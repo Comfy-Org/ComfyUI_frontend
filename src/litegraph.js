@@ -7132,15 +7132,16 @@ LGraphNode.prototype.executeAction = function(action)
         }
     };
 
-    LGraphCanvas.prototype.copyToClipboard = function() {
+    LGraphCanvas.prototype.copyToClipboard = function(nodes) {
         var clipboard_info = {
             nodes: [],
             links: []
         };
         var index = 0;
         var selected_nodes_array = [];
-        for (var i in this.selected_nodes) {
-            var node = this.selected_nodes[i];
+        if (!nodes) nodes = this.selected_nodes;
+        for (var i in nodes) {
+            var node = nodes[i];
             if (node.clonable === false)
                 continue;
             node._relative_id = index;
