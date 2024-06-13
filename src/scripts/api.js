@@ -94,61 +94,61 @@ class ComfyApi extends EventTarget {
 					const eventType = view.getUint32(0);
 					const buffer = event.data.slice(4);
 					switch (eventType) {
-					case 1:
-						const view2 = new DataView(event.data);
-						const imageType = view2.getUint32(0)
-						let imageMime
-						switch (imageType) {
-							case 1:
-							default:
-								imageMime = "image/jpeg";
-								break;
-							case 2:
-								imageMime = "image/png"
-						}
-						const imageBlob = new Blob([buffer.slice(4)], { type: imageMime });
-						this.dispatchEvent(new CustomEvent("b_preview", { detail: imageBlob }));
-						break;
-					default:
-						throw new Error(`Unknown binary websocket message of type ${eventType}`);
+						case 1:
+							const view2 = new DataView(event.data);
+							const imageType = view2.getUint32(0)
+							let imageMime
+							switch (imageType) {
+								case 1:
+								default:
+									imageMime = "image/jpeg";
+									break;
+								case 2:
+									imageMime = "image/png"
+							}
+							const imageBlob = new Blob([buffer.slice(4)], { type: imageMime });
+							this.dispatchEvent(new CustomEvent("b_preview", { detail: imageBlob }));
+							break;
+						default:
+							throw new Error(`Unknown binary websocket message of type ${eventType}`);
 					}
 				}
 				else {
-				    const msg = JSON.parse(event.data);
-				    switch (msg.type) {
-					    case "status":
-						    if (msg.data.sid) {
-							    this.clientId = msg.data.sid;
-							    window.name = this.clientId; // use window name so it isnt reused when duplicating tabs
+					const msg = JSON.parse(event.data);
+					switch (msg.type) {
+						case "status":
+							if (msg.data.sid) {
+								this.clientId = msg.data.sid;
+								window.name = this.clientId; // use window name so it isnt reused when duplicating tabs
 								sessionStorage.setItem("clientId", this.clientId); // store in session storage so duplicate tab can load correct workflow
-						    }
-						    this.dispatchEvent(new CustomEvent("status", { detail: msg.data.status }));
-						    break;
-					    case "progress":
-						    this.dispatchEvent(new CustomEvent("progress", { detail: msg.data }));
-						    break;
-					    case "executing":
-						    this.dispatchEvent(new CustomEvent("executing", { detail: msg.data.node }));
-						    break;
-					    case "executed":
-						    this.dispatchEvent(new CustomEvent("executed", { detail: msg.data }));
-						    break;
-					    case "execution_start":
-						    this.dispatchEvent(new CustomEvent("execution_start", { detail: msg.data }));
-						    break;
-					    case "execution_error":
-						    this.dispatchEvent(new CustomEvent("execution_error", { detail: msg.data }));
-						    break;
-					    case "execution_cached":
-						    this.dispatchEvent(new CustomEvent("execution_cached", { detail: msg.data }));
-						    break;
-					    default:
-						    if (this.#registered.has(msg.type)) {
-							    this.dispatchEvent(new CustomEvent(msg.type, { detail: msg.data }));
-						    } else {
-							    throw new Error(`Unknown message type ${msg.type}`);
-						    }
-				    }
+							}
+							this.dispatchEvent(new CustomEvent("status", { detail: msg.data.status }));
+							break;
+						case "progress":
+							this.dispatchEvent(new CustomEvent("progress", { detail: msg.data }));
+							break;
+						case "executing":
+							this.dispatchEvent(new CustomEvent("executing", { detail: msg.data.node }));
+							break;
+						case "executed":
+							this.dispatchEvent(new CustomEvent("executed", { detail: msg.data }));
+							break;
+						case "execution_start":
+							this.dispatchEvent(new CustomEvent("execution_start", { detail: msg.data }));
+							break;
+						case "execution_error":
+							this.dispatchEvent(new CustomEvent("execution_error", { detail: msg.data }));
+							break;
+						case "execution_cached":
+							this.dispatchEvent(new CustomEvent("execution_cached", { detail: msg.data }));
+							break;
+						default:
+							if (this.#registered.has(msg.type)) {
+								this.dispatchEvent(new CustomEvent(msg.type, { detail: msg.data }));
+							} else {
+								throw new Error(`Unknown message type ${msg.type}`);
+							}
+					}
 				}
 			} catch (error) {
 				console.warn("Unhandled message:", event.data, error);
@@ -263,7 +263,7 @@ class ComfyApi extends EventTarget {
 	 * Gets the prompt execution history
 	 * @returns Prompt history including node outputs
 	 */
-	async getHistory(max_items=200) {
+	async getHistory(max_items = 200) {
 		try {
 			const res = await this.fetchApi(`/history?max_items=${max_items}`);
 			return { History: Object.values(await res.json()) };
@@ -412,7 +412,7 @@ class ComfyApi extends EventTarget {
 			method: "POST",
 			body: options?.stringify ? JSON.stringify(data) : data,
 			...options,
-		});	
+		});
 		if (resp.status !== 200) {
 			throw new Error(`Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`);
 		}
