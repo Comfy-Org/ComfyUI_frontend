@@ -6,5 +6,5 @@
 		},
 		"lib": ["DOM", "ES2022"]
 	},
-	"include": ["."]
+	"include": [".", "../public/lib"]
 }

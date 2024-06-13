@@ -22,5 +22,5 @@
     /* AllowJs during migration phase */
     "allowJs": true
   },
-  "include": ["src"]
+  "include": ["src", "public/lib"]
 }
