@@ -23,4 +23,7 @@ in ComfyUI's front-end code.
 
 ## Test
 
-- Run `npm run test` to execute all unit tests.
+- `cd tests-ui`
+- `npm i` to install all test dependencies
+- `npm run test:generate` to fetch `data/object_info.json`
+- `npm run test` to execute all unit tests.
