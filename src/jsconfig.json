@@ -1,0 +1,10 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"/*": ["./*"]
+		},
+		"lib": ["DOM", "ES2022"]
+	},
+	"include": ["."]
+}
