@@ -36,7 +36,7 @@ export function mockApi(config = {}) {
 	if (!mockExtensions) {
 		mockExtensions = Array.from(walkSync(path.resolve("../dist/extensions/core")))
 			.filter((x) => x.endsWith(".js"))
-			.map((x) => path.relative(path.resolve("../web"), x));
+			.map((x) => path.relative(path.resolve("../dist/"), x).replace(/\\/g, "/"));
 	}
 	if (!mockNodeDefs) {
 		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./data/object_info.json")));
