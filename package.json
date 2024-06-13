@@ -1,0 +1,19 @@
+{
+  "name": "comfyui_frontend",
+  "version": "0.0.1",
+  "description": "ComfyUI Frontend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/huchenlei/ComfyUI_frontend.git"
+  },
+  "author": "huchenlei",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/huchenlei/ComfyUI_frontend/issues"
+  },
+  "homepage": "https://github.com/huchenlei/ComfyUI_frontend#readme"
+}
