@@ -20,3 +20,7 @@ in ComfyUI's front-end code.
 - Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
+
+## Test
+
+- Run `npm run test` to execute all unit tests.

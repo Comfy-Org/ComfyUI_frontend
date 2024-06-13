@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "test": "cd tests-ui && npm run test",
     "preview": "vite preview"
   },
   "devDependencies": {
