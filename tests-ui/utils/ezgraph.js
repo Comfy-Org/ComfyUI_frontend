@@ -1,13 +1,13 @@
 // @ts-check
-/// <reference path="../../web/types/litegraph.d.ts" />
+/// <reference path="../../dist/types/litegraph.d.ts" />
 
 /**
- * @typedef { import("../../web/scripts/app")["app"] } app
- * @typedef { import("../../web/types/litegraph") } LG
- * @typedef { import("../../web/types/litegraph").IWidget } IWidget
- * @typedef { import("../../web/types/litegraph").ContextMenuItem } ContextMenuItem
- * @typedef { import("../../web/types/litegraph").INodeInputSlot } INodeInputSlot
- * @typedef { import("../../web/types/litegraph").INodeOutputSlot } INodeOutputSlot
+ * @typedef { import("../../dist/scripts/app")["app"] } app
+ * @typedef { import("../../dist/types/litegraph") } LG
+ * @typedef { import("../../dist/types/litegraph").IWidget } IWidget
+ * @typedef { import("../../dist/types/litegraph").ContextMenuItem } ContextMenuItem
+ * @typedef { import("../../dist/types/litegraph").INodeInputSlot } INodeInputSlot
+ * @typedef { import("../../dist/types/litegraph").INodeOutputSlot } INodeOutputSlot
  * @typedef { InstanceType<LG["LGraphNode"]> & { widgets?: Array<IWidget> } } LGNode
  * @typedef { (...args: EzOutput[] | [...EzOutput[], Record<string, unknown>]) => EzNode } EzNodeFactory
  */

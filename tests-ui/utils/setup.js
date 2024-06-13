@@ -1,4 +1,4 @@
-require("../../web/scripts/api");
+require("../../dist/scripts/api");
 
 const fs = require("fs");
 const path = require("path");
@@ -14,7 +14,7 @@ function* walkSync(dir) {
 }
 
 /**
- * @typedef { import("../../web/types/comfy").ComfyObjectInfo } ComfyObjectInfo
+ * @typedef { import("../../dist/types/comfy").ComfyObjectInfo } ComfyObjectInfo
  */
 
 /**
@@ -34,7 +34,7 @@ export function mockApi(config = {}) {
 		...config,
 	};
 	if (!mockExtensions) {
-		mockExtensions = Array.from(walkSync(path.resolve("../web/extensions/core")))
+		mockExtensions = Array.from(walkSync(path.resolve("../dist/extensions/core")))
 			.filter((x) => x.endsWith(".js"))
 			.map((x) => path.relative(path.resolve("../web"), x));
 	}
@@ -51,7 +51,7 @@ export function mockApi(config = {}) {
 		getExtensions: jest.fn(() => mockExtensions),
 		getNodeDefs: jest.fn(() => mockNodeDefs),
 		init: jest.fn(),
-		apiURL: jest.fn((x) => "../../web/" + x),
+		apiURL: jest.fn((x) => "../../dist/" + x),
 		createUser: jest.fn((username) => {
 			if(username in userConfig.users) {
 				return { status: 400, json: () => "Duplicate" }
@@ -73,7 +73,7 @@ export function mockApi(config = {}) {
 			userData[file] = data;
 		}),
 	};
-	jest.mock("../../web/scripts/api", () => ({
+	jest.mock("../../dist/scripts/api", () => ({
 		get api() {
 			return mockApi;
 		},

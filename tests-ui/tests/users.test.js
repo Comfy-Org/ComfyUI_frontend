@@ -22,7 +22,7 @@ describe("users", () => {
 
 	describe("multi-user", () => {
 		function mockAddStylesheet() {
-			const utils = require("../../web/scripts/utils");
+			const utils = require("../../dist/scripts/utils");
 			utils.addStylesheet = jest.fn().mockReturnValue(Promise.resolve());
 		}
 
@@ -30,7 +30,7 @@ describe("users", () => {
 			mockAddStylesheet();
 
 			// Wait for "show" to be called
-			const { UserSelectionScreen } = require("../../web/scripts/ui/userSelection");
+			const { UserSelectionScreen } = require("../../dist/scripts/ui/userSelection");
 			let resolve, reject;
 			const fn = UserSelectionScreen.prototype.show;
 			const p = new Promise((res, rej) => {
@@ -87,7 +87,7 @@ describe("users", () => {
 			expect(window.getComputedStyle(menu)?.display).not.toBe("none");
 
 			// Ensure settings + templates are saved
-			const { api } = require("../../web/scripts/api");
+			const { api } = require("../../dist/scripts/api");
 			expect(api.createUser).toHaveBeenCalledTimes(+isCreate);
 			expect(api.storeSettings).toHaveBeenCalledTimes(+isCreate);
 			expect(api.storeUserData).toHaveBeenCalledTimes(+isCreate);
@@ -226,7 +226,7 @@ describe("users", () => {
 			expectNoUserScreen();
 
 			// It should store the settings
-			const { api } = require("../../web/scripts/api");
+			const { api } = require("../../dist/scripts/api");
 			expect(api.storeSettings).toHaveBeenCalledTimes(1);
 			expect(api.storeUserData).toHaveBeenCalledTimes(1);
 			expect(api.storeUserData).toHaveBeenCalledWith("comfy.templates.json", null, { stringify: false });
@@ -240,7 +240,7 @@ describe("users", () => {
 			expectNoUserScreen();
 
 			// It should store the settings
-			const { api } = require("../../web/scripts/api");
+			const { api } = require("../../dist/scripts/api");
 			expect(api.storeSettings).toHaveBeenCalledTimes(0);
 			expect(api.storeUserData).toHaveBeenCalledTimes(0);
 			expect(app.isNewUserSession).toBeFalsy();
@@ -264,7 +264,7 @@ describe("users", () => {
 			expectNoUserScreen();
 
 			// It should store the settings
-			const { api } = require("../../web/scripts/api");
+			const { api } = require("../../dist/scripts/api");
 			expect(api.storeSettings).toHaveBeenCalledTimes(0);
 			expect(api.storeUserData).toHaveBeenCalledTimes(0);
 			expect(app.isNewUserSession).toBeFalsy();
@@ -277,7 +277,7 @@ describe("users", () => {
 			expectNoUserScreen();
 
 			// It should store the settings
-			const { api } = require("../../web/scripts/api");
+			const { api } = require("../../dist/scripts/api");
 			expect(api.storeSettings).toHaveBeenCalledTimes(0);
 			expect(api.storeUserData).toHaveBeenCalledTimes(0);
 			expect(app.isNewUserSession).toBeFalsy();

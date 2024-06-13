@@ -432,7 +432,7 @@ describe("group node", () => {
 			nodes.save,
 		]);
 
-		const { api } = require("../../web/scripts/api");
+		const { api } = require("../../dist/scripts/api");
 
 		api.dispatchEvent(new CustomEvent("execution_start", {}));
 		api.dispatchEvent(new CustomEvent("executing", { detail: `${nodes.save.id}` }));
