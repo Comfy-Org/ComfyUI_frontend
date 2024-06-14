@@ -32,7 +32,7 @@ jobs:
       working-directory: ComfyUI
     - name: Start ComfyUI server
       run: |
-        python main.py --cpu
+        python main.py --cpu &
       working-directory: ComfyUI
     - name: Run UI tests
       run: |
