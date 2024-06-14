@@ -13,7 +13,7 @@ export default defineConfig({
 			}
 		}
 	},
-	plugins: [noBundlePlugin({ copy: '**/*.css' })],
+	plugins: [noBundlePlugin({ copy: ['**/*.css', 'lib/*.js'] })],
 	build: {
 		lib: {
 			formats: ['es'],
