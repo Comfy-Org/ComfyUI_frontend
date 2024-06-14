@@ -34,11 +34,15 @@ jobs:
       run: |
         python main.py --cpu &
       working-directory: ComfyUI
+    - name: Build Front-End
+      run: |
+        npm ci
+        npm run build
+      working-directory: ComfyUI_frontend
     - name: Run UI tests
       run: |
         wait-for-it --service 127.0.0.1:8188 -t 600
         npm ci
-        npm run build
         npm run test:generate
         npm test -- --verbose
       working-directory: ComfyUI_frontend/tests-ui
