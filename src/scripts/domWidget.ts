@@ -1,4 +1,4 @@
-import { app, ANIM_PREVIEW_WIDGET } from "./app.js";
+import { app, ANIM_PREVIEW_WIDGET } from "./app";
 import type { LGraphNode, Vector4 } from "/types/litegraph";
 
 
