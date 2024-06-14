@@ -213,7 +213,7 @@ function seedWidget(node, inputName, inputData, app, widgetName) {
 	return seed;
 }
 
-function createIntWidget(node, inputName, inputData, app, isSeedInput) {
+function createIntWidget(node, inputName, inputData, app, isSeedInput: boolean = false) {
 	const control = inputData[1]?.control_after_generate;
 	if (!isSeedInput && control) {
 		return seedWidget(node, inputName, inputData, app, typeof control === "string" ? control : undefined);
@@ -398,13 +398,11 @@ export const ComfyWidgets = {
 			},
 
 			get : function() {
-				let value = "";
-				if (this._real_value) {
-					value = this._real_value;
-				} else {
+				if (!this._real_value) {
 					return default_value;
 				}
 
+				let value = this._real_value;
 				if (value.filename) {
 					let real_value = value;
 					value = "";

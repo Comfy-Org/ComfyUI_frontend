@@ -1,5 +1,5 @@
 import { ComfyLogging } from "./logging.js";
-import { ComfyWidgets, initWidgets } from "./widgets.js";
+import { ComfyWidgets, initWidgets } from "./widgets";
 import { ComfyUI, $el } from "./ui.js";
 import { api } from "./api.js";
 import { defaultGraph } from "./defaultGraph.js";
