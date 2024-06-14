@@ -1,5 +1,30 @@
 import { api } from "./api"
 import "./domWidget";
+import type { ComfyApp } from "./app";
+import type { IWidget, LGraphNode } from "/types/litegraph";
+
+interface InputDataOptions {
+    display?: string;
+    default?: any;
+    label_on?: boolean;
+    label_off?: boolean;
+    multiline?: boolean;
+	// TODO: infer type
+    dynamicPrompts?: any;
+	// TODO: infer type
+    control_after_generate?: any;
+	// Name of widget.
+	widget?: string
+}
+
+export type InputData = [
+	string, InputDataOptions
+];
+
+export type ComfyWidgetConstructor = (
+	node: LGraphNode, inputName: string, inputData: InputData, app?: ComfyApp, widgetName?: string) =>
+		{widget: IWidget, minWidth?: number; minHeight?: number };
+
 
 let controlValueRunBefore = false;
 export function updateControlWidgetLabel(widget) {
@@ -301,11 +326,11 @@ export function initWidgets(app) {
 	});
 }
 
-export const ComfyWidgets = {
+export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 	"INT:seed": seedWidget,
 	"INT:noise_seed": seedWidget,
 	FLOAT(node, inputName, inputData, app) {
-		let widgetType = isSlider(inputData[1]["display"], app);
+		let widgetType: "number" | "slider" = isSlider(inputData[1]["display"], app);
 		let precision = app.ui.settings.getSettingValue("Comfy.FloatRoundingPrecision");
 		let disable_rounding = app.ui.settings.getSettingValue("Comfy.DisableFloatRounding")
 		if (precision == 0) precision = undefined;
@@ -369,17 +394,22 @@ export const ComfyWidgets = {
 		}
 		const res = { widget: node.addWidget("combo", inputName, defaultValue, () => {}, { values: type }) };
 		if (inputData[1]?.control_after_generate) {
+			// TODO make combo handle a widget node type?
+			// @ts-ignore
 			res.widget.linkedWidgets = addValueControlWidgets(node, res.widget, undefined, undefined, inputData);
 		}
 		return res;
 	},
-	IMAGEUPLOAD(node, inputName, inputData, app) {
+	IMAGEUPLOAD(node: LGraphNode, inputName, inputData, app) {
+		// TODO make image upload handle a custom node type?
+		// @ts-ignore
 		const imageWidget = node.widgets.find((w) => w.name === (inputData[1]?.widget ?? "image"));
 		let uploadWidget;
 
 		function showImage(name) {
 			const img = new Image();
 			img.onload = () => {
+				// @ts-ignore
 				node.imgs = [img];
 				app.graph.setDirtyCanvas(true);
 			};
@@ -390,6 +420,7 @@ export const ComfyWidgets = {
 				name = name.substring(folder_separator + 1);
 			}
 			img.src = api.apiURL(`/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`);
+			// @ts-ignore
 			node.setSizeForImage?.();
 		}
 
@@ -422,6 +453,8 @@ export const ComfyWidgets = {
 		});
 
 		// Add our own callback to the combo widget to render an image when it changes
+		// TODO: Explain this?
+		// @ts-ignore
 		const cb = node.callback;
 		imageWidget.callback = function () {
 			showImage(imageWidget.value);
@@ -493,6 +526,7 @@ export const ComfyWidgets = {
 		uploadWidget.serialize = false;
 
 		// Add handler to check if an image is being dragged over our node
+		// @ts-ignore
 		node.onDragOver = function (e) {
 			if (e.dataTransfer && e.dataTransfer.items) {
 				const image = [...e.dataTransfer.items].find((f) => f.kind === "file");
@@ -503,6 +537,7 @@ export const ComfyWidgets = {
 		};
 
 		// On drop upload files
+		// @ts-ignore
 		node.onDragDrop = function (e) {
 			console.log("onDragDrop called");
 			let handled = false;
@@ -516,6 +551,7 @@ export const ComfyWidgets = {
 			return handled;
 		};
 
+		// @ts-ignore
 		node.pasteFile = function(file) {
 			if (file.type.startsWith("image/")) {
 				const is_pasted = (file.name === "image.png") &&

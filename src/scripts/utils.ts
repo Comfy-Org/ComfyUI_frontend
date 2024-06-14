@@ -43,9 +43,11 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
 		}
 
 		// Find node with matching S&R property name
+		// @ts-ignore
 		let nodes = app.graph._nodes.filter((n) => n.properties?.["Node name for S&R"] === split[0]);
 		// If we cant, see if there is a node with that title
 		if (!nodes.length) {
+			// @ts-ignore
 			nodes = app.graph._nodes.filter((n) => n.title === split[0]);
 		}
 		if (!nodes.length) {

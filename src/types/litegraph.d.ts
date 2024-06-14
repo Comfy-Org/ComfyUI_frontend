@@ -221,7 +221,7 @@ export declare class LGraph {
      */
     updateExecutionOrder(): void;
     /** This is more internal, it computes the executable nodes in order and returns it */
-    computeExecutionOrder<T = any>(only_onExecute: boolean, set_level: any): T;
+    computeExecutionOrder<T = any>(only_onExecute: boolean, set_level?: any): T;
     /**
      * Returns all the nodes that could affect this one (ancestors) by crawling all the inputs recursively.
      * It doesn't include the node itself
@@ -357,7 +357,7 @@ export declare class LGraph {
     clearTriggeredSlots(): void;
     /* Called when something visually changed (not the graph!) */
     change(): void;
-    setDirtyCanvas(fg: boolean, bg: boolean): void;
+    setDirtyCanvas(fg: boolean, bg?: boolean): void;
     /** Destroys a link */
     removeLink(link_id: number): void;
     /** Creates a Object containing all the info about this graph, it can be serialized */
@@ -456,6 +456,8 @@ export declare class LGraphNode {
         | typeof LiteGraph.ON_TRIGGER
         | typeof LiteGraph.NEVER
         | typeof LiteGraph.ALWAYS;
+
+    widgets?: IWidget[];
 
     /** If set to true widgets do not start after the slots */
     widgets_up: boolean;
@@ -1075,6 +1077,12 @@ export declare class LGraphCanvas {
     visible_links: LLink[];
     visible_nodes: LGraphNode[];
     zoom_modify_alpha: boolean;
+    //mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle
+    mouse: Vector2;
+    //mouse in graph coordinates, where 0,0 is the top-left corner of the blue rectangle
+    graph_mouse: Vector2;
+
+    pointer_is_down?: boolean;
 
     /** clears all the data inside */
     clear(): void;
@@ -1309,8 +1317,8 @@ declare global {
             y: number,
             width: number,
             height: number,
-            radius: number,
-            radiusLow: number
+            radius: number | Vector4,
+            radiusLow?: number
         ): void;
     }
 
@@ -1319,6 +1327,11 @@ declare global {
     }
 
     const LiteGraph: {
+		DEFAULT_GROUP_FONT_SIZE: any;
+		overlapBounding(visible_area: any, _bounding: any): unknown;
+		release_link_on_empty_shows_menu: boolean;
+		alt_drag_do_clone_nodes: boolean;
+		GRID_SHAPE: number;
         VERSION: number;
     
         CANVAS_GRID_SIZE: number;
@@ -1411,7 +1424,7 @@ declare global {
     
         createNode<T extends LGraphNode = LGraphNode>(type: string): T;
         /** Register a node class so it can be listed when the user wants to create a new one */
-        registerNodeType(type: string, base: { new (): LGraphNode }): void;
+        registerNodeType(type: string, base: { new (): LGraphNode } | LGraphNode): void;
         /** removes a node type from the system */
         unregisterNodeType(type: string): void;
         /** Removes all previously registered node's types. */
