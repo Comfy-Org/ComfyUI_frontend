@@ -2,72 +2,70 @@ import { api } from "./api.js";
 import { ComfyDialog as _ComfyDialog } from "./ui/dialog.js";
 import { toggleSwitch } from "./ui/toggleSwitch.js";
 import { ComfySettingsDialog } from "./ui/settings.js";
+import { ComfyApp, app } from "./app.js";
 
 export const ComfyDialog = _ComfyDialog;
 
-/**
- * 
- * @param { string } tag HTML Element Tag and optional classes e.g. div.class1.class2
- * @param { string | Element | Element[] | {
- * 	 parent?: Element,
- *   $?: (el: Element) => void, 
- *   dataset?: DOMStringMap,
- *   style?: CSSStyleDeclaration,
- * 	 for?: string
- *   ...any
- * } | undefined } [propsOrChildren] 
- * @param { Element[] | Element | undefined } [children]
- * @returns 
- */
-export function $el(tag, propsOrChildren, children) {
-	const split = tag.split(".");
-	const element = document.createElement(split.shift());
-	if (split.length > 0) {
-		element.classList.add(...split);
-	}
+type Position2D = {
+	x: number,
+	y: number
+};
 
-	if (propsOrChildren) {
-		if (typeof propsOrChildren === "string") {
-			propsOrChildren = { textContent: propsOrChildren };
-		} else if (propsOrChildren instanceof Element) {
-			propsOrChildren = [propsOrChildren];
-		}
-		if (Array.isArray(propsOrChildren)) {
-			element.append(...propsOrChildren);
-		} else {
-			const { parent, $: cb, dataset, style } = propsOrChildren;
-			delete propsOrChildren.parent;
-			delete propsOrChildren.$;
-			delete propsOrChildren.dataset;
-			delete propsOrChildren.style;
+type Props = {
+    parent?: HTMLElement,
+    $?: (el: HTMLElement) => void,
+    dataset?: DOMStringMap,
+    style?: Partial<CSSStyleDeclaration>,
+    for?: string,
+    textContent?: string,
+    [key: string]: any
+};
 
-			if (Object.hasOwn(propsOrChildren, "for")) {
-				element.setAttribute("for", propsOrChildren.for)
-			}
+export function $el(tag: string, propsOrChildren?: string | Element | Element[] | Props, children?: Element[] | Element): HTMLElement {
+    const split = tag.split(".");
+    const element = document.createElement(split.shift() as string);
+    if (split.length > 0) {
+        element.classList.add(...split);
+    }
 
-			if (style) {
-				Object.assign(element.style, style);
-			}
+    if (propsOrChildren) {
+        if (typeof propsOrChildren === "string") {
+            propsOrChildren = { textContent: propsOrChildren };
+        } else if (propsOrChildren instanceof Element) {
+            propsOrChildren = [propsOrChildren];
+        }
+        if (Array.isArray(propsOrChildren)) {
+            element.append(...propsOrChildren);
+        } else {
+            const { parent, $: cb, dataset, style, ...rest } = propsOrChildren as Props;
 
-			if (dataset) {
-				Object.assign(element.dataset, dataset);
-			}
+            if (rest.for) {
+                element.setAttribute("for", rest.for)
+            }
 
-			Object.assign(element, propsOrChildren);
-			if (children) {
-				element.append(...(children instanceof Array ? children : [children]));
-			}
+            if (style) {
+                Object.assign(element.style, style);
+            }
 
-			if (parent) {
-				parent.append(element);
-			}
+            if (dataset) {
+                Object.assign(element.dataset, dataset);
+            }
 
-			if (cb) {
-				cb(element);
-			}
-		}
-	}
-	return element;
+            Object.assign(element, rest);
+            if (children) {
+                element.append(...(Array.isArray(children) ? children : [children]));
+            }
+
+            if (parent) {
+                parent.append(element);
+            }
+
+            if (cb) {
+                cb(element);
+            }
+        }
+    }
+    return element;
 }
 
 function dragElement(dragEl, settings) {
@@ -130,9 +128,9 @@ function dragElement(dragEl, settings) {
 	}
 
 	function restorePos() {
-		let pos = localStorage.getItem("Comfy.MenuPosition");
-		if (pos) {
-			pos = JSON.parse(pos);
+		let posString = localStorage.getItem("Comfy.MenuPosition");
+		if (posString) {
+			const pos = JSON.parse(posString) as Position2D;
 			newPosX = pos.x;
 			newPosY = pos.y;
 			positionElement();
@@ -198,12 +196,14 @@ class ComfyList {
 	#type;
 	#text;
 	#reverse;
+	element: HTMLDivElement;
+	button?: HTMLButtonElement;
 
-	constructor(text, type, reverse) {
+	constructor(text, type?, reverse?) {
 		this.#text = text;
 		this.#type = type || text.toLowerCase();
 		this.#reverse = reverse || false;
-		this.element = $el("div.comfy-list");
+		this.element = $el("div.comfy-list") as HTMLDivElement;
 		this.element.style.display = "none";
 	}
 
@@ -289,6 +289,20 @@ class ComfyList {
 }
 
 export class ComfyUI {
+	app: ComfyApp;
+	dialog: _ComfyDialog;
+	settings: ComfySettingsDialog;
+	batchCount: number;
+	lastQueueSize: number;
+	queue: ComfyList;
+	history: ComfyList;
+	autoQueueMode: string;
+	graphHasChanged: boolean;
+	autoQueueEnabled: boolean;
+	menuHamburger: HTMLDivElement;
+	menuContainer: HTMLDivElement;
+	queueSize: Element;
+
 	constructor(app) {
 		this.app = app;
 		this.dialog = new ComfyDialog();
@@ -371,7 +385,7 @@ export class ComfyUI {
 			onchange: () => {
 				app.handleFile(fileInput.files[0]);
 			},
-		});
+		}) as HTMLInputElement;
 
 		const autoQueueModeEl = toggleSwitch(
 			"autoQueueMode",
@@ -408,7 +422,7 @@ export class ComfyUI {
 				},
 			},
 			[$el("div"), $el("div"), $el("div")]
-		);
+		) as HTMLDivElement;
 
 		this.menuContainer = $el("div.comfy-menu", { parent: document.body }, [
 			$el("div.drag-handle.comfy-menu-header", {
@@ -446,8 +460,9 @@ export class ComfyUI {
 						type: "checkbox",
 						onchange: (i) => {
 							document.getElementById("extraOptions").style.display = i.srcElement.checked ? "block" : "none";
-							this.batchCount = i.srcElement.checked ? document.getElementById("batchCountInputRange").value : 1;
-							document.getElementById("autoQueueCheckbox").checked = false;
+							this.batchCount = i.srcElement.checked ?
+								Number.parseInt((document.getElementById("batchCountInputRange") as HTMLInputElement).value) : 1;
+							(document.getElementById("autoQueueCheckbox") as HTMLInputElement).checked = false;
 							this.autoQueueEnabled = false;
 						},
 					}),
@@ -462,10 +477,14 @@ export class ComfyUI {
 						type: "number",
 						value: this.batchCount,
 						min: "1",
-						style: { width: "35%", "margin-left": "0.4em" },
+						style: { width: "35%", "marginLeft": "0.4em" },
 						oninput: (i) => {
 							this.batchCount = i.target.value;
-							document.getElementById("batchCountInputRange").value = this.batchCount;
+							/* Even though an <input> element with a type of range logically represents a number (since
+							it's used for numeric input), the value it holds is still treated as a string in HTML and
+							JavaScript. This behavior is consistent across all <input> elements regardless of their type
+							(like text, number, or range), where the .value property is always a string. */
+							(document.getElementById("batchCountInputRange") as HTMLInputElement).value = this.batchCount.toString();
 						},
 					}),
 					$el("input", {
@@ -476,7 +495,8 @@ export class ComfyUI {
 						value: this.batchCount,
 						oninput: (i) => {
 							this.batchCount = i.srcElement.value;
-							document.getElementById("batchCountInputNumber").value = i.srcElement.value;
+							// Note
+							(document.getElementById("batchCountInputNumber") as HTMLInputElement).value = i.srcElement.value;
 						},
 					}),
 				]),
@@ -505,7 +525,7 @@ export class ComfyUI {
 					onclick: () => app.queuePrompt(-1, this.batchCount)
 				}),
 				$el("button", {
-					$: (b) => (this.queue.button = b),
+					$: (b) => (this.queue.button = b as HTMLButtonElement),
 					id: "comfy-view-queue-button",
 					textContent: "View Queue",
 					onclick: () => {
@@ -514,7 +534,7 @@ export class ComfyUI {
 					},
 				}),
 				$el("button", {
-					$: (b) => (this.history.button = b),
+					$: (b) => (this.history.button = b as HTMLButtonElement),
 					id: "comfy-view-history-button",
 					textContent: "View History",
 					onclick: () => {
@@ -615,7 +635,7 @@ export class ComfyUI {
 					app.resetView();
 				}
 			}),
-		]);
+		]) as HTMLDivElement;
 
 		const devMode = this.settings.addSetting({
 			id: "Comfy.DevMode",
