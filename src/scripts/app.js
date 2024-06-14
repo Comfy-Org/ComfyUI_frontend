@@ -1,4 +1,4 @@
-import { ComfyLogging } from "./logging.js";
+import { ComfyLogging } from "./logging";
 import { ComfyWidgets, initWidgets } from "./widgets";
 import { ComfyUI, $el } from "./ui.js";
 import { api } from "./api.js";
