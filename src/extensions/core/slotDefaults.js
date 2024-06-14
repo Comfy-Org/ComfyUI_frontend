@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { ComfyWidgets } from "../../scripts/widgets";
 // Adds defaults for quickly adding nodes with middle click on the input/output
 
 app.registerExtension({
