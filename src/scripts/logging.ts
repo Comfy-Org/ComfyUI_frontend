@@ -35,19 +35,19 @@ function stringify(val, depth, replacer, space, onGetObjID) {
 		return !val || typeof val != "object"
 			? val
 			: ((r = recursMap.has(val)),
-			  recursMap.set(val, true),
-			  (a = Array.isArray(val)),
-			  r
+				recursMap.set(val, true),
+				(a = Array.isArray(val)),
+				r
 					? (o = (onGetObjID && onGetObjID(val)) || null)
 					: JSON.stringify(val, function (k, v) {
-							if (a || depth > 0) {
-								if (replacer) v = replacer(k, v);
-								if (!k) return (a = Array.isArray(v)), (val = v);
-								!o && (o = a ? [] : {});
-								o[k] = _build(v, a ? depth : depth - 1);
-							}
-					  }),
-			  o === void 0 ? (a ? [] : {}) : o);
+						if (a || depth > 0) {
+							if (replacer) v = replacer(k, v);
+							if (!k) return (a = Array.isArray(v)), (val = v);
+							!o && (o = a ? [] : {});
+							o[k] = _build(v, a ? depth : depth - 1);
+						}
+					}),
+				o === void 0 ? (a ? [] : {}) : o);
 	}
 	return JSON.stringify(_build(val, depth), null, space);
 }
