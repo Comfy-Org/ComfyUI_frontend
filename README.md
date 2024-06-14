@@ -23,6 +23,7 @@ in ComfyUI's front-end code.
 
 ## Test
 
+- `npm run build` to build the front end
 - `cd tests-ui`
 - `npm i` to install all test dependencies
 - `npm run test:generate` to fetch `data/object_info.json`

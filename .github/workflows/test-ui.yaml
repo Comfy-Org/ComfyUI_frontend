@@ -38,6 +38,7 @@ jobs:
       run: |
         wait-for-it --service 127.0.0.1:8188 -t 600
         npm ci
+        npm run build
         npm run test:generate
         npm test -- --verbose
       working-directory: ComfyUI_frontend/tests-ui
