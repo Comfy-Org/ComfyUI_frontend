@@ -1,5 +1,28 @@
+interface QueuePromptRequestBody {
+	client_id: string;
+	// Mapping from node id to node info + input values
+	// TODO: Type this.
+	prompt: Record<number, any>;
+	extra_data: {
+		extra_pnginfo: {
+			// Workflow JSON
+			// TODO: Type this.
+			workflow: any;
+		};
+	};
+	front?: boolean;
+	number?: number;
+}
+
+
 class ComfyApi extends EventTarget {
 	#registered = new Set();
+	api_host: string;
+	api_base: string;
+	initialClientId: string;
+	user: string;
+	socket?: WebSocket;
+	clientId?: string;
 
 	constructor() {
 		super();
@@ -12,7 +35,7 @@ class ComfyApi extends EventTarget {
 		return this.api_base + route;
 	}
 
-	fetchApi(route, options) {
+	fetchApi(route, options?) {
 		if (!options) {
 			options = {};
 		}
@@ -23,7 +46,7 @@ class ComfyApi extends EventTarget {
 		return fetch(this.apiURL(route), options);
 	}
 
-	addEventListener(type, callback, options) {
+	addEventListener(type, callback, options?) {
 		super.addEventListener(type, callback, options);
 		this.#registered.add(type);
 	}
@@ -47,7 +70,7 @@ class ComfyApi extends EventTarget {
 	 * Creates and connects a WebSocket for realtime updates
 	 * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
 	 */
-	#createSocket(isReconnect) {
+	#createSocket(isReconnect?) {
 		if (this.socket) {
 			return;
 		}
@@ -195,8 +218,8 @@ class ComfyApi extends EventTarget {
 	 * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
 	 * @param {object} prompt The prompt data to queue
 	 */
-	async queuePrompt(number, { output, workflow }) {
-		const body = {
+	async queuePrompt(number: number, { output, workflow }) {
+		const body: QueuePromptRequestBody = {
 			client_id: this.clientId,
 			prompt: output,
 			extra_data: { extra_pnginfo: { workflow } },
