@@ -1,4 +1,4 @@
-import { $el } from "./ui.js";
+import { $el } from "./ui";
 
 // Simple date formatter
 const parts = {

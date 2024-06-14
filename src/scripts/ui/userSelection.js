@@ -1,5 +1,5 @@
 import { api } from "../api.js";
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 import { addStylesheet } from "../utils.js";
 import { createSpinner } from "./spinner.js";
 

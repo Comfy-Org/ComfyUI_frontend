@@ -1,4 +1,4 @@
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 import { api } from "../api.js";
 import { ComfyDialog } from "./dialog.js";
 import type { ComfyApp } from "../app.js";

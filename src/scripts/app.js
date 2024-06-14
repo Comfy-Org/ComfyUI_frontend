@@ -1,6 +1,6 @@
 import { ComfyLogging } from "./logging";
 import { ComfyWidgets, initWidgets } from "./widgets";
-import { ComfyUI, $el } from "./ui.js";
+import { ComfyUI, $el } from "./ui";
 import { api } from "./api.js";
 import { defaultGraph } from "./defaultGraph.js";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo.js";

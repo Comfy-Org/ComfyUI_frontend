@@ -1,4 +1,4 @@
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 
 /**
  * @typedef { { text: string, value?: string, tooltip?: string } } ToggleSwitchItem
