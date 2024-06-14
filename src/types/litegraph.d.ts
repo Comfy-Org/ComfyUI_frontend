@@ -1424,7 +1424,7 @@ declare global {
     
         createNode<T extends LGraphNode = LGraphNode>(type: string): T;
         /** Register a node class so it can be listed when the user wants to create a new one */
-        registerNodeType(type: string, base: { new (): LGraphNode } | LGraphNode): void;
+        registerNodeType(type: string, base: { new (): LGraphNode }): void;
         /** removes a node type from the system */
         unregisterNodeType(type: string): void;
         /** Removes all previously registered node's types. */
