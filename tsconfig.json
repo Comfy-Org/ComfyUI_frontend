@@ -5,13 +5,9 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "moduleResolution": "Classic",
 
     /* Linting */
     "strict": false,
@@ -20,7 +16,11 @@
     "noFallthroughCasesInSwitch": true,
 
     /* AllowJs during migration phase */
-    "allowJs": true
+    "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"],
+    }
   },
-  "include": ["src", "public"]
+  "include": ["src/**/*"]
 }
