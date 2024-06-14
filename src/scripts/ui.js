@@ -14,6 +14,7 @@ export const ComfyDialog = _ComfyDialog;
  *   dataset?: DOMStringMap,
  *   style?: CSSStyleDeclaration,
  * 	 for?: string
+ *   ...any
  * } | undefined } propsOrChildren 
  * @param { Element[] | undefined } [children]
  * @returns 
