@@ -29,6 +29,7 @@ jobs:
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
         pip install wait-for-it
+      working-directory: ComfyUI
     - name: Start ComfyUI server
       run: |
         python main.py --cpu
