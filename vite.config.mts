@@ -13,12 +13,26 @@ export default defineConfig({
 			}
 		}
 	},
-	plugins: [noBundlePlugin({ copy: ['**/*.css', 'lib/*.js'] })],
+	plugins: [noBundlePlugin({
+		copy: [
+			'**/*.css',
+			'lib/*.js',
+			// Make sure to include all core extensions, as they are loaded dynamically
+			'extensions/core/*.js',
+			// Include modules only used by core extensions
+			'scripts/ui/draggableList.js',
+		]
+	})],
 	build: {
 		lib: {
 			formats: ['es'],
 			entry: 'index.html',
 		},
 		minify: false,
+		rollupOptions: {
+			// Disabling tree-shaking
+			// Prevent vite remove unused exports
+			treeshake: false
+		}
 	},
 });
