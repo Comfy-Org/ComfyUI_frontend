@@ -193,7 +193,9 @@ function computeSize(size: [number, number]): void {
 
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set();
+//@ts-ignore
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes;
+//@ts-ignore
 LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
 	const visibleNodes = computeVisibleNodes.apply(this, arguments);
 	for (const node of app.graph._nodes) {
@@ -228,6 +230,7 @@ export function addDomClippingSetting(): void {
 	});
 }
 
+//@ts-ignore
 LGraphNode.prototype.addDOMWidget = function (
 	name: string,
 	type: string,
