@@ -1,4 +1,4 @@
-import { addStylesheet } from "../utils.js";
+import { addStylesheet } from "../utils";
 
 addStylesheet(import.meta.url);
 
