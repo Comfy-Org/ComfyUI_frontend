@@ -1,4 +1,4 @@
-import { app, ANIM_PREVIEW_WIDGET } from "./app.js";
+import { app, ANIM_PREVIEW_WIDGET } from "./app";
 import type { LGraphNode, Vector4 } from "/types/litegraph";
 
 
@@ -198,12 +198,16 @@ const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes;
 //@ts-ignore
 LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
 	const visibleNodes = computeVisibleNodes.apply(this, arguments);
+	// @ts-ignore
 	for (const node of app.graph._nodes) {
 		if (elementWidgets.has(node)) {
 			const hidden = visibleNodes.indexOf(node) === -1;
 			for (const w of node.widgets) {
+				// @ts-ignore
 				if (w.element) {
+					// @ts-ignore
 					w.element.hidden = hidden;
+					// @ts-ignore
 					w.element.style.display = hidden ? "none" : undefined;
 					if (hidden) {
 						w.options.onHide?.(w);
@@ -298,6 +302,7 @@ LGraphNode.prototype.addDOMWidget = function (
 				width: `${widgetWidth - margin * 2}px`,
 				height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
 				position: "absolute",
+				// @ts-ignore
 				zIndex: app.graph._nodes.indexOf(node),
 			});
 

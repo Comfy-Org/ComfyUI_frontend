@@ -1,7 +1,7 @@
 import { $el } from "../ui";
 import { api } from "../api";
 import { ComfyDialog } from "./dialog.js";
-import type { ComfyApp } from "../app.js";
+import type { ComfyApp } from "../app";
 
 /* The Setting entry stored in `ComfySettingsDialog` */
 interface Setting {

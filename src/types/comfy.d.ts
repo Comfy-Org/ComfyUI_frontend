@@ -1,4 +1,4 @@
-import { LGraphNode, IWidget } from "./litegraph";
+import { LGraphNode, IWidget, LGraph } from "./litegraph";
 import { ComfyApp } from "../../scripts/app";
 
 export interface ComfyExtension {
@@ -74,3 +74,8 @@ export type ComfyObjectInfo = {
 };
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any];
+
+declare global {
+	const app: ComfyApp;
+	const graph: LGraph;
+}
