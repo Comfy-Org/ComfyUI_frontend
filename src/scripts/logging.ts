@@ -1,5 +1,6 @@
 import { $el, ComfyDialog } from "./ui.js";
 import { api } from "./api.js";
+import type { ComfyApp } from "./app.js";
 
 $el("style", {
 	textContent: `
@@ -27,10 +28,10 @@ $el("style", {
 
 // Stringify function supporting max depth and removal of circular references
 // https://stackoverflow.com/a/57193345
-function stringify(val, depth, replacer, space, onGetObjID) {
+function stringify(val, depth, replacer, space, onGetObjID?) {
 	depth = isNaN(+depth) ? 1 : depth;
 	var recursMap = new WeakMap();
-	function _build(val, depth, o, a, r) {
+	function _build(val, depth, o?, a?, r?) {
 		// (JSON.stringify() has it's own rules, which we respect here by using it for property iteration)
 		return !val || typeof val != "object"
 			? val
@@ -75,14 +76,16 @@ const jsonReplacer = (k, v, ui) => {
 	return v;
 };
 
-const fileInput = $el("input", {
+const fileInput: HTMLInputElement = $el("input", {
 	type: "file",
 	accept: ".json",
 	style: { display: "none" },
 	parent: document.body,
-});
+}) as HTMLInputElement;
 
 class ComfyLoggingDialog extends ComfyDialog {
+	logging: any;
+
 	constructor(logging) {
 		super();
 		this.logging = logging;
@@ -117,7 +120,7 @@ class ComfyLoggingDialog extends ComfyDialog {
 			reader.onload = () => {
 				fileInput.remove();
 				try {
-					const obj = JSON.parse(reader.result);
+					const obj = JSON.parse(reader.result as string);
 					if (obj instanceof Array) {
 						this.show(obj);
 					} else {
@@ -164,7 +167,7 @@ class ComfyLoggingDialog extends ComfyDialog {
 		}
 	}
 
-	show(entries) {
+	show(entries?: any[]) {
 		if (!entries) entries = this.logging.entries;
 		this.element.style.width = "100%";
 		const cols = {
@@ -239,6 +242,9 @@ export class ComfyLogging {
 	#enabled;
 	#console = {};
 
+	app: ComfyApp;
+	dialog: ComfyLoggingDialog;
+
 	get enabled() {
 		return this.#enabled;
 	}
@@ -263,7 +269,7 @@ export class ComfyLogging {
 	}
 
 	addSetting() {
-		const settingId = "Comfy.Logging.Enabled";
+		const settingId: string = "Comfy.Logging.Enabled";
 		const htmlSettingId = settingId.replaceAll(".", "-");
 		const setting = this.app.ui.settings.addSetting({
 			id: settingId,
@@ -292,6 +298,9 @@ export class ComfyLogging {
 						$el("button", {
 							textContent: "View Logs",
 							onclick: () => {
+								// TODO: Remove this ts-ignore when settings dialog
+								// is migrated.
+								// @ts-ignore
 								this.app.ui.settings.element.close();
 								this.dialog.show();
 							},
