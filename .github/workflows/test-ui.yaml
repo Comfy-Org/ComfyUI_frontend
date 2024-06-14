@@ -10,11 +10,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: "huchenlei/ComfyUI"
+        path: "ComfyUI"
         ref: main
     - name: Checkout ComfyUI_frontend
       uses: actions/checkout@v4
       with:
         repository: "huchenlei/ComfyUI_frontend"
+        path: "ComfyUI_frontend"
     - uses: actions/setup-node@v3
       with:
         node-version: 18
