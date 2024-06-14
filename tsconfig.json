@@ -14,6 +14,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
+    "downlevelIteration": true,
 
     /* AllowJs during migration phase */
     "allowJs": true,
@@ -21,7 +22,9 @@
     "paths": {
       "*": ["src/*"],
     },
-    "typeRoots": ["src/types", "node_modules/@types"]
+    "typeRoots": ["src/types", "node_modules/@types"],
+    "outDir": "./dist",
+    "rootDir": "./src",
   },
   "include": ["src/**/*", "src/types/**/*.d.ts"],
 }

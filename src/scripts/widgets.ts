@@ -142,6 +142,7 @@ export function addValueControlWidgets(node, targetWidget, defaultValue = "rando
 					break;
 				case "randomize":
 					current_index = Math.floor(Math.random() * current_length);
+					break;
 				default:
 					break;
 			}
@@ -173,6 +174,7 @@ export function addValueControlWidgets(node, targetWidget, defaultValue = "rando
 					break;
 				case "randomize":
 					targetWidget.value = Math.floor(Math.random() * range) * (targetWidget.options.step / 10) + min;
+					break;
 				default:
 					break;
 			}
