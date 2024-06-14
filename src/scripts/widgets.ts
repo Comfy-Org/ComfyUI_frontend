@@ -399,10 +399,10 @@ export const ComfyWidgets = {
 
 			get : function() {
 				if (!this._real_value) {
-            return default_value;
-        }
+					return default_value;
+				}
 
-        let value = this._real_value;
+				let value = this._real_value;
 				if (value.filename) {
 					let real_value = value;
 					value = "";
