@@ -1,7 +1,7 @@
 import { ComfyLogging } from "./logging";
 import { ComfyWidgets, initWidgets } from "./widgets";
 import { ComfyUI, $el } from "./ui";
-import { api } from "./api.js";
+import { api } from "./api";
 import { defaultGraph } from "./defaultGraph.js";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo";
 import { addDomClippingSetting } from "./domWidget";

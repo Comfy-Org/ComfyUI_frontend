@@ -1,4 +1,4 @@
-import { api } from "./api.js";
+import { api } from "./api";
 
 export function getPngMetadata(file) {
 	return new Promise<Record<string, string>>((r) => {
