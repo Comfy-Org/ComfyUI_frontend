@@ -9,7 +9,14 @@
 		<link rel="stylesheet" type="text/css" href="/user.css" />
 		<script type="text/javascript" src="/lib/litegraph.core.js"></script>
 		<script type="text/javascript" src="/lib/litegraph.extensions.js" defer></script>
-		<script type="module" src="/scripts/index.js"></script>
+		<script type="module">
+			import { app } from "./src/scripts/app.js";
+			(async () => {
+				await app.setup();
+				window.app = app;
+				window.graph = app.graph;
+			})();
+		</script>
 	</head>
 	<body class="litegraph">
 		<div id="comfy-user-selection" class="comfy-user-selection" style="display: none;">
