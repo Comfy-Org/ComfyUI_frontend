@@ -1,5 +1,5 @@
 import { api } from "./api.js"
-import "./domWidget.js";
+import "./domWidget";
 
 let controlValueRunBefore = false;
 export function updateControlWidgetLabel(widget) {

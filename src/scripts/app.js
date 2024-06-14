@@ -4,7 +4,7 @@ import { ComfyUI, $el } from "./ui.js";
 import { api } from "./api.js";
 import { defaultGraph } from "./defaultGraph.js";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo.js";
-import { addDomClippingSetting } from "./domWidget.js";
+import { addDomClippingSetting } from "./domWidget";
 import { createImageHost, calculateImageGrid } from "./ui/imagePreview.js"
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
