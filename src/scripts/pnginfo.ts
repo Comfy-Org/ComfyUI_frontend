@@ -1,23 +1,23 @@
 import { api } from "./api.js";
 
 export function getPngMetadata(file) {
-	return new Promise((r) => {
+	return new Promise<Record<string, string>>((r) => {
 		const reader = new FileReader();
 		reader.onload = (event) => {
 			// Get the PNG data as a Uint8Array
-			const pngData = new Uint8Array(event.target.result);
+			const pngData = new Uint8Array(event.target.result as ArrayBuffer);
 			const dataView = new DataView(pngData.buffer);
 
 			// Check that the PNG signature is present
 			if (dataView.getUint32(0) !== 0x89504e47) {
 				console.error("Not a valid PNG file");
-				r();
+				r({});
 				return;
 			}
 
 			// Start searching for chunks after the PNG signature
 			let offset = 8;
-			let txt_chunks = {};
+			let txt_chunks: Record<string, string> = {};
 			// Loop through the chunks in the PNG file
 			while (offset < pngData.length) {
 				// Get the length of the chunk
@@ -104,16 +104,16 @@ function splitValues(input) {
 }
 
 export function getWebpMetadata(file) {
-	return new Promise((r) => {
+	return new Promise<Record<string, string>>((r) => {
 		const reader = new FileReader();
 		reader.onload = (event) => {
-			const webp = new Uint8Array(event.target.result);
+			const webp = new Uint8Array(event.target.result as ArrayBuffer);
 			const dataView = new DataView(webp.buffer);
 
 			// Check that the WEBP signature is present
 			if (dataView.getUint32(0) !== 0x52494646 || dataView.getUint32(8) !== 0x57454250) {
 				console.error("Not a valid WEBP file");
-				r();
+				r({});
 				return;
 			}
 
@@ -130,7 +130,7 @@ export function getWebpMetadata(file) {
 					}
 					let data = parseExifData(webp.slice(offset + 8, offset + 8 + chunk_length));
 					for (var key in data) {
-						var value = data[key];
+						var value = data[key] as string;
 						let index = value.indexOf(':');
 						txt_chunks[value.slice(0, index)] = value.slice(index + 1);
 					}
@@ -150,7 +150,7 @@ export function getLatentMetadata(file) {
 	return new Promise((r) => {
 		const reader = new FileReader();
 		reader.onload = (event) => {
-			const safetensorsData = new Uint8Array(event.target.result);
+			const safetensorsData = new Uint8Array(event.target.result as ArrayBuffer);
 			const dataView = new DataView(safetensorsData.buffer);
 			let header_size = dataView.getUint32(0, true);
 			let offset = 8;
@@ -198,11 +198,11 @@ export async function importA1111(graph, parameters) {
 
 			const ceil64 = (v) => Math.ceil(v / 64) * 64;
 
-			function getWidget(node, name) {
+			const getWidget = (node, name) => {
 				return node.widgets.find((w) => w.name === name);
 			}
 
-			function setWidgetValue(node, name, value, isOptionPrefix) {
+			const setWidgetValue = (node, name, value, isOptionPrefix?) => {
 				const w = getWidget(node, name);
 				if (isOptionPrefix) {
 					const o = w.options.values.find((w) => w.startsWith(value));
@@ -217,7 +217,7 @@ export async function importA1111(graph, parameters) {
 				}
 			}
 
-			function createLoraNodes(clipNode, text, prevClip, prevModel) {
+			const createLoraNodes = (clipNode, text, prevClip, prevModel) => {
 				const loras = [];
 				text = text.replace(/<lora:([^:]+:[^>]+)>/g, function (m, c) {
 					const s = c.split(":");
@@ -251,7 +251,7 @@ export async function importA1111(graph, parameters) {
 				return { text, prevModel, prevClip };
 			}
 
-			function replaceEmbeddings(text) {
+			const replaceEmbeddings = (text) => {
 				if(!embeddings.length) return text;
 				return text.replaceAll(
 					new RegExp(
@@ -262,7 +262,7 @@ export async function importA1111(graph, parameters) {
 				);
 			}
 
-			function popOpt(name) {
+			const popOpt = (name) => {
 				const v = opts[name];
 				delete opts[name];
 				return v;
