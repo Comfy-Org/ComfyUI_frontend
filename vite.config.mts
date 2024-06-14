@@ -18,6 +18,7 @@ export default defineConfig({
 		lib: {
 			formats: ['es'],
 			entry: 'index.html',
-		}
+		},
+		minify: false,
 	},
 });
