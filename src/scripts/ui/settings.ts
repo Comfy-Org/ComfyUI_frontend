@@ -1,8 +1,21 @@
 import { $el } from "../ui.js";
 import { api } from "../api.js";
 import { ComfyDialog } from "./dialog.js";
+import type { ComfyApp } from "../app.js";
+
+interface Setting {
+    id: string;
+    onChange?: (value: any, oldValue?: any) => void;
+    name: string;
+    render: () => HTMLElement;
+}
 
 export class ComfySettingsDialog extends ComfyDialog {
+	app: ComfyApp;
+	settingsValues: any;
+	settingsLookup: Record<string, Setting>;
+	declare element: HTMLDialogElement;
+
 	constructor(app) {
 		super();
 		this.app = app;
@@ -40,7 +53,7 @@ export class ComfySettingsDialog extends ComfyDialog {
 					}),
 				]),
 			]
-		);
+		) as HTMLDialogElement;
 	}
 
 	get settings() {
@@ -67,10 +80,10 @@ export class ComfySettingsDialog extends ComfyDialog {
 		return id;
 	}
 
-	getSettingValue(id, defaultValue) {
+	getSettingValue(id, defaultValue?) {
 		let value = this.settingsValues[this.getId(id)];
-		if(value != null) {
-			if(this.app.storageLocation === "browser") {
+		if (value != null) {
+			if (this.app.storageLocation === "browser") {
 				try {
 					value = JSON.parse(value);
 				} catch (error) {
@@ -288,7 +301,7 @@ export class ComfySettingsDialog extends ComfyDialog {
 
 				return element;
 			},
-		};
+		} as Setting;
 
 		const self = this;
 		return {
@@ -308,6 +321,8 @@ export class ComfySettingsDialog extends ComfyDialog {
 				{
 					style: { display: "none" },
 				},
+				// TODO remove this once ui.js is migrated.
+				// @ts-ignore
 				[$el("th"), $el("th", { style: { width: "33%" } })]
 			),
 			...this.settings.sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.render())

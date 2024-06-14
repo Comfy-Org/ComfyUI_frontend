@@ -1,7 +1,7 @@
 import { api } from "./api.js";
 import { ComfyDialog as _ComfyDialog } from "./ui/dialog.js";
 import { toggleSwitch } from "./ui/toggleSwitch.js";
-import { ComfySettingsDialog } from "./ui/settings.js";
+import { ComfySettingsDialog } from "./ui/settings";
 
 export const ComfyDialog = _ComfyDialog;
 
@@ -15,8 +15,8 @@ export const ComfyDialog = _ComfyDialog;
  *   style?: CSSStyleDeclaration,
  * 	 for?: string
  *   ...any
- * } | undefined } propsOrChildren 
- * @param { Element[] | undefined } [children]
+ * } | undefined } [propsOrChildren] 
+ * @param { Element[] | Element | undefined } [children]
  * @returns 
  */
 export function $el(tag, propsOrChildren, children) {
