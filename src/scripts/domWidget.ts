@@ -1,6 +1,6 @@
 import { app, ANIM_PREVIEW_WIDGET } from "./app.js";
-import { LGraphCanvas, LGraphNode, LiteGraph } from "/lib/litegraph.core.js";
-import type { LGraphNode as LGraphNodeType, Vector4 } from "/types/litegraph.js";
+import type { LGraphNode, Vector4 } from "/types/litegraph";
+
 
 const SIZE = Symbol();
 
@@ -21,7 +21,7 @@ interface DOMWidget {
 	value?: any;
 	y?: number;
 	callback?: (value: any) => void;
-	draw?: (ctx: CanvasRenderingContext2D, node: LGraphNodeType, widgetWidth: number, y: number, widgetHeight: number) => void;
+	draw?: (ctx: CanvasRenderingContext2D, node: LGraphNode, widgetWidth: number, y: number, widgetHeight: number) => void;
 	onRemove?: () => void;
 }
 
@@ -35,8 +35,8 @@ function intersect(a: Rect, b: Rect): Vector4 | null {
 	else return null;
 }
 
-function getClipPath(node: LGraphNodeType, element: HTMLElement): string {
-	const selectedNode: LGraphNodeType = Object.values(app.canvas.selected_nodes)[0] as LGraphNodeType;
+function getClipPath(node: LGraphNode, element: HTMLElement): string {
+	const selectedNode: LGraphNode = Object.values(app.canvas.selected_nodes)[0] as LGraphNode;
 	if (selectedNode && selectedNode !== node) {
 		const elRect = element.getBoundingClientRect();
 		const MARGIN = 7;
@@ -194,7 +194,7 @@ function computeSize(size: [number, number]): void {
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set();
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes;
-LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNodeType[] {
+LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
 	const visibleNodes = computeVisibleNodes.apply(this, arguments);
 	for (const node of app.graph._nodes) {
 		if (elementWidgets.has(node)) {
@@ -260,7 +260,7 @@ LGraphNode.prototype.addDOMWidget = function (
 			options.setValue?.(v);
 			widget.callback?.(widget.value);
 		},
-		draw: function (ctx: CanvasRenderingContext2D, node: LGraphNodeType, widgetWidth: number, y: number, widgetHeight: number) {
+		draw: function (ctx: CanvasRenderingContext2D, node: LGraphNode, widgetWidth: number, y: number, widgetHeight: number) {
 			if (widget.computedHeight == null) {
 				computeSize.call(node, node.size);
 			}
