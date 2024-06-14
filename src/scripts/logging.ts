@@ -298,9 +298,6 @@ export class ComfyLogging {
 						$el("button", {
 							textContent: "View Logs",
 							onclick: () => {
-								// TODO: Remove this ts-ignore when settings dialog
-								// is migrated.
-								// @ts-ignore
 								this.app.ui.settings.element.close();
 								this.dialog.show();
 							},
