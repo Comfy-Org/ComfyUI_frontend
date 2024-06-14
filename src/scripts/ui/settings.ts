@@ -12,7 +12,7 @@ interface Setting {
 
 export class ComfySettingsDialog extends ComfyDialog {
 	app: ComfyApp;
-	settingsValues: {};
+	settingsValues: any;
 	settingsLookup: Record<string, Setting>;
 	declare element: HTMLDialogElement;
 
