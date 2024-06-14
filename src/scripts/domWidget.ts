@@ -1,8 +1,32 @@
 import { app, ANIM_PREVIEW_WIDGET } from "./app.js";
+import { LGraphCanvas, LGraphNode, LiteGraph } from "/lib/litegraph.core.js";
+import type { LGraphNode as LGraphNodeType, Vector4 } from "/types/litegraph.js";
 
 const SIZE = Symbol();
 
-function intersect(a, b) {
+
+interface Rect {
+	height: number;
+	width: number;
+	x: number;
+	y: number;
+}
+
+interface DOMWidget {
+	type: string;
+	name: string;
+	computedHeight?: number;
+	element?: HTMLElement;
+	options: any;
+	value?: any;
+	y?: number;
+	callback?: (value: any) => void;
+	draw?: (ctx: CanvasRenderingContext2D, node: LGraphNodeType, widgetWidth: number, y: number, widgetHeight: number) => void;
+	onRemove?: () => void;
+}
+
+
+function intersect(a: Rect, b: Rect): Vector4 | null {
 	const x = Math.max(a.x, b.x);
 	const num1 = Math.min(a.x + a.width, b.x + b.width);
 	const y = Math.max(a.y, b.y);
@@ -11,8 +35,8 @@ function intersect(a, b) {
 	else return null;
 }
 
-function getClipPath(node, element) {
-	const selectedNode = Object.values(app.canvas.selected_nodes)[0];
+function getClipPath(node: LGraphNodeType, element: HTMLElement): string {
+	const selectedNode: LGraphNodeType = Object.values(app.canvas.selected_nodes)[0] as LGraphNodeType;
 	if (selectedNode && selectedNode !== node) {
 		const elRect = element.getBoundingClientRect();
 		const MARGIN = 7;
@@ -44,7 +68,7 @@ function getClipPath(node, element) {
 	return "";
 }
 
-function computeSize(size) {
+function computeSize(size: [number, number]): void {
 	if (this.widgets?.[0]?.last_y == null) return;
 
 	let y = this.widgets[0].last_y;
@@ -170,7 +194,7 @@ function computeSize(size) {
 // Override the compute visible nodes function to allow us to hide/show DOM elements when the node goes offscreen
 const elementWidgets = new Set();
 const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes;
-LGraphCanvas.prototype.computeVisibleNodes = function () {
+LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNodeType[] {
 	const visibleNodes = computeVisibleNodes.apply(this, arguments);
 	for (const node of app.graph._nodes) {
 		if (elementWidgets.has(node)) {
@@ -192,7 +216,7 @@ LGraphCanvas.prototype.computeVisibleNodes = function () {
 
 let enableDomClipping = true;
 
-export function addDomClippingSetting() {
+export function addDomClippingSetting(): void {
 	app.ui.settings.addSetting({
 		id: "Comfy.DOMClippingEnabled",
 		name: "Enable DOM element clipping (enabling may reduce performance)",
@@ -204,7 +228,12 @@ export function addDomClippingSetting() {
 	});
 }
 
-LGraphNode.prototype.addDOMWidget = function (name, type, element, options) {
+LGraphNode.prototype.addDOMWidget = function (
+	name: string,
+	type: string,
+	element: HTMLElement,
+	options: Record<string, any>
+): DOMWidget {
 	options = { hideOnZoom: true, selectOn: ["focus", "click"], ...options };
 
 	if (!element.parentElement) {
@@ -221,7 +250,7 @@ LGraphNode.prototype.addDOMWidget = function (name, type, element, options) {
 		document.addEventListener("mousedown", mouseDownHandler);
 	}
 
-	const widget = {
+	const widget: DOMWidget = {
 		type,
 		name,
 		get value() {
@@ -231,7 +260,7 @@ LGraphNode.prototype.addDOMWidget = function (name, type, element, options) {
 			options.setValue?.(v);
 			widget.callback?.(widget.value);
 		},
-		draw: function (ctx, node, widgetWidth, y, widgetHeight) {
+		draw: function (ctx: CanvasRenderingContext2D, node: LGraphNodeType, widgetWidth: number, y: number, widgetHeight: number) {
 			if (widget.computedHeight == null) {
 				computeSize.call(node, node.size);
 			}
@@ -240,7 +269,7 @@ LGraphNode.prototype.addDOMWidget = function (name, type, element, options) {
 				node.flags?.collapsed ||
 				(!!options.hideOnZoom && app.canvas.ds.scale < 0.5) ||
 				widget.computedHeight <= 0 ||
-				widget.type === "converted-widget"||
+				widget.type === "converted-widget" ||
 				widget.type === "hidden";
 			element.hidden = hidden;
 			element.style.display = hidden ? "none" : null;
@@ -297,9 +326,9 @@ LGraphNode.prototype.addDOMWidget = function (name, type, element, options) {
 	elementWidgets.add(this);
 
 	const collapse = this.collapse;
-	this.collapse = function() {
+	this.collapse = function () {
 		collapse.apply(this, arguments);
-		if(this.flags?.collapsed) {
+		if (this.flags?.collapsed) {
 			element.hidden = true;
 			element.style.display = "none";
 		}
