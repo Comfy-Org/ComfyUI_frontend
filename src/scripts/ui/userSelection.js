@@ -1,6 +1,6 @@
 import { api } from "../api.js";
 import { $el } from "../ui";
-import { addStylesheet } from "../utils.js";
+import { addStylesheet } from "../utils";
 import { createSpinner } from "./spinner.js";
 
 export class UserSelectionScreen {

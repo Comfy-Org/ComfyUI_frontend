@@ -1,3 +1,4 @@
+import type { ComfyApp } from "./app";
 import { $el } from "./ui";
 
 // Simple date formatter
@@ -13,10 +14,10 @@ const format =
 		.map((k) => k + k + "?")
 		.join("|") + "|yyy?y?";
 
-function formatDate(text, date) {
-	return text.replace(new RegExp(format, "g"), function (text) {
+function formatDate(text: string, date: Date) {
+	return text.replace(new RegExp(format, "g"), (text: string): string => {
 		if (text === "yy") return (date.getFullYear() + "").substring(2);
-		if (text === "yyyy") return date.getFullYear();
+		if (text === "yyyy") return date.getFullYear().toString();
 		if (text[0] in parts) {
 			const p = parts[text[0]](date);
 			return (p + "").padStart(text.length, "0");
@@ -25,7 +26,7 @@ function formatDate(text, date) {
 	});
 }
 
-export function applyTextReplacements(app, value) {
+export function applyTextReplacements(app: ComfyApp, value: string): string {
 	return value.replace(/%([^%]+)%/g, function (match, text) {
 		const split = text.split(".");
 		if (split.length !== 2) {
@@ -68,7 +69,7 @@ export function applyTextReplacements(app, value) {
 	});
 }
 
-export async function addStylesheet(urlOrFile, relativeTo) {
+export async function addStylesheet(urlOrFile: string, relativeTo?: string): Promise<void> {
 	return new Promise((res, rej) => {
 		let url;
 		if (urlOrFile.endsWith(".js")) {
