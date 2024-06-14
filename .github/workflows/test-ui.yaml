@@ -6,6 +6,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+    # ComfyUI repo needs following settings to checkout.
+    - name: Set git username/email
+      run: |
+        git config --global user.name "comfyui"
+        git config --global user.email "comfy@ui"
     - name: Checkout ComfyUI
       uses: actions/checkout@v4
       with:
@@ -29,8 +34,8 @@ jobs:
         pip install wait-for-it
     - name: Start ComfyUI server
       run: |
-        cd ComfyUI
         python main.py --cpu
+      working-directory: ComfyUI
     - name: Run UI tests
       run: |
         wait-for-it --service 127.0.0.1:8188 -t 600
