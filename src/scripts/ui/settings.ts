@@ -1,13 +1,30 @@
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 import { api } from "../api.js";
 import { ComfyDialog } from "./dialog.js";
 import type { ComfyApp } from "../app.js";
 
+/* The Setting entry stored in `ComfySettingsDialog` */
 interface Setting {
     id: string;
     onChange?: (value: any, oldValue?: any) => void;
     name: string;
     render: () => HTMLElement;
+}
+
+interface SettingOption {
+    text: string;
+    value?: string;
+}
+
+interface SettingParams {
+    id: string;
+    name: string;
+    type: string | ((name: string, setter: (v: any) => void, value: any, attrs: any) => HTMLElement);
+    defaultValue: any;
+    onChange?: (newValue: any, oldValue?: any) => void;
+    attrs?: any;
+    tooltip?: string;
+    options?: SettingOption[] | ((value: any) => SettingOption[]);
 }
 
 export class ComfySettingsDialog extends ComfyDialog {
@@ -114,7 +131,8 @@ export class ComfySettingsDialog extends ComfyDialog {
 		});
 	}
 
-	addSetting({ id, name, type, defaultValue, onChange, attrs = {}, tooltip = "", options = undefined }) {
+	addSetting(params: SettingParams) {
+		const { id, name, type, defaultValue, onChange, attrs = {}, tooltip = "", options = undefined } = params;
 		if (!id) {
 			throw new Error("Settings must have an ID");
 		}
@@ -321,8 +339,6 @@ export class ComfySettingsDialog extends ComfyDialog {
 				{
 					style: { display: "none" },
 				},
-				// TODO remove this once ui.js is migrated.
-				// @ts-ignore
 				[$el("th"), $el("th", { style: { width: "33%" } })]
 			),
 			...this.settings.sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.render())

@@ -1,4 +1,4 @@
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 
 export function calculateImageGrid(imgs, dw, dh) {
 	let best = 0;
