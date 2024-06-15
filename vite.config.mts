@@ -43,13 +43,16 @@ function transformExports(code: string, id: string): ShimResult {
 	let newCode = code;
 
 	// Regex to match different types of exports
-	const regex = /export\s+(const|let|var|function|class)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g;
+	const regex = /export\s+(const|let|var|function|class|async function)\s+([a-zA-Z$_][a-zA-Z\d$_]*)(\s|\()/g;
 	let match;
 
 	while ((match = regex.exec(code)) !== null) {
 		const name = match[2];
 		// All exports should be bind to the window object as new API endpoint.
-		newCode += `\nwindow.comfyAPI.${moduleName} = window.comfyAPI.${moduleName} || {};`;
+		if (exports.length == 0) {
+			newCode += `\nwindow.comfyAPI = window.comfyAPI || {};`;
+			newCode += `\nwindow.comfyAPI.${moduleName} = window.comfyAPI.${moduleName} || {};`;
+		}
 		newCode += `\nwindow.comfyAPI.${moduleName}.${name} = ${name};`;
 		exports.push(`export const ${name} = window.comfyAPI.${moduleName}.${name};\n`);
 	}
