@@ -5,7 +5,7 @@ import { api } from "./api";
 import { defaultGraph } from "./defaultGraph.js";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo";
 import { addDomClippingSetting } from "./domWidget";
-import { createImageHost, calculateImageGrid } from "./ui/imagePreview.js"
+import { createImageHost, calculateImageGrid } from "./ui/imagePreview"
 import type { ComfyExtension } from "/types/comfy";
 import type { IWidget, LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 

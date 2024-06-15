@@ -1,7 +1,7 @@
 import { api } from "./api";
-import { ComfyDialog as _ComfyDialog } from "./ui/dialog.js";
-import { toggleSwitch } from "./ui/toggleSwitch.js";
-import { ComfySettingsDialog } from "./ui/settings.js";
+import { ComfyDialog as _ComfyDialog } from "./ui/dialog";
+import { toggleSwitch } from "./ui/toggleSwitch";
+import { ComfySettingsDialog } from "./ui/settings";
 import { ComfyApp, app } from "./app";
 
 export const ComfyDialog = _ComfyDialog;

@@ -1,6 +1,9 @@
 import { $el } from "../ui";
 
 export class ComfyDialog {
+	element: HTMLElement;
+	textElement: HTMLElement;
+
 	constructor() {
 		this.element = $el("div.comfy-modal", { parent: document.body }, [
 			$el("div.comfy-modal-content", [$el("p", { $: (p) => (this.textElement = p) }), ...this.createButtons()]),

@@ -50,7 +50,7 @@ export function createImageHost(node) {
 				if (elH < 190) {
 					elH = 190;
 				}
-				el.style.setProperty("--comfy-widget-min-height", elH);
+				el.style.setProperty("--comfy-widget-min-height", elH.toString());
 			} else {
 				el.style.setProperty("--comfy-widget-min-height", null);
 			}
