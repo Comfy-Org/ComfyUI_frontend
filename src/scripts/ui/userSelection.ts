@@ -1,7 +1,7 @@
 import { api } from "../api";
 import { $el } from "../ui";
 import { addStylesheet } from "../utils";
-import { createSpinner } from "./spinner.js";
+import { createSpinner } from "./spinner";
 
 export class UserSelectionScreen {
 	async show(users, user) {
