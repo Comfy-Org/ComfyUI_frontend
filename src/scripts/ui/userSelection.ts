@@ -3,8 +3,14 @@ import { $el } from "../ui";
 import { addStylesheet } from "../utils";
 import { createSpinner } from "./spinner";
 
+interface SelectedUser {
+	username: string;
+	userId: string;
+	created: boolean;
+}
+
 export class UserSelectionScreen {
-	async show(users, user) {
+	async show(users, user): Promise<SelectedUser>{
 		// This will rarely be hit so move the loading to on demand
 		await addStylesheet(import.meta.url);
 		const userSelection = document.getElementById("comfy-user-selection");
@@ -48,6 +54,9 @@ export class UserSelectionScreen {
 					}
 
 					// Create new user
+					// @ts-ignore
+					// Property 'readonly' does not exist on type 'HTMLSelectElement'.ts(2339)
+					// Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
 					input.disabled = select.disabled = input.readonly = select.readonly = true;
 					const spinner = createSpinner();
 					button.prepend(spinner);
@@ -56,7 +65,7 @@ export class UserSelectionScreen {
 						if (resp.status >= 300) {
 							let message = "Error creating user: " + resp.status + " " + resp.statusText;
 							try {
-								const res = await resp.json();								
+								const res = await resp.json();
 								if(res.error) {
 									message = res.error;
 								}
@@ -69,6 +78,9 @@ export class UserSelectionScreen {
 					} catch (err) {
 						spinner.remove();
 						error.textContent = err.message ?? err.statusText ?? err ?? "An unknown error occurred.";
+						// @ts-ignore
+						// Property 'readonly' does not exist on type 'HTMLSelectElement'.ts(2339)
+						// Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
 						input.disabled = select.disabled = input.readonly = select.readonly = false;
 						return;
 					}
@@ -106,7 +118,7 @@ export class UserSelectionScreen {
 				userSelection.classList.add("no-users");
 				input.focus();
 			}
-		}).then((r) => {
+		}).then((r: SelectedUser) => {
 			userSelection.remove();
 			return r;
 		});

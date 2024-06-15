@@ -6,14 +6,16 @@ import { $el } from "../ui";
 /**
  * Creates a toggle switch element
  * @param { string } name
- * @param { Array<string | ToggleSwitchItem } items
+ * @param { Array<string> | ToggleSwitchItem } items
  * @param { Object } [opts]
  * @param { (e: { item: ToggleSwitchItem, prev?: ToggleSwitchItem }) => void } [opts.onChange]
  */
-export function toggleSwitch(name, items, { onChange } = {}) {
+export function toggleSwitch(name, items, e?) {
+	const onChange = e?.onChange;
+
 	let selectedIndex;
 	let elements;
-	
+
 	function updateSelected(index) {
 		if (selectedIndex != null) {
 			elements[selectedIndex].classList.remove("comfy-toggle-selected");
