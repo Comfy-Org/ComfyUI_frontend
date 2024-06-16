@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "../../scripts/app";
 import { ComfyWidgets } from "../../scripts/widgets";
 // Adds defaults for quickly adding nodes with middle click on the input/output
 
