@@ -12,6 +12,8 @@
  * @typedef { (...args: EzOutput[] | [...EzOutput[], Record<string, unknown>]) => EzNode } EzNodeFactory
  */
 
+export type EzNameSpace = Record<string, (...args) => EzNode>;
+
 export class EzConnection {
 	/** @type { app } */
 	app;
@@ -366,6 +368,7 @@ export class EzGraph {
 			this.app.graph.clear();
 			setTimeout(async () => {
 				await this.app.loadGraphData(graph);
+				// @ts-ignore
 				r();
 			}, 10);
 		});

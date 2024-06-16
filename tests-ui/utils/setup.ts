@@ -2,7 +2,7 @@ import "../../src/scripts/api";
 
 const fs = require("fs");
 const path = require("path");
-function* walkSync(dir) {
+function* walkSync(dir: string): Generator<string> {
 	const files = fs.readdirSync(dir, { withFileTypes: true });
 	for (const file of files) {
 		if (file.isDirectory()) {
@@ -11,6 +11,14 @@ function* walkSync(dir) {
 			yield path.join(dir, file.name);
 		}
 	}
+}
+
+export interface APIConfig {
+	mockExtensions?: string[];
+	mockNodeDefs?: Record<string, any>;
+	settings?: Record<string, string>;
+	userConfig?: { storage: "server" | "browser"; users?: Record<string, any>; migrated?: boolean };
+	userData?: Record<string, any>;
 }
 
 /**
@@ -26,20 +34,19 @@ function* walkSync(dir) {
 * 	userData?: Record<string, any>
  * }} config
  */
-export function mockApi(config = {}) {
+export function mockApi(config: APIConfig = {}) {
 	let { mockExtensions, mockNodeDefs, userConfig, settings, userData } = {
-		userConfig,
 		settings: {},
 		userData: {},
 		...config,
 	};
 	if (!mockExtensions) {
-		mockExtensions = Array.from(walkSync(path.resolve("../dist/extensions/core")))
+		mockExtensions = Array.from(walkSync(path.resolve("./dist/extensions/core")))
 			.filter((x) => x.endsWith(".js"))
 			.map((x) => path.relative(path.resolve("./dist/"), x).replace(/\\/g, "/"));
 	}
 	if (!mockNodeDefs) {
-		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./data/object_info.json")));
+		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./tests-ui/data/object_info.json")));
 	}
 
 	const events = new EventTarget();
@@ -53,9 +60,11 @@ export function mockApi(config = {}) {
 		init: jest.fn(),
 		apiURL: jest.fn((x) => "../dist/" + x),
 		createUser: jest.fn((username) => {
+			// @ts-ignore
 			if(username in userConfig.users) {
 				return { status: 400, json: () => "Duplicate" }
 			}
+			// @ts-ignore
 			userConfig.users[username + "!"] = username;
 			return { status: 200, json: () => username + "!" }
 		}),

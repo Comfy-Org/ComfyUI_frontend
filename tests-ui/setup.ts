@@ -1,9 +1,9 @@
-const { resolve } = require("path");
-const { existsSync, mkdirSync, writeFileSync } = require("fs");
-const http = require("http");
+import { resolve } from "path";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
+import http from "http";
 
 async function setup() {
-	await new Promise((res, rej) => {
+	await new Promise<void>((res, rej) => {
 		http
 			.get("http://127.0.0.1:8188/object_info", (resp) => {
 				let data = "";

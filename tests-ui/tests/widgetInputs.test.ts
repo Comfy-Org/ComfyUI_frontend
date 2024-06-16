@@ -1,14 +1,5 @@
-// @ts-check
-/// <reference path="../node_modules/@types/jest/index.d.ts" />
-
-const {
-	start,
-	makeNodeDef,
-	checkBeforeAndAfterReload,
-	assertNotNullOrUndefined,
-	createDefaultWorkflow,
-} = require("../utils");
-const lg = require("../utils/litegraph");
+import { start, makeNodeDef, checkBeforeAndAfterReload, assertNotNullOrUndefined, createDefaultWorkflow } from "../utils";
+import lg from "../utils/litegraph";
 
 /**
  * @typedef { import("../utils/ezgraph") } Ez
@@ -208,7 +199,9 @@ describe("widget inputs", () => {
 		});
 
 		expect(dialogShow).toBeCalledTimes(1);
+		// @ts-ignore
 		expect(dialogShow.mock.calls[0][0].innerHTML).toContain("the following node types were not found");
+		// @ts-ignore
 		expect(dialogShow.mock.calls[0][0].innerHTML).toContain("TestNode");
 	});
 

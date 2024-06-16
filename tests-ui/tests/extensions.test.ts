@@ -1,7 +1,5 @@
-// @ts-check
-/// <reference path="../../node_modules/@types/jest/index.d.ts" />
-const { start } = require("../utils");
-const lg = require("../utils/litegraph");
+import { start } from "../utils";
+import lg from "../utils/litegraph";
 
 describe("extensions", () => {
 	beforeEach(() => {
