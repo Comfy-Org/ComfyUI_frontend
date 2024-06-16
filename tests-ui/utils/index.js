@@ -4,7 +4,7 @@ const lg = require("./litegraph");
 const fs = require("fs");
 const path = require("path");
 
-const html = fs.readFileSync(path.resolve(__dirname, "../../dist/index.html"))
+const html = fs.readFileSync(path.resolve(__dirname, "./dist/index.html"))
 
 /**
  *
@@ -28,7 +28,7 @@ export async function start(config = {}) {
 	document.body.innerHTML = html;
 
 	mockApi(config);
-	const { app } = require("../../dist/scripts/app");
+	const { app } = require("./dist/scripts/app");
 	config.preSetup?.(app);
 	await app.setup();
 
@@ -49,7 +49,7 @@ export async function checkBeforeAndAfterReload(graph, cb) {
  * @param { string } name
  * @param { Record<string, string | [string | string[], any]> } input
  * @param { (string | string[])[] | Record<string, string | string[]> } output
- * @returns { Record<string, import("../../dist/types/comfy").ComfyObjectInfo> }
+ * @returns { Record<string, import("./dist/types/comfy").ComfyObjectInfo> }
  */
 export function makeNodeDef(name, input, output = {}) {
 	const nodeDef = {
@@ -120,7 +120,7 @@ export function createDefaultWorkflow(ez, graph) {
 }
 
 export async function getNodeDefs() {
-	const { api } = require("../../dist/scripts/api");
+	const { api } = require("./dist/scripts/api");
 	return api.getNodeDefs();
 }
 

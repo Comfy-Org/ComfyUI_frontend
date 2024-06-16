@@ -2,7 +2,7 @@
 /// <reference path="../../src/types/litegraph.d.ts" />
 
 /**
- * @typedef { import("../../dist/scripts/app")["app"] } app
+ * @typedef { import("./dist/scripts/app")["app"] } app
  * @typedef { import("../../src/types/litegraph") } LG
  * @typedef { import("../../src/types/litegraph").IWidget } IWidget
  * @typedef { import("../../src/types/litegraph").ContextMenuItem } ContextMenuItem

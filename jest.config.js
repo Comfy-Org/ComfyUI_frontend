@@ -1,11 +1,9 @@
 /** @type {import('jest').Config} */
-const config = {
+export default {
 	testEnvironment: "jsdom",
-	setupFiles: ["./globalSetup.js"],
-	setupFilesAfterEnv: ["./afterSetup.js"],
+	setupFiles: ["./tests-ui/globalSetup.js"],
+	setupFilesAfterEnv: ["./tests-ui/afterSetup.js"],
 	clearMocks: true,
 	resetModules: true,
 	testTimeout: 10000
 };
-
-module.exports = config;

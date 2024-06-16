@@ -18,7 +18,7 @@ async function setup() {
 
 					data = JSON.stringify(objectInfo, undefined, "\t");
 
-					const outDir = resolve("./data");
+					const outDir = resolve("./tests-ui/data");
 					if (!existsSync(outDir)) {
 						mkdirSync(outDir);
 					}
