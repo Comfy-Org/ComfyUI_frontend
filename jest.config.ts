@@ -1,10 +1,12 @@
-/** @type {import('jest').Config} */
-export default {
-	preset: "ts-jest",
+import type { JestConfigWithTsJest } from "ts-jest";
+
+const jestConfig: JestConfigWithTsJest = {
 	testEnvironment: "jsdom",
 	transform: {
-		"^.+\\.(js|jsx)$": ["babel-jest", { configFile: "./babel.config.json" }],
-		"^.+\\.(ts|tsx)$": ["ts-jest", "tsconfig.json"],
+		'^.+\\.m?[tj]sx?$': ["ts-jest", {
+			tsconfig: "./tsconfig.json",
+			babelConfig: "./babel.config.json",
+		}],
 	},
 	setupFiles: ["./tests-ui/globalSetup.ts"],
 	setupFilesAfterEnv: ["./tests-ui/afterSetup.ts"],
@@ -15,3 +17,5 @@ export default {
 		"^src/(.*)$": "<rootDir>/src/$1",
 	},
 };
+
+export default jestConfig;

@@ -1,5 +1,6 @@
 import { addStylesheet } from "../utils";
 
+// @ts-ignore
 addStylesheet(import.meta.url);
 
 export function createSpinner() {

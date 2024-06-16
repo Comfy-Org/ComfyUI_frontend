@@ -12,6 +12,7 @@ interface SelectedUser {
 export class UserSelectionScreen {
 	async show(users, user): Promise<SelectedUser>{
 		// This will rarely be hit so move the loading to on demand
+		// @ts-ignore
 		await addStylesheet(import.meta.url);
 		const userSelection = document.getElementById("comfy-user-selection");
 		userSelection.style.display = "";
