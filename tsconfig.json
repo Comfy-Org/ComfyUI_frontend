@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2021", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "sourceMap": true,
     "esModuleInterop": true,
@@ -24,7 +24,11 @@
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
   },
-  "include": ["src/**/*", "src/types/**/*.d.ts", "tests-ui/**/*"],
+  "include": [
+    "src/**/*",
+    "src/types/**/*.d.ts",
+    "tests-ui/**/*"
+  ],
 }

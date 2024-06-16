@@ -4,7 +4,7 @@ import lg from "./litegraph";
 import fs from "fs";
 import path from "path";
 
-const html = fs.readFileSync(path.resolve(__dirname, "../../dist/index.html"))
+const html = fs.readFileSync(path.resolve(__dirname, "../../index.html"))
 
 interface StartConfig extends APIConfig {
 	resetEnv?: boolean;
@@ -40,7 +40,7 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
 	document.body.innerHTML = html.toString();
 
 	mockApi(config);
-	const { app } = await import("../../dist/scripts/app");
+	const { app } = await import("../../src/scripts/app");
 	config.preSetup?.(app);
 	await app.setup();
 
@@ -62,7 +62,7 @@ export async function checkBeforeAndAfterReload(graph, cb) {
  * @param { string } name
  * @param { Record<string, string | [string | string[], any]> } input
  * @param { (string | string[])[] | Record<string, string | string[]> } output
- * @returns { Record<string, import("./dist/types/comfy").ComfyObjectInfo> }
+ * @returns { Record<string, import("./src/types/comfy").ComfyObjectInfo> }
  */
 export function makeNodeDef(name, input, output = {}) {
 	const nodeDef = {
@@ -136,7 +136,7 @@ export function createDefaultWorkflow(ez, graph) {
 }
 
 export async function getNodeDefs() {
-	const { api } = require("../dist/scripts/api");
+	const { api } = await import("../../src/scripts/api");
 	return api.getNodeDefs();
 }
 

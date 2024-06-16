@@ -2,7 +2,7 @@ import { ComfyLogging } from "./logging";
 import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from "./widgets";
 import { ComfyUI, $el } from "./ui";
 import { api } from "./api";
-import { defaultGraph } from "./defaultGraph.js";
+import { defaultGraph } from "./defaultGraph";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo";
 import { addDomClippingSetting } from "./domWidget";
 import { createImageHost, calculateImageGrid } from "./ui/imagePreview"
@@ -1534,7 +1534,7 @@ export class ComfyApp {
 		const users = userConfig.users ?? {};
 		if (!user || !users[user]) {
 			// This will rarely be hit so move the loading to on demand
-			const { UserSelectionScreen } = await import("./ui/userSelection.js");
+			const { UserSelectionScreen } = await import("./ui/userSelection");
 
 			this.ui.menuContainer.style.display = "none";
 			const { userId, username, created } = await new UserSelectionScreen().show(users, user);

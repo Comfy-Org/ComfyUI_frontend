@@ -3,7 +3,8 @@ export default {
 	preset: "ts-jest",
 	testEnvironment: "jsdom",
 	transform: {
-		"^.+\\.(ts|tsx)$": ["ts-jest", "tsconfig.json"]
+		"^.+\\.(ts|tsx)$": ["ts-jest", "tsconfig.json"],
+		// "^.+\\.(js|jsx)$": ["babel-jest", "babel.config.js"],
 	},
 	setupFiles: ["./tests-ui/globalSetup.ts"],
 	setupFilesAfterEnv: ["./tests-ui/afterSetup.ts"],

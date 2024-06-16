@@ -22,7 +22,7 @@ export interface APIConfig {
 }
 
 /**
- * @typedef { import("./dist/types/comfy").ComfyObjectInfo } ComfyObjectInfo
+ * @typedef { import("./src/types/comfy").ComfyObjectInfo } ComfyObjectInfo
  */
 
 /**
@@ -41,9 +41,9 @@ export function mockApi(config: APIConfig = {}) {
 		...config,
 	};
 	if (!mockExtensions) {
-		mockExtensions = Array.from(walkSync(path.resolve("./dist/extensions/core")))
+		mockExtensions = Array.from(walkSync(path.resolve("./src/extensions/core")))
 			.filter((x) => x.endsWith(".js"))
-			.map((x) => path.relative(path.resolve("./dist/"), x).replace(/\\/g, "/"));
+			.map((x) => path.relative(path.resolve("./src/"), x).replace(/\\/g, "/"));
 	}
 	if (!mockNodeDefs) {
 		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./tests-ui/data/object_info.json")));
@@ -58,7 +58,7 @@ export function mockApi(config: APIConfig = {}) {
 		getExtensions: jest.fn(() => mockExtensions),
 		getNodeDefs: jest.fn(() => mockNodeDefs),
 		init: jest.fn(),
-		apiURL: jest.fn((x) => "../dist/" + x),
+		apiURL: jest.fn((x) => "src/" + x),
 		createUser: jest.fn((username) => {
 			// @ts-ignore
 			if(username in userConfig.users) {
