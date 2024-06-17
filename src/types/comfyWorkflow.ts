@@ -13,8 +13,8 @@ const zComfyLink = z.tuple([
 const zNodeOutput = z.object({
     name: z.string(),
     type: z.string(),
-    links: z.array(z.number()),
-    slot_index: z.number(),
+    links: z.array(z.number()).nullable(),
+    slot_index: z.number().optional(),
 });
 
 const zNodeInput = z.object({
@@ -32,14 +32,19 @@ const zFlags = z.object({
 }).passthrough();
 
 const zProperties = z.object({
-    ["Node name for S&R"]: z.string(),
+    ["Node name for S&R"]: z.string().optional(),
 }).passthrough();
+
+const zVector2 = z.union([
+    z.object({ 0: z.number(), 1: z.number() }),
+    z.tuple([z.number(), z.number()]),
+]);
 
 const zComfyNode = z.object({
     id: z.number(),
     type: z.string(),
     pos: z.tuple([z.number(), z.number()]),
-    size: z.record(z.number()),
+    size: zVector2,
     flags: zFlags,
     order: z.number(),
     mode: z.number(),
@@ -69,7 +74,7 @@ const zInfo = z.object({
 
 const zDS = z.object({
     scale: z.number(),
-    offset: z.tuple([z.number(), z.number()]),
+    offset: zVector2,
 });
 
 const zConfig = z.object({
@@ -85,8 +90,8 @@ const zComfyWorkflow = z.object({
     groups: z.array(zGroup),
     config: zConfig,
     extra: z.object({
-        ds: zDS,
-        info: zInfo,
+        ds: zDS.optional(),
+        info: zInfo.optional(),
     }).passthrough(),
     version: z.number(),
 });
@@ -98,8 +103,9 @@ export type ComfyNode = z.infer<typeof zComfyNode>;
 export type ComfyWorkflow = z.infer<typeof zComfyWorkflow>;
 
 
-export async function parseComfyWorkflow(data: unknown): Promise<ComfyWorkflow> {
-    const result = await zComfyWorkflow.safeParseAsync(data);
+export async function parseComfyWorkflow(data: string): Promise<ComfyWorkflow> {
+    // Validate
+    const result = await zComfyWorkflow.safeParseAsync(JSON.parse(data));
     if (!result.success) {
         throw fromZodError(result.error);
     }
