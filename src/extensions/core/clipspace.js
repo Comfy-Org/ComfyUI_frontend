@@ -1,6 +1,6 @@
-import { app } from "../../scripts/app.js";
-import { ComfyDialog, $el } from "../../scripts/ui.js";
-import { ComfyApp } from "../../scripts/app.js";
+import { app } from "../../scripts/app";
+import { ComfyDialog, $el } from "../../scripts/ui";
+import { ComfyApp } from "../../scripts/app";
 
 export class ClipspaceDialog extends ComfyDialog {
 	static items = [];

@@ -1,8 +1,6 @@
-// @ts-check
-/// <reference path="../node_modules/@types/jest/index.d.ts" />
-
-const { start, createDefaultWorkflow, getNodeDef, checkBeforeAndAfterReload } = require("../utils");
-const lg = require("../utils/litegraph");
+import { start, createDefaultWorkflow, getNodeDef, checkBeforeAndAfterReload } from "../utils";
+import { EzNode } from "../utils/ezgraph";
+import lg from "../utils/litegraph";
 
 describe("group node", () => {
 	beforeEach(() => {
@@ -271,7 +269,7 @@ describe("group node", () => {
 		const { ez, graph, app } = await start();
 		const nodes = createDefaultWorkflow(ez, graph);
 
-		let reroutes = [];
+		let reroutes: EzNode[] = [];
 		let prevNode = nodes.ckpt;
 		for (let i = 0; i < 5; i++) {
 			const reroute = ez.Reroute();
@@ -432,7 +430,7 @@ describe("group node", () => {
 			nodes.save,
 		]);
 
-		const { api } = require("../../dist/scripts/api");
+		const { api } = await import("../../src/scripts/api");
 
 		api.dispatchEvent(new CustomEvent("execution_start", {}));
 		api.dispatchEvent(new CustomEvent("executing", { detail: `${nodes.save.id}` }));
@@ -641,6 +639,7 @@ describe("group node", () => {
 		});
 
 		expect(dialogShow).toBeCalledTimes(1);
+		// @ts-ignore
 		const call = dialogShow.mock.calls[0][0].innerHTML;
 		expect(call).toContain("the following node types were not found");
 		expect(call).toContain("NotKSampler");

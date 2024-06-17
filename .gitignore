@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Ignore test data.
-tests-ui/data/
+tests-ui/data/*

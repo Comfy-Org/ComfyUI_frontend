@@ -1,8 +1,8 @@
-require("../../dist/scripts/api");
+import "../../src/scripts/api";
 
 const fs = require("fs");
 const path = require("path");
-function* walkSync(dir) {
+function* walkSync(dir: string): Generator<string> {
 	const files = fs.readdirSync(dir, { withFileTypes: true });
 	for (const file of files) {
 		if (file.isDirectory()) {
@@ -13,8 +13,16 @@ function* walkSync(dir) {
 	}
 }
 
+export interface APIConfig {
+	mockExtensions?: string[];
+	mockNodeDefs?: Record<string, any>;
+	settings?: Record<string, string>;
+	userConfig?: { storage: "server" | "browser"; users?: Record<string, any>; migrated?: boolean };
+	userData?: Record<string, any>;
+}
+
 /**
- * @typedef { import("../../dist/types/comfy").ComfyObjectInfo } ComfyObjectInfo
+ * @typedef { import("./src/types/comfy").ComfyObjectInfo } ComfyObjectInfo
  */
 
 /**
@@ -26,20 +34,19 @@ function* walkSync(dir) {
 * 	userData?: Record<string, any>
  * }} config
  */
-export function mockApi(config = {}) {
+export function mockApi(config: APIConfig = {}) {
 	let { mockExtensions, mockNodeDefs, userConfig, settings, userData } = {
-		userConfig,
 		settings: {},
 		userData: {},
 		...config,
 	};
 	if (!mockExtensions) {
-		mockExtensions = Array.from(walkSync(path.resolve("../dist/extensions/core")))
+		mockExtensions = Array.from(walkSync(path.resolve("./src/extensions/core")))
 			.filter((x) => x.endsWith(".js"))
-			.map((x) => path.relative(path.resolve("../dist/"), x).replace(/\\/g, "/"));
+			.map((x) => path.relative(path.resolve("./src/"), x).replace(/\\/g, "/"));
 	}
 	if (!mockNodeDefs) {
-		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./data/object_info.json")));
+		mockNodeDefs = JSON.parse(fs.readFileSync(path.resolve("./tests-ui/data/object_info.json")));
 	}
 
 	const events = new EventTarget();
@@ -51,11 +58,13 @@ export function mockApi(config = {}) {
 		getExtensions: jest.fn(() => mockExtensions),
 		getNodeDefs: jest.fn(() => mockNodeDefs),
 		init: jest.fn(),
-		apiURL: jest.fn((x) => "../../dist/" + x),
+		apiURL: jest.fn((x) => "src/" + x),
 		createUser: jest.fn((username) => {
+			// @ts-ignore
 			if(username in userConfig.users) {
 				return { status: 400, json: () => "Duplicate" }
 			}
+			// @ts-ignore
 			userConfig.users[username + "!"] = username;
 			return { status: 200, json: () => username + "!" }
 		}),
@@ -73,7 +82,7 @@ export function mockApi(config = {}) {
 			userData[file] = data;
 		}),
 	};
-	jest.mock("../../dist/scripts/api", () => ({
+	jest.mock("../../src/scripts/api", () => ({
 		get api() {
 			return mockApi;
 		},

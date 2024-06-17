@@ -1,10 +1,22 @@
-const { mockApi } = require("./setup");
-const { Ez } = require("./ezgraph");
-const lg = require("./litegraph");
-const fs = require("fs");
-const path = require("path");
+import { APIConfig, mockApi } from "./setup";
+import { Ez, EzGraph, EzNameSpace } from "./ezgraph";
+import lg from "./litegraph";
+import fs from "fs";
+import path from "path";
 
-const html = fs.readFileSync(path.resolve(__dirname, "../../dist/index.html"))
+const html = fs.readFileSync(path.resolve(__dirname, "../../index.html"))
+
+interface StartConfig extends APIConfig {
+	resetEnv?: boolean;
+	preSetup?(app): Promise<void>;
+	localStorage?: Record<string, string>;
+}
+
+interface StartResult {
+	app: any;
+	graph: EzGraph;
+	ez: EzNameSpace;
+}
 
 /**
  *
@@ -15,7 +27,7 @@ const html = fs.readFileSync(path.resolve(__dirname, "../../dist/index.html"))
  * } } config
  * @returns
  */
-export async function start(config = {}) {
+export async function start(config: StartConfig = {}): Promise<StartResult> {
 	if(config.resetEnv) {
 		jest.resetModules();
 		jest.resetAllMocks();
@@ -25,13 +37,14 @@ export async function start(config = {}) {
 	}
 
 	Object.assign(localStorage, config.localStorage ?? {});
-	document.body.innerHTML = html;
+	document.body.innerHTML = html.toString();
 
 	mockApi(config);
-	const { app } = require("../../dist/scripts/app");
+	const { app } = await import("../../src/scripts/app");
 	config.preSetup?.(app);
 	await app.setup();
 
+	// @ts-ignore
 	return { ...Ez.graph(app, global["LiteGraph"], global["LGraphCanvas"]), app };
 }
 
@@ -49,7 +62,7 @@ export async function checkBeforeAndAfterReload(graph, cb) {
  * @param { string } name
  * @param { Record<string, string | [string | string[], any]> } input
  * @param { (string | string[])[] | Record<string, string | string[]> } output
- * @returns { Record<string, import("../../dist/types/comfy").ComfyObjectInfo> }
+ * @returns { Record<string, import("./src/types/comfy").ComfyObjectInfo> }
  */
 export function makeNodeDef(name, input, output = {}) {
 	const nodeDef = {
@@ -72,8 +85,11 @@ export function makeNodeDef(name, input, output = {}) {
 		}, {});
 	}
 	for (const k in output) {
+		// @ts-ignore
 		nodeDef.output.push(output[k]);
+		// @ts-ignore
 		nodeDef.output_name.push(k);
+		// @ts-ignore
 		nodeDef.output_is_list.push(false);
 	}
 
@@ -120,7 +136,7 @@ export function createDefaultWorkflow(ez, graph) {
 }
 
 export async function getNodeDefs() {
-	const { api } = require("../../dist/scripts/api");
+	const { api } = await import("../../src/scripts/api");
 	return api.getNodeDefs();
 }
 

@@ -1,6 +1,6 @@
 import { ComfyWidgets, addValueControlWidgets } from "../../scripts/widgets";
-import { app } from "../../scripts/app.js";
-import { applyTextReplacements } from "../../scripts/utils.js";
+import { app } from "../../scripts/app";
+import { applyTextReplacements } from "../../scripts/utils";
 
 const CONVERTED_TYPE = "converted-widget";
 const VALID_TYPES = ["STRING", "combo", "number", "BOOLEAN"];

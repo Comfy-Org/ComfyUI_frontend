@@ -2,7 +2,7 @@
 /// <reference path="../../src/types/litegraph.d.ts" />
 
 /**
- * @typedef { import("../../dist/scripts/app")["app"] } app
+ * @typedef { import("./src/scripts/app")["app"] } app
  * @typedef { import("../../src/types/litegraph") } LG
  * @typedef { import("../../src/types/litegraph").IWidget } IWidget
  * @typedef { import("../../src/types/litegraph").ContextMenuItem } ContextMenuItem
@@ -11,6 +11,8 @@
  * @typedef { InstanceType<LG["LGraphNode"]> & { widgets?: Array<IWidget> } } LGNode
  * @typedef { (...args: EzOutput[] | [...EzOutput[], Record<string, unknown>]) => EzNode } EzNodeFactory
  */
+
+export type EzNameSpace = Record<string, (...args) => EzNode>;
 
 export class EzConnection {
 	/** @type { app } */
@@ -366,6 +368,7 @@ export class EzGraph {
 			this.app.graph.clear();
 			setTimeout(async () => {
 				await this.app.loadGraphData(graph);
+				// @ts-ignore
 				r();
 			}, 10);
 		});
