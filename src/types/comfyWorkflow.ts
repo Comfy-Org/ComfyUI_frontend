@@ -69,7 +69,7 @@ const zInfo = z.object({
 
 const zDS = z.object({
     scale: z.number(),
-    offset: z.array(z.number()),
+    offset: z.tuple([z.number(), z.number()]),
 });
 
 const zConfig = z.object({

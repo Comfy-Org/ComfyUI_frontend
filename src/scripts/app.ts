@@ -10,7 +10,7 @@ import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
-import { type ComfyWorkflow, parseComfyWorkflow } from "/types/comfyWorkflow";
+import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
 
@@ -1934,6 +1934,9 @@ export class ComfyApp {
 		try {
 			this.graph.configure(graphData);
 			if (restore_view && this.enableWorkflowViewRestore.value && graphData.extra?.ds) {
+				// @ts-ignore
+				// Need to set strict: true for zod to match the type [number, number]
+				// https://github.com/colinhacks/zod/issues/3056
 				this.canvas.ds.offset = graphData.extra.ds.offset;
 				this.canvas.ds.scale = graphData.extra.ds.scale;
 			}
