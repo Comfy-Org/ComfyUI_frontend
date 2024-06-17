@@ -1,4 +1,6 @@
-export const defaultGraph = {
+import type { ComfyWorkflow } from "/types/comfyWorkflow";
+
+export const defaultGraph: ComfyWorkflow = {
 	last_node_id: 9,
 	last_link_id: 9,
 	nodes: [

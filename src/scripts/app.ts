@@ -10,6 +10,7 @@ import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
+import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
 
@@ -973,16 +974,18 @@ export class ComfyApp {
 
 			// No image found. Look for node data
 			data = data.getData("text/plain");
-			let workflow;
+			let workflow: ComfyWorkflow;
 			try {
 				data = data.slice(data.indexOf("{"));
-				workflow = JSON.parse(data);
+				workflow = await parseComfyWorkflow(data);
 			} catch (err) {
 				try {
 					data = data.slice(data.indexOf("workflow\n"));
 					data = data.slice(data.indexOf("{"));
-					workflow = JSON.parse(data);
-				} catch (error) {}
+					workflow = await parseComfyWorkflow(data);
+				} catch (error) {
+					console.error(error);
+				}
 			}
 
 			if (workflow && workflow.version && workflow.nodes && workflow.extra) {
@@ -1652,8 +1655,7 @@ export class ComfyApp {
 		try {
 			const loadWorkflow = async (json) => {
 				if (json) {
-					const workflow = JSON.parse(json);
-					await this.loadGraphData(workflow);
+					await this.loadGraphData(await parseComfyWorkflow(json));
 					return true;
 				}
 			};
@@ -1895,7 +1897,7 @@ export class ComfyApp {
 	 * @param {*} graphData A serialized graph object
 	 * @param { boolean } clean If the graph state, e.g. images, should be cleared
 	 */
-	async loadGraphData(graphData?, clean: boolean = true, restore_view: boolean = true) {
+	async loadGraphData(graphData?: ComfyWorkflow, clean: boolean = true, restore_view: boolean = true) {
 		if (clean !== false) {
 			this.clean();
 		}
@@ -1932,6 +1934,9 @@ export class ComfyApp {
 		try {
 			this.graph.configure(graphData);
 			if (restore_view && this.enableWorkflowViewRestore.value && graphData.extra?.ds) {
+				// @ts-ignore
+				// Need to set strict: true for zod to match the type [number, number]
+				// https://github.com/colinhacks/zod/issues/3056
 				this.canvas.ds.offset = graphData.extra.ds.offset;
 				this.canvas.ds.scale = graphData.extra.ds.scale;
 			}
@@ -2273,7 +2278,7 @@ export class ComfyApp {
 		if (file.type === "image/png") {
 			const pngInfo = await getPngMetadata(file);
 			if (pngInfo?.workflow) {
-				await this.loadGraphData(JSON.parse(pngInfo.workflow));
+				await this.loadGraphData(await parseComfyWorkflow(pngInfo.workflow));
 			} else if (pngInfo?.prompt) {
 				this.loadApiJson(JSON.parse(pngInfo.prompt));
 			} else if (pngInfo?.parameters) {
@@ -2288,7 +2293,7 @@ export class ComfyApp {
 			const prompt = pngInfo?.prompt || pngInfo?.Prompt;
 
 			if (workflow) {
-				this.loadGraphData(JSON.parse(workflow));
+				this.loadGraphData(await parseComfyWorkflow(workflow));
 			} else if (prompt) {
 				this.loadApiJson(JSON.parse(prompt));
 			} else {
@@ -2297,13 +2302,14 @@ export class ComfyApp {
 		} else if (file.type === "application/json" || file.name?.endsWith(".json")) {
 			const reader = new FileReader();
 			reader.onload = async () => {
-				const jsonContent = JSON.parse(reader.result as string);
+				const readerResult = reader.result as string;
+				const jsonContent = JSON.parse(readerResult);
 				if (jsonContent?.templates) {
 					this.loadTemplateData(jsonContent);
 				} else if(this.isApiJson(jsonContent)) {
 					this.loadApiJson(jsonContent);
 				} else {
-					await this.loadGraphData(jsonContent);
+					await this.loadGraphData(await parseComfyWorkflow(readerResult));
 				}
 			};
 			reader.readAsText(file);
@@ -2313,7 +2319,7 @@ export class ComfyApp {
 			// @ts-ignore
 			if (info.workflow) {
 				// @ts-ignore
-				await this.loadGraphData(JSON.parse(info.workflow));
+				await this.loadGraphData(await parseComfyWorkflow(info.workflow));
 				// @ts-ignore
 			} else if (info.prompt) {
 				// @ts-ignore
