@@ -1,6 +1,6 @@
 # ComfyUI_frontend
 
-Front end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized.
+Front end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with existing extension system.
 
 ## The grand migration to TypeScript
 
