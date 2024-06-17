@@ -88,7 +88,6 @@ export default defineConfig({
 			targets: [
 				{src: "src/lib/*", dest: "lib/"},
 				{src: "src/extensions/*", dest: "extensions/"},
-				{src: "src/scripts/ui/draggableList.js", dest: "scripts/ui/"},
 			],
 		}),
 	],

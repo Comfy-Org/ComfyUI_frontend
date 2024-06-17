@@ -1,6 +1,7 @@
 import { api } from "./api";
 import { ComfyDialog as _ComfyDialog } from "./ui/dialog";
 import { toggleSwitch } from "./ui/toggleSwitch";
+import { DraggableList } from "./ui/draggableList";
 import { ComfySettingsDialog } from "./ui/settings";
 import { ComfyApp, app } from "./app";
 
@@ -193,6 +194,9 @@ function dragElement(dragEl, settings) {
 }
 
 class ComfyList {
+	// Force import of DraggableList.
+	static draggableList = DraggableList;
+
 	#type;
 	#text;
 	#reverse;
