@@ -82,17 +82,19 @@ const zConfig = z.object({
     align_to_grid: z.boolean().optional(),
 }).passthrough();
 
+const zExtra = z.object({
+    ds: zDS.optional(),
+    info: zInfo.optional(),
+}).passthrough();
+
 const zComfyWorkflow = z.object({
     last_node_id: z.number(),
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
-    groups: z.array(zGroup),
-    config: zConfig,
-    extra: z.object({
-        ds: zDS.optional(),
-        info: zInfo.optional(),
-    }).passthrough(),
+    groups: z.array(zGroup).optional(),
+    config: zConfig.optional().nullable(),
+    extra: zExtra.optional().nullable(),
     version: z.number(),
 });
 
