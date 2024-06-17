@@ -6,8 +6,9 @@ import { defaultGraph } from "./defaultGraph";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo";
 import { addDomClippingSetting } from "./domWidget";
 import { createImageHost, calculateImageGrid } from "./ui/imagePreview"
+import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
-import type { IWidget, LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
+import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
 
@@ -50,6 +51,12 @@ export class ComfyApp {
 	static clipspace_invalidate_handler = null;
 	static open_maskeditor = null;
 	static clipspace_return_node = null;
+
+	// Force vite to import utils.ts as part of index.
+	static utils = {
+		applyTextReplacements,
+		addStylesheet,
+	};
 
 	ui: ComfyUI;
 	logging: ComfyLogging;

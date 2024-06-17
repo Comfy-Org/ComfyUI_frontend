@@ -23,6 +23,6 @@
     "tsx": "^4.15.6",
     "typescript": "^5.4.5",
     "vite": "^5.2.0",
-    "vite-plugin-no-bundle": "^4.0.0"
+    "vite-plugin-static-copy": "^1.0.5"
   }
 }
