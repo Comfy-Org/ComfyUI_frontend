@@ -52,7 +52,9 @@ const zComfyNode = z.object({
     outputs: z.array(zNodeOutput).optional(),
     properties: zProperties,
     widgets_values: z.array(z.any()).optional(),  // This could contain mixed types
-});
+    color: z.string().optional(),
+    bgcolor: z.string().optional(),
+}).passthrough();
 
 const zGroup = z.object({
     title: z.string(),
@@ -60,7 +62,7 @@ const zGroup = z.object({
     color: z.string(),
     font_size: z.number(),
     locked: z.boolean(),
-});
+}).passthrough();
 
 const zInfo = z.object({
     name: z.string(),
