@@ -2338,7 +2338,7 @@ export class ComfyApp {
 			// @ts-ignore
 			node.id = isNaN(+id) ? id : +id;
 			node.title = data._meta?.title ?? node.title
-			graph.add(node);
+			app.graph.add(node);
 		}
 
 		for (const id of ids) {
