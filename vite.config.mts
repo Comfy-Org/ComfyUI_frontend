@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path';
 
 
@@ -81,7 +82,16 @@ export default defineConfig({
 			}
 		}
 	},
-	plugins: [comfyAPIPlugin()],
+	plugins: [
+		comfyAPIPlugin(),
+		viteStaticCopy({
+			targets: [
+				{src: "src/lib/*", dest: "lib/"},
+				{src: "src/extensions/*", dest: "extensions/"},
+				{src: "src/scripts/ui/draggableList.js", dest: "scripts/ui/"},
+			],
+		}),
+	],
 	build: {
 		minify: false,
 		sourcemap: true,
