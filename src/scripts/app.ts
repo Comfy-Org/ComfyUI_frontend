@@ -6,6 +6,7 @@ import { defaultGraph } from "./defaultGraph";
 import { getPngMetadata, getWebpMetadata, importA1111, getLatentMetadata } from "./pnginfo";
 import { addDomClippingSetting } from "./domWidget";
 import { createImageHost, calculateImageGrid } from "./ui/imagePreview"
+import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
@@ -53,9 +54,11 @@ export class ComfyApp {
 	static clipspace_return_node = null;
 
 	// Force vite to import utils.ts as part of index.
+	// Force import of DraggableList.
 	static utils = {
 		applyTextReplacements,
 		addStylesheet,
+		DraggableList,
 	};
 
 	ui: ComfyUI;

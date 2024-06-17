@@ -1,4 +1,3 @@
-// @ts-check
 /*
 	Original implementation:
     https://github.com/TahaSh/drag-to-reorder
@@ -25,7 +24,7 @@
     SOFTWARE.
 */
 
-import { $el } from "../ui.js";
+import { $el } from "../ui";
 
 $el("style", {
     parent: document.head,
@@ -92,7 +91,7 @@ export class DraggableList extends EventTarget {
 		return item.hasAttribute("data-is-toggled");
 	}
 
-	on(source, event, listener, options) {
+	on(source, event, listener, options?) {
 		listener = listener.bind(this);
 		source.addEventListener(event, listener, options);
 		return () => source.removeEventListener(event, listener);
