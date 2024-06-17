@@ -15,13 +15,14 @@ const zNodeOutput = z.object({
     type: z.string(),
     links: z.array(z.number()).nullable(),
     slot_index: z.number().optional(),
-});
+}).passthrough();
 
 const zNodeInput = z.object({
     name: z.string(),
     type: z.string(),
     link: z.number().nullable(),
-});
+    slot_index: z.number().optional(),
+}).passthrough();
 
 const zFlags = z.object({
     collapsed: z.boolean().optional(),
@@ -72,12 +73,12 @@ const zInfo = z.object({
     created: z.string(),
     modified: z.string(),
     software: z.string(),
-});
+}).passthrough();
 
 const zDS = z.object({
     scale: z.number(),
     offset: zVector2,
-});
+}).passthrough();
 
 const zConfig = z.object({
     links_ontop: z.boolean().optional(),
@@ -98,7 +99,7 @@ const zComfyWorkflow = z.object({
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
     version: z.number(),
-});
+}).passthrough();
 
 export type NodeInput = z.infer<typeof zNodeInput>;
 export type NodeOutput = z.infer<typeof zNodeOutput>;
