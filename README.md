@@ -1,6 +1,6 @@
 # ComfyUI_frontend
 
-Front end of ComfyUI written in TypeScript
+Front end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized.
 
 ## The grand migration to TypeScript
 
