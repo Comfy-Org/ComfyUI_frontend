@@ -2,6 +2,7 @@ import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import { mergeIfValid } from "./widgetInputs";
 import { ManageGroupDialog } from "./groupNodeManage";
+import type { LGraphNode } from "/types/litegraph";
 
 const GROUP = Symbol();
 
@@ -14,7 +15,9 @@ const Workflow = {
 	isInUseGroupNode(name) {
 		const id = `workflow/${name}`;
 		// Check if lready registered/in use in this workflow
+		// @ts-ignore
 		if (app.graph.extra?.groupNodes?.[name]) {
+			// @ts-ignore
 			if (app.graph._nodes.find((n) => n.type === id)) {
 				return Workflow.InUse.InWorkflow;
 			} else {
@@ -24,7 +27,9 @@ const Workflow = {
 		return Workflow.InUse.Free;
 	},
 	storeGroupNode(name, data) {
+		// @ts-ignore
 		let extra = app.graph.extra;
+		// @ts-ignore
 		if (!extra) app.graph.extra = extra = {};
 		let groupNodes = extra.groupNodes;
 		if (!groupNodes) extra.groupNodes = groupNodes = {};
@@ -33,6 +38,9 @@ const Workflow = {
 };
 
 class GroupNodeBuilder {
+	nodes: LGraphNode[];
+	nodeData: any;
+
 	constructor(nodes) {
 		this.nodes = nodes;
 	}
@@ -120,6 +128,8 @@ class GroupNodeBuilder {
 		// Use the built in copyToClipboard function to generate the node data we need
 		const backup = localStorage.getItem("litegrapheditor_clipboard");
 		try {
+			// @ts-ignore
+			// TODO Figure out if copyToClipboard is really taking this param
 			app.canvas.copyToClipboard(this.nodes);
 			const config = JSON.parse(localStorage.getItem("litegrapheditor_clipboard"));
 
@@ -134,6 +144,25 @@ class GroupNodeBuilder {
 }
 
 export class GroupNodeConfig {
+	name: string;
+	nodeData: any;
+	inputCount: number;
+	oldToNewOutputMap: {};
+	newToOldOutputMap: {};
+	oldToNewInputMap: {};
+	oldToNewWidgetMap: {};
+	newToOldWidgetMap: {};
+	primitiveDefs: {};
+	widgetToPrimitive: {};
+	primitiveToWidget: {};
+	nodeInputs: {};
+	outputVisibility: any[];
+	nodeDef: any;
+	inputs: any[];
+	linksFrom: {};
+	linksTo: {};
+	externalFrom: {};
+
 	constructor(name, nodeData) {
 		this.name = name;
 		this.nodeData = nodeData;
@@ -289,6 +318,7 @@ export class GroupNodeConfig {
 							null,
 							widget
 						);
+						// @ts-ignore
 						config = res?.customConfig ?? config;
 					}
 				}
@@ -312,6 +342,7 @@ export class GroupNodeConfig {
 				}
 			}
 
+			// @ts-ignore
 			config.forceInput = true;
 			return {
 				input: {
@@ -328,7 +359,7 @@ export class GroupNodeConfig {
 		console.warn("Skipping virtual node " + node.type + " when building group node " + this.name);
 	}
 
-	getInputConfig(node, inputName, seenInputs, config, extra) {
+	getInputConfig(node, inputName, seenInputs, config, extra?) {
 		const customConfig = this.nodeData.config?.[node.index]?.input?.[inputName];
 		let name = customConfig?.name ?? node.inputs?.find((inp) => inp.name === inputName)?.label ?? inputName;
 		let key = name;
@@ -580,6 +611,7 @@ export class GroupNodeConfig {
 export class GroupNodeHandler {
 	node;
 	groupData;
+	innerNodes: any;
 
 	constructor(node) {
 		this.node = node;
@@ -624,6 +656,8 @@ export class GroupNodeHandler {
 						let link = app.graph.links[linkId];
 
 						// Use the outer link, but update the target to the inner node
+						// @ts-ignore
+						// TODO: Fix this
 						link = {
 							...link,
 							target_id: innerNode.id,
@@ -676,6 +710,7 @@ export class GroupNodeHandler {
 					this.groupData.nodeData.nodes.map((n, i) => {
 						const innerNode = LiteGraph.createNode(n.type);
 						innerNode.configure(n);
+						// @ts-ignore
 						innerNode.id = `${this.node.id}:${i}`;
 						return innerNode;
 					})
@@ -1225,7 +1260,9 @@ function addConvertToGroupOptions() {
 	}
 
 	// Add to canvas
+	// @ts-ignore
 	const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
+	// @ts-ignore
 	LGraphCanvas.prototype.getCanvasMenuOptions = function () {
 		const options = getCanvasMenuOptions.apply(this, arguments);
 		const index = options.findIndex((o) => o?.content === "Add Group") + 1 || options.length;
@@ -1235,7 +1272,9 @@ function addConvertToGroupOptions() {
 	};
 
 	// Add to nodes
+	// @ts-ignore
 	const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions;
+	// @ts-ignore
 	LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
 		const options = getNodeMenuOptions.apply(this, arguments);
 		if (!GroupNodeHandler.isGroupNode(node)) {

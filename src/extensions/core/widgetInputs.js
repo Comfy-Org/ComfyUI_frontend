@@ -158,11 +158,11 @@ export function mergeIfValid(output, config2, forceUpdate, recreateWidget, confi
 	}
 
 	if (config1[0] instanceof Array) {
-		if (!isValidCombo(config1[0], config2[0])) return false;
+		if (!isValidCombo(config1[0], config2[0])) return;
 	} else if (config1[0] !== config2[0]) {
 		// Types dont match
 		console.log(`connection rejected: types dont match`, config1[0], config2[0]);
-		return false;
+		return;
 	}
 
 	const keys = new Set([...Object.keys(config1[1] ?? {}), ...Object.keys(config2[1] ?? {})]);
@@ -192,7 +192,7 @@ export function mergeIfValid(output, config2, forceUpdate, recreateWidget, confi
 					const theirMax = config2[1]?.["max"];
 					if (theirMax != null && v1 > theirMax) {
 						console.log("connection rejected: min > max", v1, theirMax);
-						return false;
+						return;
 					}
 					getCustomConfig()[k] = v1 == null ? v2 : v2 == null ? v1 : Math.max(v1, v2);
 					continue;
@@ -200,7 +200,7 @@ export function mergeIfValid(output, config2, forceUpdate, recreateWidget, confi
 					const theirMin = config2[1]?.["min"];
 					if (theirMin != null && v1 < theirMin) {
 						console.log("connection rejected: max < min", v1, theirMin);
-						return false;
+						return;
 					}
 					getCustomConfig()[k] = v1 == null ? v2 : v2 == null ? v1 : Math.min(v1, v2);
 					continue;
@@ -221,7 +221,7 @@ export function mergeIfValid(output, config2, forceUpdate, recreateWidget, confi
 						}
 						if (v1 % v2) {
 							console.log("connection rejected: steps not divisible", "current:", v1, "new:", v2);
-							return false;
+							return;
 						}
 
 						step = v1;
@@ -233,7 +233,7 @@ export function mergeIfValid(output, config2, forceUpdate, recreateWidget, confi
 			}
 
 			console.log(`connection rejected: config ${k} values dont match`, v1, v2);
-			return false;
+			return;
 		}
 	}
 
@@ -302,7 +302,7 @@ app.registerExtension({
 						}
 					}
 				}
-				
+
 				//Convert.. main menu
 				if (toInput.length) {
 					if (useConversionSubmenusSetting.value) {

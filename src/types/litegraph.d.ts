@@ -52,6 +52,9 @@ export type WidgetCallback<T extends IWidget = IWidget> = (
 ) => void;
 
 export interface IWidget<TValue = any, TOptions = any> {
+    // linked widgets, e.g. seed+seedControl
+	linkedWidgets: IWidget[];
+
     name: string | null;
     value: TValue;
     options?: TOptions;
@@ -162,6 +165,7 @@ export declare class LGraph {
     static supported_types: string[];
     static STATUS_STOPPED: 1;
     static STATUS_RUNNING: 2;
+	extra: any;
 
     constructor(o?: object);
 
@@ -407,6 +411,11 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
+    // Used in group node
+	setInnerNodes(nodes: any) {
+		throw new Error("Method not implemented.");
+	}
+
     static title_color: string;
     static title: string;
     static type: null | string;
