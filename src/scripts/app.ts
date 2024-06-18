@@ -1503,20 +1503,18 @@ export class ComfyApp {
 	    const extensions = await api.getExtensions();
 	    this.logging.addEntry("Comfy.App", "debug", { Extensions: extensions });
 
-	    const extensionPromises = extensions
-		.filter(extension => !extension.includes("extensions/core"))
-		.map(async ext => {
-	        try {
-	            await import(/* @vite-ignore */api.apiURL(ext));
-	        } catch (error) {
-	            console.error("Error loading extension", ext, error);
-	        }
-	    });
-
 		// Need to load core extensions first as some custom extensions
 		// may depend on them.
 		await import("../extensions/core/index.js");
-	    await Promise.all(extensionPromises);
+	    await Promise.all(extensions
+			.filter(extension => !extension.includes("extensions/core"))
+			.map(async ext => {
+				try {
+					await import(/* @vite-ignore */api.apiURL(ext));
+				} catch (error) {
+					console.error("Error loading extension", ext, error);
+				}
+			}));
 	}
 
 	async #migrateSettings() {
