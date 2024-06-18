@@ -91,11 +91,11 @@ app.registerExtension({
                 } else {
                     // Select the current word, find the start and end of the word
                     const delimiters = " .,\\/!?%^*;:{}=-_`~()\r\n\t";
-                    
+
                     while (!delimiters.includes(inputField.value[start - 1]) && start > 0) {
                         start--;
                     }
-                    
+
                     while (!delimiters.includes(inputField.value[end]) && end < inputField.value.length) {
                         end++;
                     }
