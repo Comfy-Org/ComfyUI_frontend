@@ -21,7 +21,9 @@ type Props = {
     [key: string]: any
 };
 
-export function $el(tag: string, propsOrChildren?: string | Element | Element[] | Props, children?: Element[] | Element): HTMLElement {
+type Children = Element[] | Element | string | string[];
+
+export function $el(tag: string, propsOrChildren?: Children | Props, children?: Children): HTMLElement {
     const split = tag.split(".");
     const element = document.createElement(split.shift() as string);
     if (split.length > 0) {

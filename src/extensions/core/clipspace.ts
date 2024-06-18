@@ -20,7 +20,7 @@ export class ClipspaceDialog extends ComfyDialog {
 
 	static invalidatePreview() {
 		if(ComfyApp.clipspace && ComfyApp.clipspace.imgs && ComfyApp.clipspace.imgs.length > 0) {
-			const img_preview = document.getElementById("clipspace_preview");
+			const img_preview = document.getElementById("clipspace_preview") as HTMLImageElement;
 			if(img_preview) {
 				img_preview.src = ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src;
 				img_preview.style.maxHeight = "100%";
@@ -57,7 +57,7 @@ export class ClipspaceDialog extends ComfyDialog {
 		super();
 	}
 
-	createButtons(self) {
+	createButtons() {
 		const buttons = [];
 
 		for(let idx in ClipspaceDialog.items) {
