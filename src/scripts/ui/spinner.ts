@@ -1,7 +1,5 @@
-import { addStylesheet } from "../utils";
+import "./spinner.css";
 
-// @ts-ignore
-addStylesheet(import.meta.url);
 
 export function createSpinner() {
 	const div = document.createElement("div");
