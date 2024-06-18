@@ -15,6 +15,7 @@ const jestConfig: JestConfigWithTsJest = {
 	testTimeout: 10000,
 	moduleNameMapper: {
 		"^src/(.*)$": "<rootDir>/src/$1",
+		'\\.(css|less|scss|sass)$': 'identity-obj-proxy',
 	},
 };
 
