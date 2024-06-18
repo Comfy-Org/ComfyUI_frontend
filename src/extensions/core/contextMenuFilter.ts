@@ -6,7 +6,8 @@ const ext = {
 	name: "Comfy.ContextMenuFilter",
 	init() {
 		const ctxMenu = LiteGraph.ContextMenu;
-
+		// @ts-ignore
+		// TODO Very hacky way to modify Litegraph behaviour. Fix this later.
 		LiteGraph.ContextMenu = function (values, options) {
 			const ctx = ctxMenu.call(this, values, options);
 
@@ -17,12 +18,13 @@ const ext = {
 				filter.placeholder = "Filter list";
 				this.root.prepend(filter);
 
-				const items = Array.from(this.root.querySelectorAll(".litemenu-entry"));
+				const items = Array.from(this.root.querySelectorAll(".litemenu-entry")) as HTMLElement[];
 				let displayedItems = [...items];
 				let itemCount = displayedItems.length;
 
 				// We must request an animation frame for the current node of the active canvas to update.
 				requestAnimationFrame(() => {
+					// @ts-ignore
 					const currentNode = LGraphCanvas.active_canvas.current_node;
 					const clickedComboValue = currentNode.widgets
 						?.filter(w => w.type === "combo" && w.options.values.length === values.length)
@@ -32,7 +34,7 @@ const ext = {
 					let selectedIndex = clickedComboValue ? values.findIndex(v => v === clickedComboValue) : 0;
 					if (selectedIndex < 0) {
 						selectedIndex = 0;
-					} 
+					}
 					let selectedItem = displayedItems[selectedIndex];
 					updateSelected();
 
