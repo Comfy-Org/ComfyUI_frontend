@@ -21,8 +21,8 @@ function checkState() {
 }
 
 const loadGraphData = app.loadGraphData;
-app.loadGraphData = async function () {
-	const v = await loadGraphData.apply(this, arguments);
+app.loadGraphData = async function (...args) {
+	const v = await loadGraphData.apply(this, args);
 	if (isOurLoad) {
 		isOurLoad = false;
 	} else {
@@ -122,7 +122,7 @@ window.addEventListener(
 					return;
 				}
 			}
-		
+
 			keyIgnored = e.key === "Control" || e.key === "Shift" || e.key === "Alt" || e.key === "Meta";
 			if (keyIgnored) return;
 
@@ -155,13 +155,17 @@ api.addEventListener("promptQueued", () => {
 });
 
 // Handle litegraph clicks
+// @ts-ignore
 const processMouseUp = LGraphCanvas.prototype.processMouseUp;
+// @ts-ignore
 LGraphCanvas.prototype.processMouseUp = function (e) {
 	const v = processMouseUp.apply(this, arguments);
 	checkState();
 	return v;
 };
+// @ts-ignore
 const processMouseDown = LGraphCanvas.prototype.processMouseDown;
+// @ts-ignore
 LGraphCanvas.prototype.processMouseDown = function (e) {
 	const v = processMouseDown.apply(this, arguments);
 	checkState();
