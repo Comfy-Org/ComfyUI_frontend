@@ -419,7 +419,7 @@ class ComfyApi extends EventTarget {
 	 * @param { RequestInit } [options]
 	 * @returns { Promise<unknown> } The fetch response object
 	 */
-	async getUserData(file, options) {
+	async getUserData(file, options?) {
 		return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options);
 	}
 
@@ -430,7 +430,12 @@ class ComfyApi extends EventTarget {
 	 * @param { RequestInit & { stringify?: boolean, throwOnError?: boolean } } [options]
 	 * @returns { Promise<void> }
 	 */
-	async storeUserData(file, data, options = { stringify: true, throwOnError: true }) {
+	async storeUserData(
+		file: string,
+		data: unknown,
+		options: RequestInit & { stringify?: boolean, throwOnError?: boolean }
+		= { stringify: true, throwOnError: true }
+	): Promise<void> {
 		const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
 			method: "POST",
 			body: options?.stringify ? JSON.stringify(data) : data,
