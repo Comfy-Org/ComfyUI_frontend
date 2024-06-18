@@ -1,9 +1,10 @@
 import {app} from "../../scripts/app";
 import {$el} from "../../scripts/ui";
+import type { ColorPalettes } from "/types/colorPalette";
 
 // Manage color palettes
 
-const colorPalettes = {
+const colorPalettes: ColorPalettes = {
 	"dark": {
 		"id": "dark",
 		"name": "Dark (Default)",
@@ -391,7 +392,9 @@ const colorPalettes = {
 const id = "Comfy.ColorPalette";
 const idCustomColorPalettes = "Comfy.CustomColorPalettes";
 const defaultColorPaletteId = "dark";
-const els = {}
+const els: { select: HTMLSelectElement | null } = {
+	select: null,
+}
 // const ctxMenu = LiteGraph.ContextMenu;
 app.registerExtension({
 	name: id,
@@ -474,11 +477,11 @@ app.registerExtension({
 			return completeColorPalette(colorPalette);
 		};
 
-		const getCustomColorPalettes = () => {
+		const getCustomColorPalettes = (): ColorPalettes => {
 			return app.ui.settings.getSettingValue(idCustomColorPalettes, {});
 		};
 
-		const setCustomColorPalettes = (customColorPalettes) => {
+		const setCustomColorPalettes = (customColorPalettes: ColorPalettes) => {
 			return app.ui.settings.setSettingValue(idCustomColorPalettes, customColorPalettes);
 		};
 
@@ -513,7 +516,7 @@ app.registerExtension({
 			setCustomColorPalettes(customColorPalettes);
 
 			for (const option of els.select.childNodes) {
-				if (option.value === "custom_" + colorPalette.id) {
+				if ((option as HTMLOptionElement).value === "custom_" + colorPalette.id) {
 					els.select.removeChild(option);
 				}
 			}
@@ -533,7 +536,8 @@ app.registerExtension({
 			delete customColorPalettes[colorPaletteId];
 			setCustomColorPalettes(customColorPalettes);
 
-			for (const option of els.select.childNodes) {
+			for (const opt of els.select.childNodes) {
+				const option = opt as HTMLOptionElement;
 				if (option.value === defaultColorPaletteId) {
 					option.selected = true;
 				}
@@ -552,7 +556,9 @@ app.registerExtension({
 			if (colorPalette.colors) {
 				// Sets the colors of node slots and links
 				if (colorPalette.colors.node_slot) {
+					// @ts-ignore
 					Object.assign(app.canvas.default_connection_color_byType, colorPalette.colors.node_slot);
+					// @ts-ignore
 					Object.assign(LGraphCanvas.link_type_colors, colorPalette.colors.node_slot);
 				}
 				// Sets the colors of the LiteGraph objects
@@ -578,7 +584,7 @@ app.registerExtension({
 			}
 		};
 
-		const getColorPalette = (colorPaletteId) => {
+		const getColorPalette = (colorPaletteId?) => {
 			if (!colorPaletteId) {
 				colorPaletteId = app.ui.settings.getSettingValue(id, defaultColorPaletteId);
 			}
@@ -608,12 +614,12 @@ app.registerExtension({
 				if (file.type === "application/json" || file.name.endsWith(".json")) {
 					const reader = new FileReader();
 					reader.onload = async () => {
-						await addCustomColorPalette(JSON.parse(reader.result));
+						await addCustomColorPalette(JSON.parse(reader.result as string));
 					};
 					reader.readAsText(file);
 				}
 			},
-		});
+		}) as HTMLInputElement;
 
 		app.ui.settings.addSetting({
 			id,
@@ -640,7 +646,7 @@ app.registerExtension({
 					onchange: (e) => {
 						setter(e.target.value);
 					}
-				}, options)
+				}, options) as HTMLSelectElement;
 
 				return $el("tr", [
 					$el("td", [
@@ -754,6 +760,8 @@ app.registerExtension({
 					BACKGROUND_IMAGE = base.BACKGROUND_IMAGE;
 					CLEAR_BACKGROUND_COLOR = base.CLEAR_BACKGROUND_COLOR;
 				}
+				// @ts-ignore
+				// litegraph.extensions.js
 				app.canvas.updateBackground(BACKGROUND_IMAGE, CLEAR_BACKGROUND_COLOR);
 			},
 		});
