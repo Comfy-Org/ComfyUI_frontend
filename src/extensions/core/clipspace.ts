@@ -107,7 +107,7 @@ export class ClipspaceDialog extends ComfyDialog {
 								[
 									$el("option", {value:'selected'}, 'selected'),
 									$el("option", {value:'all'}, 'all')
-								]);
+								]) as HTMLSelectElement;
 			combo2.value = ComfyApp.clipspace['img_paste_mode'];
 
 			const row2 =
@@ -141,7 +141,7 @@ export class ClipspaceDialog extends ComfyDialog {
 	show() {
 		const img_preview = document.getElementById("clipspace_preview");
 		ClipspaceDialog.invalidate();
-		
+
 		this.element.style.display = "block";
 	}
 }
@@ -152,7 +152,7 @@ app.registerExtension({
 		app.openClipspace =
 			function () {
 				if(!ClipspaceDialog.instance) {
-					ClipspaceDialog.instance = new ClipspaceDialog(app);
+					ClipspaceDialog.instance = new ClipspaceDialog();
 					ComfyApp.clipspace_invalidate_handler = ClipspaceDialog.invalidate;
 				}
 
