@@ -6,15 +6,26 @@ app.registerExtension({
     name: "Comfy.NoteNode",
     registerCustomNodes() {
         class NoteNode {
+            static category: string;
+
+            // @ts-ignore
             color=LGraphCanvas.node_colors.yellow.color;
+            // @ts-ignore
             bgcolor=LGraphCanvas.node_colors.yellow.bgcolor;
+            // @ts-ignore
             groupcolor = LGraphCanvas.node_colors.yellow.groupcolor;
+            properties: { text: string };
+            serialize_widgets: boolean;
+            isVirtualNode: boolean;
+            collapsable: boolean;
+            title_mode: number;
+
             constructor() {
                 if (!this.properties) {
-                    this.properties = {};
-                    this.properties.text="";
+                    this.properties = { text: "" };
                 }
-
+                // @ts-ignore
+                // Should we extends LGraphNode?
                 ComfyWidgets.STRING(this, "", ["", {default:this.properties.text, multiline: true}], app)
 
                 this.serialize_widgets = true;
@@ -29,6 +40,7 @@ app.registerExtension({
 
         LiteGraph.registerNodeType(
             "Note",
+            // @ts-ignore
             Object.assign(NoteNode, {
                 title_mode: LiteGraph.NORMAL_TITLE,
                 title: "Note",

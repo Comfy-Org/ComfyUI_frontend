@@ -8,6 +8,7 @@ app.registerExtension({
 	init() {
 		const ctxMenu = LiteGraph.ContextMenu;
 		const replace = () => {
+			// @ts-ignore
 			LiteGraph.ContextMenu = function (values, options) {
 				options = options || {};
 				if (options.scroll_speed) {
