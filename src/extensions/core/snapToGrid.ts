@@ -58,7 +58,9 @@ app.registerExtension({
 		};
 
 		// Draw a preview of where the node will go if holding shift and the node is selected
+		// @ts-ignore
 		const origDrawNode = LGraphCanvas.prototype.drawNode;
+		// @ts-ignore
 		LGraphCanvas.prototype.drawNode = function (node, ctx) {
 			if (app.shiftDown && this.node_dragged && node.id in this.selected_nodes) {
 				const [x, y] = roundVectorToGrid([...node.pos]);
@@ -88,8 +90,6 @@ app.registerExtension({
 			return origDrawNode.apply(this, arguments);
 		};
 
-		
-		
 		/**
   		 * The currently moving, selected group only. Set after the `selected_group` has actually started
 		 * moving.
@@ -100,7 +100,9 @@ app.registerExtension({
   		 * Handles moving a group; tracking when a group has been moved (to show the ghost in `drawGroups`
      		 * below) as well as handle the last move call from LiteGraph's `processMouseUp`.
 		 */
+		// @ts-ignore
 		const groupMove = LGraphGroup.prototype.move;
+		// @ts-ignore
 		LGraphGroup.prototype.move = function(deltax, deltay, ignore_nodes) {
 			const v = groupMove.apply(this, arguments);
 			// When we've started moving, set `selectedAndMovingGroup` as LiteGraph sets `selected_group`
@@ -120,6 +122,7 @@ app.registerExtension({
 				for (const node of this._nodes) {
 					node.alignToGrid();
 				}
+				// @ts-ignore
 				LGraphNode.prototype.alignToGrid.apply(this);
 			}
 			return v;
@@ -130,7 +133,9 @@ app.registerExtension({
      		 * drawing a ghost box when one is actively being moved. This mimics the node snapping behavior for
 		 * both.
 		 */
+		// @ts-ignore
 		const drawGroups = LGraphCanvas.prototype.drawGroups;
+		// @ts-ignore
 		LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
 			if (this.selected_group && app.shiftDown) {
 				if (this.selected_group_resizing) {
@@ -155,13 +160,18 @@ app.registerExtension({
 
 
 		/** Handles adding a group in a snapping-enabled state. */
+		// @ts-ignore
 		const onGroupAdd = LGraphCanvas.onGroupAdd;
+		// @ts-ignore
 		LGraphCanvas.onGroupAdd = function() {
 			const v = onGroupAdd.apply(app.canvas, arguments);
 			if (app.shiftDown) {
+				// @ts-ignore
 				const lastGroup = app.graph._groups[app.graph._groups.length - 1];
 				if (lastGroup) {
+					// @ts-ignore
 					roundVectorToGrid(lastGroup.pos);
+					// @ts-ignore
 					roundVectorToGrid(lastGroup.size);
 				}
 			}
