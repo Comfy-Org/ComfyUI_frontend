@@ -855,6 +855,7 @@ export declare class LGraphNode {
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {
+	nodeData: any;  // Used by group node.
     new (): T;
 };
 
