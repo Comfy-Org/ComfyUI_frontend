@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { api } from "../../scripts/api.js"
+import { app } from "../../scripts/app";
+import { api } from "../../scripts/api";
 
 const MAX_HISTORY = 50;
 
