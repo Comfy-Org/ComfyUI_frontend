@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app";
+import { app } from "../../scripts/app.js";
 
 let touchZooming;
 let touchCount = 0;

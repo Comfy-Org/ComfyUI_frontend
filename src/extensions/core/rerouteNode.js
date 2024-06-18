@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app";
-import { mergeIfValid, getWidgetConfig, setWidgetConfig } from "./widgetInputs";
+import { app } from "../../scripts/app.js";
+import { mergeIfValid, getWidgetConfig, setWidgetConfig } from "./widgetInputs.js";
 
 // Node that allows you to redirect connections for cleaner graphs
 

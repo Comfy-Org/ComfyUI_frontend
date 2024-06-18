@@ -1,7 +1,7 @@
-import { $el, ComfyDialog } from "../../scripts/ui";
-import { DraggableList } from "../../scripts/ui/draggableList";
-import { addStylesheet } from "../../scripts/utils";
-import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
+import { $el, ComfyDialog } from "../../scripts/ui.js";
+import { DraggableList } from "../../scripts/ui/draggableList.js";
+import { addStylesheet } from "../../scripts/utils.js";
+import { GroupNodeConfig, GroupNodeHandler } from "./groupNode.js";
 
 addStylesheet(import.meta.url);
 

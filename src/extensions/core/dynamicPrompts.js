@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app";
+import { app } from "../../scripts/app.js";
 
 // Allows for simple dynamic prompt replacement
 // Inputs in the format {a|b} will have a random value of a or b chosen when the prompt is queued.

@@ -1,4 +1,15 @@
 {
-	"presets": ["@babel/preset-env"],
-	"plugins": ["babel-plugin-transform-import-meta"]
+	"presets": [
+		"@babel/preset-env"
+	],
+	"plugins": [
+		"babel-plugin-transform-import-meta",
+		[
+			"transform-rename-import",
+			{
+				"original": "^(.+?)\\.js$",
+				"replacement": "$1"
+			}
+		]
+	]
 }

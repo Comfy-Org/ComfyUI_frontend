@@ -1,7 +1,7 @@
-import { app } from "../../scripts/app";
-import { api } from "../../scripts/api";
-import { ComfyDialog, $el } from "../../scripts/ui";
-import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
+import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
+import { ComfyDialog, $el } from "../../scripts/ui.js";
+import { GroupNodeConfig, GroupNodeHandler } from "./groupNode.js";
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
