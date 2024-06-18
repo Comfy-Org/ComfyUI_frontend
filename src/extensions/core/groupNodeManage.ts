@@ -2,9 +2,11 @@ import { $el, ComfyDialog } from "../../scripts/ui";
 import { DraggableList } from "../../scripts/ui/draggableList";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
 import "./groupNodeManage.css";
+import type { ComfyApp } from "/scripts/app";
+import type { LGraphNode, LGraphNodeConstructor } from "/types/litegraph";
 
 
-const ORDER = Symbol();
+const ORDER: symbol = Symbol();
 
 function merge(target, source) {
 	if (typeof target === "object" && typeof source === "object") {
@@ -23,18 +25,23 @@ function merge(target, source) {
 	return target;
 }
 
-export class ManageGroupDialog extends ComfyDialog {
-	/** @type { Record<"Inputs" | "Outputs" | "Widgets", {tab: HTMLAnchorElement, page: HTMLElement}> } */
-	tabs = {};
-	/** @type { number | null | undefined } */
-	selectedNodeIndex;
-	/** @type { keyof ManageGroupDialog["tabs"] } */
-	selectedTab = "Inputs";
-	/** @type { string | undefined } */
-	selectedGroup;
+export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
+	tabs: Record<"Inputs" | "Outputs" | "Widgets", {tab: HTMLAnchorElement, page: HTMLElement}>;
+	selectedNodeIndex: number | null | undefined;
+	selectedTab: keyof ManageGroupDialog["tabs"] = "Inputs";
+	selectedGroup: string | undefined;
+	modifications: Record<string, Record<string, Record<string, { name?: string | undefined, visible?: boolean | undefined }>>> = {};
+	nodeItems: any[];
+	app: ComfyApp;
+	groupNodeType: LGraphNodeConstructor<LGraphNode>;
+	groupNodeDef: any;
+	groupData: any;
 
-	/** @type { Record<string, Record<string, Record<string, { name?: string | undefined, visible?: boolean | undefined }>>> } */
-	modifications = {};
+	innerNodesList: HTMLUListElement;
+	widgetsPage: HTMLElement;
+	inputsPage: HTMLElement;
+	outputsPage: HTMLElement;
+	draggable: any;
 
 	get selectedNodeInnerIndex() {
 		return +this.nodeItems[this.selectedNodeIndex].dataset.nodeindex;
@@ -45,7 +52,7 @@ export class ManageGroupDialog extends ComfyDialog {
 		this.app = app;
 		this.element = $el("dialog.comfy-group-manage", {
 			parent: document.body,
-		});
+		}) as HTMLDialogElement;
 	}
 
 	changeTab(tab) {
@@ -56,7 +63,7 @@ export class ManageGroupDialog extends ComfyDialog {
 		this.selectedTab = tab;
 	}
 
-	changeNode(index, force) {
+	changeNode(index, force?) {
 		if (!force && this.selectedNodeIndex === index) return;
 
 		if (this.selectedNodeIndex != null) {
@@ -141,7 +148,8 @@ export class ManageGroupDialog extends ComfyDialog {
 		});
 	}
 
-	storeModification({ nodeIndex, section, prop, value }) {
+	storeModification(props: { nodeIndex?: number; section: symbol; prop: string; value: any }) {
+		const { nodeIndex, section, prop, value } = props;
 		const groupMod = (this.modifications[this.selectedGroup] ??= {});
 		const nodesMod = (groupMod.nodes ??= {});
 		const nodeMod = (nodesMod[nodeIndex ?? this.selectedNodeInnerIndex] ??= {});
@@ -249,10 +257,10 @@ export class ManageGroupDialog extends ComfyDialog {
 		return !!outputs.length;
 	}
 
-	show(type) {
+	show(type?) {
 		const groupNodes = Object.keys(app.graph.extra?.groupNodes ?? {}).sort((a, b) => a.localeCompare(b));
 
-		this.innerNodesList = $el("ul.comfy-group-manage-list-items");
+		this.innerNodesList = $el("ul.comfy-group-manage-list-items") as HTMLUListElement;
 		this.widgetsPage = $el("section.comfy-group-manage-node-page");
 		this.inputsPage = $el("section.comfy-group-manage-node-page");
 		this.outputsPage = $el("section.comfy-group-manage-node-page");
@@ -262,7 +270,7 @@ export class ManageGroupDialog extends ComfyDialog {
 			["Inputs", this.inputsPage],
 			["Widgets", this.widgetsPage],
 			["Outputs", this.outputsPage],
-		].reduce((p, [name, page]) => {
+		].reduce((p, [name, page]: [string, HTMLElement]) => {
 			p[name] = {
 				tab: $el("a", {
 					onclick: () => {
@@ -273,7 +281,7 @@ export class ManageGroupDialog extends ComfyDialog {
 				page,
 			};
 			return p;
-		}, {});
+		}, {}) as any;
 
 		const outer = $el("div.comfy-group-manage-outer", [
 			$el("header", [

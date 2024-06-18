@@ -27,11 +27,10 @@ interface SettingParams {
     options?: SettingOption[] | ((value: any) => SettingOption[]);
 }
 
-export class ComfySettingsDialog extends ComfyDialog {
+export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 	app: ComfyApp;
 	settingsValues: any;
 	settingsLookup: Record<string, Setting>;
-	declare element: HTMLDialogElement;
 
 	constructor(app) {
 		super();
