@@ -40,7 +40,7 @@ app.registerExtension({
 
 			// Close out of modals using escape
 			if (event.key === "Escape") {
-				const modals = document.querySelectorAll(".comfy-modal");
+				const modals = document.querySelectorAll<HTMLElement>(".comfy-modal");
 				const modal = Array.from(modals).find(modal => window.getComputedStyle(modal).getPropertyValue("display") !== "none");
 				if (modal) {
 					modal.style.display = "none";

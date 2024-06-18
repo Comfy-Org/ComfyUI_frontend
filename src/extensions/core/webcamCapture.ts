@@ -93,7 +93,7 @@ app.registerExtension({
 			}
 
 			// Upload image to temp storage
-			const blob = await new Promise((r) => canvas.toBlob(r));
+			const blob = await new Promise<Blob>((r) => canvas.toBlob(r));
 			const name = `${+new Date()}.png`;
 			const file = new File([blob], name);
 			const body = new FormData();
@@ -117,7 +117,7 @@ app.registerExtension({
 			// If width isnt specified then use video output resolution
 			if (!w.value) {
 				w.value = video.videoWidth || 640;
-				h.value = video.videoHeight || 480; 
+				h.value = video.videoHeight || 480;
 			}
 			btn.disabled = false;
 			btn.label = "capture";
