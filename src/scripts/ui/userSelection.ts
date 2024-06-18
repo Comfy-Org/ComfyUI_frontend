@@ -1,7 +1,8 @@
 import { api } from "../api";
 import { $el } from "../ui";
-import { addStylesheet } from "../utils";
 import { createSpinner } from "./spinner";
+import "./userSelection.css";
+
 
 interface SelectedUser {
 	username: string;
@@ -9,11 +10,9 @@ interface SelectedUser {
 	created: boolean;
 }
 
+
 export class UserSelectionScreen {
 	async show(users, user): Promise<SelectedUser>{
-		// This will rarely be hit so move the loading to on demand
-		// @ts-ignore
-		await addStylesheet(import.meta.url);
 		const userSelection = document.getElementById("comfy-user-selection");
 		userSelection.style.display = "";
 		return new Promise((resolve) => {

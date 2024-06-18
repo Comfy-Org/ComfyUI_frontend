@@ -1,9 +1,8 @@
 import { $el, ComfyDialog } from "../../scripts/ui";
 import { DraggableList } from "../../scripts/ui/draggableList";
-import { addStylesheet } from "../../scripts/utils";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
+import "./groupNodeManage.css";
 
-addStylesheet(import.meta.url);
 
 const ORDER = Symbol();
 
