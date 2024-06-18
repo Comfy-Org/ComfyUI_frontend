@@ -24,6 +24,12 @@ const id = "Comfy.NodeTemplates";
 const file = "comfy.templates.json";
 
 class ManageTemplates extends ComfyDialog {
+	templates: any[];
+	draggedEl: HTMLElement | null;
+	saveVisualCue: number | null;
+	emptyImg: HTMLImageElement;
+	importInput: HTMLInputElement;
+
 	constructor() {
 		super();
 		this.load().then((v) => {
@@ -43,7 +49,7 @@ class ManageTemplates extends ComfyDialog {
 			style: { display: "none" },
 			parent: document.body,
 			onchange: () => this.importAll(),
-		});
+		}) as HTMLInputElement;
 	}
 
 	createButtons() {
@@ -123,7 +129,7 @@ class ManageTemplates extends ComfyDialog {
 			if (file.type === "application/json" || file.name.endsWith(".json")) {
 				const reader = new FileReader();
 				reader.onload = async () => {
-					const importFile = JSON.parse(reader.result);
+					const importFile = JSON.parse(reader.result as string);
 					if (importFile?.templates) {
 						for (const template of importFile.templates) {
 							if (template?.name && template?.data) {
@@ -176,7 +182,7 @@ class ManageTemplates extends ComfyDialog {
 						$el(
 							"div",
 							{
-								dataset: { id: i },
+								dataset: { id: i.toString() },
 								className: "tempateManagerRow",
 								style: {
 									display: "grid",
@@ -198,13 +204,13 @@ class ManageTemplates extends ComfyDialog {
 									e.currentTarget.removeAttribute("draggable");
 
 									// rearrange the elements
-									this.element.querySelectorAll('.tempateManagerRow').forEach((el,i) => {
-										var prev_i = el.dataset.id;
+									this.element.querySelectorAll('.tempateManagerRow').forEach((el: HTMLElement,i) => {
+										var prev_i = Number.parseInt(el.dataset.id);
 
 										if ( el == this.draggedEl && prev_i != i ) {
 											this.templates.splice(i, 0, this.templates.splice(prev_i, 1)[0]);
 										}
-										el.dataset.id = i;
+										el.dataset.id = i.toString();
 									});
 									this.store();
 								},
@@ -251,6 +257,8 @@ class ManageTemplates extends ComfyDialog {
 												this.store();
 												el.style.backgroundColor = 'rgb(40, 95, 40)';
 												el.style.transitionDuration = '0s';
+												// @ts-expect-error
+												// In browser env the return value is number.
 												this.saveVisualCue = setTimeout(function () {
 													el.style.transitionDuration = '.7s';
 													el.style.backgroundColor = 'var(--comfy-input-bg)';
@@ -308,8 +316,8 @@ class ManageTemplates extends ComfyDialog {
 												// update the rows index, setTimeout ensures that the list is updated
 												var that = this;
 												setTimeout(function (){
-													that.element.querySelectorAll('.tempateManagerRow').forEach((el,i) => {
-														el.dataset.id = i;
+													that.element.querySelectorAll('.tempateManagerRow').forEach((el: HTMLElement,i) => {
+														el.dataset.id = i.toString();
 													});
 												}, 0);
 											},
@@ -338,7 +346,9 @@ app.registerExtension({
 			localStorage.setItem("litegrapheditor_clipboard", old);
 		};
 
+		// @ts-ignore
 		const orig = LGraphCanvas.prototype.getCanvasMenuOptions;
+		// @ts-ignore
 		LGraphCanvas.prototype.getCanvasMenuOptions = function () {
 			const options = orig.apply(this, arguments);
 
@@ -356,16 +366,21 @@ app.registerExtension({
 						data = JSON.parse(data);
 						const nodeIds = Object.keys(app.canvas.selected_nodes);
 						for (let i = 0; i < nodeIds.length; i++) {
-							const node = app.graph.getNodeById(nodeIds[i]);
+							const node = app.graph.getNodeById(Number.parseInt(nodeIds[i]));
+							// @ts-ignore
 							const nodeData = node?.constructor.nodeData;
-							
+
 							let groupData = GroupNodeHandler.getGroupData(node);
 							if (groupData) {
 								groupData = groupData.nodeData;
+								// @ts-ignore
 								if (!data.groupNodes) {
+									// @ts-ignore
 									data.groupNodes = {};
 								}
+								// @ts-ignore
 								data.groupNodes[nodeData.name] = groupData;
+								// @ts-ignore
 								data.nodes[i].type = nodeData.name;
 							}
 						}
