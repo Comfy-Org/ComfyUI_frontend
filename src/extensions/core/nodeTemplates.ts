@@ -24,6 +24,12 @@ const id = "Comfy.NodeTemplates";
 const file = "comfy.templates.json";
 
 class ManageTemplates extends ComfyDialog {
+	templates: any[];
+	draggedEl: null;
+	saveVisualCue: null;
+	emptyImg: HTMLImageElement;
+	importInput: HTMLElement;
+
 	constructor() {
 		super();
 		this.load().then((v) => {
