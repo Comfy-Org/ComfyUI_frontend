@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { applyTextReplacements } from "../../scripts/utils.js";
+import { app } from "../../scripts/app";
+import { applyTextReplacements } from "../../scripts/utils";
 // Use widget values and dates in output filenames
 
 app.registerExtension({

@@ -1,4 +1,4 @@
-import {app} from "../../scripts/app.js";
+import {app} from "../../scripts/app";
 
 // Adds filtering to combo context menus
 

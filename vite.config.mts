@@ -12,7 +12,8 @@ function comfyAPIPlugin(): Plugin {
 	return {
 		name: 'comfy-api-plugin',
 		transform(code: string, id: string) {
-			if (id.endsWith('.ts')) {
+			// TODO: Remove second condition after all js files are converted to ts
+			if (id.endsWith('.ts') || (id.endsWith('.js') && id.includes("extensions/core"))) {
 				const result = transformExports(code, id);
 
 				if (result.exports.length > 0) {
@@ -87,7 +88,6 @@ export default defineConfig({
 		viteStaticCopy({
 			targets: [
 				{src: "src/lib/*", dest: "lib/"},
-				{src: "src/extensions/*", dest: "extensions/"},
 			],
 		}),
 	],
