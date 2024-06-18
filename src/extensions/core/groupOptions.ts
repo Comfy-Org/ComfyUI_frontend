@@ -63,8 +63,10 @@ function addNodesToGroup(group, nodes=[]) {
 app.registerExtension({
     name: "Comfy.GroupOptions",
     setup() {
+        // @ts-ignore
         const orig = LGraphCanvas.prototype.getCanvasMenuOptions;
         // graph_mouse
+        // @ts-ignore
         LGraphCanvas.prototype.getCanvasMenuOptions = function () {
             const options = orig.apply(this, arguments);
             const group = this.graph.getGroupOnPos(this.graph_mouse[0], this.graph_mouse[1]);
@@ -73,6 +75,7 @@ app.registerExtension({
                     content: "Add Group For Selected Nodes",
                     disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
                     callback: () => {
+                        // @ts-ignore
                         var group = new LiteGraph.LGraphGroup();
                         addNodesToGroup(group, this.selected_nodes)
                         app.canvas.graph.add(group);
