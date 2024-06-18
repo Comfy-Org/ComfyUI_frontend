@@ -411,6 +411,8 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
+	onResize?: Function;
+
     // Used in group node
 	setInnerNodes(nodes: any) {
 		throw new Error("Method not implemented.");
@@ -1028,6 +1030,8 @@ export declare class LGraphCanvas {
     node_over: LGraphNode | null;
     node_title_color: string;
     node_widget: [LGraphNode, IWidget] | null;
+    last_mouse_dragging: boolean;
+
     /** Called by `LGraphCanvas.drawBackCanvas` */
     onDrawBackground:
         | ((ctx: CanvasRenderingContext2D, visibleArea: Vector4) => void)
