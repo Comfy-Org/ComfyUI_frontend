@@ -90,7 +90,7 @@ class MaskEditorDialog extends ComfyDialog {
 
 	brush: HTMLDivElement;
 	maskCtx: any;
-	maskCanvas: any;
+	maskCanvas: HTMLCanvasElement;
 	brush_size_slider: HTMLDivElement;
 	brush_opacity_slider: HTMLDivElement;
 	colorButton: HTMLButtonElement;
@@ -103,7 +103,7 @@ class MaskEditorDialog extends ComfyDialog {
 	is_visible: boolean;
 	image: HTMLImageElement;
 	handler_registered: boolean;
-	brush_slider_input: any;
+	brush_slider_input: HTMLInputElement;
 	cursorX: number;
 	cursorY: number;
 	mousedown_pan_x: number;
@@ -224,7 +224,7 @@ class MaskEditorDialog extends ComfyDialog {
 		return divElement;
 	}
 
-	setlayout(imgCanvas, maskCanvas) {
+	setlayout(imgCanvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement) {
 		const self = this;
 
 		// If it is specified as relative, using it only as a hidden placeholder for padding is recommended
@@ -268,7 +268,7 @@ class MaskEditorDialog extends ComfyDialog {
 		this.brush_opacity_slider = this.createOpacitySlider(self, "Opacity", (event) => {
 			self.brush_opacity = event.target.value;
 			if (self.brush_color_mode !== "negative") {
-			    self.maskCanvas.style.opacity = self.brush_opacity;
+			    self.maskCanvas.style.opacity = self.brush_opacity.toString();
 			}
 		});
 
@@ -318,7 +318,7 @@ class MaskEditorDialog extends ComfyDialog {
 
 		const maskCanvasStyle = this.getMaskCanvasStyle();
 		maskCanvas.style.mixBlendMode = maskCanvasStyle.mixBlendMode;
-		maskCanvas.style.opacity = maskCanvasStyle.opacity;
+		maskCanvas.style.opacity = maskCanvasStyle.opacity.toString();
 	}
 
 	async show() {
@@ -588,7 +588,7 @@ class MaskEditorDialog extends ComfyDialog {
 
 		const maskCanvasStyle = this.getMaskCanvasStyle();
 		this.maskCanvas.style.mixBlendMode = maskCanvasStyle.mixBlendMode;
-		this.maskCanvas.style.opacity = maskCanvasStyle.opacity;
+		this.maskCanvas.style.opacity = maskCanvasStyle.opacity.toString();
 
 		// update mask canvas rgb colors
 
@@ -670,7 +670,7 @@ class MaskEditorDialog extends ComfyDialog {
 			else
 				this.brush_size = Math.max(this.brush_size-2, 1);
 
-			this.brush_slider_input.value = this.brush_size;
+			this.brush_slider_input.value = this.brush_size.toString();
 
 			this.updateBrushPreview(this);
 		}
