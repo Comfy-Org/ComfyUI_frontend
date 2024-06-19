@@ -26,8 +26,8 @@ export interface APIConfig {
  */
 
 /**
- * @param {{ 
- * 	mockExtensions?: string[], 
+ * @param {{
+ * 	mockExtensions?: string[],
  * 	mockNodeDefs?: Record<string, ComfyObjectInfo>,
 * 	settings?: Record<string, string>
 * 	userConfig?: {storage: "server" | "browser", users?: Record<string, any>, migrated?: boolean },
