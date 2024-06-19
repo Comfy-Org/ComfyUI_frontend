@@ -45,7 +45,7 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
 	await app.setup();
 
 	// @ts-ignore
-	return { ...Ez.graph(app, global["LiteGraph"], global["LGraphCanvas"]), app };
+	return { ...Ez.graph(app), app };
 }
 
 /**

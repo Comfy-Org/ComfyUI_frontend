@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app";
-import { LGraphCanvas } from "comfyui-litegraph";
+import { LGraphCanvas, LiteGraph } from "comfyui-litegraph";
 
 let touchZooming;
 let touchCount = 0;

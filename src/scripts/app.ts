@@ -10,7 +10,7 @@ import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
-import { LGraphCanvas, LGraph, LGraphNode } from "comfyui-litegraph";
+import { LGraphCanvas, LGraph, LGraphNode, LiteGraph } from "comfyui-litegraph";
 import "comfyui-litegraph/css/litegraph.css"
 
 

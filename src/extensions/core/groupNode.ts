@@ -3,7 +3,7 @@ import { api } from "../../scripts/api";
 import { mergeIfValid } from "./widgetInputs";
 import { ManageGroupDialog } from "./groupNodeManage";
 import type { LGraphNode } from "comfyui-litegraph";
-import { LGraphCanvas } from "comfyui-litegraph";
+import { LGraphCanvas, LiteGraph } from "comfyui-litegraph";
 
 const GROUP = Symbol();
 

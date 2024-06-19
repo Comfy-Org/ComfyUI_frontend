@@ -27,7 +27,7 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
-    "comfyui-litegraph": "^0.11.8",
+    "comfyui-litegraph": "^0.11.9",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
   }

@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app";
-import { LGraphCanvas, LGraphNode, LGraphGroup } from "comfyui-litegraph";
+import { LGraphCanvas, LGraphNode, LGraphGroup, LiteGraph } from "comfyui-litegraph";
 
 // Shift + drag/resize to snap to grid
 

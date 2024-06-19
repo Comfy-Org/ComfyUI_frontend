@@ -1,5 +1,5 @@
 import { app, ANIM_PREVIEW_WIDGET } from "./app";
-import { LGraphCanvas, LGraphNode } from "comfyui-litegraph";
+import { LGraphCanvas, LGraphNode, LiteGraph } from "comfyui-litegraph";
 import type { Vector4 } from "comfyui-litegraph";
 
 
