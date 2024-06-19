@@ -44,3 +44,6 @@ core extensions will be loaded.
 ## Deploy
 
 Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout.
+
+## Breaking changes
+- api.api_url now adds a prefix `api/` to every url going through the method. If the custom node registers a new api endpoint but does not offer the `api/` prefixed alt endpoint, it will have issue. Luckily there aren't many extensions that do that. We can perform an audit before launching to resolve this issue.
