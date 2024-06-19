@@ -1,23 +1,35 @@
 # ComfyUI_frontend
 
-Front end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with existing extension system.
+Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with the existing extension system.
 
-## The grand migration to TypeScript
+## Road Map
 
-This repo is an experiment trying to migrate ComfyUI's front-end code to TypeScript for a better front-end development experience.
+### What has been done
 
-## Tasks
+- Migrate all code to TypeScript with minimal change modification to the original logic.
+- Bundle all code with vite's rollup build.
+- Added a shim layer to be backward compatible with the existing extension system. https://github.com/huchenlei/ComfyUI_frontend/pull/15
+- Front-end dev server.
+- Zod schema for input validation on ComfyUI workflow.
 
-- [x] Gradually migrate the code to TypeScript in this repo, while monitoring the change
-in ComfyUI's front-end code.
-- [ ] Using zod schema to add static/runtime type check for core structures.
-- [ ] Figure out a way to reliably embed compiled code to ComfyUI distribution.
+### What to be done
 
-  - It can be a bot regularly pulling the new changes in the front-end repo and submitting them to the main repo. (Chrome does a similar process for Chrome devtools, which is hosted in a separate repo.)
-
+- Make litegraph a npm dependency.
+- Replace the existing ComfyUI front-end impl.
+- Turn on `strict` on `tsconfig.json`.
+- Introduce react to start managing part of the UI.
+- Introduce a UI library to add more widget types for node developers.
+- LLM streaming node.
+- Linear mode (Similar to InvokeAI's linear mode).
+- Invoke AI canvas.
+- Better node search. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 
 ## Development
-Note: You need to patch comfyanonymous/ComfyUI#3779 for the dev server to work.
+
+Note1: You need to patch comfyanonymous/ComfyUI#3779 for the dev server to work.
+
+Note2: The dev server will NOT load any extension from the ComfyUI server. Only
+core extensions will be loaded.
 
 - Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
@@ -25,8 +37,10 @@ Note: You need to patch comfyanonymous/ComfyUI#3779 for the dev server to work.
 
 ## Test
 
-- `npm run build` to build the front end
-- `cd tests-ui`
-- `npm i` to install all test dependencies
-- `npm run test:generate` to fetch `data/object_info.json`
+- `npm i` to install all dependencies
+- `npm run test:generate` to fetch `tests-ui/data/object_info.json`
 - `npm run test` to execute all unit tests.
+
+## Deploy
+
+Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout.
