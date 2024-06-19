@@ -17,6 +17,7 @@ in ComfyUI's front-end code.
 
 
 ## Development
+Note: You need to patch comfyanonymous/ComfyUI#3779 for the dev server to work.
 
 - Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
