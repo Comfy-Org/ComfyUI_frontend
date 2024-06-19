@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
+import { LGraphCanvas } from "comfyui-litegraph";
 
 const MAX_HISTORY = 50;
 

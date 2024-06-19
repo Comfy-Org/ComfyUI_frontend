@@ -760,8 +760,7 @@ app.registerExtension({
 					BACKGROUND_IMAGE = base.BACKGROUND_IMAGE;
 					CLEAR_BACKGROUND_COLOR = base.CLEAR_BACKGROUND_COLOR;
 				}
-				// @ts-ignore
-				// litegraph.extensions.js
+
 				app.canvas.updateBackground(BACKGROUND_IMAGE, CLEAR_BACKGROUND_COLOR);
 			},
 		});
