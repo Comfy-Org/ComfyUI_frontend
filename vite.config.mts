@@ -83,6 +83,7 @@ export default defineConfig({
 				target: 'http://127.0.0.1:8188',
 				// Return empty array for extensions API as these modules
 				// are not on vite's dev server.
+				rewrite: (path) => path.replace(/^\/api/, ''),
 				bypass: (req, res, options) => {
 					if (req.url === '/api/extensions') {
 						res.end(JSON.stringify([]));
