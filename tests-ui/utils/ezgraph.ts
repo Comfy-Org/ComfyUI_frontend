@@ -1,4 +1,4 @@
-import { LiteGraph, LGraphCanvas } from "comfyui-litegraph";
+import type { LiteGraph, LGraphCanvas } from "comfyui-litegraph";
 
 /**
  * @typedef { import("./src/scripts/app")["app"] } app
@@ -403,9 +403,11 @@ export const Ez = {
 	 * graph.arrange();
 	 * @param { app } app
 	 * @param { boolean } clearGraph
+	 * @param { LG["LiteGraph"] } LiteGraph
+	 * @param { LG["LGraphCanvas"] } LGraphCanvas
 	 * @returns { { graph: EzGraph, ez: Record<string, EzNodeFactory> } }
 	 */
-	graph(app, clearGraph = true) {
+	graph(app, LiteGraph, LGraphCanvas, clearGraph = true) {
 		// Always set the active canvas so things work
 		LGraphCanvas.active_canvas = app.canvas;
 

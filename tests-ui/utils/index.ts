@@ -41,11 +41,12 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
 
 	mockApi(config);
 	const { app } = await import("../../src/scripts/app");
+	const { LiteGraph, LGraphCanvas } = await import("comfyui-litegraph");
 	config.preSetup?.(app);
 	await app.setup();
 
 	// @ts-ignore
-	return { ...Ez.graph(app), app };
+	return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app };
 }
 
 /**
