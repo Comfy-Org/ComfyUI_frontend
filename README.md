@@ -24,13 +24,11 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Invoke AI canvas.
 - Better node search. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 - Keybinding settings management. Register keybindings API for custom nodes.
-- New extensions API for adding UI related features.
+- New extensions API for adding UI-related features.
 
 ## Development
 
-Note1: You need to patch comfyanonymous/ComfyUI#3779 for the dev server to work.
-
-Note2: The dev server will NOT load any extension from the ComfyUI server. Only
+Note: The dev server will NOT load any extension from the ComfyUI server. Only
 core extensions will be loaded.
 
 - Run `npm install` to install the necessary packages
