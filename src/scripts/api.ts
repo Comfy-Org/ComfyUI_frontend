@@ -31,7 +31,11 @@ class ComfyApi extends EventTarget {
 		this.initialClientId = sessionStorage.getItem("clientId");
 	}
 
-	apiURL(route) {
+	apiURL(route: string): string {
+		return this.api_base + "/api" + route;
+	}
+
+	fileURL(route: string): string {
 		return this.api_base + route;
 	}
 

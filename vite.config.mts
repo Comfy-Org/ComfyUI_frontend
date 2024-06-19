@@ -2,6 +2,7 @@ import { defineConfig, Plugin } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path';
 
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 interface ShimResult {
 	code: string;
@@ -12,6 +13,9 @@ function comfyAPIPlugin(): Plugin {
 	return {
 		name: 'comfy-api-plugin',
 		transform(code: string, id: string) {
+			if (IS_DEV)
+				return null;
+
 			// TODO: Remove second condition after all js files are converted to ts
 			if (id.endsWith('.ts') || (id.endsWith('.js') && id.includes("extensions/core"))) {
 				const result = transformExports(code, id);
@@ -74,20 +78,29 @@ function getModuleName(id: string): string {
 
 export default defineConfig({
 	server: {
-		open: true,
 		proxy: {
-			// Proxy websocket requests to the server
-			'/': {
+			'/api': {
+				target: 'http://127.0.0.1:8188',
+				// Return empty array for extensions API as these modules
+				// are not on vite's dev server.
+				bypass: (req, res, options) => {
+					if (req.url === '/api/extensions') {
+						res.end(JSON.stringify([]));
+					}
+					return null;
+				},
+			},
+			'/ws': {
 				target: 'ws://127.0.0.1:8188',
 				ws: true,
-			}
+			},
 		}
 	},
 	plugins: [
 		comfyAPIPlugin(),
 		viteStaticCopy({
 			targets: [
-				{src: "src/lib/*", dest: "lib/"},
+				{ src: "src/lib/*", dest: "lib/" },
 			],
 		}),
 	],

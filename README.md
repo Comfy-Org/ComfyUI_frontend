@@ -18,8 +18,6 @@ in ComfyUI's front-end code.
 
 ## Development
 
-Currently the dev server does not work as the ws runs on root path '/', and all api endpoints are all defined on '/'. There might need to be some API changes before dev server can work.
-
 - Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server

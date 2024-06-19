@@ -1510,7 +1510,7 @@ export class ComfyApp {
 			.filter(extension => !extension.includes("extensions/core"))
 			.map(async ext => {
 				try {
-					await import(/* @vite-ignore */api.apiURL(ext));
+					await import(/* @vite-ignore */api.fileURL(ext));
 				} catch (error) {
 					console.error("Error loading extension", ext, error);
 				}

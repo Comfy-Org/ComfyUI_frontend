@@ -26,8 +26,8 @@ export interface APIConfig {
  */
 
 /**
- * @param {{ 
- * 	mockExtensions?: string[], 
+ * @param {{
+ * 	mockExtensions?: string[],
  * 	mockNodeDefs?: Record<string, ComfyObjectInfo>,
 * 	settings?: Record<string, string>
 * 	userConfig?: {storage: "server" | "browser", users?: Record<string, any>, migrated?: boolean },
@@ -59,6 +59,7 @@ export function mockApi(config: APIConfig = {}) {
 		getNodeDefs: jest.fn(() => mockNodeDefs),
 		init: jest.fn(),
 		apiURL: jest.fn((x) => "src/" + x),
+		fileURL: jest.fn((x) => "src/" + x),
 		createUser: jest.fn((username) => {
 			// @ts-ignore
 			if(username in userConfig.users) {
