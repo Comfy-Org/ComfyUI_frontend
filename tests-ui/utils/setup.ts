@@ -59,6 +59,7 @@ export function mockApi(config: APIConfig = {}) {
 		getNodeDefs: jest.fn(() => mockNodeDefs),
 		init: jest.fn(),
 		apiURL: jest.fn((x) => "src/" + x),
+		fileURL: jest.fn((x) => "src/" + x),
 		createUser: jest.fn((username) => {
 			// @ts-ignore
 			if(username in userConfig.users) {

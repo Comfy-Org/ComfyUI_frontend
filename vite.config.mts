@@ -76,18 +76,20 @@ export default defineConfig({
 	server: {
 		open: true,
 		proxy: {
-			// Proxy websocket requests to the server
-			'/': {
+			'/api': {
+				target: 'http://127.0.0.1:8188',
+			},
+			'/ws': {
 				target: 'ws://127.0.0.1:8188',
 				ws: true,
-			}
+			},
 		}
 	},
 	plugins: [
 		comfyAPIPlugin(),
 		viteStaticCopy({
 			targets: [
-				{src: "src/lib/*", dest: "lib/"},
+				{ src: "src/lib/*", dest: "lib/" },
 			],
 		}),
 	],
