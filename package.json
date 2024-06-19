@@ -28,6 +28,7 @@
     "vite-plugin-static-copy": "^1.0.5"
   },
   "dependencies": {
+    "comfyui-litegraph": "^0.11.4",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
   }
