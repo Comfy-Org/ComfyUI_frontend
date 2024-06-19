@@ -1,6 +1,3 @@
-// @ts-check
-/// <reference path="../../src/types/litegraph.d.ts" />
-
 /**
  * @typedef { import("./src/scripts/app")["app"] } app
  * @typedef { import("../../src/types/litegraph") } LG

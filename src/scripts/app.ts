@@ -9,7 +9,7 @@ import { createImageHost, calculateImageGrid } from "./ui/imagePreview"
 import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
-import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
+import type { LGraph, LGraphCanvas, LGraphNode } from "comfyui-litegraph";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"

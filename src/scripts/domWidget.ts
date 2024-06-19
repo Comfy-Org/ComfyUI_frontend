@@ -1,5 +1,5 @@
 import { app, ANIM_PREVIEW_WIDGET } from "./app";
-import type { LGraphNode, Vector4 } from "/types/litegraph";
+import type { LGraphNode, Vector4 } from "comfyui-litegraph";
 
 
 const SIZE = Symbol();

@@ -2,7 +2,7 @@ import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import { mergeIfValid } from "./widgetInputs";
 import { ManageGroupDialog } from "./groupNodeManage";
-import type { LGraphNode } from "/types/litegraph";
+import type { LGraphNode } from "comfyui-litegraph";
 
 const GROUP = Symbol();
 
