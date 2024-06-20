@@ -1,5 +1,4 @@
 import { app } from "../../scripts/app";
-import { LGraphCanvas, LGraphNode, LGraphGroup, LiteGraph } from "comfyui-litegraph";
 
 // Shift + drag/resize to snap to grid
 
@@ -70,14 +69,12 @@ app.registerExtension({
 
 				let w, h;
 				if (node.flags.collapsed) {
-					// @ts-ignore
 					w = node._collapsed_width;
 					h = LiteGraph.NODE_TITLE_HEIGHT;
 					shiftY -= LiteGraph.NODE_TITLE_HEIGHT;
 				} else {
 					w = node.size[0];
 					h = node.size[1];
-					// @ts-ignore
 					let titleMode = node.constructor.title_mode;
 					if (titleMode !== LiteGraph.TRANSPARENT_TITLE && titleMode !== LiteGraph.NO_TITLE) {
 						h += LiteGraph.NODE_TITLE_HEIGHT;
@@ -97,7 +94,7 @@ app.registerExtension({
   		 * The currently moving, selected group only. Set after the `selected_group` has actually started
 		 * moving.
    		 */
-		let selectedAndMovingGroup: LGraphGroup | null = null;
+		let selectedAndMovingGroup = null;
 
 		/**
   		 * Handles moving a group; tracking when a group has been moved (to show the ghost in `drawGroups`
@@ -144,13 +141,11 @@ app.registerExtension({
 				if (this.selected_group_resizing) {
 					roundVectorToGrid(this.selected_group.size);
 				} else if (selectedAndMovingGroup) {
-					// @ts-ignore
 					const [x, y] = roundVectorToGrid([...selectedAndMovingGroup.pos]);
 					const f = ctx.fillStyle;
 					const s = ctx.strokeStyle;
 					ctx.fillStyle = "rgba(100, 100, 100, 0.33)";
 					ctx.strokeStyle = "rgba(100, 100, 100, 0.66)";
-					// @ts-ignore
 					ctx.rect(x, y, ...selectedAndMovingGroup.size);
 					ctx.fill();
 					ctx.stroke();

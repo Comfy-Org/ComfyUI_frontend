@@ -1,4 +1,3 @@
-import { LiteGraph } from "comfyui-litegraph";
 import {app} from "../../scripts/app";
 import {ComfyWidgets} from "../../scripts/widgets";
 // Node that add notes to your project
