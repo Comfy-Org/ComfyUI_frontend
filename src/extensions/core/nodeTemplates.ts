@@ -2,7 +2,6 @@ import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import { ComfyDialog, $el } from "../../scripts/ui";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
-import { LGraphCanvas } from "comfyui-litegraph";
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:

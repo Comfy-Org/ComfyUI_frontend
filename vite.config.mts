@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path';
 
 const IS_DEV = process.env.NODE_ENV === 'development';
@@ -97,6 +98,11 @@ export default defineConfig({
 	},
 	plugins: [
 		comfyAPIPlugin(),
+		viteStaticCopy({
+			targets: [
+				{ src: "src/lib/*", dest: "lib/" },
+			],
+		}),
 	],
 	build: {
 		minify: false,

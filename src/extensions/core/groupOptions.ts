@@ -1,5 +1,4 @@
 import {app} from "../../scripts/app";
-import { LGraphCanvas, LiteGraph } from "comfyui-litegraph";
 
 function setNodeMode(node, mode) {
     node.mode = mode;
