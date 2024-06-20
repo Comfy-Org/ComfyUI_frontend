@@ -1,6 +1,7 @@
 import { ComfyWidgets, addValueControlWidgets } from "../../scripts/widgets";
 import { app } from "../../scripts/app";
 import { applyTextReplacements } from "../../scripts/utils";
+import { LiteGraph } from "comfyui-litegraph";
 
 const CONVERTED_TYPE = "converted-widget";
 const VALID_TYPES = ["STRING", "combo", "number", "BOOLEAN"];

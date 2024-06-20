@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app";
 import { mergeIfValid, getWidgetConfig, setWidgetConfig } from "./widgetInputs";
+import { LiteGraph, LGraphCanvas } from "comfyui-litegraph";
 
 // Node that allows you to redirect connections for cleaner graphs
 
