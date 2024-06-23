@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && jest",
     "test:generate": "npx tsx tests-ui/setup",
+    "test:browser": "npx playwright test",
     "preview": "vite preview"
   },
   "devDependencies": {
