@@ -1,4 +1,6 @@
 import type { Page, Locator } from '@playwright/test';
+import dotenv from "dotenv";
+dotenv.config();
 
 interface Position {
   x: number;
@@ -16,9 +18,8 @@ export class ComfyPage {
 
   constructor(
     public readonly page: Page,
-    url: string = 'http://localhost:5173/'
   ) {
-    this.url = url;
+    this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188';
     this.canvas = page.locator('#graph-canvas');
     this.widgetTextBox = page.getByPlaceholder('text').nth(1);
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' });
