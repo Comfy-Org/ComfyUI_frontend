@@ -25,3 +25,9 @@ dist-ssr
 
 # Ignore test data.
 tests-ui/data/*
+
+# Browser tests
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

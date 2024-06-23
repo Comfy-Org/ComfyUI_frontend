@@ -14,7 +14,9 @@
   "devDependencies": {
     "@babel/core": "^7.24.7",
     "@babel/preset-env": "^7.22.20",
+    "@playwright/test": "^1.44.1",
     "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.8",
     "babel-plugin-transform-import-meta": "^2.2.1",
     "babel-plugin-transform-rename-import": "^2.3.0",
     "identity-obj-proxy": "^3.0.0",
