@@ -32,4 +32,9 @@ test.describe('Node Interaction', () => {
     await comfyPage.clickTextEncodeNode2();
     await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png');
   });
+
+  test('Can drag node', async ({ comfyPage }) => {
+    await comfyPage.dragNode2();
+    await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png');
+  });
 });

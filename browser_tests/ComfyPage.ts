@@ -1,5 +1,10 @@
 import type { Page, Locator } from '@playwright/test';
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 export class ComfyPage {
   public readonly url: string;
   // All canvas position operations are based on default view of canvas.
@@ -61,6 +66,22 @@ export class ComfyPage {
         y: 31
       }
     });
+    await this.nextFrame();
+  }
+
+  async dragAndDrop(source: Position, target: Position) {
+    await this.page.mouse.move(source.x, source.y);
+    await this.page.mouse.down();
+    await this.page.mouse.move(target.x, target.y);
+    await this.page.mouse.up();
+    await this.nextFrame();
+  }
+
+  async dragNode2() {
+    await this.dragAndDrop(
+      { x: 622, y: 400 },
+      { x: 622, y: 300 },
+    );
     await this.nextFrame();
   }
 }
