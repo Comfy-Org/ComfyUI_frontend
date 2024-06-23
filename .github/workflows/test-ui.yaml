@@ -1,8 +1,10 @@
 name: Tests CI
 
 on:
-  - push
-  - pull_request
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
 jobs:
   test:
@@ -21,7 +23,7 @@ jobs:
         path: "ComfyUI_frontend"
     - uses: actions/setup-node@v3
       with:
-        node-version: 18
+        node-version: lts/*
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10'
@@ -32,14 +34,31 @@ jobs:
         pip install -r requirements.txt
         pip install wait-for-it
       working-directory: ComfyUI
+    - name: Build & Install ComfyUI_frontend
+      run: |
+        npm ci
+        npm run build
+        rm -rf ../ComfyUI/web/*
+        mv dist/* ../ComfyUI/web/
+      working-directory: ComfyUI_frontend
     - name: Start ComfyUI server
       run: |
         python main.py --cpu &
+        wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
     - name: Run UI tests
       run: |
-        wait-for-it --service 127.0.0.1:8188 -t 600
-        npm ci
         npm run test:generate
         npm test -- --verbose
       working-directory: ComfyUI_frontend
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run Playwright tests
+      run: npx playwright test
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+
