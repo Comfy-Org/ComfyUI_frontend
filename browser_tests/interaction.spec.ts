@@ -75,4 +75,9 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.zoom(200);
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out.png');
   });
+
+  test('Can pan', async ({ comfyPage }) => {
+    await comfyPage.pan({ x: 200, y: 200 });
+    await expect(comfyPage.canvas).toHaveScreenshot('panned.png');
+  });
 });

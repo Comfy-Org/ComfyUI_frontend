@@ -125,4 +125,12 @@ export class ComfyPage {
     await this.page.mouse.wheel(0, deltaY);
     await this.nextFrame();
   }
+
+  async pan(offset: Position) {
+    await this.page.mouse.move(10, 10);
+    await this.page.mouse.down();
+    await this.page.mouse.move(offset.x, offset.y);
+    await this.page.mouse.up();
+    await this.nextFrame();
+  }
 }
