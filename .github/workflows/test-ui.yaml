@@ -64,7 +64,9 @@ jobs:
       run: npx playwright install --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests
+      id: playwright-tests
       run: npx playwright test
+      continue-on-error: true
       working-directory: ComfyUI_frontend
     - uses: actions/upload-artifact@v4
       if: always()
@@ -73,7 +75,7 @@ jobs:
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
     - name: Commit updated expectations
-      if: contains(github.event.pull_request.labels.*.name, 'New Browser Test Expectations')
+      if: steps.playwright-tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'New Browser Test Expectations')
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
