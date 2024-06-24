@@ -1,14 +1,16 @@
-name: Tests CI
+# Setting test expectation screenshots for Playwright
+
+name: Update Playwright Expectations
 
 on:
-  push:
-    branches: [ main, master ]
   pull_request:
+    types: [ labeled ]
     branches: [ main, master ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    if: github.event.label.name == 'New Browser Test Expectations'
     steps:
     - name: Checkout ComfyUI
       uses: actions/checkout@v4
@@ -21,15 +23,7 @@ jobs:
       with:
         repository: "huchenlei/ComfyUI_frontend"
         path: "ComfyUI_frontend"
-    - name: Get commit message
-      id: commit-message
-      run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
-      working-directory: ComfyUI_frontend
-    - name: Skip CI
-      if: contains(steps.commit-message.outputs.message, '[skip ci]')
-      run: echo "Skipping CI as commit contains '[skip ci]'"
-      continue-on-error: true
-      working-directory: ComfyUI_frontend
+        ref: ${{ github.head_ref }}
     - uses: actions/setup-node@v3
       with:
         node-version: lts/*
@@ -55,16 +49,13 @@ jobs:
         python main.py --cpu &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
-    - name: Run UI tests
-      run: |
-        npm run test:generate
-        npm test -- --verbose
-      working-directory: ComfyUI_frontend
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
       working-directory: ComfyUI_frontend
-    - name: Run Playwright tests
-      run: npx playwright test
+    - name: Run Playwright tests and update snapshots
+      id: playwright-tests
+      run: npx playwright test --update-snapshots
+      continue-on-error: true
       working-directory: ComfyUI_frontend
     - uses: actions/upload-artifact@v4
       if: always()
@@ -72,3 +63,16 @@ jobs:
         name: playwright-report
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
+    - name: Debugging info
+      run: |
+        echo "Branch: ${{ github.head_ref }}"
+        git status
+      working-directory: ComfyUI_frontend
+    - name: Commit updated expectations
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add browser_tests
+        git commit -m "Update test expectations [skip ci]"
+        git push origin HEAD:${{ github.head_ref }}
+      working-directory: ComfyUI_frontend
