@@ -5,6 +5,11 @@ const test = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page }, use) => {
     const comfyPage = new ComfyPage(page);
     await comfyPage.goto();
+    // Unify font for consistent screenshots.
+    await page.addStyleTag({
+      url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+    });
+    await page.waitForFunction(() => document.fonts.ready);
     await page.waitForFunction(() => window['app'] != undefined);
     await page.evaluate(() => { window['app']['canvas'].show_info = false; });
     await comfyPage.nextFrame();
