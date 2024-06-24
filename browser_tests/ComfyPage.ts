@@ -85,4 +85,13 @@ export class ComfyPage {
     );
     await this.nextFrame();
   }
+
+  async disconnectEdge() {
+    // CLIP input anchor
+    await this.page.mouse.move(427, 198);
+    await this.page.mouse.down();
+    await this.page.mouse.move(427, 98);
+    await this.page.mouse.up();
+    await this.nextFrame();
+  }
 }

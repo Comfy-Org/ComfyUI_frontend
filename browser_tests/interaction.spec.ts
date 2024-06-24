@@ -53,4 +53,9 @@ test.describe('Node Interaction', () => {
     await comfyPage.dragNode2();
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png');
   });
+
+  test('Can disconnect edge', async ({ comfyPage }) => {
+    await comfyPage.disconnectEdge();
+    await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png');
+  });
 });
