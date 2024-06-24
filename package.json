@@ -9,12 +9,15 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && jest",
     "test:generate": "npx tsx tests-ui/setup",
+    "test:browser": "npx playwright test",
     "preview": "vite preview"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",
     "@babel/preset-env": "^7.22.20",
+    "@playwright/test": "^1.44.1",
     "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.8",
     "babel-plugin-transform-import-meta": "^2.2.1",
     "babel-plugin-transform-rename-import": "^2.3.0",
     "identity-obj-proxy": "^3.0.0",
@@ -28,6 +31,7 @@
     "vite-plugin-static-copy": "^1.0.5"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
   }

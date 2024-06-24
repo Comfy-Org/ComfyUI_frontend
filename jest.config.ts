@@ -1,6 +1,7 @@
 import type { JestConfigWithTsJest } from "ts-jest";
 
 const jestConfig: JestConfigWithTsJest = {
+	testMatch: ["**/tests-ui/**/*.test.ts"],
 	testEnvironment: "jsdom",
 	transform: {
 		'^.+\\.m?[tj]sx?$': ["ts-jest", {
