@@ -136,6 +136,11 @@ export class ComfyPage {
     await this.page.mouse.up();
     await this.nextFrame();
   }
+
+  async rightClickCanvas() {
+    await this.page.mouse.click(10, 10, { button: 'right' });
+    await this.nextFrame();
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
