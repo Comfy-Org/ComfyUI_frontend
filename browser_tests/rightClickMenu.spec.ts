@@ -33,4 +33,12 @@ test.describe('Node Right Click Menu', () => {
         await comfyPage.nextFrame();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-properties-panel.png');
     });
+
+    test('Can collapse', async ({ comfyPage }) => {
+        await comfyPage.rightClickEmptyLatentNode();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
+        await comfyPage.page.getByText('Collapse').click();
+        await comfyPage.nextFrame();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-collapsed.png');
+    });
 });
