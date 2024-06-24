@@ -21,6 +21,15 @@ jobs:
       with:
         repository: "huchenlei/ComfyUI_frontend"
         path: "ComfyUI_frontend"
+    - name: Get commit message
+      id: commit-message
+      run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
+      working-directory: ComfyUI_frontend
+    - name: Skip CI
+      if: contains(steps.commit-message.outputs.message, '[skip ci]')
+      run: echo "Skipping CI as commit contains '[skip ci]'"
+      continue-on-error: true
+      working-directory: ComfyUI_frontend
     - uses: actions/setup-node@v3
       with:
         node-version: lts/*
@@ -63,3 +72,12 @@ jobs:
         name: playwright-report
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
+    - name: Commit updated expectations
+      if: contains(github.event.pull_request.labels.*.name, 'New Browser Test Expectations')
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add browser_tests
+        git commit -m "Update test expectations [skip ci]"
+        git push
+      working-directory: ComfyUI_frontend
