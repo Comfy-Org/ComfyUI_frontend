@@ -61,4 +61,9 @@ test.describe('Node Interaction', () => {
     // Litegraph renders edge with a slight offset.
     await expect(comfyPage.canvas).toHaveScreenshot('default.png', { maxDiffPixels: 50 });
   });
+
+  test('Can adjust widget value', async ({ comfyPage }) => {
+    await comfyPage.adjustWidgetValue();
+    await expect(comfyPage.canvas).toHaveScreenshot('adjusted-widget-value.png');
+  });
 });

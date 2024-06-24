@@ -104,4 +104,19 @@ export class ComfyPage {
     await this.page.mouse.up();
     await this.nextFrame();
   }
+
+  async adjustWidgetValue() {
+    // Adjust Empty Latent Image's width input.
+    const page = this.page;
+    await page.locator('#graph-canvas').click({
+      position: {
+        x: 724,
+        y: 645
+      }
+    });
+    await page.locator('input[type="text"]').click();
+    await page.locator('input[type="text"]').fill('128');
+    await page.locator('input[type="text"]').press('Enter');
+    await this.nextFrame();
+  }
 }
