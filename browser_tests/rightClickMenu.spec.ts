@@ -49,4 +49,14 @@ test.describe('Node Right Click Menu', () => {
         await comfyPage.nextFrame();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-bypassed.png');
     });
+
+    test('Can convert widget to input', async ({ comfyPage }) => {
+        await comfyPage.rightClickEmptyLatentNode();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
+        await comfyPage.page.getByText('Convert Widget to Input').click();
+        await comfyPage.nextFrame();
+        await comfyPage.page.getByText('Convert width to input').click();
+        await comfyPage.nextFrame();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-widget-converted.png');
+    });
 });
