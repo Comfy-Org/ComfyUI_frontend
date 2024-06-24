@@ -113,4 +113,7 @@ export default defineConfig({
 			treeshake: false
 		}
 	},
+	define: {
+		'__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
+	},
 });
