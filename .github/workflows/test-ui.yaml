@@ -21,6 +21,7 @@ jobs:
       with:
         repository: "huchenlei/ComfyUI_frontend"
         path: "ComfyUI_frontend"
+        ref: ${{ github.head_ref }}
     - name: Get commit message
       id: commit-message
       run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
@@ -74,12 +75,18 @@ jobs:
         name: playwright-report
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
+    - name: Debugging info
+      run: |
+        echo "Branch: ${{ github.head_ref }}"
+        git status
+      working-directory: ComfyUI_frontend
     - name: Commit updated expectations
       if: steps.playwright-tests.outcome == 'failure' && contains(github.event.pull_request.labels.*.name, 'New Browser Test Expectations')
+      # Pushes back to the source branch of the PR
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
         git add browser_tests
         git commit -m "Update test expectations [skip ci]"
-        git push
+        git push origin HEAD:${{ github.head_ref }}
       working-directory: ComfyUI_frontend
