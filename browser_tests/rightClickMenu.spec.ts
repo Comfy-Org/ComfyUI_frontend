@@ -26,5 +26,11 @@ test.describe('Canvas Right Click Menu', () => {
 });
 
 test.describe('Node Right Click Menu', () => {
-
+    test('Can open properties panel', async ({ comfyPage }) => {
+        await comfyPage.rightClickEmptyLatentNode();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
+        await comfyPage.page.getByText('Properties Panel').click();
+        await comfyPage.nextFrame();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-properties-panel.png');
+    });
 });
