@@ -41,7 +41,7 @@ test.describe('Node Interaction', () => {
   });
 
   test('Can highlight selected', async ({ comfyPage }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('deselected-node.png');
+    await expect(comfyPage.canvas).toHaveScreenshot('default.png');
     await comfyPage.clickTextEncodeNode1();
     await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png');
     await comfyPage.clickTextEncodeNode2();
@@ -54,8 +54,11 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png');
   });
 
-  test('Can disconnect edge', async ({ comfyPage }) => {
+  test('Can disconnect/connect edge', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge();
-    await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png');
+    await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge-with-menu.png');
+    await comfyPage.connectEdge();
+    // Litegraph renders edge with a slight offset.
+    await expect(comfyPage.canvas).toHaveScreenshot('default.png', { maxDiffPixels: 50 });
   });
 });

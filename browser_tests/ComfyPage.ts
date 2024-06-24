@@ -94,4 +94,14 @@ export class ComfyPage {
     await this.page.mouse.up();
     await this.nextFrame();
   }
+
+  async connectEdge() {
+    // CLIP output anchor on Load Checkpoint Node.
+    await this.page.mouse.move(332, 509);
+    await this.page.mouse.down();
+    // CLIP input anchor on CLIP Text Encode Node.
+    await this.page.mouse.move(427, 198);
+    await this.page.mouse.up();
+    await this.nextFrame();
+  }
 }
