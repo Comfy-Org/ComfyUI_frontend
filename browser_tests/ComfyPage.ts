@@ -119,4 +119,10 @@ export class ComfyPage {
     await page.locator('input[type="text"]').press('Enter');
     await this.nextFrame();
   }
+
+  async zoom(deltaY: number) {
+    await this.page.mouse.move(10, 10);
+    await this.page.mouse.wheel(0, deltaY);
+    await this.nextFrame();
+  }
 }

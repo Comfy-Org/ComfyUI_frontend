@@ -67,3 +67,12 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('adjusted-widget-value.png');
   });
 });
+
+test.describe('Canvas Interaction', () => {
+  test('Can zoom in/out', async ({ comfyPage }) => {
+    await comfyPage.zoom(-100);
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-in.png');
+    await comfyPage.zoom(200);
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out.png');
+  });
+});
