@@ -150,6 +150,7 @@ export class ComfyPage {
       },
       button: 'right'
     });
+    this.page.mouse.move(10, 10);
     await this.nextFrame();
   }
 }

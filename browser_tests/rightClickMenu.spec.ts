@@ -41,4 +41,12 @@ test.describe('Node Right Click Menu', () => {
         await comfyPage.nextFrame();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-collapsed.png');
     });
+
+    test('Can bypass', async ({ comfyPage }) => {
+        await comfyPage.rightClickEmptyLatentNode();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
+        await comfyPage.page.getByText('Bypass').click();
+        await comfyPage.nextFrame();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-bypassed.png');
+    });
 });
