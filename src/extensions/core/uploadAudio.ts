@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import type { IWidget } from "/types/litegraph";
+import type { DOMWidget } from "/scripts/domWidget";
 
 
 function getResourceURL(path: string): string {
@@ -22,13 +23,13 @@ function getResourceURL(path: string): string {
 	return `/view?${params}`;
 }
 
-function updateAudio(audioUIWidget: IWidget, audioFilePath: string) {
-	audioUIWidget.property["sourceElement"].src = api.apiURL(getResourceURL(audioFilePath));
+function updateAudio(audioUIWidget: DOMWidget<HTMLAudioElement>, audioFilePath: string) {
+	audioUIWidget.element.src = api.apiURL(getResourceURL(audioFilePath));
 }
 
 async function uploadFile(
 	audioWidget: IWidget,
-	audioUIWidget: IWidget,
+	audioUIWidget: DOMWidget<HTMLAudioElement>,
 	file: File,
 	updateNode: boolean,
 	pasted: boolean = false
@@ -65,6 +66,32 @@ async function uploadFile(
 	}
 }
 
+// AudioWidget MUST be registered first, as AUDIOUPLOAD depends on AUDIO_UI to be
+// present.
+app.registerExtension({
+	name: "Comfy.AudioWidget",
+	async beforeRegisterNodeDef(nodeType, nodeData) {
+		if (["LoadAudio", "SaveAudio"].includes(nodeType.comfyClass)) {
+			nodeData.input.required.audioUI = ["AUDIO_UI"];
+		}
+	},
+	getCustomWidgets() {
+		return {
+			AUDIO_UI(node, inputName: string) {
+				const audio = document.createElement("audio");
+				audio.controls = true;
+				audio.classList.add("comfy-audio");
+				audio.setAttribute("name", "media");
+
+				const audioUIWidget = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
+				audioUIWidget.serialize = false;
+
+				return { widget: audioUIWidget };
+			}
+		}
+	},
+});
+
 app.registerExtension({
 	name: "Comfy.UploadAudio",
 	async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -77,7 +104,7 @@ app.registerExtension({
 			AUDIOUPLOAD(node, inputName: string) {
 				// The widget that allows user to select file.
 				const audioWidget: IWidget = node.widgets.find((w: IWidget) => w.name === "audio");
-				const audioUIWidget: IWidget = node.widgets.find((w: IWidget) => w.name === "audioUI");
+				const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find((w: IWidget) => w.name === "audioUI");
 
 				audioWidget.callback = function () {
 					updateAudio(audioUIWidget, audioWidget.value);
@@ -100,30 +127,6 @@ app.registerExtension({
 				uploadWidget.serialize = false;
 
 				return { widget: uploadWidget };
-			}
-		}
-	},
-});
-
-app.registerExtension({
-	name: "Comfy.AudioWidget",
-	async beforeRegisterNodeDef(nodeType, nodeData) {
-		if (["LoadAudio", "SaveAudio"].includes(nodeType.comfyClass)) {
-			nodeData.input.required.audioUI = ["AUDIO_UI"];
-		}
-	},
-	getCustomWidgets() {
-		return {
-			AUDIO_UI(node, inputName: string) {
-				const audio = document.createElement("audio");
-				audio.controls = true;
-				audio.classList.add("comfy-audio");
-				audio.setAttribute("name", "media");
-
-				const audioUIWidget = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
-				audioUIWidget.serialize = false;
-
-				return { widget: audioUIWidget };
 			}
 		}
 	},
