@@ -3,28 +3,26 @@ import { api } from "../../scripts/api";
 import type { IWidget } from "/types/litegraph";
 import type { DOMWidget } from "/scripts/domWidget";
 
+type FolderType = "input" | "output" | "temp";
 
-function getResourceURL(path: string): string {
-	let folder_separator = path.lastIndexOf("/");
-	let subfolder = "";
-	if (folder_separator > -1) {
-		subfolder = path.substring(0, folder_separator);
-		path = path.substring(folder_separator + 1);
+function splitFilePath(path: string): [string, string] {
+	const folder_separator = path.lastIndexOf("/");
+	if (folder_separator === -1) {
+		return ["", path];
 	}
+	return [path.substring(0, folder_separator), path.substring(folder_separator + 1)];
+}
 
+function getResourceURL(filename: string, subfolder: string, type: FolderType = "input"): string {
 	const params = [
-		"filename=" + encodeURIComponent(path),
-		"type=input",
+		"filename=" + encodeURIComponent(filename),
+		"type=" + type,
 		"subfolder=" + subfolder,
 		app.getPreviewFormatParam().substring(1),
 		app.getRandParam().substring(1),
 	].join("&");
 
 	return `/view?${params}`;
-}
-
-function updateAudio(audioUIWidget: DOMWidget<HTMLAudioElement>, audioFilePath: string) {
-	audioUIWidget.element.src = api.apiURL(getResourceURL(audioFilePath));
 }
 
 async function uploadFile(
@@ -55,7 +53,7 @@ async function uploadFile(
 			}
 
 			if (updateNode) {
-				updateAudio(audioUIWidget, path);
+				audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(path)));
 				audioWidget.value = path;
 			}
 		} else {
@@ -86,6 +84,17 @@ app.registerExtension({
 				const audioUIWidget = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
 				audioUIWidget.serialize = false;
 
+				const isOutputNode = node.constructor.nodeData.output_node;
+				if (isOutputNode) {
+					const onExecuted = node.onExecuted;
+					node.onExecuted = function (message) {
+						onExecuted?.apply(this, arguments);
+						const audios = message.audio;
+						if (!audios) return;
+						const audio = audios[0];
+						audioUIWidget.element.src= api.apiURL(getResourceURL(audio.filename, audio.subfolder, "output"));
+					}
+				}
 				return { widget: audioUIWidget };
 			}
 		}
@@ -107,7 +116,7 @@ app.registerExtension({
 				const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find((w: IWidget) => w.name === "audioUI");
 
 				audioWidget.callback = function () {
-					updateAudio(audioUIWidget, audioWidget.value);
+					audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(audioWidget.value)));
 				}
 
 				const fileInput = document.createElement("input");
