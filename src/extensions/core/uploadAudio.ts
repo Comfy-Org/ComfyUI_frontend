@@ -13,7 +13,7 @@ function splitFilePath(path: string): [string, string] {
   return [path.substring(0, folder_separator), path.substring(folder_separator + 1)];
 }
 
-function getResourceURL(filename: string, subfolder: string, type: FolderType = "input"): string {
+function getResourceURL(subfolder: string, filename: string, type: FolderType = "input"): string {
   const params = [
     "filename=" + encodeURIComponent(filename),
     "type=" + type,
@@ -92,7 +92,7 @@ app.registerExtension({
             const audios = message.audio;
             if (!audios) return;
             const audio = audios[0];
-            audioUIWidget.element.src= api.apiURL(getResourceURL(audio.filename, audio.subfolder, "output"));
+            audioUIWidget.element.src= api.apiURL(getResourceURL(audio.subfolder, audio.filename, "output"));
           }
         }
         return { widget: audioUIWidget };
