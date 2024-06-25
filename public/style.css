@@ -557,3 +557,7 @@ dialog::backdrop {
 		border-top: none;
 	}
 }
+
+.comfy-audio::-webkit-media-controls-panel {
+	background-color: var(--descrip-text);
+}
