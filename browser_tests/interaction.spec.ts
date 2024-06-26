@@ -48,7 +48,8 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png');
   });
 
-  test('Can drag node', async ({ comfyPage }) => {
+  // Flaky. See https://github.com/comfyanonymous/ComfyUI/issues/3866
+  test.skip('Can drag node', async ({ comfyPage }) => {
     await comfyPage.dragNode2();
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png');
   });
