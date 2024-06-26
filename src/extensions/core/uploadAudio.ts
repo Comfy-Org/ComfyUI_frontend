@@ -81,11 +81,16 @@ app.registerExtension({
         audio.classList.add("comfy-audio");
         audio.setAttribute("name", "media");
 
-        const audioUIWidget = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
+        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
+        // @ts-ignore
+        // TODO: Sort out the DOMWidget type.
         audioUIWidget.serialize = false;
 
         const isOutputNode = node.constructor.nodeData.output_node;
         if (isOutputNode) {
+          // Hide the audio widget when there is no audio initially.
+          audioUIWidget.element.classList.add("empty-audio-widget");
+          // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted;
           node.onExecuted = function (message) {
             onExecuted?.apply(this, arguments);
@@ -93,6 +98,7 @@ app.registerExtension({
             if (!audios) return;
             const audio = audios[0];
             audioUIWidget.element.src= api.apiURL(getResourceURL(audio.subfolder, audio.filename, "output"));
+            audioUIWidget.element.classList.remove("empty-audio-widget");
           }
         }
         return { widget: audioUIWidget };
