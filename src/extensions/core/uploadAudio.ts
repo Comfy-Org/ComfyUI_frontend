@@ -121,9 +121,12 @@ app.registerExtension({
         const audioWidget: IWidget = node.widgets.find((w: IWidget) => w.name === "audio");
         const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find((w: IWidget) => w.name === "audioUI");
 
-        audioWidget.callback = function () {
+        const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(audioWidget.value)));
-        }
+        };
+        // Initially load default audio file to audioUIWidget.
+        onAudioWidgetUpdate();
+        audioWidget.callback = onAudioWidgetUpdate;
 
         const fileInput = document.createElement("input");
         fileInput.type = "file";
