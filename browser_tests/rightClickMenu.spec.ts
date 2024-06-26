@@ -2,7 +2,9 @@ import { expect } from '@playwright/test';
 import { comfyPageFixture as test } from './ComfyPage';
 
 test.describe('Canvas Right Click Menu', () => {
-    test('Can add node', async ({ comfyPage }) => {
+    // See https://github.com/comfyanonymous/ComfyUI/issues/3883
+    // Right-click menu on canvas's option sequence is not stable.
+    test.skip('Can add node', async ({ comfyPage }) => {
         await comfyPage.rightClickCanvas();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png');
         await comfyPage.page.getByText('Add Node').click();
@@ -16,7 +18,9 @@ test.describe('Canvas Right Click Menu', () => {
         await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png');
     });
 
-    test('Can add group', async ({ comfyPage }) => {
+    // See https://github.com/comfyanonymous/ComfyUI/issues/3883
+    // Right-click menu on canvas's option sequence is not stable.
+    test.skip('Can add group', async ({ comfyPage }) => {
         await comfyPage.rightClickCanvas();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png');
         await comfyPage.page.getByText('Add Group', { exact: true }).click();
@@ -54,7 +58,9 @@ test.describe('Node Right Click Menu', () => {
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-collapsed.png');
     });
 
-    test('Can bypass', async ({ comfyPage }) => {
+    // See https://github.com/Comfy-Org/ComfyUI_frontend/pull/57
+    // Bypass produces different output on Windows VS Linux.
+    test.skip('Can bypass', async ({ comfyPage }) => {
         await comfyPage.rightClickEmptyLatentNode();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
         await comfyPage.page.getByText('Bypass').click();
