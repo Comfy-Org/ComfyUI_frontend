@@ -59,6 +59,8 @@ test.describe('Node Right Click Menu', () => {
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
         await comfyPage.page.getByText('Bypass').click();
         await comfyPage.nextFrame();
+        await comfyPage.nextFrame();
+        await comfyPage.nextFrame();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-bypassed.png');
     });
 
