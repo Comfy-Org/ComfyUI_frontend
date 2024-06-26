@@ -23,6 +23,18 @@ test.describe('Canvas Right Click Menu', () => {
         await comfyPage.nextFrame();
         await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png');
     });
+
+    test('Can convert to group node', async ({ comfyPage }) => {
+        await comfyPage.select2Nodes();
+        await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png');
+        comfyPage.page.on('dialog', async dialog => {
+            await dialog.accept("GroupNode2CLIP");
+        });
+        await comfyPage.rightClickCanvas();
+        await comfyPage.page.getByText('Convert to Group Node').click();
+        await comfyPage.nextFrame();
+        await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-group-node.png');
+    });
 });
 
 test.describe('Node Right Click Menu', () => {

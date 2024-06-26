@@ -153,6 +153,15 @@ export class ComfyPage {
     this.page.mouse.move(10, 10);
     await this.nextFrame();
   }
+
+  async select2Nodes() {
+    // Select 2 CLIP nodes.
+    await this.page.keyboard.down('Control');
+    await this.clickTextEncodeNode1();
+    await this.clickTextEncodeNode2();
+    await this.page.keyboard.up('Control');
+    await this.nextFrame();
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
