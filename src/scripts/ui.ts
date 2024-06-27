@@ -3,6 +3,7 @@ import { ComfyDialog as _ComfyDialog } from "./ui/dialog";
 import { toggleSwitch } from "./ui/toggleSwitch";
 import { ComfySettingsDialog } from "./ui/settings";
 import { ComfyApp, app } from "./app";
+import { HistoryTaskItem, TaskItem } from "/types/apiTypes";
 
 export const ComfyDialog = _ComfyDialog;
 
@@ -221,9 +222,9 @@ class ComfyList {
 					textContent: section,
 				}),
 				$el("div.comfy-list-items", [
-					...(this.#reverse ? items[section].reverse() : items[section]).map((item) => {
+					...(this.#reverse ? items[section].reverse() : items[section]).map((item: TaskItem) => {
 						// Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-						const removeAction = item.remove || {
+						const removeAction = "remove" in item ? item.remove : {
 							name: "Delete",
 							cb: () => api.deleteItem(this.#type, item.prompt[1]),
 						};
@@ -232,7 +233,7 @@ class ComfyList {
 								textContent: "Load",
 								onclick: async () => {
 									await app.loadGraphData(item.prompt[3].extra_pnginfo.workflow, true, false);
-									if (item.outputs) {
+									if ("outputs" in item) {
 										app.nodeOutputs = item.outputs;
 									}
 								},

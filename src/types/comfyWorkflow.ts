@@ -90,7 +90,7 @@ const zExtra = z.object({
     info: zInfo.optional(),
 }).passthrough();
 
-const zComfyWorkflow = z.object({
+export const zComfyWorkflow = z.object({
     last_node_id: z.number(),
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),

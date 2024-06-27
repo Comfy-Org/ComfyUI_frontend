@@ -1,3 +1,6 @@
+import { HistoryTaskItem, PendingTaskItem, RunningTaskItem } from "/types/apiTypes";
+
+
 interface QueuePromptRequestBody {
 	client_id: string;
 	// Mapping from node id to node info + input values
@@ -268,7 +271,7 @@ class ComfyApi extends EventTarget {
 	 * Gets the current state of the queue
 	 * @returns The currently running and queued items
 	 */
-	async getQueue() {
+	async getQueue(): Promise<{ Running: RunningTaskItem[], Pending: PendingTaskItem[] }>{
 		try {
 			const res = await this.fetchApi("/queue");
 			const data = await res.json();
@@ -290,7 +293,7 @@ class ComfyApi extends EventTarget {
 	 * Gets the prompt execution history
 	 * @returns Prompt history including node outputs
 	 */
-	async getHistory(max_items = 200) {
+	async getHistory(max_items: number = 200): Promise<{History: HistoryTaskItem[]}> {
 		try {
 			const res = await this.fetchApi(`/history?max_items=${max_items}`);
 			return { History: Object.values(await res.json()) };
