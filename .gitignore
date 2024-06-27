@@ -33,3 +33,5 @@ tests-ui/data/*
 /playwright/.cache/
 
 .env
+
+dist.zip
