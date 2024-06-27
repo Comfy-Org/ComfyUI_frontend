@@ -112,7 +112,10 @@ export async function parseComfyWorkflow(data: string): Promise<ComfyWorkflow> {
     // Validate
     const result = await zComfyWorkflow.safeParseAsync(JSON.parse(data));
     if (!result.success) {
-        throw fromZodError(result.error);
+        // TODO: Pretty print the error on UI modal.
+        const error = fromZodError(result.error);
+        alert(`Invalid workflow against zod schema:\n${error}`);
+        throw error;
     }
     return result.data;
 }
