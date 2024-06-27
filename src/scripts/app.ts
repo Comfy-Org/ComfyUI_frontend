@@ -65,7 +65,7 @@ export class ComfyApp {
 	ui: ComfyUI;
 	logging: ComfyLogging;
 	extensions: ComfyExtension[];
-	nodeOutputs: Record<string, any>;
+	_nodeOutputs: Record<string, any>;
 	nodePreviewImages: Record<string, typeof Image>;
 	shiftDown: boolean;
 	graph: LGraph;
@@ -114,6 +114,15 @@ export class ComfyApp {
 		 * @type {boolean}
 		 */
 		this.shiftDown = false;
+	}
+
+	get nodeOutputs() {
+		return this._nodeOutputs;
+	}
+
+	set nodeOutputs(value) {
+		this._nodeOutputs = value;
+		this.#invokeExtensions("onNodeOutputsUpdated", value);
 	}
 
 	getPreviewFormatParam() {

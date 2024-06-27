@@ -12,11 +12,11 @@ interface Rect {
 	y: number;
 }
 
-interface DOMWidget {
+export interface DOMWidget<T = HTMLElement> {
 	type: string;
 	name: string;
 	computedHeight?: number;
-	element?: HTMLElement;
+	element?: T;
 	options: any;
 	value?: any;
 	y?: number;

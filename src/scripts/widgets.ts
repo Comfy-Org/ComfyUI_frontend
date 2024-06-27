@@ -400,7 +400,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 		}
 		return res;
 	},
-	IMAGEUPLOAD(node: LGraphNode, inputName, inputData, app) {
+	IMAGEUPLOAD(node: LGraphNode, inputName: string, inputData, app) {
 		// TODO make image upload handle a custom node type?
 		// @ts-ignore
 		const imageWidget = node.widgets.find((w) => w.name === (inputData[1]?.widget ?? "image"));

@@ -21,3 +21,4 @@ import "./undoRedo";
 import "./uploadImage";
 import "./webcamCapture";
 import "./widgetInputs";
+import "./uploadAudio";
