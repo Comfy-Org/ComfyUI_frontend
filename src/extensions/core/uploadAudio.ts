@@ -136,7 +136,9 @@ app.registerExtension({
           audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(audioWidget.value)));
         };
         // Initially load default audio file to audioUIWidget.
-        onAudioWidgetUpdate();
+        if (audioWidget.value) {
+          onAudioWidgetUpdate();
+        }
         audioWidget.callback = onAudioWidgetUpdate;
 
         const fileInput = document.createElement("input");
