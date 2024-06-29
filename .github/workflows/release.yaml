@@ -1,0 +1,56 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm install
+      - name: Get current version
+        id: current_version
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+      - name: Get previous version
+        id: previous_version
+        run: |
+          git fetch --tags
+          git describe --tags --abbrev=0 > .git/last_tag.txt
+          echo ::set-output name=last_tag::$(cat .git/last_tag.txt)
+      - name: Compare versions
+        id: compare_versions
+        run: |
+          VERSION_CURRENT=$(echo "${{ steps.current_version.outputs.version }}" | cut -d. -f1-2)
+          VERSION_PREVIOUS=$(echo "${{ steps.previous_version.outputs.last_tag }}" | cut -d. -f1-2)
+          if [[ "$VERSION_CURRENT" != "$VERSION_PREVIOUS" ]]; then
+            echo "::set-output name=release_required::true"
+          else
+            echo "::set-output name=release_required::false"
+          fi
+      - name: Build project
+        if: steps.compare_versions.outputs.release_required == 'true'
+        run: npm run build
+
+      - name: Create release
+        if: steps.compare_versions.outputs.release_required == 'true'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist/dist.zip  # Adjust the path to your built zip file
+          tag_name: ${{ steps.current_version.outputs.version }}
+          release_name: Release ${{ steps.current_version.outputs.version }}
+          draft: false
+          prerelease: false
