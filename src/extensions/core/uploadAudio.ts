@@ -69,7 +69,7 @@ async function uploadFile(
 app.registerExtension({
   name: "Comfy.AudioWidget",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (["LoadAudio", "SaveAudio"].includes(nodeType.comfyClass)) {
+    if (["LoadAudio", "SaveAudio", "PreviewAudio"].includes(nodeType.comfyClass)) {
       nodeData.input.required.audioUI = ["AUDIO_UI"];
     }
   },
@@ -97,7 +97,7 @@ app.registerExtension({
             const audios = message.audio;
             if (!audios) return;
             const audio = audios[0];
-            audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, "output"));
+            audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, audio.type));
             audioUIWidget.element.classList.remove("empty-audio-widget");
           }
         }
@@ -111,7 +111,7 @@ app.registerExtension({
       if ("audio" in output) {
         const audioUIWidget = node.widgets.find((w) => w.name === "audioUI") as unknown as DOMWidget<HTMLAudioElement>;
         const audio = output.audio[0];
-        audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, "output"));
+        audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, audio.type));
         audioUIWidget.element.classList.remove("empty-audio-widget");
       }
     }
