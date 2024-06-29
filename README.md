@@ -21,7 +21,6 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Introduce a UI library to add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
-- Invoke AI canvas.
 - Better node search. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 - Keybinding settings management. Register keybindings API for custom nodes.
 - New extensions API for adding UI-related features.
