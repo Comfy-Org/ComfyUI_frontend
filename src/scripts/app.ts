@@ -11,6 +11,7 @@ import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
+import { ComfyNodeDef } from "/types/apiTypes";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
 
@@ -1728,7 +1729,7 @@ export class ComfyApp {
 		}
 	}
 
-	async registerNodeDef(nodeId, nodeData) {
+	async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
 		const self = this;
 		const node = Object.assign(
 			function ComfyNode() {
@@ -1805,7 +1806,7 @@ export class ComfyApp {
 		node.category = nodeData.category;
 	}
 
-    async registerNodesFromDefs(defs) {
+    async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
 		await this.#invokeExtensionsAsync("addCustomNodeDefs", defs);
 
 		// Generate list of known widgets

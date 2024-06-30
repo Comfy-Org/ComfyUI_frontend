@@ -1,4 +1,4 @@
-import { HistoryTaskItem, PendingTaskItem, RunningTaskItem } from "/types/apiTypes";
+import { HistoryTaskItem, PendingTaskItem, RunningTaskItem, ComfyNodeDef } from "/types/apiTypes";
 
 
 interface QueuePromptRequestBody {
@@ -215,7 +215,7 @@ class ComfyApi extends EventTarget {
 	 * Loads node object definitions for the graph
 	 * @returns The node definitions
 	 */
-	async getNodeDefs() {
+	async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
 		const resp = await this.fetchApi("/object_info", { cache: "no-store" });
 		return await resp.json();
 	}
