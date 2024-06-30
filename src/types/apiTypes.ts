@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { ZodType, z } from "zod";
 import { zComfyWorkflow } from "./comfyWorkflow";
 
 const zNodeId = z.number();
@@ -109,9 +109,114 @@ const zHistoryTaskItem = z.object({
 
 const zTaskItem = z.union([zRunningTaskItem, zPendingTaskItem, zHistoryTaskItem]);
 
+// `/queue`
 export type RunningTaskItem = z.infer<typeof zRunningTaskItem>;
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>;
+// `/history`
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>;
 export type TaskItem = z.infer<typeof zTaskItem>;
 
 // TODO: validate `/history` `/queue` API endpoint responses.
+
+function inputSpec(spec: [ZodType, ZodType]): ZodType {
+    const [inputType, inputSpec] = spec;
+    return z.union([
+        z.tuple([inputType, inputSpec]),
+        z.tuple([inputType]),
+    ]);
+}
+
+const zIntInputSpec = inputSpec([
+    z.literal("INT"),
+    z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        step: z.number().optional(),
+        default: z.number().optional(),
+        forceInput: z.boolean().optional(),
+    }),
+]);
+
+const zFloatInputSpec = inputSpec([
+    z.literal("FLOAT"),
+    z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        step: z.number().optional(),
+        round: z.number().optional(),
+        default: z.number().optional(),
+        forceInput: z.boolean().optional(),
+    }),
+]);
+
+const zBooleanInputSpec = inputSpec([
+    z.literal("BOOLEAN"),
+    z.object({
+        label_on: z.string().optional(),
+        label_off: z.string().optional(),
+        default: z.boolean().optional(),
+        forceInput: z.boolean().optional(),
+    })
+]);
+
+const zStringInputSpec = inputSpec([
+    z.literal("STRING"),
+    z.object({
+        default: z.string().optional(),
+        multiline: z.boolean().optional(),
+        dynamicPrompts: z.boolean().optional(),
+        forceInput: z.boolean().optional(),
+    }),
+]);
+
+// Dropdown Selection.
+const zComboInputSpec = inputSpec([
+    z.array(z.any()),
+    z.object({
+        default: z.any().optional(),
+        control_after_generate: z.boolean().optional(),
+        image_upload: z.boolean().optional(),
+        forceInput: z.boolean().optional(),
+    }),
+]);
+
+const zCustomInputSpec = inputSpec([
+    z.string(),
+    z.object({
+        default: z.any().optional(),
+        forceInput: z.boolean().optional(),
+    }),
+]);
+
+const zInputSpec = z.union([
+    zIntInputSpec,
+    zFloatInputSpec,
+    zBooleanInputSpec,
+    zStringInputSpec,
+    zComboInputSpec,
+    zCustomInputSpec,
+]);
+
+const zComfyNodeDataType = z.string();
+const zComfyComboOutput = z.array(z.any());
+const zComfyOutputSpec = z.array(z.union([zComfyNodeDataType, zComfyComboOutput]));
+
+const zComfyNodeDef = z.object({
+    input: z.object({
+        required: z.record(zInputSpec).optional(),
+        optional: z.record(zInputSpec).optional(),
+    }),
+    output: zComfyOutputSpec,
+    output_is_list: z.array(z.boolean()),
+    output_name: z.array(z.string()),
+    name: z.string(),
+    display_name: z.string(),
+    description: z.string(),
+    category: z.string(),
+    output_node: z.boolean(),
+});
+
+// `/object_info`
+export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
+
+// TODO: validate `/object_info` API endpoint responses.

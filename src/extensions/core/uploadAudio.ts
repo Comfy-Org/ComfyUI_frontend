@@ -2,6 +2,7 @@ import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import type { IWidget } from "/types/litegraph";
 import type { DOMWidget } from "/scripts/domWidget";
+import { ComfyNodeDef } from "/types/apiTypes";
 
 type FolderType = "input" | "output" | "temp";
 
@@ -120,7 +121,7 @@ app.registerExtension({
 
 app.registerExtension({
   name: "Comfy.UploadAudio",
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
     if (nodeData?.input?.required?.audio?.[1]?.audio_upload === true) {
       nodeData.input.required.upload = ["AUDIOUPLOAD"];
     }
