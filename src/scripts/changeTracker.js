@@ -149,13 +149,17 @@ export class ChangeTracker {
 		});
 
 		// Handle litegraph clicks
+		// @ts-ignore
 		const processMouseUp = LGraphCanvas.prototype.processMouseUp;
+		// @ts-ignore
 		LGraphCanvas.prototype.processMouseUp = function (e) {
 			const v = processMouseUp.apply(this, arguments);
 			changeTracker().checkState();
 			return v;
 		};
+		// @ts-ignore
 		const processMouseDown = LGraphCanvas.prototype.processMouseDown;
+		// @ts-ignore
 		LGraphCanvas.prototype.processMouseDown = function (e) {
 			const v = processMouseDown.apply(this, arguments);
 			changeTracker().checkState();
@@ -167,6 +171,17 @@ export class ChangeTracker {
 		LiteGraph.ContextMenu.prototype.close = function (e) {
 			const v = close.apply(this, arguments);
 			changeTracker().checkState();
+			return v;
+		};
+
+		// Detects nodes being added via the node search dialog
+		const onNodeAdded = LiteGraph.LGraph.prototype.onNodeAdded;
+		LiteGraph.LGraph.prototype.onNodeAdded = function () {
+			const v = onNodeAdded?.apply(this, arguments);
+			const ct = changeTracker();
+			if (!ct.isOurLoad) {
+				ct.checkState();
+			}
 			return v;
 		};
 
