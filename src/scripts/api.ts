@@ -1,4 +1,3 @@
-import { ComfyWorkflow } from "types/comfyWorkflow";
 import { HistoryTaskItem, PendingTaskItem, RunningTaskItem, ComfyNodeDef } from "/types/apiTypes";
 
 
@@ -9,7 +8,9 @@ interface QueuePromptRequestBody {
 	prompt: Record<number, any>;
 	extra_data: {
 		extra_pnginfo: {
-			workflow: ComfyWorkflow;
+			// Workflow JSON
+			// TODO: Type this.
+			workflow: any;
 		};
 	};
 	front?: boolean;
@@ -434,80 +435,22 @@ class ComfyApi extends EventTarget {
 	 * @param { string } file The name of the userdata file to save
 	 * @param { unknown } data The data to save to the file
 	 * @param { RequestInit & { stringify?: boolean, throwOnError?: boolean } } [options]
-	 * @returns { Promise<Response> }
+	 * @returns { Promise<void> }
 	 */
 	async storeUserData(
 		file: string,
 		data: unknown,
-		options: RequestInit & { overwrite?: boolean, stringify?: boolean, throwOnError?: boolean }
-		= { overwrite: true, stringify: true, throwOnError: true }
-	): Promise<Response> {
-		const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}`, {
+		options: RequestInit & { stringify?: boolean, throwOnError?: boolean }
+		= { stringify: true, throwOnError: true }
+	): Promise<void> {
+		const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
 			method: "POST",
 			body: options?.stringify ? JSON.stringify(data) : data,
 			...options,
 		});
-		if (resp.status !== 200 && options.throwOnError !== false) {
+		if (resp.status !== 200) {
 			throw new Error(`Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`);
 		}
-
-		return resp;
-	}
-
-	/**
-	 * Deletes a user data file for the current user
-	 * @param { string } file The name of the userdata file to delete
-	 */
-	async deleteUserData(file) {
-		const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
-			method: "DELETE",
-		});
-		if (resp.status !== 204) {
-			throw new Error(`Error removing user data file '${file}': ${resp.status} ${(resp).statusText}`);
-		}
-	}
-
-	/**
-	 * Move a user data file for the current user
-	 * @param { string } source The userdata file to move
-	 * @param { string } dest The destination for the file
-	 */
-	async moveUserData(source, dest, options = { overwrite: false }) {
-		const resp = await this.fetchApi(`/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`, {
-			method: "POST",
-		});
-		return resp;
-	}
-
-	/**
-	 * @overload
-	 * Lists user data files for the current user
-	 * @param { string } dir The directory in which to list files
-	 * @param { boolean } [recurse] If the listing should be recursive
-	 * @param { true } [split] If the paths should be split based on the os path separator
-	 * @returns { Promise<string[][]>> } The list of split file paths in the format [fullPath, ...splitPath]
-	 */
-	/**
-	 * @overload
-	 * Lists user data files for the current user
-	 * @param { string } dir The directory in which to list files
-	 * @param { boolean } [recurse] If the listing should be recursive
-	 * @param { false | undefined } [split] If the paths should be split based on the os path separator
-	 * @returns { Promise<string[]> } The list of files
-	 */
-	async listUserData(dir, recurse, split) {
-		const resp = await this.fetchApi(
-			`/userdata?${new URLSearchParams({
-				recurse,
-				dir,
-				split,
-			})}`
-		);
-		if (resp.status === 404) return [];
-		if (resp.status !== 200) {
-			throw new Error(`Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`);
-		}
-		return resp.json();
 	}
 }
 

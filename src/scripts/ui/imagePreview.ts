@@ -1,4 +1,3 @@
-import { app } from "../app";
 import { $el } from "../ui";
 
 export function calculateImageGrid(imgs, dw, dh) {

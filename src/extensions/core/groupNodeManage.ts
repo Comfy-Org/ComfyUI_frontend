@@ -2,7 +2,7 @@ import { $el, ComfyDialog } from "../../scripts/ui";
 import { DraggableList } from "../../scripts/ui/draggableList";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
 import "./groupNodeManage.css";
-import { app, type ComfyApp } from "/scripts/app";
+import type { ComfyApp } from "/scripts/app";
 import type { LGraphNode, LGraphNodeConstructor } from "/types/litegraph";
 
 
@@ -317,7 +317,6 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 					"button.comfy-btn",
 					{
 						onclick: (e) => {
-							// @ts-ignore
 							const node = app.graph._nodes.find((n) => n.type === "workflow/" + this.selectedGroup);
 							if (node) {
 								alert("This group node is in use in the current workflow, please first remove these.");
@@ -391,7 +390,6 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 								types[g] = type;
 
 								if (!nodesByType) {
-									// @ts-ignore
 									nodesByType = app.graph._nodes.reduce((p, n) => {
 										p[n.type] ??= [];
 										p[n.type].push(n);

@@ -1,28 +1,23 @@
 import { $el } from "../ui";
 
-export class ComfyDialog<T extends HTMLElement = HTMLElement> extends EventTarget {
+export class ComfyDialog<T extends HTMLElement = HTMLElement> {
 	element: T;
 	textElement: HTMLElement;
-	#buttons: HTMLButtonElement[] | null;
 
-	constructor(type = "div", buttons = null) {
-		super();
-		this.#buttons = buttons;
-		this.element = $el(type + ".comfy-modal", { parent: document.body }, [
+	constructor() {
+		this.element = $el("div.comfy-modal", { parent: document.body }, [
 			$el("div.comfy-modal-content", [$el("p", { $: (p) => (this.textElement = p) }), ...this.createButtons()]),
 		]) as T;
 	}
 
 	createButtons() {
-		return (
-			this.#buttons ?? [
-				$el("button", {
-					type: "button",
-					textContent: "Close",
-					onclick: () => this.close(),
-				}),
-			]
-		);
+		return [
+			$el("button", {
+				type: "button",
+				textContent: "Close",
+				onclick: () => this.close(),
+			}),
+		];
 	}
 
 	close() {
@@ -33,7 +28,7 @@ export class ComfyDialog<T extends HTMLElement = HTMLElement> extends EventTarge
 		if (typeof html === "string") {
 			this.textElement.innerHTML = html;
 		} else {
-			this.textElement.replaceChildren(...(html instanceof Array ? html : [html]));
+			this.textElement.replaceChildren(html);
 		}
 		this.element.style.display = "flex";
 	}

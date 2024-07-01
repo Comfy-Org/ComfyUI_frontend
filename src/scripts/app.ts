@@ -12,9 +12,6 @@ import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "/types/apiTypes";
-import { ComfyAppMenu } from "./ui/menu/index.js";
-import { getStorageValue, setStorageValue } from "./utils.js";
-import { ComfyWorkflowManager } from "./workflows.js";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview"
 
@@ -90,22 +87,10 @@ export class ComfyApp {
 	multiUserServer: boolean;
 	ctx: CanvasRenderingContext2D;
 	widgets: Record<string, ComfyWidgetConstructor>;
-	workflowManager: ComfyWorkflowManager;
-	bodyTop: HTMLElement;
-	bodyLeft: HTMLElement;
-	bodyRight: HTMLElement;
-	bodyBottom: HTMLElement;
-	menu: ComfyAppMenu;
 
 	constructor() {
 		this.ui = new ComfyUI(this);
 		this.logging = new ComfyLogging(this);
-		this.workflowManager = new ComfyWorkflowManager(this);
-		this.bodyTop = $el("div.comfyui-body-top", { parent: document.body });
-		this.bodyLeft = $el("div.comfyui-body-left", { parent: document.body });
-		this.bodyRight = $el("div.comfyui-body-right", { parent: document.body });
-		this.bodyBottom = $el("div.comfyui-body-bottom", { parent: document.body });
-		this.menu = new ComfyAppMenu(this);
 
 		/**
 		 * List of extensions that are registered with the app
@@ -1403,15 +1388,11 @@ export class ComfyApp {
 		});
 
 		api.addEventListener("progress", ({ detail }) => {
-			if (this.workflowManager.activePrompt?.workflow
-				&& this.workflowManager.activePrompt.workflow !== this.workflowManager.activeWorkflow) return;
 			this.progress = detail;
 			this.graph.setDirtyCanvas(true, false);
 		});
 
 		api.addEventListener("executing", ({ detail }) => {
-			if (this.workflowManager.activePrompt ?.workflow
-				&& this.workflowManager.activePrompt.workflow !== this.workflowManager.activeWorkflow) return;
 			this.progress = null;
 			this.runningNodeId = detail;
 			this.graph.setDirtyCanvas(true, false);
@@ -1419,8 +1400,6 @@ export class ComfyApp {
 		});
 
 		api.addEventListener("executed", ({ detail }) => {
-			if (this.workflowManager.activePrompt ?.workflow
-				&& this.workflowManager.activePrompt.workflow !== this.workflowManager.activeWorkflow) return;
 			const output = this.nodeOutputs[detail.node];
 			if (detail.merge && output) {
 				for (const k in detail.output ?? {}) {
@@ -1537,21 +1516,15 @@ export class ComfyApp {
 		// Need to load core extensions first as some custom extensions
 		// may depend on them.
 		await import("../extensions/core/index.js");
-		await Promise.all(extensions
-		.filter(extension => !extension.includes("extensions/core"))
-		.map(async ext => {
-			try {
-				await import(/* @vite-ignore */api.fileURL(ext));
-			} catch (error) {
-				console.error("Error loading extension", ext, error);
-			}
-		}));
-
-		try {
-			this.menu.workflows.registerExtension(this);
-		} catch (error) {
-			console.error(error);
-		}
+	    await Promise.all(extensions
+			.filter(extension => !extension.includes("extensions/core"))
+			.map(async ext => {
+				try {
+					await import(/* @vite-ignore */api.fileURL(ext));
+				} catch (error) {
+					console.error("Error loading extension", ext, error);
+				}
+			}));
 	}
 
 	async #migrateSettings() {
@@ -1641,6 +1614,8 @@ export class ComfyApp {
 	 */
 	async setup() {
 		await this.#setUser();
+		await this.ui.settings.load();
+		await this.#loadExtensions();
 
 		// Create and mount the LiteGraph in the DOM
 		const mainCanvas = document.createElement("canvas")
@@ -1648,10 +1623,6 @@ export class ComfyApp {
 		const canvasEl = (this.canvasEl = Object.assign(mainCanvas, { id: "graph-canvas" }));
 		canvasEl.tabIndex = 1;
 		document.body.prepend(canvasEl);
-		this.resizeCanvas();
-
-		await Promise.all([this.workflowManager.loadWorkflows(), this.ui.settings.load()]);
-		await this.#loadExtensions();
 
 		addDomClippingSetting();
 		this.#addProcessMouseHandler();
@@ -1666,7 +1637,7 @@ export class ComfyApp {
 		this.#addAfterConfigureHandler();
 
 		// @ts-ignore
-		this.canvas = new LGraphCanvas(canvasEl, this.graph);
+		const canvas = (this.canvas = new LGraphCanvas(canvasEl, this.graph));
 		this.ctx = canvasEl.getContext("2d");
 
 		LiteGraph.release_link_on_empty_shows_menu = true;
@@ -1674,14 +1645,19 @@ export class ComfyApp {
 
 		this.graph.start();
 
+		function resizeCanvas() {
+			// Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
+			const scale = Math.max(window.devicePixelRatio, 1);
+			const { width, height } = canvasEl.getBoundingClientRect();
+			canvasEl.width = Math.round(width * scale);
+			canvasEl.height = Math.round(height * scale);
+			canvasEl.getContext("2d").scale(scale, scale);
+			canvas.draw(true, true);
+		}
+
 		// Ensure the canvas fills the window
-		this.resizeCanvas();
-		window.addEventListener("resize", () => this.resizeCanvas());
-		const ro = new ResizeObserver(() => this.resizeCanvas());
-		ro.observe(this.bodyTop);
-		ro.observe(this.bodyLeft);
-		ro.observe(this.bodyRight);
-		ro.observe(this.bodyBottom);
+		resizeCanvas();
+		window.addEventListener("resize", resizeCanvas);
 
 		await this.#invokeExtensionsAsync("init");
 		await this.registerNodes();
@@ -1692,9 +1668,7 @@ export class ComfyApp {
 		try {
 			const loadWorkflow = async (json) => {
 				if (json) {
-					const workflow = await parseComfyWorkflow(json);
-					const workflowName = getStorageValue("Comfy.PreviousWorkflow");
-					await this.loadGraphData(workflow, true, true, workflowName);
+					await this.loadGraphData(await parseComfyWorkflow(json));
 					return true;
 				}
 			};
@@ -1728,19 +1702,6 @@ export class ComfyApp {
 		this.#addKeyboardHandler();
 
 		await this.#invokeExtensionsAsync("setup");
-	}
-
-	resizeCanvas() {
-		// Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-		const scale = Math.max(window.devicePixelRatio, 1);
-
-		// Clear fixed width and height while calculating rect so it uses 100% instead
-		this.canvasEl.height = this.canvasEl.width = NaN;
-		const { width, height } = this.canvasEl.getBoundingClientRect();
-		this.canvasEl.width = Math.round(width * scale);
-		this.canvasEl.height = Math.round(height * scale);
-		this.canvasEl.getContext("2d").scale(scale, scale);
-		this.canvas?.draw(true, true);
 	}
 
 	/**
@@ -1944,32 +1905,12 @@ export class ComfyApp {
 		});
 	}
 
-	async changeWorkflow(callback, workflow = null) {
-		try {
-			this.workflowManager.activeWorkflow?.changeTracker?.store()
-		} catch (error) {
-			console.error(error);
-		}
-		await callback();
-		try {
-			this.workflowManager.setWorkflow(workflow);
-			this.workflowManager.activeWorkflow?.track()
-		} catch (error) {
-			console.error(error);
-		}
-	}
-
 	/**
 	 * Populates the graph with the specified workflow data
 	 * @param {*} graphData A serialized graph object
 	 * @param { boolean } clean If the graph state, e.g. images, should be cleared
 	 */
-	async loadGraphData(
-		graphData?: ComfyWorkflow,
-		clean: boolean = true,
-		restore_view: boolean = true,
-		workflow: string | null = null
-	) {
+	async loadGraphData(graphData?: ComfyWorkflow, clean: boolean = true, restore_view: boolean = true) {
 		if (clean !== false) {
 			this.clean();
 		}
@@ -1986,12 +1927,6 @@ export class ComfyApp {
 		}else
 		{
 			graphData = structuredClone(graphData);
-		}
-
-		try {
-			this.workflowManager.setWorkflow(workflow);
-		} catch (error) {
-			console.error(error);
 		}
 
 		const missingNodeTypes = [];
@@ -2017,12 +1952,6 @@ export class ComfyApp {
 				// https://github.com/colinhacks/zod/issues/3056
 				this.canvas.ds.offset = graphData.extra.ds.offset;
 				this.canvas.ds.scale = graphData.extra.ds.scale;
-			}
-
-			try {
-				this.workflowManager.activeWorkflow?.track()
-			} catch (error) {
-				// TODO: Do we want silently fail here?
 			}
 		} catch (error) {
 			let errorHint = [];
@@ -2112,16 +2041,13 @@ export class ComfyApp {
 			this.showMissingNodesError(missingNodeTypes);
 		}
 		await this.#invokeExtensionsAsync("afterConfigureGraph", missingNodeTypes);
-		requestAnimationFrame(() => {
-			this.graph.setDirtyCanvas(true, true);
-		});
 	}
 
 	/**
 	 * Converts the current graph workflow for sending to the API
 	 * @returns The workflow and node links
 	 */
-	async graphToPrompt(graph = this.graph, clean = true) {
+	async graphToPrompt() {
 		for (const outerNode of this.graph.computeExecutionOrder(false)) {
 			if (outerNode.widgets) {
 				for (const widget of outerNode.widgets) {
@@ -2142,10 +2068,10 @@ export class ComfyApp {
 			}
 		}
 
-		const workflow = graph.serialize();
+		const workflow = this.graph.serialize();
 		const output = {};
 		// Process nodes in order of execution
-		for (const outerNode of graph.computeExecutionOrder(false)) {
+		for (const outerNode of this.graph.computeExecutionOrder(false)) {
 			const skipNode = outerNode.mode === 2 || outerNode.mode === 4;
 			const innerNodes = (!skipNode && outerNode.getInnerNodes) ? outerNode.getInnerNodes() : [outerNode];
 			for (const node of innerNodes) {
@@ -2237,14 +2163,13 @@ export class ComfyApp {
 		}
 
 		// Remove inputs connected to removed nodes
-		if(clean) {
-			for (const o in output) {
-				for (const i in output[o].inputs) {
-					if (Array.isArray(output[o].inputs[i])
-						&& output[o].inputs[i].length === 2
-						&& !output[output[o].inputs[i][0]]) {
-						delete output[o].inputs[i];
-					}
+
+		for (const o in output) {
+			for (const i in output[o].inputs) {
+				if (Array.isArray(output[o].inputs[i])
+					&& output[o].inputs[i].length === 2
+					&& !output[output[o].inputs[i][0]]) {
+					delete output[o].inputs[i];
 				}
 			}
 		}
@@ -2314,14 +2239,6 @@ export class ComfyApp {
 						this.lastNodeErrors = res.node_errors;
 						if (this.lastNodeErrors.length > 0) {
 							this.canvas.draw(true, true);
-						} else {
-							try {
-								this.workflowManager.storePrompt({
-									id: res.prompt_id,
-									nodes: Object.keys(p.output)
-								});
-							} catch (error) {
-							}
 						}
 					} catch (error) {
 						const formattedError = this.#formatPromptError(error)
@@ -2334,7 +2251,7 @@ export class ComfyApp {
 					}
 
 					for (const n of p.workflow.nodes) {
-						const node = this.graph.getNodeById(n.id);
+						const node = graph.getNodeById(n.id);
 						if (node.widgets) {
 							for (const widget of node.widgets) {
 								// Allow widgets to run callbacks after a prompt has been queued
@@ -2356,7 +2273,6 @@ export class ComfyApp {
 			this.#processingQueue = false;
 		}
 		api.dispatchEvent(new CustomEvent("promptQueued", { detail: { number, batchCount } }));
-		return !this.lastNodeErrors;
 	}
 
 	showErrorOnFileLoad(file) {
@@ -2372,23 +2288,14 @@ export class ComfyApp {
 	 * @param {File} file
 	 */
 	async handleFile(file) {
-		const removeExt = f => {
-			if(!f) return f;
-			const p = f.lastIndexOf(".");
-			if(p === -1) return f;
-			return f.substring(0, p);
-		};
-		const fileName = removeExt(file.name);
 		if (file.type === "image/png") {
 			const pngInfo = await getPngMetadata(file);
 			if (pngInfo?.workflow) {
-				await this.loadGraphData(await parseComfyWorkflow(pngInfo.workflow), true, true, fileName);
+				await this.loadGraphData(await parseComfyWorkflow(pngInfo.workflow));
 			} else if (pngInfo?.prompt) {
-				this.loadApiJson(JSON.parse(pngInfo.prompt), fileName);
+				this.loadApiJson(JSON.parse(pngInfo.prompt));
 			} else if (pngInfo?.parameters) {
-				this.changeWorkflow(() => {
-					importA1111(this.graph, pngInfo.parameters);
-				}, fileName)
+				importA1111(this.graph, pngInfo.parameters);
 			} else {
 				this.showErrorOnFileLoad(file);
 			}
@@ -2399,9 +2306,9 @@ export class ComfyApp {
 			const prompt = pngInfo?.prompt || pngInfo?.Prompt;
 
 			if (workflow) {
-				this.loadGraphData(await parseComfyWorkflow(workflow), true, true, fileName);
+				this.loadGraphData(await parseComfyWorkflow(workflow));
 			} else if (prompt) {
-				this.loadApiJson(JSON.parse(prompt), fileName);
+				this.loadApiJson(JSON.parse(prompt));
 			} else {
 				this.showErrorOnFileLoad(file);
 			}
@@ -2411,9 +2318,9 @@ export class ComfyApp {
 			const prompt = pngInfo?.prompt || pngInfo?.Prompt;
 
 			if (workflow) {
-				this.loadGraphData(await parseComfyWorkflow(workflow), true, true, fileName);
+				this.loadGraphData(await parseComfyWorkflow(workflow));
 			} else if (prompt) {
-				this.loadApiJson(JSON.parse(prompt), fileName);
+				this.loadApiJson(JSON.parse(prompt));
 			} else {
 				this.showErrorOnFileLoad(file);
 			}
@@ -2425,9 +2332,9 @@ export class ComfyApp {
 				if (jsonContent?.templates) {
 					this.loadTemplateData(jsonContent);
 				} else if(this.isApiJson(jsonContent)) {
-					this.loadApiJson(jsonContent, fileName);
+					this.loadApiJson(jsonContent);
 				} else {
-					await this.loadGraphData(await parseComfyWorkflow(readerResult), true, fileName);
+					await this.loadGraphData(await parseComfyWorkflow(readerResult));
 				}
 			};
 			reader.readAsText(file);
@@ -2437,7 +2344,7 @@ export class ComfyApp {
 			// @ts-ignore
 			if (info.workflow) {
 				// @ts-ignore
-				await this.loadGraphData(await parseComfyWorkflow(info.workflow), true, true, fileName);
+				await this.loadGraphData(await parseComfyWorkflow(info.workflow));
 				// @ts-ignore
 			} else if (info.prompt) {
 				// @ts-ignore
@@ -2455,7 +2362,7 @@ export class ComfyApp {
 		return Object.values(data).every((v) => v.class_type);
 	}
 
-	loadApiJson(apiData, fileName: string) {
+	loadApiJson(apiData) {
 		// @ts-ignore
 		const missingNodeTypes = Object.values(apiData).filter((n) => !LiteGraph.registered_node_types[n.class_type]);
 		if (missingNodeTypes.length) {
@@ -2474,42 +2381,6 @@ export class ComfyApp {
 			node.title = data._meta?.title ?? node.title
 			app.graph.add(node);
 		}
-
-		this.changeWorkflow(() => {
-			for (const id of ids) {
-				const data = apiData[id];
-				const node = app.graph.getNodeById(Number.parseInt(id));
-				for (const input in data.inputs ?? {}) {
-					const value = data.inputs[input];
-					if (value instanceof Array) {
-						const [fromId, fromSlot] = value;
-						const fromNode = app.graph.getNodeById(fromId);
-						let toSlot = node.inputs?.findIndex((inp) => inp.name === input);
-						if (toSlot == null || toSlot === -1) {
-							try {
-								// Target has no matching input, most likely a converted widget
-								const widget = node.widgets?.find((w) => w.name === input);
-								// @ts-ignore
-								if (widget && node.convertWidgetToInput?.(widget)) {
-									toSlot = node.inputs?.length - 1;
-								}
-							} catch (error) {}
-						}
-						if (toSlot != null || toSlot !== -1) {
-							fromNode.connect(fromSlot, node, toSlot);
-						}
-					} else {
-						const widget = node.widgets?.find((w) => w.name === input);
-						if (widget) {
-							widget.value = value;
-							// @ts-ignore
-							widget.callback?.(value);
-						}
-					}
-				}
-			}
-			app.graph.arrange();
-		}, fileName);
 
 		for (const id of ids) {
 			const data = apiData[id];
