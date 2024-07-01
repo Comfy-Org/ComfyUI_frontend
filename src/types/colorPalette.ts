@@ -64,10 +64,6 @@ const comfyBaseSchema = z.object({
     ["border-color"]: z.string(),
     ["tr-even-bg-color"]: z.string(),
     ["tr-odd-bg-color"]: z.string(),
-    ["content-bg"]: z.string(),
-    ["content-fg"]: z.string(),
-    ["content-hover-bg"]: z.string(),
-    ["content-hover-fg"]: z.string(),
 });
 
 const colorsSchema = z.object({
