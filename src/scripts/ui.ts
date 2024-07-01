@@ -104,6 +104,8 @@ function dragElement(dragEl, settings) {
 	}
 
 	function positionElement() {
+		if (dragEl.style.display === "none") return;
+
 		const halfWidth = document.body.clientWidth / 2;
 		const anchorRight = newPosX + dragEl.clientWidth / 2 > halfWidth;
 
@@ -193,6 +195,8 @@ function dragElement(dragEl, settings) {
 		document.onmouseup = null;
 		document.onmousemove = null;
 	}
+
+	return restorePos;
 }
 
 class ComfyList {
@@ -389,6 +393,8 @@ export class ComfyUI {
 				app.handleFile(fileInput.files[0]);
 			},
 		}) as HTMLInputElement;
+
+		this.loadFile = () => fileInput.click();
 
 		const autoQueueModeEl = toggleSwitch(
 			"autoQueueMode",
@@ -645,10 +651,10 @@ export class ComfyUI {
 			name: "Enable Dev mode Options",
 			type: "boolean",
 			defaultValue: false,
-			onChange: function (value) { document.getElementById("comfy-dev-save-api-button").style.display = value ? "block" : "none" },
+			onChange: function (value) { document.getElementById("comfy-dev-save-api-button").style.display = value ? "flex" : "none" },
 		});
 
-		dragElement(this.menuContainer, this.settings);
+		this.restoreMenuPosition = dragElement(this.menuContainer, this.settings);
 
 		this.setStatus({ exec_info: { queue_remaining: "X" } });
 	}
