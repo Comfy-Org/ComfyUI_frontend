@@ -2,7 +2,7 @@ import { $el, ComfyDialog } from "../../scripts/ui";
 import { DraggableList } from "../../scripts/ui/draggableList";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
 import "./groupNodeManage.css";
-import { app, type ComfyApp } from "/scripts/app";
+import { app, type ComfyApp } from "../../scripts/app";
 import type { LGraphNode, LGraphNodeConstructor } from "/types/litegraph";
 
 
