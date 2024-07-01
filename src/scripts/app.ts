@@ -2312,7 +2312,7 @@ export class ComfyApp {
 			} else {
 				this.showErrorOnFileLoad(file);
 			}
-		} else if (file.type === "audio/flac") {
+		} else if (file.type === "audio/flac" || file.type === "audio/x-flac") {
 			const pngInfo = await getFlacMetadata(file);
 			const workflow = pngInfo?.workflow || pngInfo?.Workflow;
 			const prompt = pngInfo?.prompt || pngInfo?.Prompt;
