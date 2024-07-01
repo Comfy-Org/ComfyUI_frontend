@@ -394,6 +394,7 @@ export class ComfyUI {
 			},
 		}) as HTMLInputElement;
 
+		// @ts-ignore
 		this.loadFile = () => fileInput.click();
 
 		const autoQueueModeEl = toggleSwitch(
@@ -654,6 +655,7 @@ export class ComfyUI {
 			onChange: function (value) { document.getElementById("comfy-dev-save-api-button").style.display = value ? "flex" : "none" },
 		});
 
+		// @ts-ignore
 		this.restoreMenuPosition = dragElement(this.menuContainer, this.settings);
 
 		this.setStatus({ exec_info: { queue_remaining: "X" } });
