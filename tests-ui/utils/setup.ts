@@ -82,6 +82,7 @@ export function mockApi(config: APIConfig = {}) {
 		storeUserData: jest.fn((file, data) => {
 			userData[file] = data;
 		}),
+		listUserData: jest.fn(() => []),
 	};
 	jest.mock("../../src/scripts/api", () => ({
 		get api() {
