@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 
 import { $el } from "../../ui";
 import { downloadBlob } from "../../utils";

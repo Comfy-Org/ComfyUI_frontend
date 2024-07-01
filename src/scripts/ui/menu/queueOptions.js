@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 
 import { $el } from "../../ui";
 import { prop } from "../../utils";

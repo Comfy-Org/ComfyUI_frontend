@@ -2334,7 +2334,7 @@ export class ComfyApp {
 					}
 
 					for (const n of p.workflow.nodes) {
-						const node = graph.getNodeById(n.id);
+						const node = this.graph.getNodeById(n.id);
 						if (node.widgets) {
 							for (const widget of node.widgets) {
 								// Allow widgets to run callbacks after a prompt has been queued
@@ -2478,7 +2478,7 @@ export class ComfyApp {
 		this.changeWorkflow(() => {
 			for (const id of ids) {
 				const data = apiData[id];
-				const node = app.graph.getNodeById(id);
+				const node = app.graph.getNodeById(Number.parseInt(id));
 				for (const input in data.inputs ?? {}) {
 					const value = data.inputs[input];
 					if (value instanceof Array) {

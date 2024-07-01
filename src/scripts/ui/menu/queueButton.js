@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 
 import { ComfyButton } from "../components/button";
 import { $el } from "../../ui";

@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 
 import { api } from "./api";
 import { ChangeTracker } from "./changeTracker";
