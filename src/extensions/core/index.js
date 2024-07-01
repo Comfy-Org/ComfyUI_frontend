@@ -17,7 +17,6 @@ import "./saveImageExtraOutput";
 import "./simpleTouchSupport";
 import "./slotDefaults";
 import "./snapToGrid";
-import "./undoRedo";
 import "./uploadImage";
 import "./webcamCapture";
 import "./widgetInputs";

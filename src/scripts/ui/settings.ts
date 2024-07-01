@@ -5,26 +5,26 @@ import type { ComfyApp } from "../app";
 
 /* The Setting entry stored in `ComfySettingsDialog` */
 interface Setting {
-    id: string;
-    onChange?: (value: any, oldValue?: any) => void;
-    name: string;
-    render: () => HTMLElement;
+	id: string;
+	onChange?: (value: any, oldValue?: any) => void;
+	name: string;
+	render: () => HTMLElement;
 }
 
 interface SettingOption {
-    text: string;
-    value?: string;
+	text: string;
+	value?: string;
 }
 
 interface SettingParams {
-    id: string;
-    name: string;
-    type: string | ((name: string, setter: (v: any) => void, value: any, attrs: any) => HTMLElement);
-    defaultValue: any;
-    onChange?: (newValue: any, oldValue?: any) => void;
-    attrs?: any;
-    tooltip?: string;
-    options?: SettingOption[] | ((value: any) => SettingOption[]);
+	id: string;
+	name: string;
+	type: string | ((name: string, setter: (v: any) => void, value: any, attrs: any) => HTMLElement);
+	defaultValue: any;
+	onChange?: (newValue: any, oldValue?: any) => void;
+	attrs?: any;
+	tooltip?: string;
+	options?: SettingOption[] | ((value: any) => SettingOption[]);
 }
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
@@ -76,6 +76,17 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 		return Object.values(this.settingsLookup);
 	}
 
+	#dispatchChange(id, value, oldValue?) {
+		this.dispatchEvent(
+			new CustomEvent(id + ".change", {
+				detail: {
+					value,
+					oldValue
+				},
+			})
+		);
+	}
+
 	async load() {
 		if (this.app.storageLocation === "browser") {
 			this.settingsValues = localStorage;
@@ -85,7 +96,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
 		// Trigger onChange for any settings added before load
 		for (const id in this.settingsLookup) {
-			this.settingsLookup[id].onChange?.(this.settingsValues[this.getId(id)]);
+			const value = this.settingsValues[this.getId(id)];
+			this.settingsLookup[id].onChange?.(value);
+			this.#dispatchChange(id, value);
 		}
 	}
 
@@ -119,6 +132,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 		if (id in this.settingsLookup) {
 			this.settingsLookup[id].onChange?.(value, oldValue);
 		}
+		this.#dispatchChange(id, value, oldValue);
 
 		await api.storeSetting(id, value);
 	}
@@ -166,6 +180,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 			onChange,
 			name,
 			render: () => {
+				if (type === "hidden") return;
+
 				const setter = (v) => {
 					if (onChange) {
 						onChange(v, value);
@@ -340,7 +356,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 				},
 				[$el("th"), $el("th", { style: { width: "33%" } })]
 			),
-			...this.settings.sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.render())
+			...this.settings.sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.render()).filter(Boolean)
 		);
 		this.element.showModal();
 	}

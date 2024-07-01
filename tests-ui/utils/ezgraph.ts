@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck
 /// <reference path="../../src/types/litegraph.d.ts" />
 
 /**
