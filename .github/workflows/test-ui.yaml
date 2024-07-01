@@ -21,6 +21,7 @@ jobs:
       with:
         repository: "huchenlei/ComfyUI_frontend"
         path: "ComfyUI_frontend"
+        ref: ${{ github.head_ref }}
     - name: Get commit message
       id: commit-message
       run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
