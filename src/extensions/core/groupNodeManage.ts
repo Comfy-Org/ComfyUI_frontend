@@ -5,7 +5,6 @@ import "./groupNodeManage.css";
 import { app, type ComfyApp } from "../../scripts/app";
 import type { LGraphNode, LGraphNodeConstructor } from "/types/litegraph";
 
-
 const ORDER: symbol = Symbol();
 
 function merge(target, source) {
@@ -26,11 +25,23 @@ function merge(target, source) {
 }
 
 export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
-  tabs: Record<"Inputs" | "Outputs" | "Widgets", {tab: HTMLAnchorElement, page: HTMLElement}>;
+  tabs: Record<
+    "Inputs" | "Outputs" | "Widgets",
+    { tab: HTMLAnchorElement; page: HTMLElement }
+  >;
   selectedNodeIndex: number | null | undefined;
   selectedTab: keyof ManageGroupDialog["tabs"] = "Inputs";
   selectedGroup: string | undefined;
-  modifications: Record<string, Record<string, Record<string, { name?: string | undefined, visible?: boolean | undefined }>>> = {};
+  modifications: Record<
+    string,
+    Record<
+      string,
+      Record<
+        string,
+        { name?: string | undefined; visible?: boolean | undefined }
+      >
+    >
+  > = {};
   nodeItems: any[];
   app: ComfyApp;
   groupNodeType: LGraphNodeConstructor<LGraphNode>;
@@ -86,7 +97,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   getGroupData() {
-    this.groupNodeType = LiteGraph.registered_node_types["workflow/" + this.selectedGroup];
+    this.groupNodeType =
+      LiteGraph.registered_node_types["workflow/" + this.selectedGroup];
     this.groupNodeDef = this.groupNodeType.nodeData;
     this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType);
   }
@@ -131,24 +143,39 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       this.changeNode(0);
     } else {
       const items = this.draggable.getAllItems();
-      let index = items.findIndex(item => item.classList.contains("selected"));
-      if(index === -1) index = this.selectedNodeIndex;
+      let index = items.findIndex((item) =>
+        item.classList.contains("selected")
+      );
+      if (index === -1) index = this.selectedNodeIndex;
       this.changeNode(index, true);
     }
 
     const ordered = [...nodes];
     this.draggable?.dispose();
     this.draggable = new DraggableList(this.innerNodesList, "li");
-    this.draggable.addEventListener("dragend", ({ detail: { oldPosition, newPosition } }) => {
-      if (oldPosition === newPosition) return;
-      ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0]);
-      for (let i = 0; i < ordered.length; i++) {
-        this.storeModification({ nodeIndex: ordered[i].index, section: ORDER, prop: "order", value: i });
+    this.draggable.addEventListener(
+      "dragend",
+      ({ detail: { oldPosition, newPosition } }) => {
+        if (oldPosition === newPosition) return;
+        ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0]);
+        for (let i = 0; i < ordered.length; i++) {
+          this.storeModification({
+            nodeIndex: ordered[i].index,
+            section: ORDER,
+            prop: "order",
+            value: i,
+          });
+        }
       }
-    });
+    );
   }
 
-  storeModification(props: { nodeIndex?: number; section: symbol; prop: string; value: any }) {
+  storeModification(props: {
+    nodeIndex?: number;
+    section: symbol;
+    prop: string;
+    value: any;
+  }) {
     const { nodeIndex, section, prop, value } = props;
     const groupMod = (this.modifications[this.selectedGroup] ??= {});
     const nodesMod = (groupMod.nodes ??= {});
@@ -165,7 +192,10 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   getEditElement(section, prop, value, placeholder, checked, checkable = true) {
     if (value === placeholder) value = "";
 
-    const mods = this.modifications[this.selectedGroup]?.nodes?.[this.selectedNodeInnerIndex]?.[section]?.[prop];
+    const mods =
+      this.modifications[this.selectedGroup]?.nodes?.[
+        this.selectedNodeInnerIndex
+      ]?.[section]?.[prop];
     if (mods) {
       if (mods.name != null) {
         value = mods.name;
@@ -181,7 +211,11 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         placeholder,
         type: "text",
         onchange: (e) => {
-          this.storeModification({ section, prop, value: { name: e.target.value } });
+          this.storeModification({
+            section,
+            prop,
+            value: { name: e.target.value },
+          });
         },
       }),
       $el("label", { textContent: "Visible" }, [
@@ -190,7 +224,11 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           checked,
           disabled: !checkable,
           onchange: (e) => {
-            this.storeModification({ section, prop, value: { visible: !!e.target.checked } });
+            this.storeModification({
+              section,
+              prop,
+              value: { visible: !!e.target.checked },
+            });
           },
         }),
       ]),
@@ -198,13 +236,20 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   buildWidgetsPage() {
-    const widgets = this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex];
+    const widgets =
+      this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex];
     const items = Object.keys(widgets ?? {});
     const type = app.graph.extra.groupNodes[this.selectedGroup];
     const config = type.config?.[this.selectedNodeInnerIndex]?.input;
     this.widgetsPage.replaceChildren(
       ...items.map((oldName) => {
-        return this.getEditElement("input", oldName, widgets[oldName], oldName, config?.[oldName]?.visible !== false);
+        return this.getEditElement(
+          "input",
+          oldName,
+          widgets[oldName],
+          oldName,
+          config?.[oldName]?.visible !== false
+        );
       })
     );
     return !!items.length;
@@ -223,7 +268,13 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
             return;
           }
 
-          return this.getEditElement("input", oldName, value, oldName, config?.[oldName]?.visible !== false);
+          return this.getEditElement(
+            "input",
+            oldName,
+            value,
+            oldName,
+            config?.[oldName]?.visible !== false
+          );
         })
         .filter(Boolean)
     );
@@ -232,9 +283,12 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
   buildOutputsPage() {
     const nodes = this.groupData.nodeData.nodes;
-    const innerNodeDef = this.groupData.getNodeDef(nodes[this.selectedNodeInnerIndex]);
+    const innerNodeDef = this.groupData.getNodeDef(
+      nodes[this.selectedNodeInnerIndex]
+    );
     const outputs = innerNodeDef?.output ?? [];
-    const groupOutputs = this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex];
+    const groupOutputs =
+      this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex];
 
     const type = app.graph.extra.groupNodes[this.selectedGroup];
     const config = type.config?.[this.selectedNodeInnerIndex]?.output;
@@ -250,7 +304,14 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           if (!value || value === oldName) {
             value = "";
           }
-          return this.getEditElement("output", slot, value, oldName, visible, checkable);
+          return this.getEditElement(
+            "output",
+            slot,
+            value,
+            oldName,
+            visible,
+            checkable
+          );
         })
         .filter(Boolean)
     );
@@ -258,13 +319,21 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   show(type?) {
-    const groupNodes = Object.keys(app.graph.extra?.groupNodes ?? {}).sort((a, b) => a.localeCompare(b));
+    const groupNodes = Object.keys(app.graph.extra?.groupNodes ?? {}).sort(
+      (a, b) => a.localeCompare(b)
+    );
 
-    this.innerNodesList = $el("ul.comfy-group-manage-list-items") as HTMLUListElement;
+    this.innerNodesList = $el(
+      "ul.comfy-group-manage-list-items"
+    ) as HTMLUListElement;
     this.widgetsPage = $el("section.comfy-group-manage-node-page");
     this.inputsPage = $el("section.comfy-group-manage-node-page");
     this.outputsPage = $el("section.comfy-group-manage-node-page");
-    const pages = $el("div", [this.widgetsPage, this.inputsPage, this.outputsPage]);
+    const pages = $el("div", [
+      this.widgetsPage,
+      this.inputsPage,
+      this.outputsPage,
+    ]);
 
     this.tabs = [
       ["Inputs", this.inputsPage],
@@ -318,12 +387,20 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           {
             onclick: (e) => {
               // @ts-ignore
-              const node = app.graph._nodes.find((n) => n.type === "workflow/" + this.selectedGroup);
+              const node = app.graph._nodes.find(
+                (n) => n.type === "workflow/" + this.selectedGroup
+              );
               if (node) {
-                alert("This group node is in use in the current workflow, please first remove these.");
+                alert(
+                  "This group node is in use in the current workflow, please first remove these."
+                );
                 return;
               }
-              if (confirm(`Are you sure you want to remove the node: "${this.selectedGroup}"`)) {
+              if (
+                confirm(
+                  `Are you sure you want to remove the node: "${this.selectedGroup}"`
+                )
+              ) {
                 delete app.graph.extra.groupNodes[this.selectedGroup];
                 LiteGraph.unregisterNodeType("workflow/" + this.selectedGroup);
               }
@@ -416,12 +493,18 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           },
           "Save"
         ),
-        $el("button.comfy-btn", { onclick: () => this.element.close() }, "Close"),
+        $el(
+          "button.comfy-btn",
+          { onclick: () => this.element.close() },
+          "Close"
+        ),
       ]),
     ]);
 
     this.element.replaceChildren(outer);
-    this.changeGroup(type ? groupNodes.find((g) => "workflow/" + g === type) : groupNodes[0]);
+    this.changeGroup(
+      type ? groupNodes.find((g) => "workflow/" + g === type) : groupNodes[0]
+    );
     this.element.showModal();
 
     this.element.addEventListener("close", () => {

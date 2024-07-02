@@ -27,8 +27,8 @@
 import { $el } from "../ui";
 
 $el("style", {
-    parent: document.head,
-    textContent: `
+  parent: document.head,
+  textContent: `
         .draggable-item {
             position: relative;
             will-change: transform;
@@ -40,7 +40,7 @@ $el("style", {
         .draggable-item.is-draggable {
             z-index: 10;
         }
-    `
+    `,
 });
 
 export class DraggableList extends EventTarget {
@@ -57,9 +57,9 @@ export class DraggableList extends EventTarget {
   offDrag = [];
 
   constructor(element, itemSelector) {
-        super();
+    super();
     this.listContainer = element;
-        this.itemSelector = itemSelector;
+    this.itemSelector = itemSelector;
 
     if (!this.listContainer) return;
 
@@ -71,7 +71,9 @@ export class DraggableList extends EventTarget {
 
   getAllItems() {
     if (!this.items?.length) {
-      this.items = Array.from(this.listContainer.querySelectorAll(this.itemSelector));
+      this.items = Array.from(
+        this.listContainer.querySelectorAll(this.itemSelector)
+      );
       this.items.forEach((element) => {
         element.classList.add("is-idle");
       });
@@ -80,7 +82,9 @@ export class DraggableList extends EventTarget {
   }
 
   getIdleItems() {
-    return this.getAllItems().filter((item) => item.classList.contains("is-idle"));
+    return this.getAllItems().filter((item) =>
+      item.classList.contains("is-idle")
+    );
   }
 
   isItemAbove(item) {
@@ -106,18 +110,24 @@ export class DraggableList extends EventTarget {
 
     this.pointerStartX = e.clientX || e.touches[0].clientX;
     this.pointerStartY = e.clientY || e.touches[0].clientY;
-    this.scrollYMax = this.listContainer.scrollHeight - this.listContainer.clientHeight;
+    this.scrollYMax =
+      this.listContainer.scrollHeight - this.listContainer.clientHeight;
 
     this.setItemsGap();
     this.initDraggableItem();
     this.initItemsState();
 
     this.offDrag.push(this.on(document, "mousemove", this.drag));
-    this.offDrag.push(this.on(document, "touchmove", this.drag, { passive: false }));
+    this.offDrag.push(
+      this.on(document, "touchmove", this.drag, { passive: false })
+    );
 
     this.dispatchEvent(
       new CustomEvent("dragstart", {
-        detail: { element: this.draggableItem, position: this.getAllItems().indexOf(this.draggableItem) },
+        detail: {
+          element: this.draggableItem,
+          position: this.getAllItems().indexOf(this.draggableItem),
+        },
       })
     );
   }
@@ -250,7 +260,11 @@ export class DraggableList extends EventTarget {
 
     this.dispatchEvent(
       new CustomEvent("dragend", {
-        detail: { element: this.draggableItem, oldPosition, newPosition: reorderedItems.indexOf(this.draggableItem) },
+        detail: {
+          element: this.draggableItem,
+          oldPosition,
+          newPosition: reorderedItems.indexOf(this.draggableItem),
+        },
       })
     );
   }

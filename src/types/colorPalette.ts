@@ -1,6 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-const nodeSlotSchema = z.object({
+const nodeSlotSchema = z
+  .object({
     BOOLEAN: z.string().optional(),
     CLIP: z.string(),
     CLIP_VISION: z.string(),
@@ -25,10 +26,12 @@ const nodeSlotSchema = z.object({
     TAESD: z.string(),
     TIMESTEP_KEYFRAME: z.string().optional(),
     UPSCALE_MODEL: z.string().optional(),
-    VAE: z.string()
-}).passthrough();
+    VAE: z.string(),
+  })
+  .passthrough();
 
-const litegraphBaseSchema = z.object({
+const litegraphBaseSchema = z
+  .object({
     BACKGROUND_IMAGE: z.string(),
     CLEAR_BACKGROUND_COLOR: z.string(),
     NODE_TITLE_COLOR: z.string(),
@@ -49,37 +52,40 @@ const litegraphBaseSchema = z.object({
     WIDGET_SECONDARY_TEXT_COLOR: z.string(),
     LINK_COLOR: z.string(),
     EVENT_LINK_COLOR: z.string(),
-    CONNECTING_LINK_COLOR: z.string()
-}).passthrough();
+    CONNECTING_LINK_COLOR: z.string(),
+  })
+  .passthrough();
 
 const comfyBaseSchema = z.object({
-    ["fg-color"]: z.string(),
-    ["bg-color"]: z.string(),
-    ["comfy-menu-bg"]: z.string(),
-    ["comfy-input-bg"]: z.string(),
-    ["input-text"]: z.string(),
-    ["descrip-text"]: z.string(),
-    ["drag-text"]: z.string(),
-    ["error-text"]: z.string(),
-    ["border-color"]: z.string(),
-    ["tr-even-bg-color"]: z.string(),
-    ["tr-odd-bg-color"]: z.string(),
-    ["content-bg"]: z.string(),
-    ["content-fg"]: z.string(),
-    ["content-hover-bg"]: z.string(),
-    ["content-hover-fg"]: z.string(),
+  ["fg-color"]: z.string(),
+  ["bg-color"]: z.string(),
+  ["comfy-menu-bg"]: z.string(),
+  ["comfy-input-bg"]: z.string(),
+  ["input-text"]: z.string(),
+  ["descrip-text"]: z.string(),
+  ["drag-text"]: z.string(),
+  ["error-text"]: z.string(),
+  ["border-color"]: z.string(),
+  ["tr-even-bg-color"]: z.string(),
+  ["tr-odd-bg-color"]: z.string(),
+  ["content-bg"]: z.string(),
+  ["content-fg"]: z.string(),
+  ["content-hover-bg"]: z.string(),
+  ["content-hover-fg"]: z.string(),
 });
 
-const colorsSchema = z.object({
+const colorsSchema = z
+  .object({
     node_slot: nodeSlotSchema,
     litegraph_base: litegraphBaseSchema,
-    comfy_base: comfyBaseSchema
-}).passthrough();
+    comfy_base: comfyBaseSchema,
+  })
+  .passthrough();
 
 const paletteSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    colors: colorsSchema
+  id: z.string(),
+  name: z.string(),
+  colors: colorsSchema,
 });
 
 const colorPalettesSchema = z.record(paletteSchema);

@@ -14,7 +14,10 @@ export class ComfyQueueButton {
   queuePrompt = async (e) => {
     this.#internalQueueSize += this.queueOptions.batchCount;
     // Hold shift to queue front, event is undefined when auto-queue is enabled
-    await this.app.queuePrompt(e?.shiftKey ? -1 : 0, this.queueOptions.batchCount);
+    await this.app.queuePrompt(
+      e?.shiftKey ? -1 : 0,
+      this.queueOptions.batchCount
+    );
   };
 
   constructor(app) {
@@ -63,7 +66,10 @@ export class ComfyQueueButton {
       }
     });
 
-    this.queueOptions.addEventListener("autoQueueMode", (e) => (this.autoQueueMode = e["detail"]));
+    this.queueOptions.addEventListener(
+      "autoQueueMode",
+      (e) => (this.autoQueueMode = e["detail"])
+    );
 
     api.addEventListener("graphChanged", () => {
       if (this.autoQueueMode === "change") {
@@ -79,10 +85,14 @@ export class ComfyQueueButton {
     api.addEventListener("status", ({ detail }) => {
       this.#internalQueueSize = detail?.exec_info?.queue_remaining;
       if (this.#internalQueueSize != null) {
-        this.queueSizeElement.textContent = this.#internalQueueSize > 99 ? "99+" : this.#internalQueueSize + "";
+        this.queueSizeElement.textContent =
+          this.#internalQueueSize > 99 ? "99+" : this.#internalQueueSize + "";
         this.queueSizeElement.title = `${this.#internalQueueSize} prompts in queue`;
         if (!this.#internalQueueSize && !app.lastExecutionError) {
-          if (this.autoQueueMode === "instant" || (this.autoQueueMode === "change" && this.graphHasChanged)) {
+          if (
+            this.autoQueueMode === "instant" ||
+            (this.autoQueueMode === "change" && this.graphHasChanged)
+          ) {
             this.graphHasChanged = false;
             this.queuePrompt();
           }

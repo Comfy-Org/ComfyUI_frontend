@@ -3,16 +3,14 @@ import { $el } from "../ui";
 import { createSpinner } from "./spinner";
 import "./userSelection.css";
 
-
 interface SelectedUser {
   username: string;
   userId: string;
   created: boolean;
 }
 
-
 export class UserSelectionScreen {
-  async show(users, user): Promise<SelectedUser>{
+  async show(users, user): Promise<SelectedUser> {
     const userSelection = document.getElementById("comfy-user-selection");
     userSelection.style.display = "";
     return new Promise((resolve) => {
@@ -22,7 +20,9 @@ export class UserSelectionScreen {
       const selectSection = select.closest("section");
       const form = userSelection.getElementsByTagName("form")[0];
       const error = userSelection.getElementsByClassName("comfy-user-error")[0];
-      const button = userSelection.getElementsByClassName("comfy-user-button-next")[0];
+      const button = userSelection.getElementsByClassName(
+        "comfy-user-button-next"
+      )[0];
 
       let inputActive = null;
       input.addEventListener("focus", () => {
@@ -45,7 +45,8 @@ export class UserSelectionScreen {
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (inputActive == null) {
-          error.textContent = "Please enter a username or select an existing user.";
+          error.textContent =
+            "Please enter a username or select an existing user.";
         } else if (inputActive) {
           const username = input.value.trim();
           if (!username) {
@@ -54,41 +55,59 @@ export class UserSelectionScreen {
           }
 
           // Create new user
-          // @ts-ignore
           // Property 'readonly' does not exist on type 'HTMLSelectElement'.ts(2339)
           // Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
-          input.disabled = select.disabled = input.readonly = select.readonly = true;
+          input.disabled =
+            select.disabled =
+            // @ts-ignore
+            input.readonly =
+            // @ts-ignore
+            select.readonly =
+              true;
           const spinner = createSpinner();
           button.prepend(spinner);
           try {
             const resp = await api.createUser(username);
             if (resp.status >= 300) {
-              let message = "Error creating user: " + resp.status + " " + resp.statusText;
+              let message =
+                "Error creating user: " + resp.status + " " + resp.statusText;
               try {
                 const res = await resp.json();
-                if(res.error) {
+                if (res.error) {
                   message = res.error;
                 }
-              } catch (error) {
-              }
+              } catch (error) {}
               throw new Error(message);
             }
 
             resolve({ username, userId: await resp.json(), created: true });
           } catch (err) {
             spinner.remove();
-            error.textContent = err.message ?? err.statusText ?? err ?? "An unknown error occurred.";
-            // @ts-ignore
+            error.textContent =
+              err.message ??
+              err.statusText ??
+              err ??
+              "An unknown error occurred.";
             // Property 'readonly' does not exist on type 'HTMLSelectElement'.ts(2339)
             // Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
-            input.disabled = select.disabled = input.readonly = select.readonly = false;
+            input.disabled =
+              select.disabled =
+              // @ts-ignore
+              input.readonly =
+              // @ts-ignore
+              select.readonly =
+                false;
             return;
           }
         } else if (!select.value) {
           error.textContent = "Please select an existing user.";
           return;
         } else {
-          resolve({ username: users[select.value], userId: select.value, created: false });
+          resolve({
+            username: users[select.value],
+            userId: select.value,
+            created: false,
+          });
         }
       });
 
