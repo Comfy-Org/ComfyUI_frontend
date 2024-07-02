@@ -57,7 +57,11 @@ export function createImageHost(node) {
       }
 
       const nw = node.size[0];
-      ({ cellWidth: w, cellHeight: h } = calculateImageGrid(currentImgs, nw - 20, elH));
+      ({ cellWidth: w, cellHeight: h } = calculateImageGrid(
+        currentImgs,
+        nw - 20,
+        elH
+      ));
       w += "px";
       h += "px";
 
@@ -86,10 +90,13 @@ export function createImageHost(node) {
     onDraw() {
       // Element from point uses a hittest find elements so we need to toggle pointer events
       el.style.pointerEvents = "all";
-      const over = document.elementFromPoint(app.canvas.mouse[0], app.canvas.mouse[1]);
+      const over = document.elementFromPoint(
+        app.canvas.mouse[0],
+        app.canvas.mouse[1]
+      );
       el.style.pointerEvents = "none";
 
-      if(!over) return;
+      if (!over) return;
       // Set the overIndex so Open Image etc work
       const idx = currentImgs.indexOf(over);
       node.overIndex = idx;

@@ -31,7 +31,9 @@ export class ComfyViewQueueList extends ComfyViewList {
           text: "Load",
           action: async () => {
             try {
-              await this.app.loadGraphData(item.prompt[3].extra_pnginfo.workflow);
+              await this.app.loadGraphData(
+                item.prompt[3].extra_pnginfo.workflow
+              );
               if (item.outputs) {
                 this.app.nodeOutputs = item.outputs;
               }
@@ -51,5 +53,5 @@ export class ComfyViewQueueList extends ComfyViewList {
         },
       ],
     };
-  }
+  };
 }

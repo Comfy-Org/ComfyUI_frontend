@@ -8,67 +8,77 @@ import { TaskItem } from "/types/apiTypes";
 export const ComfyDialog = _ComfyDialog;
 
 type Position2D = {
-  x: number,
-  y: number
+  x: number;
+  y: number;
 };
 
 type Props = {
-    parent?: HTMLElement,
-    $?: (el: HTMLElement) => void,
-    dataset?: DOMStringMap,
-    style?: Partial<CSSStyleDeclaration>,
-    for?: string,
-    textContent?: string,
-    [key: string]: any
+  parent?: HTMLElement;
+  $?: (el: HTMLElement) => void;
+  dataset?: DOMStringMap;
+  style?: Partial<CSSStyleDeclaration>;
+  for?: string;
+  textContent?: string;
+  [key: string]: any;
 };
 
 type Children = Element[] | Element | string | string[];
 
-export function $el(tag: string, propsOrChildren?: Children | Props, children?: Children): HTMLElement {
-    const split = tag.split(".");
-    const element = document.createElement(split.shift() as string);
-    if (split.length > 0) {
-        element.classList.add(...split);
+export function $el(
+  tag: string,
+  propsOrChildren?: Children | Props,
+  children?: Children
+): HTMLElement {
+  const split = tag.split(".");
+  const element = document.createElement(split.shift() as string);
+  if (split.length > 0) {
+    element.classList.add(...split);
+  }
+
+  if (propsOrChildren) {
+    if (typeof propsOrChildren === "string") {
+      propsOrChildren = { textContent: propsOrChildren };
+    } else if (propsOrChildren instanceof Element) {
+      propsOrChildren = [propsOrChildren];
     }
+    if (Array.isArray(propsOrChildren)) {
+      element.append(...propsOrChildren);
+    } else {
+      const {
+        parent,
+        $: cb,
+        dataset,
+        style,
+        ...rest
+      } = propsOrChildren as Props;
 
-    if (propsOrChildren) {
-        if (typeof propsOrChildren === "string") {
-            propsOrChildren = { textContent: propsOrChildren };
-        } else if (propsOrChildren instanceof Element) {
-            propsOrChildren = [propsOrChildren];
-        }
-        if (Array.isArray(propsOrChildren)) {
-            element.append(...propsOrChildren);
-        } else {
-            const { parent, $: cb, dataset, style, ...rest } = propsOrChildren as Props;
+      if (rest.for) {
+        element.setAttribute("for", rest.for);
+      }
 
-            if (rest.for) {
-                element.setAttribute("for", rest.for)
-            }
+      if (style) {
+        Object.assign(element.style, style);
+      }
 
-            if (style) {
-                Object.assign(element.style, style);
-            }
+      if (dataset) {
+        Object.assign(element.dataset, dataset);
+      }
 
-            if (dataset) {
-                Object.assign(element.dataset, dataset);
-            }
+      Object.assign(element, rest);
+      if (children) {
+        element.append(...(Array.isArray(children) ? children : [children]));
+      }
 
-            Object.assign(element, rest);
-            if (children) {
-                element.append(...(Array.isArray(children) ? children : [children]));
-            }
+      if (parent) {
+        parent.append(element);
+      }
 
-            if (parent) {
-                parent.append(element);
-            }
-
-            if (cb) {
-                cb(element);
-            }
-        }
+      if (cb) {
+        cb(element);
+      }
     }
-    return element;
+  }
+  return element;
 }
 
 function dragElement(dragEl, settings) {
@@ -93,12 +103,17 @@ function dragElement(dragEl, settings) {
 
   function ensureInBounds() {
     try {
-      newPosX = Math.min(document.body.clientWidth - dragEl.clientWidth, Math.max(0, dragEl.offsetLeft));
-      newPosY = Math.min(document.body.clientHeight - dragEl.clientHeight, Math.max(0, dragEl.offsetTop));
+      newPosX = Math.min(
+        document.body.clientWidth - dragEl.clientWidth,
+        Math.max(0, dragEl.offsetLeft)
+      );
+      newPosY = Math.min(
+        document.body.clientHeight - dragEl.clientHeight,
+        Math.max(0, dragEl.offsetTop)
+      );
 
       positionElement();
-    }
-    catch (exception) {
+    } catch (exception) {
       // robust
     }
   }
@@ -112,7 +127,8 @@ function dragElement(dragEl, settings) {
     // set the element's new position:
     if (anchorRight) {
       dragEl.style.left = "unset";
-      dragEl.style.right = document.body.clientWidth - newPosX - dragEl.clientWidth + "px";
+      dragEl.style.right =
+        document.body.clientWidth - newPosX - dragEl.clientWidth + "px";
     } else {
       dragEl.style.left = newPosX + "px";
       dragEl.style.right = "unset";
@@ -180,8 +196,14 @@ function dragElement(dragEl, settings) {
     posStartX = e.clientX;
     posStartY = e.clientY;
 
-    newPosX = Math.min(document.body.clientWidth - dragEl.clientWidth, Math.max(0, dragEl.offsetLeft + posDiffX));
-    newPosY = Math.min(document.body.clientHeight - dragEl.clientHeight, Math.max(0, dragEl.offsetTop + posDiffY));
+    newPosX = Math.min(
+      document.body.clientWidth - dragEl.clientWidth,
+      Math.max(0, dragEl.offsetLeft + posDiffX)
+    );
+    newPosY = Math.min(
+      document.body.clientHeight - dragEl.clientHeight,
+      Math.max(0, dragEl.offsetTop + posDiffY)
+    );
 
     positionElement();
   }
@@ -226,31 +248,40 @@ class ComfyList {
           textContent: section,
         }),
         $el("div.comfy-list-items", [
-          ...(this.#reverse ? items[section].reverse() : items[section]).map((item: TaskItem) => {
-            // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-            const removeAction = "remove" in item ? item.remove : {
-              name: "Delete",
-              cb: () => api.deleteItem(this.#type, item.prompt[1]),
-            };
-            return $el("div", { textContent: item.prompt[0] + ": " }, [
-              $el("button", {
-                textContent: "Load",
-                onclick: async () => {
-                  await app.loadGraphData(item.prompt[3].extra_pnginfo.workflow, true, false);
-                  if ("outputs" in item) {
-                    app.nodeOutputs = item.outputs;
-                  }
-                },
-              }),
-              $el("button", {
-                textContent: removeAction.name,
-                onclick: async () => {
-                  await removeAction.cb();
-                  await this.update();
-                },
-              }),
-            ]);
-          }),
+          ...(this.#reverse ? items[section].reverse() : items[section]).map(
+            (item: TaskItem) => {
+              // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
+              const removeAction =
+                "remove" in item
+                  ? item.remove
+                  : {
+                      name: "Delete",
+                      cb: () => api.deleteItem(this.#type, item.prompt[1]),
+                    };
+              return $el("div", { textContent: item.prompt[0] + ": " }, [
+                $el("button", {
+                  textContent: "Load",
+                  onclick: async () => {
+                    await app.loadGraphData(
+                      item.prompt[3].extra_pnginfo.workflow,
+                      true,
+                      false
+                    );
+                    if ("outputs" in item) {
+                      app.nodeOutputs = item.outputs;
+                    }
+                  },
+                }),
+                $el("button", {
+                  textContent: removeAction.name,
+                  onclick: async () => {
+                    await removeAction.cb();
+                    await this.update();
+                  },
+                }),
+              ]);
+            }
+          ),
         ]),
       ]),
       $el("div.comfy-list-actions", [
@@ -400,8 +431,15 @@ export class ComfyUI {
     const autoQueueModeEl = toggleSwitch(
       "autoQueueMode",
       [
-        { text: "instant", tooltip: "A new prompt will be queued as soon as the queue reaches 0" },
-        { text: "change", tooltip: "A new prompt will be queued when the queue is at 0 and the graph is/has changed" },
+        {
+          text: "instant",
+          tooltip: "A new prompt will be queued as soon as the queue reaches 0",
+        },
+        {
+          text: "change",
+          tooltip:
+            "A new prompt will be queued when the queue is at 0 and the graph is/has changed",
+        },
       ],
       {
         onChange: (value) => {
@@ -435,30 +473,34 @@ export class ComfyUI {
     ) as HTMLDivElement;
 
     this.menuContainer = $el("div.comfy-menu", { parent: document.body }, [
-      $el("div.drag-handle.comfy-menu-header", {
-        style: {
-          overflow: "hidden",
-          position: "relative",
-          width: "100%",
-          cursor: "default"
-        }
-      }, [
-        $el("span.drag-handle"),
-        $el("span.comfy-menu-queue-size", { $: (q) => (this.queueSize = q) }),
-        $el("div.comfy-menu-actions", [
-          $el("button.comfy-settings-btn", {
-            textContent: "⚙️",
-            onclick: () => this.settings.show(),
-          }),
-          $el("button.comfy-close-menu-btn", {
-            textContent: "\u00d7",
-            onclick: () => {
-              this.menuContainer.style.display = "none";
-              this.menuHamburger.style.display = "flex";
-            },
-          }),
-        ]),
-      ]),
+      $el(
+        "div.drag-handle.comfy-menu-header",
+        {
+          style: {
+            overflow: "hidden",
+            position: "relative",
+            width: "100%",
+            cursor: "default",
+          },
+        },
+        [
+          $el("span.drag-handle"),
+          $el("span.comfy-menu-queue-size", { $: (q) => (this.queueSize = q) }),
+          $el("div.comfy-menu-actions", [
+            $el("button.comfy-settings-btn", {
+              textContent: "⚙️",
+              onclick: () => this.settings.show(),
+            }),
+            $el("button.comfy-close-menu-btn", {
+              textContent: "\u00d7",
+              onclick: () => {
+                this.menuContainer.style.display = "none";
+                this.menuHamburger.style.display = "flex";
+              },
+            }),
+          ]),
+        ]
+      ),
       $el("button.comfy-queue-btn", {
         id: "queue-button",
         textContent: "Queue Prompt",
@@ -469,70 +511,95 @@ export class ComfyUI {
           $el("input", {
             type: "checkbox",
             onchange: (i) => {
-              document.getElementById("extraOptions").style.display = i.srcElement.checked ? "block" : "none";
-              this.batchCount = i.srcElement.checked ?
-                Number.parseInt((document.getElementById("batchCountInputRange") as HTMLInputElement).value) : 1;
-              (document.getElementById("autoQueueCheckbox") as HTMLInputElement).checked = false;
+              document.getElementById("extraOptions").style.display = i
+                .srcElement.checked
+                ? "block"
+                : "none";
+              this.batchCount = i.srcElement.checked
+                ? Number.parseInt(
+                    (
+                      document.getElementById(
+                        "batchCountInputRange"
+                      ) as HTMLInputElement
+                    ).value
+                  )
+                : 1;
+              (
+                document.getElementById("autoQueueCheckbox") as HTMLInputElement
+              ).checked = false;
               this.autoQueueEnabled = false;
             },
           }),
         ]),
       ]),
-      $el("div", { id: "extraOptions", style: { width: "100%", display: "none" } }, [
-        $el("div", [
-
-          $el("label", { innerHTML: "Batch count" }),
-          $el("input", {
-            id: "batchCountInputNumber",
-            type: "number",
-            value: this.batchCount,
-            min: "1",
-            style: { width: "35%", "marginLeft": "0.4em" },
-            oninput: (i) => {
-              this.batchCount = i.target.value;
-              /* Even though an <input> element with a type of range logically represents a number (since
+      $el(
+        "div",
+        { id: "extraOptions", style: { width: "100%", display: "none" } },
+        [
+          $el("div", [
+            $el("label", { innerHTML: "Batch count" }),
+            $el("input", {
+              id: "batchCountInputNumber",
+              type: "number",
+              value: this.batchCount,
+              min: "1",
+              style: { width: "35%", marginLeft: "0.4em" },
+              oninput: (i) => {
+                this.batchCount = i.target.value;
+                /* Even though an <input> element with a type of range logically represents a number (since
               it's used for numeric input), the value it holds is still treated as a string in HTML and
               JavaScript. This behavior is consistent across all <input> elements regardless of their type
               (like text, number, or range), where the .value property is always a string. */
-              (document.getElementById("batchCountInputRange") as HTMLInputElement).value = this.batchCount.toString();
-            },
-          }),
-          $el("input", {
-            id: "batchCountInputRange",
-            type: "range",
-            min: "1",
-            max: "100",
-            value: this.batchCount,
-            oninput: (i) => {
-              this.batchCount = i.srcElement.value;
-              // Note
-              (document.getElementById("batchCountInputNumber") as HTMLInputElement).value = i.srcElement.value;
-            },
-          }),
-        ]),
-        $el("div", [
-          $el("label", {
-            for: "autoQueueCheckbox",
-            innerHTML: "Auto Queue"
-          }),
-          $el("input", {
-            id: "autoQueueCheckbox",
-            type: "checkbox",
-            checked: false,
-            title: "Automatically queue prompt when the queue size hits 0",
-            onchange: (e) => {
-              this.autoQueueEnabled = e.target.checked;
-              autoQueueModeEl.style.display = this.autoQueueEnabled ? "" : "none";
-            }
-          }),
-          autoQueueModeEl
-        ])
-      ]),
+                (
+                  document.getElementById(
+                    "batchCountInputRange"
+                  ) as HTMLInputElement
+                ).value = this.batchCount.toString();
+              },
+            }),
+            $el("input", {
+              id: "batchCountInputRange",
+              type: "range",
+              min: "1",
+              max: "100",
+              value: this.batchCount,
+              oninput: (i) => {
+                this.batchCount = i.srcElement.value;
+                // Note
+                (
+                  document.getElementById(
+                    "batchCountInputNumber"
+                  ) as HTMLInputElement
+                ).value = i.srcElement.value;
+              },
+            }),
+          ]),
+          $el("div", [
+            $el("label", {
+              for: "autoQueueCheckbox",
+              innerHTML: "Auto Queue",
+            }),
+            $el("input", {
+              id: "autoQueueCheckbox",
+              type: "checkbox",
+              checked: false,
+              title: "Automatically queue prompt when the queue size hits 0",
+              onchange: (e) => {
+                this.autoQueueEnabled = e.target.checked;
+                autoQueueModeEl.style.display = this.autoQueueEnabled
+                  ? ""
+                  : "none";
+              },
+            }),
+            autoQueueModeEl,
+          ]),
+        ]
+      ),
       $el("div.comfy-menu-btns", [
         $el("button", {
           id: "queue-front-button",
           textContent: "Queue Front",
-          onclick: () => app.queuePrompt(-1, this.batchCount)
+          onclick: () => app.queuePrompt(-1, this.batchCount),
         }),
         $el("button", {
           $: (b) => (this.queue.button = b as HTMLButtonElement),
@@ -567,7 +634,7 @@ export class ComfyUI {
               filename += ".json";
             }
           }
-          app.graphToPrompt().then(p => {
+          app.graphToPrompt().then((p) => {
             const json = JSON.stringify(p.workflow, null, 2); // convert the data to a JSON string
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -598,7 +665,7 @@ export class ComfyUI {
               filename += ".json";
             }
           }
-          app.graphToPrompt().then(p => {
+          app.graphToPrompt().then((p) => {
             const json = JSON.stringify(p.output, null, 2); // convert the data to a JSON string
             const blob = new Blob([json], { type: "application/json" });
             const url = URL.createObjectURL(blob);
@@ -616,34 +683,48 @@ export class ComfyUI {
           });
         },
       }),
-      $el("button", { id: "comfy-load-button", textContent: "Load", onclick: () => fileInput.click() }),
+      $el("button", {
+        id: "comfy-load-button",
+        textContent: "Load",
+        onclick: () => fileInput.click(),
+      }),
       $el("button", {
         id: "comfy-refresh-button",
         textContent: "Refresh",
-        onclick: () => app.refreshComboInNodes()
+        onclick: () => app.refreshComboInNodes(),
       }),
-      $el("button", { id: "comfy-clipspace-button", textContent: "Clipspace", onclick: () => app.openClipspace() }),
       $el("button", {
-        id: "comfy-clear-button", textContent: "Clear", onclick: () => {
+        id: "comfy-clipspace-button",
+        textContent: "Clipspace",
+        onclick: () => app.openClipspace(),
+      }),
+      $el("button", {
+        id: "comfy-clear-button",
+        textContent: "Clear",
+        onclick: () => {
           if (!confirmClear.value || confirm("Clear workflow?")) {
             app.clean();
             app.graph.clear();
             app.resetView();
           }
-        }
+        },
       }),
       $el("button", {
-        id: "comfy-load-default-button", textContent: "Load Default", onclick: async () => {
+        id: "comfy-load-default-button",
+        textContent: "Load Default",
+        onclick: async () => {
           if (!confirmClear.value || confirm("Load default workflow?")) {
             app.resetView();
-            await app.loadGraphData()
+            await app.loadGraphData();
           }
-        }
+        },
       }),
       $el("button", {
-        id: "comfy-reset-view-button", textContent: "Reset View", onclick: async () => {
+        id: "comfy-reset-view-button",
+        textContent: "Reset View",
+        onclick: async () => {
           app.resetView();
-        }
+        },
       }),
     ]) as HTMLDivElement;
 
@@ -652,7 +733,10 @@ export class ComfyUI {
       name: "Enable Dev mode Options",
       type: "boolean",
       defaultValue: false,
-      onChange: function (value) { document.getElementById("comfy-dev-save-api-button").style.display = value ? "flex" : "none" },
+      onChange: function (value) {
+        document.getElementById("comfy-dev-save-api-button").style.display =
+          value ? "flex" : "none";
+      },
     });
 
     // @ts-ignore
@@ -662,7 +746,8 @@ export class ComfyUI {
   }
 
   setStatus(status) {
-    this.queueSize.textContent = "Queue size: " + (status ? status.exec_info.queue_remaining : "ERR");
+    this.queueSize.textContent =
+      "Queue size: " + (status ? status.exec_info.queue_remaining : "ERR");
     if (status) {
       if (
         this.lastQueueSize != 0 &&

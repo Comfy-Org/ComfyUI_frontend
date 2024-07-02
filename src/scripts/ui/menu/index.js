@@ -48,7 +48,11 @@ export class ComfyAppMenu {
         content: t,
       });
 
-    this.logo = $el("h1.comfyui-logo.nlg-hide", { title: "ComfyUI" }, "ComfyUI");
+    this.logo = $el(
+      "h1.comfyui-logo.nlg-hide",
+      { title: "ComfyUI" },
+      "ComfyUI"
+    );
     this.saveButton = new ComfySplitButton(
       {
         primary: getSaveButton(),
@@ -71,7 +75,8 @@ export class ComfyAppMenu {
       new ComfyButton({
         icon: "api",
         content: "Export (API Format)",
-        tooltip: "Export the current workflow as JSON for use with the ComfyUI API",
+        tooltip:
+          "Export the current workflow as JSON for use with the ComfyUI API",
         action: () => this.exportWorkflow("workflow_api", "output"),
         visibilitySetting: { id: "Comfy.DevMode", showValue: true },
         app,
@@ -101,7 +106,10 @@ export class ComfyAppMenu {
         content: "Clear",
         tooltip: "Clears current workflow",
         action: () => {
-          if (!app.ui.settings.getSettingValue("Comfy.ConfirmClear", true) || confirm("Clear workflow?")) {
+          if (
+            !app.ui.settings.getSettingValue("Comfy.ConfirmClear", true) ||
+            confirm("Clear workflow?")
+          ) {
             app.clean();
             app.graph.clear();
           }
@@ -126,7 +134,9 @@ export class ComfyAppMenu {
     this.mobileMenuButton = new ComfyButton({
       icon: "menu",
       action: (_, btn) => {
-        btn.icon = this.element.classList.toggle("expanded") ? "menu-open" : "menu";
+        btn.icon = this.element.classList.toggle("expanded")
+          ? "menu-open"
+          : "menu";
         window.dispatchEvent(new Event("resize"));
       },
       classList: "comfyui-button comfyui-menu-button",
@@ -239,7 +249,10 @@ export class ComfyAppMenu {
         idx--;
       }
     } else if (innerSize > this.element.clientWidth) {
-      this.#lastSizeBreaks[this.#sizeBreak] = Math.max(window.innerWidth, innerSize);
+      this.#lastSizeBreaks[this.#sizeBreak] = Math.max(
+        window.innerWidth,
+        innerSize
+      );
       // We need to shrink
       if (idx < this.#sizeBreaks.length - 1) {
         idx++;
@@ -254,19 +267,26 @@ export class ComfyAppMenu {
     clearTimeout(this.#cacheTimeout);
     if (this.#cachedInnerSize) {
       // Extend cache time
-      this.#cacheTimeout = setTimeout(() => (this.#cachedInnerSize = null), 100);
+      this.#cacheTimeout = setTimeout(
+        () => (this.#cachedInnerSize = null),
+        100
+      );
     } else {
       let innerSize = 0;
       let count = 1;
       for (const c of this.element.children) {
         if (c.classList.contains("comfyui-menu-push")) continue; // ignore right push
-        if (idx && c.classList.contains("comfyui-menu-mobile-collapse")) continue; // ignore collapse items
+        if (idx && c.classList.contains("comfyui-menu-mobile-collapse"))
+          continue; // ignore collapse items
         innerSize += c.clientWidth;
         count++;
       }
       innerSize += 8 * count;
       this.#cachedInnerSize = innerSize;
-      this.#cacheTimeout = setTimeout(() => (this.#cachedInnerSize = null), 100);
+      this.#cacheTimeout = setTimeout(
+        () => (this.#cachedInnerSize = null),
+        100
+      );
     }
     return this.#cachedInnerSize;
   }

@@ -69,11 +69,14 @@ export class ComfyViewList {
       },
     });
 
-    this.element = $el(`div.comfyui-${this.type}-popup.comfyui-view-list-popup`, [
-      $el("h3", mode),
-      $el("header", [this.clear.element, this.refresh.element]),
-      this.items,
-    ]);
+    this.element = $el(
+      `div.comfyui-${this.type}-popup.comfyui-view-list-popup`,
+      [
+        $el("h3", mode),
+        $el("header", [this.clear.element, this.refresh.element]),
+        this.items,
+      ]
+    );
 
     api.addEventListener("status", () => {
       if (this.popup.open) {
@@ -155,7 +158,9 @@ export class ComfyViewList {
           text: "Load",
           action: async () => {
             try {
-              await this.app.loadGraphData(item.prompt[3].extra_pnginfo.workflow);
+              await this.app.loadGraphData(
+                item.prompt[3].extra_pnginfo.workflow
+              );
               if (item.outputs) {
                 this.app.nodeOutputs = item.outputs;
               }

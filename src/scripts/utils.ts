@@ -57,7 +57,9 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
 
     // Find node with matching S&R property name
     // @ts-ignore
-    let nodes = app.graph._nodes.filter((n) => n.properties?.["Node name for S&R"] === split[0]);
+    let nodes = app.graph._nodes.filter(
+      (n) => n.properties?.["Node name for S&R"] === split[0]
+    );
     // If we cant, see if there is a node with that title
     if (!nodes.length) {
       // @ts-ignore
@@ -76,7 +78,13 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
 
     const widget = node.widgets?.find((w) => w.name === split[1]);
     if (!widget) {
-      console.warn("Unable to find widget", split[1], "on node", split[0], node);
+      console.warn(
+        "Unable to find widget",
+        split[1],
+        "on node",
+        split[0],
+        node
+      );
       return match;
     }
 
@@ -84,13 +92,19 @@ export function applyTextReplacements(app: ComfyApp, value: string): string {
   });
 }
 
-export async function addStylesheet(urlOrFile: string, relativeTo?: string): Promise<void> {
+export async function addStylesheet(
+  urlOrFile: string,
+  relativeTo?: string
+): Promise<void> {
   return new Promise((res, rej) => {
     let url;
     if (urlOrFile.endsWith(".js")) {
       url = urlOrFile.substr(0, urlOrFile.length - 2) + "css";
     } else {
-      url = new URL(urlOrFile, relativeTo ?? `${window.location.protocol}//${window.location.host}`).toString();
+      url = new URL(
+        urlOrFile,
+        relativeTo ?? `${window.location.protocol}//${window.location.host}`
+      ).toString();
     }
     $el("link", {
       parent: document.head,
@@ -102,7 +116,6 @@ export async function addStylesheet(urlOrFile: string, relativeTo?: string): Pro
     });
   });
 }
-
 
 /**
  * @param { string } filename
@@ -147,7 +160,10 @@ export function prop(target, name, defaultValue, onChanged) {
 
 export function getStorageValue(id) {
   const clientId = api.clientId ?? api.initialClientId;
-  return (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ?? localStorage.getItem(id);
+  return (
+    (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??
+    localStorage.getItem(id)
+  );
 }
 
 export function setStorageValue(id, value) {

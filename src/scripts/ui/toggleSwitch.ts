@@ -20,7 +20,10 @@ export function toggleSwitch(name, items, e?) {
     if (selectedIndex != null) {
       elements[selectedIndex].classList.remove("comfy-toggle-selected");
     }
-    onChange?.({ item: items[index], prev: selectedIndex == null ? undefined : items[selectedIndex] });
+    onChange?.({
+      item: items[index],
+      prev: selectedIndex == null ? undefined : items[selectedIndex],
+    });
     selectedIndex = index;
     elements[selectedIndex].classList.add("comfy-toggle-selected");
   }

@@ -19,7 +19,14 @@ interface SettingOption {
 interface SettingParams {
   id: string;
   name: string;
-  type: string | ((name: string, setter: (v: any) => void, value: any, attrs: any) => HTMLElement);
+  type:
+    | string
+    | ((
+        name: string,
+        setter: (v: any) => void,
+        value: any,
+        attrs: any
+      ) => HTMLElement);
   defaultValue: any;
   onChange?: (newValue: any, oldValue?: any) => void;
   attrs?: any;
@@ -81,7 +88,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       new CustomEvent(id + ".change", {
         detail: {
           value,
-          oldValue
+          oldValue,
         },
       })
     );
@@ -115,8 +122,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       if (this.app.storageLocation === "browser") {
         try {
           value = JSON.parse(value);
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     }
     return value ?? defaultValue;
@@ -145,7 +151,16 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   addSetting(params: SettingParams) {
-    const { id, name, type, defaultValue, onChange, attrs = {}, tooltip = "", options = undefined } = params;
+    const {
+      id,
+      name,
+      type,
+      defaultValue,
+      onChange,
+      attrs = {},
+      tooltip = "",
+      options = undefined,
+    } = params;
     if (!id) {
       throw new Error("Settings must have an ID");
     }
@@ -272,7 +287,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
                         style: { maxWidth: "4rem" },
                         oninput: (e) => {
                           setter(e.target.value);
-                          e.target.previousElementSibling.value = e.target.value;
+                          e.target.previousElementSibling.value =
+                            e.target.value;
                         },
                       }),
                     ]
@@ -291,7 +307,10 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
                         setter(e.target.value);
                       },
                     },
-                    (typeof options === "function" ? options(value) : options || []).map((opt) => {
+                    (typeof options === "function"
+                      ? options(value)
+                      : options || []
+                    ).map((opt) => {
                       if (typeof opt === "string") {
                         opt = { text: opt };
                       }
@@ -309,7 +328,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
             case "text":
             default:
               if (type !== "text") {
-                console.warn(`Unsupported setting type '${type}, defaulting to text`);
+                console.warn(
+                  `Unsupported setting type '${type}, defaulting to text`
+                );
               }
 
               element = $el("tr", [
@@ -356,7 +377,10 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         },
         [$el("th"), $el("th", { style: { width: "33%" } })]
       ),
-      ...this.settings.sort((a, b) => a.name.localeCompare(b.name)).map((s) => s.render()).filter(Boolean)
+      ...this.settings
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((s) => s.render())
+        .filter(Boolean)
     );
     this.element.showModal();
   }
