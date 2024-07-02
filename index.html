@@ -12,6 +12,7 @@
 				font-family: 'Roboto Mono', 'Noto Color Emoji';
 			}
 		</style> -->
+		<script type="module" src="/src/main.ts"></script>
 		<script type="module">
 			console.log("ComfyUI Front-end version:", __COMFYUI_FRONTEND_VERSION__);
 			import { app } from "./src/scripts/app";
@@ -24,7 +25,8 @@
 		<link rel="stylesheet" type="text/css" href="/user.css" />
 		<link rel="stylesheet" type="text/css" href="/materialdesignicons.min.css" />
 	</head>
-	<body class="litegraph">
+	<body class="litegraph dark-theme">
+		<div id="vue-app"></div>
 		<div id="comfy-user-selection" class="comfy-user-selection" style="display: none;">
 			<main class="comfy-user-selection-inner">
 				<h1>ComfyUI</h1>

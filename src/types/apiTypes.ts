@@ -219,6 +219,7 @@ const zComfyNodeDef = z.object({
   description: z.string(),
   category: z.string(),
   output_node: z.boolean(),
+  python_module: z.string(),
 });
 
 // `/object_info`

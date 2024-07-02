@@ -36,14 +36,15 @@ body {
 	height: 100vh;
 	margin: 0;
 	overflow: hidden;
-	background-color: var(--bg-color);
-	color: var(--fg-color);
 	grid-template-columns: auto 1fr auto;
 	grid-template-rows: auto auto 1fr auto;
+	background-color: var(--bg-color);
+	color: var(--fg-color);
 	min-height: -webkit-fill-available;
 	max-height: -webkit-fill-available;
 	min-width: -webkit-fill-available;
 	max-width: -webkit-fill-available;
+	font-family: Arial, sans-serif;
 }
 
 .comfyui-body-top {
@@ -633,4 +634,18 @@ dialog::backdrop {
 
 audio.comfy-audio.empty-audio-widget {
 	display: none;
+}
+
+#vue-app {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+/* Set auto complete panel's width as it is not accessible within vue-root */
+.p-autocomplete-overlay {
+	max-width: 25vw;
 }

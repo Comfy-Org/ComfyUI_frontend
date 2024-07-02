@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import dotenv from "dotenv";
 dotenv.config();
@@ -98,6 +99,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    vue(),
     comfyAPIPlugin(),
   ],
   build: {
@@ -112,4 +114,9 @@ export default defineConfig({
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
   },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  }
 });
