@@ -53,7 +53,7 @@ export type WidgetCallback<T extends IWidget = IWidget> = (
 
 export interface IWidget<TValue = any, TOptions = any> {
     // linked widgets, e.g. seed+seedControl
-	linkedWidgets: IWidget[];
+  linkedWidgets: IWidget[];
 
     name: string | null;
     value: TValue;
@@ -165,7 +165,7 @@ export declare class LGraph {
     static supported_types: string[];
     static STATUS_STOPPED: 1;
     static STATUS_RUNNING: 2;
-	extra: any;
+  extra: any;
 
     constructor(o?: object);
 
@@ -411,12 +411,12 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
-	onResize?: Function;
+  onResize?: Function;
 
     // Used in group node
-	setInnerNodes(nodes: any) {
-		throw new Error("Method not implemented.");
-	}
+  setInnerNodes(nodes: any) {
+    throw new Error("Method not implemented.");
+  }
 
     static title_color: string;
     static title: string;
@@ -857,7 +857,7 @@ export declare class LGraphNode {
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {
-	nodeData: any;  // Used by group node.
+  nodeData: any;  // Used by group node.
     new (): T;
 };
 
@@ -1341,11 +1341,11 @@ declare global {
     }
 
     const LiteGraph: {
-		DEFAULT_GROUP_FONT_SIZE: any;
-		overlapBounding(visible_area: any, _bounding: any): unknown;
-		release_link_on_empty_shows_menu: boolean;
-		alt_drag_do_clone_nodes: boolean;
-		GRID_SHAPE: number;
+    DEFAULT_GROUP_FONT_SIZE: any;
+    overlapBounding(visible_area: any, _bounding: any): unknown;
+    release_link_on_empty_shows_menu: boolean;
+    alt_drag_do_clone_nodes: boolean;
+    GRID_SHAPE: number;
         VERSION: number;
     
         CANVAS_GRID_SIZE: number;
