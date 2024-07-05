@@ -1,12 +1,17 @@
-// @ts-nocheck
-
+import type { ComfyApp } from "scripts/app";
 import { $el } from "../../ui";
 import { prop } from "../../utils";
 
 export class ComfyQueueOptions extends EventTarget {
   element = $el("div.comfyui-queue-options");
+  app: ComfyApp;
+  batchCountInput: HTMLInputElement;
+  batchCount: number;
+  batchCountRange: HTMLInputElement;
+  autoQueueMode: string;
+  autoQueueEl: HTMLElement;
 
-  constructor(app) {
+  constructor(app: ComfyApp) {
     super();
     this.app = app;
 

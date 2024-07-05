@@ -136,14 +136,17 @@ export function downloadBlob(filename, blob) {
   }, 0);
 }
 
-/**
- * @template T
- * @param {string} name
- * @param {T} [defaultValue]
- * @param {(currentValue: any, previousValue: any)=>void} [onChanged]
- * @returns {T}
- */
-export function prop(target, name, defaultValue, onChanged) {
+export function prop<T>(
+  target: object,
+  name: string,
+  defaultValue: T,
+  onChanged?: (
+    currentValue: T,
+    previousValue: T,
+    target: object,
+    name: string
+  ) => void
+): T {
   let currentValue;
   Object.defineProperty(target, name, {
     get() {

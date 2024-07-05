@@ -1,16 +1,13 @@
-/**
- * @typedef {  string | string[] | Record<string, boolean> } ClassList
- */
+export type ClassList = string | string[] | Record<string, boolean>;
 
-/**
- * @param { HTMLElement } element
- * @param { ClassList } classList
- * @param { string[] } requiredClasses
- */
-export function applyClasses(element, classList, ...requiredClasses) {
+export function applyClasses(
+  element: HTMLElement,
+  classList: ClassList,
+  ...requiredClasses: string[]
+) {
   classList ??= "";
 
-  let str;
+  let str: string;
   if (typeof classList === "string") {
     str = classList;
   } else if (classList instanceof Array) {
@@ -29,14 +26,18 @@ export function applyClasses(element, classList, ...requiredClasses) {
   }
 }
 
-/**
- * @param { HTMLElement } element
- * @param { { onHide?: (el: HTMLElement) => void, onShow?: (el: HTMLElement, value) => void } } [param1]
- * @returns
- */
-export function toggleElement(element, { onHide, onShow } = {}) {
-  let placeholder;
-  let hidden;
+export function toggleElement(
+  element: HTMLElement,
+  {
+    onHide,
+    onShow,
+  }: {
+    onHide?: (el: HTMLElement) => void;
+    onShow?: (el: HTMLElement, value) => void;
+  } = {}
+) {
+  let placeholder: HTMLElement | Comment;
+  let hidden: boolean;
   return (value) => {
     if (value) {
       if (hidden) {

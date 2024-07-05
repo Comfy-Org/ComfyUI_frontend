@@ -1,24 +1,19 @@
-// @ts-nocheck
-
 import { prop } from "../../utils";
 import { $el } from "../../ui";
-import { applyClasses } from "../utils";
+import { applyClasses, ClassList } from "../utils";
 
 export class ComfyPopup extends EventTarget {
   element = $el("div.comfyui-popup");
+  open: boolean;
+  children: HTMLElement[];
+  target: HTMLElement;
+  ignoreTarget: boolean;
+  container: HTMLElement;
+  position: string;
+  closeOnEscape: boolean;
+  horizontal: string;
+  classList: ClassList;
 
-  /**
-   * @param {{
-   *     target: HTMLElement,
-   *      container?: HTMLElement,
-   *      classList?: import("../utils").ClassList,
-   * 		ignoreTarget?: boolean,
-   * 		closeOnEscape?: boolean,
-   * 		position?: "absolute" | "relative",
-   * 		horizontal?: "left" | "right"
-   * }} param0
-   * @param  {...HTMLElement} children
-   */
   constructor(
     {
       target,
@@ -28,8 +23,16 @@ export class ComfyPopup extends EventTarget {
       closeOnEscape = true,
       position = "absolute",
       horizontal = "left",
+    }: {
+      target: HTMLElement;
+      container?: HTMLElement;
+      classList?: ClassList;
+      ignoreTarget?: boolean;
+      closeOnEscape?: boolean;
+      position?: "absolute" | "relative";
+      horizontal?: "left" | "right";
     },
-    ...children
+    ...children: HTMLElement[]
   ) {
     super();
     this.target = target;

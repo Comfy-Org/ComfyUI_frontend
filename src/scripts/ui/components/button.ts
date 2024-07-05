@@ -1,37 +1,41 @@
-// @ts-nocheck
-
 import { $el } from "../../ui";
-import { applyClasses, toggleElement } from "../utils";
+import { applyClasses, ClassList, toggleElement } from "../utils";
 import { prop } from "../../utils";
+import type { ComfyPopup } from "./popup";
+import type { ComfyComponent } from ".";
+import type { ComfyApp } from "scripts/app";
 
-/**
- * @typedef {{
- *    icon?: string;
- *    overIcon?: string;
- *    iconSize?: number;
- *    content?: string | HTMLElement;
- *    tooltip?: string;
- *    enabled?: boolean;
- *    action?: (e: Event, btn: ComfyButton) => void,
- *    classList?: import("../utils").ClassList,
- * 	  visibilitySetting?: { id: string, showValue: any },
- * 	  app?: import("../../app").ComfyApp
- * }} ComfyButtonProps
- */
-export class ComfyButton {
+type ComfyButtonProps = {
+  icon?: string;
+  overIcon?: string;
+  iconSize?: number;
+  content?: string | HTMLElement;
+  tooltip?: string;
+  enabled?: boolean;
+  action?: (e: Event, btn: ComfyButton) => void;
+  classList?: ClassList;
+  visibilitySetting?: { id: string; showValue: any };
+  app?: ComfyApp;
+};
+
+export class ComfyButton implements ComfyComponent<HTMLElement> {
   #over = 0;
   #popupOpen = false;
   isOver = false;
   iconElement = $el("i.mdi");
   contentElement = $el("span");
-  /**
-   * @type {import("./popup").ComfyPopup}
-   */
-  popup;
+  popup: ComfyPopup;
+  element: HTMLElement;
+  overIcon: string;
+  iconSize: number;
+  content: string | HTMLElement;
+  icon: string;
+  tooltip: string;
+  classList: ClassList;
+  hidden: boolean;
+  enabled: boolean;
+  action: (e: Event, btn: ComfyButton) => void;
 
-  /**
-   * @param {ComfyButtonProps} opts
-   */
   constructor({
     icon,
     overIcon,
@@ -43,7 +47,7 @@ export class ComfyButton {
     visibilitySetting,
     app,
     enabled = true,
-  }) {
+  }: ComfyButtonProps) {
     this.element = $el(
       "button",
       {
@@ -101,7 +105,7 @@ export class ComfyButton {
     this.hidden = prop(this, "hidden", false, this.updateClasses);
     this.enabled = prop(this, "enabled", enabled, () => {
       this.updateClasses();
-      this.element.disabled = !this.enabled;
+      (this.element as HTMLButtonElement).disabled = !this.enabled;
     });
     this.action = prop(this, "action", action);
     this.element.addEventListener("click", (e) => {
@@ -148,12 +152,7 @@ export class ComfyButton {
     applyClasses(this.element, this.classList, ...internalClasses);
   };
 
-  /**
-   *
-   * @param { import("./popup").ComfyPopup } popup
-   * @param { "click" | "hover" } mode
-   */
-  withPopup(popup, mode = "click") {
+  withPopup(popup: ComfyPopup, mode: "click" | "hover" = "click") {
     this.popup = popup;
 
     if (mode === "hover") {

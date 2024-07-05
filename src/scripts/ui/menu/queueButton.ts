@@ -1,17 +1,16 @@
-// @ts-nocheck
-
 import { ComfyButton } from "../components/button";
 import { $el } from "../../ui";
 import { api } from "../../api";
 import { ComfySplitButton } from "../components/splitButton";
 import { ComfyQueueOptions } from "./queueOptions";
 import { prop } from "../../utils";
+import type { ComfyApp } from "scripts/app";
 
 export class ComfyQueueButton {
   element = $el("div.comfyui-queue-button");
   #internalQueueSize = 0;
 
-  queuePrompt = async (e) => {
+  queuePrompt = async (e?: MouseEvent) => {
     this.#internalQueueSize += this.queueOptions.batchCount;
     // Hold shift to queue front, event is undefined when auto-queue is enabled
     await this.app.queuePrompt(
@@ -19,8 +18,13 @@ export class ComfyQueueButton {
       this.queueOptions.batchCount
     );
   };
+  queueOptions: ComfyQueueOptions;
+  app: ComfyApp;
+  queueSizeElement: HTMLElement;
+  autoQueueMode: string;
+  graphHasChanged: boolean;
 
-  constructor(app) {
+  constructor(app: ComfyApp) {
     this.app = app;
     this.queueSizeElement = $el("span.comfyui-queue-count", {
       textContent: "?",
