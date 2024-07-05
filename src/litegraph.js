@@ -7581,9 +7581,14 @@ LGraphNode.prototype.executeAction = function(action)
         	clientX_rel = e.clientX;
         	clientY_rel = e.clientY;
         }
-    	
-        e.deltaX = clientX_rel - this.last_mouse_position[0];
-        e.deltaY = clientY_rel- this.last_mouse_position[1];
+
+        // Only set deltaX and deltaY if not already set.
+        // If deltaX and deltaY are already present, they are read-only.
+        // Setting them would result browser error => zoom in/out feature broken.
+        if (e.deltaX === undefined)
+            e.deltaX = clientX_rel - this.last_mouse_position[0];
+        if (e.deltaY === undefined)
+            e.deltaY = clientY_rel- this.last_mouse_position[1];
 
         this.last_mouse_position[0] = clientX_rel;
         this.last_mouse_position[1] = clientY_rel;
