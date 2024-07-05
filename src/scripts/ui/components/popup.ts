@@ -1,6 +1,6 @@
 import { prop } from "../../utils";
 import { $el } from "../../ui";
-import { applyClasses } from "../utils";
+import { applyClasses, ClassList } from "../utils";
 
 export class ComfyPopup extends EventTarget {
   element = $el("div.comfyui-popup");
@@ -12,7 +12,7 @@ export class ComfyPopup extends EventTarget {
   position: string;
   closeOnEscape: boolean;
   horizontal: string;
-  classList: import("z:/Dev/ComfyUI_frontend/src/scripts/ui/utils").ClassList;
+  classList: ClassList;
 
   constructor(
     {
@@ -26,7 +26,7 @@ export class ComfyPopup extends EventTarget {
     }: {
       target: HTMLElement;
       container?: HTMLElement;
-      classList?: import("../utils").ClassList;
+      classList?: ClassList;
       ignoreTarget?: boolean;
       closeOnEscape?: boolean;
       position?: "absolute" | "relative";

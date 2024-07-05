@@ -1,35 +1,31 @@
-// @ts-nocheck
-
+import type { LGraph, LGraphCanvas } from "lib/litegraph.core";
+import type { ComfyApp } from "./app";
 import { api } from "./api";
 import { ChangeTracker } from "./changeTracker";
 import { ComfyAsyncDialog } from "./ui/components/asyncDialog";
 import { getStorageValue, setStorageValue } from "./utils";
 
-function appendJsonExt(path) {
+function appendJsonExt(path: string) {
   if (!path.toLowerCase().endsWith(".json")) {
     path += ".json";
   }
   return path;
 }
 
-export function trimJsonExt(path) {
+export function trimJsonExt(path: string) {
   return path?.replace(/\.json$/, "");
 }
 
 export class ComfyWorkflowManager extends EventTarget {
-  /** @type {string | null} */
-  #activePromptId = null;
+  #activePromptId: string | null = null;
   #unsavedCount = 0;
-  #activeWorkflow;
+  #activeWorkflow: ComfyWorkflow;
 
-  /** @type {Record<string, ComfyWorkflow>} */
-  workflowLookup = {};
-  /** @type {Array<ComfyWorkflow>} */
-  workflows = [];
-  /** @type {Array<ComfyWorkflow>} */
-  openWorkflows = [];
-  /** @type {Record<string, {workflow?: ComfyWorkflow, nodes?: Record<string, boolean>}>} */
-  queuedPrompts = {};
+  workflowLookup: Record<string, ComfyWorkflow> = {};
+  workflows: Array<ComfyWorkflow> = [];
+  openWorkflows: Array<ComfyWorkflow> = [];
+  queuedPrompts: Record<string, { workflow?: ComfyWorkflow; nodes?: Record<string, boolean>; }> = {};
+  app: ComfyApp;
 
   get activeWorkflow() {
     return this.#activeWorkflow ?? this.openWorkflows[0];
@@ -43,10 +39,7 @@ export class ComfyWorkflowManager extends EventTarget {
     return this.queuedPrompts[this.#activePromptId];
   }
 
-  /**
-   * @param {import("./app").ComfyApp} app
-   */
-  constructor(app) {
+  constructor(app: ComfyApp) {
     super();
     this.app = app;
     ChangeTracker.init(app);
@@ -237,9 +230,9 @@ export class ComfyWorkflow {
   #path;
   #pathParts;
   #isFavorite = false;
-  /** @type {ChangeTracker | null} */
-  changeTracker = null;
+  changeTracker: ChangeTracker | null = null;
   unsaved = false;
+  manager: ComfyWorkflowManager;
 
   get name() {
     return this.#name;
@@ -261,25 +254,7 @@ export class ComfyWorkflow {
     return !!this.changeTracker;
   }
 
-  /**
-   * @overload
-   * @param {ComfyWorkflowManager} manager
-   * @param {string} path
-   */
-  /**
-   * @overload
-   * @param {ComfyWorkflowManager} manager
-   * @param {string} path
-   * @param {string[]} pathParts
-   * @param {boolean} isFavorite
-   */
-  /**
-   * @param {ComfyWorkflowManager} manager
-   * @param {string} path
-   * @param {string[]} [pathParts]
-   * @param {boolean} [isFavorite]
-   */
-  constructor(manager, path, pathParts, isFavorite) {
+  constructor(manager: ComfyWorkflowManager, path: string, pathParts?: string[], isFavorite?: boolean) {
     this.manager = manager;
     if (pathParts) {
       this.#updatePath(path, pathParts);
@@ -290,11 +265,7 @@ export class ComfyWorkflow {
     }
   }
 
-  /**
-   * @param {string} path
-   * @param {string[]} [pathParts]
-   */
-  #updatePath(path, pathParts) {
+  #updatePath(path: string, pathParts: string[]) {
     this.#path = path;
 
     if (!pathParts) {
@@ -343,10 +314,7 @@ export class ComfyWorkflow {
     }
   }
 
-  /**
-   * @param {boolean} value
-   */
-  async favorite(value) {
+  async favorite(value: boolean) {
     try {
       if (this.#isFavorite === value) return;
       this.#isFavorite = value;
@@ -362,10 +330,7 @@ export class ComfyWorkflow {
     }
   }
 
-  /**
-   * @param {string} path
-   */
-  async rename(path) {
+  async rename(path: string) {
     path = appendJsonExt(path);
     let resp = await api.moveUserData(
       "workflows/" + this.path,
@@ -411,7 +376,9 @@ export class ComfyWorkflow {
     if (!data) return;
 
     const old = localStorage.getItem("litegrapheditor_clipboard");
+    // @ts-ignore
     const graph = new LGraph(data);
+    // @ts-ignore
     const canvas = new LGraphCanvas(null, graph, {
       skip_events: true,
       skip_render: true,
@@ -448,11 +415,7 @@ export class ComfyWorkflow {
     }
   }
 
-  /**
-   * @param {string|null} path
-   * @param {boolean} overwrite
-   */
-  async #save(path, overwrite) {
+  async #save(path: string | null, overwrite: boolean) {
     if (!path) {
       path = prompt(
         "Save workflow as:",

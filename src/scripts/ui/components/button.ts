@@ -3,6 +3,7 @@ import { applyClasses, ClassList, toggleElement } from "../utils";
 import { prop } from "../../utils";
 import type { ComfyPopup } from "./popup";
 import type { ComfyComponent } from ".";
+import type { ComfyApp } from "scripts/app";
 
 type ComfyButtonProps = {
   icon?: string;
@@ -12,9 +13,9 @@ type ComfyButtonProps = {
   tooltip?: string;
   enabled?: boolean;
   action?: (e: Event, btn: ComfyButton) => void;
-  classList?: import("../utils").ClassList;
+  classList?: ClassList;
   visibilitySetting?: { id: string; showValue: any };
-  app?: import("../../app").ComfyApp;
+  app?: ComfyApp;
 };
 
 export class ComfyButton implements ComfyComponent<HTMLElement> {
@@ -23,7 +24,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
   isOver = false;
   iconElement = $el("i.mdi");
   contentElement = $el("span");
-  popup: import("./popup").ComfyPopup;
+  popup: ComfyPopup;
   element: HTMLElement;
   overIcon: string;
   iconSize: number;

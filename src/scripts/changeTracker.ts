@@ -1,26 +1,25 @@
-// @ts-nocheck
-
+import type { ComfyApp } from "./app";
 import { api } from "./api";
 import { clone } from "./utils";
+import { ComfyWorkflow } from "./workflows";
 
 export class ChangeTracker {
   static MAX_HISTORY = 50;
-  #app;
+  #app: ComfyApp;
   undo = [];
   redo = [];
   activeState = null;
   isOurLoad = false;
-  /** @type { import("./workflows").ComfyWorkflow | null } */
-  workflow;
+  workflow: ComfyWorkflow | null;
 
-  ds;
-  nodeOutputs;
+  ds: { scale: number; offset: [number, number]; };
+  nodeOutputs: any;
 
   get app() {
     return this.#app ?? this.workflow.manager.app;
   }
 
-  constructor(workflow) {
+  constructor(workflow: ComfyWorkflow) {
     this.workflow = workflow;
   }
 
@@ -89,8 +88,7 @@ export class ChangeTracker {
     }
   }
 
-  /** @param { import("./app").ComfyApp } app */
-  static init(app) {
+  static init(app: ComfyApp) {
     const changeTracker = () =>
       app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker;
     globalTracker.#setApp(app);
@@ -136,7 +134,7 @@ export class ChangeTracker {
           if (await changeTracker().undoRedo(e)) return;
 
           // If our active element is some type of input then handle changes after they're done
-          if (ChangeTracker.bindInput(activeEl)) return;
+          if (ChangeTracker.bindInput(app, activeEl)) return;
           changeTracker().checkState();
         });
       },
@@ -276,4 +274,4 @@ export class ChangeTracker {
   }
 }
 
-const globalTracker = new ChangeTracker({});
+const globalTracker = new ChangeTracker({} as ComfyWorkflow);
