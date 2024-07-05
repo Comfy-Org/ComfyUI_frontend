@@ -160,6 +160,10 @@ export class ChangeTracker {
       changeTracker().checkState();
     });
 
+    api.addEventListener("graphCleared", () => {
+      changeTracker().checkState();
+    });
+
     // Handle litegraph clicks
     // @ts-ignore
     const processMouseUp = LGraphCanvas.prototype.processMouseUp;
