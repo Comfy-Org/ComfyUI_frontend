@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { ComfyButton } from "../components/button";
 import { prop, getStorageValue, setStorageValue } from "../../utils";
 import { $el } from "../../ui";
@@ -8,10 +6,19 @@ import { ComfyPopup } from "../components/popup";
 import { createSpinner } from "../spinner";
 import { ComfyWorkflow, trimJsonExt } from "../../workflows";
 import { ComfyAsyncDialog } from "../components/asyncDialog";
+import type { ComfyApp } from "scripts/app";
+import type { ComfyComponent } from "../components";
 
 export class ComfyWorkflowsMenu {
   #first = true;
   element = $el("div.comfyui-workflows");
+  popup: ComfyPopup;
+  app: ComfyApp;
+  buttonProgress: HTMLElement;
+  workflowLabel: HTMLElement;
+  button: ComfyButton;
+  content: ComfyWorkflowsContent;
+  unsaved: boolean;
 
   get open() {
     return this.popup.open;
@@ -21,10 +28,7 @@ export class ComfyWorkflowsMenu {
     this.popup.open = open;
   }
 
-  /**
-   * @param {import("../../app").ComfyApp} app
-   */
-  constructor(app) {
+  constructor(app: ComfyApp) {
     this.app = app;
     this.#bindEvents();
 
@@ -158,10 +162,7 @@ export class ComfyWorkflowsMenu {
     return menu;
   }
 
-  /**
-   * @param {import("../../app").ComfyApp} app
-   */
-  registerExtension(app) {
+  registerExtension(app: ComfyApp) {
     const self = this;
     app.registerExtension({
       name: "Comfy.Workflows",
@@ -192,11 +193,10 @@ export class ComfyWorkflowsMenu {
           app.graph.setDirtyCanvas(true, true);
         }
 
-        /**
-         * @param {HTMLImageElement} img
-         * @param {ComfyWorkflow} workflow
-         */
-        async function sendToWorkflow(img, workflow) {
+        async function sendToWorkflow(
+          img: HTMLImageElement,
+          workflow: ComfyWorkflow
+        ) {
           await workflow.load();
           let options = [];
           const nodes = app.graph.computeExecutionOrder(false);
@@ -226,22 +226,23 @@ export class ComfyWorkflowsMenu {
         }
 
         const getExtraMenuOptions = nodeType.prototype["getExtraMenuOptions"];
-        nodeType.prototype["getExtraMenuOptions"] = function (_, options) {
+        nodeType.prototype["getExtraMenuOptions"] = function (
+          this: { imageIndex?: number; overIndex?: number; imgs: string[] },
+          _,
+          options
+        ) {
           const r = getExtraMenuOptions?.apply?.(this, arguments);
           if (
             app.ui.settings.getSettingValue("Comfy.UseNewMenu", false) === true
           ) {
-            const t =
-              /** @type { {imageIndex?: number, overIndex?: number, imgs: string[]} } */ /** @type {any} */ (
-                this
-              );
+            const t = this;
             let img;
             if (t.imageIndex != null) {
               // An image is selected so select that
               img = t.imgs?.[t.imageIndex];
             } else if (t.overIndex != null) {
               // No image is selected but one is hovered
-              img = t.img?.s[t.overIndex];
+              img = t.imgs?.[t.overIndex];
             }
 
             if (img) {
@@ -283,17 +284,20 @@ export class ComfyWorkflowsMenu {
 export class ComfyWorkflowsContent {
   element = $el("div.comfyui-workflows-panel");
   treeState = {};
-  treeFiles = {};
-  /** @type { Map<ComfyWorkflow, WorkflowElement> } */
-  openFiles = new Map();
-  /** @type {WorkflowElement} */
-  activeElement = null;
+  treeFiles: Record<string, WorkflowElement> = {};
+  openFiles: Map<ComfyWorkflow, WorkflowElement<ComfyComponent>> = new Map();
+  activeElement: WorkflowElement<ComfyComponent> = null;
+  spinner: Element;
+  openElement: HTMLElement;
+  favoritesElement: HTMLElement;
+  treeElement: HTMLElement;
+  app: ComfyApp;
+  popup: ComfyPopup;
+  actions: HTMLElement;
+  filterText: string | undefined;
+  treeRoot: HTMLElement;
 
-  /**
-   * @param {import("../../app").ComfyApp} app
-   * @param {ComfyPopup} popup
-   */
-  constructor(app, popup) {
+  constructor(app: ComfyApp, popup: ComfyPopup) {
     this.app = app;
     this.popup = popup;
     this.actions = $el("div.comfyui-workflows-actions", [
@@ -511,7 +515,7 @@ export class ComfyWorkflowsContent {
           $el("input", {
             placeholder: "Search",
             value: this.filterText ?? "",
-            oninput: (e) => {
+            oninput: (e: InputEvent) => {
               this.filterText = e.target["value"]?.trim();
               clearTimeout(typingTimeout);
               typingTimeout = setTimeout(() => this.filterTree(), 250);
@@ -589,25 +593,21 @@ export class ComfyWorkflowsContent {
     this.activeElement.primary.element.classList.remove("mdi-play");
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getFavoriteIcon(workflow) {
+  #getFavoriteIcon(workflow: ComfyWorkflow) {
     return workflow.isFavorite ? "star" : "file-outline";
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getFavoriteOverIcon(workflow) {
+  #getFavoriteOverIcon(workflow: ComfyWorkflow) {
     return workflow.isFavorite ? "star-off" : "star-outline";
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getFavoriteTooltip(workflow) {
+  #getFavoriteTooltip(workflow: ComfyWorkflow) {
     return workflow.isFavorite
       ? "Remove this workflow from your favorites"
       : "Add this workflow to your favorites";
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getFavoriteButton(workflow, primary) {
+  #getFavoriteButton(workflow: ComfyWorkflow, primary: boolean) {
     return new ComfyButton({
       icon: this.#getFavoriteIcon(workflow),
       overIcon: this.#getFavoriteOverIcon(workflow),
@@ -623,8 +623,7 @@ export class ComfyWorkflowsContent {
     });
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getDeleteButton(workflow) {
+  #getDeleteButton(workflow: ComfyWorkflow) {
     const deleteButton = new ComfyButton({
       icon: "delete",
       tooltip: "Delete this workflow",
@@ -650,8 +649,7 @@ export class ComfyWorkflowsContent {
     return deleteButton;
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getInsertButton(workflow) {
+  #getInsertButton(workflow: ComfyWorkflow) {
     return new ComfyButton({
       icon: "file-move-outline",
       iconSize: 18,
@@ -671,7 +669,7 @@ export class ComfyWorkflowsContent {
   }
 
   /** @param {ComfyWorkflow} workflow */
-  #getRenameButton(workflow) {
+  #getRenameButton(workflow: ComfyWorkflow) {
     return new ComfyButton({
       icon: "pencil",
       tooltip: workflow.path
@@ -690,8 +688,7 @@ export class ComfyWorkflowsContent {
     });
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #getWorkflowElement(workflow) {
+  #getWorkflowElement(workflow: ComfyWorkflow) {
     return new WorkflowElement(this, workflow, {
       primary: this.#getFavoriteButton(workflow, true),
       buttons: [
@@ -702,8 +699,7 @@ export class ComfyWorkflowsContent {
     });
   }
 
-  /** @param {ComfyWorkflow} workflow */
-  #createLeafNode(workflow) {
+  #createLeafNode(workflow: ComfyWorkflow) {
     const fileNode = this.#getWorkflowElement(workflow);
     this.treeFiles[workflow.path] = fileNode;
     return fileNode;
@@ -741,12 +737,21 @@ export class ComfyWorkflowsContent {
   }
 }
 
-class WorkflowElement {
-  /**
-   * @param { ComfyWorkflowsContent } parent
-   * @param { ComfyWorkflow } workflow
-   */
-  constructor(parent, workflow, { tagName = "li", primary, buttons }) {
+class WorkflowElement<TPrimary extends ComfyComponent = ComfyButton> {
+  parent: ComfyWorkflowsContent;
+  workflow: ComfyWorkflow;
+  primary: TPrimary;
+  buttons: ComfyButton[];
+  element: HTMLElement;
+  constructor(
+    parent: ComfyWorkflowsContent,
+    workflow: ComfyWorkflow,
+    {
+      tagName = "li",
+      primary,
+      buttons,
+    }: { tagName?: string; primary: TPrimary; buttons: ComfyButton[] }
+  ) {
     this.parent = parent;
     this.workflow = workflow;
     this.primary = primary;
@@ -770,13 +775,15 @@ class WorkflowElement {
   }
 }
 
-class WidgetSelectionDialog extends ComfyAsyncDialog {
-  #options;
+type WidgetSelectionDialogOptions = Array<{
+  widget: { name: string };
+  node: { pos: [number, number]; title: string; id: string; type: string };
+}>;
 
-  /**
-   * @param {Array<{widget: {name: string}, node: {pos: [number, number], title: string, id: string, type: string}}>} options
-   */
-  constructor(options) {
+class WidgetSelectionDialog extends ComfyAsyncDialog {
+  #options: WidgetSelectionDialogOptions;
+
+  constructor(options: WidgetSelectionDialogOptions) {
     super();
     this.#options = options;
   }

@@ -24,11 +24,15 @@ type Props = {
 
 type Children = Element[] | Element | string | string[];
 
-export function $el(
-  tag: string,
+type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
+  ? HTMLElementTagNameMap[K]
+  : HTMLElement;
+
+export function $el<TTag extends string>(
+  tag: TTag,
   propsOrChildren?: Children | Props,
   children?: Children
-): HTMLElement {
+): ElementType<TTag> {
   const split = tag.split(".");
   const element = document.createElement(split.shift() as string);
   if (split.length > 0) {
@@ -78,10 +82,10 @@ export function $el(
       }
     }
   }
-  return element;
+  return element as ElementType<TTag>;
 }
 
-function dragElement(dragEl, settings) {
+function dragElement(dragEl, settings): () => void {
   var posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
@@ -340,6 +344,8 @@ export class ComfyUI {
   menuHamburger: HTMLDivElement;
   menuContainer: HTMLDivElement;
   queueSize: Element;
+  restoreMenuPosition: () => void;
+  loadFile: () => void;
 
   constructor(app) {
     this.app = app;
@@ -425,7 +431,6 @@ export class ComfyUI {
       },
     }) as HTMLInputElement;
 
-    // @ts-ignore
     this.loadFile = () => fileInput.click();
 
     const autoQueueModeEl = toggleSwitch(
@@ -739,7 +744,6 @@ export class ComfyUI {
       },
     });
 
-    // @ts-ignore
     this.restoreMenuPosition = dragElement(this.menuContainer, this.settings);
 
     this.setStatus({ exec_info: { queue_remaining: "X" } });

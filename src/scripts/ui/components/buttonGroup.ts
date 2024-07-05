@@ -1,34 +1,26 @@
-// @ts-nocheck
-
 import { $el } from "../../ui";
 import { ComfyButton } from "./button";
 import { prop } from "../../utils";
 
 export class ComfyButtonGroup {
   element = $el("div.comfyui-button-group");
+  buttons: (HTMLElement | ComfyButton)[];
 
-  /** @param {Array<ComfyButton | HTMLElement>} buttons */
-  constructor(...buttons) {
+  constructor(...buttons: (HTMLElement | ComfyButton)[]) {
     this.buttons = prop(this, "buttons", buttons, () => this.update());
   }
 
-  /**
-   * @param {ComfyButton} button
-   * @param {number} index
-   */
-  insert(button, index) {
+  insert(button: ComfyButton, index: number) {
     this.buttons.splice(index, 0, button);
     this.update();
   }
 
-  /** @param {ComfyButton} button */
-  append(button) {
+  append(button: ComfyButton) {
     this.buttons.push(button);
     this.update();
   }
 
-  /** @param {ComfyButton|number} indexOrButton */
-  remove(indexOrButton) {
+  remove(indexOrButton: ComfyButton | number) {
     if (typeof indexOrButton !== "number") {
       indexOrButton = this.buttons.indexOf(indexOrButton);
     }

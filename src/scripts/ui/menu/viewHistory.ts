@@ -1,10 +1,9 @@
-// @ts-nocheck
-
+import type { ComfyApp } from "scripts/app";
 import { ComfyButton } from "../components/button";
 import { ComfyViewList, ComfyViewListButton } from "./viewList";
 
 export class ComfyViewHistoryButton extends ComfyViewListButton {
-  constructor(app) {
+  constructor(app: ComfyApp) {
     super(app, {
       button: new ComfyButton({
         content: "View History",

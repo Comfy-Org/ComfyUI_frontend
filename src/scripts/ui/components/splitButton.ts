@@ -1,23 +1,27 @@
-// @ts-nocheck
-
 import { $el } from "../../ui";
 import { ComfyButton } from "./button";
 import { prop } from "../../utils";
 import { ComfyPopup } from "./popup";
 
 export class ComfySplitButton {
-  /**
-   *  @param {{
-   * 		primary: ComfyButton,
-   * 		mode?: "hover" | "click",
-   * 		horizontal?: "left" | "right",
-   * 		position?: "relative" | "absolute"
-   *  }} param0
-   *  @param {Array<ComfyButton> | Array<HTMLElement>} items
-   */
+  arrow: ComfyButton;
+  element: HTMLElement;
+  popup: ComfyPopup;
+  items: Array<HTMLElement | ComfyButton>;
+
   constructor(
-    { primary, mode, horizontal = "left", position = "relative" },
-    ...items
+    {
+      primary,
+      mode,
+      horizontal = "left",
+      position = "relative",
+    }: {
+      primary: ComfyButton;
+      mode?: "hover" | "click";
+      horizontal?: "left" | "right";
+      position?: "relative" | "absolute";
+    },
+    ...items: Array<HTMLElement | ComfyButton>
   ) {
     this.arrow = new ComfyButton({
       icon: "chevron-down",
@@ -46,7 +50,7 @@ export class ComfySplitButton {
 
   update() {
     this.popup.element.replaceChildren(
-      ...this.items.map((b) => b.element ?? b)
+      ...this.items.map((b) => ("element" in b ? b.element : b))
     );
   }
 }

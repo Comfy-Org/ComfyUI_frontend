@@ -1,11 +1,18 @@
-// @ts-nocheck
-
 import { ComfyButton } from "../components/button";
 import { $el } from "../../ui";
 import { api } from "../../api";
 import { ComfyPopup } from "../components/popup";
+import type { ComfyApp } from "scripts/app";
+
+type ViewListMode = "Queue" | "History";
 
 export class ComfyViewListButton {
+  popup: ComfyPopup;
+  app: ComfyApp;
+  button: ComfyButton;
+  element: HTMLDivElement;
+  list: ComfyViewList;
+
   get open() {
     return this.popup.open;
   }
@@ -14,10 +21,20 @@ export class ComfyViewListButton {
     this.popup.open = open;
   }
 
-  constructor(app, { button, list, mode }) {
+  constructor(
+    app: ComfyApp,
+    {
+      button,
+      list,
+      mode,
+    }: { button: ComfyButton; list: typeof ComfyViewList; mode: ViewListMode }
+  ) {
     this.app = app;
     this.button = button;
-    this.element = $el("div.comfyui-button-wrapper", this.button.element);
+    this.element = $el(
+      "div.comfyui-button-wrapper",
+      this.button.element
+    ) as HTMLDivElement;
     this.popup = new ComfyPopup({
       target: this.element,
       container: this.element,
@@ -42,9 +59,15 @@ export class ComfyViewListButton {
 }
 
 export class ComfyViewList {
-  popup;
-
-  constructor(app, mode, popup) {
+  app: ComfyApp;
+  mode: ViewListMode;
+  popup: ComfyPopup;
+  type: string;
+  items: HTMLElement;
+  clear: ComfyButton;
+  refresh: ComfyButton;
+  element: HTMLElement;
+  constructor(app: ComfyApp, mode: ViewListMode, popup: ComfyPopup) {
     this.app = app;
     this.mode = mode;
     this.popup = popup;

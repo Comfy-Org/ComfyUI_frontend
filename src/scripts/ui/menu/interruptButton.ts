@@ -1,9 +1,7 @@
-// @ts-nocheck
-
 import { api } from "../../api";
 import { ComfyButton } from "../components/button";
 
-export function getInteruptButton(visibility) {
+export function getInteruptButton(visibility: string) {
   const btn = new ComfyButton({
     icon: "close",
     tooltip: "Cancel current generation",
