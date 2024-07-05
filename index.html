@@ -12,10 +12,6 @@
 				font-family: 'Roboto Mono', 'Noto Color Emoji';
 			}
 		</style> -->
-		<link rel="stylesheet" type="text/css" href="/lib/litegraph.css" />
-		<link rel="stylesheet" type="text/css" href="/style.css" />
-		<link rel="stylesheet" type="text/css" href="/user.css" />
-		<link rel="stylesheet" type="text/css" href="/materialdesignicons.min.css" />
 		<script type="module">
 			console.log("ComfyUI Front-end version:", __COMFYUI_FRONTEND_VERSION__);
 			import { app } from "./src/scripts/app";
@@ -25,6 +21,8 @@
 				window.graph = app.graph;
 			})();
 		</script>
+		<link rel="stylesheet" type="text/css" href="/user.css" />
+		<link rel="stylesheet" type="text/css" href="/materialdesignicons.min.css" />
 	</head>
 	<body class="litegraph">
 		<div id="comfy-user-selection" class="comfy-user-selection" style="display: none;">

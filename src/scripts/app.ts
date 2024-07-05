@@ -26,7 +26,10 @@ import {
   LGraphNode,
   LiteGraph,
 } from "@comfyorg/litegraph";
+
+// CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
+import "../assets/css/style.css";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
