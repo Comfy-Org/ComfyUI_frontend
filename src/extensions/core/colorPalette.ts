@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app";
 import { $el } from "../../scripts/ui";
 import type { ColorPalettes } from "/types/colorPalette";
+import { LGraphCanvas, LiteGraph } from "comfyui-litegraph";
 
 // Manage color palettes
 
