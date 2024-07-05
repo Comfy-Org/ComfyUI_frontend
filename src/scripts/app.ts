@@ -1845,12 +1845,10 @@ export class ComfyApp {
     this.#addApiUpdateHandlers();
     this.#addRestoreWorkflowView();
 
-    // @ts-ignore
     this.graph = new LGraph();
 
     this.#addAfterConfigureHandler();
 
-    // @ts-ignore
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
     this.ctx = canvasEl.getContext("2d");
 

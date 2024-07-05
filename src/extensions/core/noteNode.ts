@@ -1,4 +1,4 @@
-import { LiteGraph } from "@comfyorg/litegraph";
+import { LiteGraph, LGraphCanvas } from "@comfyorg/litegraph";
 import { app } from "../../scripts/app";
 import { ComfyWidgets } from "../../scripts/widgets";
 // Node that add notes to your project
@@ -9,11 +9,8 @@ app.registerExtension({
     class NoteNode {
       static category: string;
 
-      // @ts-ignore
       color = LGraphCanvas.node_colors.yellow.color;
-      // @ts-ignore
       bgcolor = LGraphCanvas.node_colors.yellow.bgcolor;
-      // @ts-ignore
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor;
       properties: { text: string };
       serialize_widgets: boolean;
