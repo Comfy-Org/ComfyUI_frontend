@@ -1,4 +1,5 @@
 import type { ComfyApp } from "scripts/app";
+import { api } from "../../api";
 import { $el } from "../../ui";
 import { downloadBlob } from "../../utils";
 import { ComfyButton } from "../components/button";
@@ -122,6 +123,7 @@ export class ComfyAppMenu {
           ) {
             app.clean();
             app.graph.clear();
+            api.dispatchEvent(new CustomEvent("graphCleared"));
           }
         },
       })

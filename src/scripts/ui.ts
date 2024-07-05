@@ -711,6 +711,7 @@ export class ComfyUI {
             app.clean();
             app.graph.clear();
             app.resetView();
+            api.dispatchEvent(new CustomEvent("graphCleared"));
           }
         },
       }),
