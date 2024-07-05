@@ -15,12 +15,13 @@ import { createImageHost, calculateImageGrid } from "./ui/imagePreview";
 import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
-import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "/types/apiTypes";
 import { ComfyAppMenu } from "./ui/menu/index.js";
 import { getStorageValue, setStorageValue } from "./utils.js";
 import { ComfyWorkflowManager } from "./workflows.js";
+import { LGraphCanvas, LGraph, LGraphNode, LiteGraph } from "comfyui-litegraph";
+import "comfyui-litegraph/css/litegraph.css";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 

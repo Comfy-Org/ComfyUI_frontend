@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app";
 import { ComfyWidgets } from "../../scripts/widgets";
+import { LiteGraph } from "comfyui-litegraph";
 // Adds defaults for quickly adding nodes with middle click on the input/output
 
 app.registerExtension({

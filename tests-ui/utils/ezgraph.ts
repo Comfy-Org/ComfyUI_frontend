@@ -1,5 +1,4 @@
-// @ts-nocheck
-/// <reference path="../../src/types/litegraph.d.ts" />
+import type { LiteGraph, LGraphCanvas } from "comfyui-litegraph";
 
 /**
  * @typedef { import("./src/scripts/app")["app"] } app
@@ -389,28 +388,28 @@ export class EzGraph {
 }
 
 export const Ez = {
-  /**
-   * Quickly build and interact with a ComfyUI graph
-   * @example
-   * const { ez, graph } = Ez.graph(app);
-   * graph.clear();
-   * const [model, clip, vae] = ez.CheckpointLoaderSimple().outputs;
-   * const [pos] = ez.CLIPTextEncode(clip, { text: "positive" }).outputs;
-   * const [neg] = ez.CLIPTextEncode(clip, { text: "negative" }).outputs;
-   * const [latent] = ez.KSampler(model, pos, neg, ...ez.EmptyLatentImage().outputs).outputs;
-   * const [image] = ez.VAEDecode(latent, vae).outputs;
-   * const saveNode = ez.SaveImage(image);
-   * console.log(saveNode);
-   * graph.arrange();
-   * @param { app } app
-   * @param { LG["LiteGraph"] } LiteGraph
-   * @param { LG["LGraphCanvas"] } LGraphCanvas
-   * @param { boolean } clearGraph
-   * @returns { { graph: EzGraph, ez: Record<string, EzNodeFactory> } }
-   */
-  graph(app, LiteGraph = window["LiteGraph"], LGraphCanvas = window["LGraphCanvas"], clearGraph = true) {
-    // Always set the active canvas so things work
-    LGraphCanvas.active_canvas = app.canvas;
+	/**
+	 * Quickly build and interact with a ComfyUI graph
+	 * @example
+	 * const { ez, graph } = Ez.graph(app);
+	 * graph.clear();
+	 * const [model, clip, vae] = ez.CheckpointLoaderSimple().outputs;
+	 * const [pos] = ez.CLIPTextEncode(clip, { text: "positive" }).outputs;
+	 * const [neg] = ez.CLIPTextEncode(clip, { text: "negative" }).outputs;
+	 * const [latent] = ez.KSampler(model, pos, neg, ...ez.EmptyLatentImage().outputs).outputs;
+	 * const [image] = ez.VAEDecode(latent, vae).outputs;
+	 * const saveNode = ez.SaveImage(image);
+	 * console.log(saveNode);
+	 * graph.arrange();
+	 * @param { app } app
+	 * @param { boolean } clearGraph
+	 * @param { LG["LiteGraph"] } LiteGraph
+	 * @param { LG["LGraphCanvas"] } LGraphCanvas
+	 * @returns { { graph: EzGraph, ez: Record<string, EzNodeFactory> } }
+	 */
+	graph(app, LiteGraph, LGraphCanvas, clearGraph = true) {
+		// Always set the active canvas so things work
+		LGraphCanvas.active_canvas = app.canvas;
 
     if (clearGraph) {
       app.graph.clear();

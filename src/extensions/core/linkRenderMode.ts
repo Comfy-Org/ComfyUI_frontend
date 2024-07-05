@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app";
-
+import { LiteGraph } from "comfyui-litegraph";
 const id = "Comfy.LinkRenderMode";
 const ext = {
   name: id,

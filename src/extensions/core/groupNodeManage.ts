@@ -3,7 +3,11 @@ import { DraggableList } from "../../scripts/ui/draggableList";
 import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
 import "./groupNodeManage.css";
 import { app, type ComfyApp } from "../../scripts/app";
-import type { LGraphNode, LGraphNodeConstructor } from "/types/litegraph";
+import {
+  LiteGraph,
+  type LGraphNode,
+  type LGraphNodeConstructor,
+} from "comfyui-litegraph";
 
 const ORDER: symbol = Symbol();
 

@@ -1,4 +1,10 @@
 import { app } from "../../scripts/app";
+import {
+  LGraphCanvas,
+  LGraphNode,
+  LGraphGroup,
+  LiteGraph,
+} from "comfyui-litegraph";
 
 // Shift + drag/resize to snap to grid
 
@@ -105,7 +111,7 @@ app.registerExtension({
      * The currently moving, selected group only. Set after the `selected_group` has actually started
      * moving.
      */
-    let selectedAndMovingGroup = null;
+    let selectedAndMovingGroup: LGraphGroup | null = null;
 
     /**
      * Handles moving a group; tracking when a group has been moved (to show the ghost in `drawGroups`

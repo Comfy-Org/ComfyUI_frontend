@@ -37,6 +37,7 @@
     "zip-dir": "^2.0.0"
   },
   "dependencies": {
+    "comfyui-litegraph": "^0.7.16",
     "dotenv": "^16.4.5",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"

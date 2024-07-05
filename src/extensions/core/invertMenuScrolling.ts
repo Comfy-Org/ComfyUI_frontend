@@ -1,3 +1,4 @@
+import { LiteGraph } from "comfyui-litegraph";
 import { app } from "../../scripts/app";
 
 // Inverts the scrolling of context menus
