@@ -20,8 +20,13 @@ import { ComfyNodeDef } from "/types/apiTypes";
 import { ComfyAppMenu } from "./ui/menu/index.js";
 import { getStorageValue, setStorageValue } from "./utils.js";
 import { ComfyWorkflowManager } from "./workflows.js";
-import { LGraphCanvas, LGraph, LGraphNode, LiteGraph } from "comfyui-litegraph";
-import "comfyui-litegraph/css/litegraph.css";
+import {
+  LGraphCanvas,
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+} from "@comfyorg/litegraph";
+import "@comfyorg/litegraph/css/litegraph.css";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 

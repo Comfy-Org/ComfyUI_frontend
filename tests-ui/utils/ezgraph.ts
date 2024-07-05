@@ -1,4 +1,4 @@
-import type { LiteGraph, LGraphCanvas } from "comfyui-litegraph";
+import type { LiteGraph, LGraphCanvas } from "@comfyorg/litegraph";
 
 /**
  * @typedef { import("./src/scripts/app")["app"] } app

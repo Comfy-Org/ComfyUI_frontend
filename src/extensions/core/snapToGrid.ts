@@ -4,7 +4,7 @@ import {
   LGraphNode,
   LGraphGroup,
   LiteGraph,
-} from "comfyui-litegraph";
+} from "@comfyorg/litegraph";
 
 // Shift + drag/resize to snap to grid
 
@@ -83,12 +83,14 @@ app.registerExtension({
 
         let w, h;
         if (node.flags.collapsed) {
+          // @ts-ignore
           w = node._collapsed_width;
           h = LiteGraph.NODE_TITLE_HEIGHT;
           shiftY -= LiteGraph.NODE_TITLE_HEIGHT;
         } else {
           w = node.size[0];
           h = node.size[1];
+          // @ts-ignore
           let titleMode = node.constructor.title_mode;
           if (
             titleMode !== LiteGraph.TRANSPARENT_TITLE &&
@@ -160,13 +162,16 @@ app.registerExtension({
     LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
       if (this.selected_group && app.shiftDown) {
         if (this.selected_group_resizing) {
+          // @ts-ignore
           roundVectorToGrid(this.selected_group.size);
         } else if (selectedAndMovingGroup) {
+          // @ts-ignore
           const [x, y] = roundVectorToGrid([...selectedAndMovingGroup.pos]);
           const f = ctx.fillStyle;
           const s = ctx.strokeStyle;
           ctx.fillStyle = "rgba(100, 100, 100, 0.33)";
           ctx.strokeStyle = "rgba(100, 100, 100, 0.66)";
+          // @ts-ignore
           ctx.rect(x, y, ...selectedAndMovingGroup.size);
           ctx.fill();
           ctx.stroke();

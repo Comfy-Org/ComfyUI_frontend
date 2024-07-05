@@ -41,7 +41,7 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
 
 	mockApi(config);
 	const { app } = await import("../../src/scripts/app");
-	const { LiteGraph, LGraphCanvas } = await import("comfyui-litegraph");
+	const { LiteGraph, LGraphCanvas } = await import("@comfyorg/litegraph");
 	config.preSetup?.(app);
 	await app.setup();
 

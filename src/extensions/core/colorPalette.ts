@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app";
 import { $el } from "../../scripts/ui";
 import type { ColorPalettes } from "/types/colorPalette";
-import { LGraphCanvas, LiteGraph } from "comfyui-litegraph";
+import { LGraphCanvas, LiteGraph } from "@comfyorg/litegraph";
 
 // Manage color palettes
 
@@ -428,6 +428,32 @@ const els: { select: HTMLSelectElement | null } = {
 // const ctxMenu = LiteGraph.ContextMenu;
 app.registerExtension({
   name: id,
+  init() {
+    /**
+     * Changes the background color of the canvas.
+     *
+     * @method updateBackground
+     * @param {image} String
+     * @param {clearBackgroundColor} String
+     */
+    // @ts-ignore
+    LGraphCanvas.prototype.updateBackground = function (
+      image,
+      clearBackgroundColor
+    ) {
+      this._bg_img = new Image();
+      this._bg_img.name = image;
+      this._bg_img.src = image;
+      this._bg_img.onload = () => {
+        this.draw(true, true);
+      };
+      this.background_image = image;
+
+      this.clear_background = true;
+      this.clear_background_color = clearBackgroundColor;
+      this._pattern = null;
+    };
+  },
   addCustomNodeDefs(node_defs) {
     const sortObjectKeys = (unordered) => {
       return Object.keys(unordered)

@@ -7,7 +7,7 @@ import {
   LiteGraph,
   type LGraphNode,
   type LGraphNodeConstructor,
-} from "comfyui-litegraph";
+} from "@comfyorg/litegraph";
 
 const ORDER: symbol = Symbol();
 
