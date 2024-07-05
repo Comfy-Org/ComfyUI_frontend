@@ -18,9 +18,9 @@ import type { ComfyExtension } from "/types/comfy";
 import type { LGraph, LGraphCanvas, LGraphNode } from "/types/litegraph";
 import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "/types/apiTypes";
-import { ComfyAppMenu } from "./ui/menu/index.js";
-import { getStorageValue, setStorageValue } from "./utils.js";
-import { ComfyWorkflowManager } from "./workflows.js";
+import { ComfyAppMenu } from "./ui/menu/index";
+import { getStorageValue, setStorageValue } from "./utils";
+import { ComfyWorkflowManager } from "./workflows";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
