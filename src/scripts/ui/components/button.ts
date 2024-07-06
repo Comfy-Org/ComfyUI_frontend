@@ -3,7 +3,7 @@ import { applyClasses, ClassList, toggleElement } from "../utils";
 import { prop } from "../../utils";
 import type { ComfyPopup } from "./popup";
 import type { ComfyComponent } from ".";
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 
 type ComfyButtonProps = {
   icon?: string;

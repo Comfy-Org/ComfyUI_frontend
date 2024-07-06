@@ -1,7 +1,7 @@
 import { ComfyButton } from "../components/button";
 import { ComfyViewList, ComfyViewListButton } from "./viewList";
 import { api } from "../../api";
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 
 export class ComfyViewQueueButton extends ComfyViewListButton {
   constructor(app: ComfyApp) {

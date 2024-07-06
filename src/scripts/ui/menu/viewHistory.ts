@@ -1,4 +1,4 @@
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 import { ComfyButton } from "../components/button";
 import { ComfyViewList, ComfyViewListButton } from "./viewList";
 

@@ -6,7 +6,7 @@ import { ComfyPopup } from "../components/popup";
 import { createSpinner } from "../spinner";
 import { ComfyWorkflow, trimJsonExt } from "../../workflows";
 import { ComfyAsyncDialog } from "../components/asyncDialog";
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 import type { ComfyComponent } from "../components";
 
 export class ComfyWorkflowsMenu {

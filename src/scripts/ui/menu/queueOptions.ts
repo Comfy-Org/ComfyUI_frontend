@@ -1,4 +1,4 @@
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 import { $el } from "../../ui";
 import { prop } from "../../utils";
 

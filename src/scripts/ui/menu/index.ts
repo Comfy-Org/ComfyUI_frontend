@@ -1,4 +1,4 @@
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 import { api } from "../../api";
 import { $el } from "../../ui";
 import { downloadBlob } from "../../utils";

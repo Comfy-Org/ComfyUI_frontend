@@ -2,7 +2,7 @@ import { ComfyButton } from "../components/button";
 import { $el } from "../../ui";
 import { api } from "../../api";
 import { ComfyPopup } from "../components/popup";
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 
 type ViewListMode = "Queue" | "History";
 

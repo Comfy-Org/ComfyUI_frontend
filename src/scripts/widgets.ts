@@ -2,7 +2,7 @@ import { api } from "./api";
 import "./domWidget";
 import type { ComfyApp } from "./app";
 import type { IWidget, LGraphNode } from "@comfyorg/litegraph";
-import { ComfyNodeDef } from "/types/apiTypes";
+import { ComfyNodeDef } from "@/types/apiTypes";
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,

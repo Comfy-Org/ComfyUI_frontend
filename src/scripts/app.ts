@@ -14,12 +14,12 @@ import { addDomClippingSetting } from "./domWidget";
 import { createImageHost, calculateImageGrid } from "./ui/imagePreview";
 import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
-import type { ComfyExtension } from "/types/comfy";
+import type { ComfyExtension } from "@/types/comfy";
 import {
   type ComfyWorkflowJSON,
   parseComfyWorkflow,
 } from "../types/comfyWorkflow";
-import { ComfyNodeDef } from "/types/apiTypes";
+import { ComfyNodeDef } from "@/types/apiTypes";
 import { ComfyAppMenu } from "./ui/menu/index";
 import { getStorageValue } from "./utils";
 import { ComfyWorkflowManager, ComfyWorkflow } from "./workflows";
