@@ -8,16 +8,19 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 
 - Migrate all code to TypeScript with minimal change modification to the original logic.
 - Bundle all code with vite's rollup build.
-- Added a shim layer to be backward compatible with the existing extension system. https://github.com/huchenlei/ComfyUI_frontend/pull/15
+- Added a shim layer to be backward compatible with the existing extension system. <https://github.com/huchenlei/ComfyUI_frontend/pull/15>
 - Front-end dev server.
 - Zod schema for input validation on ComfyUI workflow.
-- Make litegraph a npm dependency.
+- Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
 
 ### What to be done
 
-- Replace the existing ComfyUI front-end impl.
+- Replace the existing ComfyUI front-end impl (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+- Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
-- Introduce react to start managing part of the UI.
+- Introduce Vue to start managing part of the UI.
+
+  - Starting with node search box revamp
 - Introduce a UI library to add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
@@ -27,6 +30,13 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 
 ## Development
 
+### Git pre-commit hooks
+
+Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
+hook is used to auto-format code on commit.
+
+### Dev Server
+
 Note: The dev server will NOT load any extension from the ComfyUI server. Only
 core extensions will be loaded.
 
@@ -34,7 +44,7 @@ core extensions will be loaded.
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
 
-## Test
+### Test
 
 - `npm i` to install all dependencies
 - `npm run test:generate` to fetch `tests-ui/data/object_info.json`
@@ -45,4 +55,5 @@ core extensions will be loaded.
 Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout.
 
 ## Breaking changes
+
 - api.api_url now adds a prefix `api/` to every url going through the method. If the custom node registers a new api endpoint but does not offer the `api/` prefixed alt endpoint, it will have issue. Luckily there aren't many extensions that do that. We can perform an audit before launching to resolve this issue.

@@ -12,6 +12,7 @@
     "test": "npm run build && jest",
     "test:generate": "npx tsx tests-ui/setup",
     "test:browser": "npx playwright test",
+    "prepare": "husky || true",
     "preview": "vite preview"
   },
   "devDependencies": {
