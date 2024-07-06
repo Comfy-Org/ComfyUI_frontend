@@ -7,6 +7,9 @@ This repo is litegraph with following modifications:
 - Type schema change for ComfyUI_frontend TS migration (https://github.com/Comfy-Org/litegraph.js/pull/3)
 - Zoom fix (https://github.com/Comfy-Org/litegraph.js/pull/7)
 
+# Install
+`npm i @comfyorg/litegraph`
+
 # litegraph.js
 
 A library in Javascript to create graphs in the browser similar to Unreal Blueprints. Nodes can be programmed easily and it includes an editor to construct and tests the graphs.
