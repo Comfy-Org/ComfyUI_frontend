@@ -24,10 +24,10 @@ export interface INodeSlot {
     type: string | -1;
     label?: string;
     dir?:
-        | typeof LiteGraph.UP
-        | typeof LiteGraph.RIGHT
-        | typeof LiteGraph.DOWN
-        | typeof LiteGraph.LEFT;
+    | typeof LiteGraph.UP
+    | typeof LiteGraph.RIGHT
+    | typeof LiteGraph.DOWN
+    | typeof LiteGraph.LEFT;
     color_on?: string;
     color_off?: string;
     shape?: SlotShape;
@@ -104,8 +104,8 @@ export interface IComboWidget
         string[],
         {
             values:
-                | string[]
-                | ((widget: IComboWidget, node: LGraphNode) => string[]);
+            | string[]
+            | ((widget: IComboWidget, node: LGraphNode) => string[]);
         }
     > {
     type: "combo";
@@ -145,6 +145,20 @@ export type ContextMenuEventListener = (
     parentMenu: ContextMenu | undefined,
     node: LGraphNode
 ) => boolean | void;
+
+export type LinkReleaseContext = {
+    node_from: LGraphNode;
+    slot_from: INodeSlot;
+    type_filter_in: string;
+};
+
+export type LiteGraphCanvasEventType = "empty-release" | "empty-double-click";
+
+export type LiteGraphCanvasEvent = CustomEvent<{
+    subType: string;
+    originalEvent: Event,
+    linkReleaseContext?: LinkReleaseContext;
+}>;
 
 export const LiteGraph: {
     DEFAULT_GROUP_FONT_SIZE: any;
@@ -244,7 +258,7 @@ export const LiteGraph: {
 
     createNode<T extends LGraphNode = LGraphNode>(type: string): T;
     /** Register a node class so it can be listed when the user wants to create a new one */
-    registerNodeType(type: string, base: { new (): LGraphNode }): void;
+    registerNodeType(type: string, base: { new(): LGraphNode }): void;
     /** removes a node type from the system */
     unregisterNodeType(type: string): void;
     /** Removes all previously registered node's types. */
@@ -426,7 +440,7 @@ export declare class LGraph {
     /**
      * Positions every node in a more readable manner
      */
-    arrange(margin?: number,layout?: string): void;
+    arrange(margin?: number, layout?: string): void;
     /**
      * Returns the amount of time the graph has been running in milliseconds
      * @return number of milliseconds the graph has been running
@@ -602,10 +616,10 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
-	onResize?: Function;
+    onResize?: Function;
 
     // Used in group node
-	setInnerNodes(nodes: LGraphNode[]);
+    setInnerNodes(nodes: LGraphNode[]);
 
     static title_color: string;
     static title: string;
@@ -1054,8 +1068,8 @@ export declare class LGraphNode {
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {
-	nodeData: any;  // Used by group node.
-    new (): T;
+    nodeData: any;  // Used by group node.
+    new(): T;
 };
 
 export type SerializedLGraphGroup = {
@@ -1257,10 +1271,10 @@ export declare class LGraphCanvas {
     /** Called by `LGraphCanvas.showSearchBox` */
     onSearchBox:
         | ((
-              helper: Element,
-              value: string,
-              graphCanvas: LGraphCanvas
-          ) => string[])
+            helper: Element,
+            value: string,
+            graphCanvas: LGraphCanvas
+        ) => string[])
         | null;
     onSearchBoxSelection:
         | ((name: string, event: MouseEvent, graphCanvas: LGraphCanvas) => void)

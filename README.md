@@ -2,10 +2,11 @@
 
 This is the litegraph version used in [ComfyUI_frontend](https://github.com/Comfy-Org/ComfyUI_frontend).
 
-This repo is litegraph with following modifications:
+This repo is litegraph with the following modifications:
 - Accumulated comfyUI custom changes (2024-01 ~ 2024-05) (https://github.com/Comfy-Org/litegraph.js/pull/1)
 - Type schema change for ComfyUI_frontend TS migration (https://github.com/Comfy-Org/litegraph.js/pull/3)
 - Zoom fix (https://github.com/Comfy-Org/litegraph.js/pull/7)
+- Emit search box triggering custom events (<https://github.com/Comfy-Org/litegraph.js/pull/10>)
 
 # Install
 `npm i @comfyorg/litegraph`

@@ -6186,10 +6186,22 @@ LGraphNode.prototype.executeAction = function(action)
 						}
 					}
 
-					if (is_double_click && !this.read_only && this.allow_searchbox) {
-						this.showSearchBox(e);
-						e.preventDefault();
-						e.stopPropagation();
+					if (is_double_click && !this.read_only) {
+                        if (this.allow_searchbox) {
+                            this.showSearchBox(e);
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                        this.canvas.dispatchEvent(new CustomEvent(
+                            "litegraph:canvas",
+                            {
+                                bubbles: true,
+                                detail: {
+                                    type: "empty-double-click",
+                                    originalEvent: e,
+                                }
+                            },
+                        ));
 					}
 
 					clicking_canvas_bg = true;
@@ -6756,9 +6768,7 @@ LGraphNode.prototype.executeAction = function(action)
                                 // look for a good slot
                                 this.connecting_node.connectByType(this.connecting_slot,node,connType);
                             }
-                            
-                        }else if (this.connecting_input){
-                            
+                        } else if (this.connecting_input) {
                             var slot = this.isOverNodeOutput(
                                 node,
                                 e.canvasX,
@@ -6772,22 +6782,34 @@ LGraphNode.prototype.executeAction = function(action)
                                 // look for a good slot
                                 this.connecting_node.connectByTypeOutput(this.connecting_slot,node,connType);
                             }
-                            
                         }
-                        
-                        
-                    //}
-                    
-                }else{
-                    
+                } else {
+                    const linkReleaseContext = this.connecting_output ? {
+                        node_from: this.connecting_node,
+                        slot_from: this.connecting_output,
+                        type_filter_in: this.connecting_output.type
+                    } : {
+                        node_to: this.connecting_node,
+                        slot_from: this.connecting_input,
+                        type_filter_out: this.connecting_input.type
+                    };
+
+                    this.canvas.dispatchEvent(new CustomEvent(
+                        "litegraph:canvas", {
+                            bubbles: true,
+                            detail: {
+                                subType: "empty-release",
+                                originalEvent: e,
+                                linkReleaseContext,
+                            },
+                        }
+                    ));
                     // add menu when releasing link in empty space
                 	if (LiteGraph.release_link_on_empty_shows_menu){
-	                    if (e.shiftKey && this.allow_searchbox){
-	                        if(this.connecting_output){
-	                            this.showSearchBox(e,{node_from: this.connecting_node, slot_from: this.connecting_output, type_filter_in: this.connecting_output.type});
-	                        }else if(this.connecting_input){
-	                            this.showSearchBox(e,{node_to: this.connecting_node, slot_from: this.connecting_input, type_filter_out: this.connecting_input.type});
-	                        }
+	                    if (e.shiftKey){
+                            if (this.allow_searchbox) {
+                                this.showSearchBox(e, linkReleaseContext);
+                            }
 	                    }else{
 	                        if(this.connecting_output){
 	                            this.showConnectionMenu({nodeFrom: this.connecting_node, slotFrom: this.connecting_output, e: e});
