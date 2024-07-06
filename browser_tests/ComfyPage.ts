@@ -38,6 +38,8 @@ export class ComfyPage {
 
   async resetView() {
     await this.resetViewButton.click();
+    // Avoid "Reset View" button highlight.
+    await this.page.mouse.move(10, 10);
     await this.nextFrame();
   }
 
