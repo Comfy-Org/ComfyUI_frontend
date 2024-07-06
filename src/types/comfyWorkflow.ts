@@ -127,9 +127,11 @@ export type NodeInput = z.infer<typeof zNodeInput>;
 export type NodeOutput = z.infer<typeof zNodeOutput>;
 export type ComfyLink = z.infer<typeof zComfyLink>;
 export type ComfyNode = z.infer<typeof zComfyNode>;
-export type ComfyWorkflow = z.infer<typeof zComfyWorkflow>;
+export type ComfyWorkflowJSON = z.infer<typeof zComfyWorkflow>;
 
-export async function parseComfyWorkflow(data: string): Promise<ComfyWorkflow> {
+export async function parseComfyWorkflow(
+  data: string
+): Promise<ComfyWorkflowJSON> {
   // Validate
   const result = await zComfyWorkflow.safeParseAsync(JSON.parse(data));
   if (!result.success) {
