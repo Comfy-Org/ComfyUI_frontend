@@ -52,7 +52,8 @@ core extensions will be loaded.
 
 ## Deploy
 
-Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout.
+- Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
+- Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
 
 ## Breaking changes
 
