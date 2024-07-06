@@ -144,6 +144,11 @@ export class ComfyPage {
     await this.nextFrame();
   }
 
+  async doubleClickCanvas() {
+    await this.page.mouse.dblclick(10, 10);
+    await this.nextFrame();
+  }
+
   async rightClickEmptyLatentNode() {
     await this.canvas.click({
       position: {
