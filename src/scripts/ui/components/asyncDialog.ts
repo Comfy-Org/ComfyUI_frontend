@@ -1,10 +1,10 @@
 import { ComfyDialog } from "../dialog";
 import { $el } from "../../ui";
 
-export class ComfyAsyncDialog extends ComfyDialog {
-  #resolve;
+export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
+  #resolve: (value: any) => void;
 
-  constructor(actions) {
+  constructor(actions?: Array<string | { value?: any; text: string }>) {
     super(
       "dialog.comfy-dialog.comfyui-dialog",
       actions?.map((opt) => {
@@ -20,7 +20,7 @@ export class ComfyAsyncDialog extends ComfyDialog {
     );
   }
 
-  show(html) {
+  show(html: string | HTMLElement | HTMLElement[]) {
     this.element.addEventListener("close", () => {
       this.close();
     });
@@ -32,7 +32,7 @@ export class ComfyAsyncDialog extends ComfyDialog {
     });
   }
 
-  showModal(html) {
+  showModal(html: string | HTMLElement | HTMLElement[]) {
     this.element.addEventListener("close", () => {
       this.close();
     });

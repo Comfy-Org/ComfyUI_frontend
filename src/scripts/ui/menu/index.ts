@@ -1,5 +1,4 @@
-// @ts-nocheck
-
+import type { ComfyApp } from "scripts/app";
 import { api } from "../../api";
 import { $el } from "../../ui";
 import { downloadBlob } from "../../utils";
@@ -12,6 +11,9 @@ import { ComfyWorkflowsMenu } from "./workflows";
 import { ComfyViewQueueButton } from "./viewQueue";
 import { getInteruptButton } from "./interruptButton";
 import "./menu.css";
+import type { ComfySettingsDialog } from "../settings";
+
+type MenuPosition = "Disabled" | "Top" | "Bottom";
 
 const collapseOnMobile = (t) => {
   (t.element ?? t).classList.add("comfyui-menu-mobile-collapse");
@@ -33,15 +35,23 @@ export class ComfyAppMenu {
   #sizeBreaks = Object.keys(this.#lastSizeBreaks);
   #cachedInnerSize = null;
   #cacheTimeout = null;
+  app: ComfyApp;
+  workflows: ComfyWorkflowsMenu;
+  logo: HTMLElement;
+  saveButton: ComfySplitButton;
+  actionsGroup: ComfyButtonGroup;
+  settingsGroup: ComfyButtonGroup;
+  viewGroup: ComfyButtonGroup;
+  mobileMenuButton: ComfyButton;
+  element: HTMLElement;
+  menuPositionSetting: ReturnType<ComfySettingsDialog["addSetting"]>;
+  position: MenuPosition;
 
-  /**
-   * @param { import("../../app").ComfyApp } app
-   */
-  constructor(app) {
+  constructor(app: ComfyApp) {
     this.app = app;
 
     this.workflows = new ComfyWorkflowsMenu(app);
-    const getSaveButton = (t) =>
+    const getSaveButton = (t?: string) =>
       new ComfyButton({
         icon: "content-save",
         tooltip: "Save the current workflow",
@@ -158,14 +168,14 @@ export class ComfyAppMenu {
       showOnMobile(this.mobileMenuButton).element,
     ]);
 
-    let resizeHandler;
+    let resizeHandler: () => void;
     this.menuPositionSetting = app.ui.settings.addSetting({
       id: "Comfy.UseNewMenu",
       defaultValue: "Disabled",
       name: "[Beta] Use new menu and workflow management. Note: On small screens the menu will always be at the top.",
       type: "combo",
       options: ["Disabled", "Top", "Bottom"],
-      onChange: async (v) => {
+      onChange: async (v: MenuPosition) => {
         if (v && v !== "Disabled") {
           if (!resizeHandler) {
             resizeHandler = () => {
@@ -189,7 +199,7 @@ export class ComfyAppMenu {
     });
   }
 
-  updatePosition(v) {
+  updatePosition(v: MenuPosition) {
     document.body.style.display = "grid";
     this.app.ui.menuContainer.style.display = "none";
     this.element.style.removeProperty("display");
@@ -202,7 +212,7 @@ export class ComfyAppMenu {
     this.calculateSizeBreak();
   }
 
-  updateSizeBreak(idx, prevIdx, direction) {
+  updateSizeBreak(idx: number, prevIdx: number, direction: number) {
     const newSize = this.#sizeBreaks[idx];
     if (newSize === this.#sizeBreak) return;
     this.#cachedInnerSize = null;
@@ -264,7 +274,7 @@ export class ComfyAppMenu {
     this.updateSizeBreak(idx, currIdx, direction);
   }
 
-  calculateInnerSize(idx) {
+  calculateInnerSize(idx: number) {
     // Cache the inner size to prevent too much calculation when resizing the window
     clearTimeout(this.#cacheTimeout);
     if (this.#cachedInnerSize) {
@@ -293,10 +303,7 @@ export class ComfyAppMenu {
     return this.#cachedInnerSize;
   }
 
-  /**
-   * @param {string} defaultName
-   */
-  getFilename(defaultName) {
+  getFilename(defaultName: string) {
     if (this.app.ui.settings.getSettingValue("Comfy.PromptFilename", true)) {
       defaultName = prompt("Save workflow as:", defaultName);
       if (!defaultName) return;
@@ -307,11 +314,10 @@ export class ComfyAppMenu {
     return defaultName;
   }
 
-  /**
-   * @param {string} [filename]
-   * @param { "workflow" | "output" } [promptProperty]
-   */
-  async exportWorkflow(filename, promptProperty) {
+  async exportWorkflow(
+    filename: string,
+    promptProperty: "workflow" | "output"
+  ) {
     if (this.app.workflowManager.activeWorkflow?.path) {
       filename = this.app.workflowManager.activeWorkflow.name;
     }

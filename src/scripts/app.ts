@@ -20,9 +20,9 @@ import {
   parseComfyWorkflow,
 } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "/types/apiTypes";
-import { ComfyAppMenu } from "./ui/menu/index.js";
-import { getStorageValue, setStorageValue } from "./utils.js";
-import { ComfyWorkflowManager } from "./workflows.js";
+import { ComfyAppMenu } from "./ui/menu/index";
+import { getStorageValue } from "./utils";
+import { ComfyWorkflowManager, ComfyWorkflow } from "./workflows";
 import {
   LGraphCanvas,
   LGraph,
@@ -2179,16 +2179,11 @@ export class ComfyApp {
     }
   }
 
-  /**
-   * Populates the graph with the specified workflow data
-   * @param {*} graphData A serialized graph object
-   * @param { boolean } clean If the graph state, e.g. images, should be cleared
-   */
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
     restore_view: boolean = true,
-    workflow: string | null = null
+    workflow: string | null | ComfyWorkflow = null
   ) {
     if (clean !== false) {
       this.clean();

@@ -31,7 +31,7 @@ interface SettingParams {
   onChange?: (newValue: any, oldValue?: any) => void;
   attrs?: any;
   tooltip?: string;
-  options?: SettingOption[] | ((value: any) => SettingOption[]);
+  options?: Array<string | SettingOption> | ((value: any) => SettingOption[]);
 }
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
