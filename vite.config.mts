@@ -1,5 +1,4 @@
 import { defineConfig, Plugin } from 'vite';
-import { viteStaticCopy } from 'vite-plugin-static-copy'
 import path from 'path';
 import dotenv from "dotenv";
 dotenv.config();
@@ -100,11 +99,6 @@ export default defineConfig({
   },
   plugins: [
     comfyAPIPlugin(),
-    viteStaticCopy({
-      targets: [
-        { src: "src/lib/*", dest: "lib/" },
-      ],
-    }),
   ],
   build: {
     minify: false,

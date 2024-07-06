@@ -1,3 +1,4 @@
+import { LiteGraph } from "@comfyorg/litegraph";
 import { api } from "./api";
 
 export function getPngMetadata(file) {

@@ -1,5 +1,6 @@
 import { app, ANIM_PREVIEW_WIDGET } from "./app";
-import type { LGraphNode, Vector4 } from "/types/litegraph";
+import { LGraphCanvas, LGraphNode, LiteGraph } from "@comfyorg/litegraph";
+import type { Vector4 } from "@comfyorg/litegraph";
 
 const SIZE = Symbol();
 

@@ -11,10 +11,10 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Added a shim layer to be backward compatible with the existing extension system. https://github.com/huchenlei/ComfyUI_frontend/pull/15
 - Front-end dev server.
 - Zod schema for input validation on ComfyUI workflow.
+- Make litegraph a npm dependency.
 
 ### What to be done
 
-- Make litegraph a npm dependency.
 - Replace the existing ComfyUI front-end impl.
 - Turn on `strict` on `tsconfig.json`.
 - Introduce react to start managing part of the UI.

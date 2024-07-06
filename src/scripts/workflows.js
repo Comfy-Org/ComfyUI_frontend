@@ -4,6 +4,7 @@ import { api } from "./api";
 import { ChangeTracker } from "./changeTracker";
 import { ComfyAsyncDialog } from "./ui/components/asyncDialog";
 import { getStorageValue, setStorageValue } from "./utils";
+import { LGraphCanvas } from "@comfyorg/litegraph";
 
 function appendJsonExt(path) {
   if (!path.toLowerCase().endsWith(".json")) {

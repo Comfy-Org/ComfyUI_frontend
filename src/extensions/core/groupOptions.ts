@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app";
+import { LGraphCanvas, LiteGraph } from "@comfyorg/litegraph";
 
 function setNodeMode(node, mode) {
   node.mode = mode;

@@ -2,6 +2,7 @@
 
 import { api } from "./api";
 import { clone } from "./utils";
+import { LGraphCanvas, LiteGraph } from "@comfyorg/litegraph";
 
 export class ChangeTracker {
   static MAX_HISTORY = 50;

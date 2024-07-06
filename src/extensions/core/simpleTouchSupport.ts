@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app";
+import { LGraphCanvas, LiteGraph } from "@comfyorg/litegraph";
 
 let touchZooming;
 let touchCount = 0;

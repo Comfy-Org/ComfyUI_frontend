@@ -1,3 +1,4 @@
+import { LiteGraph, LGraphCanvas } from "@comfyorg/litegraph";
 import { app } from "../../scripts/app";
 
 // Adds filtering to combo context menus

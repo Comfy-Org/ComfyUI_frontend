@@ -39,13 +39,14 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
   Object.assign(localStorage, config.localStorage ?? {});
   document.body.innerHTML = html.toString();
 
-  mockApi(config);
-  const { app } = await import("../../src/scripts/app");
-  config.preSetup?.(app);
-  await app.setup();
+	mockApi(config);
+	const { app } = await import("../../src/scripts/app");
+	const { LiteGraph, LGraphCanvas } = await import("@comfyorg/litegraph");
+	config.preSetup?.(app);
+	await app.setup();
 
-  // @ts-ignore
-  return { ...Ez.graph(app, global["LiteGraph"], global["LGraphCanvas"]), app };
+	// @ts-ignore
+	return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app };
 }
 
 /**
