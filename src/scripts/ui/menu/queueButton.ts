@@ -4,7 +4,7 @@ import { api } from "../../api";
 import { ComfySplitButton } from "../components/splitButton";
 import { ComfyQueueOptions } from "./queueOptions";
 import { prop } from "../../utils";
-import type { ComfyApp } from "scripts/app";
+import type { ComfyApp } from "@/scripts/app";
 
 export class ComfyQueueButton {
   element = $el("div.comfyui-queue-button");

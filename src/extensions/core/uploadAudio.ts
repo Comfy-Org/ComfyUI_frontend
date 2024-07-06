@@ -1,8 +1,8 @@
 import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
 import type { IWidget } from "@comfyorg/litegraph";
-import type { DOMWidget } from "/scripts/domWidget";
-import { ComfyNodeDef } from "/types/apiTypes";
+import type { DOMWidget } from "@/scripts/domWidget";
+import { ComfyNodeDef } from "@/types/apiTypes";
 
 type FolderType = "input" | "output" | "temp";
 

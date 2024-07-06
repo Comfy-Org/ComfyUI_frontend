@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app";
-import { ComfyNodeDef } from "/types/apiTypes";
+import { ComfyNodeDef } from "@/types/apiTypes";
 
 // Adds an upload button to the nodes
 

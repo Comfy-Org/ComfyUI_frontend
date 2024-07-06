@@ -1,10 +1,10 @@
-import { ComfyWorkflowJSON } from "types/comfyWorkflow";
+import { ComfyWorkflowJSON } from "@/types/comfyWorkflow";
 import {
   HistoryTaskItem,
   PendingTaskItem,
   RunningTaskItem,
   ComfyNodeDef,
-} from "/types/apiTypes";
+} from "@/types/apiTypes";
 
 interface QueuePromptRequestBody {
   client_id: string;
