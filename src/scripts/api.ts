@@ -1,4 +1,4 @@
-import { ComfyWorkflow } from "types/comfyWorkflow";
+import { ComfyWorkflowJSON } from "types/comfyWorkflow";
 import {
   HistoryTaskItem,
   PendingTaskItem,
@@ -13,7 +13,7 @@ interface QueuePromptRequestBody {
   prompt: Record<number, any>;
   extra_data: {
     extra_pnginfo: {
-      workflow: ComfyWorkflow;
+      workflow: ComfyWorkflowJSON;
     };
   };
   front?: boolean;

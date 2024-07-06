@@ -15,7 +15,10 @@ import { createImageHost, calculateImageGrid } from "./ui/imagePreview";
 import { DraggableList } from "./ui/draggableList";
 import { applyTextReplacements, addStylesheet } from "./utils";
 import type { ComfyExtension } from "/types/comfy";
-import { type ComfyWorkflow, parseComfyWorkflow } from "../types/comfyWorkflow";
+import {
+  type ComfyWorkflowJSON,
+  parseComfyWorkflow,
+} from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "/types/apiTypes";
 import { ComfyAppMenu } from "./ui/menu/index.js";
 import { getStorageValue, setStorageValue } from "./utils.js";
@@ -1094,7 +1097,7 @@ export class ComfyApp {
 
       // No image found. Look for node data
       data = data.getData("text/plain");
-      let workflow: ComfyWorkflow;
+      let workflow: ComfyWorkflowJSON;
       try {
         data = data.slice(data.indexOf("{"));
         workflow = await parseComfyWorkflow(data);
@@ -2182,7 +2185,7 @@ export class ComfyApp {
    * @param { boolean } clean If the graph state, e.g. images, should be cleared
    */
   async loadGraphData(
-    graphData?: ComfyWorkflow,
+    graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null = null
