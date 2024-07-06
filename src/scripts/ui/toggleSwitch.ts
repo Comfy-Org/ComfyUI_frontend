@@ -11,52 +11,55 @@ import { $el } from "../ui";
  * @param { (e: { item: ToggleSwitchItem, prev?: ToggleSwitchItem }) => void } [opts.onChange]
  */
 export function toggleSwitch(name, items, e?) {
-	const onChange = e?.onChange;
+  const onChange = e?.onChange;
 
-	let selectedIndex;
-	let elements;
+  let selectedIndex;
+  let elements;
 
-	function updateSelected(index) {
-		if (selectedIndex != null) {
-			elements[selectedIndex].classList.remove("comfy-toggle-selected");
-		}
-		onChange?.({ item: items[index], prev: selectedIndex == null ? undefined : items[selectedIndex] });
-		selectedIndex = index;
-		elements[selectedIndex].classList.add("comfy-toggle-selected");
-	}
+  function updateSelected(index) {
+    if (selectedIndex != null) {
+      elements[selectedIndex].classList.remove("comfy-toggle-selected");
+    }
+    onChange?.({
+      item: items[index],
+      prev: selectedIndex == null ? undefined : items[selectedIndex],
+    });
+    selectedIndex = index;
+    elements[selectedIndex].classList.add("comfy-toggle-selected");
+  }
 
-	elements = items.map((item, i) => {
-		if (typeof item === "string") item = { text: item };
-		if (!item.value) item.value = item.text;
+  elements = items.map((item, i) => {
+    if (typeof item === "string") item = { text: item };
+    if (!item.value) item.value = item.text;
 
-		const toggle = $el(
-			"label",
-			{
-				textContent: item.text,
-				title: item.tooltip ?? "",
-			},
-			$el("input", {
-				name,
-				type: "radio",
-				value: item.value ?? item.text,
-				checked: item.selected,
-				onchange: () => {
-					updateSelected(i);
-				},
-			})
-		);
-		if (item.selected) {
-			updateSelected(i);
-		}
-		return toggle;
-	});
+    const toggle = $el(
+      "label",
+      {
+        textContent: item.text,
+        title: item.tooltip ?? "",
+      },
+      $el("input", {
+        name,
+        type: "radio",
+        value: item.value ?? item.text,
+        checked: item.selected,
+        onchange: () => {
+          updateSelected(i);
+        },
+      })
+    );
+    if (item.selected) {
+      updateSelected(i);
+    }
+    return toggle;
+  });
 
-	const container = $el("div.comfy-toggle-switch", elements);
+  const container = $el("div.comfy-toggle-switch", elements);
 
-	if (selectedIndex == null) {
-		elements[0].children[0].checked = true;
-		updateSelected(0);
-	}
+  if (selectedIndex == null) {
+    elements[0].children[0].checked = true;
+    updateSelected(0);
+  }
 
-	return container;
+  return container;
 }

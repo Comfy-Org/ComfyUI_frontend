@@ -1,53 +1,53 @@
-import {app} from "../../scripts/app";
-import {ComfyWidgets} from "../../scripts/widgets";
+import { LiteGraph, LGraphCanvas } from "@comfyorg/litegraph";
+import { app } from "../../scripts/app";
+import { ComfyWidgets } from "../../scripts/widgets";
 // Node that add notes to your project
 
 app.registerExtension({
-    name: "Comfy.NoteNode",
-    registerCustomNodes() {
-        class NoteNode {
-            static category: string;
+  name: "Comfy.NoteNode",
+  registerCustomNodes() {
+    class NoteNode {
+      static category: string;
 
-            // @ts-ignore
-            color=LGraphCanvas.node_colors.yellow.color;
-            // @ts-ignore
-            bgcolor=LGraphCanvas.node_colors.yellow.bgcolor;
-            // @ts-ignore
-            groupcolor = LGraphCanvas.node_colors.yellow.groupcolor;
-            properties: { text: string };
-            serialize_widgets: boolean;
-            isVirtualNode: boolean;
-            collapsable: boolean;
-            title_mode: number;
+      color = LGraphCanvas.node_colors.yellow.color;
+      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor;
+      groupcolor = LGraphCanvas.node_colors.yellow.groupcolor;
+      properties: { text: string };
+      serialize_widgets: boolean;
+      isVirtualNode: boolean;
+      collapsable: boolean;
+      title_mode: number;
 
-            constructor() {
-                if (!this.properties) {
-                    this.properties = { text: "" };
-                }
-                // @ts-ignore
-                // Should we extends LGraphNode?
-                ComfyWidgets.STRING(this, "", ["", {default:this.properties.text, multiline: true}], app)
-
-                this.serialize_widgets = true;
-                this.isVirtualNode = true;
-
-            }
-
-
+      constructor() {
+        if (!this.properties) {
+          this.properties = { text: "" };
         }
-
-        // Load default visibility
-
-        LiteGraph.registerNodeType(
-            "Note",
-            // @ts-ignore
-            Object.assign(NoteNode, {
-                title_mode: LiteGraph.NORMAL_TITLE,
-                title: "Note",
-                collapsable: true,
-            })
+        ComfyWidgets.STRING(
+          // @ts-ignore
+          // Should we extends LGraphNode?
+          this,
+          "",
+          ["", { default: this.properties.text, multiline: true }],
+          app
         );
 
-        NoteNode.category = "utils";
-    },
+        this.serialize_widgets = true;
+        this.isVirtualNode = true;
+      }
+    }
+
+    // Load default visibility
+
+    LiteGraph.registerNodeType(
+      "Note",
+      // @ts-ignore
+      Object.assign(NoteNode, {
+        title_mode: LiteGraph.NORMAL_TITLE,
+        title: "Note",
+        collapsable: true,
+      })
+    );
+
+    NoteNode.category = "utils";
+  },
 });

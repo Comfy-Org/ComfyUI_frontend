@@ -1,8 +1,8 @@
 import { app } from "../../scripts/app";
 import { api } from "../../scripts/api";
-import type { IWidget } from "/types/litegraph";
-import type { DOMWidget } from "/scripts/domWidget";
-import { ComfyNodeDef } from "/types/apiTypes";
+import type { IWidget } from "@comfyorg/litegraph";
+import type { DOMWidget } from "@/scripts/domWidget";
+import { ComfyNodeDef } from "@/types/apiTypes";
 
 type FolderType = "input" | "output" | "temp";
 
@@ -11,10 +11,17 @@ function splitFilePath(path: string): [string, string] {
   if (folder_separator === -1) {
     return ["", path];
   }
-  return [path.substring(0, folder_separator), path.substring(folder_separator + 1)];
+  return [
+    path.substring(0, folder_separator),
+    path.substring(folder_separator + 1),
+  ];
 }
 
-function getResourceURL(subfolder: string, filename: string, type: FolderType = "input"): string {
+function getResourceURL(
+  subfolder: string,
+  filename: string,
+  type: FolderType = "input"
+): string {
   const params = [
     "filename=" + encodeURIComponent(filename),
     "type=" + type,
@@ -54,7 +61,9 @@ async function uploadFile(
       }
 
       if (updateNode) {
-        audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(path)));
+        audioUIWidget.element.src = api.apiURL(
+          getResourceURL(...splitFilePath(path))
+        );
         audioWidget.value = path;
       }
     } else {
@@ -70,7 +79,9 @@ async function uploadFile(
 app.registerExtension({
   name: "Comfy.AudioWidget",
   async beforeRegisterNodeDef(nodeType, nodeData) {
-    if (["LoadAudio", "SaveAudio", "PreviewAudio"].includes(nodeType.comfyClass)) {
+    if (
+      ["LoadAudio", "SaveAudio", "PreviewAudio"].includes(nodeType.comfyClass)
+    ) {
       nodeData.input.required.audioUI = ["AUDIO_UI"];
     }
   },
@@ -82,7 +93,11 @@ app.registerExtension({
         audio.classList.add("comfy-audio");
         audio.setAttribute("name", "media");
 
-        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.addDOMWidget(inputName, /* name=*/ "audioUI", audio);
+        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.addDOMWidget(
+          inputName,
+          /* name=*/ "audioUI",
+          audio
+        );
         // @ts-ignore
         // TODO: Sort out the DOMWidget type.
         audioUIWidget.serialize = false;
@@ -98,21 +113,27 @@ app.registerExtension({
             const audios = message.audio;
             if (!audios) return;
             const audio = audios[0];
-            audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, audio.type));
+            audioUIWidget.element.src = api.apiURL(
+              getResourceURL(audio.subfolder, audio.filename, audio.type)
+            );
             audioUIWidget.element.classList.remove("empty-audio-widget");
-          }
+          };
         }
         return { widget: audioUIWidget };
-      }
-    }
+      },
+    };
   },
   onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
     for (const [nodeId, output] of Object.entries(nodeOutputs)) {
       const node = app.graph.getNodeById(Number.parseInt(nodeId));
       if ("audio" in output) {
-        const audioUIWidget = node.widgets.find((w) => w.name === "audioUI") as unknown as DOMWidget<HTMLAudioElement>;
+        const audioUIWidget = node.widgets.find(
+          (w) => w.name === "audioUI"
+        ) as unknown as DOMWidget<HTMLAudioElement>;
         const audio = output.audio[0];
-        audioUIWidget.element.src = api.apiURL(getResourceURL(audio.subfolder, audio.filename, audio.type));
+        audioUIWidget.element.src = api.apiURL(
+          getResourceURL(audio.subfolder, audio.filename, audio.type)
+        );
         audioUIWidget.element.classList.remove("empty-audio-widget");
       }
     }
@@ -130,11 +151,17 @@ app.registerExtension({
     return {
       AUDIOUPLOAD(node, inputName: string) {
         // The widget that allows user to select file.
-        const audioWidget: IWidget = node.widgets.find((w: IWidget) => w.name === "audio");
-        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find((w: IWidget) => w.name === "audioUI");
+        const audioWidget: IWidget = node.widgets.find(
+          (w: IWidget) => w.name === "audio"
+        );
+        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find(
+          (w: IWidget) => w.name === "audioUI"
+        );
 
         const onAudioWidgetUpdate = () => {
-          audioUIWidget.element.src = api.apiURL(getResourceURL(...splitFilePath(audioWidget.value)));
+          audioUIWidget.element.src = api.apiURL(
+            getResourceURL(...splitFilePath(audioWidget.value))
+          );
         };
         // Initially load default audio file to audioUIWidget.
         if (audioWidget.value) {
@@ -152,14 +179,19 @@ app.registerExtension({
           }
         };
         // The widget to pop up the upload dialog.
-        const uploadWidget = node.addWidget("button", inputName, /* value=*/"", () => {
-          fileInput.click();
-        });
+        const uploadWidget = node.addWidget(
+          "button",
+          inputName,
+          /* value=*/ "",
+          () => {
+            fileInput.click();
+          }
+        );
         uploadWidget.label = "choose file to upload";
         uploadWidget.serialize = false;
 
         return { widget: uploadWidget };
-      }
-    }
+      },
+    };
   },
 });

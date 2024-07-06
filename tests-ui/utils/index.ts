@@ -7,45 +7,46 @@ import path from "path";
 const html = fs.readFileSync(path.resolve(__dirname, "../../index.html"))
 
 interface StartConfig extends APIConfig {
-	resetEnv?: boolean;
-	preSetup?(app): Promise<void>;
-	localStorage?: Record<string, string>;
+  resetEnv?: boolean;
+  preSetup?(app): Promise<void>;
+  localStorage?: Record<string, string>;
 }
 
 interface StartResult {
-	app: any;
-	graph: EzGraph;
-	ez: EzNameSpace;
+  app: any;
+  graph: EzGraph;
+  ez: EzNameSpace;
 }
 
 /**
  *
  * @param { Parameters<typeof mockApi>[0] & { 
- * 	resetEnv?: boolean, 
- * 	preSetup?(app): Promise<void>,
+ *   resetEnv?: boolean, 
+ *   preSetup?(app): Promise<void>,
  *  localStorage?: Record<string, string> 
  * } } config
  * @returns
  */
 export async function start(config: StartConfig = {}): Promise<StartResult> {
-	if(config.resetEnv) {
-		jest.resetModules();
-		jest.resetAllMocks();
+  if(config.resetEnv) {
+    jest.resetModules();
+    jest.resetAllMocks();
         lg.setup(global);
-		localStorage.clear();
-		sessionStorage.clear();
-	}
+    localStorage.clear();
+    sessionStorage.clear();
+  }
 
-	Object.assign(localStorage, config.localStorage ?? {});
-	document.body.innerHTML = html.toString();
+  Object.assign(localStorage, config.localStorage ?? {});
+  document.body.innerHTML = html.toString();
 
 	mockApi(config);
 	const { app } = await import("../../src/scripts/app");
+	const { LiteGraph, LGraphCanvas } = await import("@comfyorg/litegraph");
 	config.preSetup?.(app);
 	await app.setup();
 
 	// @ts-ignore
-	return { ...Ez.graph(app, global["LiteGraph"], global["LGraphCanvas"]), app };
+	return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app };
 }
 
 /**
@@ -53,9 +54,9 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
  * @param { (hasReloaded: boolean) => (Promise<void> | void) } cb
  */
 export async function checkBeforeAndAfterReload(graph, cb) {
-	await cb(false);
-	await graph.reload();
-	await cb(true);
+  await cb(false);
+  await graph.reload();
+  await cb(true);
 }
 
 /**
@@ -65,35 +66,35 @@ export async function checkBeforeAndAfterReload(graph, cb) {
  * @returns { Record<string, import("./src/types/comfy").ComfyObjectInfo> }
  */
 export function makeNodeDef(name, input, output = {}) {
-	const nodeDef = {
-		name,
-		category: "test",
-		output: [],
-		output_name: [],
-		output_is_list: [],
-		input: {
-			required: {},
-		},
-	};
-	for (const k in input) {
-		nodeDef.input.required[k] = typeof input[k] === "string" ? [input[k], {}] : [...input[k]];
-	}
-	if (output instanceof Array) {
-		output = output.reduce((p, c) => {
-			p[c] = c;
-			return p;
-		}, {});
-	}
-	for (const k in output) {
-		// @ts-ignore
-		nodeDef.output.push(output[k]);
-		// @ts-ignore
-		nodeDef.output_name.push(k);
-		// @ts-ignore
-		nodeDef.output_is_list.push(false);
-	}
+  const nodeDef = {
+    name,
+    category: "test",
+    output: [],
+    output_name: [],
+    output_is_list: [],
+    input: {
+      required: {},
+    },
+  };
+  for (const k in input) {
+    nodeDef.input.required[k] = typeof input[k] === "string" ? [input[k], {}] : [...input[k]];
+  }
+  if (output instanceof Array) {
+    output = output.reduce((p, c) => {
+      p[c] = c;
+      return p;
+    }, {});
+  }
+  for (const k in output) {
+    // @ts-ignore
+    nodeDef.output.push(output[k]);
+    // @ts-ignore
+    nodeDef.output_name.push(k);
+    // @ts-ignore
+    nodeDef.output_is_list.push(false);
+  }
 
-	return { [name]: nodeDef };
+  return { [name]: nodeDef };
 }
 
 /**
@@ -103,9 +104,9 @@ export function makeNodeDef(name, input, output = {}) {
  * @returns { x is Exclude<T, null | undefined> }
  */
 export function assertNotNullOrUndefined(x) {
-	expect(x).not.toEqual(null);
-	expect(x).not.toEqual(undefined);
-	return true;
+  expect(x).not.toEqual(null);
+  expect(x).not.toEqual(undefined);
+  return true;
 }
 
 /**
@@ -114,32 +115,32 @@ export function assertNotNullOrUndefined(x) {
  * @param { ReturnType<Ez["graph"]>["graph"] } graph
  */
 export function createDefaultWorkflow(ez, graph) {
-	graph.clear();
-	const ckpt = ez.CheckpointLoaderSimple();
+  graph.clear();
+  const ckpt = ez.CheckpointLoaderSimple();
 
-	const pos = ez.CLIPTextEncode(ckpt.outputs.CLIP, { text: "positive" });
-	const neg = ez.CLIPTextEncode(ckpt.outputs.CLIP, { text: "negative" });
+  const pos = ez.CLIPTextEncode(ckpt.outputs.CLIP, { text: "positive" });
+  const neg = ez.CLIPTextEncode(ckpt.outputs.CLIP, { text: "negative" });
 
-	const empty = ez.EmptyLatentImage();
-	const sampler = ez.KSampler(
-		ckpt.outputs.MODEL,
-		pos.outputs.CONDITIONING,
-		neg.outputs.CONDITIONING,
-		empty.outputs.LATENT
-	);
+  const empty = ez.EmptyLatentImage();
+  const sampler = ez.KSampler(
+    ckpt.outputs.MODEL,
+    pos.outputs.CONDITIONING,
+    neg.outputs.CONDITIONING,
+    empty.outputs.LATENT
+  );
 
-	const decode = ez.VAEDecode(sampler.outputs.LATENT, ckpt.outputs.VAE);
-	const save = ez.SaveImage(decode.outputs.IMAGE);
-	graph.arrange();
+  const decode = ez.VAEDecode(sampler.outputs.LATENT, ckpt.outputs.VAE);
+  const save = ez.SaveImage(decode.outputs.IMAGE);
+  graph.arrange();
 
-	return { ckpt, pos, neg, empty, sampler, decode, save };
+  return { ckpt, pos, neg, empty, sampler, decode, save };
 }
 
 export async function getNodeDefs() {
-	const { api } = await import("../../src/scripts/api");
-	return api.getNodeDefs();
+  const { api } = await import("../../src/scripts/api");
+  return api.getNodeDefs();
 }
 
 export async function getNodeDef(nodeId) {
-	return (await getNodeDefs())[nodeId];
+  return (await getNodeDefs())[nodeId];
 }
