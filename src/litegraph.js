@@ -6196,7 +6196,7 @@ LGraphNode.prototype.executeAction = function(action)
                             {
                                 bubbles: true,
                                 detail: {
-                                    type: "empty-double-click",
+                                    subType: "empty-double-click",
                                     originalEvent: e,
                                 }
                             },
