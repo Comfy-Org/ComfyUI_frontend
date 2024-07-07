@@ -1115,8 +1115,9 @@ export class ComfyApp {
         await this.loadGraphData(workflow);
       } else {
         if (
-          e.target instanceof HTMLInputElement &&
-          (e.target.type === "text" || e.target.type === "textarea")
+          (e.target instanceof HTMLTextAreaElement &&
+            e.target.type === "textarea") ||
+          (e.target instanceof HTMLInputElement && e.target.type === "text")
         ) {
           return;
         }
@@ -1133,8 +1134,9 @@ export class ComfyApp {
   #addCopyHandler() {
     document.addEventListener("copy", (e) => {
       if (
-        e.target instanceof HTMLInputElement &&
-        (e.target.type === "text" || e.target.type === "textarea")
+        (e.target instanceof HTMLTextAreaElement &&
+          e.target.type === "textarea") ||
+        (e.target instanceof HTMLInputElement && e.target.type === "text")
       ) {
         // Default system copy
         return;
@@ -1142,7 +1144,7 @@ export class ComfyApp {
 
       // copy nodes and clear clipboard
       if (
-        e.target instanceof HTMLElement &&
+        e.target instanceof Element &&
         e.target.className === "litegraph" &&
         this.canvas.selected_nodes
       ) {
@@ -1269,7 +1271,7 @@ export class ComfyApp {
 
       var block_default = false;
 
-      if (e.target instanceof HTMLElement && e.target.localName == "input") {
+      if (e.target instanceof Element && e.target.localName == "input") {
         return;
       }
 
