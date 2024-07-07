@@ -1114,8 +1114,11 @@ export class ComfyApp {
       if (workflow && workflow.version && workflow.nodes && workflow.extra) {
         await this.loadGraphData(workflow);
       } else {
-        // @ts-ignore
-        if (e.target.type === "text" || e.target.type === "textarea") {
+        if (
+          (e.target instanceof HTMLTextAreaElement &&
+            e.target.type === "textarea") ||
+          (e.target instanceof HTMLInputElement && e.target.type === "text")
+        ) {
           return;
         }
 
@@ -1130,8 +1133,11 @@ export class ComfyApp {
    */
   #addCopyHandler() {
     document.addEventListener("copy", (e) => {
-      // @ts-ignore
-      if (e.target.type === "text" || e.target.type === "textarea") {
+      if (
+        (e.target instanceof HTMLTextAreaElement &&
+          e.target.type === "textarea") ||
+        (e.target instanceof HTMLInputElement && e.target.type === "text")
+      ) {
         // Default system copy
         return;
       }
