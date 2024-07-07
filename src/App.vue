@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { onMounted, provide, ref } from "vue";
 import NodeSearchBox from "@/components/NodeSearchBox.vue";
+import ProgressSpinner from "primevue/progressspinner";
 import { api } from "@/scripts/api";
 import { NodeSearchService } from "./services/nodeSearchService";
 
