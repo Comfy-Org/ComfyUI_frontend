@@ -1,60 +1,15 @@
 import { LiteGraph } from "@comfyorg/litegraph";
 import { api } from "./api";
+import { getFromPngFile } from "./metadata/png";
+import { getFromFlacFile } from "./metadata/flac";
 
-export function getPngMetadata(file) {
-  return new Promise<Record<string, string>>((r) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      // Get the PNG data as a Uint8Array
-      const pngData = new Uint8Array(event.target.result as ArrayBuffer);
-      const dataView = new DataView(pngData.buffer);
+// Original functions left in for backwards compatibility
+export function getPngMetadata(file: File): Promise<Record<string, string>> {
+  return getFromPngFile(file);
+}
 
-      // Check that the PNG signature is present
-      if (dataView.getUint32(0) !== 0x89504e47) {
-        console.error("Not a valid PNG file");
-        r({});
-        return;
-      }
-
-      // Start searching for chunks after the PNG signature
-      let offset = 8;
-      let txt_chunks: Record<string, string> = {};
-      // Loop through the chunks in the PNG file
-      while (offset < pngData.length) {
-        // Get the length of the chunk
-        const length = dataView.getUint32(offset);
-        // Get the chunk type
-        const type = String.fromCharCode(
-          ...pngData.slice(offset + 4, offset + 8)
-        );
-        if (type === "tEXt" || type == "comf" || type === "iTXt") {
-          // Get the keyword
-          let keyword_end = offset + 8;
-          while (pngData[keyword_end] !== 0) {
-            keyword_end++;
-          }
-          const keyword = String.fromCharCode(
-            ...pngData.slice(offset + 8, keyword_end)
-          );
-          // Get the text
-          const contentArraySegment = pngData.slice(
-            keyword_end + 1,
-            offset + 8 + length
-          );
-          const contentJson = new TextDecoder("utf-8").decode(
-            contentArraySegment
-          );
-          txt_chunks[keyword] = contentJson;
-        }
-
-        offset += 12 + length;
-      }
-
-      r(txt_chunks);
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
+export function getFlacMetadata(file: File): Promise<Record<string, string>> {
+  return getFromFlacFile(file);
 }
 
 function parseExifData(exifData) {
@@ -194,82 +149,6 @@ export function getLatentMetadata(file) {
 
     var slice = file.slice(0, 1024 * 1024 * 4);
     reader.readAsArrayBuffer(slice);
-  });
-}
-
-function getString(dataView: DataView, offset: number, length: number): string {
-  let string = "";
-  for (let i = 0; i < length; i++) {
-    string += String.fromCharCode(dataView.getUint8(offset + i));
-  }
-  return string;
-}
-
-// Function to parse the Vorbis Comment block
-function parseVorbisComment(dataView: DataView): Record<string, string> {
-  let offset = 0;
-  const vendorLength = dataView.getUint32(offset, true);
-  offset += 4;
-  const vendorString = getString(dataView, offset, vendorLength);
-  offset += vendorLength;
-
-  const userCommentListLength = dataView.getUint32(offset, true);
-  offset += 4;
-  const comments = {};
-  for (let i = 0; i < userCommentListLength; i++) {
-    const commentLength = dataView.getUint32(offset, true);
-    offset += 4;
-    const comment = getString(dataView, offset, commentLength);
-    offset += commentLength;
-
-    const [key, value] = comment.split("=");
-
-    comments[key] = value;
-  }
-
-  return comments;
-}
-
-// Function to read a FLAC file and parse Vorbis comments
-export function getFlacMetadata(file: Blob): Promise<Record<string, string>> {
-  return new Promise((r) => {
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const arrayBuffer = event.target.result as ArrayBuffer;
-      const dataView = new DataView(arrayBuffer);
-
-      // Verify the FLAC signature
-      const signature = String.fromCharCode(
-        ...new Uint8Array(arrayBuffer, 0, 4)
-      );
-      if (signature !== "fLaC") {
-        console.error("Not a valid FLAC file");
-        return;
-      }
-
-      // Parse metadata blocks
-      let offset = 4;
-      let vorbisComment = null;
-      while (offset < dataView.byteLength) {
-        const isLastBlock = dataView.getUint8(offset) & 0x80;
-        const blockType = dataView.getUint8(offset) & 0x7f;
-        const blockSize = dataView.getUint32(offset, false) & 0xffffff;
-        offset += 4;
-
-        if (blockType === 4) {
-          // Vorbis Comment block type
-          vorbisComment = parseVorbisComment(
-            new DataView(arrayBuffer, offset, blockSize)
-          );
-        }
-
-        offset += blockSize;
-        if (isLastBlock) break;
-      }
-
-      r(vorbisComment);
-    };
-    reader.readAsArrayBuffer(file);
   });
 }
 
