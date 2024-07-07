@@ -28,9 +28,10 @@
           </div>
         </div>
       </template>
+      <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
         <Chip
-          :label="value.type.invokeSequences[1] + ': ' + value.value"
+          :label="value[0].invokeSequence + ': ' + value[1]"
           removable
           @remove="activeFilters = activeFilters.filter((f) => f !== value)"
         />
@@ -40,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { inject, Ref, ref } from "vue";
 import AutoComplete from "primevue/autocomplete";
 import Chip from "primevue/chip";
 import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
@@ -48,37 +49,40 @@ import NodeSourceChip from "@/components/NodeSourceChip.vue";
 import { ComfyNodeDef } from "@/types/apiTypes";
 import {
   NodeSearchService,
-  type NodeFilter,
+  type FilterAndValue,
 } from "@/services/nodeSearchService";
+import { LinkReleaseContext } from "@comfyorg/litegraph";
 
 const props = defineProps({
-  nodes: {
-    type: Array<ComfyNodeDef>,
-    default: [],
-  },
-  debounceTimeout: {
-    type: Number,
-    default: 300,
-  },
   searchLimit: {
     type: Number,
     default: 10,
   },
+  triggerEvent: {
+    type: CustomEvent<{
+      subType: string;
+      originalEvent: Event;
+      linkReleaseContext?: LinkReleaseContext;
+    }>,
+    required: false,
+  },
 });
 
-const activeFilters = ref<NodeFilter[]>([]);
+const nodeSearchService = (
+  inject("nodeSearchService") as Ref<NodeSearchService>
+).value;
+
+const activeFilters = ref<FilterAndValue[]>([]);
 const suggestions = ref<ComfyNodeDef[]>([]);
 
 const search = (event: { query: string }) => {
   const query = event.query;
-  suggestions.value = NodeSearchService.getInstance().searchNode(
-    query,
-    activeFilters.value,
-    { limit: props.searchLimit }
-  );
+  suggestions.value = nodeSearchService.searchNode(query, activeFilters.value, {
+    limit: props.searchLimit,
+  });
 };
 
-const addFilter = (filter: NodeFilter) => {
+const addFilter = (filter: FilterAndValue<string>) => {
   activeFilters.value.push(filter);
 };
 </script>

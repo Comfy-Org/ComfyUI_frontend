@@ -1,22 +1,26 @@
 <template>
-  <NodeSearchBox :nodes="nodeDefs"></NodeSearchBox>
+  <ProgressSpinner v-if="isLoading"></ProgressSpinner>
+  <div v-else>
+    <NodeSearchBox></NodeSearchBox>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, provide, ref } from "vue";
 import NodeSearchBox from "@/components/NodeSearchBox.vue";
-
 import { api } from "@/scripts/api";
-import { ComfyNodeDef } from "./types/apiTypes";
 import { NodeSearchService } from "./services/nodeSearchService";
 
-const nodeDefs = ref<ComfyNodeDef[]>([]);
+const isLoading = ref(true);
+const nodeSearchService = ref<NodeSearchService>();
 
 onMounted(async () => {
-  nodeDefs.value = Object.values(await api.getNodeDefs());
-  // Initialize node search service
-  NodeSearchService.getInstance(nodeDefs.value);
+  const nodeDefs = Object.values(await api.getNodeDefs());
+  nodeSearchService.value = new NodeSearchService(nodeDefs);
+  isLoading.value = false;
 });
+
+provide("nodeSearchService", nodeSearchService);
 </script>
 
 <style></style>

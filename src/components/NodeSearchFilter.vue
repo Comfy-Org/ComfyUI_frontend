@@ -9,21 +9,24 @@
     <template #header>
       <h3>Add node filter condition</h3>
     </template>
-    <Select
-      v-model="selectedFilterType"
-      :options="filterTypes"
-      optionLabel="displayText"
-      @change="updateSelectedFilterOption"
-    />
-    <AutoComplete
-      v-model="selectedFilterOption"
-      :suggestions="filterOptions"
-      :min-length="0"
-      @complete="search"
-      completeOnFocus
-      forceSelection
-      dropdown
-    ></AutoComplete>
+    <div class="dialog-body">
+      <SelectButton
+        v-model="selectedFilter"
+        :options="filters"
+        :allowEmpty="false"
+        optionLabel="name"
+        @change="updateSelectedFilterValue"
+      />
+      <AutoComplete
+        v-model="selectedFilterValue"
+        :suggestions="filterValues"
+        :min-length="0"
+        @complete="(event) => updateFilterValues(event.query)"
+        completeOnFocus
+        forceSelection
+        dropdown
+      ></AutoComplete>
+    </div>
     <template #footer>
       <Button type="button" label="Add" @click="submit"></Button>
     </template>
@@ -33,57 +36,52 @@
 <script setup lang="ts">
 import {
   NodeFilter,
-  NodeFilterType,
   NodeSearchService,
+  type FilterAndValue,
 } from "@/services/nodeSearchService";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
-import Select from "primevue/select";
+import SelectButton from "primevue/selectbutton";
 import AutoComplete from "primevue/autocomplete";
-import { ref } from "vue";
+import { inject, ref, onMounted } from "vue";
 
 const visible = ref<boolean>(false);
-const filterTypes = NodeSearchService.SUPPORTED_NODE_FILTER_TYPES;
-const selectedFilterType = ref<NodeFilterType>(filterTypes[0]);
+const nodeSearchService: NodeSearchService = inject("nodeSearchService").value;
 
-const filterOptions = ref<string[]>([]);
-const selectedFilterOption = ref<string>("");
+const filters = ref<NodeFilter[]>([]);
+const selectedFilter = ref<NodeFilter>();
+const filterValues = ref<string[]>([]);
+const selectedFilterValue = ref<string>("");
+
+onMounted(() => {
+  filters.value = nodeSearchService.nodeFilters;
+  selectedFilter.value = filters.value[0];
+});
 
 const emit = defineEmits(["addFilter"]);
 
-const updateSelectedFilterOption = () => {
-  search({ query: "" });
-  if (filterOptions.value.includes(selectedFilterOption.value)) {
+const updateSelectedFilterValue = () => {
+  updateFilterValues("");
+  if (filterValues.value.includes(selectedFilterValue.value)) {
     return;
   }
-  selectedFilterOption.value = filterOptions.value[0];
+  selectedFilterValue.value = filterValues.value[0];
 };
 
-const search = (event: { query: string }) => {
-  filterOptions.value =
-    event.query === ""
-      ? // Copy array. Otherwise, Vue will have some reactive bugs.
-        [
-          ...NodeSearchService.getInstance().filterOptions[
-            selectedFilterType.value.name
-          ],
-        ]
-      : NodeSearchService.getInstance().searchFilter(
-          event.query,
-          selectedFilterType.value
-        );
+const updateFilterValues = (query: string) => {
+  filterValues.value = selectedFilter.value.fuseSearch.search(query);
 };
 
 const submit = () => {
   visible.value = false;
-  emit("addFilter", {
-    type: selectedFilterType.value,
-    value: selectedFilterOption.value,
-  } as NodeFilter);
+  emit("addFilter", [
+    selectedFilter.value,
+    selectedFilterValue.value,
+  ] as FilterAndValue);
 };
 
 const showModal = () => {
-  updateSelectedFilterOption();
+  updateSelectedFilterValue();
   visible.value = true;
 };
 </script>
@@ -91,5 +89,13 @@ const showModal = () => {
 <style scoped>
 .filter-button {
   z-index: 10;
+}
+
+.dialog {
+  @apply min-w-96;
+}
+
+.dialog-body {
+  @apply flex flex-col space-y-2;
 }
 </style>
