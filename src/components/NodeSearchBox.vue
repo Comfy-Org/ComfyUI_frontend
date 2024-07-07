@@ -31,10 +31,14 @@
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
         <Chip
-          :label="value[0].invokeSequence + ': ' + value[1]"
           removable
           @remove="activeFilters = activeFilters.filter((f) => f !== value)"
-        />
+        >
+          <Badge size="small" :class="value[0].invokeSequence + '-badge'">
+            {{ value[0].invokeSequence.toUpperCase() }}
+          </Badge>
+          {{ value[1] }}
+        </Chip>
       </template>
     </AutoComplete>
   </div>
@@ -44,6 +48,7 @@
 import { inject, Ref, ref } from "vue";
 import AutoComplete from "primevue/autocomplete";
 import Chip from "primevue/chip";
+import Badge from "primevue/badge";
 import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
 import NodeSourceChip from "@/components/NodeSourceChip.vue";
 import { ComfyNodeDef } from "@/types/apiTypes";
@@ -118,5 +123,21 @@ const addFilter = (filter: FilterAndValue<string>) => {
   @apply text-sm text-gray-400 overflow-hidden text-ellipsis;
   /* Keeps the text on a single line by default */
   white-space: nowrap;
+}
+
+.i-badge {
+  @apply bg-green-500 text-white;
+}
+
+.o-badge {
+  @apply bg-red-500 text-white;
+}
+
+.c-badge {
+  @apply bg-blue-500 text-white;
+}
+
+.s-badge {
+  @apply bg-yellow-500;
 }
 </style>
