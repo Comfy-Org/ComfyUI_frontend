@@ -1115,8 +1115,9 @@ export class ComfyApp {
         await this.loadGraphData(workflow);
       } else {
         if (
-          e.target instanceof HTMLInputElement &&
-          (e.target.type === "text" || e.target.type === "textarea")
+          (e.target instanceof HTMLInputElement && e.target.type === "text") ||
+          (e.target instanceof HTMLTextAreaElement &&
+            e.target.type === "textarea")
         ) {
           return;
         }
