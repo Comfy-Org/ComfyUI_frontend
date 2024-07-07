@@ -1,13 +1,13 @@
 <template>
-  <ProgressSpinner v-if="isLoading"></ProgressSpinner>
+  <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <div v-else>
-    <NodeSearchBox></NodeSearchBox>
+    <NodeSearchboxPopover />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, provide, ref } from "vue";
-import NodeSearchBox from "@/components/NodeSearchBox.vue";
+import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import { api } from "@/scripts/api";
 import { NodeSearchService } from "./services/nodeSearchService";
@@ -24,4 +24,8 @@ onMounted(async () => {
 provide("nodeSearchService", nodeSearchService);
 </script>
 
-<style></style>
+<style scoped>
+.spinner {
+  @apply absolute inset-0 flex justify-center items-center h-screen;
+}
+</style>

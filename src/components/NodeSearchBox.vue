@@ -94,7 +94,7 @@ const addFilter = (filter: FilterAndValue<string>) => {
 
 <style scoped>
 .comfy-vue-node-search-container {
-  @apply flex justify-center items-center h-screen;
+  @apply flex justify-center items-center;
 }
 
 .comfy-vue-node-search-container * {
