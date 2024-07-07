@@ -59,7 +59,7 @@ app.registerExtension({
 
     var outputs = nodeData["output"];
     for (const key in outputs) {
-      var type = outputs[key];
+      var type = outputs[key] as string;
       if (!(type in this.slot_types_default_in)) {
         this.slot_types_default_in[type] = ["Reroute"]; // ["Reroute", "Primitive"];  primitive doesn't always work :'()
       }
