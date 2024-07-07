@@ -23,6 +23,10 @@ if (!fs.existsSync(repoPath)) {
   );
 }
 
+if (!fs.existsSync(workflowsPath)) {
+  await fs.promises.mkdir(workflowsPath);
+}
+
 async function* getFiles(
   dir: string,
   ...exts: string[]
