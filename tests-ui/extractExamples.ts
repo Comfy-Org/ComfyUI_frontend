@@ -9,6 +9,8 @@ import path from "path";
 import { fileURLToPath } from "node:url";
 import { getFromPngBuffer } from "@/scripts/metadata/png";
 import { getFromFlacBuffer } from "@/scripts/metadata/flac";
+import dotenv from "dotenv";
+dotenv.config();
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoPath =
@@ -17,7 +19,7 @@ const workflowsPath = path.resolve(dirname, "workflows", "examples");
 
 if (!fs.existsSync(repoPath)) {
   console.error(
-    `ComfyUI_examples repo not found. Please clone this to ${repoPath} or set the EXAMPLE_REPO_PATH env var and re-run.`
+    `ComfyUI_examples repo not found. Please clone this to ${repoPath} or set the EXAMPLE_REPO_PATH env var (see .env_example) and re-run.`
   );
 }
 
