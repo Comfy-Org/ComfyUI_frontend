@@ -55,7 +55,7 @@ const selectedFilterValue = ref<string>("");
 
 onMounted(() => {
   filters.value = nodeSearchService.nodeFilters;
-  selectedFilter.value = filters.value[0];
+  selectedFilter.value = nodeSearchService.nodeFilters[0];
 });
 
 const emit = defineEmits(["addFilter"]);
