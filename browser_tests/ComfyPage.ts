@@ -144,6 +144,22 @@ export class ComfyPage {
     await this.nextFrame();
   }
 
+  async doubleClickCanvas() {
+    await this.page.mouse.dblclick(10, 10);
+    await this.nextFrame();
+  }
+
+  async clickEmptyLatentNode() {
+    await this.canvas.click({
+      position: {
+        x: 724,
+        y: 625
+      },
+    });
+    this.page.mouse.move(10, 10);
+    await this.nextFrame();
+  }
+
   async rightClickEmptyLatentNode() {
     await this.canvas.click({
       position: {
@@ -161,6 +177,20 @@ export class ComfyPage {
     await this.page.keyboard.down('Control');
     await this.clickTextEncodeNode1();
     await this.clickTextEncodeNode2();
+    await this.page.keyboard.up('Control');
+    await this.nextFrame();
+  }
+
+  async ctrlC() {
+    await this.page.keyboard.down('Control');
+    await this.page.keyboard.press('KeyC');
+    await this.page.keyboard.up('Control');
+    await this.nextFrame();
+  }
+
+  async ctrlV() {
+    await this.page.keyboard.down('Control');
+    await this.page.keyboard.press('KeyV');
     await this.page.keyboard.up('Control');
     await this.nextFrame();
   }
