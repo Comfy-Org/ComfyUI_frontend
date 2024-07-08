@@ -53,12 +53,20 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   visible.value = true;
 };
 
+const handleEscapeKeyPress = (event) => {
+  if (event.key === "Escape") {
+    visible.value = false;
+  }
+};
+
 onMounted(() => {
   document.addEventListener("litegraph:canvas", canvasEventHandler);
+  document.addEventListener("keydown", handleEscapeKeyPress);
 });
 
 onUnmounted(() => {
   document.removeEventListener("litegraph:canvas", canvasEventHandler);
+  document.removeEventListener("keydown", handleEscapeKeyPress);
 });
 </script>
 
