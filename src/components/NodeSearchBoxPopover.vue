@@ -1,11 +1,12 @@
 <template>
   <div>
     <Dialog v-model:visible="visible" pt:root:class="invisible-dialog-root">
-      <template #container="{ closeCallback }">
+      <template #container>
         <NodeSearchBox
           :filters="nodeFilters"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
+          @add-node="addNode"
         />
       </template>
     </Dialog>
@@ -13,14 +14,16 @@
 </template>
 
 <script setup lang="ts">
+import { app } from "@/scripts/app";
 import { inject, onMounted, onUnmounted, reactive, Ref, ref } from "vue";
 import NodeSearchBox from "./NodeSearchBox.vue";
 import Dialog from "primevue/dialog";
-import { LiteGraphCanvasEvent } from "@comfyorg/litegraph";
+import { LiteGraph, LiteGraphCanvasEvent } from "@comfyorg/litegraph";
 import {
   FilterAndValue,
   NodeSearchService,
 } from "@/services/nodeSearchService";
+import { ComfyNodeDef } from "@/types/apiTypes";
 
 const visible = ref(false);
 const nodeFilters = reactive([]);
@@ -31,6 +34,15 @@ const removeFilter = (filter: FilterAndValue) => {
   const index = nodeFilters.findIndex((f) => f === filter);
   if (index !== -1) {
     nodeFilters.splice(index, 1);
+  }
+};
+const addNode = (nodeDef: ComfyNodeDef) => {
+  visible.value = false;
+
+  const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {});
+  if (node) {
+    node.pos = [100, 100];
+    app.graph.add(node);
   }
 };
 const nodeSearchService = (

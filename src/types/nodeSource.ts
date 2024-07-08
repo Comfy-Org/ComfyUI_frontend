@@ -7,17 +7,17 @@ export type NodeSource = {
 
 export const getNodeSource = (python_module: string): NodeSource => {
   const modules = python_module.split(".");
-  if (modules[0] === "custom_nodes") {
-    return {
-      type: "custom_nodes",
-      className: "comfy-custom-nodes",
-      displayText: modules[1],
-    };
-  } else {
+  if (["nodes", "comfy_extras"].includes(modules[0])) {
     return {
       type: "core",
       className: "comfy-core",
       displayText: "Comfy Core",
+    };
+  } else {
+    return {
+      type: "custom_nodes",
+      className: "comfy-custom-nodes",
+      displayText: modules[1],
     };
   }
 };

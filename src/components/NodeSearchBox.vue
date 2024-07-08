@@ -11,6 +11,7 @@
       :suggestions="suggestions"
       :min-length="0"
       @complete="search"
+      @option-select="emit('addNode', $event.value)"
       complete-on-focus
       auto-option-focus
       force-selection
@@ -83,7 +84,7 @@ const search = (event: { query: string }) => {
   });
 };
 
-const emit = defineEmits(["addFilter", "removeFilter"]);
+const emit = defineEmits(["addFilter", "removeFilter", "addNode"]);
 
 const reFocusInput = () => {
   const inputElement = document.getElementById(inputId) as HTMLInputElement;
