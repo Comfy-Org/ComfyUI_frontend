@@ -13,11 +13,13 @@ export const getNodeSource = (python_module: string): NodeSource => {
       className: "comfy-core",
       displayText: "Comfy Core",
     };
-  } else {
+  } else if (modules[0] === "custom_nodes") {
     return {
       type: "custom_nodes",
       className: "comfy-custom-nodes",
-      displayText: modules[0],
+      displayText: modules[1],
     };
+  } else {
+    throw new Error(`Unknown node source: ${python_module}`);
   }
 };
