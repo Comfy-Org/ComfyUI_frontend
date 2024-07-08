@@ -54,6 +54,9 @@ onUnmounted(() => {
 
 <style>
 .invisible-dialog-root {
+  width: 30%;
+  min-width: 24rem;
+  max-width: 48rem;
   border: 0 !important;
   background-color: transparent !important;
 }

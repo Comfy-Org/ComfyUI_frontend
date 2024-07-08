@@ -11,7 +11,8 @@
       :min-length="0"
       @complete="search"
       complete-on-focus
-      forceSelection
+      auto-option-focus
+      force-selection
       multiple
     >
       <template v-slot:option="{ option }">
@@ -90,7 +91,7 @@ const emit = defineEmits(["addFilter", "removeFilter"]);
 }
 
 .comfy-vue-node-search-box {
-  @apply min-w-96 w-1/4 z-10;
+  @apply min-w-96 w-full z-10;
 }
 
 .option-container {
