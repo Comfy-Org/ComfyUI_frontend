@@ -17,7 +17,7 @@ export const getNodeSource = (python_module: string): NodeSource => {
     return {
       type: "custom_nodes",
       className: "comfy-custom-nodes",
-      displayText: modules[1],
+      displayText: modules[0],
     };
   }
 };

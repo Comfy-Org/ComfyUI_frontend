@@ -10,7 +10,7 @@
       append-to="self"
       :suggestions="suggestions"
       :min-length="0"
-      @complete="search"
+      @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
       complete-on-focus
       auto-option-focus
@@ -77,8 +77,7 @@ const placeholder = computed(() => {
   return props.filters.length === 0 ? "Search for nodes" : "";
 });
 
-const search = (event: { query: string }) => {
-  const query = event.query;
+const search = (query: string) => {
   suggestions.value = nodeSearchService.searchNode(query, props.filters, {
     limit: props.searchLimit,
   });
