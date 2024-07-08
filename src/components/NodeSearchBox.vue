@@ -5,8 +5,9 @@
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
       scrollHeight="28rem"
-      placeholder="Search for nodes..."
-      appendTo="self"
+      :placeholder="placeholder"
+      :input-id="inputId"
+      append-to="self"
       :suggestions="suggestions"
       :min-length="0"
       @complete="search"
@@ -43,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { inject, Ref, ref } from "vue";
+import { computed, inject, onMounted, Ref, ref } from "vue";
 import AutoComplete from "primevue/autocomplete";
 import Chip from "primevue/chip";
 import Badge from "primevue/badge";
@@ -69,7 +70,11 @@ const nodeSearchService = (
   inject("nodeSearchService") as Ref<NodeSearchService>
 ).value;
 
+const inputId = `comfy-vue-node-search-box-input-${Math.random()}`;
 const suggestions = ref<ComfyNodeDef[]>([]);
+const placeholder = computed(() => {
+  return props.filters.length === 0 ? "Search for nodes" : "";
+});
 
 const search = (event: { query: string }) => {
   const query = event.query;
@@ -79,6 +84,11 @@ const search = (event: { query: string }) => {
 };
 
 const emit = defineEmits(["addFilter", "removeFilter"]);
+
+onMounted(() => {
+  const inputElement = document.getElementById(inputId) as HTMLInputElement;
+  inputElement.focus();
+});
 </script>
 
 <style scoped>

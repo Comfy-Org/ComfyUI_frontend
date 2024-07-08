@@ -2,7 +2,11 @@
   <div>
     <Dialog v-model:visible="visible" pt:root:class="invisible-dialog-root">
       <template #container="{ closeCallback }">
-        <NodeSearchBox :filters="nodeFilters" @add-filter="addFilter" />
+        <NodeSearchBox
+          :filters="nodeFilters"
+          @add-filter="addFilter"
+          @remove-filter="removeFilter"
+        />
       </template>
     </Dialog>
   </div>
@@ -22,6 +26,12 @@ const visible = ref(false);
 const nodeFilters = reactive([]);
 const addFilter = (filter: FilterAndValue) => {
   nodeFilters.push(filter);
+};
+const removeFilter = (filter: FilterAndValue) => {
+  const index = nodeFilters.findIndex((f) => f === filter);
+  if (index !== -1) {
+    nodeFilters.splice(index, 1);
+  }
 };
 const nodeSearchService = (
   inject("nodeSearchService") as Ref<NodeSearchService>
