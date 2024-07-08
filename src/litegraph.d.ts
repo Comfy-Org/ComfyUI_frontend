@@ -147,9 +147,11 @@ export type ContextMenuEventListener = (
 ) => boolean | void;
 
 export type LinkReleaseContext = {
-    node_from: LGraphNode;
+    node_to?: LGraphNode;
+    node_from?: LGraphNode;
     slot_from: INodeSlot;
-    type_filter_in: string;
+    type_filter_in?: string;
+    type_filter_out?: string;
 };
 
 export type LiteGraphCanvasEventType = "empty-release" | "empty-double-click";
