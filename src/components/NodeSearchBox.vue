@@ -1,6 +1,6 @@
 <template>
   <div class="comfy-vue-node-search-container">
-    <NodeSearchFilter @addFilter="$emit('addFilter', $event)" />
+    <NodeSearchFilter @addFilter="onAddFilter" />
     <AutoComplete
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
@@ -32,7 +32,7 @@
       </template>
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
-        <Chip removable @remove="$emit('removeFilter', value)">
+        <Chip removable @remove="onRemoveFilter($event, value)">
           <Badge size="small" :class="value[0].invokeSequence + '-badge'">
             {{ value[0].invokeSequence.toUpperCase() }}
           </Badge>
@@ -85,10 +85,25 @@ const search = (event: { query: string }) => {
 
 const emit = defineEmits(["addFilter", "removeFilter"]);
 
-onMounted(() => {
+const reFocusInput = () => {
   const inputElement = document.getElementById(inputId) as HTMLInputElement;
-  inputElement.focus();
-});
+  if (inputElement) {
+    inputElement.blur();
+    inputElement.focus();
+  }
+};
+
+onMounted(reFocusInput);
+const onAddFilter = (filterAndValue: FilterAndValue) => {
+  emit("addFilter", filterAndValue);
+  reFocusInput();
+};
+const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
+  event.stopPropagation();
+  event.preventDefault();
+  emit("removeFilter", filterAndValue);
+  reFocusInput();
+};
 </script>
 
 <style scoped>
