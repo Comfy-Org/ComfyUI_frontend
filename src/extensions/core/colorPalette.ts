@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app";
 import { $el } from "../../scripts/ui";
-import type { ColorPalettes } from "@/types/colorPalette";
+import type { ColorPalettes, Palette } from "@/types/colorPalette";
 import { LGraphCanvas, LiteGraph } from "@comfyorg/litegraph";
 
 // Manage color palettes
@@ -626,7 +626,7 @@ app.registerExtension({
       await loadColorPalette(getColorPalette());
     };
 
-    const loadColorPalette = async (colorPalette) => {
+    const loadColorPalette = async (colorPalette: Palette) => {
       colorPalette = await completeColorPalette(colorPalette);
       if (colorPalette.colors) {
         // Sets the colors of node slots and links
@@ -671,6 +671,12 @@ app.registerExtension({
         }
         app.canvas.draw(true, true);
       }
+
+      document.dispatchEvent(
+        new CustomEvent("comfy:setting:color-palette-loaded", {
+          detail: colorPalette,
+        })
+      );
     };
 
     const getColorPalette = (colorPaletteId?) => {
