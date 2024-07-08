@@ -46,7 +46,7 @@
     "zip-dir": "^2.0.0"
   },
   "dependencies": {
-    "@comfyorg/litegraph": "^0.7.24",
+    "@comfyorg/litegraph": "^0.7.25",
     "@primevue/themes": "^4.0.0-rc.2",
     "@vitejs/plugin-vue": "^5.0.5",
     "dotenv": "^16.4.5",
