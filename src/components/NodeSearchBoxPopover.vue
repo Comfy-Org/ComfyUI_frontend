@@ -1,24 +1,44 @@
 <template>
   <div>
-    <Dialog v-model:visible="visible">
+    <Dialog v-model:visible="visible" pt:root:class="invisible-dialog-root">
       <template #container="{ closeCallback }">
-        <NodeSearchBox />
+        <NodeSearchBox :filters="nodeFilters" @add-filter="addFilter" />
       </template>
     </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { inject, onMounted, onUnmounted, reactive, Ref, ref } from "vue";
 import NodeSearchBox from "./NodeSearchBox.vue";
 import Dialog from "primevue/dialog";
 import { LiteGraphCanvasEvent } from "@comfyorg/litegraph";
+import {
+  FilterAndValue,
+  NodeSearchService,
+} from "@/services/nodeSearchService";
 
 const visible = ref(false);
+const nodeFilters = reactive([]);
+const addFilter = (filter: FilterAndValue) => {
+  nodeFilters.push(filter);
+};
+const nodeSearchService = (
+  inject("nodeSearchService") as Ref<NodeSearchService>
+).value;
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
-  if (e.detail.subType === "empty-release") {
-    console.log(e.detail.linkReleaseContext!);
+  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey;
+  if (e.detail.subType === "empty-release" && shiftPressed) {
+    const destIsInput = e.detail.linkReleaseContext.node_from !== undefined;
+    const filter = destIsInput
+      ? nodeSearchService.getFilterById("input")
+      : nodeSearchService.getFilterById("output");
+    const value = destIsInput
+      ? e.detail.linkReleaseContext.type_filter_in
+      : e.detail.linkReleaseContext.type_filter_out;
+
+    addFilter([filter, value]);
   }
   visible.value = true;
 };
@@ -31,3 +51,10 @@ onUnmounted(() => {
   document.removeEventListener("litegraph:canvas", canvasEventHandler);
 });
 </script>
+
+<style>
+.invisible-dialog-root {
+  border: 0 !important;
+  background-color: transparent !important;
+}
+</style>

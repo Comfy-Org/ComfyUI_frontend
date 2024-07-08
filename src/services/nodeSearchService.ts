@@ -31,9 +31,10 @@ export class FuseSearch<T> {
 export type FilterAndValue<T = string> = [NodeFilter<T>, T];
 
 export abstract class NodeFilter<FilterOptionT = string> {
-  public readonly name: string;
-  public readonly invokeSequence: string;
-  public readonly longInvokeSequence: string;
+  public abstract readonly id: string;
+  public abstract readonly name: string;
+  public abstract readonly invokeSequence: string;
+  public abstract readonly longInvokeSequence: string;
   public readonly fuseSearch: FuseSearch<FilterOptionT>;
 
   constructor(nodeDefs: ComfyNodeDef[], options?: IFuseOptions<FilterOptionT>) {
@@ -58,6 +59,7 @@ export abstract class NodeFilter<FilterOptionT = string> {
 }
 
 export class InputTypeFilter extends NodeFilter<string> {
+  public readonly id: string = "input";
   public readonly name = "Input Type";
   public readonly invokeSequence = "i";
   public readonly longInvokeSequence = "input";
@@ -75,6 +77,7 @@ export class InputTypeFilter extends NodeFilter<string> {
 }
 
 export class OutputTypeFilter extends NodeFilter<string> {
+  public readonly id: string = "output";
   public readonly name = "Output Type";
   public readonly invokeSequence = "o";
   public readonly longInvokeSequence = "output";
@@ -88,6 +91,7 @@ export class OutputTypeFilter extends NodeFilter<string> {
 }
 
 export class NodeSourceFilter extends NodeFilter<string> {
+  public readonly id: string = "source";
   public readonly name = "Source";
   public readonly invokeSequence = "s";
   public readonly longInvokeSequence = "source";
@@ -98,6 +102,7 @@ export class NodeSourceFilter extends NodeFilter<string> {
 }
 
 export class NodeCategoryFilter extends NodeFilter<string> {
+  public readonly id: string = "category";
   public readonly name = "Category";
   public readonly invokeSequence = "c";
   public readonly longInvokeSequence = "category";
@@ -155,5 +160,9 @@ export class NodeSearchService {
     });
 
     return options?.limit ? results.slice(0, options.limit) : results;
+  }
+
+  public getFilterById(id: string): NodeFilter<string> | undefined {
+    return this.nodeFilters.find((filter) => filter.id === id);
   }
 }

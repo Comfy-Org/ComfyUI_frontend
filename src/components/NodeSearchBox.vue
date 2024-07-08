@@ -1,8 +1,8 @@
 <template>
   <div class="comfy-vue-node-search-container">
-    <NodeSearchFilter @addFilter="addFilter" />
+    <NodeSearchFilter @addFilter="$emit('addFilter', $event)" />
     <AutoComplete
-      v-model="activeFilters"
+      :model-value="props.filters"
       class="comfy-vue-node-search-box"
       scrollHeight="28rem"
       placeholder="Search for nodes..."
@@ -30,10 +30,7 @@
       </template>
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
-        <Chip
-          removable
-          @remove="activeFilters = activeFilters.filter((f) => f !== value)"
-        >
+        <Chip removable @remove="$emit('removeFilter', value)">
           <Badge size="small" :class="value[0].invokeSequence + '-badge'">
             {{ value[0].invokeSequence.toUpperCase() }}
           </Badge>
@@ -56,20 +53,14 @@ import {
   NodeSearchService,
   type FilterAndValue,
 } from "@/services/nodeSearchService";
-import { LinkReleaseContext } from "@comfyorg/litegraph";
 
 const props = defineProps({
+  filters: {
+    type: Array<FilterAndValue>,
+  },
   searchLimit: {
     type: Number,
     default: 10,
-  },
-  triggerEvent: {
-    type: CustomEvent<{
-      subType: string;
-      originalEvent: Event;
-      linkReleaseContext?: LinkReleaseContext;
-    }>,
-    required: false,
   },
 });
 
@@ -77,19 +68,16 @@ const nodeSearchService = (
   inject("nodeSearchService") as Ref<NodeSearchService>
 ).value;
 
-const activeFilters = ref<FilterAndValue[]>([]);
 const suggestions = ref<ComfyNodeDef[]>([]);
 
 const search = (event: { query: string }) => {
   const query = event.query;
-  suggestions.value = nodeSearchService.searchNode(query, activeFilters.value, {
+  suggestions.value = nodeSearchService.searchNode(query, props.filters, {
     limit: props.searchLimit,
   });
 };
 
-const addFilter = (filter: FilterAndValue<string>) => {
-  activeFilters.value.push(filter);
-};
+const emit = defineEmits(["addFilter", "removeFilter"]);
 </script>
 
 <style scoped>
