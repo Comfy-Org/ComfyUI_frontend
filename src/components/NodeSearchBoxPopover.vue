@@ -51,9 +51,15 @@ const removeFilter = (filter: FilterAndValue) => {
     nodeFilters.splice(index, 1);
   }
 };
-const addNode = (nodeDef: ComfyNodeDef) => {
+const clearFilters = () => {
+  nodeFilters.splice(0, nodeFilters.length);
+};
+const closeDialog = () => {
+  clearFilters();
   visible.value = false;
-
+};
+const addNode = (nodeDef: ComfyNodeDef) => {
+  closeDialog();
   const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {});
   if (node) {
     node.pos = getNewNodeLocation();
@@ -83,7 +89,7 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
 
 const handleEscapeKeyPress = (event) => {
   if (event.key === "Escape") {
-    visible.value = false;
+    closeDialog();
   }
 };
 
