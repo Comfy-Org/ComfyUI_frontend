@@ -63,7 +63,7 @@ const props = defineProps({
   },
   searchLimit: {
     type: Number,
-    default: 10,
+    default: 64,
   },
 });
 
