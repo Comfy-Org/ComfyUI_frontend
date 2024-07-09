@@ -25,7 +25,22 @@ import {
 } from "@/services/nodeSearchService";
 import { ComfyNodeDef } from "@/types/apiTypes";
 
+interface LiteGraphPointerEvent extends Event {
+  canvasX: number;
+  canvasY: number;
+}
+
 const visible = ref(false);
+const triggerEvent = ref<LiteGraphCanvasEvent | null>(null);
+const getNewNodeLocation = (): [number, number] => {
+  if (triggerEvent.value === null) {
+    return [100, 100];
+  }
+
+  const originalEvent = triggerEvent.value.detail
+    .originalEvent as LiteGraphPointerEvent;
+  return [originalEvent.canvasX, originalEvent.canvasY];
+};
 const nodeFilters = reactive([]);
 const addFilter = (filter: FilterAndValue) => {
   nodeFilters.push(filter);
@@ -41,7 +56,7 @@ const addNode = (nodeDef: ComfyNodeDef) => {
 
   const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {});
   if (node) {
-    node.pos = [100, 100];
+    node.pos = getNewNodeLocation();
     app.graph.add(node);
   }
 };
@@ -62,6 +77,7 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
 
     addFilter([filter, value]);
   }
+  triggerEvent.value = e;
   visible.value = true;
 };
 
