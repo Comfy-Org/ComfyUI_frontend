@@ -28,6 +28,7 @@
   },
   "include": [
     "src/**/*",
+    "src/**/*.vue",
     "src/types/**/*.d.ts",
     "tests-ui/**/*"
   ],

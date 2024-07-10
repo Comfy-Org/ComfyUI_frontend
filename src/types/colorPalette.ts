@@ -93,3 +93,4 @@ const colorPalettesSchema = z.record(paletteSchema);
 export type Colors = z.infer<typeof colorsSchema>;
 export type Palette = z.infer<typeof paletteSchema>;
 export type ColorPalettes = z.infer<typeof colorPalettesSchema>;
+export type ColorPaletteLoadedEvent = CustomEvent<Palette>;

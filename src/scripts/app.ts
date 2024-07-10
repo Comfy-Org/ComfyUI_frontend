@@ -1145,7 +1145,7 @@ export class ComfyApp {
       // copy nodes and clear clipboard
       if (
         e.target instanceof Element &&
-        e.target.className === "litegraph" &&
+        e.target.classList.contains("litegraph") &&
         this.canvas.selected_nodes
       ) {
         this.canvas.copyToClipboard();
@@ -1858,6 +1858,7 @@ export class ComfyApp {
     this.#addAfterConfigureHandler();
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
+    this.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
     this.ctx = canvasEl.getContext("2d");
 
     LiteGraph.release_link_on_empty_shows_menu = true;
