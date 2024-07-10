@@ -4,9 +4,9 @@ import Aura from "@primevue/themes/aura";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
+import { app as comfyApp } from "@/scripts/app";
 
 const app = createApp(App);
-
 app
   .use(PrimeVue, {
     theme: {
@@ -21,3 +21,8 @@ app
     },
   })
   .mount("#vue-app");
+
+comfyApp.setup().then(() => {
+  window["app"] = comfyApp;
+  window["graph"] = comfyApp.graph;
+});

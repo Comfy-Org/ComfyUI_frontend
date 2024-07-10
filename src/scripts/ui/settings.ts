@@ -150,6 +150,12 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     });
   }
 
+  refreshSetting(id: string) {
+    const value = this.getSettingValue(id);
+    this.settingsLookup[id].onChange?.(value);
+    this.#dispatchChange(id, value);
+  }
+
   addSetting(params: SettingParams) {
     const {
       id,
