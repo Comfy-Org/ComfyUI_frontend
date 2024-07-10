@@ -1145,7 +1145,7 @@ export class ComfyApp {
       // copy nodes and clear clipboard
       if (
         e.target instanceof Element &&
-        e.target.className === "litegraph" &&
+        e.target.classList.contains("litegraph") &&
         this.canvas.selected_nodes
       ) {
         this.canvas.copyToClipboard();
