@@ -1858,8 +1858,9 @@ export class ComfyApp {
     this.#addAfterConfigureHandler();
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
-    // Disable litegraph's default node search.
-    this.canvas.allow_searchbox = false;
+    this.canvas.allow_searchbox =
+      this.ui.settings.getSettingValue("Comfy.NodeSearchBoxImpl") ===
+      "litegraph (legacy)";
     this.ctx = canvasEl.getContext("2d");
 
     LiteGraph.release_link_on_empty_shows_menu = true;

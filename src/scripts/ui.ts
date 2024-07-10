@@ -7,6 +7,8 @@ import { TaskItem } from "@/types/apiTypes";
 
 export const ComfyDialog = _ComfyDialog;
 
+export type LiteGraphNodeSearchSettingEvent = CustomEvent<boolean>;
+
 type Position2D = {
   x: number;
   y: number;
@@ -418,6 +420,26 @@ export class ComfyUI {
         step: 1,
       },
       defaultValue: 0,
+    });
+
+    this.settings.addSetting({
+      id: "Comfy.NodeSearchBoxImpl",
+      name: "Node Search box implementation",
+      type: "combo",
+      options: ["default", "litegraph (legacy)"],
+      defaultValue: "default",
+      onChange: (value?: string) => {
+        if (value === undefined) return;
+        if (!app.canvas) return;
+
+        const useLitegraphSearch = value === "litegraph (legacy)";
+        app.canvas.allow_searchbox = useLitegraphSearch;
+        document.dispatchEvent(
+          new CustomEvent("comfy:setting:litegraph-node-search", {
+            detail: useLitegraphSearch,
+          })
+        );
+      },
     });
 
     const fileInput = $el("input", {
