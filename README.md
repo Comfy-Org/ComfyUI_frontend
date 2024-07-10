@@ -12,19 +12,20 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Front-end dev server.
 - Zod schema for input validation on ComfyUI workflow.
 - Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
+- Introduce Vue to start managing part of the UI.
+
+  - Starting with node search box revamp
+
 
 ### What to be done
 
 - Replace the existing ComfyUI front-end impl (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
-- Introduce Vue to start managing part of the UI.
-
-  - Starting with node search box revamp
 - Introduce a UI library to add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
-- Better node search. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
+- Better node management. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 - Keybinding settings management. Register keybindings API for custom nodes.
 - New extensions API for adding UI-related features.
 
