@@ -16,16 +16,16 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
         class="sb_row nodepreview"
       >
-        <div class="sb_col" v-if="slotInput">
-          <div :class="['sb_dot', slotInput.type]"></div>
+        <div class="sb_col">
+          <div v-if="slotInput" :class="['sb_dot', slotInput.type]"></div>
         </div>
-        <div class="sb_col" v-if="slotInput">{{ slotInput.name }}</div>
+        <div class="sb_col">{{ slotInput ? slotInput.name : "" }}</div>
         <div class="sb_col middle-column"></div>
-        <div class="sb_col sb_inherit" v-if="slotOutput">
-          {{ slotOutput.name }}
+        <div class="sb_col sb_inherit">
+          {{ slotOutput ? slotOutput.name : "" }}
         </div>
-        <div class="sb_col" v-if="slotOutput">
-          <div :class="['sb_dot', slotOutput.type]"></div>
+        <div class="sb_col">
+          <div v-if="slotOutput" :class="['sb_dot', slotOutput.type]"></div>
         </div>
       </div>
 
@@ -67,12 +67,12 @@ const nodeDef = props.nodeDef as ComfyNodeDef;
 interface IComfyNodeInputDef {
   name: string;
   type: string;
-  widgetType?: string;
+  widgetType: string | null;
   defaultValue: any;
 }
 
 interface IComfyNodeOutputDef {
-  name?: string;
+  name: string | null;
   type: string;
   isList: boolean;
 }
@@ -105,12 +105,8 @@ const allOutputDefs: IComfyNodeOutputDef[] = _.zip(
   };
 });
 
-const slotInputDefs = allInputDefs.filter(
-  (input) => input.widgetType === undefined
-);
-const widgetInputDefs = allInputDefs.filter(
-  (input) => input.widgetType !== undefined
-);
+const slotInputDefs = allInputDefs.filter((input) => !input.widgetType);
+const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
 </script>
 
 <style scoped>

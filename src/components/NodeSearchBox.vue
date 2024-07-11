@@ -23,8 +23,8 @@
       <template v-slot:option="{ option }">
         <div
           class="option-container"
-          @mouseenter="hoveredSuggestion = option"
-          @mouseleave="hoveredSuggestion = null"
+          @mouseenter="setHoverSuggestion(option)"
+          @mouseleave="setHoverSuggestion(null)"
         >
           <div class="option-display-name">
             {{ option.display_name }}
@@ -112,6 +112,9 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   event.preventDefault();
   emit("removeFilter", filterAndValue);
   reFocusInput();
+};
+const setHoverSuggestion = (value: null | ComfyNodeDef) => {
+  hoveredSuggestion.value = value;
 };
 </script>
 
