@@ -72,7 +72,13 @@ const nodeSearchService = (
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey;
-  if (e.detail.subType === "empty-release" && shiftPressed) {
+  // Ignore empty releases unless shift is pressed
+  // Empty release without shift is trigger right click menu
+  if (e.detail.subType === "empty-release" && !shiftPressed) {
+    return;
+  }
+
+  if (e.detail.subType === "empty-release") {
     const destIsInput = e.detail.linkReleaseContext.node_from !== undefined;
     const filter = destIsInput
       ? nodeSearchService.getFilterById("input")
