@@ -1,6 +1,11 @@
 <template>
   <div>
-    <Dialog v-model:visible="visible" pt:root:class="invisible-dialog-root">
+    <Dialog
+      v-model:visible="visible"
+      pt:root:class="invisible-dialog-root"
+      dismissable-mask
+      modal
+    >
       <template #container>
         <NodeSearchBox
           :filters="nodeFilters"
