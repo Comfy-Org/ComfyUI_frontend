@@ -14,7 +14,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       <!-- Node slot I/O -->
       <div
         v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
-        class="sb_row nodepreview"
+        class="sb_row slot_row"
       >
         <div class="sb_col">
           <div v-if="slotInput" :class="['sb_dot', slotInput.type]"></div>
@@ -30,10 +30,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
 
       <!-- Node widget inputs -->
-      <div
-        v-for="widgetInput in widgetInputDefs"
-        class="sb_row nodepreview long_field"
-      >
+      <div v-for="widgetInput in widgetInputDefs" class="sb_row long_field">
         <div class="sb_col sb_arrow">&#x25C0;</div>
         <div class="sb_col">{{ widgetInput.name }}</div>
         <div class="sb_col middle-column"></div>
@@ -110,6 +107,10 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
 </script>
 
 <style scoped>
+.slot_row {
+  padding: 2px;
+}
+
 .sb_dot {
   width: 8px;
   height: 8px;
@@ -125,6 +126,8 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   font-size: 15px;
   text-wrap: nowrap;
   overflow: hidden;
+  display: flex;
+  align-items: center;
 }
 
 .headdot {
