@@ -1,5 +1,6 @@
 <template>
   <div class="comfy-vue-node-search-container">
+    <NodePreview :nodeDef="hoveredSuggestion" v-if="hoveredSuggestion" />
     <NodeSearchFilter @addFilter="onAddFilter" />
     <AutoComplete
       :model-value="props.filters"
@@ -18,7 +19,11 @@
       multiple
     >
       <template v-slot:option="{ option }">
-        <div class="option-container">
+        <div
+          class="option-container"
+          @mouseenter="hoveredSuggestion = option"
+          @mouseleave="hoveredSuggestion = null"
+        >
           <div class="option-display-name">
             {{ option.display_name }}
             <NodeSourceChip
@@ -56,6 +61,7 @@ import {
   NodeSearchService,
   type FilterAndValue,
 } from "@/services/nodeSearchService";
+import NodePreview from "./NodePreview.vue";
 
 const props = defineProps({
   filters: {
@@ -73,6 +79,7 @@ const nodeSearchService = (
 
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`;
 const suggestions = ref<ComfyNodeDef[]>([]);
+const hoveredSuggestion = ref<ComfyNodeDef | null>(null);
 const placeholder = computed(() => {
   return props.filters.length === 0 ? "Search for nodes" : "";
 });
@@ -120,7 +127,7 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
 }
 
 .option-container {
-  @apply flex flex-col px-4 py-2 cursor-pointer overflow-hidden;
+  @apply flex flex-col px-4 py-2 cursor-pointer overflow-hidden w-full;
 }
 
 .option-container:hover .option-description {
