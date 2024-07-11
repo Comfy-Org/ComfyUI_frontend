@@ -22,7 +22,7 @@ class ComfyNodeSearchBox {
   }
 
   async fillAndSelectFirstNode(nodeName: string) {
-    await this.input.waitFor({ state: "visible" })
+    await this.input.waitFor({ state: "visible" });
     await this.input.fill(nodeName);
     await this.dropdown.waitFor({ state: "visible" });
     await this.dropdown.locator("li").nth(0).click();
