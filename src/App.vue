@@ -15,7 +15,7 @@ import { ColorPaletteLoadedEvent } from "./types/colorPalette";
 import { LiteGraphNodeSearchSettingEvent } from "./scripts/ui";
 
 const isLoading = ref(true);
-const nodeSearchEnabled = ref(false);
+const nodeSearchEnabled = ref(true);
 const nodeSearchService = ref<NodeSearchService>();
 
 const updateTheme = (e: ColorPaletteLoadedEvent) => {
@@ -30,7 +30,7 @@ const updateTheme = (e: ColorPaletteLoadedEvent) => {
 };
 
 const updateNodeSearchSetting = (e: LiteGraphNodeSearchSettingEvent) => {
-  nodeSearchEnabled.value = !e.detail;
+  // nodeSearchEnabled.value = !e.detail;
 };
 
 onMounted(async () => {
