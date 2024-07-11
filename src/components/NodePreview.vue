@@ -113,6 +113,7 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   padding: 2px;
 }
 
+/* Original N-SideBar styles */
 .sb_dot {
   width: 8px;
   height: 8px;
@@ -137,10 +138,6 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   height: 10px;
   float: inline-start;
   margin-right: 8px;
-}
-
-.sb_hidden {
-  display: none;
 }
 
 .IMAGE {
@@ -214,7 +211,7 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   display: grid;
   grid-template-columns: 10px 1fr 1fr 1fr 10px;
   grid-column-gap: 10px;
-  align-items: baseline;
+  align-items: center;
   padding-left: 9px;
   padding-right: 9px;
 }
