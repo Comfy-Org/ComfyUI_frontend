@@ -8,6 +8,27 @@ interface Position {
   y: number;
 }
 
+class ComfyNodeSearchBox {
+  public readonly input: Locator;
+  public readonly dropdown: Locator;
+
+  constructor(public readonly page: Page) {
+    this.input = page.locator(
+      '.comfy-vue-node-search-container input[type="text"]'
+    );
+    this.dropdown = page.locator(
+      ".comfy-vue-node-search-container .p-autocomplete-list"
+    );
+  }
+
+  async fillAndSelectFirstNode(nodeName: string) {
+    await this.input.waitFor({ state: "visible" })
+    await this.input.fill(nodeName);
+    await this.dropdown.waitFor({ state: "visible" });
+    await this.dropdown.locator("li").nth(0).click();
+  }
+}
+
 export class ComfyPage {
   public readonly url: string;
   // All canvas position operations are based on default view of canvas.
@@ -18,20 +39,14 @@ export class ComfyPage {
   public readonly resetViewButton: Locator;
 
   // Search box
-  public readonly searchBoxInput: Locator;
-  public readonly searchBoxDropdown: Locator;
+  public readonly searchBox: ComfyNodeSearchBox;
 
   constructor(public readonly page: Page) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || "http://localhost:8188";
     this.canvas = page.locator("#graph-canvas");
     this.widgetTextBox = page.getByPlaceholder("text").nth(1);
     this.resetViewButton = page.getByRole("button", { name: "Reset View" });
-    this.searchBoxInput = page.locator(
-      '.comfy-vue-node-search-container input[type="text"]'
-    );
-    this.searchBoxDropdown = page.locator(
-      '.comfy-vue-node-search-container .p-autocomplete-list'
-    );
+    this.searchBox = new ComfyNodeSearchBox(page);
   }
 
   async goto() {
