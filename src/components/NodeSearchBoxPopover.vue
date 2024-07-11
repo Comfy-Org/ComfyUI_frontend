@@ -23,14 +23,18 @@ import { app } from "@/scripts/app";
 import { inject, onMounted, onUnmounted, reactive, Ref, ref } from "vue";
 import NodeSearchBox from "./NodeSearchBox.vue";
 import Dialog from "primevue/dialog";
-import { LiteGraph, LiteGraphCanvasEvent } from "@comfyorg/litegraph";
+import {
+  INodeSlot,
+  LiteGraph,
+  LiteGraphCanvasEvent,
+  LGraphNode,
+  LinkReleaseContext,
+} from "@comfyorg/litegraph";
 import {
   FilterAndValue,
   NodeSearchService,
 } from "@/services/nodeSearchService";
 import { ComfyNodeDef } from "@/types/apiTypes";
-import { LGraphNode } from "@comfyorg/litegraph";
-import { LinkReleaseContext } from "@comfyorg/litegraph";
 
 interface LiteGraphPointerEvent extends Event {
   canvasX: number;
@@ -79,8 +83,15 @@ const connectNodeOnLinkRelease = (
     : context.type_filter_out;
   const destSlots = destIsInput ? node.inputs : node.outputs;
   const destSlotIndex = destSlots.findIndex(
-    (slot) => slot.type === linkDataType
+    (slot: INodeSlot) => slot.type === linkDataType
   );
+
+  if (destSlotIndex === -1) {
+    console.warn(
+      `Could not find slot with type ${linkDataType} on node ${node.title}`
+    );
+    return;
+  }
 
   if (destIsInput) {
     srcNode.connect(srcSlotIndex, node, destSlotIndex);
