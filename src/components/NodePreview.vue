@@ -175,9 +175,6 @@ const widgetInputDefs = allInputDefs.filter(
 }
 
 #previewDiv {
-  position: absolute;
-  left: -350px;
-
   background-color: var(--comfy-menu-bg);
   font-family: "Open Sans", sans-serif;
   font-size: small;

@@ -1,6 +1,8 @@
 <template>
   <div class="comfy-vue-node-search-container">
-    <NodePreview :nodeDef="hoveredSuggestion" v-if="hoveredSuggestion" />
+    <div class="comfy-vue-node-preview-container">
+      <NodePreview :nodeDef="hoveredSuggestion" v-if="hoveredSuggestion" />
+    </div>
     <NodeSearchFilter @addFilter="onAddFilter" />
     <AutoComplete
       :model-value="props.filters"
@@ -120,6 +122,12 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
 
 .comfy-vue-node-search-container * {
   pointer-events: auto;
+}
+
+.comfy-vue-node-preview-container {
+  position: absolute;
+  left: -350px;
+  top: 50px;
 }
 
 .comfy-vue-node-search-box {
