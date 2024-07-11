@@ -1,5 +1,5 @@
-import type { Page, Locator } from '@playwright/test';
-import { test as base } from '@playwright/test';
+import type { Page, Locator } from "@playwright/test";
+import { test as base } from "@playwright/test";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -17,13 +17,21 @@ export class ComfyPage {
   // Buttons
   public readonly resetViewButton: Locator;
 
-  constructor(
-    public readonly page: Page,
-  ) {
-    this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188';
-    this.canvas = page.locator('#graph-canvas');
-    this.widgetTextBox = page.getByPlaceholder('text').nth(1);
-    this.resetViewButton = page.getByRole('button', { name: 'Reset View' });
+  // Search box
+  public readonly searchBoxInput: Locator;
+  public readonly searchBoxDropdown: Locator;
+
+  constructor(public readonly page: Page) {
+    this.url = process.env.PLAYWRIGHT_TEST_URL || "http://localhost:8188";
+    this.canvas = page.locator("#graph-canvas");
+    this.widgetTextBox = page.getByPlaceholder("text").nth(1);
+    this.resetViewButton = page.getByRole("button", { name: "Reset View" });
+    this.searchBoxInput = page.locator(
+      '.comfy-vue-node-search-container input[type="text"]'
+    );
+    this.searchBoxDropdown = page.locator(
+      '.comfy-vue-node-search-container .p-autocomplete-list'
+    );
   }
 
   async goto() {
@@ -47,8 +55,8 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 618,
-        y: 191
-      }
+        y: 191,
+      },
     });
     await this.nextFrame();
   }
@@ -57,8 +65,8 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 622,
-        y: 400
-      }
+        y: 400,
+      },
     });
     await this.nextFrame();
   }
@@ -67,8 +75,8 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 35,
-        y: 31
-      }
+        y: 31,
+      },
     });
     await this.nextFrame();
   }
@@ -82,10 +90,7 @@ export class ComfyPage {
   }
 
   async dragNode2() {
-    await this.dragAndDrop(
-      { x: 622, y: 400 },
-      { x: 622, y: 300 },
-    );
+    await this.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 });
     await this.nextFrame();
   }
 
@@ -113,15 +118,15 @@ export class ComfyPage {
   async adjustWidgetValue() {
     // Adjust Empty Latent Image's width input.
     const page = this.page;
-    await page.locator('#graph-canvas').click({
+    await page.locator("#graph-canvas").click({
       position: {
         x: 724,
-        y: 645
-      }
+        y: 645,
+      },
     });
     await page.locator('input[type="text"]').click();
-    await page.locator('input[type="text"]').fill('128');
-    await page.locator('input[type="text"]').press('Enter');
+    await page.locator('input[type="text"]').fill("128");
+    await page.locator('input[type="text"]').press("Enter");
     await this.nextFrame();
   }
 
@@ -140,7 +145,7 @@ export class ComfyPage {
   }
 
   async rightClickCanvas() {
-    await this.page.mouse.click(10, 10, { button: 'right' });
+    await this.page.mouse.click(10, 10, { button: "right" });
     await this.nextFrame();
   }
 
@@ -153,7 +158,7 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 724,
-        y: 625
+        y: 625,
       },
     });
     this.page.mouse.move(10, 10);
@@ -164,9 +169,9 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 724,
-        y: 645
+        y: 645,
       },
-      button: 'right'
+      button: "right",
     });
     this.page.mouse.move(10, 10);
     await this.nextFrame();
@@ -174,24 +179,24 @@ export class ComfyPage {
 
   async select2Nodes() {
     // Select 2 CLIP nodes.
-    await this.page.keyboard.down('Control');
+    await this.page.keyboard.down("Control");
     await this.clickTextEncodeNode1();
     await this.clickTextEncodeNode2();
-    await this.page.keyboard.up('Control');
+    await this.page.keyboard.up("Control");
     await this.nextFrame();
   }
 
   async ctrlC() {
-    await this.page.keyboard.down('Control');
-    await this.page.keyboard.press('KeyC');
-    await this.page.keyboard.up('Control');
+    await this.page.keyboard.down("Control");
+    await this.page.keyboard.press("KeyC");
+    await this.page.keyboard.up("Control");
     await this.nextFrame();
   }
 
   async ctrlV() {
-    await this.page.keyboard.down('Control');
-    await this.page.keyboard.press('KeyV');
-    await this.page.keyboard.up('Control');
+    await this.page.keyboard.down("Control");
+    await this.page.keyboard.press("KeyV");
+    await this.page.keyboard.up("Control");
     await this.nextFrame();
   }
 }
@@ -202,21 +207,23 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     await comfyPage.goto();
     // Unify font for consistent screenshots.
     await page.addStyleTag({
-      url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+      url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
     });
     await page.addStyleTag({
-      url: "https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+      url: "https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
     });
     await page.addStyleTag({
       content: `
       * {
 				font-family: 'Roboto Mono', 'Noto Color Emoji';
-			}`
+			}`,
     });
 
     await page.waitForFunction(() => document.fonts.ready);
-    await page.waitForFunction(() => window['app'] != undefined);
-    await page.evaluate(() => { window['app']['canvas'].show_info = false; });
+    await page.waitForFunction(() => window["app"] != undefined);
+    await page.evaluate(() => {
+      window["app"]["canvas"].show_info = false;
+    });
     await comfyPage.nextFrame();
     // Reset view to force re-rendering of canvas. So that info fields like fps
     // become hidden.
