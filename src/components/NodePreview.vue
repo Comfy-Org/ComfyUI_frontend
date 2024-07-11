@@ -85,7 +85,9 @@ const allInputDefs: IComfyNodeInputDef[] = Object.entries(allInputs).map(
       name: inputName,
       type: inputData[0],
       widgetType: app.getWidgetType(inputData, inputName),
-      defaultValue: inputData[1]?.default,
+      defaultValue:
+        inputData[1]?.default ||
+        (inputData[0] instanceof Array ? inputData[0][0] : ""),
     };
   }
 );
