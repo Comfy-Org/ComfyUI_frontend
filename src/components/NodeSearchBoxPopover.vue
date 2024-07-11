@@ -23,7 +23,13 @@ import { app } from "@/scripts/app";
 import { inject, onMounted, onUnmounted, reactive, Ref, ref } from "vue";
 import NodeSearchBox from "./NodeSearchBox.vue";
 import Dialog from "primevue/dialog";
-import { LiteGraph, LiteGraphCanvasEvent } from "@comfyorg/litegraph";
+import {
+  INodeSlot,
+  LiteGraph,
+  LiteGraphCanvasEvent,
+  LGraphNode,
+  LinkReleaseContext,
+} from "@comfyorg/litegraph";
 import {
   FilterAndValue,
   NodeSearchService,
@@ -63,12 +69,47 @@ const closeDialog = () => {
   clearFilters();
   visible.value = false;
 };
+const connectNodeOnLinkRelease = (
+  node: LGraphNode,
+  context: LinkReleaseContext
+) => {
+  const destIsInput = context.node_from !== undefined;
+  const srcNode = (
+    destIsInput ? context.node_from : context.node_to
+  ) as LGraphNode;
+  const srcSlotIndex: number = context.slot_from.slot_index;
+  const linkDataType = destIsInput
+    ? context.type_filter_in
+    : context.type_filter_out;
+  const destSlots = destIsInput ? node.inputs : node.outputs;
+  const destSlotIndex = destSlots.findIndex(
+    (slot: INodeSlot) => slot.type === linkDataType
+  );
+
+  if (destSlotIndex === -1) {
+    console.warn(
+      `Could not find slot with type ${linkDataType} on node ${node.title}`
+    );
+    return;
+  }
+
+  if (destIsInput) {
+    srcNode.connect(srcSlotIndex, node, destSlotIndex);
+  } else {
+    node.connect(destSlotIndex, srcNode, srcSlotIndex);
+  }
+};
 const addNode = (nodeDef: ComfyNodeDef) => {
   closeDialog();
   const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {});
   if (node) {
     node.pos = getNewNodeLocation();
     app.graph.add(node);
+
+    const eventDetail = triggerEvent.value.detail;
+    if (eventDetail.subType === "empty-release") {
+      connectNodeOnLinkRelease(node, eventDetail.linkReleaseContext);
+    }
   }
 };
 const nodeSearchService = (
