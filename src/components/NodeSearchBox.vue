@@ -1,7 +1,14 @@
 <template>
   <div class="comfy-vue-node-search-container">
+    <div class="comfy-vue-node-preview-container">
+      <NodePreview
+        :nodeDef="hoveredSuggestion"
+        :key="hoveredSuggestion?.name || ''"
+        v-if="hoveredSuggestion"
+      />
+    </div>
     <NodeSearchFilter @addFilter="onAddFilter" />
-    <AutoComplete
+    <AutoCompletePlus
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
       scrollHeight="28rem"
@@ -12,6 +19,7 @@
       :min-length="0"
       @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
+      @focused-option-changed="setHoverSuggestion($event)"
       complete-on-focus
       auto-option-focus
       force-selection
@@ -40,13 +48,13 @@
           {{ value[1] }}
         </Chip>
       </template>
-    </AutoComplete>
+    </AutoCompletePlus>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, inject, onMounted, Ref, ref } from "vue";
-import AutoComplete from "primevue/autocomplete";
+import AutoCompletePlus from "./primevueOverride/AutoCompletePlus.vue";
 import Chip from "primevue/chip";
 import Badge from "primevue/badge";
 import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
@@ -56,6 +64,7 @@ import {
   NodeSearchService,
   type FilterAndValue,
 } from "@/services/nodeSearchService";
+import NodePreview from "./NodePreview.vue";
 
 const props = defineProps({
   filters: {
@@ -73,6 +82,7 @@ const nodeSearchService = (
 
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`;
 const suggestions = ref<ComfyNodeDef[]>([]);
+const hoveredSuggestion = ref<ComfyNodeDef | null>(null);
 const placeholder = computed(() => {
   return props.filters.length === 0 ? "Search for nodes" : "";
 });
@@ -104,6 +114,14 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   emit("removeFilter", filterAndValue);
   reFocusInput();
 };
+const setHoverSuggestion = (index: number) => {
+  if (index === -1) {
+    hoveredSuggestion.value = null;
+    return;
+  }
+  const value = suggestions.value[index];
+  hoveredSuggestion.value = value;
+};
 </script>
 
 <style scoped>
@@ -115,12 +133,18 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   pointer-events: auto;
 }
 
+.comfy-vue-node-preview-container {
+  position: absolute;
+  left: -350px;
+  top: 50px;
+}
+
 .comfy-vue-node-search-box {
   @apply min-w-96 w-full z-10;
 }
 
 .option-container {
-  @apply flex flex-col px-4 py-2 cursor-pointer overflow-hidden;
+  @apply flex flex-col px-4 py-2 cursor-pointer overflow-hidden w-full;
 }
 
 .option-container:hover .option-description {

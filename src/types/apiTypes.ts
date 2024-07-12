@@ -223,6 +223,8 @@ const zComfyNodeDef = z.object({
 });
 
 // `/object_info`
+export type ComfyInputSpec = z.infer<typeof zInputSpec>;
+export type ComfyOutputSpec = z.infer<typeof zComfyOutputSpec>;
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
 
 // TODO: validate `/object_info` API endpoint responses.
