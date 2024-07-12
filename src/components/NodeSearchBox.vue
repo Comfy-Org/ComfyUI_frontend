@@ -11,7 +11,7 @@
     <AutoCompletePlus
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
-      scrollHeight="28rem"
+      scrollHeight="40vh"
       :placeholder="placeholder"
       :input-id="inputId"
       append-to="self"
@@ -126,7 +126,7 @@ const setHoverSuggestion = (index: number) => {
 
 <style scoped>
 .comfy-vue-node-search-container {
-  @apply flex justify-center items-center;
+  @apply flex justify-center items-center w-full min-w-96;
 }
 
 .comfy-vue-node-search-container * {
@@ -140,7 +140,7 @@ const setHoverSuggestion = (index: number) => {
 }
 
 .comfy-vue-node-search-box {
-  @apply min-w-96 w-full z-10;
+  @apply z-10 flex-grow;
 }
 
 .option-container {
