@@ -14,7 +14,7 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
 - Introduce Vue to start managing part of the UI.
 
-  - Starting with node search box revamp
+  - Starting with node search box revamp ![image](https://github.com/user-attachments/assets/ef6ce019-5194-4e55-9f1e-91440e473920)
 
 
 ### What to be done
