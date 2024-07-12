@@ -126,7 +126,7 @@ const setHoverSuggestion = (index: number) => {
 
 <style scoped>
 .comfy-vue-node-search-container {
-  @apply flex justify-center items-center;
+  @apply flex justify-center items-center w-full min-w-96;
 }
 
 .comfy-vue-node-search-container * {
@@ -140,8 +140,7 @@ const setHoverSuggestion = (index: number) => {
 }
 
 .comfy-vue-node-search-box {
-  @apply w-full z-10;
-  min-width: 24rem;
+  @apply z-10 flex-grow;
 }
 
 .option-container {
