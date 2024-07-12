@@ -11,7 +11,7 @@
     <AutoCompletePlus
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
-      scrollHeight="28rem"
+      scrollHeight="40vh"
       :placeholder="placeholder"
       :input-id="inputId"
       append-to="self"
