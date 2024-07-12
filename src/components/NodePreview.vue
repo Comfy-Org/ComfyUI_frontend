@@ -55,6 +55,11 @@ const props = defineProps({
     type: Object as PropType<ComfyNodeDef>,
     required: true,
   },
+  // Make sure vue properly re-render the component when the nodeDef changes
+  key: {
+    type: String,
+    required: true,
+  },
 });
 
 const nodeDef = props.nodeDef as ComfyNodeDef;

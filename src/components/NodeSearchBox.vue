@@ -1,10 +1,14 @@
 <template>
   <div class="comfy-vue-node-search-container">
     <div class="comfy-vue-node-preview-container">
-      <NodePreview :nodeDef="hoveredSuggestion" v-if="hoveredSuggestion" />
+      <NodePreview
+        :nodeDef="hoveredSuggestion"
+        :key="hoveredSuggestion?.name || ''"
+        v-if="hoveredSuggestion"
+      />
     </div>
     <NodeSearchFilter @addFilter="onAddFilter" />
-    <AutoComplete
+    <AutoCompletePlus
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
       scrollHeight="28rem"
@@ -15,17 +19,14 @@
       :min-length="0"
       @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
+      @focused-option-changed="setHoverSuggestion($event)"
       complete-on-focus
       auto-option-focus
       force-selection
       multiple
     >
       <template v-slot:option="{ option }">
-        <div
-          class="option-container"
-          @mouseenter="setHoverSuggestion(option)"
-          @mouseleave="setHoverSuggestion(null)"
-        >
+        <div class="option-container">
           <div class="option-display-name">
             {{ option.display_name }}
             <NodeSourceChip
@@ -47,13 +48,13 @@
           {{ value[1] }}
         </Chip>
       </template>
-    </AutoComplete>
+    </AutoCompletePlus>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, inject, onMounted, Ref, ref } from "vue";
-import AutoComplete from "primevue/autocomplete";
+import AutoCompletePlus from "./primevueOverride/AutoCompletePlus.vue";
 import Chip from "primevue/chip";
 import Badge from "primevue/badge";
 import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
@@ -113,7 +114,12 @@ const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   emit("removeFilter", filterAndValue);
   reFocusInput();
 };
-const setHoverSuggestion = (value: null | ComfyNodeDef) => {
+const setHoverSuggestion = (index: number) => {
+  if (index === -1) {
+    hoveredSuggestion.value = null;
+    return;
+  }
+  const value = suggestions.value[index];
   hoveredSuggestion.value = value;
 };
 </script>
