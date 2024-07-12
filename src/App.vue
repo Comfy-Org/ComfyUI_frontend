@@ -33,16 +33,25 @@ const updateNodeSearchSetting = (e: LiteGraphNodeSearchSettingEvent) => {
   nodeSearchEnabled.value = !e.detail;
 };
 
-onMounted(async () => {
+const init = async () => {
   const nodeDefs = Object.values(await api.getNodeDefs());
   nodeSearchService.value = new NodeSearchService(nodeDefs);
-  isLoading.value = false;
 
   document.addEventListener("comfy:setting:color-palette-loaded", updateTheme);
   document.addEventListener(
     "comfy:setting:litegraph-node-search",
     updateNodeSearchSetting
   );
+};
+
+onMounted(async () => {
+  try {
+    await init();
+  } catch (e) {
+    console.error("Failed to init Vue app", e);
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 onUnmounted(() => {
