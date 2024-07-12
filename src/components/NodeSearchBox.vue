@@ -140,7 +140,8 @@ const setHoverSuggestion = (index: number) => {
 }
 
 .comfy-vue-node-search-box {
-  @apply min-w-96 w-full z-10;
+  @apply w-full z-10;
+  min-width: 24rem;
 }
 
 .option-container {
