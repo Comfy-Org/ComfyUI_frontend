@@ -10,7 +10,10 @@ import { onMounted, onUnmounted, provide, ref } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import { api } from "@/scripts/api";
-import { NodeSearchService } from "./services/nodeSearchService";
+import {
+  NodeSearchService,
+  SYSTEM_NODE_DEFS,
+} from "./services/nodeSearchService";
 import { ColorPaletteLoadedEvent } from "./types/colorPalette";
 import { LiteGraphNodeSearchSettingEvent } from "./scripts/ui";
 
@@ -35,7 +38,10 @@ const updateNodeSearchSetting = (e: LiteGraphNodeSearchSettingEvent) => {
 
 const init = async () => {
   const nodeDefs = Object.values(await api.getNodeDefs());
-  nodeSearchService.value = new NodeSearchService(nodeDefs);
+  nodeSearchService.value = new NodeSearchService([
+    ...nodeDefs,
+    ...SYSTEM_NODE_DEFS,
+  ]);
 
   document.addEventListener("comfy:setting:color-palette-loaded", updateTheme);
   document.addEventListener(
