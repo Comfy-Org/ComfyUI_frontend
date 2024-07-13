@@ -1,0 +1,43 @@
+name: Create Release Draft
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - master
+    paths:
+      - "package.json"
+
+jobs:
+  draft_release:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+      - name: Get current version
+        id: current_version
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+      - name: Build project
+        run: |
+          npm ci
+          npm run build
+          npm run zipdist
+      - name: Create release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist.zip
+          tag_name: v${{ steps.current_version.outputs.version }}
+          draft: true
+          prerelease: false
+          make_latest: "true"
