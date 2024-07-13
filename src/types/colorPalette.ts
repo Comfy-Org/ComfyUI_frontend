@@ -86,6 +86,12 @@ const paletteSchema = z.object({
   id: z.string(),
   name: z.string(),
   colors: colorsSchema,
+  /**
+   * Brightens color for light theme
+   * @param color in hex format
+   * @returns color in hex format
+   */
+  shiftBgColor: z.function(z.tuple([z.string()]), z.string()).optional(),
 });
 
 const colorPalettesSchema = z.record(paletteSchema);

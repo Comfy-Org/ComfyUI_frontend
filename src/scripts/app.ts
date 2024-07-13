@@ -33,6 +33,7 @@ import {
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
 import "../assets/css/style.css";
+import { lightenColor } from "@/utils/colorUtil";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
@@ -1538,7 +1539,8 @@ export class ComfyApp {
     // @ts-ignore
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
       var editor_alpha = this.editor_alpha;
-      var old_color = node.bgcolor;
+      var old_color = node.color;
+      var old_bgcolor = node.bgcolor;
 
       if (node.mode === 2) {
         // never
@@ -1551,10 +1553,19 @@ export class ComfyApp {
       // 	this.editor_alpha = 0.2;
       // }
 
+      const adjustColor = (color?: string) => {
+        return color ? lightenColor(color, 0.5) : color;
+      };
+      if (app.ui.settings.getSettingValue("Comfy.ColorPalette") === "light") {
+        node.bgcolor = adjustColor(node.bgcolor);
+        node.color = adjustColor(node.color);
+      }
+
       const res = origDrawNode.apply(this, arguments);
 
       this.editor_alpha = editor_alpha;
-      node.bgcolor = old_color;
+      node.color = old_color;
+      node.bgcolor = old_bgcolor;
 
       return res;
     };
