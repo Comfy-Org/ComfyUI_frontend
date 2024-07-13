@@ -20,6 +20,7 @@ import {
   parseComfyWorkflow,
 } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "@/types/apiTypes";
+import { lightenColor } from "@/utils/colorUtil";
 import { ComfyAppMenu } from "./ui/menu/index";
 import { getStorageValue } from "./utils";
 import { ComfyWorkflowManager, ComfyWorkflow } from "./workflows";
@@ -33,7 +34,6 @@ import {
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
 import "../assets/css/style.css";
-import { lightenColor } from "@/utils/colorUtil";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
