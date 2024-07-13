@@ -1,3 +1,4 @@
+import { lightenColor } from "@/utils/colorUtil";
 import { app } from "../../scripts/app";
 import { $el } from "../../scripts/ui";
 import type { ColorPalettes, Palette } from "@/types/colorPalette";
