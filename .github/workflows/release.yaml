@@ -37,7 +37,7 @@ jobs:
         with:
           files: |
             dist.zip
-          tag_name: ${{ steps.current_version.outputs.version }}
+          tag_name: v${{ steps.current_version.outputs.version }}
           draft: true
           prerelease: false
           make_latest: "true"
