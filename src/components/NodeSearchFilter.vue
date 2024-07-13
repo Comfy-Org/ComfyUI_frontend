@@ -2,14 +2,14 @@
   <Button
     icon="pi pi-filter"
     severity="secondary"
-    class="filter-button"
+    class="_filter-button"
     @click="showModal"
   />
-  <Dialog v-model:visible="visible" class="dialog">
+  <Dialog v-model:visible="visible" class="_dialog">
     <template #header>
       <h3>Add node filter condition</h3>
     </template>
-    <div class="dialog-body">
+    <div class="_dialog-body">
       <SelectButton
         v-model="selectedFilter"
         :options="filters"
@@ -87,15 +87,15 @@ const showModal = () => {
 </script>
 
 <style scoped>
-.filter-button {
+._filter-button {
   z-index: 10;
 }
 
-.dialog {
+._dialog {
   @apply min-w-96;
 }
 
-.dialog-body {
+._dialog-body {
   @apply flex flex-col space-y-2;
 }
 </style>
