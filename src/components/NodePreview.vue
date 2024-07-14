@@ -214,6 +214,7 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   align-items: center;
   padding-left: 9px;
   padding-right: 9px;
+  overflow-x: hidden;
 }
 
 ._sb_row_string {
@@ -240,6 +241,7 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
   margin: 5px 5px 0 5px;
   border-radius: 10px;
   line-height: 1.7;
+  text-wrap: nowrap;
 }
 
 ._sb_arrow {
