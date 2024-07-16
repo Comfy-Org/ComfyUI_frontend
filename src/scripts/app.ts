@@ -30,6 +30,7 @@ import {
   LGraphNode,
   LiteGraph,
 } from "@comfyorg/litegraph";
+import { StorageLocation } from "@/types/settingTypes";
 
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
@@ -104,8 +105,7 @@ export class ComfyApp {
   progress: { value: number; max: number } | null;
   configuringGraph: boolean;
   isNewUserSession: boolean;
-  // Are there any other options than "server"?
-  storageLocation: string;
+  storageLocation: StorageLocation;
   multiUserServer: boolean;
   ctx: CanvasRenderingContext2D;
   widgets: Record<string, ComfyWidgetConstructor>;
