@@ -2,6 +2,18 @@
 
 Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with the existing extension system.
 
+## How To Use
+
+Add command line argument `--front-end-version Comfy-Org/ComfyUI_frontend@latest` to your
+ComfyUI launch script.
+
+For Windows stand-alone build users, please edit the `run_cpu.bat` / `run_nvidia_gpu.bat` file as following
+
+```bat
+.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --front-end-version Comfy-Org/ComfyUI_frontend@latest
+pause
+```
+
 ## Road Map
 
 ### What has been done
@@ -16,10 +28,12 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 
   - Starting with node search box revamp ![image](https://github.com/user-attachments/assets/ef6ce019-5194-4e55-9f1e-91440e473920)
 
+- Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+
 
 ### What to be done
 
-- Replace the existing ComfyUI front-end impl (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+- Replace the existing ComfyUI front-end impl
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
 - Introduce a UI library to add more widget types for node developers.
