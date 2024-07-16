@@ -233,7 +233,10 @@ export class ComfyWorkflowsMenu {
         ) {
           const r = getExtraMenuOptions?.apply?.(this, arguments);
           if (
-            app.ui.settings.getSettingValue("Comfy.UseNewMenu", false) === true
+            app.ui.settings.getSettingValue<boolean>(
+              "Comfy.UseNewMenu",
+              false
+            ) === true
           ) {
             const t = this;
             let img;
