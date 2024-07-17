@@ -1941,8 +1941,20 @@ export class ComfyApp {
     const scale = Math.max(window.devicePixelRatio, 1);
 
     // Clear fixed width and height while calculating rect so it uses 100% instead
+    const { width: oldWidth, height: oldHeight } =
+      this.canvasEl.getBoundingClientRect();
+
     this.canvasEl.height = this.canvasEl.width = NaN;
     const { width, height } = this.canvasEl.getBoundingClientRect();
+
+    if (width === 0 || height === 0) {
+      // TODO(huchenlei): This is a very hacky fix. Need to find a better way to handle resize
+      // of canvas deterministically.
+      this.canvasEl.width = oldWidth;
+      this.canvasEl.height = oldHeight;
+      return;
+    }
+
     this.canvasEl.width = Math.round(width * scale);
     this.canvasEl.height = Math.round(height * scale);
     this.canvasEl.getContext("2d").scale(scale, scale);
