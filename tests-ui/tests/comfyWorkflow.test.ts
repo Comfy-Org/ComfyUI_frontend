@@ -52,4 +52,16 @@ describe("parseComfyWorkflow", () => {
         workflow.extra = { foo: "bar" }; // Should accept extra fields.
         await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
     });
+
+    it("workflow.nodes.pos", async () => {
+        const workflow = JSON.parse(JSON.stringify(defaultGraph));
+        workflow.nodes[0].pos = [1, 2, 3];
+        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.toThrow();
+
+        workflow.nodes[0].pos = [1, 2];
+        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+
+        workflow.nodes[0].pos = {1: 1, 2: 2};
+        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+    });
 });
