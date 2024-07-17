@@ -53,7 +53,7 @@ const zComfyNode = z
   .object({
     id: z.number(),
     type: z.string(),
-    pos: z.tuple([z.number(), z.number()]),
+    pos: zVector2,
     size: zVector2,
     flags: zFlags,
     order: z.number(),
