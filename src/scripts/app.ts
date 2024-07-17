@@ -1867,8 +1867,6 @@ export class ComfyApp {
     this.#addRestoreWorkflowView();
 
     this.graph = new LGraph();
-    // @ts-ignore
-    this.graph.node_box_coloured_by_mode = true;
 
     this.#addAfterConfigureHandler();
 
