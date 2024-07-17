@@ -1547,11 +1547,13 @@ export class ComfyApp {
         this.editor_alpha = 0.4;
       }
 
-      // Mode never equals 4 by ts check.
-      // if (node.mode === 4) { // never
-      // 	node.bgcolor = "#FF00FF";
-      // 	this.editor_alpha = 0.2;
-      // }
+      // ComfyUI's custom node mode enum value 4 => bypass/never.
+      // @ts-ignore
+      if (node.mode === 4) {
+        // never
+        node.bgcolor = "#FF00FF";
+        this.editor_alpha = 0.2;
+      }
 
       const adjustColor = (color?: string) => {
         return color ? lightenColor(color, 0.5) : color;
@@ -1865,6 +1867,8 @@ export class ComfyApp {
     this.#addRestoreWorkflowView();
 
     this.graph = new LGraph();
+    // @ts-ignore
+    this.graph.node_box_coloured_by_mode = true;
 
     this.#addAfterConfigureHandler();
 
