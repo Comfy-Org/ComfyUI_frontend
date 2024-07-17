@@ -119,7 +119,7 @@ export class OutputTypeFilter extends NodeFilter<string> {
   public readonly longInvokeSequence = "output";
 
   public override getNodeOptions(node: ComfyNodeDef): string[] {
-    const outputs = node.output;
+    const outputs = node.output || [];
     return outputs.map((output) => {
       return typeof output === "string" ? output : output[0];
     });
