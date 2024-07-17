@@ -119,7 +119,14 @@ export class OutputTypeFilter extends NodeFilter<string> {
   public readonly longInvokeSequence = "output";
 
   public override getNodeOptions(node: ComfyNodeDef): string[] {
-    const outputs = node.output;
+    const outputs = node.output || [];
+    // "custom_nodes.was-node-suite-comfyui"
+    // has a custom node with an output that is not an array.
+    // https://github.com/WASasquatch/was-node-suite-comfyui/pull/440
+    if (!(outputs instanceof Array)) {
+      console.error("Invalid output type", node);
+      return [];
+    }
     return outputs.map((output) => {
       return typeof output === "string" ? output : output[0];
     });
