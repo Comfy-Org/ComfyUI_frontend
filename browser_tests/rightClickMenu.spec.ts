@@ -58,9 +58,7 @@ test.describe('Node Right Click Menu', () => {
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node-collapsed.png');
     });
 
-    // See https://github.com/Comfy-Org/ComfyUI_frontend/pull/57
-    // Bypass produces different output on Windows VS Linux.
-    test.skip('Can bypass', async ({ comfyPage }) => {
+    test('Can bypass', async ({ comfyPage }) => {
         await comfyPage.rightClickEmptyLatentNode();
         await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png');
         await comfyPage.page.getByText('Bypass').click();
