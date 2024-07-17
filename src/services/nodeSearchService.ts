@@ -120,6 +120,12 @@ export class OutputTypeFilter extends NodeFilter<string> {
 
   public override getNodeOptions(node: ComfyNodeDef): string[] {
     const outputs = node.output || [];
+    // "custom_nodes.was-node-suite-comfyui"
+    // has a custom node with an output that is not an array.
+    if (!(outputs instanceof Array)) {
+      console.error("Invalid output type", node);
+      return [];
+    }
     return outputs.map((output) => {
       return typeof output === "string" ? output : output[0];
     });
