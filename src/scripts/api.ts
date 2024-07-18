@@ -4,6 +4,7 @@ import {
   PendingTaskItem,
   RunningTaskItem,
   ComfyNodeDef,
+  validateComfyNodeDef,
 } from "@/types/apiTypes";
 
 interface QueuePromptRequestBody {
@@ -240,7 +241,17 @@ class ComfyApi extends EventTarget {
    */
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi("/object_info", { cache: "no-store" });
-    return await resp.json();
+    const objectInfoUnsafe = await resp.json();
+    const objectInfo: Record<string, ComfyNodeDef> = {};
+    for (const key in objectInfoUnsafe) {
+      try {
+        objectInfo[key] = validateComfyNodeDef(objectInfoUnsafe[key]);
+      } catch (e) {
+        console.warn("Ignore node definition: ", key);
+        console.error(e);
+      }
+    }
+    return objectInfo;
   }
 
   /**

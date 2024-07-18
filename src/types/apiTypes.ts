@@ -1,5 +1,6 @@
 import { ZodType, z } from "zod";
 import { zComfyWorkflow } from "./comfyWorkflow";
+import { fromZodError } from "zod-validation-error";
 
 const zNodeId = z.number();
 const zNodeType = z.string();
@@ -227,4 +228,10 @@ export type ComfyInputSpec = z.infer<typeof zInputSpec>;
 export type ComfyOutputSpec = z.infer<typeof zComfyOutputSpec>;
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
 
-// TODO: validate `/object_info` API endpoint responses.
+export function validateComfyNodeDef(data: any): ComfyNodeDef {
+  const result = zComfyNodeDef.safeParse(data);
+  if (!result.success) {
+    throw fromZodError(result.error);
+  }
+  return result.data;
+}
