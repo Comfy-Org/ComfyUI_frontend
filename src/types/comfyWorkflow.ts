@@ -45,7 +45,7 @@ const zProperties = z
   .passthrough();
 
 const zVector2 = z.union([
-  z.object({ 0: z.number(), 1: z.number() }),
+  z.object({ 0: z.number(), 1: z.number() }).transform((v) => [v[0], v[1]]),
   z.tuple([z.number(), z.number()]),
 ]);
 
