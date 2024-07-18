@@ -2115,9 +2115,7 @@
      */
     LGraph.prototype.serialize = function() {
         var nodes_info = [];
-        for (var i = 0, l = this._nodes.length; i < l; ++i) {
-            nodes_info.push(this._nodes[i].serialize());
-        }
+        nodes_info = this._nodes.sort((a, b) => a.id - b.id).map(node => node.serialize());
 
         //pack link info into a non-verbose format
         var links = [];
