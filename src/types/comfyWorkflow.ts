@@ -49,6 +49,15 @@ const zVector2 = z.union([
   z.tuple([z.number(), z.number()]),
 ]);
 
+const zWidgetValues = z.union([
+  z.array(z.any()),
+  z.record(z.any()).transform((v) =>
+    Object.keys(v)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((key) => v[key])
+  ),
+]);
+
 const zComfyNode = z
   .object({
     id: z.number(),
@@ -61,7 +70,7 @@ const zComfyNode = z
     inputs: z.array(zNodeInput).optional(),
     outputs: z.array(zNodeOutput).optional(),
     properties: zProperties,
-    widgets_values: z.array(z.any()).optional(), // This could contain mixed types
+    widgets_values: zWidgetValues.optional(),
     color: z.string().optional(),
     bgcolor: z.string().optional(),
   })
