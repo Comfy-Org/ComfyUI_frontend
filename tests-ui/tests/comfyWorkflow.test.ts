@@ -56,15 +56,18 @@ describe("parseComfyWorkflow", () => {
     it("workflow.nodes.pos", async () => {
         const workflow = JSON.parse(JSON.stringify(defaultGraph));
         workflow.nodes[0].pos = [1, 2, 3];
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toBeTruthy();
+        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
 
         workflow.nodes[0].pos = [1, 2];
         await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
 
+        // Should automatically transform the legacy format object to array.
         workflow.nodes[0].pos = {"0": 3, "1": 4};
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+        let parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
+        expect(parsedWorkflow.nodes[0].pos).toEqual([3, 4]);
 
         workflow.nodes[0].pos = {0: 3, 1: 4};
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+        parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
+        expect(parsedWorkflow.nodes[0].pos).toEqual([3, 4]);
     });
 });
