@@ -1734,7 +1734,7 @@ export class ComfyApp {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import("../extensions/core/index.js");
+    await import("../extensions/core/index");
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes("extensions/core"))
