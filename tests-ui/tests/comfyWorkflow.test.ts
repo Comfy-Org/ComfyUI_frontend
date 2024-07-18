@@ -82,9 +82,10 @@ describe("parseComfyWorkflow", () => {
         workflow.nodes[0].widgets_values = undefined;
         await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
 
-        // Should automatically transform the legacy format object to array.
-        workflow.nodes[0].widgets_values = {0: "foo", 1: "bar"};
+        // The object format of widgets_values is used by VHS nodes to perform
+        // dynamic widgets display.
+        workflow.nodes[0].widgets_values = {"foo": "bar"};
         const parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
-        expect(parsedWorkflow.nodes[0].widgets_values).toEqual(["foo", "bar"]);
+        expect(parsedWorkflow.nodes[0].widgets_values).toEqual({"foo": "bar"});
     });
 });
