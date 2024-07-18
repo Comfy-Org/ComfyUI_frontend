@@ -231,7 +231,9 @@ export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
 export function validateComfyNodeDef(data: any): ComfyNodeDef {
   const result = zComfyNodeDef.safeParse(data);
   if (!result.success) {
-    throw fromZodError(result.error);
+    const error = new Error(`Invalid ComfyNodeDef: ${JSON.stringify(data)}`);
+    error.cause = result.error;
+    throw error;
   }
   return result.data;
 }
