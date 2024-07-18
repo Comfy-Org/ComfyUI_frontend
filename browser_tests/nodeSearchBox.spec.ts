@@ -1,17 +1,6 @@
 import { expect } from "@playwright/test";
-import { ComfyPage, comfyPageFixture } from "./ComfyPage";
+import { comfyPageFixture as test} from "./ComfyPage";
 
-export const test = comfyPageFixture.extend<{ comfyPage: ComfyPage }>({
-  comfyPage: async ({ comfyPage }, use) => {
-    await comfyPage.page.evaluate(async () => {
-      await window["app"].ui.settings.setSettingValueAsync(
-        "Comfy.NodeSearchBoxImpl",
-        "default"
-      );
-    });
-    await use(comfyPage);
-  },
-});
 
 test.describe("Node search box", () => {
   test("Can trigger on empty canvas double click", async ({ comfyPage }) => {
