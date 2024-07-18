@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
-    "deploy": "node scripts/deploy.js",
+    "deploy": "npm run build && node scripts/deploy.js",
     "zipdist": "node scripts/zipdist.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write 'src/**/*.{js,ts,tsx,vue}'",

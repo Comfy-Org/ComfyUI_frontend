@@ -125,9 +125,21 @@ export type TaskItem = z.infer<typeof zTaskItem>;
 
 // TODO: validate `/history` `/queue` API endpoint responses.
 
-function inputSpec(spec: [ZodType, ZodType]): ZodType {
+function inputSpec(
+  spec: [ZodType, ZodType],
+  allowUpcast: boolean = true
+): ZodType {
   const [inputType, inputSpec] = spec;
-  return z.union([z.tuple([inputType, inputSpec]), z.tuple([inputType])]);
+  // e.g. "INT" => ["INT", {}]
+  const upcastTypes: ZodType[] = allowUpcast
+    ? [inputType.transform((type) => [type, {}])]
+    : [];
+
+  return z.union([
+    z.tuple([inputType, inputSpec]),
+    z.tuple([inputType]).transform(([type]) => [type, {}]),
+    ...upcastTypes,
+  ]);
 }
 
 const zIntInputSpec = inputSpec([
@@ -174,15 +186,18 @@ const zStringInputSpec = inputSpec([
 ]);
 
 // Dropdown Selection.
-const zComboInputSpec = inputSpec([
-  z.array(z.any()),
-  z.object({
-    default: z.any().optional(),
-    control_after_generate: z.boolean().optional(),
-    image_upload: z.boolean().optional(),
-    forceInput: z.boolean().optional(),
-  }),
-]);
+const zComboInputSpec = inputSpec(
+  [
+    z.array(z.any()),
+    z.object({
+      default: z.any().optional(),
+      control_after_generate: z.boolean().optional(),
+      image_upload: z.boolean().optional(),
+      forceInput: z.boolean().optional(),
+    }),
+  ],
+  /* allowUpcast=*/ false
+);
 
 const zCustomInputSpec = inputSpec([
   z.string(),
@@ -211,6 +226,9 @@ const zComfyNodeDef = z.object({
   input: z.object({
     required: z.record(zInputSpec).optional(),
     optional: z.record(zInputSpec).optional(),
+    // Frontend repo is not using it, but some custom nodes are using the
+    // hidden field to pass various values.
+    hidden: z.record(z.any()).optional(),
   }),
   output: zComfyOutputSpec,
   output_is_list: z.array(z.boolean()),
@@ -231,8 +249,11 @@ export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
 export function validateComfyNodeDef(data: any): ComfyNodeDef {
   const result = zComfyNodeDef.safeParse(data);
   if (!result.success) {
-    const error = new Error(`Invalid ComfyNodeDef: ${JSON.stringify(data)}`);
-    error.cause = result.error;
+    const zodError = fromZodError(result.error);
+    const error = new Error(
+      `Invalid ComfyNodeDef: ${JSON.stringify(data)}\n${zodError.message}`
+    );
+    error.cause = zodError;
     throw error;
   }
   return result.data;
