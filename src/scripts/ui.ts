@@ -429,9 +429,9 @@ export class ComfyUI {
       options: ["default", "litegraph (legacy)"],
       defaultValue: "default",
       onChange: (value?: string) => {
+        if (value === undefined) return;
         if (!app.canvas) return;
 
-        value = value || "default";
         const useLitegraphSearch = value === "litegraph (legacy)";
         app.canvas.allow_searchbox = useLitegraphSearch;
         document.dispatchEvent(
