@@ -11,6 +11,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
   constructor(app: ComfyApp) {
     super();
+    const frontendVersion = window["__COMFYUI_FRONTEND_VERSION__"];
     this.app = app;
     this.settingsValues = {};
     this.settingsLookup = {};
@@ -24,7 +25,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         $el("table.comfy-modal-content.comfy-table", [
           $el(
             "caption",
-            { textContent: "Settings" },
+            { textContent: `Settings (v${frontendVersion})` },
             $el("button.comfy-btn", {
               type: "button",
               textContent: "\u00d7",
