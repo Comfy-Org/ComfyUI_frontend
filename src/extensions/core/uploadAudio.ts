@@ -26,7 +26,6 @@ function getResourceURL(
     "filename=" + encodeURIComponent(filename),
     "type=" + type,
     "subfolder=" + subfolder,
-    app.getPreviewFormatParam().substring(1),
     app.getRandParam().substring(1),
   ].join("&");
 
