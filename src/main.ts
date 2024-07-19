@@ -1,16 +1,24 @@
 import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
+import { definePreset } from "@primevue/themes";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
 import { app as comfyApp } from "@/scripts/app";
 
+const ComfyUIPreset = definePreset(Aura, {
+  semantic: {
+    // @ts-ignore
+    primary: Aura.primitive.blue,
+  },
+});
+
 const app = createApp(App);
 app
   .use(PrimeVue, {
     theme: {
-      preset: Aura,
+      preset: ComfyUIPreset,
       options: {
         prefix: "p",
         cssLayer: false,
