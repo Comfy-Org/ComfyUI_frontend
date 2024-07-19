@@ -8,7 +8,8 @@
     />
     <div class="side-tool-bar-end">
       <SideBarThemeToggleIcon />
-      <SideBarIcon icon="pi pi-cog" />
+      <!-- TODO: Maybe moving the setting button to side bar? -->
+      <!-- <SideBarIcon icon="pi pi-cog" /> -->
     </div>
   </nav>
 </template>
@@ -44,9 +45,6 @@ const onItemClick = (item) => {
 
   pointer-events: auto;
 
-  /* position: fixed;
-  left: 0;
-  top: 0; */
   width: var(--sidebar-width);
   height: 100%;
 
