@@ -3,8 +3,9 @@
     <Dialog
       v-model:visible="visible"
       pt:root:class="invisible-dialog-root"
-      dismissable-mask
       modal
+      :dismissable-mask="dismissable"
+      @hide="clearFilters"
     >
       <template #container>
         <NodeSearchBox
@@ -42,6 +43,7 @@ interface LiteGraphPointerEvent extends Event {
 }
 
 const visible = ref(false);
+const dismissable = ref(true);
 const triggerEvent = ref<LiteGraphCanvasEvent | null>(null);
 const getNewNodeLocation = (): [number, number] => {
   if (triggerEvent.value === null) {
@@ -66,7 +68,6 @@ const clearFilters = () => {
   nodeFilters.splice(0, nodeFilters.length);
 };
 const closeDialog = () => {
-  clearFilters();
   visible.value = false;
 };
 const connectNodeOnLinkRelease = (
@@ -137,6 +138,11 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   }
   triggerEvent.value = e;
   visible.value = true;
+  // Prevent the dialog from being dismissed immediately
+  dismissable.value = false;
+  setTimeout(() => {
+    dismissable.value = true;
+  }, 300);
 };
 
 const handleEscapeKeyPress = (event) => {
