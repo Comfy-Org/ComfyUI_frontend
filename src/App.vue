@@ -2,12 +2,14 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <div v-else>
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
+    <SideToolBar />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, provide, ref } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
+import SideToolBar from "@/components/sidebar/SideToolBar.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import { api } from "@/scripts/api";
 import {
