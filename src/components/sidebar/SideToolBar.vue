@@ -44,15 +44,11 @@ const onItemClick = (item) => {
 
   pointer-events: auto;
 
-  position: fixed;
-  /* Fix the position relative to the viewport */
+  /* position: fixed;
   left: 0;
-  /* Align to the left side of the viewport */
-  top: 0;
-  /* Align to the top of the viewport */
+  top: 0; */
   width: var(--sidebar-width);
-  height: 100vh;
-  /* Set the height to cover the full viewport height */
+  height: 100%;
 
   background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
