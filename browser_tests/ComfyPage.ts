@@ -235,7 +235,13 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     });
 
     await page.waitForFunction(() => document.fonts.ready);
-    await page.waitForFunction(() => window["app"] != undefined);
+    await page.waitForFunction(() => {
+      return new Promise((resolve) => {
+        window.addEventListener("comfy:vue-app-loaded", resolve, {
+          once: true,
+        });
+      });
+    });
     await page.evaluate(() => {
       window["app"]["canvas"].show_info = false;
     });
