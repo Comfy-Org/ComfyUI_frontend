@@ -115,6 +115,7 @@ export class ComfyApp {
   bodyRight: HTMLElement;
   bodyBottom: HTMLElement;
   menu: ComfyAppMenu;
+  nodeDefs: Record<string, ComfyNodeDef>;
 
   constructor() {
     this.ui = new ComfyUI(this);
@@ -1871,7 +1872,6 @@ export class ComfyApp {
     this.#addAfterConfigureHandler();
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
-    this.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
     this.ctx = canvasEl.getContext("2d");
 
     LiteGraph.release_link_on_empty_shows_menu = true;
@@ -1955,9 +1955,9 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    const app = this;
     // Load node definitions from the backend
     const defs = await api.getNodeDefs();
+    this.nodeDefs = defs;
     await this.registerNodesFromDefs(defs);
     await this.#invokeExtensionsAsync("registerCustomNodes");
   }

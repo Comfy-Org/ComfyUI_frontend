@@ -233,9 +233,8 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
 				font-family: 'Roboto Mono', 'Noto Color Emoji';
 			}`,
     });
-
     await page.waitForFunction(() => document.fonts.ready);
-    await page.waitForFunction(() => window["app"] != undefined);
+    await page.waitForFunction(() => window["app"] !== undefined);
     await page.evaluate(() => {
       window["app"]["canvas"].show_info = false;
     });
