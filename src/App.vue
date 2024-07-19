@@ -60,7 +60,6 @@ onMounted(async () => {
     console.error("Failed to init Vue app", e);
   } finally {
     isLoading.value = false;
-    window["vueAppLoaded"] = true;
   }
 });
 
