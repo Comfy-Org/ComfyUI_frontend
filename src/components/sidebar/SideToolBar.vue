@@ -9,8 +9,7 @@
       />
       <div class="side-tool-bar-end">
         <SideBarThemeToggleIcon />
-        <!-- TODO: Maybe moving the setting button to side bar? -->
-        <!-- <SideBarIcon icon="pi pi-cog" /> -->
+        <SideBarSettingsToggleIcon />
       </div>
     </nav>
   </teleport>
@@ -26,6 +25,7 @@
 <script setup lang="ts">
 import SideBarIcon from "./SideBarIcon.vue";
 import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
+import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
 import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
 import { markRaw, ref } from "vue";

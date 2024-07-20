@@ -40,7 +40,6 @@ export class ComfyAppMenu {
   logo: HTMLElement;
   saveButton: ComfySplitButton;
   actionsGroup: ComfyButtonGroup;
-  settingsGroup: ComfyButtonGroup;
   viewGroup: ComfyButtonGroup;
   mobileMenuButton: ComfyButton;
   element: HTMLElement;
@@ -128,16 +127,6 @@ export class ComfyAppMenu {
         },
       })
     );
-    this.settingsGroup = new ComfyButtonGroup(
-      new ComfyButton({
-        icon: "cog",
-        content: "Settings",
-        tooltip: "Open settings",
-        action: () => {
-          app.ui.settings.show();
-        },
-      })
-    );
     this.viewGroup = new ComfyButtonGroup(
       new ComfyViewHistoryButton(app).element,
       new ComfyViewQueueButton(app).element,
@@ -160,7 +149,6 @@ export class ComfyAppMenu {
       this.saveButton.element,
       collapseOnMobile(this.actionsGroup).element,
       $el("section.comfyui-menu-push"),
-      collapseOnMobile(this.settingsGroup).element,
       collapseOnMobile(this.viewGroup).element,
 
       getInteruptButton("lt-lg-show").element,
