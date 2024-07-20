@@ -1,22 +1,28 @@
 <template>
-  <nav class="side-tool-bar-container">
-    <SideBarIcon
-      v-for="item in items"
-      :icon="item.icon"
-      :selected="item === selectedItem"
-      @click="onItemClick(item)"
-    />
-    <div class="side-tool-bar-end">
-      <SideBarThemeToggleIcon />
-      <!-- TODO: Maybe moving the setting button to side bar? -->
-      <!-- <SideBarIcon icon="pi pi-cog" /> -->
-    </div>
-  </nav>
+  <teleport to=".comfyui-body-left">
+    <nav class="side-tool-bar-container">
+      <SideBarIcon
+        v-for="item in items"
+        :icon="item.icon"
+        :selected="item === selectedItem"
+        @click="onItemClick(item)"
+      />
+      <div class="side-tool-bar-end">
+        <SideBarThemeToggleIcon />
+        <!-- TODO: Maybe moving the setting button to side bar? -->
+        <!-- <SideBarIcon icon="pi pi-cog" /> -->
+      </div>
+    </nav>
+  </teleport>
+  <teleport to="#graph-canvas-container">
+    <LiteGraphCanvasSplitterOverlay />
+  </teleport>
 </template>
 
 <script setup lang="ts">
 import SideBarIcon from "./SideBarIcon.vue";
 import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
+import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import { ref } from "vue";
 
 const items = ref([{ icon: "pi pi-plus" }, { icon: "pi pi-search" }]);

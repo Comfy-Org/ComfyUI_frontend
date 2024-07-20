@@ -2,12 +2,7 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <div v-else>
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
-    <teleport to="#graph-canvas-container">
-      <LiteGraphCanvasSplitterOverlay />
-    </teleport>
-    <teleport to=".comfyui-body-left">
-      <SideToolBar />
-    </teleport>
+    <SideToolBar />
   </div>
 </template>
 
@@ -15,7 +10,6 @@
 import { onMounted, onUnmounted, provide, ref } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import SideToolBar from "@/components/sidebar/SideToolBar.vue";
-import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import {
   NodeSearchService,
