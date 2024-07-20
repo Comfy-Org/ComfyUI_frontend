@@ -53,5 +53,6 @@ const gutterClass = computed(() => {
   background-color: transparent;
   pointer-events: none;
   z-index: 10;
+  border: none;
 }
 </style>
