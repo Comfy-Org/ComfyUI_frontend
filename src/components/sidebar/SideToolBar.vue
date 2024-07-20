@@ -13,22 +13,15 @@
       </div>
     </nav>
   </teleport>
-  <teleport to="#graph-canvas-container">
-    <LiteGraphCanvasSplitterOverlay v-show="selectedItem !== null">
-      <template #side-bar-panel>
-        <component :is="selectedItem?.component" />
-      </template>
-    </LiteGraphCanvasSplitterOverlay>
-  </teleport>
+  <component :is="selectedItem?.component" />
 </template>
 
 <script setup lang="ts">
 import SideBarIcon from "./SideBarIcon.vue";
 import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
 import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
-import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
-import { markRaw, ref } from "vue";
+import { markRaw, ref, watch } from "vue";
 
 const items = ref([
   { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
@@ -42,6 +35,11 @@ const onItemClick = (item) => {
   }
   selectedItem.value = item;
 };
+
+const emit = defineEmits(["change"]);
+watch(selectedItem, (newVal) => {
+  emit("change", newVal !== null);
+});
 </script>
 
 <style>
