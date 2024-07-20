@@ -1,9 +1,9 @@
 <template>
   <Splitter class="splitter-overlay">
-    <SplitterPanel class="side-bar-panel">
-      <div>Placeholder</div>
+    <SplitterPanel class="side-bar-panel" :minSize="10" :size="20">
+      <slot name="side-bar-panel"></slot>
     </SplitterPanel>
-    <SplitterPanel class="graph-canvas-panel">
+    <SplitterPanel class="graph-canvas-panel" :size="100">
       <div></div>
     </SplitterPanel>
   </Splitter>
