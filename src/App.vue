@@ -2,9 +2,7 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <div v-else>
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
-    <teleport to=".comfyui-body-left">
-      <SideToolBar />
-    </teleport>
+    <SideToolBar />
   </div>
 </template>
 
