@@ -133,6 +133,10 @@
   font-size: 0.8em;
   display: flex;
   padding: 4px 8px;
+  /* Chromium based browser randomly shifts the bar up by 4px on first interaction with canvas.
+  Compensate this by adding 4px to padding top. */
+  /* Firefox does not have this issue. */
+  padding-top: 8px;
   align-items: center;
   gap: 8px;
   box-sizing: border-box;
