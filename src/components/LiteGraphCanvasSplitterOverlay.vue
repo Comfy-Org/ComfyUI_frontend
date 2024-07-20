@@ -19,7 +19,7 @@ import Splitter from "primevue/splitter";
 import SplitterPanel from "primevue/splitterpanel";
 import { computed, ref } from "vue";
 
-const sideBarPanelVisible = ref(true);
+const sideBarPanelVisible = ref(false);
 const setPanelVisible = (visible: boolean) => {
   sideBarPanelVisible.value = visible;
 };
