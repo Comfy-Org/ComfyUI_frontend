@@ -3,7 +3,7 @@
   <div v-else>
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
     <teleport to="#graph-canvas-container">
-      <LiteGraphCanvasContainer />
+      <LiteGraphCanvasSplitterOverlay />
     </teleport>
     <teleport to=".comfyui-body-left">
       <SideToolBar />
@@ -15,7 +15,7 @@
 import { onMounted, onUnmounted, provide, ref } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import SideToolBar from "@/components/sidebar/SideToolBar.vue";
-import LiteGraphCanvasContainer from "./components/LiteGraphCanvasContainer.vue";
+import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import {
   NodeSearchService,
