@@ -21,10 +21,12 @@ import SideBarIcon from "./SideBarIcon.vue";
 import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
 import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
+import QueueSideBarItem from "./items/QueueSideBarItem.vue";
 import { markRaw, ref, watch } from "vue";
 
 const items = ref([
   { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
+  { icon: "pi pi-history", component: markRaw(QueueSideBarItem) },
   { icon: "pi pi-search" },
 ]);
 const selectedItem = ref(null);
