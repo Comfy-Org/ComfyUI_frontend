@@ -108,9 +108,11 @@ export class TaskItemImpl {
 
   get executionEndTimestamp() {
     const messages = this.messages.filter((message) =>
-      ["execution_end", "execution_interrupted", "execution_error"].includes(
-        message[0]
-      )
+      [
+        "execution_success",
+        "execution_interrupted",
+        "execution_error",
+      ].includes(message[0])
     );
     if (!messages.length) {
       return undefined;

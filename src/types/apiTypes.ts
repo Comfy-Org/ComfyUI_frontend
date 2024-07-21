@@ -36,8 +36,8 @@ const zExecutionStartMessage = z.tuple([
   zMessageDetailBase,
 ]);
 
-const zExecutionEndMessage = z.tuple([
-  z.literal("execution_end"),
+const zExecutionSuccessMessage = z.tuple([
+  z.literal("execution_success"),
   zMessageDetailBase,
 ]);
 
@@ -75,7 +75,7 @@ const zExecutionErrorMessage = z.tuple([
 
 const zStatusMessage = z.union([
   zExecutionStartMessage,
-  zExecutionEndMessage,
+  zExecutionSuccessMessage,
   zExecutionCachedMessage,
   zExecutionInterruptedMessage,
   zExecutionErrorMessage,
