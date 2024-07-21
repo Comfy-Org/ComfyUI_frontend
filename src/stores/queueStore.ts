@@ -54,8 +54,8 @@ export const useQueueStore = defineStore("queue", {
   getters: {
     tasks(state) {
       return [
-        ...state.runningTasks,
         ...state.pendingTasks,
+        ...state.runningTasks,
         ...state.historyTasks,
       ];
     },
