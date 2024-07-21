@@ -13,7 +13,7 @@ import { defineStore } from "pinia";
 // Task type used in the API.
 export type APITaskType = "queue" | "history";
 
-class TaskItemImpl {
+export class TaskItemImpl {
   taskType: TaskType;
   prompt: TaskPrompt;
   status?: TaskStatus;
