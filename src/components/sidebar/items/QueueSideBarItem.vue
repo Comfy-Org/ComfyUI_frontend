@@ -21,6 +21,12 @@
     <Column>
       <template #body="{ data }">
         <Button
+          icon="pi pi-file-export"
+          text
+          severity="primary"
+          @click="data.loadWorkflow()"
+        />
+        <Button
           icon="pi pi-times"
           text
           severity="secondary"

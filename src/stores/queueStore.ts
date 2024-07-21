@@ -1,4 +1,5 @@
 import { api } from "@/scripts/api";
+import { app } from "@/scripts/app";
 import {
   validateTaskItem,
   TaskItem,
@@ -10,6 +11,7 @@ import {
 import { plainToClass } from "class-transformer";
 import _ from "lodash";
 import { defineStore } from "pinia";
+import { toRaw } from "vue";
 
 // Task type used in the API.
 export type APITaskType = "queue" | "history";
@@ -139,6 +141,13 @@ export class TaskItemImpl {
     return this.executionTime !== undefined
       ? this.executionTime / 1000
       : undefined;
+  }
+
+  public async loadWorkflow() {
+    await app.loadGraphData(toRaw(this.workflow));
+    if (this.outputs) {
+      app.nodeOutputs = toRaw(this.outputs);
+    }
   }
 }
 
