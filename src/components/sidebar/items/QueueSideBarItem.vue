@@ -18,6 +18,16 @@
         <div v-else class="queue-time-cell">queued...</div>
       </template>
     </Column>
+    <Column>
+      <template #body="{ data }">
+        <Button
+          icon="pi pi-times"
+          text
+          severity="secondary"
+          @click="removeTask(data)"
+        />
+      </template>
+    </Column>
   </DataTable>
 </template>
 
@@ -25,7 +35,12 @@
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Tag from "primevue/tag";
-import { TaskItemDisplayStatus, useQueueStore } from "@/stores/queueStore";
+import Button from "primevue/button";
+import {
+  TaskItemDisplayStatus,
+  TaskItemImpl,
+  useQueueStore,
+} from "@/stores/queueStore";
 import { computed, onMounted } from "vue";
 import { api } from "@/scripts/api";
 
@@ -51,7 +66,12 @@ const formatTime = (time?: number) => {
   }
   return `${time.toFixed(2)}s`;
 };
-
+const removeTask = (task: TaskItemImpl) => {
+  if (task.isRunning) {
+    api.interrupt();
+  }
+  queueStore.delete(task);
+};
 onMounted(() => {
   api.addEventListener("status", () => {
     queueStore.update();

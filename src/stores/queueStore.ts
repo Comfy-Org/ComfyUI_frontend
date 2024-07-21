@@ -184,12 +184,14 @@ export const useQueueStore = defineStore("queue", {
       this.historyTasks = toClassAll(history.History);
     },
     async clear() {
-      return Promise.all(
+      await Promise.all(
         ["queue", "history"].map((type) => api.clearItems(type))
       );
+      await this.update();
     },
     async delete(task: TaskItemImpl) {
-      return api.deleteItem(task.apiTaskType, task.promptId);
+      await api.deleteItem(task.apiTaskType, task.promptId);
+      await this.update();
     },
   },
 });
