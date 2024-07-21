@@ -47,7 +47,7 @@ export class ComfyPage {
   public readonly searchBox: ComfyNodeSearchBox;
 
   constructor(public readonly page: Page) {
-    this.url = process.env.PLAYWRIGHT_TEST_URL || "http://localhost:5173";
+    this.url = process.env.PLAYWRIGHT_TEST_URL || "http://localhost:8188";
     this.canvas = page.locator("#graph-canvas");
     this.widgetTextBox = page.getByPlaceholder("text").nth(1);
     this.resetViewButton = page.getByRole("button", { name: "Reset View" });
