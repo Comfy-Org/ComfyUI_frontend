@@ -8,6 +8,11 @@ interface Position {
   y: number;
 }
 
+interface Size {
+  width: number;
+  height: number;
+}
+
 class ComfyNodeSearchBox {
   public readonly input: Locator;
   public readonly dropdown: Locator;
@@ -214,6 +219,65 @@ export class ComfyPage {
     await this.page.keyboard.up("Control");
     await this.nextFrame();
   }
+
+  async closeMenu() {
+    await this.page.click("button.comfy-close-menu-btn");
+    await this.nextFrame();
+  }
+
+  async resizeNode(nodePos: Position, nodeSize: Size, ratioX: number, ratioY: number, revertAfter: boolean = false) {
+    const bottomRight = {
+      x: nodePos.x + nodeSize.width,
+      y: nodePos.y + nodeSize.height,
+    }
+    const target = {
+      x: nodePos.x + nodeSize.width * ratioX,
+      y: nodePos.y + nodeSize.height * ratioY,
+    }
+    await this.dragAndDrop(bottomRight, target);
+    await this.nextFrame();
+    if (revertAfter) {
+      await this.dragAndDrop(target, bottomRight);
+      await this.nextFrame();
+    }
+  }
+
+  async resizeKsamplerNode(percentX: number, percentY: number, revertAfter: boolean = false) {
+    const ksamplerPos = {
+      x: 864,
+      y: 157
+    }
+    const ksamplerSize = {
+      width: 315,
+      height: 292,
+    }
+    this.resizeNode(ksamplerPos, ksamplerSize, percentX, percentY, revertAfter);
+  }
+  
+  async resizeLoadCheckpointNode(percentX: number, percentY: number, revertAfter: boolean = false) {
+    const loadCheckpointPos = {
+      x: 25,
+      y: 440,
+    }
+    const loadCheckpointSize = {
+      width: 320,
+      height: 120,
+    }
+    this.resizeNode(loadCheckpointPos, loadCheckpointSize, percentX, percentY, revertAfter);
+  }
+  
+  async resizeEmptyLatentNode(percentX: number, percentY: number, revertAfter: boolean = false) {
+    const emptyLatentPos = {
+      x: 475,
+      y: 580,
+    }
+    const emptyLatentSize = {
+      width: 303,
+      height: 132,
+    }
+    this.resizeNode(emptyLatentPos, emptyLatentSize, percentX, percentY, revertAfter);
+  }
+
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
