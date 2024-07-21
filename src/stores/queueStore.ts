@@ -98,6 +98,33 @@ export class TaskItemImpl {
         }
     }
   }
+
+  get executionStartTimestamp() {
+    const message = this.messages.find(
+      (message) => message[0] === "execution_start"
+    );
+    return message ? message[1].timestamp : undefined;
+  }
+
+  get executionEndTimestamp() {
+    if (!this.messages.length) {
+      return undefined;
+    }
+    return _.max(this.messages.map((message) => message[1].timestamp));
+  }
+
+  get executionTime() {
+    if (!this.executionStartTimestamp || !this.executionEndTimestamp) {
+      return undefined;
+    }
+    return this.executionEndTimestamp - this.executionStartTimestamp;
+  }
+
+  get executionTimeInSeconds() {
+    return this.executionTime !== undefined
+      ? this.executionTime / 1000
+      : undefined;
+  }
 }
 
 interface State {

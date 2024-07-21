@@ -7,6 +7,11 @@
         </Tag>
       </template>
     </Column>
+    <Column header="TIME">
+      <template #body="{ data }">
+        {{ formatTime(data.executionTimeInSeconds) }}
+      </template>
+    </Column>
   </DataTable>
 </template>
 
@@ -33,6 +38,12 @@ const taskTagSeverity = (status: TaskItemDisplayStatus) => {
     case TaskItemDisplayStatus.Cancelled:
       return "warning";
   }
+};
+const formatTime = (time?: number) => {
+  if (time === undefined) {
+    return "";
+  }
+  return `${time.toFixed(2)}s`;
 };
 
 onMounted(() => {

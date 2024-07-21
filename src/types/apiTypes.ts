@@ -26,26 +26,32 @@ const zExtraData = z.object({
 });
 const zOutputsToExecute = z.array(zNodeId);
 
+const zMessageDetailBase = z.object({
+  prompt_id: zPromptId,
+  timestamp: z.number(),
+});
+
 const zExecutionStartMessage = z.tuple([
   z.literal("execution_start"),
-  z.object({
-    prompt_id: zPromptId,
-  }),
+  zMessageDetailBase,
+]);
+
+const zExecutionEndMessage = z.tuple([
+  z.literal("execution_end"),
+  zMessageDetailBase,
 ]);
 
 const zExecutionCachedMessage = z.tuple([
   z.literal("execution_cached"),
-  z.object({
-    prompt_id: zPromptId,
+  zMessageDetailBase.extend({
     nodes: z.array(zNodeId),
   }),
 ]);
 
 const zExecutionInterruptedMessage = z.tuple([
   z.literal("execution_interrupted"),
-  z.object({
+  zMessageDetailBase.extend({
     // InterruptProcessingException
-    prompt_id: zPromptId,
     node_id: zNodeId,
     node_type: zNodeType,
     executed: z.array(zNodeId),
@@ -54,8 +60,7 @@ const zExecutionInterruptedMessage = z.tuple([
 
 const zExecutionErrorMessage = z.tuple([
   z.literal("execution_error"),
-  z.object({
-    prompt_id: zPromptId,
+  zMessageDetailBase.extend({
     node_id: zNodeId,
     node_type: zNodeType,
     executed: z.array(zNodeId),
@@ -70,6 +75,7 @@ const zExecutionErrorMessage = z.tuple([
 
 const zStatusMessage = z.union([
   zExecutionStartMessage,
+  zExecutionEndMessage,
   zExecutionCachedMessage,
   zExecutionInterruptedMessage,
   zExecutionErrorMessage,
