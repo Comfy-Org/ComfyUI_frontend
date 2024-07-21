@@ -176,6 +176,7 @@ export const useQueueStore = defineStore("queue", {
           .map((task) => validateTaskItem(task))
           .filter((result) => result.success)
           .map((result) => plainToClass(TaskItemImpl, result.data))
+          // Desc order to show the latest tasks first
           .sort((a, b) => b.queueIndex - a.queueIndex);
 
       this.runningTasks = toClassAll(queue.Running);
