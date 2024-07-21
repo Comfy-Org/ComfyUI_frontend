@@ -81,6 +81,14 @@ export class TaskItemImpl {
     );
   }
 
+  get isHistory() {
+    return this.taskType === "History";
+  }
+
+  get isRunning() {
+    return this.taskType === "Running";
+  }
+
   get displayStatus(): TaskItemDisplayStatus {
     switch (this.taskType) {
       case "Running":

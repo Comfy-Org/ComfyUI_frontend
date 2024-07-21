@@ -9,7 +9,13 @@
     </Column>
     <Column header="TIME">
       <template #body="{ data }">
-        {{ formatTime(data.executionTimeInSeconds) }}
+        <div v-if="data.isHistory" class="queue-time-cell">
+          {{ formatTime(data.executionTimeInSeconds) }}
+        </div>
+        <div v-else-if="data.isRunning" class="queue-time-cell">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <div v-else class="queue-time-cell">queued...</div>
       </template>
     </Column>
   </DataTable>
@@ -54,3 +60,9 @@ onMounted(() => {
   queueStore.update();
 });
 </script>
+
+<style scoped>
+.queue-time-cell {
+  min-width: 10ch;
+}
+</style>
