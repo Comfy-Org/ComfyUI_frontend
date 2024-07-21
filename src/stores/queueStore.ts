@@ -175,7 +175,8 @@ export const useQueueStore = defineStore("queue", {
         tasks
           .map((task) => validateTaskItem(task))
           .filter((result) => result.success)
-          .map((result) => plainToClass(TaskItemImpl, result.data));
+          .map((result) => plainToClass(TaskItemImpl, result.data))
+          .sort((a, b) => b.queueIndex - a.queueIndex);
 
       this.runningTasks = toClassAll(queue.Running);
       this.pendingTasks = toClassAll(queue.Pending);
