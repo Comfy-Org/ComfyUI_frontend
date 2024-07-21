@@ -2,7 +2,8 @@
   <div>
     <Dialog
       v-model:visible="visible"
-      pt:root:class="invisible-dialog-root"
+      pt:root="invisible-dialog-root"
+      pt:mask="node-search-box-dialog-mask"
       modal
       :dismissable-mask="dismissable"
       @hide="clearFilters"
@@ -169,5 +170,9 @@ onUnmounted(() => {
   max-width: 48rem;
   border: 0 !important;
   background-color: transparent !important;
+  margin-top: 25vh;
+}
+.node-search-box-dialog-mask {
+  align-items: flex-start !important;
 }
 </style>
