@@ -1,22 +1,25 @@
 <template>
-  <Accordion>
-    <AccordionPanel v-for="task in tasks" :key="task.promptId">
-      <AccordionHeader>
-        <div>{{ task.queueIndex }} - {{ task.taskType }}</div>
-      </AccordionHeader>
-      <AccordionContent>
-        <div>{{ task.promptInputs }}</div>
-      </AccordionContent>
-    </AccordionPanel>
-  </Accordion>
+  <DataTable :value="tasks" dataKey="promptId">
+    <Column header="#">
+      <template #body="{ index }">
+        {{ index + 1 }}
+      </template>
+    </Column>
+    <Column header="STATUS">
+      <template #body="{ data }">
+        <Tag>
+          {{ data.displayStatus }}
+        </Tag>
+      </template>
+    </Column>
+  </DataTable>
 </template>
 
 <script setup lang="ts">
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Tag from "primevue/tag";
 import { useQueueStore } from "@/stores/queueStore";
-import Accordion from "primevue/accordion";
-import AccordionHeader from "primevue/accordionheader";
-import AccordionPanel from "primevue/accordionpanel";
-import AccordionContent from "primevue/accordioncontent";
 import { computed, onMounted } from "vue";
 import { api } from "@/scripts/api";
 

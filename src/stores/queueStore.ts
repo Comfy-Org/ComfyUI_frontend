@@ -8,10 +8,19 @@ import {
   TaskOutput,
 } from "@/types/apiTypes";
 import { plainToClass } from "class-transformer";
+import _ from "lodash";
 import { defineStore } from "pinia";
 
 // Task type used in the API.
 export type APITaskType = "queue" | "history";
+
+export enum TaskItemDisplayStatus {
+  Running = "Running",
+  Pending = "Pending",
+  Completed = "Completed",
+  Failed = "Failed",
+  Cancelled = "Cancelled",
+}
 
 export class TaskItemImpl {
   taskType: TaskType;
@@ -59,6 +68,35 @@ export class TaskItemImpl {
 
   get workflow() {
     return this.extraPngInfo.workflow;
+  }
+
+  get messages() {
+    return this.status?.messages || [];
+  }
+
+  get interrupted() {
+    return _.some(
+      this.messages,
+      (message) => message[0] === "execution_interrupted"
+    );
+  }
+
+  get displayStatus(): TaskItemDisplayStatus {
+    switch (this.taskType) {
+      case "Running":
+        return TaskItemDisplayStatus.Running;
+      case "Pending":
+        return TaskItemDisplayStatus.Pending;
+      case "History":
+        switch (this.status!.status_str) {
+          case "success":
+            return TaskItemDisplayStatus.Completed;
+          case "error":
+            return this.interrupted
+              ? TaskItemDisplayStatus.Cancelled
+              : TaskItemDisplayStatus.Failed;
+        }
+    }
   }
 }
 
