@@ -2,7 +2,7 @@ import { ZodType, z } from "zod";
 import { zComfyWorkflow } from "./comfyWorkflow";
 import { fromZodError } from "zod-validation-error";
 
-const zNodeId = z.number();
+const zNodeId = z.union([z.number(), z.string()]);
 const zNodeType = z.string();
 const zQueueIndex = z.number();
 const zPromptId = z.string();
@@ -12,7 +12,7 @@ const zPromptInputItem = z.object({
   class_type: zNodeType,
 });
 
-const zPromptInputs = z.array(zPromptInputItem);
+const zPromptInputs = z.record(zPromptInputItem);
 
 const zExtraPngInfo = z
   .object({
@@ -165,7 +165,14 @@ export type HistoryTaskItemFlat = z.infer<typeof zHistoryTaskItemFlat>;
 export type TaskItemFlat = z.infer<typeof zTaskItemFlat>;
 
 export function flattenTaskItem(taskItem: TaskItem): TaskItemFlat {
-  return zTaskItemFlat.parse(taskItem);
+  const result = zTaskItemFlat.safeParse(taskItem);
+  if (!result.success) {
+    const zodError = fromZodError(result.error);
+    throw new Error(
+      `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
+    );
+  }
+  return result.data;
 }
 
 function inputSpec(
