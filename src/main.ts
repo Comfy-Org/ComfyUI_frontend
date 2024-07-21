@@ -2,10 +2,13 @@ import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
+import ConfirmationService from "primevue/confirmationservice";
+import ToastService from "primevue/toastservice";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
 import { app as comfyApp } from "@/scripts/app";
+import { createPinia } from "pinia";
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -15,6 +18,7 @@ const ComfyUIPreset = definePreset(Aura, {
 });
 
 const app = createApp(App);
+const pinia = createPinia();
 
 comfyApp.setup().then(() => {
   window["app"] = comfyApp;
@@ -33,5 +37,8 @@ comfyApp.setup().then(() => {
         },
       },
     })
+    .use(ConfirmationService)
+    .use(ToastService)
+    .use(pinia)
     .mount("#vue-app");
 });

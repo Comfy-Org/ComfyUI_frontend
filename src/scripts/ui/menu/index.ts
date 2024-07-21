@@ -5,10 +5,8 @@ import { downloadBlob } from "../../utils";
 import { ComfyButton } from "../components/button";
 import { ComfyButtonGroup } from "../components/buttonGroup";
 import { ComfySplitButton } from "../components/splitButton";
-import { ComfyViewHistoryButton } from "./viewHistory";
 import { ComfyQueueButton } from "./queueButton";
 import { ComfyWorkflowsMenu } from "./workflows";
-import { ComfyViewQueueButton } from "./viewQueue";
 import { getInteruptButton } from "./interruptButton";
 import "./menu.css";
 import type { ComfySettingsDialog } from "../settings";
@@ -128,8 +126,6 @@ export class ComfyAppMenu {
       })
     );
     this.viewGroup = new ComfyButtonGroup(
-      new ComfyViewHistoryButton(app).element,
-      new ComfyViewQueueButton(app).element,
       getInteruptButton("nlg-hide").element
     );
     this.mobileMenuButton = new ComfyButton({
