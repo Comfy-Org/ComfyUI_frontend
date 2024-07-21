@@ -107,10 +107,15 @@ export class TaskItemImpl {
   }
 
   get executionEndTimestamp() {
-    if (!this.messages.length) {
+    const messages = this.messages.filter((message) =>
+      ["execution_end", "execution_interrupted", "execution_error"].includes(
+        message[0]
+      )
+    );
+    if (!messages.length) {
       return undefined;
     }
-    return _.max(this.messages.map((message) => message[1].timestamp));
+    return _.max(messages.map((message) => message[1].timestamp));
   }
 
   get executionTime() {
