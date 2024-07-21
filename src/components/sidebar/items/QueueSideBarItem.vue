@@ -1,3 +1,3 @@
-<template>
-  <div>Placeholder</div>
-</template>
+<template></template>
+
+<script setup lang="ts"></script>
