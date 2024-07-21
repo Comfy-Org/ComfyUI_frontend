@@ -1,48 +1,71 @@
 import { api } from "@/scripts/api";
 import {
-  flattenTaskItem,
-  HistoryTaskItemFlat,
-  PendingTaskItemFlat,
-  RunningTaskItemFlat,
+  validateTaskItem,
   TaskItem,
-  TaskItemFlat,
+  TaskType,
+  TaskPrompt,
+  TaskStatus,
+  TaskOutput,
 } from "@/types/apiTypes";
+import { plainToClass } from "class-transformer";
 import { defineStore } from "pinia";
-
-interface State {
-  runningTasks: RunningTaskItemFlat[];
-  pendingTasks: PendingTaskItemFlat[];
-  historyTasks: HistoryTaskItemFlat[];
-}
-
-export enum TaskType {
-  Running = "Running",
-  Pending = "Pending",
-  History = "History",
-}
 
 // Task type used in the API.
 export type APITaskType = "queue" | "history";
 
-export function getAPITaskType(taskType: TaskType): APITaskType {
-  switch (taskType) {
-    case TaskType.Running:
-      return "queue";
-    case TaskType.Pending:
-      return "queue";
-    case TaskType.History:
-      return "history";
+class TaskItemImpl {
+  taskType: TaskType;
+  prompt: TaskPrompt;
+  status?: TaskStatus;
+  outputs?: TaskOutput;
+
+  get apiTaskType(): APITaskType {
+    switch (this.taskType) {
+      case "Running":
+      case "Pending":
+        return "queue";
+      case "History":
+        return "history";
+    }
+  }
+
+  get queueIndex() {
+    return this.prompt[0];
+  }
+
+  get promptId() {
+    return this.prompt[1];
+  }
+
+  get promptInputs() {
+    return this.prompt[2];
+  }
+
+  get extraData() {
+    return this.prompt[3];
+  }
+
+  get outputsToExecute() {
+    return this.prompt[4];
+  }
+
+  get extraPngInfo() {
+    return this.extraData.extra_pnginfo;
+  }
+
+  get clientId() {
+    return this.extraData.client_id;
+  }
+
+  get workflow() {
+    return this.extraPngInfo.workflow;
   }
 }
 
-export function getTaskType(task: TaskItemFlat) {
-  if ("prompt" in task) {
-    return TaskType.Running;
-  } else if ("inputs" in task) {
-    return TaskType.Pending;
-  } else {
-    return TaskType.History;
-  }
+interface State {
+  runningTasks: TaskItemImpl[];
+  pendingTasks: TaskItemImpl[];
+  historyTasks: TaskItemImpl[];
 }
 
 export const useQueueStore = defineStore("queue", {
@@ -68,23 +91,23 @@ export const useQueueStore = defineStore("queue", {
         api.getHistory(),
       ]);
 
-      const flattenAll = (tasks: TaskItem[]) =>
-        tasks.map((task) => flattenTaskItem(task));
+      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
+        tasks
+          .map((task) => validateTaskItem(task))
+          .filter((result) => result.success)
+          .map((result) => plainToClass(TaskItemImpl, result.data));
 
-      this.runningTasks = flattenAll(queue.Running);
-      this.pendingTasks = flattenAll(queue.Pending);
-      this.historyTasks = flattenAll(history.History);
+      this.runningTasks = toClassAll(queue.Running);
+      this.pendingTasks = toClassAll(queue.Pending);
+      this.historyTasks = toClassAll(history.History);
     },
     async clear() {
       return Promise.all(
         ["queue", "history"].map((type) => api.clearItems(type))
       );
     },
-    async delete(task: TaskItemFlat) {
-      return api.deleteItem(
-        getAPITaskType(getTaskType(task)),
-        task.prompt.promptId
-      );
+    async delete(task: TaskItemImpl) {
+      return api.deleteItem(task.apiTaskType, task.promptId);
     },
   },
 });

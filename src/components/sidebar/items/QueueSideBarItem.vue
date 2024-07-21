@@ -1,11 +1,11 @@
 <template>
   <Accordion>
-    <AccordionPanel v-for="task in tasks" :key="task.prompt.promptId">
+    <AccordionPanel v-for="task in tasks" :key="task.promptId">
       <AccordionHeader>
-        <div>{{ task.prompt.queueIndex }} - {{ task.taskType }}</div>
+        <div>{{ task.queueIndex }} - {{ task.taskType }}</div>
       </AccordionHeader>
       <AccordionContent>
-        <div>{{ task.prompt.promptInputs }}</div>
+        <div>{{ task.promptInputs }}</div>
       </AccordionContent>
     </AccordionPanel>
   </Accordion>

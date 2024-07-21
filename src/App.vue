@@ -9,7 +9,6 @@
         </template>
       </LiteGraphCanvasSplitterOverlay>
     </teleport>
-    <SideToolBar />
   </div>
 </template>
 

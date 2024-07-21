@@ -95,6 +95,7 @@ const zTaskPrompt = z.tuple([
 const zRunningTaskItem = z.object({
   taskType: z.literal("Running"),
   prompt: zTaskPrompt,
+  // @Deprecated
   remove: z.object({
     name: z.literal("Cancel"),
     cb: z.function(),
@@ -106,11 +107,13 @@ const zPendingTaskItem = z.object({
   prompt: zTaskPrompt,
 });
 
+const zTaskOutput = z.record(zNodeId, zOutput);
+
 const zHistoryTaskItem = z.object({
   taskType: z.literal("History"),
   prompt: zTaskPrompt,
   status: zStatus.optional(),
-  outputs: z.record(zNodeId, zOutput),
+  outputs: zTaskOutput,
 });
 
 const zTaskItem = z.union([
@@ -119,6 +122,17 @@ const zTaskItem = z.union([
   zHistoryTaskItem,
 ]);
 
+const zTaskType = z.union([
+  z.literal("Running"),
+  z.literal("Pending"),
+  z.literal("History"),
+]);
+
+export type TaskType = z.infer<typeof zTaskType>;
+export type TaskPrompt = z.infer<typeof zTaskPrompt>;
+export type TaskStatus = z.infer<typeof zStatus>;
+export type TaskOutput = z.infer<typeof zTaskOutput>;
+
 // `/queue`
 export type RunningTaskItem = z.infer<typeof zRunningTaskItem>;
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>;
@@ -126,53 +140,16 @@ export type PendingTaskItem = z.infer<typeof zPendingTaskItem>;
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>;
 export type TaskItem = z.infer<typeof zTaskItem>;
 
-// TODO: validate `/history` `/queue` API endpoint responses.
-
-// Flat versions of the above types, for use in the frontend.
-const zTaskPromptFlat = zTaskPrompt.transform(
-  ([queueIndex, promptId, promptInputs, extraData, outputsToExecute]) => ({
-    queueIndex,
-    promptId,
-    promptInputs,
-    outputsToExecute,
-    clientId: extraData.client_id,
-    extraPngInfo: extraData.extra_pnginfo,
-    workflow: extraData.extra_pnginfo.workflow,
-  })
-);
-
-const zRunningTaskItemFlat = zRunningTaskItem.extend({
-  prompt: zTaskPromptFlat,
-});
-
-const zPendingTaskItemFlat = zPendingTaskItem.extend({
-  prompt: zTaskPromptFlat,
-});
-
-const zHistoryTaskItemFlat = zHistoryTaskItem.extend({
-  prompt: zTaskPromptFlat,
-});
-
-const zTaskItemFlat = z.union([
-  zRunningTaskItemFlat,
-  zPendingTaskItemFlat,
-  zHistoryTaskItemFlat,
-]);
-
-export type RunningTaskItemFlat = z.infer<typeof zRunningTaskItemFlat>;
-export type PendingTaskItemFlat = z.infer<typeof zPendingTaskItemFlat>;
-export type HistoryTaskItemFlat = z.infer<typeof zHistoryTaskItemFlat>;
-export type TaskItemFlat = z.infer<typeof zTaskItemFlat>;
-
-export function flattenTaskItem(taskItem: TaskItem): TaskItemFlat {
-  const result = zTaskItemFlat.safeParse(taskItem);
+export function validateTaskItem(taskItem: unknown) {
+  const result = zTaskItem.safeParse(taskItem);
   if (!result.success) {
     const zodError = fromZodError(result.error);
-    throw new Error(
+    // TODO accept a callback to report error.
+    console.warn(
       `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
     );
   }
-  return result.data;
+  return result;
 }
 
 function inputSpec(
