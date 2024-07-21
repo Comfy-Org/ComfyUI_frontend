@@ -197,6 +197,13 @@ export class ComfyWorkflowsMenu {
           img: HTMLImageElement,
           workflow: ComfyWorkflow
         ) {
+          const openWorkflow = app.workflowManager.openWorkflows.find(
+            (w) => w.path === workflow.path
+          );
+          if (openWorkflow) {
+            workflow = openWorkflow;
+          }
+
           await workflow.load();
           let options = [];
           const nodes = app.graph.computeExecutionOrder(false);
@@ -232,12 +239,11 @@ export class ComfyWorkflowsMenu {
           options
         ) {
           const r = getExtraMenuOptions?.apply?.(this, arguments);
-          if (
-            app.ui.settings.getSettingValue<boolean>(
-              "Comfy.UseNewMenu",
-              false
-            ) === true
-          ) {
+          const setting = app.ui.settings.getSettingValue(
+            "Comfy.UseNewMenu",
+            false
+          );
+          if (setting && setting != "Disabled") {
             const t = this;
             let img;
             if (t.imageIndex != null) {
