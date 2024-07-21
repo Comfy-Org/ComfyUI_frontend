@@ -2,6 +2,8 @@ import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
+import ConfirmationService from "primevue/confirmationservice";
+import ToastService from "primevue/toastservice";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
@@ -35,6 +37,8 @@ comfyApp.setup().then(() => {
         },
       },
     })
+    .use(ConfirmationService)
+    .use(ToastService)
     .use(pinia)
     .mount("#vue-app");
 });
