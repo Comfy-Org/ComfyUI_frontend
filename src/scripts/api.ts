@@ -315,10 +315,14 @@ class ComfyApi extends EventTarget {
       return {
         // Running action uses a different endpoint for cancelling
         Running: data.queue_running.map((prompt) => ({
+          taskType: "Running",
           prompt,
           remove: { name: "Cancel", cb: () => api.interrupt() },
         })),
-        Pending: data.queue_pending.map((prompt) => ({ prompt })),
+        Pending: data.queue_pending.map((prompt) => ({
+          taskType: "Pending",
+          prompt,
+        })),
       };
     } catch (error) {
       console.error(error);
@@ -335,7 +339,11 @@ class ComfyApi extends EventTarget {
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
       const res = await this.fetchApi(`/history?max_items=${max_items}`);
-      return { History: Object.values(await res.json()) };
+      return {
+        History: Object.values(await res.json()).map(
+          (item: HistoryTaskItem) => ({ ...item, taskType: "History" })
+        ),
+      };
     } catch (error) {
       console.error(error);
       return { History: [] };

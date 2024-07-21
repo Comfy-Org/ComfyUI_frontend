@@ -6,6 +6,7 @@ import "primeicons/primeicons.css";
 
 import App from "./App.vue";
 import { app as comfyApp } from "@/scripts/app";
+import { createPinia } from "pinia";
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
@@ -15,6 +16,7 @@ const ComfyUIPreset = definePreset(Aura, {
 });
 
 const app = createApp(App);
+const pinia = createPinia();
 
 comfyApp.setup().then(() => {
   window["app"] = comfyApp;
@@ -33,5 +35,6 @@ comfyApp.setup().then(() => {
         },
       },
     })
+    .use(pinia)
     .mount("#vue-app");
 });

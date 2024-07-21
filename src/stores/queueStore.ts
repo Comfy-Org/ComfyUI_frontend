@@ -1,16 +1,18 @@
 import { api } from "@/scripts/api";
 import {
-  HistoryTaskItem,
-  PendingTaskItem,
-  RunningTaskItem,
+  flattenTaskItem,
+  HistoryTaskItemFlat,
+  PendingTaskItemFlat,
+  RunningTaskItemFlat,
   TaskItem,
+  TaskItemFlat,
 } from "@/types/apiTypes";
 import { defineStore } from "pinia";
 
 interface State {
-  runningTasks: RunningTaskItem[];
-  pendingTasks: PendingTaskItem[];
-  historyTasks: HistoryTaskItem[];
+  runningTasks: RunningTaskItemFlat[];
+  pendingTasks: PendingTaskItemFlat[];
+  historyTasks: HistoryTaskItemFlat[];
 }
 
 export enum TaskType {
@@ -33,7 +35,7 @@ export function getAPITaskType(taskType: TaskType): APITaskType {
   }
 }
 
-export function getTaskType(task: TaskItem) {
+export function getTaskType(task: TaskItemFlat) {
   if ("prompt" in task) {
     return TaskType.Running;
   } else if ("inputs" in task) {
@@ -43,16 +45,21 @@ export function getTaskType(task: TaskItem) {
   }
 }
 
-export function getTaskId(task: TaskItem): string {
-  return task.prompt[1];
-}
-
 export const useQueueStore = defineStore("queue", {
   state: (): State => ({
     runningTasks: [],
     pendingTasks: [],
     historyTasks: [],
   }),
+  getters: {
+    tasks(state) {
+      return [
+        ...state.runningTasks,
+        ...state.pendingTasks,
+        ...state.historyTasks,
+      ];
+    },
+  },
   actions: {
     // Fetch the queue data from the API
     async update() {
@@ -61,17 +68,23 @@ export const useQueueStore = defineStore("queue", {
         api.getHistory(),
       ]);
 
-      this.runningTasks = queue.Running;
-      this.pendingTasks = queue.Pending;
-      this.historyTasks = history.History;
+      const flattenAll = (tasks: TaskItem[]) =>
+        tasks.map((task) => flattenTaskItem(task));
+
+      this.runningTasks = flattenAll(queue.Running);
+      this.pendingTasks = flattenAll(queue.Pending);
+      this.historyTasks = flattenAll(history.History);
     },
     async clear() {
       return Promise.all(
         ["queue", "history"].map((type) => api.clearItems(type))
       );
     },
-    async delete(task: TaskItem) {
-      return api.deleteItem(getAPITaskType(getTaskType(task)), getTaskId(task));
+    async delete(task: TaskItemFlat) {
+      return api.deleteItem(
+        getAPITaskType(getTaskType(task)),
+        task.prompt.promptId
+      );
     },
   },
 });

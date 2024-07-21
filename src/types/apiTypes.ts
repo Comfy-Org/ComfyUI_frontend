@@ -7,12 +7,12 @@ const zNodeType = z.string();
 const zQueueIndex = z.number();
 const zPromptId = z.string();
 
-const zPromptItem = z.object({
+const zPromptInputItem = z.object({
   inputs: z.record(z.string(), z.any()),
   class_type: zNodeType,
 });
 
-const zPrompt = z.array(zPromptItem);
+const zPromptInputs = z.array(zPromptInputItem);
 
 const zExtraPngInfo = z
   .object({
@@ -87,12 +87,13 @@ const zOutput = z.any();
 const zTaskPrompt = z.tuple([
   zQueueIndex,
   zPromptId,
-  zPrompt,
+  zPromptInputs,
   zExtraData,
   zOutputsToExecute,
 ]);
 
 const zRunningTaskItem = z.object({
+  taskType: z.literal("Running"),
   prompt: zTaskPrompt,
   remove: z.object({
     name: z.literal("Cancel"),
@@ -101,10 +102,12 @@ const zRunningTaskItem = z.object({
 });
 
 const zPendingTaskItem = z.object({
+  taskType: z.literal("Pending"),
   prompt: zTaskPrompt,
 });
 
 const zHistoryTaskItem = z.object({
+  taskType: z.literal("History"),
   prompt: zTaskPrompt,
   status: zStatus.optional(),
   outputs: z.record(zNodeId, zOutput),
@@ -124,6 +127,46 @@ export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>;
 export type TaskItem = z.infer<typeof zTaskItem>;
 
 // TODO: validate `/history` `/queue` API endpoint responses.
+
+// Flat versions of the above types, for use in the frontend.
+const zTaskPromptFlat = zTaskPrompt.transform(
+  ([queueIndex, promptId, promptInputs, extraData, outputsToExecute]) => ({
+    queueIndex,
+    promptId,
+    promptInputs,
+    outputsToExecute,
+    clientId: extraData.client_id,
+    extraPngInfo: extraData.extra_pnginfo,
+    workflow: extraData.extra_pnginfo.workflow,
+  })
+);
+
+const zRunningTaskItemFlat = zRunningTaskItem.extend({
+  prompt: zTaskPromptFlat,
+});
+
+const zPendingTaskItemFlat = zPendingTaskItem.extend({
+  prompt: zTaskPromptFlat,
+});
+
+const zHistoryTaskItemFlat = zHistoryTaskItem.extend({
+  prompt: zTaskPromptFlat,
+});
+
+const zTaskItemFlat = z.union([
+  zRunningTaskItemFlat,
+  zPendingTaskItemFlat,
+  zHistoryTaskItemFlat,
+]);
+
+export type RunningTaskItemFlat = z.infer<typeof zRunningTaskItemFlat>;
+export type PendingTaskItemFlat = z.infer<typeof zPendingTaskItemFlat>;
+export type HistoryTaskItemFlat = z.infer<typeof zHistoryTaskItemFlat>;
+export type TaskItemFlat = z.infer<typeof zTaskItemFlat>;
+
+export function flattenTaskItem(taskItem: TaskItem): TaskItemFlat {
+  return zTaskItemFlat.parse(taskItem);
+}
 
 function inputSpec(
   spec: [ZodType, ZodType],
