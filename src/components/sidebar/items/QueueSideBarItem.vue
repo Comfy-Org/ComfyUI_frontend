@@ -1,5 +1,10 @@
 <template>
-  <DataTable :value="tasks" dataKey="promptId" class="queue-table">
+  <DataTable
+    v-if="tasks.length > 0"
+    :value="tasks"
+    dataKey="promptId"
+    class="queue-table"
+  >
     <Column header="STATUS">
       <template #body="{ data }">
         <Tag :severity="taskTagSeverity(data.displayStatus)">
@@ -54,6 +59,11 @@
       </template>
     </Column>
   </DataTable>
+  <div>
+    <Message icon="pi pi-info" severity="error">
+      <span class="ml-2">No tasks</span>
+    </Message>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -63,6 +73,7 @@ import Tag from "primevue/tag";
 import Button from "primevue/button";
 import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
+import Message from "primevue/message";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import {
