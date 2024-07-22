@@ -38,6 +38,7 @@ export class ComfyAppMenu {
   logo: HTMLElement;
   saveButton: ComfySplitButton;
   actionsGroup: ComfyButtonGroup;
+  settingsGroup: ComfyButtonGroup;
   viewGroup: ComfyButtonGroup;
   mobileMenuButton: ComfyButton;
   element: HTMLElement;
@@ -125,6 +126,9 @@ export class ComfyAppMenu {
         },
       })
     );
+    // Keep the settings group as there are custom scripts attaching extra
+    // elements to it.
+    this.settingsGroup = new ComfyButtonGroup();
     this.viewGroup = new ComfyButtonGroup(
       getInteruptButton("nlg-hide").element
     );
@@ -145,6 +149,7 @@ export class ComfyAppMenu {
       this.saveButton.element,
       collapseOnMobile(this.actionsGroup).element,
       $el("section.comfyui-menu-push"),
+      collapseOnMobile(this.settingsGroup).element,
       collapseOnMobile(this.viewGroup).element,
 
       getInteruptButton("lt-lg-show").element,
