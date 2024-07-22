@@ -7,8 +7,6 @@ import { TaskItem } from "@/types/apiTypes";
 
 export const ComfyDialog = _ComfyDialog;
 
-export type LiteGraphNodeSearchSettingEvent = CustomEvent<boolean>;
-
 type Position2D = {
   x: number;
   y: number;
@@ -434,11 +432,6 @@ export class ComfyUI {
         value = value || "default";
         const useLitegraphSearch = value === "litegraph (legacy)";
         app.canvas.allow_searchbox = useLitegraphSearch;
-        document.dispatchEvent(
-          new CustomEvent("comfy:setting:litegraph-node-search", {
-            detail: useLitegraphSearch,
-          })
-        );
       },
     });
 
