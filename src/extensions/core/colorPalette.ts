@@ -672,12 +672,6 @@ app.registerExtension({
         }
         app.canvas.draw(true, true);
       }
-
-      document.dispatchEvent(
-        new CustomEvent("comfy:setting:color-palette-loaded", {
-          detail: colorPalette,
-        })
-      );
     };
 
     const getColorPalette = (colorPaletteId?) => {

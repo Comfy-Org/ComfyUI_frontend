@@ -22,7 +22,6 @@ import {
   NodeSearchService,
   SYSTEM_NODE_DEFS,
 } from "./services/nodeSearchService";
-import { ColorPaletteLoadedEvent } from "./types/colorPalette";
 import { LiteGraphNodeSearchSettingEvent } from "./scripts/ui";
 import { app } from "./scripts/app";
 
@@ -30,9 +29,9 @@ const isLoading = ref(true);
 const nodeSearchEnabled = ref(false);
 const nodeSearchService = ref<NodeSearchService>();
 
-const updateTheme = (e: ColorPaletteLoadedEvent) => {
+const updateTheme = (e) => {
   const DARK_THEME_CLASS = "dark-theme";
-  const isDarkTheme = e.detail.id !== "light";
+  const isDarkTheme = e.detail.value !== "light";
 
   if (isDarkTheme) {
     document.body.classList.add(DARK_THEME_CLASS);
@@ -52,6 +51,7 @@ const init = async () => {
     ...SYSTEM_NODE_DEFS,
   ]);
 
+  app.ui.settings.addEventListener("Comfy.ColorPalette.change", updateTheme);
   document.addEventListener("comfy:setting:color-palette-loaded", updateTheme);
   document.addEventListener(
     "comfy:setting:litegraph-node-search",
