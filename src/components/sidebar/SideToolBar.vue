@@ -22,7 +22,7 @@ import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
 import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
 import QueueSideBarItem from "./items/QueueSideBarItem.vue";
-import { markRaw, ref, watch } from "vue";
+import { markRaw, onMounted, onUnmounted, ref, watch } from "vue";
 
 const items = ref([
   { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
@@ -41,6 +41,24 @@ const onItemClick = (item) => {
 const emit = defineEmits(["change"]);
 watch(selectedItem, (newVal) => {
   emit("change", newVal !== null);
+});
+
+const onBetaMenuDisabled = () => {
+  selectedItem.value = null;
+};
+
+onMounted(() => {
+  document.addEventListener(
+    "comfy:setting:beta-menu-disabled",
+    onBetaMenuDisabled
+  );
+});
+
+onUnmounted(() => {
+  document.removeEventListener(
+    "comfy:setting:beta-menu-disabled",
+    onBetaMenuDisabled
+  );
 });
 </script>
 
