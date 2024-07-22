@@ -22,7 +22,6 @@ import {
   NodeSearchService,
   SYSTEM_NODE_DEFS,
 } from "./services/nodeSearchService";
-import { LiteGraphNodeSearchSettingEvent } from "./scripts/ui";
 import { app } from "./scripts/app";
 
 const isLoading = ref(true);
@@ -40,8 +39,8 @@ const updateTheme = (e) => {
   }
 };
 
-const updateNodeSearchSetting = (e: LiteGraphNodeSearchSettingEvent) => {
-  nodeSearchEnabled.value = !e.detail;
+const updateNodeSearchSetting = (e) => {
+  nodeSearchEnabled.value = e.detail.value === "default";
 };
 
 const init = async () => {
@@ -52,12 +51,10 @@ const init = async () => {
   ]);
 
   app.ui.settings.addEventListener("Comfy.ColorPalette.change", updateTheme);
-  document.addEventListener("comfy:setting:color-palette-loaded", updateTheme);
-  document.addEventListener(
-    "comfy:setting:litegraph-node-search",
+  app.ui.settings.addEventListener(
+    "Comfy.NodeSearchBoxImpl.change",
     updateNodeSearchSetting
   );
-
   app.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
   app.ui.settings.refreshSetting("Comfy.ColorPalette");
 };
@@ -73,12 +70,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener(
-    "comfy:setting:color-palette-loaded",
-    updateTheme
-  );
-  document.removeEventListener(
-    "comfy:setting:litegraph-node-search",
+  app.ui.settings.removeEventListener("Comfy.ColorPalette.change", updateTheme);
+  app.ui.settings.removeEventListener(
+    "Comfy.NodeSearchBoxImpl.change",
     updateNodeSearchSetting
   );
 });
