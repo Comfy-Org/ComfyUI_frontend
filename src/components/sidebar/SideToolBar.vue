@@ -25,9 +25,8 @@ import QueueSideBarItem from "./items/QueueSideBarItem.vue";
 import { markRaw, onMounted, onUnmounted, ref, watch } from "vue";
 
 const items = ref([
-  { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
+  // { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
   { icon: "pi pi-history", component: markRaw(QueueSideBarItem) },
-  { icon: "pi pi-search" },
 ]);
 const selectedItem = ref(null);
 const onItemClick = (item) => {
