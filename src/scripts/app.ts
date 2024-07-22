@@ -1845,13 +1845,18 @@ export class ComfyApp {
     await this.#setUser();
 
     // Create and mount the LiteGraph in the DOM
+    const canvasContainer = document.createElement("div");
+    canvasContainer.id = "graph-canvas-container";
+
     const mainCanvas = document.createElement("canvas");
     mainCanvas.style.touchAction = "none";
     const canvasEl = (this.canvasEl = Object.assign(mainCanvas, {
       id: "graph-canvas",
     }));
     canvasEl.tabIndex = 1;
-    document.body.prepend(canvasEl);
+    canvasContainer.prepend(canvasEl);
+    document.body.prepend(canvasContainer);
+
     this.resizeCanvas();
 
     await Promise.all([
