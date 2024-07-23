@@ -40,7 +40,8 @@ const updateTheme = (e) => {
 };
 
 const updateNodeSearchSetting = (e) => {
-  nodeSearchEnabled.value = e.detail.value === "default";
+  const settingValue = e.detail.value || "default";
+  nodeSearchEnabled.value = settingValue === "default";
 };
 
 const init = async () => {
