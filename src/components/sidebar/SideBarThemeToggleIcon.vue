@@ -1,5 +1,5 @@
 <template>
-  <SideBarIcon :icon="icon" @click="toggleTheme" />
+  <SideBarIcon :icon="icon" @click="toggleTheme" tooltip="Toggle Theme" />
 </template>
 
 <script setup lang="ts">

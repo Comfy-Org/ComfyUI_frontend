@@ -1,5 +1,5 @@
 <template>
-  <SideBarIcon icon="pi pi-cog" @click="showSetting" />
+  <SideBarIcon icon="pi pi-cog" @click="showSetting" tooltip="Settings" />
 </template>
 
 <script setup lang="ts">
