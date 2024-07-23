@@ -34,6 +34,12 @@ class ComfyNodeSearchBox {
   }
 }
 
+class ComfyMenu {
+  public readonly menu: Locator;
+  public readonly settingButton: Locator;
+  public readonly themeToggleButton: Locator;
+}
+
 export class ComfyPage {
   public readonly url: string;
   // All canvas position operations are based on default view of canvas.
