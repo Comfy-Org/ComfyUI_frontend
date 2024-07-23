@@ -1,19 +1,23 @@
 import { expect } from "@playwright/test";
-import { comfyPageFixture, ComfyPage } from "./ComfyPage";
+import { comfyPageFixture as test } from "./ComfyPage";
 
-const test = comfyPageFixture.extend<{ comfyPage: ComfyPage }>({
-  comfyPage: async ({ comfyPage }, use) => {
+test.describe("Menu", () => {
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.page.evaluate(async () => {
       await window["app"].ui.settings.setSettingValueAsync(
         "Comfy.UseNewMenu",
         "Top"
       );
     });
-    await use(comfyPage);
-  },
-});
+  });
 
-test.describe("Menu", () => {
+  test.afterEach(async ({ comfyPage }) => {
+    const currentThemeId = await comfyPage.menu.getThemeId();
+    if (currentThemeId !== "dark") {
+      await comfyPage.menu.toggleTheme();
+    }
+  });
+
   test("Toggle theme", async ({ comfyPage }) => {
     test.setTimeout(30000);
 
