@@ -11,6 +11,7 @@
       icon: 'side-bar-button-icon',
     }"
     @click="emit('click', $event)"
+    v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
   />
 </template>
 
@@ -20,6 +21,10 @@ import Button from "primevue/button";
 const props = defineProps({
   icon: String,
   selected: Boolean,
+  tooltip: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["click"]);

@@ -4,6 +4,7 @@
       <SideBarIcon
         v-for="item in items"
         :icon="item.icon"
+        :tooltip="item.tooltip"
         :selected="item === selectedItem"
         @click="onItemClick(item)"
       />
@@ -26,7 +27,11 @@ import { markRaw, onMounted, onUnmounted, ref, watch } from "vue";
 
 const items = ref([
   // { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
-  { icon: "pi pi-history", component: markRaw(QueueSideBarItem) },
+  {
+    icon: "pi pi-history",
+    tooltip: "Queue",
+    component: markRaw(QueueSideBarItem),
+  },
 ]);
 const selectedItem = ref(null);
 const onItemClick = (item) => {

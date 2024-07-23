@@ -4,6 +4,7 @@ import Aura from "@primevue/themes/aura";
 import { definePreset } from "@primevue/themes";
 import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
+import Tooltip from "primevue/tooltip";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
@@ -24,6 +25,7 @@ comfyApp.setup().then(() => {
   window["app"] = comfyApp;
   window["graph"] = comfyApp.graph;
 
+  app.directive("tooltip", Tooltip);
   app
     .use(PrimeVue, {
       theme: {
