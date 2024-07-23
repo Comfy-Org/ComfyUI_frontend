@@ -74,7 +74,7 @@ jobs:
         npm test -- --verbose
       working-directory: ComfyUI_frontend
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests
       run: npx playwright test

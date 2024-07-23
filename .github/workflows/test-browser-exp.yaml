@@ -50,7 +50,7 @@ jobs:
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests and update snapshots
       id: playwright-tests
