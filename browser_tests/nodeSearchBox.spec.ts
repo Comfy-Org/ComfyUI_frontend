@@ -1,6 +1,5 @@
 import { expect } from "@playwright/test";
-import { comfyPageFixture as test} from "./ComfyPage";
-
+import { comfyPageFixture as test } from "./ComfyPage";
 
 test.describe("Node search box", () => {
   test("Can trigger on empty canvas double click", async ({ comfyPage }) => {
