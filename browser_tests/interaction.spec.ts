@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { comfyPageFixture as test } from './ComfyPage';
+import { ComfyPage, comfyPageFixture as test } from './ComfyPage';
 
 test.describe('Node Interaction', () => {
   test('Can enter prompt', async ({ comfyPage }) => {
@@ -36,6 +36,23 @@ test.describe('Node Interaction', () => {
   test('Can adjust widget value', async ({ comfyPage }) => {
     await comfyPage.adjustWidgetValue();
     await expect(comfyPage.canvas).toHaveScreenshot('adjusted-widget-value.png');
+  });
+
+  test('Link snap to slot', async ({comfyPage}) => {
+    await comfyPage.loadWorkflow("snap_to_slot");
+    await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot.png');
+
+    const outputSlotPos = {
+      x: 406,
+      y: 333
+    };
+    const samplerNodeCenterPos = {
+      x: 748,
+      y: 77
+    };
+    await comfyPage.dragAndDrop(outputSlotPos, samplerNodeCenterPos);
+
+    await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot_linked.png');
   });
 });
 
