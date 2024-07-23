@@ -9,7 +9,7 @@
     "deploy": "npm run build && node scripts/deploy.js",
     "zipdist": "node scripts/zipdist.js",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write 'src/**/*.{js,ts,tsx,vue}'",
+    "format": "prettier --write './**/*.{js,ts,tsx,vue}'",
     "test": "npm run build && jest",
     "test:generate:examples": "npx tsx tests-ui/extractExamples",
     "test:generate": "npx tsx tests-ui/setup",
@@ -63,7 +63,7 @@
     "zod-validation-error": "^3.3.0"
   },
   "lint-staged": {
-    "src/**/*.{js,ts,tsx,vue}": [
+    "./**/*.{js,ts,tsx,vue}": [
       "prettier --write",
       "git add"
     ]

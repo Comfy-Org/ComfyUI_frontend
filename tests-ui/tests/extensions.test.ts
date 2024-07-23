@@ -49,7 +49,9 @@ describe("extensions", () => {
     // Before register node def will be called once per node type
     const nodeNames = Object.keys(defs);
     const nodeCount = nodeNames.length;
-    expect(mockExtension.beforeRegisterNodeDef).toHaveBeenCalledTimes(nodeCount);
+    expect(mockExtension.beforeRegisterNodeDef).toHaveBeenCalledTimes(
+      nodeCount
+    );
     for (let i = 0; i < 10; i++) {
       // It should be send the JS class and the original JSON definition
       const nodeClass = mockExtension.beforeRegisterNodeDef.mock.calls[i][0];
@@ -71,15 +73,23 @@ describe("extensions", () => {
     const graphData = mockExtension.beforeConfigureGraph.mock.calls[0][0];
 
     // A node created is fired for each node constructor that is called
-    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(graphData.nodes.length);
+    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(
+      graphData.nodes.length
+    );
     for (let i = 0; i < graphData.nodes.length; i++) {
-      expect(mockExtension.nodeCreated.mock.calls[i][0].type).toBe(graphData.nodes[i].type);
+      expect(mockExtension.nodeCreated.mock.calls[i][0].type).toBe(
+        graphData.nodes[i].type
+      );
     }
 
     // Each node then calls loadedGraphNode to allow them to be updated
-    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(graphData.nodes.length);
+    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(
+      graphData.nodes.length
+    );
     for (let i = 0; i < graphData.nodes.length; i++) {
-      expect(mockExtension.loadedGraphNode.mock.calls[i][0].type).toBe(graphData.nodes[i].type);
+      expect(mockExtension.loadedGraphNode.mock.calls[i][0].type).toBe(
+        graphData.nodes[i].type
+      );
     }
 
     // After configure is then called once all the setup is done
@@ -104,15 +114,21 @@ describe("extensions", () => {
     for (let i = 1; i < callOrder.length; i++) {
       const fn1 = mockExtension[callOrder[i - 1]];
       const fn2 = mockExtension[callOrder[i]];
-      expect(fn1.mock.invocationCallOrder[0]).toBeLessThan(fn2.mock.invocationCallOrder[0]);
+      expect(fn1.mock.invocationCallOrder[0]).toBeLessThan(
+        fn2.mock.invocationCallOrder[0]
+      );
     }
 
     graph.clear();
 
     // Ensure adding a new node calls the correct callback
     ez.LoadImage();
-    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(graphData.nodes.length);
-    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(graphData.nodes.length + 1);
+    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(
+      graphData.nodes.length
+    );
+    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(
+      graphData.nodes.length + 1
+    );
     expect(mockExtension.nodeCreated.mock.lastCall[0].type).toBe("LoadImage");
 
     // Reload the graph to ensure correct hooks are fired
@@ -123,13 +139,19 @@ describe("extensions", () => {
     expect(mockExtension.addCustomNodeDefs).toHaveBeenCalledTimes(1);
     expect(mockExtension.getCustomWidgets).toHaveBeenCalledTimes(1);
     expect(mockExtension.registerCustomNodes).toHaveBeenCalledTimes(1);
-    expect(mockExtension.beforeRegisterNodeDef).toHaveBeenCalledTimes(nodeCount);
+    expect(mockExtension.beforeRegisterNodeDef).toHaveBeenCalledTimes(
+      nodeCount
+    );
     expect(mockExtension.setup).toHaveBeenCalledTimes(1);
 
     // These should be called again
     expect(mockExtension.beforeConfigureGraph).toHaveBeenCalledTimes(2);
-    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(graphData.nodes.length + 2);
-    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(graphData.nodes.length + 1);
+    expect(mockExtension.nodeCreated).toHaveBeenCalledTimes(
+      graphData.nodes.length + 2
+    );
+    expect(mockExtension.loadedGraphNode).toHaveBeenCalledTimes(
+      graphData.nodes.length + 1
+    );
     expect(mockExtension.afterConfigureGraph).toHaveBeenCalledTimes(2);
   }, 15000);
 

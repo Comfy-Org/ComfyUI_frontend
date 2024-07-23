@@ -1,4 +1,9 @@
-import { start, createDefaultWorkflow, getNodeDef, checkBeforeAndAfterReload } from "../utils";
+import {
+  start,
+  createDefaultWorkflow,
+  getNodeDef,
+  checkBeforeAndAfterReload,
+} from "../utils";
 import { EzNode } from "../utils/ezgraph";
 import lg from "../utils/litegraph";
 
@@ -25,9 +30,9 @@ describe("group node", () => {
       n.select(true);
     }
 
-    expect(Object.keys(app.canvas.selected_nodes).sort((a, b) => +a - +b)).toEqual(
-      nodes.map((n) => n.id + "").sort((a, b) => +a - +b)
-    );
+    expect(
+      Object.keys(app.canvas.selected_nodes).sort((a, b) => +a - +b)
+    ).toEqual(nodes.map((n) => n.id + "").sort((a, b) => +a - +b));
 
     global.prompt = jest.fn().mockImplementation(() => name);
     const groupNode = await nodes[0].menu["Convert to Group Node"].call(false);
@@ -57,10 +62,22 @@ describe("group node", () => {
       }, {});
     }
     const expected = {
-      1: { inputs: { ckpt_name: "model1.safetensors", ...valueMap?.[1] }, class_type: "CheckpointLoaderSimple" },
-      2: { inputs: { text: "positive", clip: ["1", 1], ...valueMap?.[2] }, class_type: "CLIPTextEncode" },
-      3: { inputs: { text: "negative", clip: ["1", 1], ...valueMap?.[3] }, class_type: "CLIPTextEncode" },
-      4: { inputs: { width: 512, height: 512, batch_size: 1, ...valueMap?.[4] }, class_type: "EmptyLatentImage" },
+      1: {
+        inputs: { ckpt_name: "model1.safetensors", ...valueMap?.[1] },
+        class_type: "CheckpointLoaderSimple",
+      },
+      2: {
+        inputs: { text: "positive", clip: ["1", 1], ...valueMap?.[2] },
+        class_type: "CLIPTextEncode",
+      },
+      3: {
+        inputs: { text: "negative", clip: ["1", 1], ...valueMap?.[3] },
+        class_type: "CLIPTextEncode",
+      },
+      4: {
+        inputs: { width: 512, height: 512, batch_size: 1, ...valueMap?.[4] },
+        class_type: "EmptyLatentImage",
+      },
       5: {
         inputs: {
           seed: 0,
@@ -77,8 +94,18 @@ describe("group node", () => {
         },
         class_type: "KSampler",
       },
-      6: { inputs: { samples: ["5", 0], vae: ["1", 2], ...valueMap?.[6] }, class_type: "VAEDecode" },
-      7: { inputs: { filename_prefix: "ComfyUI", images: ["6", 0], ...valueMap?.[7] }, class_type: "SaveImage" },
+      6: {
+        inputs: { samples: ["5", 0], vae: ["1", 2], ...valueMap?.[6] },
+        class_type: "VAEDecode",
+      },
+      7: {
+        inputs: {
+          filename_prefix: "ComfyUI",
+          images: ["6", 0],
+          ...valueMap?.[7],
+        },
+        class_type: "SaveImage",
+      },
     };
 
     // Map old IDs to new at the top level
@@ -107,33 +134,58 @@ describe("group node", () => {
   test("can be created from selected nodes", async () => {
     const { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    const group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg, nodes.empty]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+      nodes.empty,
+    ]);
 
     // Ensure links are now to the group node
     expect(group.inputs).toHaveLength(2);
     expect(group.outputs).toHaveLength(3);
 
-    expect(group.inputs.map((i) => i.input.name)).toEqual(["clip", "CLIPTextEncode clip"]);
-    expect(group.outputs.map((i) => i.output.name)).toEqual(["LATENT", "CONDITIONING", "CLIPTextEncode CONDITIONING"]);
+    expect(group.inputs.map((i) => i.input.name)).toEqual([
+      "clip",
+      "CLIPTextEncode clip",
+    ]);
+    expect(group.outputs.map((i) => i.output.name)).toEqual([
+      "LATENT",
+      "CONDITIONING",
+      "CLIPTextEncode CONDITIONING",
+    ]);
 
     // ckpt clip to both clip inputs on the group
-    expect(nodes.ckpt.outputs.CLIP.connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
+    expect(
+      nodes.ckpt.outputs.CLIP.connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([
       [group.id, 0],
       [group.id, 1],
     ]);
 
     // group conditioning to sampler
-    expect(group.outputs["CONDITIONING"].connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
-      [nodes.sampler.id, 1],
-    ]);
+    expect(
+      group.outputs["CONDITIONING"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([[nodes.sampler.id, 1]]);
     // group conditioning 2 to sampler
     expect(
-      group.outputs["CLIPTextEncode CONDITIONING"].connections.map((t) => [t.targetNode.id, t.targetInput.index])
+      group.outputs["CLIPTextEncode CONDITIONING"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
     ).toEqual([[nodes.sampler.id, 2]]);
     // group latent to sampler
-    expect(group.outputs["LATENT"].connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
-      [nodes.sampler.id, 3],
-    ]);
+    expect(
+      group.outputs["LATENT"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([[nodes.sampler.id, 3]]);
   });
 
   test("maintains all output links on conversion", async () => {
@@ -142,7 +194,10 @@ describe("group node", () => {
     const save2 = ez.SaveImage(...nodes.decode.outputs);
     const save3 = ez.SaveImage(...nodes.decode.outputs);
     // Ensure an output with multiple links maintains them on convert to group
-    const group = await convertToGroup(app, graph, "test", [nodes.sampler, nodes.decode]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.sampler,
+      nodes.decode,
+    ]);
     expect(group.outputs[0].connections.length).toBe(3);
     expect(group.outputs[0].connections[0].targetNode.id).toBe(nodes.save.id);
     expect(group.outputs[0].connections[1].targetNode.id).toBe(save2.id);
@@ -193,22 +248,36 @@ describe("group node", () => {
     expect(sampler.widgets["control_after_generate"].value).toBe("fixed");
 
     // validate links
-    expect(nodes.ckpt.outputs.CLIP.connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
+    expect(
+      nodes.ckpt.outputs.CLIP.connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([
       [pos.id, 0],
       [neg.id, 0],
     ]);
 
-    expect(pos.outputs["CONDITIONING"].connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
-      [nodes.sampler.id, 1],
-    ]);
+    expect(
+      pos.outputs["CONDITIONING"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([[nodes.sampler.id, 1]]);
 
-    expect(neg.outputs["CONDITIONING"].connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
-      [nodes.sampler.id, 2],
-    ]);
+    expect(
+      neg.outputs["CONDITIONING"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([[nodes.sampler.id, 2]]);
 
-    expect(empty.outputs["LATENT"].connections.map((t) => [t.targetNode.id, t.targetInput.index])).toEqual([
-      [nodes.sampler.id, 3],
-    ]);
+    expect(
+      empty.outputs["LATENT"].connections.map((t) => [
+        t.targetNode.id,
+        t.targetInput.index,
+      ])
+    ).toEqual([[nodes.sampler.id, 3]]);
   });
   test("it can embed reroutes as inputs", async () => {
     const { ez, graph, app } = await start();
@@ -221,7 +290,12 @@ describe("group node", () => {
     reroute.outputs[0].connectTo(nodes.neg.inputs[0]);
 
     // Convert to group and ensure we only have 1 input of the correct type
-    const group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg, nodes.empty, reroute]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+      nodes.empty,
+      reroute,
+    ]);
     expect(group.inputs).toHaveLength(1);
     expect(group.inputs[0].input.type).toEqual("CLIP");
 
@@ -236,10 +310,16 @@ describe("group node", () => {
     nodes.decode.outputs.IMAGE.connectTo(reroute.inputs[0]);
 
     // Convert to group and ensure there is an IMAGE output
-    const group = await convertToGroup(app, graph, "test", [nodes.decode, nodes.save, reroute]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.decode,
+      nodes.save,
+      reroute,
+    ]);
     expect(group.outputs).toHaveLength(1);
     expect(group.outputs[0].output.type).toEqual("IMAGE");
-    expect((await graph.toPrompt()).output).toEqual(getOutput([nodes.decode.id, nodes.save.id]));
+    expect((await graph.toPrompt()).output).toEqual(
+      getOutput([nodes.decode.id, nodes.save.id])
+    );
   });
   test("it can embed reroutes as pipes", async () => {
     const { ez, graph, app } = await start();
@@ -253,13 +333,25 @@ describe("group node", () => {
     nodes.ckpt.outputs.CLIP.connectTo(rerouteClip.inputs[0]);
     nodes.ckpt.outputs.VAE.connectTo(rerouteVae.inputs[0]);
 
-    const group = await convertToGroup(app, graph, "test", [rerouteModel, rerouteClip, rerouteVae]);
+    const group = await convertToGroup(app, graph, "test", [
+      rerouteModel,
+      rerouteClip,
+      rerouteVae,
+    ]);
 
     expect(group.outputs).toHaveLength(3);
-    expect(group.outputs.map((o) => o.output.type)).toEqual(["MODEL", "CLIP", "VAE"]);
+    expect(group.outputs.map((o) => o.output.type)).toEqual([
+      "MODEL",
+      "CLIP",
+      "VAE",
+    ]);
 
     expect(group.outputs).toHaveLength(3);
-    expect(group.outputs.map((o) => o.output.type)).toEqual(["MODEL", "CLIP", "VAE"]);
+    expect(group.outputs.map((o) => o.output.type)).toEqual([
+      "MODEL",
+      "CLIP",
+      "VAE",
+    ]);
 
     group.outputs[0].connectTo(nodes.sampler.inputs.model);
     group.outputs[1].connectTo(nodes.pos.inputs.clip);
@@ -279,7 +371,10 @@ describe("group node", () => {
     }
     prevNode.outputs[0].connectTo(nodes.sampler.inputs.model);
 
-    const group = await convertToGroup(app, graph, "test", [...reroutes, ...Object.values(nodes)]);
+    const group = await convertToGroup(app, graph, "test", [
+      ...reroutes,
+      ...Object.values(nodes),
+    ]);
     expect((await graph.toPrompt()).output).toEqual(getOutput());
 
     group.menu["Convert to nodes"].call();
@@ -324,26 +419,38 @@ describe("group node", () => {
     expect(group.widgets["denoise"].value).toEqual(0.9);
 
     expect((await graph.toPrompt()).output).toEqual(
-      getOutput([nodes.ckpt.id, nodes.pos.id, nodes.neg.id, nodes.empty.id, nodes.sampler.id], {
-        [nodes.ckpt.id]: { ckpt_name: "model2.ckpt" },
-        [nodes.pos.id]: { text: "hello" },
-        [nodes.neg.id]: { text: "world" },
-        [nodes.empty.id]: { width: 256, height: 1024 },
-        [nodes.sampler.id]: {
-          seed: 1,
-          steps: 8,
-          cfg: 4.5,
-          sampler_name: "uni_pc",
-          scheduler: "karras",
-          denoise: 0.9,
-        },
-      })
+      getOutput(
+        [
+          nodes.ckpt.id,
+          nodes.pos.id,
+          nodes.neg.id,
+          nodes.empty.id,
+          nodes.sampler.id,
+        ],
+        {
+          [nodes.ckpt.id]: { ckpt_name: "model2.ckpt" },
+          [nodes.pos.id]: { text: "hello" },
+          [nodes.neg.id]: { text: "world" },
+          [nodes.empty.id]: { width: 256, height: 1024 },
+          [nodes.sampler.id]: {
+            seed: 1,
+            steps: 8,
+            cfg: 4.5,
+            sampler_name: "uni_pc",
+            scheduler: "karras",
+            denoise: 0.9,
+          },
+        }
+      )
     );
   });
   test("group inputs can be reroutes", async () => {
     const { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    const group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+    ]);
 
     const reroute = ez.Reroute();
     nodes.ckpt.outputs.CLIP.connectTo(reroute.inputs[0]);
@@ -351,12 +458,17 @@ describe("group node", () => {
     reroute.outputs[0].connectTo(group.inputs[0]);
     reroute.outputs[0].connectTo(group.inputs[1]);
 
-    expect((await graph.toPrompt()).output).toEqual(getOutput([nodes.pos.id, nodes.neg.id]));
+    expect((await graph.toPrompt()).output).toEqual(
+      getOutput([nodes.pos.id, nodes.neg.id])
+    );
   });
   test("group outputs can be reroutes", async () => {
     const { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    const group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+    ]);
 
     const reroute1 = ez.Reroute();
     const reroute2 = ez.Reroute();
@@ -366,13 +478,21 @@ describe("group node", () => {
     reroute1.outputs[0].connectTo(nodes.sampler.inputs.positive);
     reroute2.outputs[0].connectTo(nodes.sampler.inputs.negative);
 
-    expect((await graph.toPrompt()).output).toEqual(getOutput([nodes.pos.id, nodes.neg.id]));
+    expect((await graph.toPrompt()).output).toEqual(
+      getOutput([nodes.pos.id, nodes.neg.id])
+    );
   });
   test("groups can connect to each other", async () => {
     const { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    const group1 = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg]);
-    const group2 = await convertToGroup(app, graph, "test2", [nodes.empty, nodes.sampler]);
+    const group1 = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+    ]);
+    const group2 = await convertToGroup(app, graph, "test2", [
+      nodes.empty,
+      nodes.sampler,
+    ]);
 
     group1.outputs[0].connectTo(group2.inputs["positive"]);
     group1.outputs[1].connectTo(group2.inputs["negative"]);
@@ -392,7 +512,10 @@ describe("group node", () => {
     latent.outputs[0].connectTo(latentReroute.inputs[0]);
     vae.outputs[0].connectTo(vaeReroute.inputs[0]);
 
-    const group1 = await convertToGroup(app, graph, "test", [latentReroute, vaeReroute]);
+    const group1 = await convertToGroup(app, graph, "test", [
+      latentReroute,
+      vaeReroute,
+    ]);
     group1.menu.Clone.call();
     expect(app.graph._nodes).toHaveLength(4);
     const group2 = graph.find(app.graph._nodes[3]);
@@ -406,10 +529,22 @@ describe("group node", () => {
     const preview = ez.PreviewImage(decode.outputs[0]);
 
     const output = {
-      [latent.id]: { inputs: { width: 512, height: 512, batch_size: 1 }, class_type: "EmptyLatentImage" },
-      [vae.id]: { inputs: { vae_name: "vae1.safetensors" }, class_type: "VAELoader" },
-      [decode.id]: { inputs: { samples: [latent.id + "", 0], vae: [vae.id + "", 0] }, class_type: "VAEDecode" },
-      [preview.id]: { inputs: { images: [decode.id + "", 0] }, class_type: "PreviewImage" },
+      [latent.id]: {
+        inputs: { width: 512, height: 512, batch_size: 1 },
+        class_type: "EmptyLatentImage",
+      },
+      [vae.id]: {
+        inputs: { vae_name: "vae1.safetensors" },
+        class_type: "VAELoader",
+      },
+      [decode.id]: {
+        inputs: { samples: [latent.id + "", 0], vae: [vae.id + "", 0] },
+        class_type: "VAEDecode",
+      },
+      [preview.id]: {
+        inputs: { images: [decode.id + "", 0] },
+        class_type: "PreviewImage",
+      },
     };
     expect((await graph.toPrompt()).output).toEqual(output);
 
@@ -433,7 +568,9 @@ describe("group node", () => {
     const { api } = await import("../../src/scripts/api");
 
     api.dispatchEvent(new CustomEvent("execution_start", {}));
-    api.dispatchEvent(new CustomEvent("executing", { detail: `${nodes.save.id}` }));
+    api.dispatchEvent(
+      new CustomEvent("executing", { detail: `${nodes.save.id}` })
+    );
     // Event should be forwarded to group node id
     expect(+app.runningNodeId).toEqual(group.id);
     expect(group.node["imgs"]).toBeFalsy();
@@ -473,7 +610,9 @@ describe("group node", () => {
 
     // Check it works for internal node ids
     api.dispatchEvent(new CustomEvent("execution_start", {}));
-    api.dispatchEvent(new CustomEvent("executing", { detail: `${group.id}:5` }));
+    api.dispatchEvent(
+      new CustomEvent("executing", { detail: `${group.id}:5` })
+    );
     // Event should be forwarded to group node id
     expect(+app.runningNodeId).toEqual(group.id);
     expect(group.node["imgs"]).toBeFalsy();
@@ -506,7 +645,10 @@ describe("group node", () => {
   test("allows widgets to be converted to inputs", async () => {
     const { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    const group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg]);
+    const group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+    ]);
     group.widgets[0].convertToInput();
 
     const primitive = ez.PrimitiveNode();
@@ -555,11 +697,21 @@ describe("group node", () => {
 
     let i = 0;
     expect((await graph.toPrompt()).output).toEqual({
-      ...getOutput([nodes.empty.id, nodes.pos.id, nodes.neg.id, nodes.sampler.id, nodes.decode.id, nodes.save.id], {
-        [nodes.empty.id]: { width: 256 },
-        [nodes.pos.id]: { text: "hello" },
-        [nodes.sampler.id]: { seed: 1 },
-      }),
+      ...getOutput(
+        [
+          nodes.empty.id,
+          nodes.pos.id,
+          nodes.neg.id,
+          nodes.sampler.id,
+          nodes.decode.id,
+          nodes.save.id,
+        ],
+        {
+          [nodes.empty.id]: { width: 256 },
+          [nodes.pos.id]: { text: "hello" },
+          [nodes.sampler.id]: { seed: 1 },
+        }
+      ),
       ...getOutput(
         {
           [nodes.empty.id]: `${group2.id}:${i++}`,
@@ -582,7 +734,10 @@ describe("group node", () => {
   test("is embedded in workflow", async () => {
     let { ez, graph, app } = await start();
     const nodes = createDefaultWorkflow(ez, graph);
-    let group = await convertToGroup(app, graph, "test", [nodes.pos, nodes.neg]);
+    let group = await convertToGroup(app, graph, "test", [
+      nodes.pos,
+      nodes.neg,
+    ]);
     const workflow = JSON.stringify((await graph.toPrompt()).workflow);
 
     // Clear the environment
@@ -659,7 +814,11 @@ describe("group node", () => {
     primitive.outputs[0].connectTo(pos.inputs.text);
     primitive.outputs[0].connectTo(neg.inputs.text);
 
-    const group = await convertToGroup(app, graph, "test", [pos, neg, primitive]);
+    const group = await convertToGroup(app, graph, "test", [
+      pos,
+      neg,
+      primitive,
+    ]);
     // This will use a primitive widget named 'value'
     expect(group.widgets.length).toBe(1);
     expect(group.widgets["value"].value).toBe("positive");
@@ -680,7 +839,9 @@ describe("group node", () => {
   });
   test("correctly handles widget inputs", async () => {
     const { ez, graph, app } = await start();
-    const upscaleMethods = (await getNodeDef("ImageScaleBy")).input.required["upscale_method"][0];
+    const upscaleMethods = (await getNodeDef("ImageScaleBy")).input.required[
+      "upscale_method"
+    ][0];
 
     const image = ez.LoadImage();
     const scale1 = ez.ImageScaleBy(image.outputs[0]);
@@ -707,23 +868,40 @@ describe("group node", () => {
     expect(primitive.widgets.value.widget.options.values).toBe(upscaleMethods);
     expect(primitive.widgets.value.value).toBe(upscaleMethods[1]); // Ensure value is copied
     primitive.widgets.value.value = upscaleMethods[1];
-    
+
     await checkBeforeAndAfterReload(graph, async (r) => {
       const scale1id = r ? `${group.id}:0` : scale1.id;
       const scale2id = r ? `${group.id}:1` : scale2.id;
       // Ensure widget value is applied to prompt
       expect((await graph.toPrompt()).output).toStrictEqual({
-        [image.id]: { inputs: { image: "example.png", upload: "image" }, class_type: "LoadImage" },
+        [image.id]: {
+          inputs: { image: "example.png", upload: "image" },
+          class_type: "LoadImage",
+        },
         [scale1id]: {
-          inputs: { upscale_method: upscaleMethods[1], scale_by: 1, image: [`${image.id}`, 0] },
+          inputs: {
+            upscale_method: upscaleMethods[1],
+            scale_by: 1,
+            image: [`${image.id}`, 0],
+          },
           class_type: "ImageScaleBy",
         },
         [scale2id]: {
-          inputs: { upscale_method: "nearest-exact", scale_by: 1, image: [`${image.id}`, 0] },
+          inputs: {
+            upscale_method: "nearest-exact",
+            scale_by: 1,
+            image: [`${image.id}`, 0],
+          },
           class_type: "ImageScaleBy",
         },
-        [preview1.id]: { inputs: { images: [`${scale1id}`, 0] }, class_type: "PreviewImage" },
-        [preview2.id]: { inputs: { images: [`${scale2id}`, 0] }, class_type: "PreviewImage" },
+        [preview1.id]: {
+          inputs: { images: [`${scale1id}`, 0] },
+          class_type: "PreviewImage",
+        },
+        [preview2.id]: {
+          inputs: { images: [`${scale2id}`, 0] },
+          class_type: "PreviewImage",
+        },
       });
     });
   });
@@ -738,7 +916,12 @@ describe("group node", () => {
     decode.outputs.IMAGE.connectTo(save.inputs.images);
     empty.outputs.LATENT.connectTo(scale.inputs.samples);
 
-    const group = await convertToGroup(app, graph, "test", [scale, save, empty, decode]);
+    const group = await convertToGroup(app, graph, "test", [
+      scale,
+      save,
+      empty,
+      decode,
+    ]);
     const widgets = group.widgets.map((w) => w.widget.name);
     expect(widgets).toStrictEqual([
       "width",
@@ -758,7 +941,11 @@ describe("group node", () => {
     const preview1 = ez.PreviewImage(...decode.outputs);
     const preview2 = ez.PreviewImage(...decode.outputs);
 
-    const group = await convertToGroup(app, graph, "test", [img, decode, preview1]);
+    const group = await convertToGroup(app, graph, "test", [
+      img,
+      decode,
+      preview1,
+    ]);
 
     // Ensure we have an output connected to the 2nd preview node
     expect(group.outputs.length).toBe(1);
@@ -792,7 +979,12 @@ describe("group node", () => {
     const preview = ez.PreviewImage(decode2.outputs.IMAGE);
     vae.outputs.VAE.connectTo(encode.inputs.vae);
 
-    const group = await convertToGroup(app, graph, "test", [vae, decode1, encode, sampler]);
+    const group = await convertToGroup(app, graph, "test", [
+      vae,
+      decode1,
+      encode,
+      sampler,
+    ]);
 
     expect(group.outputs.length).toBe(3);
     expect(group.outputs[0].output.name).toBe("VAE");
@@ -815,11 +1007,31 @@ describe("group node", () => {
     expect(group.outputs[2].connections[0].targetInput.index).toBe(0);
 
     expect((await graph.toPrompt()).output).toEqual({
-      ...getOutput({ 1: ckpt.id, 2: pos.id, 3: neg.id, 4: empty.id, 5: sampler.id, 6: decode1.id, 7: save.id }),
-      [vae.id]: { inputs: { vae_name: "vae1.safetensors" }, class_type: vae.node.type },
-      [encode.id]: { inputs: { pixels: ["6", 0], vae: [vae.id + "", 0] }, class_type: encode.node.type },
-      [decode2.id]: { inputs: { samples: [encode.id + "", 0], vae: [vae.id + "", 0] }, class_type: decode2.node.type },
-      [preview.id]: { inputs: { images: [decode2.id + "", 0] }, class_type: preview.node.type },
+      ...getOutput({
+        1: ckpt.id,
+        2: pos.id,
+        3: neg.id,
+        4: empty.id,
+        5: sampler.id,
+        6: decode1.id,
+        7: save.id,
+      }),
+      [vae.id]: {
+        inputs: { vae_name: "vae1.safetensors" },
+        class_type: vae.node.type,
+      },
+      [encode.id]: {
+        inputs: { pixels: ["6", 0], vae: [vae.id + "", 0] },
+        class_type: encode.node.type,
+      },
+      [decode2.id]: {
+        inputs: { samples: [encode.id + "", 0], vae: [vae.id + "", 0] },
+        class_type: decode2.node.type,
+      },
+      [preview.id]: {
+        inputs: { images: [decode2.id + "", 0] },
+        class_type: preview.node.type,
+      },
     });
   });
   test("works with IMAGEUPLOAD widget", async () => {
@@ -847,7 +1059,12 @@ describe("group node", () => {
     primitive.outputs[0].connectTo(scale1.inputs.width);
     primitive.outputs[0].connectTo(scale2.inputs.height);
 
-    const group = await convertToGroup(app, graph, "test", [img, primitive, scale1, scale2]);
+    const group = await convertToGroup(app, graph, "test", [
+      img,
+      primitive,
+      scale1,
+      scale2,
+    ]);
     group.widgets.value.value = 100;
     expect((await graph.toPrompt()).output).toEqual({
       1: {
@@ -855,11 +1072,23 @@ describe("group node", () => {
         class_type: "LoadImage",
       },
       2: {
-        inputs: { upscale_method: "nearest-exact", width: 100, height: 512, crop: "disabled", image: ["1", 0] },
+        inputs: {
+          upscale_method: "nearest-exact",
+          width: 100,
+          height: 512,
+          crop: "disabled",
+          image: ["1", 0],
+        },
         class_type: "ImageScale",
       },
       3: {
-        inputs: { upscale_method: "nearest-exact", width: 512, height: 100, crop: "disabled", image: ["1", 0] },
+        inputs: {
+          upscale_method: "nearest-exact",
+          width: 512,
+          height: 100,
+          crop: "disabled",
+          image: ["1", 0],
+        },
         class_type: "ImageScale",
       },
       4: { inputs: { images: ["2", 0] }, class_type: "PreviewImage" },
@@ -930,7 +1159,13 @@ describe("group node", () => {
     r2.outputs[0].connectTo(latent.inputs.width);
     r2.outputs[0].connectTo(scale.inputs.height);
 
-    const group = await convertToGroup(app, graph, "test", [r1, r2, latent, decode, scale]);
+    const group = await convertToGroup(app, graph, "test", [
+      r1,
+      r2,
+      latent,
+      decode,
+      scale,
+    ]);
 
     expect(group.inputs[0].input.type).toBe("VAE");
     expect(group.inputs[1].input.type).toBe("INT");
@@ -958,11 +1193,26 @@ describe("group node", () => {
     await checkBeforeAndAfterReload(graph, async (r) => {
       const id = (v) => (r ? `${group.id}:` : "") + v;
       expect((await graph.toPrompt()).output).toStrictEqual({
-        1: { inputs: { vae_name: "vae1.safetensors" }, class_type: "VAELoader" },
-        [id(2)]: { inputs: { width: 32, height: 16, batch_size: 16 }, class_type: "EmptyLatentImage" },
-        [id(3)]: { inputs: { samples: [id(2), 0], vae: ["1", 0] }, class_type: "VAEDecode" },
+        1: {
+          inputs: { vae_name: "vae1.safetensors" },
+          class_type: "VAELoader",
+        },
+        [id(2)]: {
+          inputs: { width: 32, height: 16, batch_size: 16 },
+          class_type: "EmptyLatentImage",
+        },
+        [id(3)]: {
+          inputs: { samples: [id(2), 0], vae: ["1", 0] },
+          class_type: "VAEDecode",
+        },
         [id(4)]: {
-          inputs: { upscale_method: "nearest-exact", width: 16, height: 32, crop: "disabled", image: [id(3), 0] },
+          inputs: {
+            upscale_method: "nearest-exact",
+            width: 16,
+            height: 32,
+            crop: "disabled",
+            image: [id(3), 0],
+          },
           class_type: "ImageScale",
         },
         5: { inputs: { images: [id(4), 0] }, class_type: "PreviewImage" },

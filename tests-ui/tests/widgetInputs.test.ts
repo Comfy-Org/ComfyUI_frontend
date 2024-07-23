@@ -1,4 +1,10 @@
-import { start, makeNodeDef, checkBeforeAndAfterReload, assertNotNullOrUndefined, createDefaultWorkflow } from "../utils";
+import {
+  start,
+  makeNodeDef,
+  checkBeforeAndAfterReload,
+  assertNotNullOrUndefined,
+  createDefaultWorkflow,
+} from "../utils";
 import lg from "../utils/litegraph";
 
 /**
@@ -14,7 +20,13 @@ import lg from "../utils/litegraph";
  * @param { number } controlWidgetCount
  * @returns
  */
-async function connectPrimitiveAndReload(ez, graph, input, widgetType, controlWidgetCount = 0) {
+async function connectPrimitiveAndReload(
+  ez,
+  graph,
+  input,
+  widgetType,
+  controlWidgetCount = 0
+) {
   // Connect to primitive and ensure its still connected after
   let primitive = ez.PrimitiveNode();
   primitive.outputs[0].connectTo(input);
@@ -69,7 +81,9 @@ describe("widget inputs", () => {
   ].forEach((c) => {
     test(`widget conversion + primitive works on ${c.name}`, async () => {
       const { ez, graph } = await start({
-        mockNodeDefs: makeNodeDef("TestNode", { [c.name]: [c.type, c.opt ?? {}] }),
+        mockNodeDefs: makeNodeDef("TestNode", {
+          [c.name]: [c.type, c.opt ?? {}],
+        }),
       });
 
       // Create test node and convert to input
@@ -81,7 +95,13 @@ describe("widget inputs", () => {
       expect(input).toBeTruthy();
 
       // @ts-ignore : input is valid here
-      await connectPrimitiveAndReload(ez, graph, input, c.widget ?? c.name, c.control);
+      await connectPrimitiveAndReload(
+        ez,
+        graph,
+        input,
+        c.widget ?? c.name,
+        c.control
+      );
     });
   });
 
@@ -107,7 +127,13 @@ describe("widget inputs", () => {
     n.widgets.ckpt_name.convertToInput();
     expect(n.inputs.length).toEqual(inputCount + 1);
 
-    const primitive = await connectPrimitiveAndReload(ez, graph, n.inputs.ckpt_name, "combo", 2);
+    const primitive = await connectPrimitiveAndReload(
+      ez,
+      graph,
+      n.inputs.ckpt_name,
+      "combo",
+      2
+    );
 
     // Disconnect & reconnect
     primitive.outputs[0].connections[0].disconnect();
@@ -173,7 +199,15 @@ describe("widget inputs", () => {
           flags: {},
           order: 1,
           mode: 0,
-          inputs: [{ name: "test", type: "FLOAT", link: 4, widget: { name: "test" }, slot_index: 0 }],
+          inputs: [
+            {
+              name: "test",
+              type: "FLOAT",
+              link: 4,
+              widget: { name: "test" },
+              slot_index: 0,
+            },
+          ],
           outputs: [],
           properties: { "Node name for S&R": "TestNode" },
           widgets_values: [1],
@@ -200,14 +234,18 @@ describe("widget inputs", () => {
 
     expect(dialogShow).toBeCalledTimes(1);
     // @ts-ignore
-    expect(dialogShow.mock.calls[0][0].innerHTML).toContain("the following node types were not found");
+    expect(dialogShow.mock.calls[0][0].innerHTML).toContain(
+      "the following node types were not found"
+    );
     // @ts-ignore
     expect(dialogShow.mock.calls[0][0].innerHTML).toContain("TestNode");
   });
 
   test("defaultInput widgets can be converted back to inputs", async () => {
     const { graph, ez } = await start({
-      mockNodeDefs: makeNodeDef("TestNode", { example: ["INT", { defaultInput: true }] }),
+      mockNodeDefs: makeNodeDef("TestNode", {
+        example: ["INT", { defaultInput: true }],
+      }),
     });
 
     // Create test node and ensure it starts as an input
@@ -246,7 +284,9 @@ describe("widget inputs", () => {
 
   test("forceInput widgets can not be converted back to inputs", async () => {
     const { graph, ez } = await start({
-      mockNodeDefs: makeNodeDef("TestNode", { example: ["INT", { forceInput: true }] }),
+      mockNodeDefs: makeNodeDef("TestNode", {
+        example: ["INT", { forceInput: true }],
+      }),
     });
 
     // Create test node and ensure it starts as an input
@@ -271,8 +311,12 @@ describe("widget inputs", () => {
   test("primitive can connect to matching combos on converted widgets", async () => {
     const { ez } = await start({
       mockNodeDefs: {
-        ...makeNodeDef("TestNode1", { example: [["A", "B", "C"], { forceInput: true }] }),
-        ...makeNodeDef("TestNode2", { example: [["A", "B", "C"], { forceInput: true }] }),
+        ...makeNodeDef("TestNode1", {
+          example: [["A", "B", "C"], { forceInput: true }],
+        }),
+        ...makeNodeDef("TestNode2", {
+          example: [["A", "B", "C"], { forceInput: true }],
+        }),
       },
     });
 
@@ -290,8 +334,12 @@ describe("widget inputs", () => {
   test("primitive can not connect to non matching combos on converted widgets", async () => {
     const { ez } = await start({
       mockNodeDefs: {
-        ...makeNodeDef("TestNode1", { example: [["A", "B", "C"], { forceInput: true }] }),
-        ...makeNodeDef("TestNode2", { example: [["A", "B"], { forceInput: true }] }),
+        ...makeNodeDef("TestNode1", {
+          example: [["A", "B", "C"], { forceInput: true }],
+        }),
+        ...makeNodeDef("TestNode2", {
+          example: [["A", "B"], { forceInput: true }],
+        }),
       },
     });
 
@@ -307,8 +355,12 @@ describe("widget inputs", () => {
     const { ez } = await start({
       mockNodeDefs: {
         ...makeNodeDef("TestNode1", {}, [["A", "B"]]),
-        ...makeNodeDef("TestNode2", { example: [["A", "B"], { forceInput: true }] }),
-        ...makeNodeDef("TestNode3", { example: [["A", "B", "C"], { forceInput: true }] }),
+        ...makeNodeDef("TestNode2", {
+          example: [["A", "B"], { forceInput: true }],
+        }),
+        ...makeNodeDef("TestNode3", {
+          example: [["A", "B", "C"], { forceInput: true }],
+        }),
       },
     });
 
@@ -323,7 +375,12 @@ describe("widget inputs", () => {
   test("combo primitive can filter list when control_after_generate called", async () => {
     const { ez } = await start({
       mockNodeDefs: {
-        ...makeNodeDef("TestNode1", { example: [["A", "B", "C", "D", "AA", "BB", "CC", "DD", "AAA", "BBB"], {}] }),
+        ...makeNodeDef("TestNode1", {
+          example: [
+            ["A", "B", "C", "D", "AA", "BB", "CC", "DD", "AAA", "BBB"],
+            {},
+          ],
+        }),
       },
     });
 
@@ -395,11 +452,24 @@ describe("widget inputs", () => {
   describe("reroutes", () => {
     async function checkOutput(graph, values) {
       expect((await graph.toPrompt()).output).toStrictEqual({
-        1: { inputs: { ckpt_name: "model1.safetensors" }, class_type: "CheckpointLoaderSimple" },
-        2: { inputs: { text: "positive", clip: ["1", 1] }, class_type: "CLIPTextEncode" },
-        3: { inputs: { text: "negative", clip: ["1", 1] }, class_type: "CLIPTextEncode" },
+        1: {
+          inputs: { ckpt_name: "model1.safetensors" },
+          class_type: "CheckpointLoaderSimple",
+        },
+        2: {
+          inputs: { text: "positive", clip: ["1", 1] },
+          class_type: "CLIPTextEncode",
+        },
+        3: {
+          inputs: { text: "negative", clip: ["1", 1] },
+          class_type: "CLIPTextEncode",
+        },
         4: {
-          inputs: { width: values.width ?? 512, height: values.height ?? 512, batch_size: values?.batch_size ?? 1 },
+          inputs: {
+            width: values.width ?? 512,
+            height: values.height ?? 512,
+            batch_size: values?.batch_size ?? 1,
+          },
           class_type: "EmptyLatentImage",
         },
         5: {
@@ -417,9 +487,15 @@ describe("widget inputs", () => {
           },
           class_type: "KSampler",
         },
-        6: { inputs: { samples: ["5", 0], vae: ["1", 2] }, class_type: "VAEDecode" },
+        6: {
+          inputs: { samples: ["5", 0], vae: ["1", 2] },
+          class_type: "VAEDecode",
+        },
         7: {
-          inputs: { filename_prefix: values.filename_prefix ?? "ComfyUI", images: ["6", 0] },
+          inputs: {
+            filename_prefix: values.filename_prefix ?? "ComfyUI",
+            images: ["6", 0],
+          },
           class_type: "SaveImage",
         },
       });

@@ -3,7 +3,9 @@ import { comfyPageFixture as test } from "./ComfyPage";
 
 function listenForEvent(): Promise<Event> {
   return new Promise<Event>((resolve) => {
-    document.addEventListener("litegraph:canvas", (e) => resolve(e), { once: true });
+    document.addEventListener("litegraph:canvas", (e) => resolve(e), {
+      once: true,
+    });
   });
 }
 
