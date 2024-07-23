@@ -3,6 +3,7 @@
     :icon="icon"
     @click="toggleTheme"
     :tooltip="$t('sideToolBar.themeToggle')"
+    class="comfy-vue-theme-toggle"
   />
 </template>
 

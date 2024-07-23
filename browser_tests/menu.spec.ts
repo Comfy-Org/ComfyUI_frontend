@@ -14,7 +14,22 @@ const test = comfyPageFixture.extend<{ comfyPage: ComfyPage }>({
 });
 
 test.describe("Menu", () => {
-  test("Should have setting button visible", async ({ comfyPage }) => {
-    await expect(comfyPage.menu.settingsButton).toBeVisible();
+  test("Toggle theme", async ({ comfyPage }) => {
+    test.setTimeout(30000);
+
+    expect(await comfyPage.menu.getThemeId()).toBe("dark");
+
+    await comfyPage.menu.toggleTheme();
+
+    expect(await comfyPage.menu.getThemeId()).toBe("light");
+
+    // Theme id should persist after reload.
+    await comfyPage.page.reload();
+    await comfyPage.setup();
+    expect(await comfyPage.menu.getThemeId()).toBe("light");
+
+    await comfyPage.menu.toggleTheme();
+
+    expect(await comfyPage.menu.getThemeId()).toBe("dark");
   });
 });

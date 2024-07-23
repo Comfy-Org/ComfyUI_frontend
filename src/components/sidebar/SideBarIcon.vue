@@ -1,6 +1,7 @@
 <template>
   <Button
     :icon="props.icon"
+    :class="props.class"
     text
     :pt="{
       root: `side-bar-button ${
@@ -22,6 +23,10 @@ const props = defineProps({
   icon: String,
   selected: Boolean,
   tooltip: {
+    type: String,
+    default: "",
+  },
+  class: {
     type: String,
     default: "",
   },

@@ -35,9 +35,34 @@ class ComfyNodeSearchBox {
 }
 
 class ComfyMenu {
-  public readonly menu: Locator;
-  public readonly settingButton: Locator;
   public readonly themeToggleButton: Locator;
+
+  constructor(public readonly page: Page) {
+    this.themeToggleButton = page.locator(".comfy-vue-theme-toggle");
+  }
+
+  async toggleTheme() {
+    await this.themeToggleButton.click();
+    await this.page.evaluate(() => {
+      return new Promise((resolve) => {
+        window["app"].ui.settings.addEventListener(
+          "Comfy.ColorPalette.change",
+          resolve,
+          { once: true }
+        );
+
+        setTimeout(resolve, 5000);
+      });
+    });
+  }
+
+  async getThemeId() {
+    return await this.page.evaluate(async () => {
+      return await window["app"].ui.settings.getSettingValue(
+        "Comfy.ColorPalette"
+      );
+    });
+  }
 }
 
 export class ComfyPage {
@@ -52,8 +77,9 @@ export class ComfyPage {
   // Inputs
   public readonly workflowUploadInput: Locator;
 
-  // Search box
+  // Components
   public readonly searchBox: ComfyNodeSearchBox;
+  public readonly menu: ComfyMenu;
 
   constructor(public readonly page: Page) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || "http://localhost:8188";
@@ -62,6 +88,38 @@ export class ComfyPage {
     this.resetViewButton = page.getByRole("button", { name: "Reset View" });
     this.workflowUploadInput = page.locator("#comfy-file-input");
     this.searchBox = new ComfyNodeSearchBox(page);
+    this.menu = new ComfyMenu(page);
+  }
+
+  async setup() {
+    await this.goto();
+    // Unify font for consistent screenshots.
+    await this.page.addStyleTag({
+      url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
+    });
+    await this.page.addStyleTag({
+      url: "https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
+    });
+    await this.page.addStyleTag({
+      content: `
+      * {
+				font-family: 'Roboto Mono', 'Noto Color Emoji';
+			}`,
+    });
+    await this.page.waitForFunction(() => document.fonts.ready);
+    await this.page.waitForFunction(() => window["app"] !== undefined);
+    await this.page.evaluate(() => {
+      window["app"]["canvas"].show_info = false;
+    });
+    await this.nextFrame();
+    // Reset view to force re-rendering of canvas. So that info fields like fps
+    // become hidden.
+    await this.resetView();
+  }
+
+  async realod() {
+    await this.page.reload({ timeout: 15000 });
+    await this.setup();
   }
 
   async goto() {
@@ -82,7 +140,9 @@ export class ComfyPage {
   }
 
   async resetView() {
-    await this.resetViewButton.click();
+    if (await this.resetViewButton.isVisible()) {
+      await this.resetViewButton.click();
+    }
     // Avoid "Reset View" button highlight.
     await this.page.mouse.move(10, 10);
     await this.nextFrame();
@@ -329,29 +389,7 @@ export class ComfyPage {
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page }, use) => {
     const comfyPage = new ComfyPage(page);
-    await comfyPage.goto();
-    // Unify font for consistent screenshots.
-    await page.addStyleTag({
-      url: "https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
-    });
-    await page.addStyleTag({
-      url: "https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap",
-    });
-    await page.addStyleTag({
-      content: `
-      * {
-				font-family: 'Roboto Mono', 'Noto Color Emoji';
-			}`,
-    });
-    await page.waitForFunction(() => document.fonts.ready);
-    await page.waitForFunction(() => window["app"] !== undefined);
-    await page.evaluate(() => {
-      window["app"]["canvas"].show_info = false;
-    });
-    await comfyPage.nextFrame();
-    // Reset view to force re-rendering of canvas. So that info fields like fps
-    // become hidden.
-    await comfyPage.resetView();
+    await comfyPage.setup();
     await use(comfyPage);
   },
 });
