@@ -1,5 +1,9 @@
 <template>
-  <SideBarIcon icon="pi pi-cog" @click="showSetting" tooltip="Settings" />
+  <SideBarIcon
+    icon="pi pi-cog"
+    @click="showSetting"
+    :tooltip="$t('sideToolBar.settings')"
+  />
 </template>
 
 <script setup lang="ts">

@@ -24,12 +24,14 @@ import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
 import QueueSideBarItem from "./items/QueueSideBarItem.vue";
 import { markRaw, onMounted, onUnmounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 
+const { t } = useI18n();
 const items = ref([
   // { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
   {
     icon: "pi pi-history",
-    tooltip: "Queue",
+    tooltip: t("sideToolBar.queue"),
     component: markRaw(QueueSideBarItem),
   },
 ]);

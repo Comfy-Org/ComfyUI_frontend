@@ -1,5 +1,9 @@
 <template>
-  <SideBarIcon :icon="icon" @click="toggleTheme" tooltip="Toggle Theme" />
+  <SideBarIcon
+    :icon="icon"
+    @click="toggleTheme"
+    :tooltip="$t('sideToolBar.themeToggle')"
+  />
 </template>
 
 <script setup lang="ts">
