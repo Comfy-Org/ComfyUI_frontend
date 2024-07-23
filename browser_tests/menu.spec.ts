@@ -16,6 +16,12 @@ test.describe("Menu", () => {
     if (currentThemeId !== "dark") {
       await comfyPage.menu.toggleTheme();
     }
+    await comfyPage.page.evaluate(async () => {
+      await window["app"].ui.settings.setSettingValueAsync(
+        "Comfy.UseNewMenu",
+        "Disabled"
+      );
+    });
   });
 
   test("Toggle theme", async ({ comfyPage }) => {
