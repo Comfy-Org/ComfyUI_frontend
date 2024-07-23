@@ -11049,7 +11049,7 @@ LGraphNode.prototype.executeAction = function(action)
 			}else{
 				// is not not connected
 			}
-			nodeNewType = false;
+			let nodeNewType = false;
 			if(typeof slotTypesDefault[fromSlotType] == "object" || typeof slotTypesDefault[fromSlotType] == "array"){
 				for(var typeX in slotTypesDefault[fromSlotType]){
 					if (opts.nodeType == slotTypesDefault[fromSlotType][typeX] || opts.nodeType == "AUTO"){
