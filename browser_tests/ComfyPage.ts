@@ -43,6 +43,9 @@ export class ComfyPage {
   // Buttons
   public readonly resetViewButton: Locator;
 
+  // Inputs
+  public readonly workflowUploadInput: Locator;
+
   // Search box
   public readonly searchBox: ComfyNodeSearchBox;
 
@@ -51,6 +54,7 @@ export class ComfyPage {
     this.canvas = page.locator("#graph-canvas");
     this.widgetTextBox = page.getByPlaceholder("text").nth(1);
     this.resetViewButton = page.getByRole("button", { name: "Reset View" });
+    this.workflowUploadInput = page.locator('#comfy-file-input');
     this.searchBox = new ComfyNodeSearchBox(page);
   }
 
@@ -62,6 +66,11 @@ export class ComfyPage {
     await this.page.evaluate(() => {
       return new Promise<number>(requestAnimationFrame);
     });
+  }
+
+  async loadWorkflow(workflowName: string) {
+    await this.workflowUploadInput.setInputFiles(`./browser_tests/assets/${workflowName}.json`);
+    await this.nextFrame();
   }
 
   async resetView() {
