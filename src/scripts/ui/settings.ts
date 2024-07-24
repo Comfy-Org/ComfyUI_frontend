@@ -3,6 +3,7 @@ import { api } from "../api";
 import { ComfyDialog } from "./dialog";
 import type { ComfyApp } from "../app";
 import type { Setting, SettingParams } from "@/types/settingTypes";
+import { useSettingStore } from "@/stores/settingStore";
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp;
@@ -55,6 +56,14 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   #dispatchChange<T>(id: string, value: T, oldValue?: T) {
+    // Keep the settingStore updated. Not using `store.set` as it would trigger
+    // setSettingValue again.
+    // `load` re-dispatch the change for any settings added before load so
+    // settingStore is always up to date.
+    if (this.app.vueAppReady) {
+      useSettingStore().settingValues[id] = value;
+    }
+
     this.dispatchEvent(
       new CustomEvent(id + ".change", {
         detail: {
@@ -165,6 +174,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     // Trigger initial setting of value
     if (!skipOnChange) {
       onChange?.(value, undefined);
+      this.#dispatchChange(id, value);
     }
 
     this.settingsLookup[id] = {

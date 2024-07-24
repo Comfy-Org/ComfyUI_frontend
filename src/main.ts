@@ -45,4 +45,6 @@ comfyApp.setup().then(() => {
     .use(pinia)
     .use(i18n)
     .mount("#vue-app");
+
+  comfyApp.vueAppReady = true;
 });

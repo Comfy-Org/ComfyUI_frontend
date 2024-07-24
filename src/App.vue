@@ -13,51 +13,39 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, provide, ref } from "vue";
+import { computed, onMounted, onUnmounted, provide, ref, watch } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import SideToolBar from "@/components/sidebar/SideToolBar.vue";
 import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import ProgressSpinner from "primevue/progressspinner";
-import {
-  NodeSearchService,
-  SYSTEM_NODE_DEFS,
-} from "./services/nodeSearchService";
+import { NodeSearchService } from "./services/nodeSearchService";
 import { app } from "./scripts/app";
+import { useSettingStore } from "./stores/settingStore";
+import { useNodeDefStore } from "./stores/nodeDefStore";
 
 const isLoading = ref(true);
-const nodeSearchEnabled = ref(false);
-const nodeSearchService = ref<NodeSearchService>();
-
-const updateTheme = (e) => {
+const nodeSearchService = computed(
+  () => new NodeSearchService(useNodeDefStore().nodeDefs)
+);
+const nodeSearchEnabled = computed<boolean>(
+  () => useSettingStore().get("Comfy.NodeSearchBoxImpl") === "default"
+);
+const theme = computed<string>(() =>
+  useSettingStore().get("Comfy.ColorPalette")
+);
+watch(theme, (newTheme) => {
   const DARK_THEME_CLASS = "dark-theme";
-  const isDarkTheme = e.detail.value !== "light";
-
+  const isDarkTheme = newTheme !== "light";
   if (isDarkTheme) {
     document.body.classList.add(DARK_THEME_CLASS);
   } else {
     document.body.classList.remove(DARK_THEME_CLASS);
   }
-};
-
-const updateNodeSearchSetting = (e) => {
-  const settingValue = e.detail.value || "default";
-  nodeSearchEnabled.value = settingValue === "default";
-};
+});
 
 const init = async () => {
-  const nodeDefs = Object.values(app.nodeDefs);
-  nodeSearchService.value = new NodeSearchService([
-    ...nodeDefs,
-    ...SYSTEM_NODE_DEFS,
-  ]);
-
-  app.ui.settings.addEventListener("Comfy.ColorPalette.change", updateTheme);
-  app.ui.settings.addEventListener(
-    "Comfy.NodeSearchBoxImpl.change",
-    updateNodeSearchSetting
-  );
-  app.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
-  app.ui.settings.refreshSetting("Comfy.ColorPalette");
+  useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs));
+  useSettingStore().addSettings(app.ui.settings);
 };
 
 onMounted(async () => {
@@ -68,14 +56,6 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
-});
-
-onUnmounted(() => {
-  app.ui.settings.removeEventListener("Comfy.ColorPalette.change", updateTheme);
-  app.ui.settings.removeEventListener(
-    "Comfy.NodeSearchBoxImpl.change",
-    updateNodeSearchSetting
-  );
 });
 
 provide("nodeSearchService", nodeSearchService);
