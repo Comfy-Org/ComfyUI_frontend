@@ -60,11 +60,9 @@ import Badge from "primevue/badge";
 import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
 import NodeSourceChip from "@/components/NodeSourceChip.vue";
 import { ComfyNodeDef } from "@/types/apiTypes";
-import {
-  NodeSearchService,
-  type FilterAndValue,
-} from "@/services/nodeSearchService";
+import { type FilterAndValue } from "@/services/nodeSearchService";
 import NodePreview from "./NodePreview.vue";
+import { useNodeDefStore } from "@/stores/nodeDefStore";
 
 const props = defineProps({
   filters: {
@@ -76,10 +74,6 @@ const props = defineProps({
   },
 });
 
-const nodeSearchService = (
-  inject("nodeSearchService") as Ref<NodeSearchService>
-).value;
-
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`;
 const suggestions = ref<ComfyNodeDef[]>([]);
 const hoveredSuggestion = ref<ComfyNodeDef | null>(null);
@@ -88,9 +82,13 @@ const placeholder = computed(() => {
 });
 
 const search = (query: string) => {
-  suggestions.value = nodeSearchService.searchNode(query, props.filters, {
-    limit: props.searchLimit,
-  });
+  suggestions.value = useNodeDefStore().nodeSearchService.searchNode(
+    query,
+    props.filters,
+    {
+      limit: props.searchLimit,
+    }
+  );
 };
 
 const emit = defineEmits(["addFilter", "removeFilter", "addNode"]);

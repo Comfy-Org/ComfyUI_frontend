@@ -110,7 +110,9 @@ export class ComfyPage {
 			}`,
     });
     await this.page.waitForFunction(() => document.fonts.ready);
-    await this.page.waitForFunction(() => window["app"] !== undefined);
+    await this.page.waitForFunction(
+      () => window["app"] !== undefined && window["app"].vueAppReady
+    );
     await this.page.evaluate(() => {
       window["app"]["canvas"].show_info = false;
     });

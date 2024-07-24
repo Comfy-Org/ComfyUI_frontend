@@ -13,20 +13,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, provide, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import SideToolBar from "@/components/sidebar/SideToolBar.vue";
 import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
 import ProgressSpinner from "primevue/progressspinner";
-import { NodeSearchService } from "./services/nodeSearchService";
 import { app } from "./scripts/app";
 import { useSettingStore } from "./stores/settingStore";
 import { useNodeDefStore } from "./stores/nodeDefStore";
 
 const isLoading = ref(true);
-const nodeSearchService = computed(
-  () => new NodeSearchService(useNodeDefStore().nodeDefs)
-);
 const nodeSearchEnabled = computed<boolean>(
   () => useSettingStore().get("Comfy.NodeSearchBoxImpl") === "default"
 );
@@ -47,22 +43,21 @@ watch(
   { immediate: true }
 );
 
-const init = async () => {
+const init = () => {
   useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs));
   useSettingStore().addSettings(app.ui.settings);
+  app.vueAppReady = true;
 };
 
-onMounted(async () => {
+onMounted(() => {
   try {
-    await init();
+    init();
   } catch (e) {
     console.error("Failed to init Vue app", e);
   } finally {
     isLoading.value = false;
   }
 });
-
-provide("nodeSearchService", nodeSearchService);
 </script>
 
 <style scoped>

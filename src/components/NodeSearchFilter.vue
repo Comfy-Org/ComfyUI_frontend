@@ -34,26 +34,22 @@
 </template>
 
 <script setup lang="ts">
-import {
-  NodeFilter,
-  NodeSearchService,
-  type FilterAndValue,
-} from "@/services/nodeSearchService";
+import { NodeFilter, type FilterAndValue } from "@/services/nodeSearchService";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import SelectButton from "primevue/selectbutton";
 import AutoComplete from "primevue/autocomplete";
-import { inject, ref, onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { useNodeDefStore } from "@/stores/nodeDefStore";
 
 const visible = ref<boolean>(false);
-const nodeSearchService: NodeSearchService = inject("nodeSearchService").value;
-
 const filters = ref<NodeFilter[]>([]);
 const selectedFilter = ref<NodeFilter>();
 const filterValues = ref<string[]>([]);
 const selectedFilterValue = ref<string>("");
 
 onMounted(() => {
+  const nodeSearchService = useNodeDefStore().nodeSearchService;
   filters.value = nodeSearchService.nodeFilters;
   selectedFilter.value = nodeSearchService.nodeFilters[0];
 });
