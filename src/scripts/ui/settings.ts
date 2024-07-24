@@ -9,6 +9,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp;
   settingsValues: any;
   settingsLookup: Record<string, Setting>;
+  settingsParamLookup: Record<string, SettingParams>;
 
   constructor(app: ComfyApp) {
     super();
@@ -16,6 +17,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     this.app = app;
     this.settingsValues = {};
     this.settingsLookup = {};
+    this.settingsParamLookup = {};
     this.element = $el(
       "dialog",
       {
@@ -108,6 +110,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return value ?? defaultValue;
   }
 
+  getSettingDefaultValue(id: string) {
+    const param = this.settingsParamLookup[id];
+    return param?.defaultValue;
+  }
+
   async setSettingValueAsync(id: string, value: any) {
     const json = JSON.stringify(value);
     localStorage["Comfy.Settings." + id] = json; // backwards compatibility for extensions keep setting in storage
@@ -177,6 +184,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       this.#dispatchChange(id, value);
     }
 
+    this.settingsParamLookup[id] = params;
     this.settingsLookup[id] = {
       id,
       onChange,

@@ -33,15 +33,19 @@ const nodeSearchEnabled = computed<boolean>(
 const theme = computed<string>(() =>
   useSettingStore().get("Comfy.ColorPalette")
 );
-watch(theme, (newTheme) => {
-  const DARK_THEME_CLASS = "dark-theme";
-  const isDarkTheme = newTheme !== "light";
-  if (isDarkTheme) {
-    document.body.classList.add(DARK_THEME_CLASS);
-  } else {
-    document.body.classList.remove(DARK_THEME_CLASS);
-  }
-});
+watch(
+  theme,
+  (newTheme) => {
+    const DARK_THEME_CLASS = "dark-theme";
+    const isDarkTheme = newTheme !== "light";
+    if (isDarkTheme) {
+      document.body.classList.add(DARK_THEME_CLASS);
+    } else {
+      document.body.classList.remove(DARK_THEME_CLASS);
+    }
+  },
+  { immediate: true }
+);
 
 const init = async () => {
   useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs));
