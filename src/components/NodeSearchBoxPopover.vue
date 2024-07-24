@@ -32,11 +32,9 @@ import {
   LGraphNode,
   LinkReleaseContext,
 } from "@comfyorg/litegraph";
-import {
-  FilterAndValue,
-  NodeSearchService,
-} from "@/services/nodeSearchService";
+import { FilterAndValue } from "@/services/nodeSearchService";
 import { ComfyNodeDef } from "@/types/apiTypes";
+import { useNodeDefStore } from "@/stores/nodeDefStore";
 
 interface LiteGraphPointerEvent extends Event {
   canvasX: number;
@@ -114,9 +112,6 @@ const addNode = (nodeDef: ComfyNodeDef) => {
     }
   }
 };
-const nodeSearchService = (
-  inject("nodeSearchService") as Ref<NodeSearchService>
-).value;
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey;
@@ -128,9 +123,10 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
 
   if (e.detail.subType === "empty-release") {
     const destIsInput = e.detail.linkReleaseContext.node_from !== undefined;
-    const filter = destIsInput
-      ? nodeSearchService.getFilterById("input")
-      : nodeSearchService.getFilterById("output");
+    const filter = useNodeDefStore().nodeSearchService.getFilterById(
+      destIsInput ? "input" : "output"
+    );
+
     const value = destIsInput
       ? e.detail.linkReleaseContext.type_filter_in
       : e.detail.linkReleaseContext.type_filter_out;
@@ -172,6 +168,7 @@ onUnmounted(() => {
   background-color: transparent !important;
   margin-top: 25vh;
 }
+
 .node-search-box-dialog-mask {
   align-items: flex-start !important;
 }

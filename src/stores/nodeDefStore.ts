@@ -1,3 +1,4 @@
+import { NodeSearchService } from "@/services/nodeSearchService";
 import { ComfyNodeDef } from "@/types/apiTypes";
 import { defineStore } from "pinia";
 
@@ -54,6 +55,9 @@ export const useNodeDefStore = defineStore("nodeDef", {
     nodeDefs(state) {
       return Object.values(state.nodeDefsByName);
     },
+    nodeSearchService(state) {
+      return new NodeSearchService(Object.values(state.nodeDefsByName));
+    },
   },
   actions: {
     addNodeDef(nodeDef: ComfyNodeDef) {
@@ -61,7 +65,7 @@ export const useNodeDefStore = defineStore("nodeDef", {
     },
     addNodeDefs(nodeDefs: ComfyNodeDef[]) {
       for (const nodeDef of nodeDefs) {
-        this.addNodeDef(nodeDef);
+        this.nodeDefsByName[nodeDef.name] = nodeDef;
       }
     },
   },
