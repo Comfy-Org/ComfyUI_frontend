@@ -8,31 +8,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import SideBarIcon from "./SideBarIcon.vue";
-import { app } from "@/scripts/app";
+import { useSettingStore } from "@/stores/settingStore";
 
-const isDarkMode = ref(false);
+const previousDarkTheme = ref("dark");
+const currentTheme = computed(() =>
+  useSettingStore().get("Comfy.ColorPalette", "dark")
+);
+const isDarkMode = computed(() => currentTheme.value !== "light");
 const icon = computed(() => (isDarkMode.value ? "pi pi-moon" : "pi pi-sun"));
-const themeId = computed(() => (isDarkMode.value ? "dark" : "light"));
+
 const toggleTheme = () => {
-  isDarkMode.value = !isDarkMode.value;
+  if (isDarkMode.value) {
+    previousDarkTheme.value = currentTheme.value;
+    useSettingStore().set("Comfy.ColorPalette", "light");
+  } else {
+    useSettingStore().set("Comfy.ColorPalette", previousDarkTheme.value);
+  }
 };
-
-watch(themeId, (newThemeId) => {
-  app.ui.settings.setSettingValue("Comfy.ColorPalette", newThemeId);
-});
-
-const updateTheme = (e) => {
-  isDarkMode.value = e.detail.value !== "light";
-};
-
-onMounted(() => {
-  app.ui.settings.addEventListener("Comfy.ColorPalette.change", updateTheme);
-  app.ui.settings.refreshSetting("Comfy.ColorPalette");
-});
-
-onUnmounted(() => {
-  app.ui.settings.removeEventListener("Comfy.ColorPalette.change", updateTheme);
-});
 </script>

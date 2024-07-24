@@ -86,6 +86,7 @@ export class ComfyApp {
     DraggableList,
   };
 
+  vueAppReady: boolean;
   ui: ComfyUI;
   logging: ComfyLogging;
   extensions: ComfyExtension[];
@@ -118,6 +119,7 @@ export class ComfyApp {
   nodeDefs: Record<string, ComfyNodeDef>;
 
   constructor() {
+    this.vueAppReady = false;
     this.ui = new ComfyUI(this);
     this.logging = new ComfyLogging(this);
     this.workflowManager = new ComfyWorkflowManager(this);
@@ -1877,6 +1879,7 @@ export class ComfyApp {
     this.#addAfterConfigureHandler();
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
+    this.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
     this.ctx = canvasEl.getContext("2d");
 
     LiteGraph.release_link_on_empty_shows_menu = true;

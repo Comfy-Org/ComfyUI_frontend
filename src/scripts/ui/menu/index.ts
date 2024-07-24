@@ -182,7 +182,6 @@ export class ComfyAppMenu {
           app.ui.menuContainer.style.removeProperty("display");
           this.element.style.display = "none";
           app.ui.restoreMenuPosition();
-          document.dispatchEvent(new Event("comfy:setting:beta-menu-disabled"));
         }
         window.dispatchEvent(new Event("resize"));
       },
