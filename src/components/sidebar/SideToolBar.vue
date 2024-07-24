@@ -23,8 +23,9 @@ import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
 import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
 import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
 import QueueSideBarItem from "./items/QueueSideBarItem.vue";
-import { markRaw, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, markRaw, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useSettingStore } from "@/stores/settingStore";
 
 const { t } = useI18n();
 const items = ref([
@@ -49,22 +50,13 @@ watch(selectedItem, (newVal) => {
   emit("change", newVal !== null);
 });
 
-const onBetaMenuDisabled = () => {
-  selectedItem.value = null;
-};
-
-onMounted(() => {
-  document.addEventListener(
-    "comfy:setting:beta-menu-disabled",
-    onBetaMenuDisabled
-  );
-});
-
-onUnmounted(() => {
-  document.removeEventListener(
-    "comfy:setting:beta-menu-disabled",
-    onBetaMenuDisabled
-  );
+const betaMenuEnabled = computed(
+  () => useSettingStore().get("Comfy.UseNewMenu") !== "Disabled"
+);
+watch(betaMenuEnabled, (newValue) => {
+  if (!newValue) {
+    selectedItem.value = null;
+  }
 });
 </script>
 
