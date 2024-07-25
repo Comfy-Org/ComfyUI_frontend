@@ -1,37 +1,77 @@
 <template>
-  <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
-  <div v-else>
-    <NodeSearchboxPopover v-if="nodeSearchEnabled" />
-    <teleport to="#graph-canvas-container">
-      <LiteGraphCanvasSplitterOverlay>
-        <template #side-bar-panel>
-          <SideToolBar />
-        </template>
-      </LiteGraphCanvasSplitterOverlay>
-    </teleport>
+  <div class="relative min-h-screen">
+    <router-view />
+    <dt
+      v-if="mainLoadingSpinner"
+      class="absolute inset-0 bg-zinc-950/80 z-[1000] flex items-center justify-center"
+    >
+      <Loader class="text-[30px] text-zinc-300/80" />
+    </dt>
   </div>
+
+  <VueConfirm />
+  <VueToast />
+
+  <teleport to="body">
+    <div id="comfy-user-selection" class="comfy-user-selection">
+      <main class="comfy-user-selection-inner">
+        <h1>ComfyUI</h1>
+        <form>
+          <section>
+            <label
+              >New user:
+              <input placeholder="Enter a username" />
+            </label>
+          </section>
+          <div class="comfy-user-existing">
+            <span class="or-separator">OR</span>
+            <section>
+              <label>
+                Existing user:
+                <select>
+                  <option hidden disabled selected value>Select a user</option>
+                </select>
+              </label>
+            </section>
+          </div>
+          <footer>
+            <span class="comfy-user-error">&nbsp;</span>
+            <button class="comfy-btn comfy-user-button-next">Next</button>
+          </footer>
+        </form>
+      </main>
+    </div>
+  </teleport>
+
+  <!-- TODO refactor this -->
+  <LiteGraphCanvasSplitterOverlay>
+    <template #side-bar-panel>
+      <SideToolBar />
+    </template>
+  </LiteGraphCanvasSplitterOverlay>
+
+  <teleport to="#blockui">
+    <BlockUI :open="status.spinning" />
+  </teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref, watch } from 'vue'
-import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
+import { ref, computed, watch } from 'vue'
+import { VueConfirm } from '@/components/UI/VueConfirm/VueConfirm'
+import { VueToast } from '@/components/UI/VueToast/VueToast'
+import { useMainStore, useSettingStore, storeToRefs } from '@/stores'
+import BlockUI from '@/components/UI/BlockUI.vue'
+import Loader from '@/components/UI/Loader.vue'
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
-import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
-import ProgressSpinner from 'primevue/progressspinner'
-import { app } from './scripts/app'
-import { useSettingStore } from './stores/settingStore'
-import { useNodeDefStore } from './stores/nodeDefStore'
-import { ExtensionManagerImpl } from './scripts/extensionManager'
-import { useI18n } from 'vue-i18n'
 
-const isLoading = ref(true)
-const nodeSearchEnabled = computed<boolean>(
-  () => useSettingStore().get('Comfy.NodeSearchBoxImpl') === 'default'
-)
-const theme = computed<string>(() =>
-  useSettingStore().get('Comfy.ColorPalette')
-)
+const mainStore = useMainStore()
+const settingsStore = useSettingStore()
+const { status } = storeToRefs(mainStore)
+const mainLoadingSpinner = ref(false)
+
+const theme = computed<string>(() => settingsStore.get('Comfy.ColorPalette'))
+
 watch(
   theme,
   (newTheme) => {
@@ -45,37 +85,4 @@ watch(
   },
   { immediate: true }
 )
-
-const { t } = useI18n()
-const init = () => {
-  useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs))
-  useSettingStore().addSettings(app.ui.settings)
-  app.vueAppReady = true
-  // Late init as extension manager needs to access pinia store.
-  app.extensionManager = new ExtensionManagerImpl()
-  app.extensionManager.registerSidebarTab({
-    id: 'queue',
-    icon: 'pi pi-history',
-    title: t('sideToolBar.queue'),
-    tooltip: t('sideToolBar.queue'),
-    component: markRaw(QueueSideBarTab),
-    type: 'vue'
-  })
-}
-
-onMounted(() => {
-  try {
-    init()
-  } catch (e) {
-    console.error('Failed to init Vue app', e)
-  } finally {
-    isLoading.value = false
-  }
-})
 </script>
-
-<style scoped>
-.spinner {
-  @apply absolute inset-0 flex justify-center items-center h-screen;
-}
-</style>

@@ -163,6 +163,7 @@ export const useQueueStore = defineStore('queue', {
     pendingTasks: [],
     historyTasks: []
   }),
+
   getters: {
     tasks(state) {
       return [
@@ -172,6 +173,7 @@ export const useQueueStore = defineStore('queue', {
       ]
     }
   },
+
   actions: {
     // Fetch the queue data from the API
     async update() {
@@ -192,12 +194,14 @@ export const useQueueStore = defineStore('queue', {
       this.pendingTasks = toClassAll(queue.Pending)
       this.historyTasks = toClassAll(history.History)
     },
+
     async clear() {
       await Promise.all(
         ['queue', 'history'].map((type) => api.clearItems(type))
       )
       await this.update()
     },
+
     async delete(task: TaskItemImpl) {
       await api.deleteItem(task.apiTaskType, task.promptId)
       await this.update()

@@ -9,6 +9,8 @@ interface SelectedUser {
   created: boolean
 }
 
+/* TODO: This should be replaced with a Vue component */
+
 export class UserSelectionScreen {
   async show(users, user): Promise<SelectedUser> {
     const userSelection = document.getElementById('comfy-user-selection')

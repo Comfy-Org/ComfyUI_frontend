@@ -1,6 +1,6 @@
 import { ComfyLogging } from './logging'
-import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
 import { ComfyUI, $el } from './ui'
+import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
 import { api } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
@@ -31,10 +31,6 @@ import {
   LiteGraph
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
-
-// CSS imports. style.css must be imported later as it overwrites some litegraph styles.
-import '@comfyorg/litegraph/css/litegraph.css'
-import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -87,6 +83,7 @@ export class ComfyApp {
     DraggableList
   }
 
+  initied: boolean
   vueAppReady: boolean
   ui: ComfyUI
   logging: ComfyLogging
@@ -121,7 +118,9 @@ export class ComfyApp {
   nodeDefs: Record<string, ComfyNodeDef>
 
   constructor() {
+    this.initied = false
     this.vueAppReady = false
+
     this.ui = new ComfyUI(this)
     this.logging = new ComfyLogging(this)
     this.workflowManager = new ComfyWorkflowManager(this)
@@ -1840,31 +1839,25 @@ export class ComfyApp {
     })
   }
 
+  setupCanvas(canvasEl: HTMLCanvasElement) {}
+
+  setupHandlers() {}
+
   /**
    * Set up the app on the page
    */
-  async setup() {
+  async setup(canvasEl: HTMLCanvasElement) {
     await this.#setUser()
 
-    // Create and mount the LiteGraph in the DOM
-    const canvasContainer = document.createElement('div')
-    canvasContainer.id = 'graph-canvas-container'
-
-    const mainCanvas = document.createElement('canvas')
-    mainCanvas.style.touchAction = 'none'
-    const canvasEl = (this.canvasEl = Object.assign(mainCanvas, {
-      id: 'graph-canvas'
-    }))
-    canvasEl.tabIndex = 1
-    canvasContainer.prepend(canvasEl)
-    document.body.prepend(canvasContainer)
-
+    this.canvasEl = canvasEl
+    this.canvasEl.tabIndex = 1
     this.resizeCanvas()
 
     await Promise.all([
       this.workflowManager.loadWorkflows(),
       this.ui.settings.load()
     ])
+
     await this.#loadExtensions()
 
     addDomClippingSetting()
@@ -1878,9 +1871,9 @@ export class ComfyApp {
 
     this.#addAfterConfigureHandler()
 
-    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    this.canvas = new LGraphCanvas(this.canvasEl, this.graph)
     this.ui.settings.refreshSetting('Comfy.NodeSearchBoxImpl')
-    this.ctx = canvasEl.getContext('2d')
+    this.ctx = this.canvasEl.getContext('2d')
 
     LiteGraph.release_link_on_empty_shows_menu = true
     LiteGraph.alt_drag_do_clone_nodes = true
@@ -1928,6 +1921,7 @@ export class ComfyApp {
     }
 
     // Save current workflow automatically
+    /* TODO: save only when something changes on the graph */
     setInterval(() => {
       const workflow = JSON.stringify(this.graph.serialize())
       localStorage.setItem('workflow', workflow)

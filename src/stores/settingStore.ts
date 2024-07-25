@@ -19,6 +19,7 @@ export const useSettingStore = defineStore('setting', {
   state: (): State => ({
     settingValues: {}
   }),
+
   actions: {
     addSettings(settings: ComfySettingsDialog) {
       for (const id in settings.settingsLookup) {
@@ -29,12 +30,12 @@ export const useSettingStore = defineStore('setting', {
 
     set(key: string, value: any) {
       this.settingValues[key] = value
-      app.ui.settings.setSettingValue(key, value)
+      app.ui?.settings.setSettingValue(key, value)
     },
 
     get(key: string) {
       return (
-        this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
+        this.settingValues[key] ?? app.ui?.settings.getSettingDefaultValue(key)
       )
     }
   }

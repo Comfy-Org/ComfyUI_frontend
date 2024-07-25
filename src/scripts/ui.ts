@@ -5,6 +5,10 @@ import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
 import { TaskItem } from '@/types/apiTypes'
 
+/**
+ * all of this should be eliminated soon and replaced with Vue components
+ **/
+
 export const ComfyDialog = _ComfyDialog
 
 type Position2D = {

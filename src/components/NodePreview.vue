@@ -79,6 +79,7 @@ const allInputs = Object.assign(
   nodeDef.input.required || {},
   nodeDef.input.optional || {}
 )
+
 const allInputDefs: IComfyNodeInputDef[] = Object.entries(allInputs).map(
   ([inputName, inputData]) => {
     return {
