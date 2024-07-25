@@ -26,21 +26,28 @@ describe("users", () => {
 
     async function waitForUserScreenShow() {
       // Wait for "show" to be called
-      const { UserSelectionScreen } = await import("../../src/scripts/ui/userSelection");
+      const { UserSelectionScreen } = await import(
+        "../../src/scripts/ui/userSelection"
+      );
       let resolve, reject;
       const fn = UserSelectionScreen.prototype.show;
       const p = new Promise((res, rej) => {
         resolve = res;
         reject = rej;
       });
-      jest.spyOn(UserSelectionScreen.prototype, "show").mockImplementation(async (...args) => {
-        const res = fn(...args);
-        await new Promise(process.nextTick); // wait for promises to resolve
-        resolve();
-        return res;
-      });
+      jest
+        .spyOn(UserSelectionScreen.prototype, "show")
+        .mockImplementation(async (...args) => {
+          const res = fn(...args);
+          await new Promise(process.nextTick); // wait for promises to resolve
+          resolve();
+          return res;
+        });
       // @ts-ignore
-      setTimeout(() => reject("timeout waiting for UserSelectionScreen to be shown."), 500);
+      setTimeout(
+        () => reject("timeout waiting for UserSelectionScreen to be shown."),
+        500
+      );
       await p;
       await new Promise(process.nextTick); // wait for promises to resolve
     }
@@ -80,7 +87,9 @@ describe("users", () => {
       const s = await starting;
 
       // Ensure login is removed
-      expect(document.querySelectorAll("#comfy-user-selection")).toHaveLength(0);
+      expect(document.querySelectorAll("#comfy-user-selection")).toHaveLength(
+        0
+      );
       expect(window.getComputedStyle(menu)?.display).not.toBe("none");
 
       // Ensure settings + templates are saved
@@ -89,7 +98,11 @@ describe("users", () => {
       expect(api.storeSettings).toHaveBeenCalledTimes(+isCreate);
       expect(api.storeUserData).toHaveBeenCalledTimes(+isCreate);
       if (isCreate) {
-        expect(api.storeUserData).toHaveBeenCalledWith("comfy.templates.json", null, { stringify: false });
+        expect(api.storeUserData).toHaveBeenCalledWith(
+          "comfy.templates.json",
+          null,
+          { stringify: false }
+        );
         expect(s.app.isNewUserSession).toBeTruthy();
       } else {
         expect(s.app.isNewUserSession).toBeFalsy();
@@ -226,7 +239,11 @@ describe("users", () => {
       const { api } = await import("../../src/scripts/api");
       expect(api.storeSettings).toHaveBeenCalledTimes(1);
       expect(api.storeUserData).toHaveBeenCalledTimes(1);
-      expect(api.storeUserData).toHaveBeenCalledWith("comfy.templates.json", null, { stringify: false });
+      expect(api.storeUserData).toHaveBeenCalledWith(
+        "comfy.templates.json",
+        null,
+        { stringify: false }
+      );
       expect(app.isNewUserSession).toBeTruthy();
     });
     it("doesnt show user creation if default user", async () => {

@@ -20,6 +20,7 @@ import {
   parseComfyWorkflow,
 } from "../types/comfyWorkflow";
 import { ComfyNodeDef } from "@/types/apiTypes";
+import { lightenColor } from "@/utils/colorUtil";
 import { ComfyAppMenu } from "./ui/menu/index";
 import { getStorageValue } from "./utils";
 import { ComfyWorkflowManager, ComfyWorkflow } from "./workflows";
@@ -29,10 +30,12 @@ import {
   LGraphNode,
   LiteGraph,
 } from "@comfyorg/litegraph";
+import { StorageLocation } from "@/types/settingTypes";
 
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
 import "../assets/css/style.css";
+import { ExtensionManager } from "@/types/extensionTypes";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
@@ -84,9 +87,11 @@ export class ComfyApp {
     DraggableList,
   };
 
+  vueAppReady: boolean;
   ui: ComfyUI;
   logging: ComfyLogging;
   extensions: ComfyExtension[];
+  extensionManager: ExtensionManager;
   _nodeOutputs: Record<string, any>;
   nodePreviewImages: Record<string, typeof Image>;
   shiftDown: boolean;
@@ -103,8 +108,7 @@ export class ComfyApp {
   progress: { value: number; max: number } | null;
   configuringGraph: boolean;
   isNewUserSession: boolean;
-  // Are there any other options than "server"?
-  storageLocation: string;
+  storageLocation: StorageLocation;
   multiUserServer: boolean;
   ctx: CanvasRenderingContext2D;
   widgets: Record<string, ComfyWidgetConstructor>;
@@ -114,8 +118,10 @@ export class ComfyApp {
   bodyRight: HTMLElement;
   bodyBottom: HTMLElement;
   menu: ComfyAppMenu;
+  nodeDefs: Record<string, ComfyNodeDef>;
 
   constructor() {
+    this.vueAppReady = false;
     this.ui = new ComfyUI(this);
     this.logging = new ComfyLogging(this);
     this.workflowManager = new ComfyWorkflowManager(this);
@@ -1115,8 +1121,9 @@ export class ComfyApp {
         await this.loadGraphData(workflow);
       } else {
         if (
-          e.target instanceof HTMLInputElement &&
-          (e.target.type === "text" || e.target.type === "textarea")
+          (e.target instanceof HTMLTextAreaElement &&
+            e.target.type === "textarea") ||
+          (e.target instanceof HTMLInputElement && e.target.type === "text")
         ) {
           return;
         }
@@ -1133,8 +1140,9 @@ export class ComfyApp {
   #addCopyHandler() {
     document.addEventListener("copy", (e) => {
       if (
-        e.target instanceof HTMLInputElement &&
-        (e.target.type === "text" || e.target.type === "textarea")
+        (e.target instanceof HTMLTextAreaElement &&
+          e.target.type === "textarea") ||
+        (e.target instanceof HTMLInputElement && e.target.type === "text")
       ) {
         // Default system copy
         return;
@@ -1142,8 +1150,8 @@ export class ComfyApp {
 
       // copy nodes and clear clipboard
       if (
-        e.target instanceof HTMLElement &&
-        e.target.className === "litegraph" &&
+        e.target instanceof Element &&
+        e.target.classList.contains("litegraph") &&
         this.canvas.selected_nodes
       ) {
         this.canvas.copyToClipboard();
@@ -1269,7 +1277,7 @@ export class ComfyApp {
 
       var block_default = false;
 
-      if (e.target instanceof HTMLElement && e.target.localName == "input") {
+      if (e.target instanceof Element && e.target.localName == "input") {
         return;
       }
 
@@ -1536,23 +1544,35 @@ export class ComfyApp {
     // @ts-ignore
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
       var editor_alpha = this.editor_alpha;
-      var old_color = node.bgcolor;
+      var old_color = node.color;
+      var old_bgcolor = node.bgcolor;
 
       if (node.mode === 2) {
         // never
         this.editor_alpha = 0.4;
       }
 
-      // Mode never equals 4 by ts check.
-      // if (node.mode === 4) { // never
-      // 	node.bgcolor = "#FF00FF";
-      // 	this.editor_alpha = 0.2;
-      // }
+      // ComfyUI's custom node mode enum value 4 => bypass/never.
+      // @ts-ignore
+      if (node.mode === 4) {
+        // never
+        node.bgcolor = "#FF00FF";
+        this.editor_alpha = 0.2;
+      }
+
+      const adjustColor = (color?: string) => {
+        return color ? lightenColor(color, 0.5) : color;
+      };
+      if (app.ui.settings.getSettingValue("Comfy.ColorPalette") === "light") {
+        node.bgcolor = adjustColor(node.bgcolor);
+        node.color = adjustColor(node.color);
+      }
 
       const res = origDrawNode.apply(this, arguments);
 
       this.editor_alpha = editor_alpha;
-      node.bgcolor = old_color;
+      node.color = old_color;
+      node.bgcolor = old_bgcolor;
 
       return res;
     };
@@ -1719,7 +1739,7 @@ export class ComfyApp {
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import("../extensions/core/index.js");
+    await import("../extensions/core/index");
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes("extensions/core"))
@@ -1829,13 +1849,18 @@ export class ComfyApp {
     await this.#setUser();
 
     // Create and mount the LiteGraph in the DOM
+    const canvasContainer = document.createElement("div");
+    canvasContainer.id = "graph-canvas-container";
+
     const mainCanvas = document.createElement("canvas");
     mainCanvas.style.touchAction = "none";
     const canvasEl = (this.canvasEl = Object.assign(mainCanvas, {
       id: "graph-canvas",
     }));
     canvasEl.tabIndex = 1;
-    document.body.prepend(canvasEl);
+    canvasContainer.prepend(canvasEl);
+    document.body.prepend(canvasContainer);
+
     this.resizeCanvas();
 
     await Promise.all([
@@ -1856,6 +1881,7 @@ export class ComfyApp {
     this.#addAfterConfigureHandler();
 
     this.canvas = new LGraphCanvas(canvasEl, this.graph);
+    this.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
     this.ctx = canvasEl.getContext("2d");
 
     LiteGraph.release_link_on_empty_shows_menu = true;
@@ -1939,9 +1965,9 @@ export class ComfyApp {
    * Registers nodes with the graph
    */
   async registerNodes() {
-    const app = this;
     // Load node definitions from the backend
     const defs = await api.getNodeDefs();
+    this.nodeDefs = defs;
     await this.registerNodesFromDefs(defs);
     await this.#invokeExtensionsAsync("registerCustomNodes");
   }

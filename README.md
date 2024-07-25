@@ -2,6 +2,18 @@
 
 Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with the existing extension system.
 
+## How To Use
+
+Add command line argument `--front-end-version Comfy-Org/ComfyUI_frontend@latest` to your
+ComfyUI launch script.
+
+For Windows stand-alone build users, please edit the `run_cpu.bat` / `run_nvidia_gpu.bat` file as following
+
+```bat
+.\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --front-end-version Comfy-Org/ComfyUI_frontend@latest
+pause
+```
+
 ## Road Map
 
 ### What has been done
@@ -12,19 +24,22 @@ Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. Th
 - Front-end dev server.
 - Zod schema for input validation on ComfyUI workflow.
 - Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
+- Introduce Vue to start managing part of the UI.
+
+  - Starting with node search box revamp ![image](https://github.com/user-attachments/assets/ef6ce019-5194-4e55-9f1e-91440e473920)
+
+- Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+
 
 ### What to be done
 
-- Replace the existing ComfyUI front-end impl (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+- Replace the existing ComfyUI front-end impl
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
-- Introduce Vue to start managing part of the UI.
-
-  - Starting with node search box revamp
 - Introduce a UI library to add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
-- Better node search. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
+- Better node management. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 - Keybinding settings management. Register keybindings API for custom nodes.
 - New extensions API for adding UI-related features.
 
@@ -46,13 +61,16 @@ core extensions will be loaded.
 
 ### Test
 
+- `git clone https://github.com/comfyanonymous/ComfyUI_examples.git` to `tests-ui/ComfyUI_examples` or the EXAMPLE_REPO_PATH location specified in .env
 - `npm i` to install all dependencies
 - `npm run test:generate` to fetch `tests-ui/data/object_info.json`
+- `npm run test:generate:examples` to extract the example workflows
 - `npm run test` to execute all unit tests.
 
 ## Deploy
 
-Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout.
+- Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
+- Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
 
 ## Breaking changes
 

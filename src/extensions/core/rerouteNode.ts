@@ -1,13 +1,20 @@
 import { app } from "../../scripts/app";
 import { mergeIfValid, getWidgetConfig, setWidgetConfig } from "./widgetInputs";
-import { LiteGraph, LGraphCanvas } from "@comfyorg/litegraph";
+import { LiteGraph, LGraphCanvas, LGraphNode } from "@comfyorg/litegraph";
 
 // Node that allows you to redirect connections for cleaner graphs
 
 app.registerExtension({
   name: "Comfy.RerouteNode",
   registerCustomNodes(app) {
+    interface RerouteNode extends LGraphNode {
+      __outputType?: string;
+    }
+
     class RerouteNode {
+      static category: string | undefined;
+      static defaultVisibility = false;
+
       constructor() {
         if (!this.properties) {
           this.properties = {};
@@ -227,7 +234,7 @@ app.registerExtension({
               this.properties.showOutputText = !this.properties.showOutputText;
               if (this.properties.showOutputText) {
                 this.outputs[0].name =
-                  this.__outputType || this.outputs[0].type;
+                  this.__outputType || (this.outputs[0].type as string);
               } else {
                 this.outputs[0].name = "";
               }
@@ -273,7 +280,7 @@ app.registerExtension({
         app.graph.setDirtyCanvas(true, true);
       }
 
-      computeSize() {
+      computeSize(): [number, number] {
         return [
           this.properties.showOutputText && this.outputs && this.outputs.length
             ? Math.max(

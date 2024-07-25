@@ -18,14 +18,12 @@ function forEachKey(cb) {
 }
 
 export default {
-	setup(ctx) {
+  setup(ctx) {},
 
-	},
-
-	teardown(ctx) {
-		// forEachKey((k) => delete ctx[k]);
+  teardown(ctx) {
+    // forEachKey((k) => delete ctx[k]);
 
     // Clear document after each run
     document.getElementsByTagName("html")[0].innerHTML = "";
-  }
+  },
 };

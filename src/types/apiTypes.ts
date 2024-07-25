@@ -1,17 +1,18 @@
 import { ZodType, z } from "zod";
 import { zComfyWorkflow } from "./comfyWorkflow";
+import { fromZodError } from "zod-validation-error";
 
-const zNodeId = z.number();
+const zNodeId = z.union([z.number(), z.string()]);
 const zNodeType = z.string();
 const zQueueIndex = z.number();
 const zPromptId = z.string();
 
-const zPromptItem = z.object({
+const zPromptInputItem = z.object({
   inputs: z.record(z.string(), z.any()),
   class_type: zNodeType,
 });
 
-const zPrompt = z.array(zPromptItem);
+const zPromptInputs = z.record(zPromptInputItem);
 
 const zExtraPngInfo = z
   .object({
@@ -25,26 +26,32 @@ const zExtraData = z.object({
 });
 const zOutputsToExecute = z.array(zNodeId);
 
+const zMessageDetailBase = z.object({
+  prompt_id: zPromptId,
+  timestamp: z.number(),
+});
+
 const zExecutionStartMessage = z.tuple([
   z.literal("execution_start"),
-  z.object({
-    prompt_id: zPromptId,
-  }),
+  zMessageDetailBase,
+]);
+
+const zExecutionSuccessMessage = z.tuple([
+  z.literal("execution_success"),
+  zMessageDetailBase,
 ]);
 
 const zExecutionCachedMessage = z.tuple([
   z.literal("execution_cached"),
-  z.object({
-    prompt_id: zPromptId,
+  zMessageDetailBase.extend({
     nodes: z.array(zNodeId),
   }),
 ]);
 
 const zExecutionInterruptedMessage = z.tuple([
   z.literal("execution_interrupted"),
-  z.object({
+  zMessageDetailBase.extend({
     // InterruptProcessingException
-    prompt_id: zPromptId,
     node_id: zNodeId,
     node_type: zNodeType,
     executed: z.array(zNodeId),
@@ -53,8 +60,7 @@ const zExecutionInterruptedMessage = z.tuple([
 
 const zExecutionErrorMessage = z.tuple([
   z.literal("execution_error"),
-  z.object({
-    prompt_id: zPromptId,
+  zMessageDetailBase.extend({
     node_id: zNodeId,
     node_type: zNodeType,
     executed: z.array(zNodeId),
@@ -69,6 +75,7 @@ const zExecutionErrorMessage = z.tuple([
 
 const zStatusMessage = z.union([
   zExecutionStartMessage,
+  zExecutionSuccessMessage,
   zExecutionCachedMessage,
   zExecutionInterruptedMessage,
   zExecutionErrorMessage,
@@ -86,13 +93,15 @@ const zOutput = z.any();
 const zTaskPrompt = z.tuple([
   zQueueIndex,
   zPromptId,
-  zPrompt,
+  zPromptInputs,
   zExtraData,
   zOutputsToExecute,
 ]);
 
 const zRunningTaskItem = z.object({
+  taskType: z.literal("Running"),
   prompt: zTaskPrompt,
+  // @Deprecated
   remove: z.object({
     name: z.literal("Cancel"),
     cb: z.function(),
@@ -100,13 +109,17 @@ const zRunningTaskItem = z.object({
 });
 
 const zPendingTaskItem = z.object({
+  taskType: z.literal("Pending"),
   prompt: zTaskPrompt,
 });
 
+const zTaskOutput = z.record(zNodeId, zOutput);
+
 const zHistoryTaskItem = z.object({
+  taskType: z.literal("History"),
   prompt: zTaskPrompt,
   status: zStatus.optional(),
-  outputs: z.record(zNodeId, zOutput),
+  outputs: zTaskOutput,
 });
 
 const zTaskItem = z.union([
@@ -115,6 +128,17 @@ const zTaskItem = z.union([
   zHistoryTaskItem,
 ]);
 
+const zTaskType = z.union([
+  z.literal("Running"),
+  z.literal("Pending"),
+  z.literal("History"),
+]);
+
+export type TaskType = z.infer<typeof zTaskType>;
+export type TaskPrompt = z.infer<typeof zTaskPrompt>;
+export type TaskStatus = z.infer<typeof zStatus>;
+export type TaskOutput = z.infer<typeof zTaskOutput>;
+
 // `/queue`
 export type RunningTaskItem = z.infer<typeof zRunningTaskItem>;
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>;
@@ -122,11 +146,33 @@ export type PendingTaskItem = z.infer<typeof zPendingTaskItem>;
 export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>;
 export type TaskItem = z.infer<typeof zTaskItem>;
 
-// TODO: validate `/history` `/queue` API endpoint responses.
+export function validateTaskItem(taskItem: unknown) {
+  const result = zTaskItem.safeParse(taskItem);
+  if (!result.success) {
+    const zodError = fromZodError(result.error);
+    // TODO accept a callback to report error.
+    console.warn(
+      `Invalid TaskItem: ${JSON.stringify(taskItem)}\n${zodError.message}`
+    );
+  }
+  return result;
+}
 
-function inputSpec(spec: [ZodType, ZodType]): ZodType {
+function inputSpec(
+  spec: [ZodType, ZodType],
+  allowUpcast: boolean = true
+): ZodType {
   const [inputType, inputSpec] = spec;
-  return z.union([z.tuple([inputType, inputSpec]), z.tuple([inputType])]);
+  // e.g. "INT" => ["INT", {}]
+  const upcastTypes: ZodType[] = allowUpcast
+    ? [inputType.transform((type) => [type, {}])]
+    : [];
+
+  return z.union([
+    z.tuple([inputType, inputSpec]),
+    z.tuple([inputType]).transform(([type]) => [type, {}]),
+    ...upcastTypes,
+  ]);
 }
 
 const zIntInputSpec = inputSpec([
@@ -173,15 +219,18 @@ const zStringInputSpec = inputSpec([
 ]);
 
 // Dropdown Selection.
-const zComboInputSpec = inputSpec([
-  z.array(z.any()),
-  z.object({
-    default: z.any().optional(),
-    control_after_generate: z.boolean().optional(),
-    image_upload: z.boolean().optional(),
-    forceInput: z.boolean().optional(),
-  }),
-]);
+const zComboInputSpec = inputSpec(
+  [
+    z.array(z.any()),
+    z.object({
+      default: z.any().optional(),
+      control_after_generate: z.boolean().optional(),
+      image_upload: z.boolean().optional(),
+      forceInput: z.boolean().optional(),
+    }),
+  ],
+  /* allowUpcast=*/ false
+);
 
 const zCustomInputSpec = inputSpec([
   z.string(),
@@ -210,6 +259,9 @@ const zComfyNodeDef = z.object({
   input: z.object({
     required: z.record(zInputSpec).optional(),
     optional: z.record(zInputSpec).optional(),
+    // Frontend repo is not using it, but some custom nodes are using the
+    // hidden field to pass various values.
+    hidden: z.record(z.any()).optional(),
   }),
   output: zComfyOutputSpec,
   output_is_list: z.array(z.boolean()),
@@ -219,9 +271,23 @@ const zComfyNodeDef = z.object({
   description: z.string(),
   category: z.string(),
   output_node: z.boolean(),
+  python_module: z.string(),
 });
 
 // `/object_info`
+export type ComfyInputSpec = z.infer<typeof zInputSpec>;
+export type ComfyOutputSpec = z.infer<typeof zComfyOutputSpec>;
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>;
 
-// TODO: validate `/object_info` API endpoint responses.
+export function validateComfyNodeDef(data: any): ComfyNodeDef {
+  const result = zComfyNodeDef.safeParse(data);
+  if (!result.success) {
+    const zodError = fromZodError(result.error);
+    const error = new Error(
+      `Invalid ComfyNodeDef: ${JSON.stringify(data)}\n${zodError.message}`
+    );
+    error.cause = zodError;
+    throw error;
+  }
+  return result.data;
+}

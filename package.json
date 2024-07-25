@@ -1,15 +1,17 @@
 {
   "name": "comfyui-frontend",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.2.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "npm run typecheck && vite build",
+    "deploy": "npm run build && node scripts/deploy.js",
     "zipdist": "node scripts/zipdist.js",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write 'src/**/*.{js,ts,tsx}'",
+    "format": "prettier --write './**/*.{js,ts,tsx,vue}'",
     "test": "npm run build && jest",
+    "test:generate:examples": "npx tsx tests-ui/extractExamples",
     "test:generate": "npx tsx tests-ui/setup",
     "test:browser": "npx playwright test",
     "prepare": "husky || true",
@@ -20,15 +22,21 @@
     "@babel/preset-env": "^7.22.20",
     "@playwright/test": "^1.44.1",
     "@types/jest": "^29.5.12",
+    "@types/lodash": "^4.17.6",
     "@types/node": "^20.14.8",
+    "autoprefixer": "^10.4.19",
     "babel-plugin-transform-import-meta": "^2.2.1",
     "babel-plugin-transform-rename-import": "^2.3.0",
+    "chalk": "^5.3.0",
+    "fs-extra": "^11.2.0",
     "husky": "^9.0.11",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "lint-staged": "^15.2.7",
+    "postcss": "^8.4.39",
     "prettier": "^3.3.2",
+    "tailwindcss": "^3.4.4",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.15.6",
@@ -38,13 +46,24 @@
     "zip-dir": "^2.0.0"
   },
   "dependencies": {
-    "@comfyorg/litegraph": "^0.7.20",
+    "@comfyorg/litegraph": "^0.7.29",
+    "@primevue/themes": "^4.0.0-rc.2",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "class-transformer": "^0.5.1",
     "dotenv": "^16.4.5",
+    "fuse.js": "^7.0.0",
+    "lodash": "^4.17.21",
+    "pinia": "^2.1.7",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.0.0-rc.2",
+    "reflect-metadata": "^0.2.2",
+    "vue": "^3.4.31",
+    "vue-i18n": "^9.13.1",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
   },
   "lint-staged": {
-    "src/**/*.{js,ts,tsx}": [
+    "./**/*.{js,ts,tsx,vue}": [
       "prettier --write",
       "git add"
     ]

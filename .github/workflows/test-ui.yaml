@@ -2,9 +2,15 @@ name: Tests CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
+      - 'dev*'
   pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
+      - 'dev*'
 
 jobs:
   test:
@@ -25,6 +31,12 @@ jobs:
       id: commit-message
       run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
       working-directory: ComfyUI_frontend
+    - name: Checkout ComfyUI_examples
+      uses: actions/checkout@v4
+      with:
+        repository: "comfyanonymous/ComfyUI_examples"
+        path: "ComfyUI_frontend/tests-ui/ComfyUI_examples"
+        ref: master
     - name: Skip CI
       if: contains(steps.commit-message.outputs.message, '[skip ci]')
       run: echo "Skipping CI as commit contains '[skip ci]'"
@@ -58,10 +70,11 @@ jobs:
     - name: Run UI tests
       run: |
         npm run test:generate
+        npm run test:generate:examples
         npm test -- --verbose
       working-directory: ComfyUI_frontend
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests
       run: npx playwright test

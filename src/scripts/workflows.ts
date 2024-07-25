@@ -24,7 +24,10 @@ export class ComfyWorkflowManager extends EventTarget {
   workflowLookup: Record<string, ComfyWorkflow> = {};
   workflows: Array<ComfyWorkflow> = [];
   openWorkflows: Array<ComfyWorkflow> = [];
-  queuedPrompts: Record<string, { workflow?: ComfyWorkflow; nodes?: Record<string, boolean>; }> = {};
+  queuedPrompts: Record<
+    string,
+    { workflow?: ComfyWorkflow; nodes?: Record<string, boolean> }
+  > = {};
   app: ComfyApp;
 
   get activeWorkflow() {
@@ -254,7 +257,12 @@ export class ComfyWorkflow {
     return !!this.changeTracker;
   }
 
-  constructor(manager: ComfyWorkflowManager, path: string, pathParts?: string[], isFavorite?: boolean) {
+  constructor(
+    manager: ComfyWorkflowManager,
+    path: string,
+    pathParts?: string[],
+    isFavorite?: boolean
+  ) {
     this.manager = manager;
     if (pathParts) {
       this.#updatePath(path, pathParts);

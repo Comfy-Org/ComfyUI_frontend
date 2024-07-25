@@ -26,6 +26,8 @@ dist-ssr
 
 # Ignore test data.
 tests-ui/data/*
+tests-ui/ComfyUI_examples
+tests-ui/workflows/examples
 
 # Browser tests
 /test-results/

@@ -45,15 +45,17 @@ const zProperties = z
   .passthrough();
 
 const zVector2 = z.union([
-  z.object({ 0: z.number(), 1: z.number() }),
+  z.object({ 0: z.number(), 1: z.number() }).transform((v) => [v[0], v[1]]),
   z.tuple([z.number(), z.number()]),
 ]);
+
+const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())]);
 
 const zComfyNode = z
   .object({
     id: z.number(),
     type: z.string(),
-    pos: z.tuple([z.number(), z.number()]),
+    pos: zVector2,
     size: zVector2,
     flags: zFlags,
     order: z.number(),
@@ -61,7 +63,7 @@ const zComfyNode = z
     inputs: z.array(zNodeInput).optional(),
     outputs: z.array(zNodeOutput).optional(),
     properties: zProperties,
-    widgets_values: z.array(z.any()).optional(), // This could contain mixed types
+    widgets_values: zWidgetValues.optional(),
     color: z.string().optional(),
     bgcolor: z.string().optional(),
   })

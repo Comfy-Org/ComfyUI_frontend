@@ -420,6 +420,21 @@ export class ComfyUI {
       defaultValue: 0,
     });
 
+    this.settings.addSetting({
+      id: "Comfy.NodeSearchBoxImpl",
+      name: "Node Search box implementation",
+      type: "combo",
+      options: ["default", "litegraph (legacy)"],
+      defaultValue: "default",
+      onChange: (value?: string) => {
+        if (!app.canvas) return;
+
+        value = value || "default";
+        const useLitegraphSearch = value === "litegraph (legacy)";
+        app.canvas.allow_searchbox = useLitegraphSearch;
+      },
+    });
+
     const fileInput = $el("input", {
       id: "comfy-file-input",
       type: "file",

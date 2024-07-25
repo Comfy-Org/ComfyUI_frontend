@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import dotenv from "dotenv";
 dotenv.config();
@@ -77,11 +78,13 @@ function getModuleName(id: string): string {
   return fileName.replace(/\.\w+$/, '');  // Remove file extension
 }
 
+const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188';
+
 export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188',
+        target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
         bypass: (req, res, options) => {
@@ -92,12 +95,13 @@ export default defineConfig({
         },
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8188',
+        target: DEV_SERVER_COMFYUI_URL,
         ws: true,
       },
     }
   },
   plugins: [
+    vue(),
     comfyAPIPlugin(),
   ],
   build: {
@@ -112,4 +116,9 @@ export default defineConfig({
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
   },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
+  }
 });

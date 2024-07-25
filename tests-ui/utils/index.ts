@@ -4,7 +4,7 @@ import lg from "./litegraph";
 import fs from "fs";
 import path from "path";
 
-const html = fs.readFileSync(path.resolve(__dirname, "../../index.html"))
+const html = fs.readFileSync(path.resolve(__dirname, "../../index.html"));
 
 interface StartConfig extends APIConfig {
   resetEnv?: boolean;
@@ -20,18 +20,18 @@ interface StartResult {
 
 /**
  *
- * @param { Parameters<typeof mockApi>[0] & { 
- *   resetEnv?: boolean, 
+ * @param { Parameters<typeof mockApi>[0] & {
+ *   resetEnv?: boolean,
  *   preSetup?(app): Promise<void>,
- *  localStorage?: Record<string, string> 
+ *  localStorage?: Record<string, string>
  * } } config
  * @returns
  */
 export async function start(config: StartConfig = {}): Promise<StartResult> {
-  if(config.resetEnv) {
+  if (config.resetEnv) {
     jest.resetModules();
     jest.resetAllMocks();
-        lg.setup(global);
+    lg.setup(global);
     localStorage.clear();
     sessionStorage.clear();
   }
@@ -39,14 +39,14 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
   Object.assign(localStorage, config.localStorage ?? {});
   document.body.innerHTML = html.toString();
 
-	mockApi(config);
-	const { app } = await import("../../src/scripts/app");
-	const { LiteGraph, LGraphCanvas } = await import("@comfyorg/litegraph");
-	config.preSetup?.(app);
-	await app.setup();
+  mockApi(config);
+  const { app } = await import("../../src/scripts/app");
+  const { LiteGraph, LGraphCanvas } = await import("@comfyorg/litegraph");
+  config.preSetup?.(app);
+  await app.setup();
 
-	// @ts-ignore
-	return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app };
+  // @ts-ignore
+  return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app };
 }
 
 /**
@@ -77,7 +77,8 @@ export function makeNodeDef(name, input, output = {}) {
     },
   };
   for (const k in input) {
-    nodeDef.input.required[k] = typeof input[k] === "string" ? [input[k], {}] : [...input[k]];
+    nodeDef.input.required[k] =
+      typeof input[k] === "string" ? [input[k], {}] : [...input[k]];
   }
   if (output instanceof Array) {
     output = output.reduce((p, c) => {

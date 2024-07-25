@@ -13,7 +13,7 @@ export class ChangeTracker {
   isOurLoad = false;
   workflow: ComfyWorkflow | null;
 
-  ds: { scale: number; offset: [number, number]; };
+  ds: { scale: number; offset: [number, number] };
   nodeOutputs: any;
 
   get app() {

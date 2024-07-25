@@ -4,6 +4,7 @@ import {
   PendingTaskItem,
   RunningTaskItem,
   ComfyNodeDef,
+  validateComfyNodeDef,
 } from "@/types/apiTypes";
 
 interface QueuePromptRequestBody {
@@ -183,6 +184,11 @@ class ComfyApi extends EventTarget {
                 new CustomEvent("execution_start", { detail: msg.data })
               );
               break;
+            case "execution_success":
+              this.dispatchEvent(
+                new CustomEvent("execution_success", { detail: msg.data })
+              );
+              break;
             case "execution_error":
               this.dispatchEvent(
                 new CustomEvent("execution_error", { detail: msg.data })
@@ -240,7 +246,17 @@ class ComfyApi extends EventTarget {
    */
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
     const resp = await this.fetchApi("/object_info", { cache: "no-store" });
-    return await resp.json();
+    const objectInfoUnsafe = await resp.json();
+    const objectInfo: Record<string, ComfyNodeDef> = {};
+    for (const key in objectInfoUnsafe) {
+      try {
+        objectInfo[key] = validateComfyNodeDef(objectInfoUnsafe[key]);
+      } catch (e) {
+        console.warn("Ignore node definition: ", key);
+        console.error(e);
+      }
+    }
+    return objectInfo;
   }
 
   /**
@@ -304,10 +320,14 @@ class ComfyApi extends EventTarget {
       return {
         // Running action uses a different endpoint for cancelling
         Running: data.queue_running.map((prompt) => ({
+          taskType: "Running",
           prompt,
           remove: { name: "Cancel", cb: () => api.interrupt() },
         })),
-        Pending: data.queue_pending.map((prompt) => ({ prompt })),
+        Pending: data.queue_pending.map((prompt) => ({
+          taskType: "Pending",
+          prompt,
+        })),
       };
     } catch (error) {
       console.error(error);
@@ -324,7 +344,11 @@ class ComfyApi extends EventTarget {
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
       const res = await this.fetchApi(`/history?max_items=${max_items}`);
-      return { History: Object.values(await res.json()) };
+      return {
+        History: Object.values(await res.json()).map(
+          (item: HistoryTaskItem) => ({ ...item, taskType: "History" })
+        ),
+      };
     } catch (error) {
       console.error(error);
       return { History: [] };

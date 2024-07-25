@@ -20,7 +20,10 @@ export class EzConnection {
   link;
 
   get originNode() {
-    return new EzNode(this.app, this.app.graph.getNodeById(this.link.origin_id));
+    return new EzNode(
+      this.app,
+      this.app.graph.getNodeById(this.link.origin_id)
+    );
   }
 
   get originOutput() {
@@ -28,7 +31,10 @@ export class EzConnection {
   }
 
   get targetNode() {
-    return new EzNode(this.app, this.app.graph.getNodeById(this.link.target_id));
+    return new EzNode(
+      this.app,
+      this.app.graph.getNodeById(this.link.target_id)
+    );
   }
 
   get targetInput() {
@@ -121,7 +127,11 @@ export class EzOutput extends EzSlot {
     /**
      * @type { LG["LLink"] | null }
      */
-    const link = this.node.node.connect(this.index, input.node.node, input.index);
+    const link = this.node.node.connect(
+      this.index,
+      input.node.node,
+      input.index
+    );
     if (!link) {
       const inp = input.input;
       const inName = inp.name || inp.label || inp.type;
@@ -155,11 +165,21 @@ export class EzNodeMenuItem {
   }
 
   call(selectNode = true) {
-    if (!this.item?.callback) throw new Error(`Menu Item ${this.item?.content ?? "[null]"} has no callback.`);
+    if (!this.item?.callback)
+      throw new Error(
+        `Menu Item ${this.item?.content ?? "[null]"} has no callback.`
+      );
     if (selectNode) {
       this.node.select();
     }
-    return this.item.callback.call(this.node.node, undefined, undefined, undefined, undefined, this.node.node);
+    return this.item.callback.call(
+      this.node.node,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      this.node.node
+    );
   }
 }
 
@@ -188,7 +208,7 @@ export class EzWidget {
 
   set value(v) {
     this.widget.value = v;
-    this.widget.callback?.call?.(this.widget, v)
+    this.widget.callback?.call?.(this.widget, v);
   }
 
   get isConvertedToInput() {
@@ -197,24 +217,35 @@ export class EzWidget {
   }
 
   getConvertedInput() {
-    if (!this.isConvertedToInput) throw new Error(`Widget ${this.widget.name} is not converted to input.`);
+    if (!this.isConvertedToInput)
+      throw new Error(`Widget ${this.widget.name} is not converted to input.`);
 
-    return this.node.inputs.find((inp) => inp.input["widget"]?.name === this.widget.name);
+    return this.node.inputs.find(
+      (inp) => inp.input["widget"]?.name === this.widget.name
+    );
   }
 
   convertToWidget() {
     if (!this.isConvertedToInput)
-      throw new Error(`Widget ${this.widget.name} cannot be converted as it is already a widget.`);
+      throw new Error(
+        `Widget ${this.widget.name} cannot be converted as it is already a widget.`
+      );
     var menu = this.node.menu["Convert Input to Widget"].item.submenu.options;
-    var index = menu.findIndex(a => a.content == `Convert ${this.widget.name} to widget`);
+    var index = menu.findIndex(
+      (a) => a.content == `Convert ${this.widget.name} to widget`
+    );
     menu[index].callback.call();
   }
 
   convertToInput() {
     if (this.isConvertedToInput)
-      throw new Error(`Widget ${this.widget.name} cannot be converted as it is already an input.`);
+      throw new Error(
+        `Widget ${this.widget.name} cannot be converted as it is already an input.`
+      );
     var menu = this.node.menu["Convert Widget to Input"].item.submenu.options;
-    var index = menu.findIndex(a => a.content == `Convert ${this.widget.name} to input`);
+    var index = menu.findIndex(
+      (a) => a.content == `Convert ${this.widget.name} to input`
+    );
     menu[index].callback.call();
   }
 }
@@ -251,7 +282,11 @@ export class EzNode {
   }
 
   get menu() {
-    return this.#makeLookupArray(() => this.app.canvas.getNodeMenuOptions(this.node), "content", EzNodeMenuItem);
+    return this.#makeLookupArray(
+      () => this.app.canvas.getNodeMenuOptions(this.node),
+      "content",
+      EzNodeMenuItem
+    );
   }
 
   get isRemoved() {
@@ -287,25 +322,33 @@ export class EzNode {
    * @returns { Record<string, InstanceType<T>> & Array<InstanceType<T>> }
    */
   #makeLookupArray(nodeProperty, nameProperty, ctor) {
-    const items = typeof nodeProperty === "function" ? nodeProperty() : this.node[nodeProperty];
+    const items =
+      typeof nodeProperty === "function"
+        ? nodeProperty()
+        : this.node[nodeProperty];
     // @ts-ignore
-    return (items ?? []).reduce((p, s, i) => {
-      if (!s) return p;
+    return (items ?? []).reduce(
+      (p, s, i) => {
+        if (!s) return p;
 
-      const name = s[nameProperty];
-      const item = new ctor(this, i, s);
-      // @ts-ignore
-      p.push(item);
-      if (name) {
+        const name = s[nameProperty];
+        const item = new ctor(this, i, s);
         // @ts-ignore
-        if (name in p) {
-          throw new Error(`Unable to store ${nodeProperty} ${name} on array as name conflicts.`);
+        p.push(item);
+        if (name) {
+          // @ts-ignore
+          if (name in p) {
+            throw new Error(
+              `Unable to store ${nodeProperty} ${name} on array as name conflicts.`
+            );
+          }
         }
-      }
-      // @ts-ignore
-      p[name] = item;
-      return p;
-    }, Object.assign([], { $: this }));
+        // @ts-ignore
+        p[name] = item;
+        return p;
+      },
+      Object.assign([], { $: this })
+    );
   }
 }
 
@@ -388,28 +431,28 @@ export class EzGraph {
 }
 
 export const Ez = {
-	/**
-	 * Quickly build and interact with a ComfyUI graph
-	 * @example
-	 * const { ez, graph } = Ez.graph(app);
-	 * graph.clear();
-	 * const [model, clip, vae] = ez.CheckpointLoaderSimple().outputs;
-	 * const [pos] = ez.CLIPTextEncode(clip, { text: "positive" }).outputs;
-	 * const [neg] = ez.CLIPTextEncode(clip, { text: "negative" }).outputs;
-	 * const [latent] = ez.KSampler(model, pos, neg, ...ez.EmptyLatentImage().outputs).outputs;
-	 * const [image] = ez.VAEDecode(latent, vae).outputs;
-	 * const saveNode = ez.SaveImage(image);
-	 * console.log(saveNode);
-	 * graph.arrange();
-	 * @param { app } app
-	 * @param { boolean } clearGraph
-	 * @param { LG["LiteGraph"] } LiteGraph
-	 * @param { LG["LGraphCanvas"] } LGraphCanvas
-	 * @returns { { graph: EzGraph, ez: Record<string, EzNodeFactory> } }
-	 */
-	graph(app, LiteGraph, LGraphCanvas, clearGraph = true) {
-		// Always set the active canvas so things work
-		LGraphCanvas.active_canvas = app.canvas;
+  /**
+   * Quickly build and interact with a ComfyUI graph
+   * @example
+   * const { ez, graph } = Ez.graph(app);
+   * graph.clear();
+   * const [model, clip, vae] = ez.CheckpointLoaderSimple().outputs;
+   * const [pos] = ez.CLIPTextEncode(clip, { text: "positive" }).outputs;
+   * const [neg] = ez.CLIPTextEncode(clip, { text: "negative" }).outputs;
+   * const [latent] = ez.KSampler(model, pos, neg, ...ez.EmptyLatentImage().outputs).outputs;
+   * const [image] = ez.VAEDecode(latent, vae).outputs;
+   * const saveNode = ez.SaveImage(image);
+   * console.log(saveNode);
+   * graph.arrange();
+   * @param { app } app
+   * @param { boolean } clearGraph
+   * @param { LG["LiteGraph"] } LiteGraph
+   * @param { LG["LGraphCanvas"] } LGraphCanvas
+   * @returns { { graph: EzGraph, ez: Record<string, EzNodeFactory> } }
+   */
+  graph(app, LiteGraph, LGraphCanvas, clearGraph = true) {
+    // Always set the active canvas so things work
+    LGraphCanvas.active_canvas = app.canvas;
 
     if (clearGraph) {
       app.graph.clear();

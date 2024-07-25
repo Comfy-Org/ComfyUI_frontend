@@ -2,48 +2,22 @@ import { $el } from "../ui";
 import { api } from "../api";
 import { ComfyDialog } from "./dialog";
 import type { ComfyApp } from "../app";
-
-/* The Setting entry stored in `ComfySettingsDialog` */
-interface Setting {
-  id: string;
-  onChange?: (value: any, oldValue?: any) => void;
-  name: string;
-  render: () => HTMLElement;
-}
-
-interface SettingOption {
-  text: string;
-  value?: string;
-}
-
-interface SettingParams {
-  id: string;
-  name: string;
-  type:
-    | string
-    | ((
-        name: string,
-        setter: (v: any) => void,
-        value: any,
-        attrs: any
-      ) => HTMLElement);
-  defaultValue: any;
-  onChange?: (newValue: any, oldValue?: any) => void;
-  attrs?: any;
-  tooltip?: string;
-  options?: Array<string | SettingOption> | ((value: any) => SettingOption[]);
-}
+import type { Setting, SettingParams } from "@/types/settingTypes";
+import { useSettingStore } from "@/stores/settingStore";
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp;
   settingsValues: any;
   settingsLookup: Record<string, Setting>;
+  settingsParamLookup: Record<string, SettingParams>;
 
-  constructor(app) {
+  constructor(app: ComfyApp) {
     super();
+    const frontendVersion = window["__COMFYUI_FRONTEND_VERSION__"];
     this.app = app;
     this.settingsValues = {};
     this.settingsLookup = {};
+    this.settingsParamLookup = {};
     this.element = $el(
       "dialog",
       {
@@ -54,7 +28,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         $el("table.comfy-modal-content.comfy-table", [
           $el(
             "caption",
-            { textContent: "Settings" },
+            { textContent: `Settings (v${frontendVersion})` },
             $el("button.comfy-btn", {
               type: "button",
               textContent: "\u00d7",
@@ -83,7 +57,15 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return Object.values(this.settingsLookup);
   }
 
-  #dispatchChange(id, value, oldValue?) {
+  #dispatchChange<T>(id: string, value: T, oldValue?: T) {
+    // Keep the settingStore updated. Not using `store.set` as it would trigger
+    // setSettingValue again.
+    // `load` re-dispatch the change for any settings added before load so
+    // settingStore is always up to date.
+    if (this.app.vueAppReady) {
+      useSettingStore().settingValues[id] = value;
+    }
+
     this.dispatchEvent(
       new CustomEvent(id + ".change", {
         detail: {
@@ -109,26 +91,31 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     }
   }
 
-  getId(id) {
+  getId(id: string) {
     if (this.app.storageLocation === "browser") {
       id = "Comfy.Settings." + id;
     }
     return id;
   }
 
-  getSettingValue(id, defaultValue?) {
+  getSettingValue<T>(id: string, defaultValue?: T): T {
     let value = this.settingsValues[this.getId(id)];
     if (value != null) {
       if (this.app.storageLocation === "browser") {
         try {
-          value = JSON.parse(value);
+          value = JSON.parse(value) as T;
         } catch (error) {}
       }
     }
     return value ?? defaultValue;
   }
 
-  async setSettingValueAsync(id, value) {
+  getSettingDefaultValue(id: string) {
+    const param = this.settingsParamLookup[id];
+    return param?.defaultValue;
+  }
+
+  async setSettingValueAsync(id: string, value: any) {
     const json = JSON.stringify(value);
     localStorage["Comfy.Settings." + id] = json; // backwards compatibility for extensions keep setting in storage
 
@@ -143,11 +130,17 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     await api.storeSetting(id, value);
   }
 
-  setSettingValue(id, value) {
+  setSettingValue(id: string, value: any) {
     this.setSettingValueAsync(id, value).catch((err) => {
       alert(`Error saving setting '${id}'`);
       console.error(err);
     });
+  }
+
+  refreshSetting(id: string) {
+    const value = this.getSettingValue(id);
+    this.settingsLookup[id].onChange?.(value);
+    this.#dispatchChange(id, value);
   }
 
   addSetting(params: SettingParams) {
@@ -188,8 +181,10 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     // Trigger initial setting of value
     if (!skipOnChange) {
       onChange?.(value, undefined);
+      this.#dispatchChange(id, value);
     }
 
+    this.settingsParamLookup[id] = params;
     this.settingsLookup[id] = {
       id,
       onChange,

@@ -5,10 +5,8 @@ import { downloadBlob } from "../../utils";
 import { ComfyButton } from "../components/button";
 import { ComfyButtonGroup } from "../components/buttonGroup";
 import { ComfySplitButton } from "../components/splitButton";
-import { ComfyViewHistoryButton } from "./viewHistory";
 import { ComfyQueueButton } from "./queueButton";
 import { ComfyWorkflowsMenu } from "./workflows";
-import { ComfyViewQueueButton } from "./viewQueue";
 import { getInteruptButton } from "./interruptButton";
 import "./menu.css";
 import type { ComfySettingsDialog } from "../settings";
@@ -128,19 +126,10 @@ export class ComfyAppMenu {
         },
       })
     );
-    this.settingsGroup = new ComfyButtonGroup(
-      new ComfyButton({
-        icon: "cog",
-        content: "Settings",
-        tooltip: "Open settings",
-        action: () => {
-          app.ui.settings.show();
-        },
-      })
-    );
+    // Keep the settings group as there are custom scripts attaching extra
+    // elements to it.
+    this.settingsGroup = new ComfyButtonGroup();
     this.viewGroup = new ComfyButtonGroup(
-      new ComfyViewHistoryButton(app).element,
-      new ComfyViewQueueButton(app).element,
       getInteruptButton("nlg-hide").element
     );
     this.mobileMenuButton = new ComfyButton({
