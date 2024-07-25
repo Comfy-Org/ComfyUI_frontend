@@ -5,7 +5,8 @@ import {
   StringInputSpec,
   BooleanInputSpec,
   FloatInputSpec,
-  CustomInputSpec
+  CustomInputSpec,
+  ComboInputSpec
 } from '@/stores/nodeDefStore' // Adjust the import path as needed
 
 describe('ComfyInputsSpec', () => {
@@ -83,6 +84,20 @@ describe('ComfyInputsSpec', () => {
     expect(floatInput.min).toBe(0)
     expect(floatInput.max).toBe(1)
     expect(floatInput.step).toBe(0.1)
+  })
+
+  it('should handle custom input specs', () => {
+    const plainObject = {
+      optional: {
+        comboInput: [[1, 2, 3], { default: 2 }]
+      }
+    }
+
+    const result = plainToClass(ComfyInputsSpec, plainObject)
+
+    expect(result.optional?.comboInput).toBeInstanceOf(ComboInputSpec)
+    expect(result.optional?.comboInput.type).toBe('COMBO')
+    expect(result.optional?.comboInput.default).toBe(2)
   })
 
   it('should handle custom input specs', () => {
