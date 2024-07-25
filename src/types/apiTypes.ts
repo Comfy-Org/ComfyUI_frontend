@@ -249,21 +249,23 @@ const zInputSpec = z.union([
   zCustomInputSpec
 ])
 
+const zComfyInputsSpec = z.object({
+  required: z.record(zInputSpec).optional(),
+  optional: z.record(zInputSpec).optional(),
+  // Frontend repo is not using it, but some custom nodes are using the
+  // hidden field to pass various values.
+  hidden: z.record(z.any()).optional()
+})
+
 const zComfyNodeDataType = z.string()
 const zComfyComboOutput = z.array(z.any())
-const zComfyOutputSpec = z.array(
+const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
 
 const zComfyNodeDef = z.object({
-  input: z.object({
-    required: z.record(zInputSpec).optional(),
-    optional: z.record(zInputSpec).optional(),
-    // Frontend repo is not using it, but some custom nodes are using the
-    // hidden field to pass various values.
-    hidden: z.record(z.any()).optional()
-  }),
-  output: zComfyOutputSpec,
+  input: zComfyInputsSpec,
+  output: zComfyOutputTypesSpec,
   output_is_list: z.array(z.boolean()),
   output_name: z.array(z.string()),
   name: z.string(),
@@ -275,8 +277,8 @@ const zComfyNodeDef = z.object({
 })
 
 // `/object_info`
-export type ComfyInputSpec = z.infer<typeof zInputSpec>
-export type ComfyOutputSpec = z.infer<typeof zComfyOutputSpec>
+export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
+export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 
 export function validateComfyNodeDef(data: any): ComfyNodeDef {
