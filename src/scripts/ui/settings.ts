@@ -4,6 +4,7 @@ import { ComfyDialog } from './dialog'
 import type { ComfyApp } from '../app'
 import type { Setting, SettingParams } from '@/types/settingTypes'
 import { useSettingStore } from '@/stores/settingStore'
+import config from '@/config'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
@@ -13,7 +14,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
   constructor(app: ComfyApp) {
     super()
-    const frontendVersion = window['__COMFYUI_FRONTEND_VERSION__']
+    const frontendVersion = config.app_version
     this.app = app
     this.settingsValues = {}
     this.settingsLookup = {}
