@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --fg-color: #000;
   --bg-color: #fff;
@@ -32,18 +36,7 @@
 }
 
 body {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  overflow: hidden;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto 1fr auto;
-  background-color: var(--bg-color);
-  color: var(--fg-color);
-  min-height: -webkit-fill-available;
-  max-height: -webkit-fill-available;
-  min-width: -webkit-fill-available;
-  max-width: -webkit-fill-available;
+  @apply w-[100vw] h-[100vh] m-0 overflow-hidden bg-zinc-950 text-zinc-200;
   font-family: Arial, sans-serif;
 }
 
@@ -90,19 +83,8 @@ body {
   display: flex;
 }
 
-#graph-canvas-container {
-  width: 100%;
-  height: 100%;
-  order: -3;
-  grid-column: 2;
-  grid-row: 2;
-  position: relative;
-  overflow: hidden;
-}
-
-#graph-canvas {
-  width: 100%;
-  height: 100%;
+.graph-canvas-container {
+  touch-action: none;
 }
 
 .comfyui-body-right {
@@ -685,15 +667,6 @@ dialog::backdrop {
 
 audio.comfy-audio.empty-audio-widget {
   display: none;
-}
-
-#vue-app {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
 }
 
 /* Set auto complete panel's width as it is not accessible within vue-root */
