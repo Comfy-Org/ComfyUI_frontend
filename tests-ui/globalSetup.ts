@@ -5,6 +5,7 @@ module.exports = async function () {
     disconnect() {}
   }
 
+  require('reflect-metadata')
   const { nop } = require('./utils/nopProxy')
   global.enableWebGLCanvas = nop
 

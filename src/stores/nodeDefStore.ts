@@ -1,6 +1,125 @@
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
+import { Type, Transform, plainToClass } from 'class-transformer'
+
+export class BaseInputSpec<T = any> {
+  type: string
+
+  default?: T
+
+  @Type(() => Boolean)
+  forceInput?: boolean
+
+  static isInputSpec(obj: any): boolean {
+    return (
+      Array.isArray(obj) &&
+      obj.length >= 1 &&
+      (typeof obj[0] === 'string' || Array.isArray(obj[0]))
+    )
+  }
+}
+
+export class NumericInputSpec extends BaseInputSpec<number> {
+  @Type(() => Number)
+  min?: number
+
+  @Type(() => Number)
+  max?: number
+
+  @Type(() => Number)
+  step?: number
+}
+
+export class IntInputSpec extends NumericInputSpec {
+  type: 'INT' = 'INT'
+}
+
+export class FloatInputSpec extends NumericInputSpec {
+  type: 'FLOAT' = 'FLOAT'
+
+  @Type(() => Number)
+  round?: number
+}
+
+export class BooleanInputSpec extends BaseInputSpec<boolean> {
+  type: 'BOOLEAN' = 'BOOLEAN'
+
+  labelOn?: string
+  labelOff?: string
+}
+
+export class StringInputSpec extends BaseInputSpec<string> {
+  type: 'STRING' = 'STRING'
+
+  @Type(() => Boolean)
+  multiline?: boolean
+
+  @Type(() => Boolean)
+  dynamicPrompts?: boolean
+}
+
+export class ComboInputSpec extends BaseInputSpec<any> {
+  type: string = 'COMBO'
+
+  @Transform(({ value }) => value[0])
+  comboOptions: any[]
+
+  @Type(() => Boolean)
+  controlAfterGenerate?: boolean
+
+  @Type(() => Boolean)
+  imageUpload?: boolean
+}
+
+export class CustomInputSpec extends BaseInputSpec {}
+
+export class ComfyInputsSpec {
+  @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
+  required?: Record<string, BaseInputSpec>
+
+  @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
+  optional?: Record<string, BaseInputSpec>
+
+  hidden?: Record<string, any>
+
+  private static transformInputSpecRecord(
+    record: Record<string, any>
+  ): Record<string, BaseInputSpec> {
+    if (!record) return record
+    const result: Record<string, BaseInputSpec> = {}
+    for (const [key, value] of Object.entries(record)) {
+      result[key] = ComfyInputsSpec.transformSingleInputSpec(value)
+    }
+    return result
+  }
+
+  private static transformSingleInputSpec(value: any): BaseInputSpec {
+    if (!BaseInputSpec.isInputSpec(value)) return value
+
+    const [typeRaw, spec] = value
+    const type = Array.isArray(typeRaw) ? 'COMBO' : value[0]
+
+    switch (type) {
+      case 'INT':
+        return plainToClass(IntInputSpec, { type, ...spec })
+      case 'FLOAT':
+        return plainToClass(FloatInputSpec, { type, ...spec })
+      case 'BOOLEAN':
+        return plainToClass(BooleanInputSpec, { type, ...spec })
+      case 'STRING':
+        return plainToClass(StringInputSpec, { type, ...spec })
+      case 'COMBO':
+        return plainToClass(ComboInputSpec, {
+          type,
+          ...spec,
+          comboOptions: typeRaw
+        })
+      default:
+        return plainToClass(CustomInputSpec, { type, ...spec })
+    }
+  }
+}
 
 export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
   {
