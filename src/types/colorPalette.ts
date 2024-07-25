@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 const nodeSlotSchema = z
   .object({
@@ -26,9 +26,9 @@ const nodeSlotSchema = z
     TAESD: z.string(),
     TIMESTEP_KEYFRAME: z.string().optional(),
     UPSCALE_MODEL: z.string().optional(),
-    VAE: z.string(),
+    VAE: z.string()
   })
-  .passthrough();
+  .passthrough()
 
 const litegraphBaseSchema = z
   .object({
@@ -52,44 +52,44 @@ const litegraphBaseSchema = z
     WIDGET_SECONDARY_TEXT_COLOR: z.string(),
     LINK_COLOR: z.string(),
     EVENT_LINK_COLOR: z.string(),
-    CONNECTING_LINK_COLOR: z.string(),
+    CONNECTING_LINK_COLOR: z.string()
   })
-  .passthrough();
+  .passthrough()
 
 const comfyBaseSchema = z.object({
-  ["fg-color"]: z.string(),
-  ["bg-color"]: z.string(),
-  ["comfy-menu-bg"]: z.string(),
-  ["comfy-input-bg"]: z.string(),
-  ["input-text"]: z.string(),
-  ["descrip-text"]: z.string(),
-  ["drag-text"]: z.string(),
-  ["error-text"]: z.string(),
-  ["border-color"]: z.string(),
-  ["tr-even-bg-color"]: z.string(),
-  ["tr-odd-bg-color"]: z.string(),
-  ["content-bg"]: z.string(),
-  ["content-fg"]: z.string(),
-  ["content-hover-bg"]: z.string(),
-  ["content-hover-fg"]: z.string(),
-});
+  ['fg-color']: z.string(),
+  ['bg-color']: z.string(),
+  ['comfy-menu-bg']: z.string(),
+  ['comfy-input-bg']: z.string(),
+  ['input-text']: z.string(),
+  ['descrip-text']: z.string(),
+  ['drag-text']: z.string(),
+  ['error-text']: z.string(),
+  ['border-color']: z.string(),
+  ['tr-even-bg-color']: z.string(),
+  ['tr-odd-bg-color']: z.string(),
+  ['content-bg']: z.string(),
+  ['content-fg']: z.string(),
+  ['content-hover-bg']: z.string(),
+  ['content-hover-fg']: z.string()
+})
 
 const colorsSchema = z
   .object({
     node_slot: nodeSlotSchema,
     litegraph_base: litegraphBaseSchema,
-    comfy_base: comfyBaseSchema,
+    comfy_base: comfyBaseSchema
   })
-  .passthrough();
+  .passthrough()
 
 const paletteSchema = z.object({
   id: z.string(),
   name: z.string(),
-  colors: colorsSchema,
-});
+  colors: colorsSchema
+})
 
-const colorPalettesSchema = z.record(paletteSchema);
+const colorPalettesSchema = z.record(paletteSchema)
 
-export type Colors = z.infer<typeof colorsSchema>;
-export type Palette = z.infer<typeof paletteSchema>;
-export type ColorPalettes = z.infer<typeof colorPalettesSchema>;
+export type Colors = z.infer<typeof colorsSchema>
+export type Palette = z.infer<typeof paletteSchema>
+export type ColorPalettes = z.infer<typeof colorPalettesSchema>

@@ -1,19 +1,19 @@
-import fs from "fs";
-import path from "path";
-import { nop } from "../utils/nopProxy";
+import fs from 'fs'
+import path from 'path'
+import { nop } from '../utils/nopProxy'
 
 function forEachKey(cb) {
   for (const k of [
-    "LiteGraph",
-    "LGraph",
-    "LLink",
-    "LGraphNode",
-    "LGraphGroup",
-    "DragAndScale",
-    "LGraphCanvas",
-    "ContextMenu",
+    'LiteGraph',
+    'LGraph',
+    'LLink',
+    'LGraphNode',
+    'LGraphGroup',
+    'DragAndScale',
+    'LGraphCanvas',
+    'ContextMenu'
   ]) {
-    cb(k);
+    cb(k)
   }
 }
 
@@ -24,6 +24,6 @@ export default {
     // forEachKey((k) => delete ctx[k]);
 
     // Clear document after each run
-    document.getElementsByTagName("html")[0].innerHTML = "";
-  },
-};
+    document.getElementsByTagName('html')[0].innerHTML = ''
+  }
+}

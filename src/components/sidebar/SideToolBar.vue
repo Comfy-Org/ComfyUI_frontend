@@ -28,55 +28,55 @@
           mountCustomTab(
             selectedTab as CustomSidebarTabExtension,
             el as HTMLElement
-          );
+          )
       }
     "
   ></div>
 </template>
 
 <script setup lang="ts">
-import SideBarIcon from "./SideBarIcon.vue";
-import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
-import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
-import { computed, onBeforeUnmount, watch } from "vue";
-import { useSettingStore } from "@/stores/settingStore";
-import { app } from "@/scripts/app";
-import { useWorkspaceStore } from "@/stores/workspaceStateStore";
+import SideBarIcon from './SideBarIcon.vue'
+import SideBarThemeToggleIcon from './SideBarThemeToggleIcon.vue'
+import SideBarSettingsToggleIcon from './SideBarSettingsToggleIcon.vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
+import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
   CustomSidebarTabExtension,
-  SidebarTabExtension,
-} from "@/types/extensionTypes";
+  SidebarTabExtension
+} from '@/types/extensionTypes'
 
-const workspaceStateStore = useWorkspaceStore();
-const tabs = computed(() => app.extensionManager.getSidebarTabs());
+const workspaceStateStore = useWorkspaceStore()
+const tabs = computed(() => app.extensionManager.getSidebarTabs())
 const selectedTab = computed<SidebarTabExtension | null>(() => {
-  const tabId = workspaceStateStore.activeSidebarTab;
-  return tabs.value.find((tab) => tab.id === tabId) || null;
-});
+  const tabId = workspaceStateStore.activeSidebarTab
+  return tabs.value.find((tab) => tab.id === tabId) || null
+})
 const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
-  tab.render(el);
-};
+  tab.render(el)
+}
 const onTabClick = (item: SidebarTabExtension) => {
   workspaceStateStore.updateActiveSidebarTab(
     workspaceStateStore.activeSidebarTab === item.id ? null : item.id
-  );
-};
+  )
+}
 
 const betaMenuEnabled = computed(
-  () => useSettingStore().get("Comfy.UseNewMenu") !== "Disabled"
-);
+  () => useSettingStore().get('Comfy.UseNewMenu') !== 'Disabled'
+)
 watch(betaMenuEnabled, (newValue) => {
   if (!newValue) {
-    workspaceStateStore.updateActiveSidebarTab(null);
+    workspaceStateStore.updateActiveSidebarTab(null)
   }
-});
+})
 onBeforeUnmount(() => {
   tabs.value.forEach((tab) => {
-    if (tab.type === "custom" && tab.destroy) {
-      tab.destroy();
+    if (tab.type === 'custom' && tab.destroy) {
+      tab.destroy()
     }
-  });
-});
+  })
+})
 </script>
 
 <style>

@@ -7,35 +7,35 @@
  * settings directly updates the settingStore.settingValues.
  */
 
-import { app } from "@/scripts/app";
-import { ComfySettingsDialog } from "@/scripts/ui/settings";
-import { defineStore } from "pinia";
+import { app } from '@/scripts/app'
+import { ComfySettingsDialog } from '@/scripts/ui/settings'
+import { defineStore } from 'pinia'
 
 interface State {
-  settingValues: Record<string, any>;
+  settingValues: Record<string, any>
 }
 
-export const useSettingStore = defineStore("setting", {
+export const useSettingStore = defineStore('setting', {
   state: (): State => ({
-    settingValues: {},
+    settingValues: {}
   }),
   actions: {
     addSettings(settings: ComfySettingsDialog) {
       for (const id in settings.settingsLookup) {
-        const value = settings.getSettingValue(id);
-        this.settingValues[id] = value;
+        const value = settings.getSettingValue(id)
+        this.settingValues[id] = value
       }
     },
 
     set(key: string, value: any) {
-      this.settingValues[key] = value;
-      app.ui.settings.setSettingValue(key, value);
+      this.settingValues[key] = value
+      app.ui.settings.setSettingValue(key, value)
     },
 
     get(key: string) {
       return (
         this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
-      );
-    },
-  },
-});
+      )
+    }
+  }
+})

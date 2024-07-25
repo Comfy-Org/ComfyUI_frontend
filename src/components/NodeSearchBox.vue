@@ -53,73 +53,73 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, Ref, ref } from "vue";
-import AutoCompletePlus from "./primevueOverride/AutoCompletePlus.vue";
-import Chip from "primevue/chip";
-import Badge from "primevue/badge";
-import NodeSearchFilter from "@/components/NodeSearchFilter.vue";
-import NodeSourceChip from "@/components/NodeSourceChip.vue";
-import { ComfyNodeDef } from "@/types/apiTypes";
-import { type FilterAndValue } from "@/services/nodeSearchService";
-import NodePreview from "./NodePreview.vue";
-import { useNodeDefStore } from "@/stores/nodeDefStore";
+import { computed, inject, onMounted, Ref, ref } from 'vue'
+import AutoCompletePlus from './primevueOverride/AutoCompletePlus.vue'
+import Chip from 'primevue/chip'
+import Badge from 'primevue/badge'
+import NodeSearchFilter from '@/components/NodeSearchFilter.vue'
+import NodeSourceChip from '@/components/NodeSourceChip.vue'
+import { ComfyNodeDef } from '@/types/apiTypes'
+import { type FilterAndValue } from '@/services/nodeSearchService'
+import NodePreview from './NodePreview.vue'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const props = defineProps({
   filters: {
-    type: Array<FilterAndValue>,
+    type: Array<FilterAndValue>
   },
   searchLimit: {
     type: Number,
-    default: 64,
-  },
-});
+    default: 64
+  }
+})
 
-const inputId = `comfy-vue-node-search-box-input-${Math.random()}`;
-const suggestions = ref<ComfyNodeDef[]>([]);
-const hoveredSuggestion = ref<ComfyNodeDef | null>(null);
+const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
+const suggestions = ref<ComfyNodeDef[]>([])
+const hoveredSuggestion = ref<ComfyNodeDef | null>(null)
 const placeholder = computed(() => {
-  return props.filters.length === 0 ? "Search for nodes" : "";
-});
+  return props.filters.length === 0 ? 'Search for nodes' : ''
+})
 
 const search = (query: string) => {
   suggestions.value = useNodeDefStore().nodeSearchService.searchNode(
     query,
     props.filters,
     {
-      limit: props.searchLimit,
+      limit: props.searchLimit
     }
-  );
-};
+  )
+}
 
-const emit = defineEmits(["addFilter", "removeFilter", "addNode"]);
+const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
 const reFocusInput = () => {
-  const inputElement = document.getElementById(inputId) as HTMLInputElement;
+  const inputElement = document.getElementById(inputId) as HTMLInputElement
   if (inputElement) {
-    inputElement.blur();
-    inputElement.focus();
+    inputElement.blur()
+    inputElement.focus()
   }
-};
+}
 
-onMounted(reFocusInput);
+onMounted(reFocusInput)
 const onAddFilter = (filterAndValue: FilterAndValue) => {
-  emit("addFilter", filterAndValue);
-  reFocusInput();
-};
+  emit('addFilter', filterAndValue)
+  reFocusInput()
+}
 const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
-  event.stopPropagation();
-  event.preventDefault();
-  emit("removeFilter", filterAndValue);
-  reFocusInput();
-};
+  event.stopPropagation()
+  event.preventDefault()
+  emit('removeFilter', filterAndValue)
+  reFocusInput()
+}
 const setHoverSuggestion = (index: number) => {
   if (index === -1) {
-    hoveredSuggestion.value = null;
-    return;
+    hoveredSuggestion.value = null
+    return
   }
-  const value = suggestions.value[index];
-  hoveredSuggestion.value = value;
-};
+  const value = suggestions.value[index]
+  hoveredSuggestion.value = value
+}
 </script>
 
 <style scoped>

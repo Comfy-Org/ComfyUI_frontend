@@ -1,53 +1,53 @@
-import type { ComfyApp } from "./app";
-import { api } from "./api";
-import { ChangeTracker } from "./changeTracker";
-import { ComfyAsyncDialog } from "./ui/components/asyncDialog";
-import { getStorageValue, setStorageValue } from "./utils";
-import { LGraphCanvas, LGraph } from "@comfyorg/litegraph";
+import type { ComfyApp } from './app'
+import { api } from './api'
+import { ChangeTracker } from './changeTracker'
+import { ComfyAsyncDialog } from './ui/components/asyncDialog'
+import { getStorageValue, setStorageValue } from './utils'
+import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
 
 function appendJsonExt(path: string) {
-  if (!path.toLowerCase().endsWith(".json")) {
-    path += ".json";
+  if (!path.toLowerCase().endsWith('.json')) {
+    path += '.json'
   }
-  return path;
+  return path
 }
 
 export function trimJsonExt(path: string) {
-  return path?.replace(/\.json$/, "");
+  return path?.replace(/\.json$/, '')
 }
 
 export class ComfyWorkflowManager extends EventTarget {
-  #activePromptId: string | null = null;
-  #unsavedCount = 0;
-  #activeWorkflow: ComfyWorkflow;
+  #activePromptId: string | null = null
+  #unsavedCount = 0
+  #activeWorkflow: ComfyWorkflow
 
-  workflowLookup: Record<string, ComfyWorkflow> = {};
-  workflows: Array<ComfyWorkflow> = [];
-  openWorkflows: Array<ComfyWorkflow> = [];
+  workflowLookup: Record<string, ComfyWorkflow> = {}
+  workflows: Array<ComfyWorkflow> = []
+  openWorkflows: Array<ComfyWorkflow> = []
   queuedPrompts: Record<
     string,
     { workflow?: ComfyWorkflow; nodes?: Record<string, boolean> }
-  > = {};
-  app: ComfyApp;
+  > = {}
+  app: ComfyApp
 
   get activeWorkflow() {
-    return this.#activeWorkflow ?? this.openWorkflows[0];
+    return this.#activeWorkflow ?? this.openWorkflows[0]
   }
 
   get activePromptId() {
-    return this.#activePromptId;
+    return this.#activePromptId
   }
 
   get activePrompt() {
-    return this.queuedPrompts[this.#activePromptId];
+    return this.queuedPrompts[this.#activePromptId]
   }
 
   constructor(app: ComfyApp) {
-    super();
-    this.app = app;
-    ChangeTracker.init(app);
+    super()
+    this.app = app
+    ChangeTracker.init(app)
 
-    this.#bindExecutionEvents();
+    this.#bindExecutionEvents()
   }
 
   #bindExecutionEvents() {
@@ -55,99 +55,99 @@ export class ComfyWorkflowManager extends EventTarget {
 
     const emit = () =>
       this.dispatchEvent(
-        new CustomEvent("execute", { detail: this.activePrompt })
-      );
-    let executing = null;
-    api.addEventListener("execution_start", (e) => {
-      this.#activePromptId = e.detail.prompt_id;
+        new CustomEvent('execute', { detail: this.activePrompt })
+      )
+    let executing = null
+    api.addEventListener('execution_start', (e) => {
+      this.#activePromptId = e.detail.prompt_id
 
       // This event can fire before the event is stored, so put a placeholder
-      this.queuedPrompts[this.#activePromptId] ??= { nodes: {} };
-      emit();
-    });
-    api.addEventListener("execution_cached", (e) => {
-      if (!this.activePrompt) return;
+      this.queuedPrompts[this.#activePromptId] ??= { nodes: {} }
+      emit()
+    })
+    api.addEventListener('execution_cached', (e) => {
+      if (!this.activePrompt) return
       for (const n of e.detail.nodes) {
-        this.activePrompt.nodes[n] = true;
+        this.activePrompt.nodes[n] = true
       }
-      emit();
-    });
-    api.addEventListener("executed", (e) => {
-      if (!this.activePrompt) return;
-      this.activePrompt.nodes[e.detail.node] = true;
-      emit();
-    });
-    api.addEventListener("executing", (e) => {
-      if (!this.activePrompt) return;
+      emit()
+    })
+    api.addEventListener('executed', (e) => {
+      if (!this.activePrompt) return
+      this.activePrompt.nodes[e.detail.node] = true
+      emit()
+    })
+    api.addEventListener('executing', (e) => {
+      if (!this.activePrompt) return
 
       if (executing) {
         // Seems sometimes nodes that are cached fire executing but not executed
-        this.activePrompt.nodes[executing] = true;
+        this.activePrompt.nodes[executing] = true
       }
-      executing = e.detail;
+      executing = e.detail
       if (!executing) {
-        delete this.queuedPrompts[this.#activePromptId];
-        this.#activePromptId = null;
+        delete this.queuedPrompts[this.#activePromptId]
+        this.#activePromptId = null
       }
-      emit();
-    });
+      emit()
+    })
   }
 
   async loadWorkflows() {
     try {
-      let favorites;
-      const resp = await api.getUserData("workflows/.index.json");
-      let info;
+      let favorites
+      const resp = await api.getUserData('workflows/.index.json')
+      let info
       if (resp.status === 200) {
-        info = await resp.json();
-        favorites = new Set(info?.favorites ?? []);
+        info = await resp.json()
+        favorites = new Set(info?.favorites ?? [])
       } else {
-        favorites = new Set();
+        favorites = new Set()
       }
 
-      const workflows = (await api.listUserData("workflows", true, true)).map(
+      const workflows = (await api.listUserData('workflows', true, true)).map(
         (w) => {
-          let workflow = this.workflowLookup[w[0]];
+          let workflow = this.workflowLookup[w[0]]
           if (!workflow) {
             workflow = new ComfyWorkflow(
               this,
               w[0],
               w.slice(1),
               favorites.has(w[0])
-            );
-            this.workflowLookup[workflow.path] = workflow;
+            )
+            this.workflowLookup[workflow.path] = workflow
           }
-          return workflow;
+          return workflow
         }
-      );
+      )
 
-      this.workflows = workflows;
+      this.workflows = workflows
     } catch (error) {
-      alert("Error loading workflows: " + (error.message ?? error));
-      this.workflows = [];
+      alert('Error loading workflows: ' + (error.message ?? error))
+      this.workflows = []
     }
   }
 
   async saveWorkflowMetadata() {
-    await api.storeUserData("workflows/.index.json", {
+    await api.storeUserData('workflows/.index.json', {
       favorites: [
-        ...this.workflows.filter((w) => w.isFavorite).map((w) => w.path),
-      ],
-    });
+        ...this.workflows.filter((w) => w.isFavorite).map((w) => w.path)
+      ]
+    })
   }
 
   /**
    * @param {string | ComfyWorkflow | null} workflow
    */
   setWorkflow(workflow) {
-    if (workflow && typeof workflow === "string") {
+    if (workflow && typeof workflow === 'string') {
       // Selected by path, i.e. on reload of last workflow
-      const found = this.workflows.find((w) => w.path === workflow);
+      const found = this.workflows.find((w) => w.path === workflow)
       if (found) {
-        workflow = found;
+        workflow = found
         workflow.unsaved =
           !workflow ||
-          getStorageValue("Comfy.PreviousWorkflowUnsaved") === "true";
+          getStorageValue('Comfy.PreviousWorkflowUnsaved') === 'true'
       }
     }
 
@@ -156,33 +156,33 @@ export class ComfyWorkflowManager extends EventTarget {
       workflow = new ComfyWorkflow(
         this,
         workflow ||
-          "Unsaved Workflow" +
-            (this.#unsavedCount++ ? ` (${this.#unsavedCount})` : "")
-      );
+          'Unsaved Workflow' +
+            (this.#unsavedCount++ ? ` (${this.#unsavedCount})` : '')
+      )
     }
 
-    const index = this.openWorkflows.indexOf(workflow);
+    const index = this.openWorkflows.indexOf(workflow)
     if (index === -1) {
       // Opening a new workflow
-      this.openWorkflows.push(workflow);
+      this.openWorkflows.push(workflow)
     }
 
-    this.#activeWorkflow = workflow;
+    this.#activeWorkflow = workflow
 
-    setStorageValue("Comfy.PreviousWorkflow", this.activeWorkflow.path ?? "");
-    this.dispatchEvent(new CustomEvent("changeWorkflow"));
+    setStorageValue('Comfy.PreviousWorkflow', this.activeWorkflow.path ?? '')
+    this.dispatchEvent(new CustomEvent('changeWorkflow'))
   }
 
   storePrompt({ nodes, id }) {
-    this.queuedPrompts[id] ??= {};
+    this.queuedPrompts[id] ??= {}
     this.queuedPrompts[id].nodes = {
       ...nodes.reduce((p, n) => {
-        p[n] = false;
-        return p;
+        p[n] = false
+        return p
       }, {}),
-      ...this.queuedPrompts[id].nodes,
-    };
-    this.queuedPrompts[id].workflow = this.activeWorkflow;
+      ...this.queuedPrompts[id].nodes
+    }
+    this.queuedPrompts[id].workflow = this.activeWorkflow
   }
 
   /**
@@ -190,71 +190,71 @@ export class ComfyWorkflowManager extends EventTarget {
    */
   async closeWorkflow(workflow, warnIfUnsaved = true) {
     if (!workflow.isOpen) {
-      return true;
+      return true
     }
     if (workflow.unsaved && warnIfUnsaved) {
       const res = await ComfyAsyncDialog.prompt({
-        title: "Save Changes?",
+        title: 'Save Changes?',
         message: `Do you want to save changes to "${workflow.path ?? workflow.name}" before closing?`,
-        actions: ["Yes", "No", "Cancel"],
-      });
-      if (res === "Yes") {
-        const active = this.activeWorkflow;
+        actions: ['Yes', 'No', 'Cancel']
+      })
+      if (res === 'Yes') {
+        const active = this.activeWorkflow
         if (active !== workflow) {
           // We need to switch to the workflow to save it
-          await workflow.load();
+          await workflow.load()
         }
 
         if (!(await workflow.save())) {
           // Save was canceled, restore the previous workflow
           if (active !== workflow) {
-            await active.load();
+            await active.load()
           }
-          return;
+          return
         }
-      } else if (res === "Cancel") {
-        return;
+      } else if (res === 'Cancel') {
+        return
       }
     }
-    workflow.changeTracker = null;
-    this.openWorkflows.splice(this.openWorkflows.indexOf(workflow), 1);
+    workflow.changeTracker = null
+    this.openWorkflows.splice(this.openWorkflows.indexOf(workflow), 1)
     if (this.openWorkflows.length) {
-      this.#activeWorkflow = this.openWorkflows[0];
-      await this.#activeWorkflow.load();
+      this.#activeWorkflow = this.openWorkflows[0]
+      await this.#activeWorkflow.load()
     } else {
       // Load default
-      await this.app.loadGraphData();
+      await this.app.loadGraphData()
     }
   }
 }
 
 export class ComfyWorkflow {
-  #name;
-  #path;
-  #pathParts;
-  #isFavorite = false;
-  changeTracker: ChangeTracker | null = null;
-  unsaved = false;
-  manager: ComfyWorkflowManager;
+  #name
+  #path
+  #pathParts
+  #isFavorite = false
+  changeTracker: ChangeTracker | null = null
+  unsaved = false
+  manager: ComfyWorkflowManager
 
   get name() {
-    return this.#name;
+    return this.#name
   }
 
   get path() {
-    return this.#path;
+    return this.#path
   }
 
   get pathParts() {
-    return this.#pathParts;
+    return this.#pathParts
   }
 
   get isFavorite() {
-    return this.#isFavorite;
+    return this.#isFavorite
   }
 
   get isOpen() {
-    return !!this.changeTracker;
+    return !!this.changeTracker
   }
 
   constructor(
@@ -263,40 +263,40 @@ export class ComfyWorkflow {
     pathParts?: string[],
     isFavorite?: boolean
   ) {
-    this.manager = manager;
+    this.manager = manager
     if (pathParts) {
-      this.#updatePath(path, pathParts);
-      this.#isFavorite = isFavorite;
+      this.#updatePath(path, pathParts)
+      this.#isFavorite = isFavorite
     } else {
-      this.#name = path;
-      this.unsaved = true;
+      this.#name = path
+      this.unsaved = true
     }
   }
 
   #updatePath(path: string, pathParts: string[]) {
-    this.#path = path;
+    this.#path = path
 
     if (!pathParts) {
-      if (!path.includes("\\")) {
-        pathParts = path.split("/");
+      if (!path.includes('\\')) {
+        pathParts = path.split('/')
       } else {
-        pathParts = path.split("\\");
+        pathParts = path.split('\\')
       }
     }
 
-    this.#pathParts = pathParts;
-    this.#name = trimJsonExt(pathParts[pathParts.length - 1]);
+    this.#pathParts = pathParts
+    this.#name = trimJsonExt(pathParts[pathParts.length - 1])
   }
 
   async getWorkflowData() {
-    const resp = await api.getUserData("workflows/" + this.path);
+    const resp = await api.getUserData('workflows/' + this.path)
     if (resp.status !== 200) {
       alert(
         `Error loading workflow file '${this.path}': ${resp.status} ${resp.statusText}`
-      );
-      return;
+      )
+      return
     }
-    return await resp.json();
+    return await resp.json()
   }
 
   load = async () => {
@@ -306,44 +306,44 @@ export class ComfyWorkflow {
         true,
         true,
         this
-      );
+      )
     } else {
-      const data = await this.getWorkflowData();
-      if (!data) return;
-      await this.manager.app.loadGraphData(data, true, true, this);
+      const data = await this.getWorkflowData()
+      if (!data) return
+      await this.manager.app.loadGraphData(data, true, true, this)
     }
-  };
+  }
 
   async save(saveAs = false) {
     if (!this.path || saveAs) {
-      return !!(await this.#save(null, false));
+      return !!(await this.#save(null, false))
     } else {
-      return !!(await this.#save(this.path, true));
+      return !!(await this.#save(this.path, true))
     }
   }
 
   async favorite(value: boolean) {
     try {
-      if (this.#isFavorite === value) return;
-      this.#isFavorite = value;
-      await this.manager.saveWorkflowMetadata();
-      this.manager.dispatchEvent(new CustomEvent("favorite", { detail: this }));
+      if (this.#isFavorite === value) return
+      this.#isFavorite = value
+      await this.manager.saveWorkflowMetadata()
+      this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
       alert(
-        "Error favoriting workflow " +
+        'Error favoriting workflow ' +
           this.path +
-          "\n" +
+          '\n' +
           (error.message ?? error)
-      );
+      )
     }
   }
 
   async rename(path: string) {
-    path = appendJsonExt(path);
+    path = appendJsonExt(path)
     let resp = await api.moveUserData(
-      "workflows/" + this.path,
-      "workflows/" + path
-    );
+      'workflows/' + this.path,
+      'workflows/' + path
+    )
 
     if (resp.status === 409) {
       if (
@@ -351,50 +351,50 @@ export class ComfyWorkflow {
           `Workflow '${path}' already exists, do you want to overwrite it?`
         )
       )
-        return resp;
+        return resp
       resp = await api.moveUserData(
-        "workflows/" + this.path,
-        "workflows/" + path,
+        'workflows/' + this.path,
+        'workflows/' + path,
         { overwrite: true }
-      );
+      )
     }
 
     if (resp.status !== 200) {
       alert(
         `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
-      );
-      return;
+      )
+      return
     }
 
-    const isFav = this.isFavorite;
+    const isFav = this.isFavorite
     if (isFav) {
-      await this.favorite(false);
+      await this.favorite(false)
     }
-    path = (await resp.json()).substring("workflows/".length);
-    this.#updatePath(path, null);
+    path = (await resp.json()).substring('workflows/'.length)
+    this.#updatePath(path, null)
     if (isFav) {
-      await this.favorite(true);
+      await this.favorite(true)
     }
-    this.manager.dispatchEvent(new CustomEvent("rename", { detail: this }));
-    setStorageValue("Comfy.PreviousWorkflow", this.path ?? "");
+    this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
+    setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
   }
 
   async insert() {
-    const data = await this.getWorkflowData();
-    if (!data) return;
+    const data = await this.getWorkflowData()
+    if (!data) return
 
-    const old = localStorage.getItem("litegrapheditor_clipboard");
+    const old = localStorage.getItem('litegrapheditor_clipboard')
     // @ts-ignore
-    const graph = new LGraph(data);
+    const graph = new LGraph(data)
     const canvas = new LGraphCanvas(null, graph, {
       // @ts-ignore
       skip_events: true,
-      skip_render: true,
-    });
-    canvas.selectNodes();
-    canvas.copyToClipboard();
-    this.manager.app.canvas.pasteFromClipboard();
-    localStorage.setItem("litegrapheditor_clipboard", old);
+      skip_render: true
+    })
+    canvas.selectNodes()
+    canvas.copyToClipboard()
+    this.manager.app.canvas.pasteFromClipboard()
+    localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
   async delete() {
@@ -402,84 +402,84 @@ export class ComfyWorkflow {
 
     try {
       if (this.isFavorite) {
-        await this.favorite(false);
+        await this.favorite(false)
       }
-      await api.deleteUserData("workflows/" + this.path);
-      this.unsaved = true;
-      this.#path = null;
-      this.#pathParts = null;
-      this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1);
-      this.manager.dispatchEvent(new CustomEvent("delete", { detail: this }));
+      await api.deleteUserData('workflows/' + this.path)
+      this.unsaved = true
+      this.#path = null
+      this.#pathParts = null
+      this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
+      this.manager.dispatchEvent(new CustomEvent('delete', { detail: this }))
     } catch (error) {
-      alert(`Error deleting workflow: ${error.message || error}`);
+      alert(`Error deleting workflow: ${error.message || error}`)
     }
   }
 
   track() {
     if (this.changeTracker) {
-      this.changeTracker.restore();
+      this.changeTracker.restore()
     } else {
-      this.changeTracker = new ChangeTracker(this);
+      this.changeTracker = new ChangeTracker(this)
     }
   }
 
   async #save(path: string | null, overwrite: boolean) {
     if (!path) {
       path = prompt(
-        "Save workflow as:",
-        trimJsonExt(this.path) ?? this.name ?? "workflow"
-      );
-      if (!path) return;
+        'Save workflow as:',
+        trimJsonExt(this.path) ?? this.name ?? 'workflow'
+      )
+      if (!path) return
     }
 
-    path = appendJsonExt(path);
+    path = appendJsonExt(path)
 
-    const p = await this.manager.app.graphToPrompt();
-    const json = JSON.stringify(p.workflow, null, 2);
-    let resp = await api.storeUserData("workflows/" + path, json, {
+    const p = await this.manager.app.graphToPrompt()
+    const json = JSON.stringify(p.workflow, null, 2)
+    let resp = await api.storeUserData('workflows/' + path, json, {
       stringify: false,
       throwOnError: false,
-      overwrite,
-    });
+      overwrite
+    })
     if (resp.status === 409) {
       if (
         !confirm(
           `Workflow '${path}' already exists, do you want to overwrite it?`
         )
       )
-        return;
-      resp = await api.storeUserData("workflows/" + path, json, {
-        stringify: false,
-      });
+        return
+      resp = await api.storeUserData('workflows/' + path, json, {
+        stringify: false
+      })
     }
 
     if (resp.status !== 200) {
       alert(
         `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
-      );
-      return;
+      )
+      return
     }
 
-    path = (await resp.json()).substring("workflows/".length);
+    path = (await resp.json()).substring('workflows/'.length)
 
     if (!this.path) {
       // Saved new workflow, patch this instance
-      this.#updatePath(path, null);
-      await this.manager.loadWorkflows();
-      this.unsaved = false;
-      this.manager.dispatchEvent(new CustomEvent("rename", { detail: this }));
-      setStorageValue("Comfy.PreviousWorkflow", this.path ?? "");
+      this.#updatePath(path, null)
+      await this.manager.loadWorkflows()
+      this.unsaved = false
+      this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
+      setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
     } else if (path !== this.path) {
       // Saved as, open the new copy
-      await this.manager.loadWorkflows();
-      const workflow = this.manager.workflowLookup[path];
-      await workflow.load();
+      await this.manager.loadWorkflows()
+      const workflow = this.manager.workflowLookup[path]
+      await workflow.load()
     } else {
       // Normal save
-      this.unsaved = false;
-      this.manager.dispatchEvent(new CustomEvent("save", { detail: this }));
+      this.unsaved = false
+      this.manager.dispatchEvent(new CustomEvent('save', { detail: this }))
     }
 
-    return true;
+    return true
   }
 }

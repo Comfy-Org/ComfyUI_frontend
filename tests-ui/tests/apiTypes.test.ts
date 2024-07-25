@@ -1,77 +1,77 @@
-import { ComfyNodeDef, validateComfyNodeDef } from "@/types/apiTypes";
-const fs = require("fs");
-const path = require("path");
+import { ComfyNodeDef, validateComfyNodeDef } from '@/types/apiTypes'
+const fs = require('fs')
+const path = require('path')
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {
     required: {
-      ckpt_name: [["model1.safetensors", "model2.ckpt"]],
-    },
+      ckpt_name: [['model1.safetensors', 'model2.ckpt']]
+    }
   },
-  output: ["MODEL", "CLIP", "VAE"],
+  output: ['MODEL', 'CLIP', 'VAE'],
   output_is_list: [false, false, false],
-  output_name: ["MODEL", "CLIP", "VAE"],
-  name: "CheckpointLoaderSimple",
-  display_name: "Load Checkpoint",
-  description: "",
-  python_module: "nodes",
-  category: "loaders",
-  output_node: false,
-};
+  output_name: ['MODEL', 'CLIP', 'VAE'],
+  name: 'CheckpointLoaderSimple',
+  display_name: 'Load Checkpoint',
+  description: '',
+  python_module: 'nodes',
+  category: 'loaders',
+  output_node: false
+}
 
-describe("validateNodeDef", () => {
-  it("Should accept a valid node definition", () => {
-    expect(() => validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toThrow();
-  });
+describe('validateNodeDef', () => {
+  it('Should accept a valid node definition', () => {
+    expect(() => validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toThrow()
+  })
 
   describe.each([
-    [{ ckpt_name: "foo" }, ["foo", {}]],
-    [{ ckpt_name: ["foo"] }, ["foo", {}]],
-    [{ ckpt_name: ["foo", { default: 1 }] }, ["foo", { default: 1 }]],
+    [{ ckpt_name: 'foo' }, ['foo', {}]],
+    [{ ckpt_name: ['foo'] }, ['foo', {}]],
+    [{ ckpt_name: ['foo', { default: 1 }] }, ['foo', { default: 1 }]]
   ])(
-    "validateComfyNodeDef with various input spec formats",
+    'validateComfyNodeDef with various input spec formats',
     (inputSpec, expected) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, () => {
         expect(
           validateComfyNodeDef({
             ...EXAMPLE_NODE_DEF,
             input: {
-              required: inputSpec,
-            },
+              required: inputSpec
+            }
           }).input.required.ckpt_name
-        ).toEqual(expected);
-      });
+        ).toEqual(expected)
+      })
     }
-  );
+  )
 
   describe.each([
-    [{ ckpt_name: { "model1.safetensors": "foo" } }],
-    [{ ckpt_name: ["*", ""] }],
-    [{ ckpt_name: ["foo", { default: 1 }, { default: 2 }] }],
+    [{ ckpt_name: { 'model1.safetensors': 'foo' } }],
+    [{ ckpt_name: ['*', ''] }],
+    [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }]
   ])(
-    "validateComfyNodeDef rejects with various input spec formats",
+    'validateComfyNodeDef rejects with various input spec formats',
     (inputSpec) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, () => {
         expect(() =>
           validateComfyNodeDef({
             ...EXAMPLE_NODE_DEF,
             input: {
-              required: inputSpec,
-            },
+              required: inputSpec
+            }
           })
-        ).toThrow();
-      });
+        ).toThrow()
+      })
     }
-  );
+  )
 
-  it("Should accept all built-in node definitions", async () => {
+  it('Should accept all built-in node definitions', async () => {
     const nodeDefs = Object.values(
       JSON.parse(
-        fs.readFileSync(path.resolve("./tests-ui/data/object_info.json"))
+        fs.readFileSync(path.resolve('./tests-ui/data/object_info.json'))
       )
-    );
+    )
     nodeDefs.forEach((nodeDef) => {
-      expect(() => validateComfyNodeDef(nodeDef)).not.toThrow();
-    });
-  });
-});
+      expect(() => validateComfyNodeDef(nodeDef)).not.toThrow()
+    })
+  })
+})

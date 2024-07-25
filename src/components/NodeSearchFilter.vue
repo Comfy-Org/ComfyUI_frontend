@@ -34,52 +34,52 @@
 </template>
 
 <script setup lang="ts">
-import { NodeFilter, type FilterAndValue } from "@/services/nodeSearchService";
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import SelectButton from "primevue/selectbutton";
-import AutoComplete from "primevue/autocomplete";
-import { ref, onMounted } from "vue";
-import { useNodeDefStore } from "@/stores/nodeDefStore";
+import { NodeFilter, type FilterAndValue } from '@/services/nodeSearchService'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import SelectButton from 'primevue/selectbutton'
+import AutoComplete from 'primevue/autocomplete'
+import { ref, onMounted } from 'vue'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-const visible = ref<boolean>(false);
-const filters = ref<NodeFilter[]>([]);
-const selectedFilter = ref<NodeFilter>();
-const filterValues = ref<string[]>([]);
-const selectedFilterValue = ref<string>("");
+const visible = ref<boolean>(false)
+const filters = ref<NodeFilter[]>([])
+const selectedFilter = ref<NodeFilter>()
+const filterValues = ref<string[]>([])
+const selectedFilterValue = ref<string>('')
 
 onMounted(() => {
-  const nodeSearchService = useNodeDefStore().nodeSearchService;
-  filters.value = nodeSearchService.nodeFilters;
-  selectedFilter.value = nodeSearchService.nodeFilters[0];
-});
+  const nodeSearchService = useNodeDefStore().nodeSearchService
+  filters.value = nodeSearchService.nodeFilters
+  selectedFilter.value = nodeSearchService.nodeFilters[0]
+})
 
-const emit = defineEmits(["addFilter"]);
+const emit = defineEmits(['addFilter'])
 
 const updateSelectedFilterValue = () => {
-  updateFilterValues("");
+  updateFilterValues('')
   if (filterValues.value.includes(selectedFilterValue.value)) {
-    return;
+    return
   }
-  selectedFilterValue.value = filterValues.value[0];
-};
+  selectedFilterValue.value = filterValues.value[0]
+}
 
 const updateFilterValues = (query: string) => {
-  filterValues.value = selectedFilter.value.fuseSearch.search(query);
-};
+  filterValues.value = selectedFilter.value.fuseSearch.search(query)
+}
 
 const submit = () => {
-  visible.value = false;
-  emit("addFilter", [
+  visible.value = false
+  emit('addFilter', [
     selectedFilter.value,
-    selectedFilterValue.value,
-  ] as FilterAndValue);
-};
+    selectedFilterValue.value
+  ] as FilterAndValue)
+}
 
 const showModal = () => {
-  updateSelectedFilterValue();
-  visible.value = true;
-};
+  updateSelectedFilterValue()
+  visible.value = true
+}
 </script>
 
 <style scoped>
