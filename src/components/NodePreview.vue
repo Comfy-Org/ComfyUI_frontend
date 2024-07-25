@@ -19,10 +19,10 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col">
           <div v-if="slotInput" :class="['_sb_dot', slotInput.type]"></div>
         </div>
-        <div class="_sb_col">{{ slotInput ? slotInput.name : "" }}</div>
+        <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
         <div class="_sb_col middle-column"></div>
         <div class="_sb_col _sb_inherit">
-          {{ slotOutput ? slotOutput.name : "" }}
+          {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
           <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]"></div>
@@ -45,40 +45,40 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import { app } from "@/scripts/app";
-import { type ComfyNodeDef } from "@/types/apiTypes";
-import _ from "lodash";
-import { PropType } from "vue";
+import { app } from '@/scripts/app'
+import { type ComfyNodeDef } from '@/types/apiTypes'
+import _ from 'lodash'
+import { PropType } from 'vue'
 
 const props = defineProps({
   nodeDef: {
     type: Object as PropType<ComfyNodeDef>,
-    required: true,
-  },
-});
+    required: true
+  }
+})
 
-const nodeDef = props.nodeDef as ComfyNodeDef;
+const nodeDef = props.nodeDef as ComfyNodeDef
 
 // --------------------------------------------------
 // TODO: Move out to separate file
 interface IComfyNodeInputDef {
-  name: string;
-  type: string;
-  widgetType: string | null;
-  defaultValue: any;
+  name: string
+  type: string
+  widgetType: string | null
+  defaultValue: any
 }
 
 interface IComfyNodeOutputDef {
-  name: string | null;
-  type: string;
-  isList: boolean;
+  name: string | null
+  type: string
+  isList: boolean
 }
 
 const allInputs = Object.assign(
   {},
   nodeDef.input.required || {},
   nodeDef.input.optional || {}
-);
+)
 const allInputDefs: IComfyNodeInputDef[] = Object.entries(allInputs).map(
   ([inputName, inputData]) => {
     return {
@@ -87,10 +87,10 @@ const allInputDefs: IComfyNodeInputDef[] = Object.entries(allInputs).map(
       widgetType: app.getWidgetType(inputData, inputName),
       defaultValue:
         inputData[1]?.default ||
-        (inputData[0] instanceof Array ? inputData[0][0] : ""),
-    };
+        (inputData[0] instanceof Array ? inputData[0][0] : '')
+    }
   }
-);
+)
 
 const allOutputDefs: IComfyNodeOutputDef[] = _.zip(
   nodeDef.output,
@@ -99,13 +99,13 @@ const allOutputDefs: IComfyNodeOutputDef[] = _.zip(
 ).map(([outputType, outputName, isList]) => {
   return {
     name: outputName,
-    type: outputType instanceof Array ? "COMBO" : outputType,
-    isList: isList,
-  };
-});
+    type: outputType instanceof Array ? 'COMBO' : outputType,
+    isList: isList
+  }
+})
 
-const slotInputDefs = allInputDefs.filter((input) => !input.widgetType);
-const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
+const slotInputDefs = allInputDefs.filter((input) => !input.widgetType)
+const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType)
 </script>
 
 <style scoped>
@@ -174,7 +174,7 @@ const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType);
 
 ._sb_node_preview {
   background-color: var(--comfy-menu-bg);
-  font-family: "Open Sans", sans-serif;
+  font-family: 'Open Sans', sans-serif;
   font-size: small;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);

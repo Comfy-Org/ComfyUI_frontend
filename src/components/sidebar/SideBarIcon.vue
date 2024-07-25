@@ -9,7 +9,7 @@
           ? 'p-button-primary side-bar-button-selected'
           : 'p-button-secondary'
       }`,
-      icon: 'side-bar-button-icon',
+      icon: 'side-bar-button-icon'
     }"
     @click="emit('click', $event)"
     v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
@@ -17,22 +17,22 @@
 </template>
 
 <script setup lang="ts">
-import Button from "primevue/button";
+import Button from 'primevue/button'
 
 const props = defineProps({
   icon: String,
   selected: Boolean,
   tooltip: {
     type: String,
-    default: "",
+    default: ''
   },
   class: {
     type: String,
-    default: "",
-  },
-});
+    default: ''
+  }
+})
 
-const emit = defineEmits(["click"]);
+const emit = defineEmits(['click'])
 </script>
 
 <style>

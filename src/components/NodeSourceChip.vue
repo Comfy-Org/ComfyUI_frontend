@@ -5,18 +5,18 @@
 </template>
 
 <script setup lang="ts">
-import { getNodeSource } from "@/types/nodeSource";
-import Chip from "primevue/chip";
-import { computed } from "vue";
+import { getNodeSource } from '@/types/nodeSource'
+import Chip from 'primevue/chip'
+import { computed } from 'vue'
 
 const props = defineProps({
   python_module: {
     type: String,
-    required: true,
-  },
-});
+    required: true
+  }
+})
 
-const nodeSource = computed(() => getNodeSource(props.python_module));
+const nodeSource = computed(() => getNodeSource(props.python_module))
 </script>
 
 <style scoped>

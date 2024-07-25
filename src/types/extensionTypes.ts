@@ -1,30 +1,30 @@
-import { Component } from "vue";
+import { Component } from 'vue'
 
 export interface BaseSidebarTabExtension {
-  id: string;
-  title: string;
-  icon?: string;
-  order?: number;
-  tooltip?: string;
+  id: string
+  title: string
+  icon?: string
+  order?: number
+  tooltip?: string
 }
 
 export interface VueSidebarTabExtension extends BaseSidebarTabExtension {
-  type: "vue";
-  component: Component;
+  type: 'vue'
+  component: Component
 }
 
 export interface CustomSidebarTabExtension extends BaseSidebarTabExtension {
-  type: "custom";
-  render: (container: HTMLElement) => void;
-  destroy?: () => void;
+  type: 'custom'
+  render: (container: HTMLElement) => void
+  destroy?: () => void
 }
 
 export type SidebarTabExtension =
   | VueSidebarTabExtension
-  | CustomSidebarTabExtension;
+  | CustomSidebarTabExtension
 
 export interface ExtensionManager {
-  registerSidebarTab(tab: SidebarTabExtension): void;
-  unregisterSidebarTab(id: string): void;
-  getSidebarTabs(): SidebarTabExtension[];
+  registerSidebarTab(tab: SidebarTabExtension): void
+  unregisterSidebarTab(id: string): void
+  getSidebarTabs(): SidebarTabExtension[]
 }

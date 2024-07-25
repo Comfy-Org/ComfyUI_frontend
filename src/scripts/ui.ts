@@ -1,52 +1,52 @@
-import { api } from "./api";
-import { ComfyDialog as _ComfyDialog } from "./ui/dialog";
-import { toggleSwitch } from "./ui/toggleSwitch";
-import { ComfySettingsDialog } from "./ui/settings";
-import { ComfyApp, app } from "./app";
-import { TaskItem } from "@/types/apiTypes";
+import { api } from './api'
+import { ComfyDialog as _ComfyDialog } from './ui/dialog'
+import { toggleSwitch } from './ui/toggleSwitch'
+import { ComfySettingsDialog } from './ui/settings'
+import { ComfyApp, app } from './app'
+import { TaskItem } from '@/types/apiTypes'
 
-export const ComfyDialog = _ComfyDialog;
+export const ComfyDialog = _ComfyDialog
 
 type Position2D = {
-  x: number;
-  y: number;
-};
+  x: number
+  y: number
+}
 
 type Props = {
-  parent?: HTMLElement;
-  $?: (el: HTMLElement) => void;
-  dataset?: DOMStringMap;
-  style?: Partial<CSSStyleDeclaration>;
-  for?: string;
-  textContent?: string;
-  [key: string]: any;
-};
+  parent?: HTMLElement
+  $?: (el: HTMLElement) => void
+  dataset?: DOMStringMap
+  style?: Partial<CSSStyleDeclaration>
+  for?: string
+  textContent?: string
+  [key: string]: any
+}
 
-type Children = Element[] | Element | string | string[];
+type Children = Element[] | Element | string | string[]
 
 type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[K]
-  : HTMLElement;
+  : HTMLElement
 
 export function $el<TTag extends string>(
   tag: TTag,
   propsOrChildren?: Children | Props,
   children?: Children
 ): ElementType<TTag> {
-  const split = tag.split(".");
-  const element = document.createElement(split.shift() as string);
+  const split = tag.split('.')
+  const element = document.createElement(split.shift() as string)
   if (split.length > 0) {
-    element.classList.add(...split);
+    element.classList.add(...split)
   }
 
   if (propsOrChildren) {
-    if (typeof propsOrChildren === "string") {
-      propsOrChildren = { textContent: propsOrChildren };
+    if (typeof propsOrChildren === 'string') {
+      propsOrChildren = { textContent: propsOrChildren }
     } else if (propsOrChildren instanceof Element) {
-      propsOrChildren = [propsOrChildren];
+      propsOrChildren = [propsOrChildren]
     }
     if (Array.isArray(propsOrChildren)) {
-      element.append(...propsOrChildren);
+      element.append(...propsOrChildren)
     } else {
       const {
         parent,
@@ -54,35 +54,35 @@ export function $el<TTag extends string>(
         dataset,
         style,
         ...rest
-      } = propsOrChildren as Props;
+      } = propsOrChildren as Props
 
       if (rest.for) {
-        element.setAttribute("for", rest.for);
+        element.setAttribute('for', rest.for)
       }
 
       if (style) {
-        Object.assign(element.style, style);
+        Object.assign(element.style, style)
       }
 
       if (dataset) {
-        Object.assign(element.dataset, dataset);
+        Object.assign(element.dataset, dataset)
       }
 
-      Object.assign(element, rest);
+      Object.assign(element, rest)
       if (children) {
-        element.append(...(Array.isArray(children) ? children : [children]));
+        element.append(...(Array.isArray(children) ? children : [children]))
       }
 
       if (parent) {
-        parent.append(element);
+        parent.append(element)
       }
 
       if (cb) {
-        cb(element);
+        cb(element)
       }
     }
   }
-  return element as ElementType<TTag>;
+  return element as ElementType<TTag>
 }
 
 function dragElement(dragEl, settings): () => void {
@@ -91,290 +91,290 @@ function dragElement(dragEl, settings): () => void {
     posStartX = 0,
     posStartY = 0,
     newPosX = 0,
-    newPosY = 0;
-  if (dragEl.getElementsByClassName("drag-handle")[0]) {
+    newPosY = 0
+  if (dragEl.getElementsByClassName('drag-handle')[0]) {
     // if present, the handle is where you move the DIV from:
-    dragEl.getElementsByClassName("drag-handle")[0].onmousedown = dragMouseDown;
+    dragEl.getElementsByClassName('drag-handle')[0].onmousedown = dragMouseDown
   } else {
     // otherwise, move the DIV from anywhere inside the DIV:
-    dragEl.onmousedown = dragMouseDown;
+    dragEl.onmousedown = dragMouseDown
   }
 
   // When the element resizes (e.g. view queue) ensure it is still in the windows bounds
   const resizeObserver = new ResizeObserver(() => {
-    ensureInBounds();
-  }).observe(dragEl);
+    ensureInBounds()
+  }).observe(dragEl)
 
   function ensureInBounds() {
     try {
       newPosX = Math.min(
         document.body.clientWidth - dragEl.clientWidth,
         Math.max(0, dragEl.offsetLeft)
-      );
+      )
       newPosY = Math.min(
         document.body.clientHeight - dragEl.clientHeight,
         Math.max(0, dragEl.offsetTop)
-      );
+      )
 
-      positionElement();
+      positionElement()
     } catch (exception) {
       // robust
     }
   }
 
   function positionElement() {
-    if (dragEl.style.display === "none") return;
+    if (dragEl.style.display === 'none') return
 
-    const halfWidth = document.body.clientWidth / 2;
-    const anchorRight = newPosX + dragEl.clientWidth / 2 > halfWidth;
+    const halfWidth = document.body.clientWidth / 2
+    const anchorRight = newPosX + dragEl.clientWidth / 2 > halfWidth
 
     // set the element's new position:
     if (anchorRight) {
-      dragEl.style.left = "unset";
+      dragEl.style.left = 'unset'
       dragEl.style.right =
-        document.body.clientWidth - newPosX - dragEl.clientWidth + "px";
+        document.body.clientWidth - newPosX - dragEl.clientWidth + 'px'
     } else {
-      dragEl.style.left = newPosX + "px";
-      dragEl.style.right = "unset";
+      dragEl.style.left = newPosX + 'px'
+      dragEl.style.right = 'unset'
     }
 
-    dragEl.style.top = newPosY + "px";
-    dragEl.style.bottom = "unset";
+    dragEl.style.top = newPosY + 'px'
+    dragEl.style.bottom = 'unset'
 
     if (savePos) {
       localStorage.setItem(
-        "Comfy.MenuPosition",
+        'Comfy.MenuPosition',
         JSON.stringify({
           x: dragEl.offsetLeft,
-          y: dragEl.offsetTop,
+          y: dragEl.offsetTop
         })
-      );
+      )
     }
   }
 
   function restorePos() {
-    let posString = localStorage.getItem("Comfy.MenuPosition");
+    let posString = localStorage.getItem('Comfy.MenuPosition')
     if (posString) {
-      const pos = JSON.parse(posString) as Position2D;
-      newPosX = pos.x;
-      newPosY = pos.y;
-      positionElement();
-      ensureInBounds();
+      const pos = JSON.parse(posString) as Position2D
+      newPosX = pos.x
+      newPosY = pos.y
+      positionElement()
+      ensureInBounds()
     }
   }
 
-  let savePos = undefined;
+  let savePos = undefined
   settings.addSetting({
-    id: "Comfy.MenuPosition",
-    name: "Save menu position",
-    type: "boolean",
+    id: 'Comfy.MenuPosition',
+    name: 'Save menu position',
+    type: 'boolean',
     defaultValue: savePos,
     onChange(value) {
       if (savePos === undefined && value) {
-        restorePos();
+        restorePos()
       }
-      savePos = value;
-    },
-  });
+      savePos = value
+    }
+  })
 
   function dragMouseDown(e) {
-    e = e || window.event;
-    e.preventDefault();
+    e = e || window.event
+    e.preventDefault()
     // get the mouse cursor position at startup:
-    posStartX = e.clientX;
-    posStartY = e.clientY;
-    document.onmouseup = closeDragElement;
+    posStartX = e.clientX
+    posStartY = e.clientY
+    document.onmouseup = closeDragElement
     // call a function whenever the cursor moves:
-    document.onmousemove = elementDrag;
+    document.onmousemove = elementDrag
   }
 
   function elementDrag(e) {
-    e = e || window.event;
-    e.preventDefault();
+    e = e || window.event
+    e.preventDefault()
 
-    dragEl.classList.add("comfy-menu-manual-pos");
+    dragEl.classList.add('comfy-menu-manual-pos')
 
     // calculate the new cursor position:
-    posDiffX = e.clientX - posStartX;
-    posDiffY = e.clientY - posStartY;
-    posStartX = e.clientX;
-    posStartY = e.clientY;
+    posDiffX = e.clientX - posStartX
+    posDiffY = e.clientY - posStartY
+    posStartX = e.clientX
+    posStartY = e.clientY
 
     newPosX = Math.min(
       document.body.clientWidth - dragEl.clientWidth,
       Math.max(0, dragEl.offsetLeft + posDiffX)
-    );
+    )
     newPosY = Math.min(
       document.body.clientHeight - dragEl.clientHeight,
       Math.max(0, dragEl.offsetTop + posDiffY)
-    );
+    )
 
-    positionElement();
+    positionElement()
   }
 
-  window.addEventListener("resize", () => {
-    ensureInBounds();
-  });
+  window.addEventListener('resize', () => {
+    ensureInBounds()
+  })
 
   function closeDragElement() {
     // stop moving when mouse button is released:
-    document.onmouseup = null;
-    document.onmousemove = null;
+    document.onmouseup = null
+    document.onmousemove = null
   }
 
-  return restorePos;
+  return restorePos
 }
 
 class ComfyList {
-  #type;
-  #text;
-  #reverse;
-  element: HTMLDivElement;
-  button?: HTMLButtonElement;
+  #type
+  #text
+  #reverse
+  element: HTMLDivElement
+  button?: HTMLButtonElement
 
   constructor(text, type?, reverse?) {
-    this.#text = text;
-    this.#type = type || text.toLowerCase();
-    this.#reverse = reverse || false;
-    this.element = $el("div.comfy-list") as HTMLDivElement;
-    this.element.style.display = "none";
+    this.#text = text
+    this.#type = type || text.toLowerCase()
+    this.#reverse = reverse || false
+    this.element = $el('div.comfy-list') as HTMLDivElement
+    this.element.style.display = 'none'
   }
 
   get visible() {
-    return this.element.style.display !== "none";
+    return this.element.style.display !== 'none'
   }
 
   async load() {
-    const items = await api.getItems(this.#type);
+    const items = await api.getItems(this.#type)
     this.element.replaceChildren(
       ...Object.keys(items).flatMap((section) => [
-        $el("h4", {
-          textContent: section,
+        $el('h4', {
+          textContent: section
         }),
-        $el("div.comfy-list-items", [
+        $el('div.comfy-list-items', [
           ...(this.#reverse ? items[section].reverse() : items[section]).map(
             (item: TaskItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
               const removeAction =
-                "remove" in item
+                'remove' in item
                   ? item.remove
                   : {
-                      name: "Delete",
-                      cb: () => api.deleteItem(this.#type, item.prompt[1]),
-                    };
-              return $el("div", { textContent: item.prompt[0] + ": " }, [
-                $el("button", {
-                  textContent: "Load",
+                      name: 'Delete',
+                      cb: () => api.deleteItem(this.#type, item.prompt[1])
+                    }
+              return $el('div', { textContent: item.prompt[0] + ': ' }, [
+                $el('button', {
+                  textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
                       item.prompt[3].extra_pnginfo.workflow,
                       true,
                       false
-                    );
-                    if ("outputs" in item) {
-                      app.nodeOutputs = item.outputs;
+                    )
+                    if ('outputs' in item) {
+                      app.nodeOutputs = item.outputs
                     }
-                  },
+                  }
                 }),
-                $el("button", {
+                $el('button', {
                   textContent: removeAction.name,
                   onclick: async () => {
-                    await removeAction.cb();
-                    await this.update();
-                  },
-                }),
-              ]);
+                    await removeAction.cb()
+                    await this.update()
+                  }
+                })
+              ])
             }
-          ),
-        ]),
+          )
+        ])
       ]),
-      $el("div.comfy-list-actions", [
-        $el("button", {
-          textContent: "Clear " + this.#text,
+      $el('div.comfy-list-actions', [
+        $el('button', {
+          textContent: 'Clear ' + this.#text,
           onclick: async () => {
-            await api.clearItems(this.#type);
-            await this.load();
-          },
+            await api.clearItems(this.#type)
+            await this.load()
+          }
         }),
-        $el("button", { textContent: "Refresh", onclick: () => this.load() }),
+        $el('button', { textContent: 'Refresh', onclick: () => this.load() })
       ])
-    );
+    )
   }
 
   async update() {
     if (this.visible) {
-      await this.load();
+      await this.load()
     }
   }
 
   async show() {
-    this.element.style.display = "block";
-    this.button.textContent = "Close";
+    this.element.style.display = 'block'
+    this.button.textContent = 'Close'
 
-    await this.load();
+    await this.load()
   }
 
   hide() {
-    this.element.style.display = "none";
-    this.button.textContent = "View " + this.#text;
+    this.element.style.display = 'none'
+    this.button.textContent = 'View ' + this.#text
   }
 
   toggle() {
     if (this.visible) {
-      this.hide();
-      return false;
+      this.hide()
+      return false
     } else {
-      this.show();
-      return true;
+      this.show()
+      return true
     }
   }
 }
 
 export class ComfyUI {
-  app: ComfyApp;
-  dialog: _ComfyDialog;
-  settings: ComfySettingsDialog;
-  batchCount: number;
-  lastQueueSize: number;
-  queue: ComfyList;
-  history: ComfyList;
-  autoQueueMode: string;
-  graphHasChanged: boolean;
-  autoQueueEnabled: boolean;
-  menuHamburger: HTMLDivElement;
-  menuContainer: HTMLDivElement;
-  queueSize: Element;
-  restoreMenuPosition: () => void;
-  loadFile: () => void;
+  app: ComfyApp
+  dialog: _ComfyDialog
+  settings: ComfySettingsDialog
+  batchCount: number
+  lastQueueSize: number
+  queue: ComfyList
+  history: ComfyList
+  autoQueueMode: string
+  graphHasChanged: boolean
+  autoQueueEnabled: boolean
+  menuHamburger: HTMLDivElement
+  menuContainer: HTMLDivElement
+  queueSize: Element
+  restoreMenuPosition: () => void
+  loadFile: () => void
 
   constructor(app) {
-    this.app = app;
-    this.dialog = new ComfyDialog();
-    this.settings = new ComfySettingsDialog(app);
+    this.app = app
+    this.dialog = new ComfyDialog()
+    this.settings = new ComfySettingsDialog(app)
 
-    this.batchCount = 1;
-    this.lastQueueSize = 0;
-    this.queue = new ComfyList("Queue");
-    this.history = new ComfyList("History", "history", true);
+    this.batchCount = 1
+    this.lastQueueSize = 0
+    this.queue = new ComfyList('Queue')
+    this.history = new ComfyList('History', 'history', true)
 
-    api.addEventListener("status", () => {
-      this.queue.update();
-      this.history.update();
-    });
+    api.addEventListener('status', () => {
+      this.queue.update()
+      this.history.update()
+    })
 
     const confirmClear = this.settings.addSetting({
-      id: "Comfy.ConfirmClear",
-      name: "Require confirmation when clearing workflow",
-      type: "boolean",
-      defaultValue: true,
-    });
+      id: 'Comfy.ConfirmClear',
+      name: 'Require confirmation when clearing workflow',
+      type: 'boolean',
+      defaultValue: true
+    })
 
     const promptFilename = this.settings.addSetting({
-      id: "Comfy.PromptFilename",
-      name: "Prompt for filename when saving workflow",
-      type: "boolean",
-      defaultValue: true,
-    });
+      id: 'Comfy.PromptFilename',
+      name: 'Prompt for filename when saving workflow',
+      type: 'boolean',
+      defaultValue: true
+    })
 
     /**
      * file format for preview
@@ -388,399 +388,399 @@ export class ComfyUI {
      * @type {string}
      */
     const previewImage = this.settings.addSetting({
-      id: "Comfy.PreviewFormat",
-      name: "When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.",
-      type: "text",
-      defaultValue: "",
-    });
+      id: 'Comfy.PreviewFormat',
+      name: 'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
+      type: 'text',
+      defaultValue: ''
+    })
 
     this.settings.addSetting({
-      id: "Comfy.DisableSliders",
-      name: "Disable sliders.",
-      type: "boolean",
-      defaultValue: false,
-    });
+      id: 'Comfy.DisableSliders',
+      name: 'Disable sliders.',
+      type: 'boolean',
+      defaultValue: false
+    })
 
     this.settings.addSetting({
-      id: "Comfy.DisableFloatRounding",
-      name: "Disable rounding floats (requires page reload).",
-      type: "boolean",
-      defaultValue: false,
-    });
+      id: 'Comfy.DisableFloatRounding',
+      name: 'Disable rounding floats (requires page reload).',
+      type: 'boolean',
+      defaultValue: false
+    })
 
     this.settings.addSetting({
-      id: "Comfy.FloatRoundingPrecision",
-      name: "Decimal places [0 = auto] (requires page reload).",
-      type: "slider",
+      id: 'Comfy.FloatRoundingPrecision',
+      name: 'Decimal places [0 = auto] (requires page reload).',
+      type: 'slider',
       attrs: {
         min: 0,
         max: 6,
-        step: 1,
+        step: 1
       },
-      defaultValue: 0,
-    });
+      defaultValue: 0
+    })
 
     this.settings.addSetting({
-      id: "Comfy.NodeSearchBoxImpl",
-      name: "Node Search box implementation",
-      type: "combo",
-      options: ["default", "litegraph (legacy)"],
-      defaultValue: "default",
+      id: 'Comfy.NodeSearchBoxImpl',
+      name: 'Node Search box implementation',
+      type: 'combo',
+      options: ['default', 'litegraph (legacy)'],
+      defaultValue: 'default',
       onChange: (value?: string) => {
-        if (!app.canvas) return;
+        if (!app.canvas) return
 
-        value = value || "default";
-        const useLitegraphSearch = value === "litegraph (legacy)";
-        app.canvas.allow_searchbox = useLitegraphSearch;
-      },
-    });
+        value = value || 'default'
+        const useLitegraphSearch = value === 'litegraph (legacy)'
+        app.canvas.allow_searchbox = useLitegraphSearch
+      }
+    })
 
-    const fileInput = $el("input", {
-      id: "comfy-file-input",
-      type: "file",
-      accept: ".json,image/png,.latent,.safetensors,image/webp,audio/flac",
-      style: { display: "none" },
+    const fileInput = $el('input', {
+      id: 'comfy-file-input',
+      type: 'file',
+      accept: '.json,image/png,.latent,.safetensors,image/webp,audio/flac',
+      style: { display: 'none' },
       parent: document.body,
       onchange: () => {
-        app.handleFile(fileInput.files[0]);
-      },
-    }) as HTMLInputElement;
+        app.handleFile(fileInput.files[0])
+      }
+    }) as HTMLInputElement
 
-    this.loadFile = () => fileInput.click();
+    this.loadFile = () => fileInput.click()
 
     const autoQueueModeEl = toggleSwitch(
-      "autoQueueMode",
+      'autoQueueMode',
       [
         {
-          text: "instant",
-          tooltip: "A new prompt will be queued as soon as the queue reaches 0",
+          text: 'instant',
+          tooltip: 'A new prompt will be queued as soon as the queue reaches 0'
         },
         {
-          text: "change",
+          text: 'change',
           tooltip:
-            "A new prompt will be queued when the queue is at 0 and the graph is/has changed",
-        },
+            'A new prompt will be queued when the queue is at 0 and the graph is/has changed'
+        }
       ],
       {
         onChange: (value) => {
-          this.autoQueueMode = value.item.value;
-        },
-      }
-    );
-    autoQueueModeEl.style.display = "none";
-
-    api.addEventListener("graphChanged", () => {
-      if (this.autoQueueMode === "change" && this.autoQueueEnabled === true) {
-        if (this.lastQueueSize === 0) {
-          this.graphHasChanged = false;
-          app.queuePrompt(0, this.batchCount);
-        } else {
-          this.graphHasChanged = true;
+          this.autoQueueMode = value.item.value
         }
       }
-    });
+    )
+    autoQueueModeEl.style.display = 'none'
+
+    api.addEventListener('graphChanged', () => {
+      if (this.autoQueueMode === 'change' && this.autoQueueEnabled === true) {
+        if (this.lastQueueSize === 0) {
+          this.graphHasChanged = false
+          app.queuePrompt(0, this.batchCount)
+        } else {
+          this.graphHasChanged = true
+        }
+      }
+    })
 
     this.menuHamburger = $el(
-      "div.comfy-menu-hamburger",
+      'div.comfy-menu-hamburger',
       {
         parent: document.body,
         onclick: () => {
-          this.menuContainer.style.display = "block";
-          this.menuHamburger.style.display = "none";
-        },
+          this.menuContainer.style.display = 'block'
+          this.menuHamburger.style.display = 'none'
+        }
       },
-      [$el("div"), $el("div"), $el("div")]
-    ) as HTMLDivElement;
+      [$el('div'), $el('div'), $el('div')]
+    ) as HTMLDivElement
 
-    this.menuContainer = $el("div.comfy-menu", { parent: document.body }, [
+    this.menuContainer = $el('div.comfy-menu', { parent: document.body }, [
       $el(
-        "div.drag-handle.comfy-menu-header",
+        'div.drag-handle.comfy-menu-header',
         {
           style: {
-            overflow: "hidden",
-            position: "relative",
-            width: "100%",
-            cursor: "default",
-          },
+            overflow: 'hidden',
+            position: 'relative',
+            width: '100%',
+            cursor: 'default'
+          }
         },
         [
-          $el("span.drag-handle"),
-          $el("span.comfy-menu-queue-size", { $: (q) => (this.queueSize = q) }),
-          $el("div.comfy-menu-actions", [
-            $el("button.comfy-settings-btn", {
-              textContent: "⚙️",
-              onclick: () => this.settings.show(),
+          $el('span.drag-handle'),
+          $el('span.comfy-menu-queue-size', { $: (q) => (this.queueSize = q) }),
+          $el('div.comfy-menu-actions', [
+            $el('button.comfy-settings-btn', {
+              textContent: '⚙️',
+              onclick: () => this.settings.show()
             }),
-            $el("button.comfy-close-menu-btn", {
-              textContent: "\u00d7",
+            $el('button.comfy-close-menu-btn', {
+              textContent: '\u00d7',
               onclick: () => {
-                this.menuContainer.style.display = "none";
-                this.menuHamburger.style.display = "flex";
-              },
-            }),
-          ]),
+                this.menuContainer.style.display = 'none'
+                this.menuHamburger.style.display = 'flex'
+              }
+            })
+          ])
         ]
       ),
-      $el("button.comfy-queue-btn", {
-        id: "queue-button",
-        textContent: "Queue Prompt",
-        onclick: () => app.queuePrompt(0, this.batchCount),
+      $el('button.comfy-queue-btn', {
+        id: 'queue-button',
+        textContent: 'Queue Prompt',
+        onclick: () => app.queuePrompt(0, this.batchCount)
       }),
-      $el("div", {}, [
-        $el("label", { innerHTML: "Extra options" }, [
-          $el("input", {
-            type: "checkbox",
+      $el('div', {}, [
+        $el('label', { innerHTML: 'Extra options' }, [
+          $el('input', {
+            type: 'checkbox',
             onchange: (i) => {
-              document.getElementById("extraOptions").style.display = i
+              document.getElementById('extraOptions').style.display = i
                 .srcElement.checked
-                ? "block"
-                : "none";
+                ? 'block'
+                : 'none'
               this.batchCount = i.srcElement.checked
                 ? Number.parseInt(
                     (
                       document.getElementById(
-                        "batchCountInputRange"
+                        'batchCountInputRange'
                       ) as HTMLInputElement
                     ).value
                   )
-                : 1;
-              (
-                document.getElementById("autoQueueCheckbox") as HTMLInputElement
-              ).checked = false;
-              this.autoQueueEnabled = false;
-            },
-          }),
-        ]),
+                : 1
+              ;(
+                document.getElementById('autoQueueCheckbox') as HTMLInputElement
+              ).checked = false
+              this.autoQueueEnabled = false
+            }
+          })
+        ])
       ]),
       $el(
-        "div",
-        { id: "extraOptions", style: { width: "100%", display: "none" } },
+        'div',
+        { id: 'extraOptions', style: { width: '100%', display: 'none' } },
         [
-          $el("div", [
-            $el("label", { innerHTML: "Batch count" }),
-            $el("input", {
-              id: "batchCountInputNumber",
-              type: "number",
+          $el('div', [
+            $el('label', { innerHTML: 'Batch count' }),
+            $el('input', {
+              id: 'batchCountInputNumber',
+              type: 'number',
               value: this.batchCount,
-              min: "1",
-              style: { width: "35%", marginLeft: "0.4em" },
+              min: '1',
+              style: { width: '35%', marginLeft: '0.4em' },
               oninput: (i) => {
-                this.batchCount = i.target.value;
+                this.batchCount = i.target.value
                 /* Even though an <input> element with a type of range logically represents a number (since
               it's used for numeric input), the value it holds is still treated as a string in HTML and
               JavaScript. This behavior is consistent across all <input> elements regardless of their type
               (like text, number, or range), where the .value property is always a string. */
-                (
+                ;(
                   document.getElementById(
-                    "batchCountInputRange"
+                    'batchCountInputRange'
                   ) as HTMLInputElement
-                ).value = this.batchCount.toString();
-              },
+                ).value = this.batchCount.toString()
+              }
             }),
-            $el("input", {
-              id: "batchCountInputRange",
-              type: "range",
-              min: "1",
-              max: "100",
+            $el('input', {
+              id: 'batchCountInputRange',
+              type: 'range',
+              min: '1',
+              max: '100',
               value: this.batchCount,
               oninput: (i) => {
-                this.batchCount = i.srcElement.value;
+                this.batchCount = i.srcElement.value
                 // Note
-                (
+                ;(
                   document.getElementById(
-                    "batchCountInputNumber"
+                    'batchCountInputNumber'
                   ) as HTMLInputElement
-                ).value = i.srcElement.value;
-              },
-            }),
+                ).value = i.srcElement.value
+              }
+            })
           ]),
-          $el("div", [
-            $el("label", {
-              for: "autoQueueCheckbox",
-              innerHTML: "Auto Queue",
+          $el('div', [
+            $el('label', {
+              for: 'autoQueueCheckbox',
+              innerHTML: 'Auto Queue'
             }),
-            $el("input", {
-              id: "autoQueueCheckbox",
-              type: "checkbox",
+            $el('input', {
+              id: 'autoQueueCheckbox',
+              type: 'checkbox',
               checked: false,
-              title: "Automatically queue prompt when the queue size hits 0",
+              title: 'Automatically queue prompt when the queue size hits 0',
               onchange: (e) => {
-                this.autoQueueEnabled = e.target.checked;
+                this.autoQueueEnabled = e.target.checked
                 autoQueueModeEl.style.display = this.autoQueueEnabled
-                  ? ""
-                  : "none";
-              },
+                  ? ''
+                  : 'none'
+              }
             }),
-            autoQueueModeEl,
-          ]),
+            autoQueueModeEl
+          ])
         ]
       ),
-      $el("div.comfy-menu-btns", [
-        $el("button", {
-          id: "queue-front-button",
-          textContent: "Queue Front",
-          onclick: () => app.queuePrompt(-1, this.batchCount),
+      $el('div.comfy-menu-btns', [
+        $el('button', {
+          id: 'queue-front-button',
+          textContent: 'Queue Front',
+          onclick: () => app.queuePrompt(-1, this.batchCount)
         }),
-        $el("button", {
+        $el('button', {
           $: (b) => (this.queue.button = b as HTMLButtonElement),
-          id: "comfy-view-queue-button",
-          textContent: "View Queue",
+          id: 'comfy-view-queue-button',
+          textContent: 'View Queue',
           onclick: () => {
-            this.history.hide();
-            this.queue.toggle();
-          },
+            this.history.hide()
+            this.queue.toggle()
+          }
         }),
-        $el("button", {
+        $el('button', {
           $: (b) => (this.history.button = b as HTMLButtonElement),
-          id: "comfy-view-history-button",
-          textContent: "View History",
+          id: 'comfy-view-history-button',
+          textContent: 'View History',
           onclick: () => {
-            this.queue.hide();
-            this.history.toggle();
-          },
-        }),
+            this.queue.hide()
+            this.history.toggle()
+          }
+        })
       ]),
       this.queue.element,
       this.history.element,
-      $el("button", {
-        id: "comfy-save-button",
-        textContent: "Save",
+      $el('button', {
+        id: 'comfy-save-button',
+        textContent: 'Save',
         onclick: () => {
-          let filename = "workflow.json";
+          let filename = 'workflow.json'
           if (promptFilename.value) {
-            filename = prompt("Save workflow as:", filename);
-            if (!filename) return;
-            if (!filename.toLowerCase().endsWith(".json")) {
-              filename += ".json";
+            filename = prompt('Save workflow as:', filename)
+            if (!filename) return
+            if (!filename.toLowerCase().endsWith('.json')) {
+              filename += '.json'
             }
           }
           app.graphToPrompt().then((p) => {
-            const json = JSON.stringify(p.workflow, null, 2); // convert the data to a JSON string
-            const blob = new Blob([json], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = $el("a", {
+            const json = JSON.stringify(p.workflow, null, 2) // convert the data to a JSON string
+            const blob = new Blob([json], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = $el('a', {
               href: url,
               download: filename,
-              style: { display: "none" },
-              parent: document.body,
-            });
-            a.click();
+              style: { display: 'none' },
+              parent: document.body
+            })
+            a.click()
             setTimeout(function () {
-              a.remove();
-              window.URL.revokeObjectURL(url);
-            }, 0);
-          });
-        },
+              a.remove()
+              window.URL.revokeObjectURL(url)
+            }, 0)
+          })
+        }
       }),
-      $el("button", {
-        id: "comfy-dev-save-api-button",
-        textContent: "Save (API Format)",
-        style: { width: "100%", display: "none" },
+      $el('button', {
+        id: 'comfy-dev-save-api-button',
+        textContent: 'Save (API Format)',
+        style: { width: '100%', display: 'none' },
         onclick: () => {
-          let filename = "workflow_api.json";
+          let filename = 'workflow_api.json'
           if (promptFilename.value) {
-            filename = prompt("Save workflow (API) as:", filename);
-            if (!filename) return;
-            if (!filename.toLowerCase().endsWith(".json")) {
-              filename += ".json";
+            filename = prompt('Save workflow (API) as:', filename)
+            if (!filename) return
+            if (!filename.toLowerCase().endsWith('.json')) {
+              filename += '.json'
             }
           }
           app.graphToPrompt().then((p) => {
-            const json = JSON.stringify(p.output, null, 2); // convert the data to a JSON string
-            const blob = new Blob([json], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = $el("a", {
+            const json = JSON.stringify(p.output, null, 2) // convert the data to a JSON string
+            const blob = new Blob([json], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = $el('a', {
               href: url,
               download: filename,
-              style: { display: "none" },
-              parent: document.body,
-            });
-            a.click();
+              style: { display: 'none' },
+              parent: document.body
+            })
+            a.click()
             setTimeout(function () {
-              a.remove();
-              window.URL.revokeObjectURL(url);
-            }, 0);
-          });
-        },
+              a.remove()
+              window.URL.revokeObjectURL(url)
+            }, 0)
+          })
+        }
       }),
-      $el("button", {
-        id: "comfy-load-button",
-        textContent: "Load",
-        onclick: () => fileInput.click(),
+      $el('button', {
+        id: 'comfy-load-button',
+        textContent: 'Load',
+        onclick: () => fileInput.click()
       }),
-      $el("button", {
-        id: "comfy-refresh-button",
-        textContent: "Refresh",
-        onclick: () => app.refreshComboInNodes(),
+      $el('button', {
+        id: 'comfy-refresh-button',
+        textContent: 'Refresh',
+        onclick: () => app.refreshComboInNodes()
       }),
-      $el("button", {
-        id: "comfy-clipspace-button",
-        textContent: "Clipspace",
-        onclick: () => app.openClipspace(),
+      $el('button', {
+        id: 'comfy-clipspace-button',
+        textContent: 'Clipspace',
+        onclick: () => app.openClipspace()
       }),
-      $el("button", {
-        id: "comfy-clear-button",
-        textContent: "Clear",
+      $el('button', {
+        id: 'comfy-clear-button',
+        textContent: 'Clear',
         onclick: () => {
-          if (!confirmClear.value || confirm("Clear workflow?")) {
-            app.clean();
-            app.graph.clear();
-            app.resetView();
-            api.dispatchEvent(new CustomEvent("graphCleared"));
+          if (!confirmClear.value || confirm('Clear workflow?')) {
+            app.clean()
+            app.graph.clear()
+            app.resetView()
+            api.dispatchEvent(new CustomEvent('graphCleared'))
           }
-        },
+        }
       }),
-      $el("button", {
-        id: "comfy-load-default-button",
-        textContent: "Load Default",
+      $el('button', {
+        id: 'comfy-load-default-button',
+        textContent: 'Load Default',
         onclick: async () => {
-          if (!confirmClear.value || confirm("Load default workflow?")) {
-            app.resetView();
-            await app.loadGraphData();
+          if (!confirmClear.value || confirm('Load default workflow?')) {
+            app.resetView()
+            await app.loadGraphData()
           }
-        },
+        }
       }),
-      $el("button", {
-        id: "comfy-reset-view-button",
-        textContent: "Reset View",
+      $el('button', {
+        id: 'comfy-reset-view-button',
+        textContent: 'Reset View',
         onclick: async () => {
-          app.resetView();
-        },
-      }),
-    ]) as HTMLDivElement;
+          app.resetView()
+        }
+      })
+    ]) as HTMLDivElement
 
     const devMode = this.settings.addSetting({
-      id: "Comfy.DevMode",
-      name: "Enable Dev mode Options",
-      type: "boolean",
+      id: 'Comfy.DevMode',
+      name: 'Enable Dev mode Options',
+      type: 'boolean',
       defaultValue: false,
       onChange: function (value) {
-        document.getElementById("comfy-dev-save-api-button").style.display =
-          value ? "flex" : "none";
-      },
-    });
+        document.getElementById('comfy-dev-save-api-button').style.display =
+          value ? 'flex' : 'none'
+      }
+    })
 
-    this.restoreMenuPosition = dragElement(this.menuContainer, this.settings);
+    this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
 
-    this.setStatus({ exec_info: { queue_remaining: "X" } });
+    this.setStatus({ exec_info: { queue_remaining: 'X' } })
   }
 
   setStatus(status) {
     this.queueSize.textContent =
-      "Queue size: " + (status ? status.exec_info.queue_remaining : "ERR");
+      'Queue size: ' + (status ? status.exec_info.queue_remaining : 'ERR')
     if (status) {
       if (
         this.lastQueueSize != 0 &&
         status.exec_info.queue_remaining == 0 &&
         this.autoQueueEnabled &&
-        (this.autoQueueMode === "instant" || this.graphHasChanged) &&
+        (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
         !app.lastExecutionError
       ) {
-        app.queuePrompt(0, this.batchCount);
-        status.exec_info.queue_remaining += this.batchCount;
-        this.graphHasChanged = false;
+        app.queuePrompt(0, this.batchCount)
+        status.exec_info.queue_remaining += this.batchCount
+        this.graphHasChanged = false
       }
-      this.lastQueueSize = status.exec_info.queue_remaining;
+      this.lastQueueSize = status.exec_info.queue_remaining
     }
   }
 }

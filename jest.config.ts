@@ -1,26 +1,26 @@
-import type { JestConfigWithTsJest } from "ts-jest";
+import type { JestConfigWithTsJest } from 'ts-jest'
 
 const jestConfig: JestConfigWithTsJest = {
-  testMatch: ["**/tests-ui/**/*.test.ts"],
-  testEnvironment: "jsdom",
+  testMatch: ['**/tests-ui/**/*.test.ts'],
+  testEnvironment: 'jsdom',
   transform: {
-    "^.+\\.m?[tj]sx?$": [
-      "ts-jest",
+    '^.+\\.m?[tj]sx?$': [
+      'ts-jest',
       {
-        tsconfig: "./tsconfig.json",
-        babelConfig: "./babel.config.json",
-      },
-    ],
+        tsconfig: './tsconfig.json',
+        babelConfig: './babel.config.json'
+      }
+    ]
   },
-  setupFiles: ["./tests-ui/globalSetup.ts"],
-  setupFilesAfterEnv: ["./tests-ui/afterSetup.ts"],
+  setupFiles: ['./tests-ui/globalSetup.ts'],
+  setupFilesAfterEnv: ['./tests-ui/afterSetup.ts'],
   clearMocks: true,
   resetModules: true,
   testTimeout: 10000,
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
-    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-  },
-};
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
+  }
+}
 
-export default jestConfig;
+export default jestConfig

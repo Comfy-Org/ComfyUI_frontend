@@ -7,10 +7,10 @@
 </template>
 
 <script setup lang="ts">
-import { app } from "@/scripts/app";
-import SideBarIcon from "./SideBarIcon.vue";
+import { app } from '@/scripts/app'
+import SideBarIcon from './SideBarIcon.vue'
 
 const showSetting = () => {
-  app.ui.settings.show();
-};
+  app.ui.settings.show()
+}
 </script>

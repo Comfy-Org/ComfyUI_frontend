@@ -8,23 +8,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import SideBarIcon from "./SideBarIcon.vue";
-import { useSettingStore } from "@/stores/settingStore";
+import { computed, ref } from 'vue'
+import SideBarIcon from './SideBarIcon.vue'
+import { useSettingStore } from '@/stores/settingStore'
 
-const previousDarkTheme = ref("dark");
+const previousDarkTheme = ref('dark')
 const currentTheme = computed(() =>
-  useSettingStore().get("Comfy.ColorPalette", "dark")
-);
-const isDarkMode = computed(() => currentTheme.value !== "light");
-const icon = computed(() => (isDarkMode.value ? "pi pi-moon" : "pi pi-sun"));
+  useSettingStore().get('Comfy.ColorPalette', 'dark')
+)
+const isDarkMode = computed(() => currentTheme.value !== 'light')
+const icon = computed(() => (isDarkMode.value ? 'pi pi-moon' : 'pi pi-sun'))
 
 const toggleTheme = () => {
   if (isDarkMode.value) {
-    previousDarkTheme.value = currentTheme.value;
-    useSettingStore().set("Comfy.ColorPalette", "light");
+    previousDarkTheme.value = currentTheme.value
+    useSettingStore().set('Comfy.ColorPalette', 'light')
   } else {
-    useSettingStore().set("Comfy.ColorPalette", previousDarkTheme.value);
+    useSettingStore().set('Comfy.ColorPalette', previousDarkTheme.value)
   }
-};
+}
 </script>
