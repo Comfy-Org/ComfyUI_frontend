@@ -1,32 +1,32 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia'
 
 interface WorkspaceState {
-  activeSidebarTab: string | null;
-  sidebarTabsOrder: string[]; // Array of tab IDs in order
+  activeSidebarTab: string | null
+  sidebarTabsOrder: string[] // Array of tab IDs in order
 }
 
-export const useWorkspaceStore = defineStore("workspace", {
+export const useWorkspaceStore = defineStore('workspace', {
   state: (): WorkspaceState => ({
     activeSidebarTab: null,
-    sidebarTabsOrder: [],
+    sidebarTabsOrder: []
   }),
   actions: {
     updateActiveSidebarTab(tabId: string) {
-      this.activeSidebarTab = tabId;
+      this.activeSidebarTab = tabId
     },
     updateSidebarOrder(newOrder: string[]) {
-      this.sidebarTabsOrder = newOrder;
+      this.sidebarTabsOrder = newOrder
     },
     serialize() {
       return JSON.stringify({
         activeSidebarTab: this.activeSidebarTab,
-        sidebarTabsOrder: this.sidebarTabsOrder,
-      });
+        sidebarTabsOrder: this.sidebarTabsOrder
+      })
     },
     deserialize(state: string) {
-      const parsedState = JSON.parse(state);
-      this.sidebarTabsOrder = parsedState.sidebarTabsOrder;
-      this.activeSidebarTab = parsedState.activeSidebarTab;
-    },
-  },
-});
+      const parsedState = JSON.parse(state)
+      this.sidebarTabsOrder = parsedState.sidebarTabsOrder
+      this.activeSidebarTab = parsedState.activeSidebarTab
+    }
+  }
+})

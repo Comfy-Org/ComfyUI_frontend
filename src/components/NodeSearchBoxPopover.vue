@@ -21,142 +21,142 @@
 </template>
 
 <script setup lang="ts">
-import { app } from "@/scripts/app";
-import { inject, onMounted, onUnmounted, reactive, Ref, ref } from "vue";
-import NodeSearchBox from "./NodeSearchBox.vue";
-import Dialog from "primevue/dialog";
+import { app } from '@/scripts/app'
+import { inject, onMounted, onUnmounted, reactive, Ref, ref } from 'vue'
+import NodeSearchBox from './NodeSearchBox.vue'
+import Dialog from 'primevue/dialog'
 import {
   INodeSlot,
   LiteGraph,
   LiteGraphCanvasEvent,
   LGraphNode,
-  LinkReleaseContext,
-} from "@comfyorg/litegraph";
-import { FilterAndValue } from "@/services/nodeSearchService";
-import { ComfyNodeDef } from "@/types/apiTypes";
-import { useNodeDefStore } from "@/stores/nodeDefStore";
+  LinkReleaseContext
+} from '@comfyorg/litegraph'
+import { FilterAndValue } from '@/services/nodeSearchService'
+import { ComfyNodeDef } from '@/types/apiTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 interface LiteGraphPointerEvent extends Event {
-  canvasX: number;
-  canvasY: number;
+  canvasX: number
+  canvasY: number
 }
 
-const visible = ref(false);
-const dismissable = ref(true);
-const triggerEvent = ref<LiteGraphCanvasEvent | null>(null);
+const visible = ref(false)
+const dismissable = ref(true)
+const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
 const getNewNodeLocation = (): [number, number] => {
   if (triggerEvent.value === null) {
-    return [100, 100];
+    return [100, 100]
   }
 
   const originalEvent = triggerEvent.value.detail
-    .originalEvent as LiteGraphPointerEvent;
-  return [originalEvent.canvasX, originalEvent.canvasY];
-};
-const nodeFilters = reactive([]);
+    .originalEvent as LiteGraphPointerEvent
+  return [originalEvent.canvasX, originalEvent.canvasY]
+}
+const nodeFilters = reactive([])
 const addFilter = (filter: FilterAndValue) => {
-  nodeFilters.push(filter);
-};
+  nodeFilters.push(filter)
+}
 const removeFilter = (filter: FilterAndValue) => {
-  const index = nodeFilters.findIndex((f) => f === filter);
+  const index = nodeFilters.findIndex((f) => f === filter)
   if (index !== -1) {
-    nodeFilters.splice(index, 1);
+    nodeFilters.splice(index, 1)
   }
-};
+}
 const clearFilters = () => {
-  nodeFilters.splice(0, nodeFilters.length);
-};
+  nodeFilters.splice(0, nodeFilters.length)
+}
 const closeDialog = () => {
-  visible.value = false;
-};
+  visible.value = false
+}
 const connectNodeOnLinkRelease = (
   node: LGraphNode,
   context: LinkReleaseContext
 ) => {
-  const destIsInput = context.node_from !== undefined;
+  const destIsInput = context.node_from !== undefined
   const srcNode = (
     destIsInput ? context.node_from : context.node_to
-  ) as LGraphNode;
-  const srcSlotIndex: number = context.slot_from.slot_index;
+  ) as LGraphNode
+  const srcSlotIndex: number = context.slot_from.slot_index
   const linkDataType = destIsInput
     ? context.type_filter_in
-    : context.type_filter_out;
-  const destSlots = destIsInput ? node.inputs : node.outputs;
+    : context.type_filter_out
+  const destSlots = destIsInput ? node.inputs : node.outputs
   const destSlotIndex = destSlots.findIndex(
     (slot: INodeSlot) => slot.type === linkDataType
-  );
+  )
 
   if (destSlotIndex === -1) {
     console.warn(
       `Could not find slot with type ${linkDataType} on node ${node.title}`
-    );
-    return;
+    )
+    return
   }
 
   if (destIsInput) {
-    srcNode.connect(srcSlotIndex, node, destSlotIndex);
+    srcNode.connect(srcSlotIndex, node, destSlotIndex)
   } else {
-    node.connect(destSlotIndex, srcNode, srcSlotIndex);
+    node.connect(destSlotIndex, srcNode, srcSlotIndex)
   }
-};
+}
 const addNode = (nodeDef: ComfyNodeDef) => {
-  closeDialog();
-  const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {});
+  closeDialog()
+  const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {})
   if (node) {
-    node.pos = getNewNodeLocation();
-    app.graph.add(node);
+    node.pos = getNewNodeLocation()
+    app.graph.add(node)
 
-    const eventDetail = triggerEvent.value.detail;
-    if (eventDetail.subType === "empty-release") {
-      connectNodeOnLinkRelease(node, eventDetail.linkReleaseContext);
+    const eventDetail = triggerEvent.value.detail
+    if (eventDetail.subType === 'empty-release') {
+      connectNodeOnLinkRelease(node, eventDetail.linkReleaseContext)
     }
   }
-};
+}
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
-  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey;
+  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
   // Ignore empty releases unless shift is pressed
   // Empty release without shift is trigger right click menu
-  if (e.detail.subType === "empty-release" && !shiftPressed) {
-    return;
+  if (e.detail.subType === 'empty-release' && !shiftPressed) {
+    return
   }
 
-  if (e.detail.subType === "empty-release") {
-    const destIsInput = e.detail.linkReleaseContext.node_from !== undefined;
+  if (e.detail.subType === 'empty-release') {
+    const destIsInput = e.detail.linkReleaseContext.node_from !== undefined
     const filter = useNodeDefStore().nodeSearchService.getFilterById(
-      destIsInput ? "input" : "output"
-    );
+      destIsInput ? 'input' : 'output'
+    )
 
     const value = destIsInput
       ? e.detail.linkReleaseContext.type_filter_in
-      : e.detail.linkReleaseContext.type_filter_out;
+      : e.detail.linkReleaseContext.type_filter_out
 
-    addFilter([filter, value]);
+    addFilter([filter, value])
   }
-  triggerEvent.value = e;
-  visible.value = true;
+  triggerEvent.value = e
+  visible.value = true
   // Prevent the dialog from being dismissed immediately
-  dismissable.value = false;
+  dismissable.value = false
   setTimeout(() => {
-    dismissable.value = true;
-  }, 300);
-};
+    dismissable.value = true
+  }, 300)
+}
 
 const handleEscapeKeyPress = (event) => {
-  if (event.key === "Escape") {
-    closeDialog();
+  if (event.key === 'Escape') {
+    closeDialog()
   }
-};
+}
 
 onMounted(() => {
-  document.addEventListener("litegraph:canvas", canvasEventHandler);
-  document.addEventListener("keydown", handleEscapeKeyPress);
-});
+  document.addEventListener('litegraph:canvas', canvasEventHandler)
+  document.addEventListener('keydown', handleEscapeKeyPress)
+})
 
 onUnmounted(() => {
-  document.removeEventListener("litegraph:canvas", canvasEventHandler);
-  document.removeEventListener("keydown", handleEscapeKeyPress);
-});
+  document.removeEventListener('litegraph:canvas', canvasEventHandler)
+  document.removeEventListener('keydown', handleEscapeKeyPress)
+})
 </script>
 
 <style>

@@ -1,40 +1,40 @@
-import { $el } from "../../ui";
-import { applyClasses, ClassList, toggleElement } from "../utils";
-import { prop } from "../../utils";
-import type { ComfyPopup } from "./popup";
-import type { ComfyComponent } from ".";
-import type { ComfyApp } from "@/scripts/app";
+import { $el } from '../../ui'
+import { applyClasses, ClassList, toggleElement } from '../utils'
+import { prop } from '../../utils'
+import type { ComfyPopup } from './popup'
+import type { ComfyComponent } from '.'
+import type { ComfyApp } from '@/scripts/app'
 
 type ComfyButtonProps = {
-  icon?: string;
-  overIcon?: string;
-  iconSize?: number;
-  content?: string | HTMLElement;
-  tooltip?: string;
-  enabled?: boolean;
-  action?: (e: Event, btn: ComfyButton) => void;
-  classList?: ClassList;
-  visibilitySetting?: { id: string; showValue: any };
-  app?: ComfyApp;
-};
+  icon?: string
+  overIcon?: string
+  iconSize?: number
+  content?: string | HTMLElement
+  tooltip?: string
+  enabled?: boolean
+  action?: (e: Event, btn: ComfyButton) => void
+  classList?: ClassList
+  visibilitySetting?: { id: string; showValue: any }
+  app?: ComfyApp
+}
 
 export class ComfyButton implements ComfyComponent<HTMLElement> {
-  #over = 0;
-  #popupOpen = false;
-  isOver = false;
-  iconElement = $el("i.mdi");
-  contentElement = $el("span");
-  popup: ComfyPopup;
-  element: HTMLElement;
-  overIcon: string;
-  iconSize: number;
-  content: string | HTMLElement;
-  icon: string;
-  tooltip: string;
-  classList: ClassList;
-  hidden: boolean;
-  enabled: boolean;
-  action: (e: Event, btn: ComfyButton) => void;
+  #over = 0
+  #popupOpen = false
+  isOver = false
+  iconElement = $el('i.mdi')
+  contentElement = $el('span')
+  popup: ComfyPopup
+  element: HTMLElement
+  overIcon: string
+  iconSize: number
+  content: string | HTMLElement
+  icon: string
+  tooltip: string
+  classList: ClassList
+  hidden: boolean
+  enabled: boolean
+  action: (e: Event, btn: ComfyButton) => void
 
   constructor({
     icon,
@@ -43,134 +43,134 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
     content,
     tooltip,
     action,
-    classList = "comfyui-button",
+    classList = 'comfyui-button',
     visibilitySetting,
     app,
-    enabled = true,
+    enabled = true
   }: ComfyButtonProps) {
     this.element = $el(
-      "button",
+      'button',
       {
         onmouseenter: () => {
-          this.isOver = true;
+          this.isOver = true
           if (this.overIcon) {
-            this.updateIcon();
+            this.updateIcon()
           }
         },
         onmouseleave: () => {
-          this.isOver = false;
+          this.isOver = false
           if (this.overIcon) {
-            this.updateIcon();
+            this.updateIcon()
           }
-        },
+        }
       },
       [this.iconElement, this.contentElement]
-    );
+    )
 
     this.icon = prop(
       this,
-      "icon",
+      'icon',
       icon,
       toggleElement(this.iconElement, { onShow: this.updateIcon })
-    );
-    this.overIcon = prop(this, "overIcon", overIcon, () => {
+    )
+    this.overIcon = prop(this, 'overIcon', overIcon, () => {
       if (this.isOver) {
-        this.updateIcon();
+        this.updateIcon()
       }
-    });
-    this.iconSize = prop(this, "iconSize", iconSize, this.updateIcon);
+    })
+    this.iconSize = prop(this, 'iconSize', iconSize, this.updateIcon)
     this.content = prop(
       this,
-      "content",
+      'content',
       content,
       toggleElement(this.contentElement, {
         onShow: (el, v) => {
-          if (typeof v === "string") {
-            el.textContent = v;
+          if (typeof v === 'string') {
+            el.textContent = v
           } else {
-            el.replaceChildren(v);
+            el.replaceChildren(v)
           }
-        },
+        }
       })
-    );
+    )
 
-    this.tooltip = prop(this, "tooltip", tooltip, (v) => {
+    this.tooltip = prop(this, 'tooltip', tooltip, (v) => {
       if (v) {
-        this.element.title = v;
+        this.element.title = v
       } else {
-        this.element.removeAttribute("title");
+        this.element.removeAttribute('title')
       }
-    });
-    this.classList = prop(this, "classList", classList, this.updateClasses);
-    this.hidden = prop(this, "hidden", false, this.updateClasses);
-    this.enabled = prop(this, "enabled", enabled, () => {
-      this.updateClasses();
-      (this.element as HTMLButtonElement).disabled = !this.enabled;
-    });
-    this.action = prop(this, "action", action);
-    this.element.addEventListener("click", (e) => {
+    })
+    this.classList = prop(this, 'classList', classList, this.updateClasses)
+    this.hidden = prop(this, 'hidden', false, this.updateClasses)
+    this.enabled = prop(this, 'enabled', enabled, () => {
+      this.updateClasses()
+      ;(this.element as HTMLButtonElement).disabled = !this.enabled
+    })
+    this.action = prop(this, 'action', action)
+    this.element.addEventListener('click', (e) => {
       if (this.popup) {
         // we are either a touch device or triggered by click not hover
         if (!this.#over) {
-          this.popup.toggle();
+          this.popup.toggle()
         }
       }
-      this.action?.(e, this);
-    });
+      this.action?.(e, this)
+    })
 
     if (visibilitySetting?.id) {
       const settingUpdated = () => {
         this.hidden =
           app.ui.settings.getSettingValue(visibilitySetting.id) !==
-          visibilitySetting.showValue;
-      };
+          visibilitySetting.showValue
+      }
       app.ui.settings.addEventListener(
-        visibilitySetting.id + ".change",
+        visibilitySetting.id + '.change',
         settingUpdated
-      );
-      settingUpdated();
+      )
+      settingUpdated()
     }
   }
 
   updateIcon = () =>
-    (this.iconElement.className = `mdi mdi-${(this.isOver && this.overIcon) || this.icon}${this.iconSize ? " mdi-" + this.iconSize + "px" : ""}`);
+    (this.iconElement.className = `mdi mdi-${(this.isOver && this.overIcon) || this.icon}${this.iconSize ? ' mdi-' + this.iconSize + 'px' : ''}`)
   updateClasses = () => {
-    const internalClasses = [];
+    const internalClasses = []
     if (this.hidden) {
-      internalClasses.push("hidden");
+      internalClasses.push('hidden')
     }
     if (!this.enabled) {
-      internalClasses.push("disabled");
+      internalClasses.push('disabled')
     }
     if (this.popup) {
       if (this.#popupOpen) {
-        internalClasses.push("popup-open");
+        internalClasses.push('popup-open')
       } else {
-        internalClasses.push("popup-closed");
+        internalClasses.push('popup-closed')
       }
     }
-    applyClasses(this.element, this.classList, ...internalClasses);
-  };
+    applyClasses(this.element, this.classList, ...internalClasses)
+  }
 
-  withPopup(popup: ComfyPopup, mode: "click" | "hover" = "click") {
-    this.popup = popup;
+  withPopup(popup: ComfyPopup, mode: 'click' | 'hover' = 'click') {
+    this.popup = popup
 
-    if (mode === "hover") {
+    if (mode === 'hover') {
       for (const el of [this.element, this.popup.element]) {
-        el.addEventListener("mouseenter", () => {
-          this.popup.open = !!++this.#over;
-        });
-        el.addEventListener("mouseleave", () => {
-          this.popup.open = !!--this.#over;
-        });
+        el.addEventListener('mouseenter', () => {
+          this.popup.open = !!++this.#over
+        })
+        el.addEventListener('mouseleave', () => {
+          this.popup.open = !!--this.#over
+        })
       }
     }
 
-    popup.addEventListener("change", () => {
-      this.#popupOpen = popup.open;
-      this.updateClasses();
-    });
+    popup.addEventListener('change', () => {
+      this.#popupOpen = popup.open
+      this.updateClasses()
+    })
 
-    return this;
+    return this
   }
 }

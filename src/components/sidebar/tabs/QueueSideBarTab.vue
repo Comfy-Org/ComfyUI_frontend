@@ -26,11 +26,11 @@
     <Column
       :pt="{
         headerCell: {
-          class: 'queue-tool-header-cell',
+          class: 'queue-tool-header-cell'
         },
         bodyCell: {
-          class: 'queue-tool-body-cell',
-        },
+          class: 'queue-tool-body-cell'
+        }
       }"
     >
       <template #header>
@@ -67,89 +67,89 @@
 </template>
 
 <script setup lang="ts">
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
-import Tag from "primevue/tag";
-import Button from "primevue/button";
-import ConfirmPopup from "primevue/confirmpopup";
-import Toast from "primevue/toast";
-import Message from "primevue/message";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import ConfirmPopup from 'primevue/confirmpopup'
+import Toast from 'primevue/toast'
+import Message from 'primevue/message'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import {
   TaskItemDisplayStatus,
   TaskItemImpl,
-  useQueueStore,
-} from "@/stores/queueStore";
-import { computed, onMounted } from "vue";
-import { api } from "@/scripts/api";
+  useQueueStore
+} from '@/stores/queueStore'
+import { computed, onMounted } from 'vue'
+import { api } from '@/scripts/api'
 
-const confirm = useConfirm();
-const toast = useToast();
-const queueStore = useQueueStore();
+const confirm = useConfirm()
+const toast = useToast()
+const queueStore = useQueueStore()
 
-const tasks = computed(() => queueStore.tasks);
+const tasks = computed(() => queueStore.tasks)
 const taskTagSeverity = (status: TaskItemDisplayStatus) => {
   switch (status) {
     case TaskItemDisplayStatus.Pending:
-      return "secondary";
+      return 'secondary'
     case TaskItemDisplayStatus.Running:
-      return "info";
+      return 'info'
     case TaskItemDisplayStatus.Completed:
-      return "success";
+      return 'success'
     case TaskItemDisplayStatus.Failed:
-      return "danger";
+      return 'danger'
     case TaskItemDisplayStatus.Cancelled:
-      return "warning";
+      return 'warning'
   }
-};
+}
 const formatTime = (time?: number) => {
   if (time === undefined) {
-    return "";
+    return ''
   }
-  return `${time.toFixed(2)}s`;
-};
+  return `${time.toFixed(2)}s`
+}
 const removeTask = (task: TaskItemImpl) => {
   if (task.isRunning) {
-    api.interrupt();
+    api.interrupt()
   }
-  queueStore.delete(task);
-};
+  queueStore.delete(task)
+}
 const removeAllTasks = async () => {
-  await queueStore.clear();
-};
+  await queueStore.clear()
+}
 const confirmRemoveAll = (event) => {
   confirm.require({
     target: event.currentTarget,
-    message: "Do you want to delete all tasks?",
-    icon: "pi pi-info-circle",
+    message: 'Do you want to delete all tasks?',
+    icon: 'pi pi-info-circle',
     rejectProps: {
-      label: "Cancel",
-      severity: "secondary",
-      outlined: true,
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true
     },
     acceptProps: {
-      label: "Delete",
-      severity: "danger",
+      label: 'Delete',
+      severity: 'danger'
     },
     accept: async () => {
-      await removeAllTasks();
+      await removeAllTasks()
       toast.add({
-        severity: "info",
-        summary: "Confirmed",
-        detail: "Tasks deleted",
-        life: 3000,
-      });
-    },
-  });
-};
+        severity: 'info',
+        summary: 'Confirmed',
+        detail: 'Tasks deleted',
+        life: 3000
+      })
+    }
+  })
+}
 onMounted(() => {
-  api.addEventListener("status", () => {
-    queueStore.update();
-  });
+  api.addEventListener('status', () => {
+    queueStore.update()
+  })
 
-  queueStore.update();
-});
+  queueStore.update()
+})
 </script>
 
 <style>

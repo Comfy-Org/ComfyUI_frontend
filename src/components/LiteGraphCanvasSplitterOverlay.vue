@@ -15,17 +15,17 @@
 </template>
 
 <script setup lang="ts">
-import { useWorkspaceStore } from "@/stores/workspaceStateStore";
-import Splitter from "primevue/splitter";
-import SplitterPanel from "primevue/splitterpanel";
-import { computed } from "vue";
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import Splitter from 'primevue/splitter'
+import SplitterPanel from 'primevue/splitterpanel'
+import { computed } from 'vue'
 
 const sideBarPanelVisible = computed(
   () => useWorkspaceStore().activeSidebarTab !== null
-);
+)
 const gutterClass = computed(() => {
-  return sideBarPanelVisible.value ? "" : "gutter-hidden";
-});
+  return sideBarPanelVisible.value ? '' : 'gutter-hidden'
+})
 </script>
 
 <style>

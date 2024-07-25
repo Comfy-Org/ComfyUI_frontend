@@ -1,28 +1,28 @@
-export type ClassList = string | string[] | Record<string, boolean>;
+export type ClassList = string | string[] | Record<string, boolean>
 
 export function applyClasses(
   element: HTMLElement,
   classList: ClassList,
   ...requiredClasses: string[]
 ) {
-  classList ??= "";
+  classList ??= ''
 
-  let str: string;
-  if (typeof classList === "string") {
-    str = classList;
+  let str: string
+  if (typeof classList === 'string') {
+    str = classList
   } else if (classList instanceof Array) {
-    str = classList.join(" ");
+    str = classList.join(' ')
   } else {
     str = Object.entries(classList).reduce((p, c) => {
       if (c[1]) {
-        p += (p.length ? " " : "") + c[0];
+        p += (p.length ? ' ' : '') + c[0]
       }
-      return p;
-    }, "");
+      return p
+    }, '')
   }
-  element.className = str;
+  element.className = str
   if (requiredClasses) {
-    element.classList.add(...requiredClasses);
+    element.classList.add(...requiredClasses)
   }
 }
 
@@ -30,28 +30,28 @@ export function toggleElement(
   element: HTMLElement,
   {
     onHide,
-    onShow,
+    onShow
   }: {
-    onHide?: (el: HTMLElement) => void;
-    onShow?: (el: HTMLElement, value) => void;
+    onHide?: (el: HTMLElement) => void
+    onShow?: (el: HTMLElement, value) => void
   } = {}
 ) {
-  let placeholder: HTMLElement | Comment;
-  let hidden: boolean;
+  let placeholder: HTMLElement | Comment
+  let hidden: boolean
   return (value) => {
     if (value) {
       if (hidden) {
-        hidden = false;
-        placeholder.replaceWith(element);
+        hidden = false
+        placeholder.replaceWith(element)
       }
-      onShow?.(element, value);
+      onShow?.(element, value)
     } else {
       if (!placeholder) {
-        placeholder = document.createComment("");
+        placeholder = document.createComment('')
       }
-      hidden = true;
-      element.replaceWith(placeholder);
-      onHide?.(element);
+      hidden = true
+      element.replaceWith(placeholder)
+      onHide?.(element)
     }
-  };
+  }
 }
