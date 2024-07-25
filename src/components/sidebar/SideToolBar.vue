@@ -49,9 +49,9 @@ import {
 
 const workspaceStateStore = useWorkspaceStore();
 const tabs = computed(() => app.extensionManager.getSidebarTabs());
-const selectedTab = computed(() => {
+const selectedTab = computed<SidebarTabExtension | null>(() => {
   const tabId = workspaceStateStore.activeSidebarTab;
-  return tabs.value.find((tab) => tab.id === tabId);
+  return tabs.value.find((tab) => tab.id === tabId) || null;
 });
 const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
   tab.render(el);

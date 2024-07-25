@@ -18,7 +18,7 @@
 import { useWorkspaceStore } from "@/stores/workspaceStateStore";
 import Splitter from "primevue/splitter";
 import SplitterPanel from "primevue/splitterpanel";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 const sideBarPanelVisible = computed(
   () => useWorkspaceStore().activeSidebarTab !== null
