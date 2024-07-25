@@ -87,7 +87,7 @@ export class ComfyApp {
     DraggableList
   }
   // @ts-ignore
-  static readonly APP_VERSION = __COMFYUI_FRONTEND_VERSION__
+  public readonly APP_VERSION = __COMFYUI_FRONTEND_VERSION__
 
   vueAppReady: boolean
   ui: ComfyUI

@@ -27,7 +27,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         $el('table.comfy-modal-content.comfy-table', [
           $el(
             'caption',
-            { textContent: `Settings (v${ComfyApp.APP_VERSION})` },
+            { textContent: `Settings (v${app.APP_VERSION})` },
             $el('button.comfy-btn', {
               type: 'button',
               textContent: '\u00d7',

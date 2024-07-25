@@ -8,7 +8,7 @@ import Tooltip from 'primevue/tooltip'
 import 'primeicons/primeicons.css'
 
 import App from './App.vue'
-import { ComfyApp, app as comfyApp } from '@/scripts/app'
+import { app as comfyApp } from '@/scripts/app'
 import { createPinia } from 'pinia'
 import { i18n } from './i18n'
 
@@ -22,7 +22,7 @@ const ComfyUIPreset = definePreset(Aura, {
 const app = createApp(App)
 const pinia = createPinia()
 
-console.log('ComfyUI Front-end version:', ComfyApp.APP_VERSION)
+console.log('ComfyUI Front-end version:', comfyApp.APP_VERSION)
 comfyApp.setup().then(() => {
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
