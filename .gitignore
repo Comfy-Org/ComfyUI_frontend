@@ -19,6 +19,7 @@ dist-ssr
 .idea
 .DS_Store
 components.d.ts
+package-lock.json
 *.suo
 *.ntvs*
 *.njsproj
