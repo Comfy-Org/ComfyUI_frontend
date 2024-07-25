@@ -35,6 +35,7 @@ import { StorageLocation } from "@/types/settingTypes";
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import "@comfyorg/litegraph/css/litegraph.css";
 import "../assets/css/style.css";
+import { ExtensionManager } from "@/types/extensionTypes";
 
 export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
 
@@ -90,6 +91,7 @@ export class ComfyApp {
   ui: ComfyUI;
   logging: ComfyLogging;
   extensions: ComfyExtension[];
+  extensionManager: ExtensionManager;
   _nodeOutputs: Record<string, any>;
   nodePreviewImages: Record<string, typeof Image>;
   shiftDown: boolean;

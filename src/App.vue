@@ -4,8 +4,8 @@
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
     <teleport to="#graph-canvas-container">
       <LiteGraphCanvasSplitterOverlay>
-        <template #side-bar-panel="{ setPanelVisible }">
-          <SideToolBar @change="setPanelVisible($event)" />
+        <template #side-bar-panel>
+          <SideToolBar />
         </template>
       </LiteGraphCanvasSplitterOverlay>
     </teleport>
@@ -13,14 +13,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, markRaw, onMounted, ref, watch } from "vue";
 import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
 import SideToolBar from "@/components/sidebar/SideToolBar.vue";
 import LiteGraphCanvasSplitterOverlay from "@/components/LiteGraphCanvasSplitterOverlay.vue";
+import QueueSideBarTab from "@/components/sidebar/tabs/QueueSideBarTab.vue";
 import ProgressSpinner from "primevue/progressspinner";
 import { app } from "./scripts/app";
 import { useSettingStore } from "./stores/settingStore";
 import { useNodeDefStore } from "./stores/nodeDefStore";
+import { ExtensionManagerImpl } from "./scripts/extensionManager";
+import { useI18n } from "vue-i18n";
 
 const isLoading = ref(true);
 const nodeSearchEnabled = computed<boolean>(
@@ -43,10 +46,21 @@ watch(
   { immediate: true }
 );
 
+const { t } = useI18n();
 const init = () => {
   useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs));
   useSettingStore().addSettings(app.ui.settings);
   app.vueAppReady = true;
+  // Late init as extension manager needs to access pinia store.
+  app.extensionManager = new ExtensionManagerImpl();
+  app.extensionManager.registerSidebarTab({
+    id: "queue",
+    icon: "pi pi-history",
+    title: t("sideToolBar.queue"),
+    tooltip: t("sideToolBar.queue"),
+    component: markRaw(QueueSideBarTab),
+    type: "vue",
+  });
 };
 
 onMounted(() => {
