@@ -4,11 +4,7 @@ import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
 
 export class BaseInputSpec<T = any> {
-  @Transform(({ value }) => value[0])
   type: string
-
-  @Transform(({ value }) => value[1])
-  spec: Record<string, any>
 
   default?: T
 
@@ -76,47 +72,12 @@ export class ComboInputSpec extends BaseInputSpec<any> {
   imageUpload?: boolean
 }
 
-export class CustomInputSpec extends BaseInputSpec {
-  @Transform(({ value }) => value[0])
-  declare type: string
-}
-
-export type InputSpec =
-  | IntInputSpec
-  | FloatInputSpec
-  | BooleanInputSpec
-  | StringInputSpec
-  | ComboInputSpec
-  | CustomInputSpec
-
-function TransformInputSpec() {
-  return Transform(({ value }) => {
-    if (!BaseInputSpec.isInputSpec(value)) return value
-
-    const type = Array.isArray(value[0]) ? 'COMBO' : value[0]
-    switch (type) {
-      case 'INT':
-        return plainToClass(IntInputSpec, value)
-      case 'FLOAT':
-        return plainToClass(FloatInputSpec, value)
-      case 'BOOLEAN':
-        return plainToClass(BooleanInputSpec, value)
-      case 'STRING':
-        return plainToClass(StringInputSpec, value)
-      case 'COMBO':
-        return plainToClass(ComboInputSpec, value)
-      default:
-        return plainToClass(CustomInputSpec, value)
-    }
-  })
-}
+export class CustomInputSpec extends BaseInputSpec {}
 
 export class ComfyInputsSpec {
-  @Type(() => BaseInputSpec)
   @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
   required?: Record<string, BaseInputSpec>
 
-  @Type(() => BaseInputSpec)
   @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
   optional?: Record<string, BaseInputSpec>
 
@@ -133,9 +94,30 @@ export class ComfyInputsSpec {
     return result
   }
 
-  @TransformInputSpec()
   private static transformSingleInputSpec(value: any): BaseInputSpec {
-    return value
+    if (!BaseInputSpec.isInputSpec(value)) return value
+
+    const [typeRaw, spec] = value
+    const type = Array.isArray(typeRaw) ? 'COMBO' : value[0]
+
+    switch (type) {
+      case 'INT':
+        return plainToClass(IntInputSpec, { type, ...spec })
+      case 'FLOAT':
+        return plainToClass(FloatInputSpec, { type, ...spec })
+      case 'BOOLEAN':
+        return plainToClass(BooleanInputSpec, { type, ...spec })
+      case 'STRING':
+        return plainToClass(StringInputSpec, { type, ...spec })
+      case 'COMBO':
+        return plainToClass(ComboInputSpec, {
+          type,
+          ...spec,
+          comboOptions: typeRaw
+        })
+      default:
+        return plainToClass(CustomInputSpec, { type, ...spec })
+    }
   }
 }
 
