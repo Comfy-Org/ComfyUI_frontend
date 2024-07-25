@@ -1,7 +1,7 @@
 import { $el } from '../ui'
 import { api } from '../api'
 import { ComfyDialog } from './dialog'
-import type { ComfyApp } from '../app'
+import { ComfyApp } from '../app'
 import type { Setting, SettingParams } from '@/types/settingTypes'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -13,7 +13,6 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
   constructor(app: ComfyApp) {
     super()
-    const frontendVersion = window['__COMFYUI_FRONTEND_VERSION__']
     this.app = app
     this.settingsValues = {}
     this.settingsLookup = {}
@@ -28,7 +27,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         $el('table.comfy-modal-content.comfy-table', [
           $el(
             'caption',
-            { textContent: `Settings (v${frontendVersion})` },
+            { textContent: `Settings (v${ComfyApp.APP_VERSION})` },
             $el('button.comfy-btn', {
               type: 'button',
               textContent: '\u00d7',

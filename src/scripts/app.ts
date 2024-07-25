@@ -86,6 +86,8 @@ export class ComfyApp {
     addStylesheet,
     DraggableList
   }
+  // @ts-ignore
+  static readonly APP_VERSION = __COMFYUI_FRONTEND_VERSION__
 
   vueAppReady: boolean
   ui: ComfyUI
