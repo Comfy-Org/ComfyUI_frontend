@@ -975,7 +975,7 @@ export class ComfyApp {
               }
 
               if (drawButton(dw - 40, top + 10, 30, `x`)) {
-                if (!this.pointerDown || !this.pointerDown.index === null) {
+                if (!this.pointerDown || this.pointerDown.index !== null) {
                   this.pointerDown = { index: null, pos: [...mouse] }
                 }
               }

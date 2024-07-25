@@ -127,7 +127,7 @@ class ComfyApi extends EventTarget {
           const eventType = view.getUint32(0)
           const buffer = event.data.slice(4)
           switch (eventType) {
-            case 1:
+            case 1: {
               const view2 = new DataView(event.data)
               const imageType = view2.getUint32(0)
               let imageMime
@@ -146,6 +146,7 @@ class ComfyApi extends EventTarget {
                 new CustomEvent('b_preview', { detail: imageBlob })
               )
               break
+            }
             default:
               throw new Error(
                 `Unknown binary websocket message of type ${eventType}`
