@@ -199,6 +199,11 @@ class ComfyApi extends EventTarget {
                 new CustomEvent("execution_cached", { detail: msg.data })
               );
               break;
+            case "crystools.monitor":
+              this.dispatchEvent(
+                new CustomEvent("crystools.monitor", { detail: msg.data })
+              );
+              break;
             default:
               if (this.#registered.has(msg.type)) {
                 this.dispatchEvent(
