@@ -6,7 +6,7 @@
       :size="20"
       v-show="sideBarPanelVisible"
     >
-      <slot name="side-bar-panel" :setPanelVisible="setPanelVisible"></slot>
+      <slot name="side-bar-panel"></slot>
     </SplitterPanel>
     <SplitterPanel class="graph-canvas-panel" :size="100">
       <div></div>
@@ -15,14 +15,14 @@
 </template>
 
 <script setup lang="ts">
+import { useWorkspaceStore } from "@/stores/workspaceStateStore";
 import Splitter from "primevue/splitter";
 import SplitterPanel from "primevue/splitterpanel";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
-const sideBarPanelVisible = ref(false);
-const setPanelVisible = (visible: boolean) => {
-  sideBarPanelVisible.value = visible;
-};
+const sideBarPanelVisible = computed(
+  () => useWorkspaceStore().activeSidebarTab !== null
+);
 const gutterClass = computed(() => {
   return sideBarPanelVisible.value ? "" : "gutter-hidden";
 });

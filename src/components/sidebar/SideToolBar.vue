@@ -2,11 +2,12 @@
   <teleport to=".comfyui-body-left">
     <nav class="side-tool-bar-container">
       <SideBarIcon
-        v-for="item in items"
-        :icon="item.icon"
-        :tooltip="item.tooltip"
-        :selected="item === selectedItem"
-        @click="onItemClick(item)"
+        v-for="tab in tabs"
+        :key="tab.id"
+        :icon="tab.icon"
+        :tooltip="tab.tooltip"
+        :selected="tab === selectedTab"
+        @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
         <SideBarThemeToggleIcon />
@@ -14,49 +15,67 @@
       </div>
     </nav>
   </teleport>
-  <component :is="selectedItem?.component" />
+  <div v-if="!selectedTab"></div>
+  <component
+    v-else-if="selectedTab.type === 'vue'"
+    :is="selectedTab.component"
+  />
+  <div
+    v-else
+    :ref="
+      (el) => {
+        if (el)
+          mountCustomTab(
+            selectedTab as CustomSidebarTabExtension,
+            el as HTMLElement
+          );
+      }
+    "
+  ></div>
 </template>
 
 <script setup lang="ts">
 import SideBarIcon from "./SideBarIcon.vue";
 import SideBarThemeToggleIcon from "./SideBarThemeToggleIcon.vue";
 import SideBarSettingsToggleIcon from "./SideBarSettingsToggleIcon.vue";
-import NodeDetailSideBarItem from "./items/NodeDetailSideBarItem.vue";
-import QueueSideBarItem from "./items/QueueSideBarItem.vue";
-import { computed, markRaw, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { computed, onBeforeUnmount, watch } from "vue";
 import { useSettingStore } from "@/stores/settingStore";
+import { app } from "@/scripts/app";
+import { useWorkspaceStore } from "@/stores/workspaceStateStore";
+import {
+  CustomSidebarTabExtension,
+  SidebarTabExtension,
+} from "@/types/extensionTypes";
 
-const { t } = useI18n();
-const items = ref([
-  // { icon: "pi pi-map", component: markRaw(NodeDetailSideBarItem) },
-  {
-    icon: "pi pi-history",
-    tooltip: t("sideToolBar.queue"),
-    component: markRaw(QueueSideBarItem),
-  },
-]);
-const selectedItem = ref(null);
-const onItemClick = (item) => {
-  if (selectedItem.value === item) {
-    selectedItem.value = null;
-    return;
-  }
-  selectedItem.value = item;
-};
-
-const emit = defineEmits(["change"]);
-watch(selectedItem, (newVal) => {
-  emit("change", newVal !== null);
+const workspaceStateStore = useWorkspaceStore();
+const tabs = computed(() => app.extensionManager.getSidebarTabs());
+const selectedTab = computed<SidebarTabExtension | null>(() => {
+  const tabId = workspaceStateStore.activeSidebarTab;
+  return tabs.value.find((tab) => tab.id === tabId) || null;
 });
+const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
+  tab.render(el);
+};
+const onTabClick = (item: SidebarTabExtension) => {
+  workspaceStateStore.updateActiveSidebarTab(
+    workspaceStateStore.activeSidebarTab === item.id ? null : item.id
+  );
+};
 
 const betaMenuEnabled = computed(
   () => useSettingStore().get("Comfy.UseNewMenu") !== "Disabled"
 );
 watch(betaMenuEnabled, (newValue) => {
   if (!newValue) {
-    selectedItem.value = null;
+    workspaceStateStore.updateActiveSidebarTab(null);
   }
+});
+onBeforeUnmount(() => {
+  tabs.value.forEach((tab) => {
+    if (tab.type === "custom" && tab.destroy) {
+      tab.destroy();
+    }
+  });
 });
 </script>
 
