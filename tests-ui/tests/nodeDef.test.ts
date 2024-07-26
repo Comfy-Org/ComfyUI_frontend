@@ -6,7 +6,8 @@ import {
   BooleanInputSpec,
   FloatInputSpec,
   CustomInputSpec,
-  ComboInputSpec
+  ComboInputSpec,
+  ComfyNodeDefImpl
 } from '@/stores/nodeDefStore' // Adjust the import path as needed
 
 describe('ComfyInputsSpec', () => {
@@ -138,5 +139,183 @@ describe('ComfyInputsSpec', () => {
     expect(result.required).toBeUndefined()
     expect(result.optional).toBeUndefined()
     expect(result.hidden).toBeUndefined()
+  })
+})
+
+describe('ComfyNodeDefImpl', () => {
+  it('should transform a basic node definition correctly', () => {
+    const plainObject = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: {
+        required: {
+          intInput: ['INT', { min: 0, max: 100, default: 50 }]
+        }
+      },
+      output: ['INT'],
+      output_is_list: [false],
+      output_name: ['intOutput']
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+
+    expect(result).toBeInstanceOf(ComfyNodeDefImpl)
+    expect(result.name).toBe('TestNode')
+    expect(result.display_name).toBe('Test Node')
+    expect(result.category).toBe('Testing')
+    expect(result.python_module).toBe('test_module')
+    expect(result.description).toBe('A test node')
+    expect(result.input).toBeInstanceOf(ComfyInputsSpec)
+    expect(result.output).toEqual({
+      intOutput: {
+        name: 'intOutput',
+        display_name: 'intOutput',
+        type: 'INT',
+        is_list: false
+      }
+    })
+  })
+
+  it('should handle multiple outputs including COMBO type', () => {
+    const plainObject = {
+      name: 'MultiOutputNode',
+      display_name: 'Multi Output Node',
+      category: 'Advanced',
+      python_module: 'advanced_module',
+      description: 'A node with multiple outputs',
+      input: {},
+      output: ['STRING', ['COMBO', 'option1', 'option2'], 'FLOAT'],
+      output_is_list: [true, false, false],
+      output_name: ['stringOutput', 'comboOutput', 'floatOutput']
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+
+    expect(result.output).toEqual({
+      stringOutput: {
+        name: 'stringOutput',
+        display_name: 'stringOutput',
+        type: 'STRING',
+        is_list: true
+      },
+      comboOutput: {
+        name: 'comboOutput',
+        display_name: 'comboOutput',
+        type: 'COMBO',
+        is_list: false,
+        comboOptions: ['COMBO', 'option1', 'option2']
+      },
+      floatOutput: {
+        name: 'floatOutput',
+        display_name: 'floatOutput',
+        type: 'FLOAT',
+        is_list: false
+      }
+    })
+  })
+
+  it('should use index for output names if matches type', () => {
+    const plainObject = {
+      name: 'MissingNamesNode',
+      display_name: 'Missing Names Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with missing output names',
+      input: {},
+      output: ['INT', 'FLOAT', 'FLOAT'],
+      output_is_list: [false, true, true],
+      output_name: ['INT', 'FLOAT', 'FLOAT']
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+
+    expect(result.output).toEqual({
+      '0': {
+        name: '0',
+        display_name: 'INT',
+        type: 'INT',
+        is_list: false
+      },
+      '1': {
+        name: '1',
+        display_name: 'FLOAT',
+        type: 'FLOAT',
+        is_list: true
+      },
+      '2': {
+        name: '2',
+        display_name: 'FLOAT',
+        type: 'FLOAT',
+        is_list: true
+      }
+    })
+  })
+
+  it('should throw an error for duplicate output names', () => {
+    const plainObject = {
+      name: 'DuplicateOutputNode',
+      display_name: 'Duplicate Output Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with duplicate output names',
+      input: {},
+      output: ['INT', 'FLOAT', 'STRING'],
+      output_is_list: [false, false, false],
+      output_name: ['output', 'output', 'uniqueOutput']
+    }
+
+    expect(() => {
+      plainToClass(ComfyNodeDefImpl, plainObject)
+    }).toThrow('Duplicate output name: output')
+  })
+
+  it('should handle empty output', () => {
+    const plainObject = {
+      name: 'EmptyOutputNode',
+      display_name: 'Empty Output Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with no outputs',
+      input: {},
+      output: [],
+      output_is_list: [],
+      output_name: []
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+
+    expect(result.output).toEqual({})
+  })
+
+  it('should handle complex input specifications', () => {
+    const plainObject = {
+      name: 'ComplexInputNode',
+      display_name: 'Complex Input Node',
+      category: 'Advanced',
+      python_module: 'advanced_module',
+      description: 'A node with complex input',
+      input: {
+        required: {
+          intInput: ['INT', { min: 0, max: 100, default: 50 }],
+          stringInput: ['STRING', { multiline: true }]
+        },
+        optional: {
+          booleanInput: ['BOOLEAN', { default: true }],
+          floatInput: ['FLOAT', { step: 0.1 }]
+        }
+      },
+      output: ['INT'],
+      output_is_list: [false],
+      output_name: ['result']
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+
+    expect(result.input).toBeInstanceOf(ComfyInputsSpec)
+    expect(result.input.required).toBeDefined()
+    expect(result.input.optional).toBeDefined()
   })
 })
