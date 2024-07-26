@@ -1965,10 +1965,12 @@ export class ComfyApp {
   async registerNodes() {
     // Load node definitions from the backend
     const defs = await api.getNodeDefs()
-    if (this.vueAppReady) {
-      useNodeDefStore().addNodeDefs(Object.values(defs))
-    }
     await this.registerNodesFromDefs(defs)
+    if (this.vueAppReady) {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.addNodeDefs(Object.values(defs))
+      nodeDefStore.updateWidgets(this.widgets)
+    }
     await this.#invokeExtensionsAsync('registerCustomNodes')
   }
 

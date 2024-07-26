@@ -2,6 +2,7 @@ import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
+import { ComfyWidgetConstructor } from '@/scripts/widgets'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -124,6 +125,10 @@ export class ComfyInputsSpec {
         return plainToClass(CustomInputSpec, { name, type, ...spec })
     }
   }
+
+  get all() {
+    return [...Object.values(this.required), ...Object.values(this.optional)]
+  }
 }
 
 export class ComfyOutputSpec {
@@ -224,11 +229,13 @@ const SYSTEM_NODE_DEFS_BY_NAME = SYSTEM_NODE_DEFS.reduce((acc, nodeDef) => {
 
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDef>
+  widgets: Record<string, ComfyWidgetConstructor>
 }
 
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
-    nodeDefsByName: SYSTEM_NODE_DEFS_BY_NAME
+    nodeDefsByName: SYSTEM_NODE_DEFS_BY_NAME,
+    widgets: {}
   }),
   getters: {
     nodeDefs(state) {
@@ -246,6 +253,23 @@ export const useNodeDefStore = defineStore('nodeDef', {
       for (const nodeDef of nodeDefs) {
         this.nodeDefsByName[nodeDef.name] = nodeDef
       }
+    },
+    updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
+      this.widgets = widgets
+    },
+    getWidgetType(type: string, inputName: string) {
+      if (type === 'COMBO') {
+        return 'COMBO'
+      } else if (`${type}:${inputName}` in this.widgets) {
+        return `${type}:${inputName}`
+      } else if (type in this.widgets) {
+        return type
+      } else {
+        return null
+      }
+    },
+    inputIsWidget(spec: BaseInputSpec) {
+      return this.getWidgetType(spec.type, spec.name) !== null
     }
   }
 })
