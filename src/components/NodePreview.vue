@@ -15,6 +15,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       <div
         v-for="[slotInput, slotOutput] in _.zip(slotInputDefs, allOutputDefs)"
         class="_sb_row slot_row"
+        :key="(slotInput?.name || '') + (slotOutput?.index.toString() || '')"
       >
         <div class="_sb_col">
           <div v-if="slotInput" :class="['_sb_dot', slotInput.type]"></div>
@@ -22,7 +23,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
         <div class="_sb_col middle-column"></div>
         <div class="_sb_col _sb_inherit">
-          {{ slotOutput ? slotOutput.display_name : '' }}
+          {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
           <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]"></div>
@@ -30,7 +31,11 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       </div>
 
       <!-- Node widget inputs -->
-      <div v-for="widgetInput in widgetInputDefs" class="_sb_row _long_field">
+      <div
+        v-for="widgetInput in widgetInputDefs"
+        class="_sb_row _long_field"
+        :key="widgetInput.name"
+      >
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
         <div class="_sb_col">{{ widgetInput.name }}</div>
         <div class="_sb_col middle-column"></div>

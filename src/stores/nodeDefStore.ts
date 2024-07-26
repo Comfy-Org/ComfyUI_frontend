@@ -133,8 +133,9 @@ export class ComfyInputsSpec {
 
 export class ComfyOutputSpec {
   constructor(
+    public index: number,
+    // Name is not unique for output params
     public name: string,
-    public display_name: string,
     public type: string,
     public is_list: boolean,
     public comboOptions?: any[]
@@ -142,10 +143,10 @@ export class ComfyOutputSpec {
 }
 
 export class ComfyOutputsSpec {
-  constructor(public outputByName: Record<string, ComfyOutputSpec>) {}
+  constructor(public outputs: ComfyOutputSpec[]) {}
 
   get all() {
-    return Object.values(this.outputByName)
+    return this.outputs
   }
 }
 
@@ -164,27 +165,17 @@ export class ComfyNodeDefImpl {
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name } = obj
-    const result = {}
-
-    output.forEach((type: string | any[], index: number) => {
+    const result = output.map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
-      const display_name = output_name[index]
-      const name = display_name === typeString ? index.toString() : display_name
 
-      const outputSpec = new ComfyOutputSpec(
-        name,
-        display_name,
+      return new ComfyOutputSpec(
+        index,
+        output_name[index],
         typeString,
         output_is_list[index],
         Array.isArray(type) ? type : undefined
       )
-
-      if (name in result) {
-        throw new Error(`Duplicate output name: ${name}`)
-      }
-      result[name] = outputSpec
     })
-
     return new ComfyOutputsSpec(result)
   }
 }
