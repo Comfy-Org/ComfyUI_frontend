@@ -5,14 +5,16 @@ const messages = {
     sideToolBar: {
       settings: 'Settings',
       themeToggle: 'Toggle Theme',
-      queue: 'Queue'
+      queue: 'Queue',
+      nodeLibrary: 'Node Library'
     }
   },
   zh: {
     sideToolBar: {
       settings: '设置',
       themeToggle: '主题切换',
-      queue: '队列'
+      queue: '队列',
+      nodeLibrary: '节点库'
     }
   }
   // TODO: Add more languages

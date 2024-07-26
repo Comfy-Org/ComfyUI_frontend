@@ -23,6 +23,7 @@ import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
+import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -59,6 +60,14 @@ const init = () => {
     title: t('sideToolBar.queue'),
     tooltip: t('sideToolBar.queue'),
     component: markRaw(QueueSideBarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'node-library',
+    icon: 'pi pi-book',
+    title: t('sideToolBar.nodeLibrary'),
+    tooltip: t('sideToolBar.nodeLibrary'),
+    component: markRaw(NodeLibrarySideBarTab),
     type: 'vue'
   })
 }
