@@ -132,15 +132,21 @@ export class ComfyInputsSpec {
 }
 
 export class ComfyOutputSpec {
-  type: string
-  is_list: boolean
-  display_name: string
-  name?: string
-  comboOptions?: any[]
+  constructor(
+    public name: string,
+    public display_name: string,
+    public type: string,
+    public is_list: boolean,
+    public comboOptions?: any[]
+  ) {}
 }
 
 export class ComfyOutputsSpec {
-  [key: string]: ComfyOutputSpec
+  constructor(public outputByName: Record<string, ComfyOutputSpec>) {}
+
+  get all() {
+    return Object.values(this.outputByName)
+  }
 }
 
 export class ComfyNodeDefImpl {
@@ -158,23 +164,20 @@ export class ComfyNodeDefImpl {
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name } = obj
-    const result: ComfyOutputsSpec = {}
+    const result = {}
 
     output.forEach((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
       const display_name = output_name[index]
       const name = display_name === typeString ? index.toString() : display_name
 
-      const outputSpec = {
+      const outputSpec = new ComfyOutputSpec(
         name,
         display_name,
-        type: typeString,
-        is_list: output_is_list[index]
-      } as ComfyOutputSpec
-
-      if (Array.isArray(type)) {
-        outputSpec.comboOptions = type
-      }
+        typeString,
+        output_is_list[index],
+        Array.isArray(type) ? type : undefined
+      )
 
       if (name in result) {
         throw new Error(`Duplicate output name: ${name}`)
@@ -182,7 +185,7 @@ export class ComfyNodeDefImpl {
       result[name] = outputSpec
     })
 
-    return result
+    return new ComfyOutputsSpec(result)
   }
 }
 

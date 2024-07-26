@@ -59,7 +59,7 @@ const nodeDefStore = useNodeDefStore()
 
 const nodeDef = props.nodeDef
 const allInputDefs = nodeDef.input.all
-const allOutputDefs = Object.values(nodeDef.output)
+const allOutputDefs = nodeDef.output.all
 const slotInputDefs = allInputDefs.filter(
   (input) => !nodeDefStore.inputIsWidget(input)
 )
