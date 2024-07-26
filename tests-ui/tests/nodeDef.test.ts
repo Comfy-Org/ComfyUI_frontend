@@ -47,11 +47,11 @@ describe('ComfyInputsSpec', () => {
 
     const result = plainToClass(ComfyInputsSpec, plainObject)
 
-    expect(result.required?.intInput).toBeInstanceOf(IntInputSpec)
-    expect(result.required?.stringInput).toBeInstanceOf(StringInputSpec)
+    expect(result.required.intInput).toBeInstanceOf(IntInputSpec)
+    expect(result.required.stringInput).toBeInstanceOf(StringInputSpec)
 
-    const intInput = result.required?.intInput as IntInputSpec
-    const stringInput = result.required?.stringInput as StringInputSpec
+    const intInput = result.required.intInput as IntInputSpec
+    const stringInput = result.required.stringInput as StringInputSpec
 
     expect(intInput.min).toBe(0)
     expect(intInput.max).toBe(100)
@@ -73,11 +73,11 @@ describe('ComfyInputsSpec', () => {
 
     const result = plainToClass(ComfyInputsSpec, plainObject)
 
-    expect(result.optional?.booleanInput).toBeInstanceOf(BooleanInputSpec)
-    expect(result.optional?.floatInput).toBeInstanceOf(FloatInputSpec)
+    expect(result.optional.booleanInput).toBeInstanceOf(BooleanInputSpec)
+    expect(result.optional.floatInput).toBeInstanceOf(FloatInputSpec)
 
-    const booleanInput = result.optional?.booleanInput as BooleanInputSpec
-    const floatInput = result.optional?.floatInput as FloatInputSpec
+    const booleanInput = result.optional.booleanInput as BooleanInputSpec
+    const floatInput = result.optional.floatInput as FloatInputSpec
 
     expect(booleanInput.default).toBe(true)
     expect(booleanInput.labelOn).toBe('Yes')
@@ -96,9 +96,9 @@ describe('ComfyInputsSpec', () => {
 
     const result = plainToClass(ComfyInputsSpec, plainObject)
 
-    expect(result.optional?.comboInput).toBeInstanceOf(ComboInputSpec)
-    expect(result.optional?.comboInput.type).toBe('COMBO')
-    expect(result.optional?.comboInput.default).toBe(2)
+    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
+    expect(result.optional.comboInput.type).toBe('COMBO')
+    expect(result.optional.comboInput.default).toBe(2)
   })
 
   it('should handle custom input specs', () => {
@@ -110,9 +110,9 @@ describe('ComfyInputsSpec', () => {
 
     const result = plainToClass(ComfyInputsSpec, plainObject)
 
-    expect(result.optional?.customInput).toBeInstanceOf(CustomInputSpec)
-    expect(result.optional?.customInput.type).toBe('CUSTOM_TYPE')
-    expect(result.optional?.customInput.default).toBe('custom value')
+    expect(result.optional.customInput).toBeInstanceOf(CustomInputSpec)
+    expect(result.optional.customInput.type).toBe('CUSTOM_TYPE')
+    expect(result.optional.customInput.default).toBe('custom value')
   })
 
   it('should not transform hidden fields', () => {
@@ -136,8 +136,8 @@ describe('ComfyInputsSpec', () => {
     const result = plainToClass(ComfyInputsSpec, plainObject)
 
     expect(result).toBeInstanceOf(ComfyInputsSpec)
-    expect(result.required).toBeUndefined()
-    expect(result.optional).toBeUndefined()
+    expect(result.required).toEqual({})
+    expect(result.optional).toEqual({})
     expect(result.hidden).toBeUndefined()
   })
 })
