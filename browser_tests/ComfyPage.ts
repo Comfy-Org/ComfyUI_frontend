@@ -38,9 +38,11 @@ class ComfyNodeSearchBox {
 }
 
 class ComfyMenu {
+  public readonly sideToolBar: Locator
   public readonly themeToggleButton: Locator
 
   constructor(public readonly page: Page) {
+    this.sideToolBar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
   }
 
