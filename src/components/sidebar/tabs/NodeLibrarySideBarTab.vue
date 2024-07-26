@@ -6,8 +6,11 @@
     filterMode="lenient"
   >
     <template #folder="{ node }">
-      <span class="p-tree-node-label">{{ node.label }}</span>
+      <span class="folder-label">{{ node.label }}</span>
       <Badge :value="node.totalNodes" severity="secondary"></Badge>
+    </template>
+    <template #node="{ node }">
+      <span class="node-label">{{ node.label }}</span>
     </template>
   </Tree>
 </template>
@@ -45,9 +48,3 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
   }
 }
 </script>
-
-<style scoped>
-.p-tree-node-label {
-  font-weight: bold;
-}
-</style>
