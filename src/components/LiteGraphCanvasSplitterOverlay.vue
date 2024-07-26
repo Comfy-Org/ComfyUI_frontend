@@ -52,7 +52,11 @@ const gutterClass = computed(() => {
   left: 0;
   background-color: transparent;
   pointer-events: none;
-  z-index: 10;
+  /* Set it the same as the ComfyUI menu */
+  /* Note: Lite-graph DOM widgets have the same z-index as the node id, so
+  999 should be sufficient to make sure splitter overlays on node's DOM
+  widgets */
+  z-index: 999;
   border: none;
 }
 </style>
