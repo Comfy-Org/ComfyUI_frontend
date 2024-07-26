@@ -22,7 +22,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
         <div class="_sb_col middle-column"></div>
         <div class="_sb_col _sb_inherit">
-          {{ slotOutput ? slotOutput.name : '' }}
+          {{ slotOutput ? slotOutput.display_name : '' }}
         </div>
         <div class="_sb_col">
           <div v-if="slotOutput" :class="['_sb_dot', slotOutput.type]"></div>
@@ -34,7 +34,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
         <div class="_sb_col">{{ widgetInput.name }}</div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit">{{ widgetInput.defaultValue }}</div>
+        <div class="_sb_col _sb_inherit">{{ widgetInput.default }}</div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
     </div>
@@ -45,67 +45,27 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import { app } from '@/scripts/app'
-import { type ComfyNodeDef } from '@/types/apiTypes'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import _ from 'lodash'
-import { PropType } from 'vue'
 
 const props = defineProps({
   nodeDef: {
-    type: Object as PropType<ComfyNodeDef>,
+    type: ComfyNodeDefImpl,
     required: true
   }
 })
 
-const nodeDef = props.nodeDef as ComfyNodeDef
+const nodeDefStore = useNodeDefStore()
 
-// --------------------------------------------------
-// TODO: Move out to separate file
-interface IComfyNodeInputDef {
-  name: string
-  type: string
-  widgetType: string | null
-  defaultValue: any
-}
-
-interface IComfyNodeOutputDef {
-  name: string | null
-  type: string
-  isList: boolean
-}
-
-const allInputs = Object.assign(
-  {},
-  nodeDef.input.required || {},
-  nodeDef.input.optional || {}
+const nodeDef = props.nodeDef
+const allInputDefs = nodeDef.input.all
+const allOutputDefs = Object.values(nodeDef.output)
+const slotInputDefs = allInputDefs.filter(
+  (input) => !nodeDefStore.inputIsWidget(input)
 )
-const allInputDefs: IComfyNodeInputDef[] = Object.entries(allInputs).map(
-  ([inputName, inputData]) => {
-    return {
-      name: inputName,
-      type: inputData[0],
-      widgetType: app.getWidgetType(inputData, inputName),
-      defaultValue:
-        inputData[1]?.default ||
-        (inputData[0] instanceof Array ? inputData[0][0] : '')
-    }
-  }
+const widgetInputDefs = allInputDefs.filter((input) =>
+  nodeDefStore.inputIsWidget(input)
 )
-
-const allOutputDefs: IComfyNodeOutputDef[] = _.zip(
-  nodeDef.output,
-  nodeDef.output_name || [],
-  nodeDef.output_is_list || []
-).map(([outputType, outputName, isList]) => {
-  return {
-    name: outputName,
-    type: outputType instanceof Array ? 'COMBO' : outputType,
-    isList: isList
-  }
-})
-
-const slotInputDefs = allInputDefs.filter((input) => !input.widgetType)
-const widgetInputDefs = allInputDefs.filter((input) => !!input.widgetType)
 </script>
 
 <style scoped>

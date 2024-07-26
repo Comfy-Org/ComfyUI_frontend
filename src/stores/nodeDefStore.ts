@@ -125,6 +125,10 @@ export class ComfyInputsSpec {
         return plainToClass(CustomInputSpec, { name, type, ...spec })
     }
   }
+
+  get all() {
+    return [...Object.values(this.required), ...Object.values(this.optional)]
+  }
 }
 
 export class ComfyOutputSpec {
@@ -252,6 +256,20 @@ export const useNodeDefStore = defineStore('nodeDef', {
     },
     updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
       this.widgets = widgets
+    },
+    getWidgetType(type: string, inputName: string) {
+      if (type === 'COMBO') {
+        return 'COMBO'
+      } else if (`${type}:${inputName}` in this.widgets) {
+        return `${type}:${inputName}`
+      } else if (type in this.widgets) {
+        return type
+      } else {
+        return null
+      }
+    },
+    inputIsWidget(spec: BaseInputSpec) {
+      return this.getWidgetType(spec.type, spec.name) !== null
     }
   }
 })

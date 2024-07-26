@@ -2,7 +2,7 @@
   <div class="comfy-vue-node-search-container">
     <div class="comfy-vue-node-preview-container">
       <NodePreview
-        :nodeDef="hoveredSuggestion"
+        :nodeDef="plainToClass(ComfyNodeDefImpl, hoveredSuggestion)"
         :key="hoveredSuggestion?.name || ''"
         v-if="hoveredSuggestion"
       />
@@ -62,7 +62,8 @@ import NodeSourceChip from '@/components/NodeSourceChip.vue'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from './NodePreview.vue'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { plainToClass } from 'class-transformer'
 
 const props = defineProps({
   filters: {
