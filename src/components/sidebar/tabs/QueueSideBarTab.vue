@@ -168,9 +168,4 @@ onMounted(() => {
 .queue-time-cell-content {
   width: fit-content;
 }
-
-.queue-table {
-  height: 100%;
-  overflow-y: auto;
-}
 </style>

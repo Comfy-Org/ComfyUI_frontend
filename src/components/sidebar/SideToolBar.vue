@@ -15,23 +15,21 @@
       </div>
     </nav>
   </teleport>
-  <div v-if="!selectedTab"></div>
-  <component
-    v-else-if="selectedTab.type === 'vue'"
-    :is="selectedTab.component"
-  />
-  <div
-    v-else
-    :ref="
-      (el) => {
-        if (el)
-          mountCustomTab(
-            selectedTab as CustomSidebarTabExtension,
-            el as HTMLElement
-          )
-      }
-    "
-  ></div>
+  <div v-if="selectedTab" class="sidebar-content-container">
+    <component v-if="selectedTab.type === 'vue'" :is="selectedTab.component" />
+    <div
+      v-else
+      :ref="
+        (el) => {
+          if (el)
+            mountCustomTab(
+              selectedTab as CustomSidebarTabExtension,
+              el as HTMLElement
+            )
+        }
+      "
+    ></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -93,5 +91,10 @@ onBeforeUnmount(() => {
 .side-tool-bar-end {
   align-self: flex-end;
   margin-top: auto;
+}
+
+.sidebar-content-container {
+  height: 100%;
+  overflow-y: auto;
 }
 </style>
