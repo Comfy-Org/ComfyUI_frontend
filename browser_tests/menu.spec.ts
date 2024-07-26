@@ -42,4 +42,29 @@ test.describe('Menu', () => {
 
     expect(await comfyPage.menu.getThemeId()).toBe('dark')
   })
+
+  test('Can register sidebar tab', async ({ comfyPage }) => {
+    const initialChildrenCount = await comfyPage.menu.sideToolBar.evaluate(
+      (el) => el.children.length
+    )
+
+    await comfyPage.page.evaluate(async () => {
+      window['app'].extensionManager.registerSidebarTab({
+        id: 'search',
+        icon: 'pi pi-search',
+        title: 'search',
+        tooltip: 'search',
+        type: 'custom',
+        render: (el) => {
+          el.innerHTML = '<div>Custom search tab</div>'
+        }
+      })
+    })
+    await comfyPage.nextFrame()
+
+    const newChildrenCount = await comfyPage.menu.sideToolBar.evaluate(
+      (el) => el.children.length
+    )
+    expect(newChildrenCount).toBe(initialChildrenCount + 1)
+  })
 })

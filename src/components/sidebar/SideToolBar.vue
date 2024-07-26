@@ -39,25 +39,24 @@ import SideBarIcon from './SideBarIcon.vue'
 import SideBarThemeToggleIcon from './SideBarThemeToggleIcon.vue'
 import SideBarSettingsToggleIcon from './SideBarSettingsToggleIcon.vue'
 import { computed, onBeforeUnmount } from 'vue'
-import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
   CustomSidebarTabExtension,
   SidebarTabExtension
 } from '@/types/extensionTypes'
 
-const workspaceStateStore = useWorkspaceStore()
-const tabs = computed(() => app.extensionManager.getSidebarTabs())
+const workspaceStore = useWorkspaceStore()
+const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed<SidebarTabExtension | null>(() => {
-  const tabId = workspaceStateStore.activeSidebarTab
+  const tabId = workspaceStore.activeSidebarTab
   return tabs.value.find((tab) => tab.id === tabId) || null
 })
 const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
   tab.render(el)
 }
 const onTabClick = (item: SidebarTabExtension) => {
-  workspaceStateStore.updateActiveSidebarTab(
-    workspaceStateStore.activeSidebarTab === item.id ? null : item.id
+  workspaceStore.updateActiveSidebarTab(
+    workspaceStore.activeSidebarTab === item.id ? null : item.id
   )
 }
 onBeforeUnmount(() => {

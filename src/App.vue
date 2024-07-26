@@ -21,8 +21,8 @@ import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
-import { ExtensionManagerImpl } from './scripts/extensionManager'
 import { useI18n } from 'vue-i18n'
+import { useWorkspaceStore } from './stores/workspaceStateStore'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -52,8 +52,7 @@ const { t } = useI18n()
 const init = () => {
   useSettingStore().addSettings(app.ui.settings)
   app.vueAppReady = true
-  // lazy init as extension manager needs to access pinia store.
-  app.extensionManager = new ExtensionManagerImpl()
+  app.extensionManager = useWorkspaceStore()
   app.extensionManager.registerSidebarTab({
     id: 'queue',
     icon: 'pi pi-history',
