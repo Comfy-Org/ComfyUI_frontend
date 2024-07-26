@@ -121,6 +121,61 @@ export class ComfyInputsSpec {
   }
 }
 
+export class ComfyOutputSpec {
+  type: string
+  is_list: boolean
+  display_name: string
+  name?: string
+  comboOptions?: any[]
+}
+
+export class ComfyOutputsSpec {
+  [key: string]: ComfyOutputSpec
+}
+
+export class ComfyNodeDefImpl {
+  name: string
+  display_name: string
+  category: string
+  python_module: string
+  description: string
+
+  @Type(() => ComfyInputsSpec)
+  input: ComfyInputsSpec
+
+  @Transform(({ obj }) => ComfyNodeDefImpl.transformOutputSpec(obj))
+  output: ComfyOutputsSpec
+
+  private static transformOutputSpec(obj: any): ComfyOutputsSpec {
+    const { output, output_is_list, output_name } = obj
+    const result: ComfyOutputsSpec = {}
+
+    output.forEach((type: string | any[], index: number) => {
+      const typeString = Array.isArray(type) ? 'COMBO' : type
+      const display_name = output_name[index]
+      const name = display_name === typeString ? index.toString() : display_name
+
+      const outputSpec = {
+        name,
+        display_name,
+        type: typeString,
+        is_list: output_is_list[index]
+      } as ComfyOutputSpec
+
+      if (Array.isArray(type)) {
+        outputSpec.comboOptions = type
+      }
+
+      if (name in result) {
+        throw new Error(`Duplicate output name: ${name}`)
+      }
+      result[name] = outputSpec
+    })
+
+    return result
+  }
+}
+
 export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
   {
     name: 'PrimitiveNode',
