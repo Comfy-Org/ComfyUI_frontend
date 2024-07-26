@@ -56,8 +56,10 @@ describe('ComfyInputsSpec', () => {
     expect(intInput.min).toBe(0)
     expect(intInput.max).toBe(100)
     expect(intInput.default).toBe(50)
+    expect(intInput.name).toBe('intInput')
     expect(stringInput.default).toBe('Hello')
     expect(stringInput.multiline).toBe(true)
+    expect(stringInput.name).toBe('stringInput')
   })
 
   it('should correctly transform optional input specs', () => {
