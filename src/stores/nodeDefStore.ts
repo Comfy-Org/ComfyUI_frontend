@@ -2,6 +2,7 @@ import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
+import { ComfyWidgetConstructor } from '@/scripts/widgets'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -224,11 +225,13 @@ const SYSTEM_NODE_DEFS_BY_NAME = SYSTEM_NODE_DEFS.reduce((acc, nodeDef) => {
 
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDef>
+  widgets: Record<string, ComfyWidgetConstructor>
 }
 
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
-    nodeDefsByName: SYSTEM_NODE_DEFS_BY_NAME
+    nodeDefsByName: SYSTEM_NODE_DEFS_BY_NAME,
+    widgets: {}
   }),
   getters: {
     nodeDefs(state) {
@@ -246,6 +249,9 @@ export const useNodeDefStore = defineStore('nodeDef', {
       for (const nodeDef of nodeDefs) {
         this.nodeDefsByName[nodeDef.name] = nodeDef
       }
+    },
+    updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
+      this.widgets = widgets
     }
   }
 })
