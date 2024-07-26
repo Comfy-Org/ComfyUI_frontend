@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
 
 export class BaseInputSpec<T = any> {
+  name: string
   type: string
 
   default?: T
@@ -89,12 +90,15 @@ export class ComfyInputsSpec {
     if (!record) return record
     const result: Record<string, BaseInputSpec> = {}
     for (const [key, value] of Object.entries(record)) {
-      result[key] = ComfyInputsSpec.transformSingleInputSpec(value)
+      result[key] = ComfyInputsSpec.transformSingleInputSpec(key, value)
     }
     return result
   }
 
-  private static transformSingleInputSpec(value: any): BaseInputSpec {
+  private static transformSingleInputSpec(
+    name: string,
+    value: any
+  ): BaseInputSpec {
     if (!BaseInputSpec.isInputSpec(value)) return value
 
     const [typeRaw, spec] = value
@@ -102,21 +106,22 @@ export class ComfyInputsSpec {
 
     switch (type) {
       case 'INT':
-        return plainToClass(IntInputSpec, { type, ...spec })
+        return plainToClass(IntInputSpec, { name, type, ...spec })
       case 'FLOAT':
-        return plainToClass(FloatInputSpec, { type, ...spec })
+        return plainToClass(FloatInputSpec, { name, type, ...spec })
       case 'BOOLEAN':
-        return plainToClass(BooleanInputSpec, { type, ...spec })
+        return plainToClass(BooleanInputSpec, { name, type, ...spec })
       case 'STRING':
-        return plainToClass(StringInputSpec, { type, ...spec })
+        return plainToClass(StringInputSpec, { name, type, ...spec })
       case 'COMBO':
         return plainToClass(ComboInputSpec, {
+          name,
           type,
           ...spec,
           comboOptions: typeRaw
         })
       default:
-        return plainToClass(CustomInputSpec, { type, ...spec })
+        return plainToClass(CustomInputSpec, { name, type, ...spec })
     }
   }
 }
