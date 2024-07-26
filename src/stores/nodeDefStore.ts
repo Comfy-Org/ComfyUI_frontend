@@ -236,7 +236,11 @@ export const useNodeDefStore = defineStore('nodeDef', {
       return Object.values(state.nodeDefsByName)
     },
     nodeSearchService(state) {
-      return new NodeSearchService(Object.values(state.nodeDefsByName))
+      return new NodeSearchService(
+        Object.values(state.nodeDefsByName).map((nodeDef) =>
+          plainToClass(ComfyNodeDefImpl, nodeDef)
+        )
+      )
     }
   },
   actions: {
