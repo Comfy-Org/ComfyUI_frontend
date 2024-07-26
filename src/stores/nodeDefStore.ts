@@ -77,10 +77,10 @@ export class CustomInputSpec extends BaseInputSpec {}
 
 export class ComfyInputsSpec {
   @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
-  required?: Record<string, BaseInputSpec>
+  required: Record<string, BaseInputSpec> = {}
 
   @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
-  optional?: Record<string, BaseInputSpec>
+  optional: Record<string, BaseInputSpec> = {}
 
   hidden?: Record<string, any>
 
