@@ -171,7 +171,7 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.python_module).toBe('test_module')
     expect(result.description).toBe('A test node')
     expect(result.input).toBeInstanceOf(ComfyInputsSpec)
-    expect(result.output).toEqual({
+    expect(result.output.outputByName).toEqual({
       intOutput: {
         name: 'intOutput',
         display_name: 'intOutput',
@@ -196,7 +196,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
 
-    expect(result.output).toEqual({
+    expect(result.output.outputByName).toEqual({
       stringOutput: {
         name: 'stringOutput',
         display_name: 'stringOutput',
@@ -234,7 +234,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
 
-    expect(result.output).toEqual({
+    expect(result.output.outputByName).toEqual({
       '0': {
         name: '0',
         display_name: 'INT',
@@ -289,7 +289,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
 
-    expect(result.output).toEqual({})
+    expect(result.output.outputByName).toEqual({})
   })
 
   it('should handle complex input specifications', () => {
