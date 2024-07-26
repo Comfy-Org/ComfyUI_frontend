@@ -4,11 +4,17 @@
     :value="renderedRoot.children"
     :filter="true"
     filterMode="lenient"
-  ></Tree>
+  >
+    <template #folder="{ node }">
+      <span class="p-tree-node-label">{{ node.label }}</span>
+      <Badge :value="node.totalNodes" severity="secondary"></Badge>
+    </template>
+  </Tree>
 </template>
 
 <script setup lang="ts">
 import Tree from 'primevue/tree'
+import Badge from 'primevue/badge'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
@@ -18,7 +24,7 @@ const root = computed(() => useNodeDefStore().nodeTree)
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
-const fillNodeInfo = (node: TreeNode) => {
+const fillNodeInfo = (node: TreeNode): TreeNode => {
   const isLeaf = node.children === undefined || node.children.length === 0
   const isExpanded = expandedKeys.value[node.key]
   const icon = isLeaf
@@ -26,11 +32,22 @@ const fillNodeInfo = (node: TreeNode) => {
     : isExpanded
       ? 'pi pi-folder-open'
       : 'pi pi-folder'
+  const children = node.children?.map(fillNodeInfo)
 
   return {
     ...node,
     icon,
-    children: node.children?.map(fillNodeInfo)
+    children,
+    type: isLeaf ? 'node' : 'folder',
+    totalNodes: isLeaf
+      ? 1
+      : children.reduce((acc, child) => acc + child.totalNodes, 0)
   }
 }
 </script>
+
+<style scoped>
+.p-tree-node-label {
+  font-weight: bold;
+}
+</style>
