@@ -36,6 +36,7 @@ import { StorageLocation } from '@/types/settingTypes'
 import '@comfyorg/litegraph/css/litegraph.css'
 import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -117,8 +118,8 @@ export class ComfyApp {
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
   bodyBottom: HTMLElement
+  canvasContainer: HTMLElement
   menu: ComfyAppMenu
-  nodeDefs: Record<string, ComfyNodeDef>
 
   constructor() {
     this.vueAppReady = false
@@ -129,6 +130,9 @@ export class ComfyApp {
     this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
     this.bodyBottom = $el('div.comfyui-body-bottom', { parent: document.body })
+    this.canvasContainer = $el('div.graph-canvas-container', {
+      parent: document.body
+    })
     this.menu = new ComfyAppMenu(this)
 
     /**
@@ -1847,17 +1851,13 @@ export class ComfyApp {
     await this.#setUser()
 
     // Create and mount the LiteGraph in the DOM
-    const canvasContainer = document.createElement('div')
-    canvasContainer.id = 'graph-canvas-container'
-
     const mainCanvas = document.createElement('canvas')
     mainCanvas.style.touchAction = 'none'
     const canvasEl = (this.canvasEl = Object.assign(mainCanvas, {
       id: 'graph-canvas'
     }))
     canvasEl.tabIndex = 1
-    canvasContainer.prepend(canvasEl)
-    document.body.prepend(canvasContainer)
+    this.canvasContainer.prepend(canvasEl)
 
     this.resizeCanvas()
 
@@ -1965,7 +1965,9 @@ export class ComfyApp {
   async registerNodes() {
     // Load node definitions from the backend
     const defs = await api.getNodeDefs()
-    this.nodeDefs = defs
+    if (this.vueAppReady) {
+      useNodeDefStore().addNodeDefs(Object.values(defs))
+    }
     await this.registerNodesFromDefs(defs)
     await this.#invokeExtensionsAsync('registerCustomNodes')
   }

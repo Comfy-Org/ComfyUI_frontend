@@ -38,8 +38,7 @@
 import SideBarIcon from './SideBarIcon.vue'
 import SideBarThemeToggleIcon from './SideBarThemeToggleIcon.vue'
 import SideBarSettingsToggleIcon from './SideBarSettingsToggleIcon.vue'
-import { computed, onBeforeUnmount, watch } from 'vue'
-import { useSettingStore } from '@/stores/settingStore'
+import { computed, onBeforeUnmount } from 'vue'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
@@ -61,15 +60,6 @@ const onTabClick = (item: SidebarTabExtension) => {
     workspaceStateStore.activeSidebarTab === item.id ? null : item.id
   )
 }
-
-const betaMenuEnabled = computed(
-  () => useSettingStore().get('Comfy.UseNewMenu') !== 'Disabled'
-)
-watch(betaMenuEnabled, (newValue) => {
-  if (!newValue) {
-    workspaceStateStore.updateActiveSidebarTab(null)
-  }
-})
 onBeforeUnmount(() => {
   tabs.value.forEach((tab) => {
     if (tab.type === 'custom' && tab.destroy) {

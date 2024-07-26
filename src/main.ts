@@ -21,28 +21,27 @@ const ComfyUIPreset = definePreset(Aura, {
 
 const app = createApp(App)
 const pinia = createPinia()
+app.directive('tooltip', Tooltip)
+app
+  .use(PrimeVue, {
+    theme: {
+      preset: ComfyUIPreset,
+      options: {
+        prefix: 'p',
+        cssLayer: false,
+        // This is a workaround for the issue with the dark mode selector
+        // https://github.com/primefaces/primevue/issues/5515
+        darkModeSelector: '.dark-theme, :root:has(.dark-theme)'
+      }
+    }
+  })
+  .use(ConfirmationService)
+  .use(ToastService)
+  .use(pinia)
+  .use(i18n)
+  .mount('#vue-app')
 
 comfyApp.setup().then(() => {
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
-
-  app.directive('tooltip', Tooltip)
-  app
-    .use(PrimeVue, {
-      theme: {
-        preset: ComfyUIPreset,
-        options: {
-          prefix: 'p',
-          cssLayer: false,
-          // This is a workaround for the issue with the dark mode selector
-          // https://github.com/primefaces/primevue/issues/5515
-          darkModeSelector: '.dark-theme, :root:has(.dark-theme)'
-        }
-      }
-    })
-    .use(ConfirmationService)
-    .use(ToastService)
-    .use(pinia)
-    .use(i18n)
-    .mount('#vue-app')
 })
