@@ -236,23 +236,27 @@ export const useNodeDefStore = defineStore('nodeDef', {
     },
     nodeTree(state): TreeNode {
       const root: TreeNode = {
+        key: 'root',
         label: 'Nodes',
         children: []
       }
       for (const nodeDef of Object.values(state.nodeDefsByName)) {
         const path = nodeDef.category.split('/')
         let current = root
+        let key = 'root'
         for (const part of path) {
+          key += `/${part}`
           let next = current.children.find((child) => child.label === part)
           if (!next) {
-            next = { label: part, children: [] }
+            next = { key, label: part, children: [] }
             current.children.push(next)
           }
           current = next
         }
         current.children.push({
           label: nodeDef.display_name,
-          data: nodeDef
+          data: nodeDef,
+          key: `${key}/${nodeDef.name}`
         })
       }
       return root
