@@ -36,7 +36,7 @@ import { StorageLocation } from '@/types/settingTypes'
 import '@comfyorg/litegraph/css/litegraph.css'
 import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1968,7 +1968,7 @@ export class ComfyApp {
     await this.registerNodesFromDefs(defs)
     if (this.vueAppReady) {
       const nodeDefStore = useNodeDefStore()
-      nodeDefStore.addNodeDefs(Object.values(defs))
+      nodeDefStore.updateNodeDefs([...Object.values(defs), ...SYSTEM_NODE_DEFS])
       nodeDefStore.updateWidgets(this.widgets)
     }
     await this.#invokeExtensionsAsync('registerCustomNodes')

@@ -216,19 +216,14 @@ export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
   }
 ]
 
-const SYSTEM_NODE_DEFS_BY_NAME = SYSTEM_NODE_DEFS.reduce((acc, nodeDef) => {
-  acc[nodeDef.name] = nodeDef
-  return acc
-}, {}) as Record<string, ComfyNodeDef>
-
 interface State {
-  nodeDefsByName: Record<string, ComfyNodeDef>
+  nodeDefsByName: Record<string, ComfyNodeDefImpl>
   widgets: Record<string, ComfyWidgetConstructor>
 }
 
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
-    nodeDefsByName: SYSTEM_NODE_DEFS_BY_NAME,
+    nodeDefsByName: {},
     widgets: {}
   }),
   getters: {
@@ -236,21 +231,19 @@ export const useNodeDefStore = defineStore('nodeDef', {
       return Object.values(state.nodeDefsByName)
     },
     nodeSearchService(state) {
-      return new NodeSearchService(
-        Object.values(state.nodeDefsByName).map((nodeDef) =>
-          plainToClass(ComfyNodeDefImpl, nodeDef)
-        )
-      )
+      return new NodeSearchService(Object.values(state.nodeDefsByName))
     }
   },
   actions: {
-    addNodeDef(nodeDef: ComfyNodeDef) {
-      this.nodeDefsByName[nodeDef.name] = nodeDef
-    },
-    addNodeDefs(nodeDefs: ComfyNodeDef[]) {
+    updateNodeDefs(nodeDefs: ComfyNodeDef[]) {
+      const newNodeDefsByName: { [key: string]: ComfyNodeDefImpl } = {}
       for (const nodeDef of nodeDefs) {
-        this.nodeDefsByName[nodeDef.name] = nodeDef
+        newNodeDefsByName[nodeDef.name] = plainToClass(
+          ComfyNodeDefImpl,
+          nodeDef
+        )
       }
+      this.nodeDefsByName = newNodeDefsByName
     },
     updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
       this.widgets = widgets
