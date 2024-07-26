@@ -2,7 +2,7 @@
   <div class="comfy-vue-node-search-container">
     <div class="comfy-vue-node-preview-container">
       <NodePreview
-        :nodeDef="plainToClass(ComfyNodeDefImpl, hoveredSuggestion)"
+        :nodeDef="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
         v-if="hoveredSuggestion"
       />
@@ -53,17 +53,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, Ref, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import AutoCompletePlus from './primevueOverride/AutoCompletePlus.vue'
 import Chip from 'primevue/chip'
 import Badge from 'primevue/badge'
 import NodeSearchFilter from '@/components/NodeSearchFilter.vue'
 import NodeSourceChip from '@/components/NodeSourceChip.vue'
-import { ComfyNodeDef } from '@/types/apiTypes'
 import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from './NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { plainToClass } from 'class-transformer'
 
 const props = defineProps({
   filters: {
@@ -76,8 +74,8 @@ const props = defineProps({
 })
 
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
-const suggestions = ref<ComfyNodeDef[]>([])
-const hoveredSuggestion = ref<ComfyNodeDef | null>(null)
+const suggestions = ref<ComfyNodeDefImpl[]>([])
+const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const placeholder = computed(() => {
   return props.filters.length === 0 ? 'Search for nodes' : ''
 })

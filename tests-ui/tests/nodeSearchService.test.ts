@@ -1,7 +1,8 @@
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { plainToClass } from 'class-transformer'
 
-const EXAMPLE_NODE_DEFS: ComfyNodeDef[] = [
+const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
   {
     input: {
       required: {
@@ -50,7 +51,7 @@ const EXAMPLE_NODE_DEFS: ComfyNodeDef[] = [
     category: 'latent/batch',
     output_node: false
   }
-]
+].map((nodeDef) => plainToClass(ComfyNodeDefImpl, nodeDef))
 
 describe('nodeSearchService', () => {
   it('searches with input filter', () => {
