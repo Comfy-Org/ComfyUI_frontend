@@ -1,5 +1,5 @@
 <template>
-  <Tree :value="root.children"></Tree>
+  <Tree :value="root.children" :filter="true" filterMode="lenient"></Tree>
 </template>
 
 <script setup lang="ts">
