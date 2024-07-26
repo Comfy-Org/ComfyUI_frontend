@@ -2,8 +2,8 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <div v-else>
     <NodeSearchboxPopover v-if="nodeSearchEnabled" />
-    <teleport to="#graph-canvas-container">
-      <LiteGraphCanvasSplitterOverlay>
+    <teleport to=".graph-canvas-container">
+      <LiteGraphCanvasSplitterOverlay v-if="betaMenuEnabled">
         <template #side-bar-panel>
           <SideToolBar />
         </template>
@@ -21,7 +21,6 @@ import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
 import ProgressSpinner from 'primevue/progressspinner'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
-import { useNodeDefStore } from './stores/nodeDefStore'
 import { ExtensionManagerImpl } from './scripts/extensionManager'
 import { useI18n } from 'vue-i18n'
 
@@ -45,13 +44,15 @@ watch(
   },
   { immediate: true }
 )
+const betaMenuEnabled = computed(
+  () => useSettingStore().get('Comfy.UseNewMenu') !== 'Disabled'
+)
 
 const { t } = useI18n()
 const init = () => {
-  useNodeDefStore().addNodeDefs(Object.values(app.nodeDefs))
   useSettingStore().addSettings(app.ui.settings)
   app.vueAppReady = true
-  // Late init as extension manager needs to access pinia store.
+  // lazy init as extension manager needs to access pinia store.
   app.extensionManager = new ExtensionManagerImpl()
   app.extensionManager.registerSidebarTab({
     id: 'queue',
