@@ -26,7 +26,6 @@ import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { useNodeDefStore } from './stores/nodeDefStore'
-import { Vector2 } from '@comfyorg/litegraph'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
