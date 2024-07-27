@@ -25,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { useNodeDefStore } from './stores/nodeDefStore'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -79,7 +80,8 @@ const init = () => {
       const comfyNodeName = event.source.element.getAttribute(
         'data-comfy-node-name'
       )
-      // TODO add node on canvas.
+      const nodeDef = useNodeDefStore().nodeDefsByName[comfyNodeName]
+      app.addNodeOnGraph(nodeDef, { pos: [0, 0] })
     }
   })
 }
