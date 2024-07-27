@@ -41,6 +41,7 @@ export class ComfyAppMenu {
   settingsGroup: ComfyButtonGroup
   viewGroup: ComfyButtonGroup
   mobileMenuButton: ComfyButton
+  queueButton: ComfyQueueButton
   element: HTMLElement
   menuPositionSetting: ReturnType<ComfySettingsDialog['addSetting']>
   position: MenuPosition
@@ -136,6 +137,7 @@ export class ComfyAppMenu {
       },
       classList: 'comfyui-button comfyui-menu-button'
     })
+    this.queueButton = new ComfyQueueButton(app)
 
     this.element = $el('nav.comfyui-menu.lg', { style: { display: 'none' } }, [
       this.logo,
@@ -147,7 +149,7 @@ export class ComfyAppMenu {
       collapseOnMobile(this.viewGroup).element,
 
       getInteruptButton('lt-lg-show').element,
-      new ComfyQueueButton(app).element,
+      this.queueButton.element,
       showOnMobile(this.mobileMenuButton).element
     ])
 
