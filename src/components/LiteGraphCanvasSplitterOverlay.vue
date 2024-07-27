@@ -59,8 +59,4 @@ const gutterClass = computed(() => {
   z-index: 999;
   border: none;
 }
-
-.graph-canvas-panel {
-  position: relative;
-}
 </style>

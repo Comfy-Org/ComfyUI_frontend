@@ -22,14 +22,9 @@
       <span class="node-label">{{ node.label }}</span>
     </template>
   </TreePlus>
-  <teleport to=".graph-canvas-panel">
-    <div v-if="selectedNode" class="node-lib-node-preview">
-      <NodePreview
-        :key="selectedNode.name"
-        :nodeDef="selectedNode"
-      ></NodePreview>
-    </div>
-  </teleport>
+  <div v-if="selectedNode" class="node-lib-node-preview">
+    <NodePreview :key="selectedNode.name" :nodeDef="selectedNode"></NodePreview>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -77,11 +72,3 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
   }
 }
 </script>
-
-<style>
-.node-lib-node-preview {
-  position: absolute;
-  top: 50px;
-  left: 50px;
-}
-</style>

@@ -78,12 +78,9 @@ const init = () => {
     element: document.querySelector('.graph-canvas-container'),
     onDrop: (event) => {
       const loc = event.location.current.input
-      const pos = app.clientPosToCanvasPos(
-        // Offset to account for the toolbar and menu
-        // so that after drop of the node the mouse is on the node.
-        // TODO(huchenlei): Make this calculation more robust
-        [loc.clientX - 100, loc.clientY - 50]
-      )
+      // Add an offset on x to make sure after adding the node, the cursor
+      // is on the node (top left corner)
+      const pos = app.clientPosToCanvasPos([loc.clientX - 20, loc.clientY])
       const comfyNodeName = event.source.element.getAttribute(
         'data-comfy-node-name'
       )
