@@ -15,20 +15,22 @@
       <Badge :value="node.totalNodes" severity="secondary"></Badge>
     </template>
     <template #node="{ node }">
-      <span class="node-label" @click="showNodePreview">{{ node.label }}</span>
+      <span class="node-label">{{ node.label }}</span>
     </template>
   </Tree>
-  <PopoverPlus ref="op">
-    <div v-if="selectedNode">
-      <NodePreview :nodeDef="selectedNode"></NodePreview>
+  <teleport to=".graph-canvas-panel">
+    <div v-if="selectedNode" class="node-lib-node-preview">
+      <NodePreview
+        :key="selectedNode.name"
+        :nodeDef="selectedNode"
+      ></NodePreview>
     </div>
-  </PopoverPlus>
+  </teleport>
 </template>
 
 <script setup lang="ts">
 import Tree from 'primevue/tree'
 import Badge from 'primevue/badge'
-import PopoverPlus from '@/components/primevueOverride/PopoverPlus.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
@@ -38,17 +40,13 @@ const nodeDefStore = useNodeDefStore()
 const expandedKeys = ref({})
 const selectedKeys = ref(null)
 const selectedNode = computed<ComfyNodeDefImpl | null>(() => {
-  if (!selectedKeys.value) {
+  if (!selectedKeys.value || Object.keys(selectedKeys.value).length === 0) {
     return null
   }
   const key = Object.keys(selectedKeys.value)[0]
   const nodeName = key.split('/')[key.split('/').length - 1]
   return nodeDefStore.nodeDefsByName[nodeName] || null
 })
-const op = ref(null)
-const showNodePreview = (e) => {
-  op.value.show(e)
-}
 
 const root = computed(() => nodeDefStore.nodeTree)
 const renderedRoot = computed(() => {
@@ -75,3 +73,11 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
   }
 }
 </script>
+
+<style>
+.node-lib-node-preview {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+}
+</style>
