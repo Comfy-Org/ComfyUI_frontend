@@ -1,11 +1,12 @@
 <template>
-  <Tree
+  <TreePlus
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectedKeys"
     selectionMode="single"
     :value="renderedRoot.children"
     :filter="true"
     filterMode="lenient"
+    dragSelector=".p-tree-node-leaf"
     :pt="{
       nodeLabel: 'node-lib-tree-node-label'
     }"
@@ -17,7 +18,7 @@
     <template #node="{ node }">
       <span class="node-label">{{ node.label }}</span>
     </template>
-  </Tree>
+  </TreePlus>
   <teleport to=".graph-canvas-panel">
     <div v-if="selectedNode" class="node-lib-node-preview">
       <NodePreview
@@ -29,11 +30,11 @@
 </template>
 
 <script setup lang="ts">
-import Tree from 'primevue/tree'
 import Badge from 'primevue/badge'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
+import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/NodePreview.vue'
 
 const nodeDefStore = useNodeDefStore()
