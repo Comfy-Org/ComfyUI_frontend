@@ -22,19 +22,17 @@
 
 <script setup lang="ts">
 import { app } from '@/scripts/app'
-import { inject, onMounted, onUnmounted, reactive, Ref, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
 import {
   INodeSlot,
-  LiteGraph,
   LiteGraphCanvasEvent,
   LGraphNode,
   LinkReleaseContext
 } from '@comfyorg/litegraph'
 import { FilterAndValue } from '@/services/nodeSearchService'
-import { ComfyNodeDef } from '@/types/apiTypes'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 interface LiteGraphPointerEvent extends Event {
   canvasX: number
@@ -99,17 +97,14 @@ const connectNodeOnLinkRelease = (
     node.connect(destSlotIndex, srcNode, srcSlotIndex)
   }
 }
-const addNode = (nodeDef: ComfyNodeDef) => {
+const addNode = (nodeDef: ComfyNodeDefImpl) => {
   closeDialog()
-  const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {})
-  if (node) {
-    node.pos = getNewNodeLocation()
-    app.graph.add(node)
 
-    const eventDetail = triggerEvent.value.detail
-    if (eventDetail.subType === 'empty-release') {
-      connectNodeOnLinkRelease(node, eventDetail.linkReleaseContext)
-    }
+  const node = app.addNodeOnGraph(nodeDef, { pos: getNewNodeLocation() })
+
+  const eventDetail = triggerEvent.value.detail
+  if (eventDetail.subType === 'empty-release') {
+    connectNodeOnLinkRelease(node, eventDetail.linkReleaseContext)
   }
 }
 

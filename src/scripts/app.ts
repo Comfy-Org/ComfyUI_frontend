@@ -36,7 +36,12 @@ import { StorageLocation } from '@/types/settingTypes'
 import '@comfyorg/litegraph/css/litegraph.css'
 import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
-import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  SYSTEM_NODE_DEFS,
+  useNodeDefStore
+} from '@/stores/nodeDefStore'
+import { Vector2 } from '@comfyorg/litegraph'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2932,6 +2937,19 @@ export class ComfyApp {
     this.lastNodeErrors = null
     this.lastExecutionError = null
     this.runningNodeId = null
+  }
+
+  addNodeOnGraph(
+    nodeDef: ComfyNodeDef | ComfyNodeDefImpl,
+    options: Record<string, any> = {}
+  ): LGraphNode {
+    const node = LiteGraph.createNode(
+      nodeDef.name,
+      nodeDef.display_name,
+      options
+    )
+    this.graph.add(node)
+    return node
   }
 }
 
