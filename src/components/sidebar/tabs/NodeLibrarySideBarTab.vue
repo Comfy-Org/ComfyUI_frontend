@@ -8,7 +8,10 @@
     filterMode="lenient"
     dragSelector=".p-tree-node-leaf"
     :pt="{
-      nodeLabel: 'node-lib-tree-node-label'
+      nodeLabel: 'node-lib-tree-node-label',
+      nodeChildren: ({ props }) => ({
+        'data-comfy-node-name': props.node?.data?.name
+      })
     }"
   >
     <template #folder="{ node }">

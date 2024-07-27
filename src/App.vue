@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref, watch } from 'vue'
+import { computed, markRaw, onMounted, onUnmounted, ref, watch } from 'vue'
 import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -24,6 +24,7 @@ import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -50,6 +51,7 @@ const betaMenuEnabled = computed(
 )
 
 const { t } = useI18n()
+let dropTargetCleanup = () => {}
 const init = () => {
   useSettingStore().addSettings(app.ui.settings)
   app.vueAppReady = true
@@ -70,6 +72,16 @@ const init = () => {
     component: markRaw(NodeLibrarySideBarTab),
     type: 'vue'
   })
+
+  dropTargetCleanup = dropTargetForElements({
+    element: document.querySelector('.graph-canvas-container'),
+    onDrop: (event) => {
+      const comfyNodeName = event.source.element.getAttribute(
+        'data-comfy-node-name'
+      )
+      // TODO add node on canvas.
+    }
+  })
 }
 
 onMounted(() => {
@@ -80,6 +92,10 @@ onMounted(() => {
   } finally {
     isLoading.value = false
   }
+})
+
+onUnmounted(() => {
+  dropTargetCleanup()
 })
 </script>
 
