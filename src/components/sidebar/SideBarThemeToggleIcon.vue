@@ -13,9 +13,7 @@ import SideBarIcon from './SideBarIcon.vue'
 import { useSettingStore } from '@/stores/settingStore'
 
 const previousDarkTheme = ref('dark')
-const currentTheme = computed(() =>
-  useSettingStore().get('Comfy.ColorPalette', 'dark')
-)
+const currentTheme = computed(() => useSettingStore().get('Comfy.ColorPalette'))
 const isDarkMode = computed(() => currentTheme.value !== 'light')
 const icon = computed(() => (isDarkMode.value ? 'pi pi-moon' : 'pi pi-sun'))
 
