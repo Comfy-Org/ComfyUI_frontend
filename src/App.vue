@@ -26,6 +26,7 @@ import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { useNodeDefStore } from './stores/nodeDefStore'
+import { Vector2 } from '@comfyorg/litegraph'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -77,11 +78,18 @@ const init = () => {
   dropTargetCleanup = dropTargetForElements({
     element: document.querySelector('.graph-canvas-container'),
     onDrop: (event) => {
+      const loc = event.location.current.input
+      const pos = app.clientPosToCanvasPos(
+        // Offset to account for the toolbar and menu
+        // so that after drop of the node the mouse is on the node.
+        // TODO(huchenlei): Make this calculation more robust
+        [loc.clientX - 100, loc.clientY - 50]
+      )
       const comfyNodeName = event.source.element.getAttribute(
         'data-comfy-node-name'
       )
       const nodeDef = useNodeDefStore().nodeDefsByName[comfyNodeName]
-      app.addNodeOnGraph(nodeDef, { pos: [0, 0] })
+      app.addNodeOnGraph(nodeDef, { pos })
     }
   })
 }

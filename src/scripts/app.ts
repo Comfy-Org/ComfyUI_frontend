@@ -42,6 +42,7 @@ import {
   useNodeDefStore
 } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
+import _ from 'lodash'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2950,6 +2951,12 @@ export class ComfyApp {
     )
     this.graph.add(node)
     return node
+  }
+
+  clientPosToCanvasPos(pos: Vector2): Vector2 {
+    return _.zip(pos, this.canvas.ds.offset).map(
+      ([p, o]) => p / this.canvas.ds.scale - o
+    ) as Vector2
   }
 }
 
