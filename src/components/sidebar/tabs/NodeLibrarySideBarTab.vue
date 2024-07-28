@@ -79,7 +79,7 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
   const isLeaf = node.children === undefined || node.children.length === 0
   const isExpanded = expandedKeys.value[node.key]
   const icon = isLeaf
-    ? 'pi pi-circle'
+    ? 'pi pi-circle-fill'
     : isExpanded
       ? 'pi pi-folder-open'
       : 'pi pi-folder'
