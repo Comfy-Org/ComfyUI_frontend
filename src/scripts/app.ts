@@ -2957,7 +2957,7 @@ export class ComfyApp {
     const rect = this.canvasContainer.getBoundingClientRect()
     const containerOffsets = [rect.left, rect.top]
     return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
-      ([p, o1, o2]) => p / this.canvas.ds.scale - o1 - o2
+      ([p, o1, o2]) => (p - o2) / this.canvas.ds.scale - o1
     ) as Vector2
   }
 }
