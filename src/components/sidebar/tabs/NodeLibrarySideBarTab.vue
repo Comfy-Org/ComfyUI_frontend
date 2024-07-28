@@ -26,7 +26,11 @@
   >
     <template #folder="{ node }">
       <span class="folder-label">{{ node.label }}</span>
-      <Badge :value="node.totalNodes" severity="secondary"></Badge>
+      <Badge
+        :value="node.totalNodes"
+        severity="secondary"
+        :style="{ marginLeft: '0.5rem' }"
+      ></Badge>
     </template>
     <template #node="{ node }">
       <span class="node-label">{{ node.label }}</span>
