@@ -1,7 +1,6 @@
 <template>
   <TreePlus
     v-model:expandedKeys="expandedKeys"
-    v-model:selectionKeys="selectedKeys"
     selectionMode="single"
     :value="renderedRoot.children"
     :filter="true"
@@ -10,7 +9,18 @@
     :pt="{
       nodeLabel: 'node-lib-tree-node-label',
       nodeChildren: ({ props }) => ({
-        'data-comfy-node-name': props.node?.data?.name
+        'data-comfy-node-name': props.node?.data?.name,
+        onMouseenter: (event: MouseEvent) => {
+          hoveredComfyNodeName = props.node?.data?.name
+
+          const hoverTarget = event.target as HTMLElement
+          const targetRect = hoverTarget.getBoundingClientRect()
+          nodePreviewStyle.top = `${targetRect.top - 40}px`
+          nodePreviewStyle.left = `${targetRect.right}px`
+        },
+        onMouseleave: () => {
+          hoveredComfyNodeName = null
+        }
       })
     }"
   >
@@ -22,8 +32,15 @@
       <span class="node-label">{{ node.label }}</span>
     </template>
   </TreePlus>
-  <div v-if="selectedNode" class="node-lib-node-preview">
-    <NodePreview :key="selectedNode.name" :nodeDef="selectedNode"></NodePreview>
+  <div
+    v-if="hoveredComfyNode"
+    class="node-lib-node-preview"
+    :style="nodePreviewStyle"
+  >
+    <NodePreview
+      :key="hoveredComfyNode.name"
+      :nodeDef="hoveredComfyNode"
+    ></NodePreview>
   </div>
 </template>
 
@@ -37,14 +54,17 @@ import NodePreview from '@/components/NodePreview.vue'
 
 const nodeDefStore = useNodeDefStore()
 const expandedKeys = ref({})
-const selectedKeys = ref(null)
-const selectedNode = computed<ComfyNodeDefImpl | null>(() => {
-  if (!selectedKeys.value || Object.keys(selectedKeys.value).length === 0) {
+const hoveredComfyNodeName = ref<string | null>(null)
+const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
+  if (!hoveredComfyNodeName.value) {
     return null
   }
-  const key = Object.keys(selectedKeys.value)[0]
-  const nodeName = key.split('/')[key.split('/').length - 1]
-  return nodeDefStore.nodeDefsByName[nodeName] || null
+  return nodeDefStore.nodeDefsByName[hoveredComfyNodeName.value] || null
+})
+const nodePreviewStyle = ref<Record<string, string>>({
+  position: 'absolute',
+  top: '0px',
+  left: '0px'
 })
 
 const root = computed(() => nodeDefStore.nodeTree)
