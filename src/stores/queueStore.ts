@@ -177,7 +177,7 @@ export const useQueueStore = defineStore('queue', {
     async update() {
       const [queue, history] = await Promise.all([
         api.getQueue(),
-        api.getHistory()
+        api.getHistory(/* maxItems=*/ 64)
       ])
 
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
