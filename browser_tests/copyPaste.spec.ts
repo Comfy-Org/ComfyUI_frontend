@@ -53,4 +53,15 @@ test.describe('Copy Paste', () => {
     await comfyPage.ctrlV()
     await expect(comfyPage.canvas).toHaveScreenshot('no-node-copied.png')
   })
+
+  test('Copy node by dragging + alt', async ({ comfyPage }) => {
+    // TextEncodeNode1
+    await comfyPage.page.mouse.move(618, 191)
+    await comfyPage.page.keyboard.down('Alt')
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(100, 100)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Alt')
+    await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
+  })
 })
