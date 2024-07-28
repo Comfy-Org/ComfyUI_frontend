@@ -1,5 +1,6 @@
 <template>
   <TreePlus
+    class="node-lib-tree"
     v-model:expandedKeys="expandedKeys"
     selectionMode="single"
     :value="renderedRoot.children"

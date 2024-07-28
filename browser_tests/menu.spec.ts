@@ -67,4 +67,28 @@ test.describe('Menu', () => {
     )
     expect(newChildrenCount).toBe(initialChildrenCount + 1)
   })
+
+  test('Sidebar node preview and drag to canvas', async ({ comfyPage }) => {
+    // Open the sidebar
+    const tab = comfyPage.menu.nodeLibraryTab
+    await tab.open()
+    await tab.toggleFirstFolder()
+
+    // Hover over a node to display the preview
+    const nodeSelector = '.p-tree-node-leaf'
+    await comfyPage.page.hover(nodeSelector)
+
+    // Verify the preview is displayed
+    const previewVisible = await comfyPage.page.isVisible(
+      '.node-lib-node-preview'
+    )
+    expect(previewVisible).toBe(true)
+
+    // Drag the node onto the canvas
+    const canvasSelector = '#graph-canvas'
+    await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector)
+
+    // Verify the node is added to the canvas
+    await expect(comfyPage.canvas).toHaveScreenshot('node-added-to-canvas.png')
+  })
 })

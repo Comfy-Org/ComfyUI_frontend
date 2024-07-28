@@ -37,6 +37,42 @@ class ComfyNodeSearchBox {
   }
 }
 
+class NodeLibrarySideBarTab {
+  public readonly tabId: string = 'node-library'
+  constructor(public readonly page: Page) {}
+
+  get tabButton() {
+    return this.page.locator(`.${this.tabId}-tab-button`)
+  }
+
+  get selectedTabButton() {
+    return this.page.locator(
+      `.${this.tabId}-tab-button.side-bar-button-selected`
+    )
+  }
+
+  get nodeLibraryTree() {
+    return this.page.locator('.node-lib-tree')
+  }
+
+  get nodePreview() {
+    return this.page.locator('.node-lib-node-preview')
+  }
+
+  async open() {
+    if (await this.selectedTabButton.isVisible()) {
+      return
+    }
+
+    await this.tabButton.click()
+    await this.nodeLibraryTree.waitFor({ state: 'visible' })
+  }
+
+  async toggleFirstFolder() {
+    await this.page.locator('.p-tree-node-toggle-button').nth(0).click()
+  }
+}
+
 class ComfyMenu {
   public readonly sideToolBar: Locator
   public readonly themeToggleButton: Locator
@@ -44,6 +80,10 @@ class ComfyMenu {
   constructor(public readonly page: Page) {
     this.sideToolBar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+  }
+
+  get nodeLibraryTab() {
+    return new NodeLibrarySideBarTab(this.page)
   }
 
   async toggleTheme() {
