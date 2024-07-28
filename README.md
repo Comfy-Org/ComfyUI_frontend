@@ -14,6 +14,81 @@ For Windows stand-alone build users, please edit the `run_cpu.bat` / `run_nvidia
 pause
 ```
 
+## Release Summary
+
+### Major features
+
+<details>
+  <summary>v1.2.4: Node library sidebar tab</summary>
+
+  #### Drag & Drop
+https://github.com/user-attachments/assets/853e20b7-bc0e-49c9-bbce-a2ba7566f92f
+
+  #### Filter
+https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
+</details>
+
+<details>
+  <summary>v1.2.0: Queue/History sidebar tab</summary>
+
+  https://github.com/user-attachments/assets/86e264fe-4d26-4f07-aa9a-83bdd2d02b8f
+</details>
+
+<details>
+  <summary>v1.1.0: Node search box</summary>
+
+  #### Fuzzy search & Node preview
+  ![image](https://github.com/user-attachments/assets/94733e32-ea4e-4a9c-b321-c1a05db48709)
+
+  #### Release link with shift
+  https://github.com/user-attachments/assets/a1b2b5c3-10d1-4256-b620-345de6858f25
+</details>
+
+### QoL changes
+
+<details>
+  <summary>v1.2.2: **Litegraph** auto connects to correct slot</summary>
+
+  #### Before
+  https://github.com/user-attachments/assets/c253f778-82d5-4e6f-aec0-ea2ccf421651
+
+  #### After
+  https://github.com/user-attachments/assets/b6360ac0-f0d2-447c-9daa-8a2e20c0dc1d
+</details>
+
+<details>
+  <summary>v1.1.8: **Litegraph** hides text overflow on widget value</summary>
+
+  https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
+</details>
+
+### Node developers API
+<details>
+  <summary>v1.2.4: Extension API to register custom side bar tab</summary>
+
+  Extensions now can call following API to register a sidebar tab.
+
+```js
+  app.extensionManager.registerSidebarTab({
+    id: "search",
+    icon: "pi pi-search",
+    title: "search",
+    tooltip: "search",
+    type: "custom",
+    render: (el) => {
+      el.innerHTML = "<div>Custom search tab</div>";
+    },
+  });
+```
+
+The list of supported icons can be find here: https://primevue.org/icons/#list
+
+We will support custom icon later.
+
+![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
+</details>
+
+
 ## Road Map
 
 ### What has been done
@@ -25,10 +100,8 @@ pause
 - Zod schema for input validation on ComfyUI workflow.
 - Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
 - Introduce Vue to start managing part of the UI.
-
-  - Starting with node search box revamp ![image](https://github.com/user-attachments/assets/ef6ce019-5194-4e55-9f1e-91440e473920)
-
 - Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
+- Better node management. Sherlock <https://github.com/Nuked88/ComfyUI-N-Sidebar>.
 
 
 ### What to be done
@@ -36,10 +109,9 @@ pause
 - Replace the existing ComfyUI front-end impl
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
-- Introduce a UI library to add more widget types for node developers.
+- Add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
-- Better node management. Sherlock https://github.com/Nuked88/ComfyUI-N-Sidebar.
 - Keybinding settings management. Register keybindings API for custom nodes.
 - New extensions API for adding UI-related features.
 
