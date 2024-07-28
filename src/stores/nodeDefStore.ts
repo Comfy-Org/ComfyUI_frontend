@@ -3,6 +3,7 @@ import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
+import { TreeNode } from 'primevue/treenode'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -232,6 +233,33 @@ export const useNodeDefStore = defineStore('nodeDef', {
     },
     nodeSearchService(state) {
       return new NodeSearchService(Object.values(state.nodeDefsByName))
+    },
+    nodeTree(state): TreeNode {
+      const root: TreeNode = {
+        key: 'root',
+        label: 'Nodes',
+        children: []
+      }
+      for (const nodeDef of Object.values(state.nodeDefsByName)) {
+        const path = nodeDef.category.split('/')
+        let current = root
+        let key = 'root'
+        for (const part of path) {
+          key += `/${part}`
+          let next = current.children.find((child) => child.label === part)
+          if (!next) {
+            next = { key, label: part, children: [] }
+            current.children.push(next)
+          }
+          current = next
+        }
+        current.children.push({
+          label: nodeDef.display_name,
+          data: nodeDef,
+          key: `${key}/${nodeDef.name}`
+        })
+      }
+      return root
     }
   },
   actions: {

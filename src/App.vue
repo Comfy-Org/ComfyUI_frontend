@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref, watch } from 'vue'
+import { computed, markRaw, onMounted, onUnmounted, ref, watch } from 'vue'
 import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -23,6 +23,9 @@ import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
+import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { useNodeDefStore } from './stores/nodeDefStore'
 
 const isLoading = ref(true)
 const nodeSearchEnabled = computed<boolean>(
@@ -49,6 +52,7 @@ const betaMenuEnabled = computed(
 )
 
 const { t } = useI18n()
+let dropTargetCleanup = () => {}
 const init = () => {
   useSettingStore().addSettings(app.ui.settings)
   app.vueAppReady = true
@@ -61,6 +65,29 @@ const init = () => {
     component: markRaw(QueueSideBarTab),
     type: 'vue'
   })
+  app.extensionManager.registerSidebarTab({
+    id: 'node-library',
+    icon: 'pi pi-book',
+    title: t('sideToolBar.nodeLibrary'),
+    tooltip: t('sideToolBar.nodeLibrary'),
+    component: markRaw(NodeLibrarySideBarTab),
+    type: 'vue'
+  })
+
+  dropTargetCleanup = dropTargetForElements({
+    element: document.querySelector('.graph-canvas-container'),
+    onDrop: (event) => {
+      const loc = event.location.current.input
+      // Add an offset on x to make sure after adding the node, the cursor
+      // is on the node (top left corner)
+      const pos = app.clientPosToCanvasPos([loc.clientX - 20, loc.clientY])
+      const comfyNodeName = event.source.element.getAttribute(
+        'data-comfy-node-name'
+      )
+      const nodeDef = useNodeDefStore().nodeDefsByName[comfyNodeName]
+      app.addNodeOnGraph(nodeDef, { pos })
+    }
+  })
 }
 
 onMounted(() => {
@@ -71,6 +98,10 @@ onMounted(() => {
   } finally {
     isLoading.value = false
   }
+})
+
+onUnmounted(() => {
+  dropTargetCleanup()
 })
 </script>
 

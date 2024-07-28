@@ -7,6 +7,7 @@
         :icon="tab.icon"
         :tooltip="tab.tooltip"
         :selected="tab === selectedTab"
+        :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
