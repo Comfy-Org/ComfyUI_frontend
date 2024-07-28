@@ -13910,14 +13910,18 @@ LGraphNode.prototype.executeAction = function(action)
         } else {
             element.innerHTML = value && value.title ? value.title : name;
             element.value = value;
+            element.setAttribute("role", "menuitem");
 
             if (value) {
                 if (value.disabled) {
                     disabled = true;
                     element.classList.add("disabled");
+                    element.setAttribute("aria-disabled", "true");
                 }
                 if (value.submenu || value.has_submenu) {
                     element.classList.add("has_submenu");
+                    element.setAttribute("aria-haspopup", "true");
+                    element.setAttribute("aria-expanded", "false");
                 }
             }
 
@@ -13941,6 +13945,16 @@ LGraphNode.prototype.executeAction = function(action)
 			LiteGraph.pointerListenerAdd(element,"enter",inner_over);
         }
 
+        function setAriaExpanded() {
+            const entries = that.root.querySelectorAll("div.litemenu-entry.has_submenu");
+            if (entries) {
+                for (let i = 0; i < entries.length; i++) {
+                    entries[i].setAttribute("aria-expanded", "false");
+                }
+            }
+            element.setAttribute("aria-expanded", "true");
+        }
+
         function inner_over(e) {
             var value = this.value;
             if (!value || !value.has_submenu) {
@@ -13948,6 +13962,7 @@ LGraphNode.prototype.executeAction = function(action)
             }
             //if it is a submenu, autoopen like the item was clicked
             inner_onclick.call(this, e);
+            setAriaExpanded();
         }
 
         //menu option clicked
@@ -13957,6 +13972,9 @@ LGraphNode.prototype.executeAction = function(action)
 
             if (that.current_submenu) {
                 that.current_submenu.close(e);
+            }
+            if (value?.has_submenu || value?.submenu) {
+                setAriaExpanded();
             }
 
             //global callback
