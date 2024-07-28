@@ -13234,7 +13234,9 @@ LGraphNode.prototype.executeAction = function(action)
                     content: "Collapse",
                     callback: LGraphCanvas.onMenuNodeCollapse
                 },
-                { content: "Pin", callback: LGraphCanvas.onMenuNodePin },
+                { 
+                    content: node.flags?.pinned ? "Unpin" : "Pin", 
+                    callback: LGraphCanvas.onMenuNodePin },
                 {
                     content: "Colors",
                     has_submenu: true,
