@@ -59,7 +59,7 @@
       </template>
     </Column>
   </DataTable>
-  <div>
+  <div v-else>
     <Message icon="pi pi-info" severity="error">
       <span class="ml-2">No tasks</span>
     </Message>
