@@ -120,7 +120,8 @@ export class ComfyInputsSpec {
           name,
           type,
           ...spec,
-          comboOptions: typeRaw
+          comboOptions: typeRaw,
+          default: spec.default ?? typeRaw[0]
         })
       default:
         return plainToClass(CustomInputSpec, { name, type, ...spec })

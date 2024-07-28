@@ -89,7 +89,7 @@ describe('ComfyInputsSpec', () => {
     expect(floatInput.step).toBe(0.1)
   })
 
-  it('should handle custom input specs', () => {
+  it('should handle combo input specs', () => {
     const plainObject = {
       optional: {
         comboInput: [[1, 2, 3], { default: 2 }]
@@ -101,6 +101,21 @@ describe('ComfyInputsSpec', () => {
     expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
     expect(result.optional.comboInput.type).toBe('COMBO')
     expect(result.optional.comboInput.default).toBe(2)
+  })
+
+  it('should handle combo input specs (auto-default)', () => {
+    const plainObject = {
+      optional: {
+        comboInput: [[1, 2, 3], {}]
+      }
+    }
+
+    const result = plainToClass(ComfyInputsSpec, plainObject)
+
+    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
+    expect(result.optional.comboInput.type).toBe('COMBO')
+    // Should pick the first choice as default
+    expect(result.optional.comboInput.default).toBe(1)
   })
 
   it('should handle custom input specs', () => {
