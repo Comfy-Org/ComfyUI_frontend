@@ -136,6 +136,12 @@ export class ComfyPage {
     this.menu = new ComfyMenu(page)
   }
 
+  async getGraphNodesCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return window['app']?.graph?._nodes?.length || 0
+    })
+  }
+
   async setup() {
     await this.goto()
     // Unify font for consistent screenshots.

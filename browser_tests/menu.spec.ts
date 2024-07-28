@@ -84,11 +84,12 @@ test.describe('Menu', () => {
     )
     expect(previewVisible).toBe(true)
 
+    const count = await comfyPage.getGraphNodesCount()
     // Drag the node onto the canvas
     const canvasSelector = '#graph-canvas'
     await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector)
 
     // Verify the node is added to the canvas
-    await expect(comfyPage.canvas).toHaveScreenshot('node-added-to-canvas.png')
+    expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
   })
 })
