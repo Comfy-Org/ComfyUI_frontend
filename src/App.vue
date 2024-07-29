@@ -35,7 +35,6 @@ watch(
 const { t } = useI18n()
 const init = () => {
   useSettingStore().addSettings(app.ui.settings)
-  app.vueAppReady = true
   app.extensionManager = useWorkspaceStore()
   app.extensionManager.registerSidebarTab({
     id: 'queue',
