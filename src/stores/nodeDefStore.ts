@@ -218,6 +218,27 @@ export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
   }
 ]
 
+function sortedTree(node: TreeNode): TreeNode {
+  // Create a new node with the same label and data
+  const newNode: TreeNode = {
+    ...node
+  }
+
+  if (node.children) {
+    // Sort the children of the current node
+    const sortedChildren = [...node.children].sort((a, b) =>
+      a.label.localeCompare(b.label)
+    )
+    // Recursively sort the children and add them to the new node
+    newNode.children = []
+    for (const child of sortedChildren) {
+      newNode.children.push(sortedTree(child))
+    }
+  }
+
+  return newNode
+}
+
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDefImpl>
   widgets: Record<string, ComfyWidgetConstructor>
@@ -261,6 +282,9 @@ export const useNodeDefStore = defineStore('nodeDef', {
         })
       }
       return root
+    },
+    sortedNodeTree(): TreeNode {
+      return sortedTree(this.nodeTree)
     }
   },
   actions: {

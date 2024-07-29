@@ -6,7 +6,10 @@ const messages = {
       settings: 'Settings',
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
-      nodeLibrary: 'Node Library'
+      nodeLibrary: 'Node Library',
+      nodeLibraryTab: {
+        sortOrder: 'Sort Order'
+      }
     }
   },
   zh: {
@@ -14,7 +17,10 @@ const messages = {
       settings: '设置',
       themeToggle: '主题切换',
       queue: '队列',
-      nodeLibrary: '节点库'
+      nodeLibrary: '节点库',
+      nodeLibraryTab: {
+        sortOrder: '排序顺序'
+      }
     }
   }
   // TODO: Add more languages

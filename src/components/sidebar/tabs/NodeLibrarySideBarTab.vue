@@ -1,4 +1,19 @@
 <template>
+  <SideBarHeader :title="$t('sideToolBar.nodeLibrary')">
+    <template #tool-buttons>
+      <ToggleButton
+        v-model:model-value="alphabeticalSort"
+        on-icon="pi pi-sort-alpha-down"
+        off-icon="pi pi-sort-alt"
+        aria-label="Sort"
+        :pt="{
+          label: { style: { display: 'none' } }
+        }"
+        v-tooltip="$t('sideToolBar.nodeLibraryTab.sortOrder')"
+      >
+      </ToggleButton>
+    </template>
+  </SideBarHeader>
   <TreePlus
     class="node-lib-tree"
     v-model:expandedKeys="expandedKeys"
@@ -51,6 +66,8 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
+import ToggleButton from 'primevue/togglebutton'
+import SideBarHeader from '@/components/sidebar/SideBarHeader.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
@@ -58,6 +75,7 @@ import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/NodePreview.vue'
 
 const nodeDefStore = useNodeDefStore()
+const alphabeticalSort = ref(false)
 const expandedKeys = ref({})
 const hoveredComfyNodeName = ref<string | null>(null)
 const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
@@ -72,7 +90,9 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
-const root = computed(() => nodeDefStore.nodeTree)
+const root = computed(() =>
+  alphabeticalSort.value ? nodeDefStore.sortedNodeTree : nodeDefStore.nodeTree
+)
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
