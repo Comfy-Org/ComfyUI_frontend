@@ -8,7 +8,6 @@ import Tooltip from 'primevue/tooltip'
 import 'primeicons/primeicons.css'
 
 import App from './App.vue'
-import { app as comfyApp } from '@/scripts/app'
 import { createPinia } from 'pinia'
 import { i18n } from './i18n'
 
@@ -40,8 +39,3 @@ app
   .use(pinia)
   .use(i18n)
   .mount('#vue-app')
-
-comfyApp.setup().then(() => {
-  window['app'] = comfyApp
-  window['graph'] = comfyApp.graph
-})
