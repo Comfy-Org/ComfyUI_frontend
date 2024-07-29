@@ -43,7 +43,12 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
   const { app } = await import('../../src/scripts/app')
   const { LiteGraph, LGraphCanvas } = await import('@comfyorg/litegraph')
   config.preSetup?.(app)
-  await app.setup()
+  const canvasEl = document.createElement('canvas')
+  canvasEl.style.touchAction = 'none'
+  canvasEl.id = 'graph-canvas'
+  canvasEl.tabIndex = 1
+  app.canvasContainer.prepend(canvasEl)
+  await app.setup(canvasEl)
 
   // @ts-ignore
   return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app }
