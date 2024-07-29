@@ -99,9 +99,8 @@ const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
 const fillNodeInfo = (node: TreeNode): TreeNode => {
-  const isLeaf = node.children === undefined || node.children.length === 0
   const isExpanded = expandedKeys.value[node.key]
-  const icon = isLeaf
+  const icon = node.leaf
     ? 'pi pi-circle-fill'
     : isExpanded
       ? 'pi pi-folder-open'
@@ -112,8 +111,8 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
     ...node,
     icon,
     children,
-    type: isLeaf ? 'node' : 'folder',
-    totalNodes: isLeaf
+    type: node.leaf ? 'node' : 'folder',
+    totalNodes: node.leaf
       ? 1
       : children.reduce((acc, child) => acc + child.totalNodes, 0)
   }
