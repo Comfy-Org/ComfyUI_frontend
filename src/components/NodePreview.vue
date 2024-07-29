@@ -39,7 +39,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
         <div class="_sb_col">{{ widgetInput.name }}</div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit _sb_hide_overflow">
+        <div class="_sb_col _sb_inherit">
           {{ widgetInput.default }}
         </div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
