@@ -2,12 +2,14 @@ import { SidebarTabExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 
 interface WorkspaceState {
+  spinner: boolean
   activeSidebarTab: string | null
   sidebarTabs: SidebarTabExtension[]
 }
 
 export const useWorkspaceStore = defineStore('workspace', {
   state: (): WorkspaceState => ({
+    spinner: false,
     activeSidebarTab: null,
     sidebarTabs: []
   }),
