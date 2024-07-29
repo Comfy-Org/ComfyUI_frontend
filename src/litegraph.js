@@ -112,6 +112,7 @@
         
         shift_click_do_break_link_from: false, // [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys
         click_do_break_link_to: false, // [false!]prefer false, way too easy to break links
+        ctrl_alt_click_do_break_link: true, // [true!] who accidentally ctrl-alt-clicks on an in/output? nobody! that's who!
         
         search_hide_on_mouse_leave: true, // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
         search_filter_enabled: false, // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
@@ -5907,7 +5908,7 @@ LGraphNode.prototype.executeAction = function(action)
 		//left button mouse / single finger
         if (e.which == 1 && !this.pointer_is_double)
 		{
-            if (e.ctrlKey)
+            if (e.ctrlKey && !e.altKey)
 			{
                 this.dragging_rectangle = new Float32Array(4);
                 this.dragging_rectangle[0] = e.canvasX;
@@ -5918,7 +5919,7 @@ LGraphNode.prototype.executeAction = function(action)
             }
 
             // clone node ALT dragging
-            if (LiteGraph.alt_drag_do_clone_nodes && e.altKey && node && this.allow_interaction && !skip_action && !this.read_only)
+            if (LiteGraph.alt_drag_do_clone_nodes && e.altKey && !e.ctrlKey && node && this.allow_interaction && !skip_action && !this.read_only)
             {
                 const cloned = node.clone()
                 if (cloned) {
@@ -5984,6 +5985,10 @@ LGraphNode.prototype.executeAction = function(action)
                                         if (e.shiftKey) {
                                             node.disconnectOutput(i);
                                         }
+                                    } else if (LiteGraph.ctrl_alt_click_do_break_link) {
+                                        if (e.ctrlKey && e.altKey && !e.shiftKey) {
+                                            node.disconnectOutput(i);
+                                        }
                                     }
 
                                     if (is_double_click) {
@@ -6031,15 +6036,9 @@ LGraphNode.prototype.executeAction = function(action)
                                         var link_info = this.graph.links[
                                             input.link
                                         ]; //before disconnecting
-                                        if (LiteGraph.click_do_break_link_to){
+                                        if (LiteGraph.click_do_break_link_to || (LiteGraph.ctrl_alt_click_do_break_link && e.ctrlKey && e.altKey && !e.shiftKey)){
                                             node.disconnectInput(i);
-                                            this.dirty_bgcanvas = true;
-                                            skip_action = true;
-                                        }else{
-                                            // do same action as has not node ?
-                                        }
-
-                                        if (
+                                        } else if (
                                             this.allow_reconnect_links ||
 											//this.move_destination_link_without_shift ||
                                             e.shiftKey
@@ -6059,6 +6058,8 @@ LGraphNode.prototype.executeAction = function(action)
                                             
                                             this.dirty_bgcanvas = true;
                                             skip_action = true;
+                                        }else{
+                                            // do same action as has not node ?
                                         }
 
                                         
@@ -6077,6 +6078,8 @@ LGraphNode.prototype.executeAction = function(action)
                                         this.dirty_bgcanvas = true;
                                         skip_action = true;
                                     }
+
+                                    break;
                                 }
                             }
                         }
