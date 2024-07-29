@@ -10,6 +10,7 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
+import WorkflowsSideBarTab from '@/components/sidebar/tabs/WorkflowsSideBarTab.vue'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
@@ -52,6 +53,14 @@ const init = () => {
     title: t('sideToolBar.nodeLibrary'),
     tooltip: t('sideToolBar.nodeLibrary'),
     component: markRaw(NodeLibrarySideBarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'workflows',
+    icon: 'pi pi-copy',
+    title: t('sideToolBar.workflows'),
+    tooltip: t('sideToolBar.workflows'),
+    component: markRaw(WorkflowsSideBarTab),
     type: 'vue'
   })
 }
