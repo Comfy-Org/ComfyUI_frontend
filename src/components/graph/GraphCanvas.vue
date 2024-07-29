@@ -19,22 +19,29 @@ import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const settingStore = useSettingStore()
+const workspaceStore = useWorkspaceStore()
 
 const betaMenuEnabled = computed(
-  () => useSettingStore().get('Comfy.UseNewMenu') !== 'Disabled'
+  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
 const nodeSearchEnabled = computed<boolean>(
-  () => useSettingStore().get('Comfy.NodeSearchBoxImpl') === 'default'
+  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
 
 let dropTargetCleanup = () => {}
 
 onMounted(async () => {
   comfyApp.vueAppReady = true
+
+  workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
+  workspaceStore.spinner = false
+
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
 

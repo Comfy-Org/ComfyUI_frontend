@@ -1,10 +1,10 @@
 <template>
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
-  <GraphCanvas v-else />
+  <GraphCanvas />
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, ref, watch } from 'vue'
+import { computed, markRaw, onMounted, watch } from 'vue'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 
-const isLoading = ref(true)
+const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
   useSettingStore().get('Comfy.ColorPalette')
 )
@@ -59,8 +59,6 @@ onMounted(() => {
     init()
   } catch (e) {
     console.error('Failed to init Vue app', e)
-  } finally {
-    isLoading.value = false
   }
 })
 </script>
