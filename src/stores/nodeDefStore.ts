@@ -260,6 +260,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
       const root: TreeNode = {
         key: 'root',
         label: 'Nodes',
+        leaf: false,
         children: []
       }
       for (const nodeDef of Object.values(state.nodeDefsByName)) {
@@ -270,7 +271,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
           key += `/${part}`
           let next = current.children.find((child) => child.label === part)
           if (!next) {
-            next = { key, label: part, children: [] }
+            next = { key, label: part, children: [], leaf: false }
             current.children.push(next)
           }
           current = next
@@ -278,7 +279,8 @@ export const useNodeDefStore = defineStore('nodeDef', {
         current.children.push({
           label: nodeDef.display_name,
           data: nodeDef,
-          key: `${key}/${nodeDef.name}`
+          key: `${key}/${nodeDef.name}`,
+          leaf: true
         })
       }
       return root
