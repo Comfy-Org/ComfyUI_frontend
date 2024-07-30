@@ -1,4 +1,5 @@
 import { app } from '../../scripts/app'
+import { api } from '../../scripts/api'
 
 app.registerExtension({
   name: 'Comfy.Keybinds',
@@ -6,8 +7,14 @@ app.registerExtension({
     const keybindListener = function (event) {
       const modifierPressed = event.ctrlKey || event.metaKey
 
-      // Queue prompt using ctrl or command + enter
+      // Queue prompt using (ctrl or command) + enter
       if (modifierPressed && event.key === 'Enter') {
+        // Cancel current prompt using (ctrl or command) + alt + enter
+        if(event.altKey) {
+					api.interrupt()
+					return
+				}
+        // Queue prompt as first for generation using (ctrl or command) + shift + enter
         app.queuePrompt(event.shiftKey ? -1 : 0).then()
         return
       }
