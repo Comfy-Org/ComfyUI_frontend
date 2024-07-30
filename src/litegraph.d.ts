@@ -154,12 +154,24 @@ export type LinkReleaseContext = {
     type_filter_out?: string;
 };
 
+export type ConnectingLink = {
+    node: LGraphNode;
+    slot: number;
+    input: INodeInputSlot | null;
+    output: INodeOutputSlot | null;
+    pos: Vector2;
+};
+
+export type LinkReleaseContextExtended = {
+    links: ConnectingLink[];
+};
+
 export type LiteGraphCanvasEventType = "empty-release" | "empty-double-click";
 
 export type LiteGraphCanvasEvent = CustomEvent<{
     subType: string;
     originalEvent: Event,
-    linkReleaseContext?: LinkReleaseContext;
+    linkReleaseContext?: LinkReleaseContextExtended;
 }>;
 
 export const LiteGraph: {
