@@ -11,9 +11,9 @@ app.registerExtension({
       if (modifierPressed && event.key === 'Enter') {
         // Cancel current prompt using (ctrl or command) + alt + enter
         if(event.altKey) {
-					api.interrupt()
-					return
-				}
+          api.interrupt()
+          return
+        }
         // Queue prompt as first for generation using (ctrl or command) + shift + enter
         app.queuePrompt(event.shiftKey ? -1 : 0).then()
         return
