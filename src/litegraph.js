@@ -6844,7 +6844,7 @@ LGraphNode.prototype.executeAction = function(action)
                             detail: {
                                 subType: "empty-release",
                                 originalEvent: e,
-                                linkReleaseContextExtended,
+                                linkReleaseContext: linkReleaseContextExtended,
                             },
                         }
                     ));
