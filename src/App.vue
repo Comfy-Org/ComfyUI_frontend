@@ -1,13 +1,15 @@
 <template>
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
+  <BlockUI full-screen :blocked="isLoading" />
   <GraphCanvas />
 </template>
 
 <script setup lang="ts">
 import { computed, markRaw, onMounted, watch } from 'vue'
+import BlockUI from 'primevue/blockui'
+import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
-import ProgressSpinner from 'primevue/progressspinner'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
