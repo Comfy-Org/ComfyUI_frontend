@@ -48,12 +48,11 @@ export class ConnectingLinkImpl implements ConnectingLink {
    * - 'output' means we need a new node's outputs slot to connect with this link
    */
   get releaseSlotType(): 'input' | 'output' {
-    return this.output ? 'output' : 'input'
+    return this.output ? 'input' : 'output'
   }
 
   connectTo(newNode: LGraphNode) {
-    const newNodeSlots =
-      this.releaseSlotType === 'output' ? newNode.outputs : newNode.inputs
+    const newNodeSlots = newNode.outputs ? newNode.outputs : newNode.inputs
     const newNodeSlot = newNodeSlots.findIndex(
       (slot: INodeSlot) => slot.type === this.type
     )
@@ -65,7 +64,7 @@ export class ConnectingLinkImpl implements ConnectingLink {
       return
     }
 
-    if (this.releaseSlotType === 'output') {
+    if (this.releaseSlotType === 'input') {
       this.node.connect(this.slot, newNode, newNodeSlot)
     } else {
       newNode.connect(newNodeSlot, this.node, this.slot)
