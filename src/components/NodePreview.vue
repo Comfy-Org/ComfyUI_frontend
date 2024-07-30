@@ -40,7 +40,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col">{{ widgetInput.name }}</div>
         <div class="_sb_col middle-column"></div>
         <div class="_sb_col _sb_inherit">
-          {{ widgetInput.default }}
+          {{ truncateDefaultValue(widgetInput.default) }}
         </div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
@@ -73,6 +73,12 @@ const slotInputDefs = allInputDefs.filter(
 const widgetInputDefs = allInputDefs.filter((input) =>
   nodeDefStore.inputIsWidget(input)
 )
+const truncateDefaultValue = (value: any): string => {
+  if (value instanceof Object) {
+    return _.truncate(JSON.stringify(value), { length: 20 })
+  }
+  return value
+}
 </script>
 
 <style scoped>
