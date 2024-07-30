@@ -58,6 +58,28 @@ test.describe('Node Interaction', () => {
 
     await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot_linked.png')
   })
+
+  test('Can batch move links by drag with shift', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('batch_move_links')
+    await expect(comfyPage.canvas).toHaveScreenshot('batch_move_links.png')
+
+    const outputSlot1Pos = {
+      x: 304,
+      y: 127
+    }
+    const outputSlot2Pos = {
+      x: 307,
+      y: 310
+    }
+
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.dragAndDrop(outputSlot1Pos, outputSlot2Pos)
+    await comfyPage.page.keyboard.up('Shift')
+
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'batch_move_links_moved.png'
+    )
+  })
 })
 
 test.describe('Canvas Interaction', () => {
