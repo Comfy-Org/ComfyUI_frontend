@@ -47,6 +47,15 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.2.7: **Litegraph** drags multiple links with shift pressed</summary>
+  
+https://github.com/user-attachments/assets/68826715-bb55-4b2a-be6e-675cfc424afe
+
+https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
+
+</details>
+
+<details>
   <summary>v1.2.2: **Litegraph** auto connects to correct slot</summary>
 
   #### Before
