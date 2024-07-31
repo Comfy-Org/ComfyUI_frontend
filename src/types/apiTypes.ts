@@ -175,46 +175,49 @@ function inputSpec(
   ])
 }
 
+const zBaseInputSpecValue = z
+  .object({
+    default: z.any().optional(),
+    forceInput: z.boolean().optional()
+  })
+  .passthrough()
+
 const zIntInputSpec = inputSpec([
   z.literal('INT'),
-  z.object({
+  zBaseInputSpecValue.extend({
     min: z.number().optional(),
     max: z.number().optional(),
     step: z.number().optional(),
-    default: z.number().optional(),
-    forceInput: z.boolean().optional()
+    default: z.number().optional()
   })
 ])
 
 const zFloatInputSpec = inputSpec([
   z.literal('FLOAT'),
-  z.object({
+  zBaseInputSpecValue.extend({
     min: z.number().optional(),
     max: z.number().optional(),
     step: z.number().optional(),
     round: z.number().optional(),
-    default: z.number().optional(),
-    forceInput: z.boolean().optional()
+    default: z.number().optional()
   })
 ])
 
 const zBooleanInputSpec = inputSpec([
   z.literal('BOOLEAN'),
-  z.object({
+  zBaseInputSpecValue.extend({
     label_on: z.string().optional(),
     label_off: z.string().optional(),
-    default: z.boolean().optional(),
-    forceInput: z.boolean().optional()
+    default: z.boolean().optional()
   })
 ])
 
 const zStringInputSpec = inputSpec([
   z.literal('STRING'),
-  z.object({
+  zBaseInputSpecValue.extend({
     default: z.string().optional(),
     multiline: z.boolean().optional(),
-    dynamicPrompts: z.boolean().optional(),
-    forceInput: z.boolean().optional()
+    dynamicPrompts: z.boolean().optional()
   })
 ])
 
@@ -222,23 +225,15 @@ const zStringInputSpec = inputSpec([
 const zComboInputSpec = inputSpec(
   [
     z.array(z.any()),
-    z.object({
-      default: z.any().optional(),
+    zBaseInputSpecValue.extend({
       control_after_generate: z.boolean().optional(),
-      image_upload: z.boolean().optional(),
-      forceInput: z.boolean().optional()
+      image_upload: z.boolean().optional()
     })
   ],
   /* allowUpcast=*/ false
 )
 
-const zCustomInputSpec = inputSpec([
-  z.string(),
-  z.object({
-    default: z.any().optional(),
-    forceInput: z.boolean().optional()
-  })
-])
+const zCustomInputSpec = inputSpec([z.string(), zBaseInputSpecValue])
 
 const zInputSpec = z.union([
   zIntInputSpec,
