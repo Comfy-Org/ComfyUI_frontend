@@ -5297,7 +5297,7 @@ LGraphNode.prototype.executeAction = function(action)
 
         this.filter = null; //allows to filter to only accept some type of nodes in a graph
 
-		this.set_canvas_dirty_on_mouse_event = true; //forces to redraw the canvas if the mouse does anything
+		this.set_canvas_dirty_on_mouse_event = true; //forces to redraw the canvas on mouse events (except move)
         this.always_render_background = false;
         this.render_shadows = true;
         this.render_canvas_border = true;
@@ -6649,9 +6649,6 @@ LGraphNode.prototype.executeAction = function(action)
     	
     	//console.log("pointerevents: processMouseUp "+e.pointerId+" "+e.isPrimary+" :: "+e.clientX+" "+e.clientY);
     	
-		if( this.set_canvas_dirty_on_mouse_event )
-			this.dirty_canvas = true;
-
         if (!this.graph)
             return;
 
