@@ -51,7 +51,9 @@ describe('validateNodeDef', () => {
   describe.each([
     [{ ckpt_name: { 'model1.safetensors': 'foo' } }],
     [{ ckpt_name: ['*', ''] }],
-    [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }]
+    [{ ckpt_name: ['foo', { default: 1 }, { default: 2 }] }],
+    // Should reject incorrect default value type.
+    [{ ckpt_name: ['INT', { default: '124' }] }]
   ])(
     'validateComfyNodeDef rejects with various input spec formats',
     (inputSpec) => {

@@ -233,7 +233,12 @@ const zComboInputSpec = inputSpec(
   /* allowUpcast=*/ false
 )
 
-const zCustomInputSpec = inputSpec([z.string(), zBaseInputSpecValue])
+const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
+
+const zCustomInputSpec = inputSpec([
+  z.string().refine((value) => !excludedLiterals.has(value)),
+  zBaseInputSpecValue
+])
 
 const zInputSpec = z.union([
   zIntInputSpec,
