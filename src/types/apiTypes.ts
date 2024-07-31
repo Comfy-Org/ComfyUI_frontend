@@ -198,7 +198,7 @@ const zFloatInputSpec = inputSpec([
     min: z.number().optional(),
     max: z.number().optional(),
     step: z.number().optional(),
-    round: z.boolean().optional(),
+    round: z.union([z.number(), z.literal(false)]).optional(),
     default: z.number().optional()
   })
 ])
