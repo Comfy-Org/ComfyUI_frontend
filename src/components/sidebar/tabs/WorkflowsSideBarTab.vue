@@ -1,15 +1,29 @@
 <template>
-  <TreePlus
-    :value="renderedRoot.children"
-    v-model:expandedKeys="expandedKeys"
-    :filter="true"
-    filterMode="lenient"
-    dragSelector=".p-tree-node-leaf"
-  >
-  </TreePlus>
+  <SideBarTabTemplate :title="$t('sideToolBar.workflows')">
+    <template #tool-buttons>
+      <Button
+        icon="pi pi-refresh"
+        @click="workflowStore.loadFiles"
+        text
+        severity="secondary"
+      />
+    </template>
+    <template #body>
+      <TreePlus
+        :value="renderedRoot.children"
+        v-model:expandedKeys="expandedKeys"
+        :filter="true"
+        filterMode="lenient"
+        dragSelector=".p-tree-node-leaf"
+      >
+      </TreePlus>
+    </template>
+  </SideBarTabTemplate>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
+import SideBarTabTemplate from './SideBarTabTemplate.vue'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import { computed, onMounted, ref } from 'vue'
