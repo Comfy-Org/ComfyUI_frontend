@@ -4908,7 +4908,7 @@ LGraphNode.prototype.executeAction = function(action)
 
     LGraphGroup.prototype._ctor = function(title) {
         this.title = title || "Group";
-        this.font_size = 24;
+        this.font_size = LiteGraph.DEFAULT_GROUP_FONT || 24;
         this.color = LGraphCanvas.node_colors.pale_blue
             ? LGraphCanvas.node_colors.pale_blue.groupcolor
             : "#AAA";
