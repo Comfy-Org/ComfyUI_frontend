@@ -188,7 +188,9 @@ const zIntInputSpec = inputSpec([
     min: z.number().optional(),
     max: z.number().optional(),
     step: z.number().optional(),
-    default: z.number().optional()
+    // Note: Many node authors are using INT to pass list of INT.
+    // TODO: Add list of ints type.
+    default: z.union([z.number(), z.array(z.number())]).optional()
   })
 ])
 
@@ -199,7 +201,9 @@ const zFloatInputSpec = inputSpec([
     max: z.number().optional(),
     step: z.number().optional(),
     round: z.union([z.number(), z.literal(false)]).optional(),
-    default: z.number().optional()
+    // Note: Many node authors are using FLOAT to pass list of FLOAT.
+    // TODO: Add list of floats type.
+    default: z.union([z.number(), z.array(z.number())]).optional()
   })
 ])
 
