@@ -78,6 +78,7 @@ const renameNode = async (node: TreeNode, newName: string) => {
   }
   editingNode.value = null
 }
+
 const deleteNode = async (node: TreeNode) => {
   const result = await workflowStore.deleteFile(node.key)
   if (!result.success) {
@@ -88,6 +89,7 @@ const deleteNode = async (node: TreeNode) => {
     })
   }
 }
+
 const downloadWorkflow = async (node: TreeNode) => {
   const result = await workflowStore.getFileData(node.key)
   if (!result.success) {
@@ -103,11 +105,23 @@ const downloadWorkflow = async (node: TreeNode) => {
     downloadBlob(node.label, blob)
   }
 }
+
+const generateWorkflowPath = (folder: string) => {
+  const prefix = 'new_workflow'
+  let index = 1
+  let name = `${prefix}.json`
+  while (findNodeByKey(renderedRoot.value, folder + '/' + name)) {
+    name = `${prefix}_${index++}.json`
+  }
+  return folder + '/' + name
+}
+
 const createDefaultWorkflow = async (node: TreeNode) => {
   const folder = node.leaf
     ? node.key.slice(0, node.key.lastIndexOf('/') + 1)
     : node.key
-  const path = folder + '/new_workflow.json'
+
+  const path = generateWorkflowPath(folder)
   const result = await workflowStore.createDefaultWorkflow(path)
   if (!result.success) {
     toast.add({
@@ -121,6 +135,7 @@ const createDefaultWorkflow = async (node: TreeNode) => {
     editingNode.value = findNodeByKey(renderedRoot.value, path)
   }
 }
+
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => {
