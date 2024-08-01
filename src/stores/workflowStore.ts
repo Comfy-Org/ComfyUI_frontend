@@ -12,6 +12,7 @@ export const useWorkflowStore = defineStore('workflow', {
         key: 'root',
         label: 'Workflows',
         isDirectory: true,
+        leaf: false,
         children: []
       }
 
@@ -32,6 +33,7 @@ export const useWorkflowStore = defineStore('workflow', {
               key,
               label: part,
               isDirectory,
+              leaf: !isDirectory,
               children: isDirectory ? [] : undefined
             }
             current.children.push(next)
