@@ -87,32 +87,29 @@ const deleteNode = async (node: TreeNode) => {
 }
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
-const nodeRenameMenuItem: MenuItem = {
-  label: 'Rename',
-  icon: 'pi pi-file-edit',
-  command: () => (editingNode.value = menuTargetNode.value)
-}
-const nodeDeleteMenuItem: MenuItem = {
-  label: 'Delete',
-  icon: 'pi pi-trash',
-  command: () => deleteNode(menuTargetNode.value)
-}
-const fileDownloadMenuItem: MenuItem = {
-  label: 'Download',
-  icon: 'pi pi-download'
-}
 const menuItems = computed<MenuItem[]>(() => {
   if (!menuTargetNode.value) {
+    console.error("Menu target node doesn't exist. This should never happen.")
     return []
   }
-  if (menuTargetNode.value.key === renderedRoot.value.key) {
-    return []
-  }
-  if (menuTargetNode.value.leaf) {
-    return [nodeRenameMenuItem, nodeDeleteMenuItem, fileDownloadMenuItem]
-  } else {
-    return [nodeRenameMenuItem, nodeDeleteMenuItem]
-  }
+
+  return [
+    {
+      label: 'Rename',
+      icon: 'pi pi-file-edit',
+      command: () => (editingNode.value = menuTargetNode.value)
+    },
+    {
+      label: 'Delete',
+      icon: 'pi pi-trash',
+      command: () => deleteNode(menuTargetNode.value)
+    },
+    {
+      label: 'Download',
+      icon: 'pi pi-download',
+      visible: menuTargetNode.value.leaf
+    }
+  ]
 })
 
 const isImageFile = (fileName: string): boolean => {
