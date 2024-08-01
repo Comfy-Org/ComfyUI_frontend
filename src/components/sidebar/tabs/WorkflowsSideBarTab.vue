@@ -12,6 +12,8 @@
       <TreePlus
         :value="[renderedRoot]"
         v-model:expandedKeys="expandedKeys"
+        v-model:selectionKeys="selectedKeys"
+        selectionMode="single"
         :filter="true"
         filterMode="lenient"
         dragSelector=".p-tree-node-leaf"
@@ -83,6 +85,7 @@ const getFileIcon = (fileName: string) => {
 }
 
 const expandedKeys = ref({})
+const selectedKeys = ref(null)
 const workflowStore = useWorkflowStore()
 const root = computed<TreeNode>(() => workflowStore.fileTree)
 const renderedRoot = computed(() => {
