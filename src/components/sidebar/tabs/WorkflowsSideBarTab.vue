@@ -56,6 +56,8 @@ import _ from 'lodash'
 import EditableText from './EditableText.vue'
 import { useToast } from 'primevue/usetoast'
 import { downloadBlob } from '@/scripts/utils'
+import { app } from '@/scripts/app'
+import { findNodeByKey } from '@/utils/treeUtil'
 
 const toast = useToast()
 
@@ -101,17 +103,39 @@ const downloadWorkflow = async (node: TreeNode) => {
     downloadBlob(node.label, blob)
   }
 }
+const createDefaultWorkflow = async (node: TreeNode) => {
+  const folder = node.leaf
+    ? node.key.slice(0, node.key.lastIndexOf('/') + 1)
+    : node.key
+  const path = folder + '/new_workflow.json'
+  const result = await workflowStore.createDefaultWorkflow(path)
+  if (!result.success) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `Failed to create new workflow\n${result.message}`
+    })
+  } else {
+    app.loadGraphData()
+    app.resetView()
+    editingNode.value = findNodeByKey(renderedRoot.value, path)
+  }
+}
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => {
   if (!menuTargetNode.value) {
-    console.error("Menu target node doesn't exist. This should never happen.")
     return []
   }
 
   const isRoot = menuTargetNode.value.key === renderedRoot.value.key
 
   return [
+    {
+      label: 'New Workflow',
+      icon: 'pi pi-plus',
+      command: () => createDefaultWorkflow(menuTargetNode.value)
+    },
     {
       label: 'Rename',
       icon: 'pi pi-file-edit',

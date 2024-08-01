@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
 import { TreeNode } from 'primevue/treenode'
+import { defaultGraph } from '@/scripts/defaultGraph'
 
 export const useWorkflowStore = defineStore('workflow', {
   state: () => ({
@@ -74,6 +75,25 @@ export const useWorkflowStore = defineStore('workflow', {
     async moveFile(sourcePath: string, destPath: string) {
       await api.moveUserData(sourcePath, destPath)
       await this.loadFiles()
+    },
+    async saveFile(path: string, data: string) {
+      const resp = await api.storeUserData(path, data, {
+        stringify: false,
+        throwOnError: false,
+        overwrite: true
+      })
+
+      if (resp.status !== 200) {
+        return {
+          success: false,
+          message: `Error saving user data file '${path}': ${resp.status} ${resp.statusText}`
+        }
+      }
+      await this.loadFiles()
+      return { success: true }
+    },
+    async createDefaultWorkflow(path: string) {
+      return await this.saveFile(path, JSON.stringify(defaultGraph))
     },
     async getFileData(path: string) {
       const resp = await api.getUserData(path)
