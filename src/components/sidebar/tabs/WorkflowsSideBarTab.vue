@@ -9,9 +9,8 @@
       />
     </template>
     <template #body>
-      <div @contextmenu="menu.show($event)">foo</div>
       <TreePlus
-        :value="renderedRoot.children"
+        :value="[renderedRoot]"
         v-model:expandedKeys="expandedKeys"
         :filter="true"
         filterMode="lenient"
@@ -19,7 +18,6 @@
         :pt="{
           nodeChildren: ({ props }) => ({
             onContextmenu: (event: MouseEvent) => {
-              console.log('foo')
               menu.show(event)
             }
           })
@@ -50,8 +48,13 @@ import EditableText from './EditableText.vue'
 
 const menu = ref(null)
 const menuItems = ref([
-  { label: 'Copy', icon: 'pi pi-copy' },
-  { label: 'Rename', icon: 'pi pi-file-edit' }
+  {
+    label: 'Rename',
+    icon: 'pi pi-file-edit',
+    command: () => console.log('rename file!')
+  },
+  { label: 'Delete', icon: 'pi pi-trash' },
+  { label: 'Export', icon: 'pi pi-file-export' }
 ])
 
 const isImageFile = (fileName: string): boolean => {
