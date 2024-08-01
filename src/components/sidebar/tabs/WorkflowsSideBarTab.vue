@@ -3,7 +3,7 @@
     <template #tool-buttons>
       <Button
         icon="pi pi-refresh"
-        @click="workflowStore.loadFiles"
+        @click="async () => await workflowStore.loadFiles()"
         text
         severity="secondary"
       />
@@ -26,7 +26,7 @@
           })
         }"
       >
-        <template #file="{ node }">
+        <template #default="{ node }">
           <EditableText
             :modelValue="node.label"
             :isEditing="node.key === editingNode?.key"
