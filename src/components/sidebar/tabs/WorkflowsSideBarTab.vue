@@ -18,7 +18,7 @@
         filterMode="lenient"
         dragSelector=".p-tree-node-leaf"
         :pt="{
-          nodeChildren: ({ props }) => ({
+          nodeContent: ({ props }) => ({
             onContextmenu: (event: MouseEvent) => {
               menuTargetNode = props.node
               menu.show(event)
@@ -47,6 +47,7 @@
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import SideBarTabTemplate from './SideBarTabTemplate.vue'
+import { MenuItem } from 'primevue/menuitem'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import { computed, onMounted, ref } from 'vue'
@@ -86,19 +87,33 @@ const deleteNode = async (node: TreeNode) => {
 }
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
-const menuItems = ref([
-  {
-    label: 'Rename',
-    icon: 'pi pi-file-edit',
-    command: () => (editingNode.value = menuTargetNode.value)
-  },
-  {
-    label: 'Delete',
-    icon: 'pi pi-trash',
-    command: () => deleteNode(menuTargetNode.value)
-  },
-  { label: 'Export', icon: 'pi pi-file-export' }
-])
+const nodeRenameMenuItem: MenuItem = {
+  label: 'Rename',
+  icon: 'pi pi-file-edit',
+  command: () => (editingNode.value = menuTargetNode.value)
+}
+const nodeDeleteMenuItem: MenuItem = {
+  label: 'Delete',
+  icon: 'pi pi-trash',
+  command: () => deleteNode(menuTargetNode.value)
+}
+const fileDownloadMenuItem: MenuItem = {
+  label: 'Download',
+  icon: 'pi pi-download'
+}
+const menuItems = computed<MenuItem[]>(() => {
+  if (!menuTargetNode.value) {
+    return []
+  }
+  if (menuTargetNode.value.key === renderedRoot.value.key) {
+    return []
+  }
+  if (menuTargetNode.value.leaf) {
+    return [nodeRenameMenuItem, nodeDeleteMenuItem, fileDownloadMenuItem]
+  } else {
+    return [nodeRenameMenuItem, nodeDeleteMenuItem]
+  }
+})
 
 const isImageFile = (fileName: string): boolean => {
   const imageExtensions = [
