@@ -8,8 +8,9 @@ export const useWorkflowStore = defineStore('workflow', {
   }),
   getters: {
     fileTree(): TreeNode {
+      const rootPath = 'workflows'
       const root: TreeNode = {
-        key: 'root',
+        key: rootPath,
         label: 'workflows',
         isDirectory: true,
         leaf: false,
@@ -19,7 +20,7 @@ export const useWorkflowStore = defineStore('workflow', {
       for (const filePath of this.files) {
         const parts = filePath.split('/')
         let current = root
-        let key = 'root'
+        let key = rootPath
 
         for (let i = 0; i < parts.length; i++) {
           const part = parts[i]
