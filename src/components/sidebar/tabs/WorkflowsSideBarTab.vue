@@ -93,16 +93,20 @@ const menuItems = computed<MenuItem[]>(() => {
     return []
   }
 
+  const isRoot = menuTargetNode.value.key === renderedRoot.value.key
+
   return [
     {
       label: 'Rename',
       icon: 'pi pi-file-edit',
-      command: () => (editingNode.value = menuTargetNode.value)
+      command: () => (editingNode.value = menuTargetNode.value),
+      disabled: isRoot
     },
     {
       label: 'Delete',
       icon: 'pi pi-trash',
-      command: () => deleteNode(menuTargetNode.value)
+      command: () => deleteNode(menuTargetNode.value),
+      disabled: isRoot
     },
     {
       label: 'Download',
