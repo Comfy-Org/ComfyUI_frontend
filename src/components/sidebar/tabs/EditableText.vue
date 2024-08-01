@@ -9,6 +9,7 @@
       size="small"
       fluid
       v-model:modelValue="inputValue"
+      ref="inputRef"
       @keyup.enter="finishEditing"
       :pt="{
         root: {
@@ -22,7 +23,7 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
   modelValue: {
@@ -39,6 +40,7 @@ const emit = defineEmits(['update:modelValue', 'edit'])
 
 const inputValue = ref<string>(props.modelValue)
 const isEditingFinished = ref<boolean>(false)
+const inputRef = ref(null)
 
 const finishEditing = () => {
   if (isEditingFinished.value) {
@@ -54,6 +56,16 @@ watch(
     if (newVal) {
       inputValue.value = props.modelValue
       isEditingFinished.value = false
+
+      nextTick(() => {
+        if (!inputRef.value) return
+        const fileName = inputValue.value.split('.').slice(0, -1).join('.')
+        const start = 0
+        const end = fileName.length
+
+        const inputElement = inputRef.value.$el
+        inputElement.setSelectionRange(start, end)
+      })
     }
   }
 )
