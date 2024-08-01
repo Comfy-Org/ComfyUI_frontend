@@ -55,6 +55,7 @@ import { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import EditableText from './EditableText.vue'
 import { useToast } from 'primevue/usetoast'
+import { downloadBlob } from '@/scripts/utils'
 
 const toast = useToast()
 
@@ -85,6 +86,21 @@ const deleteNode = async (node: TreeNode) => {
     })
   }
 }
+const downloadWorkflow = async (node: TreeNode) => {
+  const result = await workflowStore.getFileData(node.key)
+  if (!result.success) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `Failed to download file\n${result.message}`
+    })
+  } else {
+    const blob = new Blob([JSON.stringify(result.data)], {
+      type: 'application/json'
+    })
+    downloadBlob(node.label, blob)
+  }
+}
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => {
@@ -111,6 +127,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       label: 'Download',
       icon: 'pi pi-download',
+      command: () => downloadWorkflow(menuTargetNode.value),
       visible: menuTargetNode.value.leaf
     }
   ]

@@ -76,7 +76,11 @@ export const useWorkflowStore = defineStore('workflow', {
       await this.loadFiles()
     },
     async getFileData(path: string) {
-      return await api.getUserData(path)
+      const resp = await api.getUserData(path)
+      if (resp.status !== 200) {
+        return { success: false, message: resp.statusText }
+      }
+      return { success: true, data: await resp.json() }
     }
   }
 })
