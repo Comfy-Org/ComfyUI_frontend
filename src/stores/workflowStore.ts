@@ -10,7 +10,7 @@ export const useWorkflowStore = defineStore('workflow', {
     fileTree(): TreeNode {
       const root: TreeNode = {
         key: 'root',
-        label: 'Workflows',
+        label: 'workflows',
         isDirectory: true,
         leaf: false,
         children: []
@@ -52,8 +52,12 @@ export const useWorkflowStore = defineStore('workflow', {
       )
     },
     async renameFile(oldPath: string, newPath: string) {
-      await api.moveUserData(oldPath, newPath)
+      const resp = await api.moveUserData(oldPath, newPath)
+      if (resp.status !== 200) {
+        return { success: false, message: resp.statusText }
+      }
       await this.loadFiles()
+      return { success: true }
     },
     async deleteFile(path: string) {
       await api.deleteUserData(path)

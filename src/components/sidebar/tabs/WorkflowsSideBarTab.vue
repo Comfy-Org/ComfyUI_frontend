@@ -20,6 +20,7 @@
         :pt="{
           nodeChildren: ({ props }) => ({
             onContextmenu: (event: MouseEvent) => {
+              menuTargetNode = props.node
               menu.show(event)
             }
           })
@@ -28,11 +29,16 @@
         <template #file="{ node }">
           <EditableText
             :modelValue="node.label"
-            @edit="workflowStore.renameFile(node.label, $event)"
+            :isEditing="node.key === editingNode?.key"
+            @edit="renameNode(node, $event)"
           />
         </template>
       </TreePlus>
-      <ContextMenu ref="menu" :model="menuItems" />
+      <ContextMenu
+        ref="menu"
+        :model="menuItems"
+        @hide="menuTargetNode = null"
+      />
     </template>
   </SideBarTabTemplate>
 </template>
@@ -47,13 +53,35 @@ import { computed, onMounted, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import EditableText from './EditableText.vue'
+import { useToast } from 'primevue/usetoast'
+
+const toast = useToast()
+
+// Whether the node is in editing mode for label edit.
+const editingNode = ref<TreeNode | null>(null)
+const renameNode = async (node: TreeNode, newName: string) => {
+  if (newName !== node.label) {
+    const oldPath = node.key
+    const newPath = oldPath.slice(0, oldPath.lastIndexOf('/') + 1) + newName
+    const result = await workflowStore.renameFile(oldPath, newPath)
+    if (!result.success) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: `Failed to rename file\n${result.message}`
+      })
+    }
+  }
+  editingNode.value = null
+}
 
 const menu = ref(null)
+const menuTargetNode = ref<TreeNode | null>(null)
 const menuItems = ref([
   {
     label: 'Rename',
     icon: 'pi pi-file-edit',
-    command: () => console.log('rename file!')
+    command: () => (editingNode.value = menuTargetNode.value)
   },
   { label: 'Delete', icon: 'pi pi-trash' },
   { label: 'Export', icon: 'pi pi-file-export' }

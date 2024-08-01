@@ -2,10 +2,12 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <BlockUI full-screen :blocked="isLoading" />
   <GraphCanvas />
+  <Toast />
 </template>
 
 <script setup lang="ts">
 import { computed, markRaw, onMounted, watch } from 'vue'
+import Toast from 'primevue/toast'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
