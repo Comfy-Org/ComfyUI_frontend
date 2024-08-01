@@ -61,8 +61,15 @@ export const useWorkflowStore = defineStore('workflow', {
       return { success: true }
     },
     async deleteFile(path: string) {
-      await api.deleteUserData(path)
+      const resp = await api.deleteUserData(path)
+      if (resp.status !== 204) {
+        return {
+          success: false,
+          message: `Error removing user data file '${path}': ${resp.status} ${resp.statusText}`
+        }
+      }
       await this.loadFiles()
+      return { success: true }
     },
     async moveFile(sourcePath: string, destPath: string) {
       await api.moveUserData(sourcePath, destPath)

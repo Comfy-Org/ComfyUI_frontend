@@ -74,7 +74,16 @@ const renameNode = async (node: TreeNode, newName: string) => {
   }
   editingNode.value = null
 }
-
+const deleteNode = async (node: TreeNode) => {
+  const result = await workflowStore.deleteFile(node.key)
+  if (!result.success) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `Failed to delete file\n${result.message}`
+    })
+  }
+}
 const menu = ref(null)
 const menuTargetNode = ref<TreeNode | null>(null)
 const menuItems = ref([
@@ -83,7 +92,11 @@ const menuItems = ref([
     icon: 'pi pi-file-edit',
     command: () => (editingNode.value = menuTargetNode.value)
   },
-  { label: 'Delete', icon: 'pi pi-trash' },
+  {
+    label: 'Delete',
+    icon: 'pi pi-trash',
+    command: () => deleteNode(menuTargetNode.value)
+  },
   { label: 'Export', icon: 'pi pi-file-export' }
 ])
 
