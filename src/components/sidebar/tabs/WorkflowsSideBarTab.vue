@@ -110,16 +110,16 @@ const generateWorkflowPath = (folder: string) => {
   const prefix = 'new_workflow'
   let index = 1
   let name = `${prefix}.json`
-  while (findNodeByKey(renderedRoot.value, folder + '/' + name)) {
+  while (findNodeByKey(renderedRoot.value, folder + name)) {
     name = `${prefix}_${index++}.json`
   }
-  return folder + '/' + name
+  return folder + name
 }
 
 const createDefaultWorkflow = async (node: TreeNode) => {
   const folder = node.leaf
     ? node.key.slice(0, node.key.lastIndexOf('/') + 1)
-    : node.key
+    : node.key + '/'
 
   const path = generateWorkflowPath(folder)
   const result = await workflowStore.createDefaultWorkflow(path)
