@@ -425,14 +425,7 @@ export class ComfyUI {
       name: 'Node Search box implementation',
       type: 'combo',
       options: ['default', 'litegraph (legacy)'],
-      defaultValue: 'default',
-      onChange: (value?: string) => {
-        if (!app.canvas) return
-
-        value = value || 'default'
-        const useLitegraphSearch = value === 'litegraph (legacy)'
-        app.canvas.allow_searchbox = useLitegraphSearch
-      }
+      defaultValue: 'default'
     })
 
     const fileInput = $el('input', {

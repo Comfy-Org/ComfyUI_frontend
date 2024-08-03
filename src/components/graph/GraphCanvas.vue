@@ -14,7 +14,14 @@
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import {
+  ref,
+  computed,
+  onUnmounted,
+  onBeforeMount,
+  watch,
+  onMounted
+} from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
@@ -32,6 +39,9 @@ const betaMenuEnabled = computed(
 const nodeSearchEnabled = computed<boolean>(
   () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
+watch(nodeSearchEnabled, (newVal) => {
+  comfyApp.canvas.allow_searchbox = !newVal
+})
 
 let dropTargetCleanup = () => {}
 
@@ -40,6 +50,7 @@ onMounted(async () => {
 
   workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
+  comfyApp.canvas.allow_searchbox = !nodeSearchEnabled.value
   workspaceStore.spinner = false
 
   window['app'] = comfyApp
