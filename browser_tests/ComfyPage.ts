@@ -37,18 +37,57 @@ class ComfyNodeSearchBox {
   }
 }
 
-class NodeLibrarySideBarTab {
-  public readonly tabId: string = 'node-library'
-  constructor(public readonly page: Page) {}
+class SideBarTab {
+  constructor(
+    public readonly page: Page,
+    public readonly tabId: string,
+    public readonly tabName: string
+  ) {}
 
-  get tabButton() {
+  public get tabButton() {
     return this.page.locator(`.${this.tabId}-tab-button`)
   }
 
-  get selectedTabButton() {
+  public get selectedTabButton() {
     return this.page.locator(
       `.${this.tabId}-tab-button.side-bar-button-selected`
     )
+  }
+
+  public get tabHeader() {
+    return this.page.locator(`.comfy-vue-side-bar-header`)
+  }
+
+  public get tabBody() {
+    return this.page.locator(`.comfy-vue-side-bar-body`)
+  }
+
+  public async isOpen() {
+    return await this.selectedTabButton.isVisible()
+  }
+
+  public async open() {
+    if (await this.isOpen()) {
+      return
+    }
+
+    await this.tabButton.click()
+    await this.tabBody.waitFor({ state: 'visible' })
+  }
+
+  public async close() {
+    if (!(await this.isOpen())) {
+      return
+    }
+
+    await this.tabButton.click()
+    await this.tabBody.waitFor({ state: 'hidden' })
+  }
+}
+
+class NodeLibrarySideBarTab extends SideBarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'node-library', 'Node Library')
   }
 
   get nodeLibraryTree() {
@@ -59,17 +98,18 @@ class NodeLibrarySideBarTab {
     return this.page.locator('.node-lib-node-preview')
   }
 
-  async open() {
-    if (await this.selectedTabButton.isVisible()) {
-      return
-    }
-
-    await this.tabButton.click()
-    await this.nodeLibraryTree.waitFor({ state: 'visible' })
-  }
-
   async toggleFirstFolder() {
     await this.page.locator('.p-tree-node-toggle-button').nth(0).click()
+  }
+}
+
+class WorkflowsSideBarTab extends SideBarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'workflows', 'Workflows')
+  }
+
+  get workflowTreeRoot() {
+    return this.page.locator('.p-tree-node[aria-label="workflows"]')
   }
 }
 
@@ -84,6 +124,10 @@ class ComfyMenu {
 
   get nodeLibraryTab() {
     return new NodeLibrarySideBarTab(this.page)
+  }
+
+  get workflowsTab() {
+    return new WorkflowsSideBarTab(this.page)
   }
 
   async toggleTheme() {
