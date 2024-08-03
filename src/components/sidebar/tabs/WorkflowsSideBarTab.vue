@@ -54,12 +54,19 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import EditableText from './EditableText.vue'
-import { useToast } from 'primevue/usetoast'
 import { downloadBlob } from '@/scripts/utils'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
+import { useToast } from 'primevue/usetoast'
 
 const toast = useToast()
+const reportError = (message: string) => {
+  toast.add({
+    severity: 'error',
+    summary: 'Error',
+    detail: message
+  })
+}
 
 // Whether the node is in editing mode for label edit.
 const editingNode = ref<TreeNode | null>(null)
@@ -69,11 +76,7 @@ const renameNode = async (node: TreeNode, newName: string) => {
     const newPath = oldPath.slice(0, oldPath.lastIndexOf('/') + 1) + newName
     const result = await userFileStore.renameFile(oldPath, newPath)
     if (!result.success) {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: `Failed to rename file\n${result.message}`
-      })
+      reportError(`Failed to rename file\n${result.message}`)
     }
   }
   editingNode.value = null
@@ -82,22 +85,14 @@ const renameNode = async (node: TreeNode, newName: string) => {
 const deleteNode = async (node: TreeNode) => {
   const result = await userFileStore.deleteFile(node.key)
   if (!result.success) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: `Failed to delete file\n${result.message}`
-    })
+    reportError(`Failed to delete file\n${result.message}`)
   }
 }
 
 const downloadWorkflow = async (node: TreeNode) => {
   const result = await userFileStore.getFileData(node.key)
   if (!result.success) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: `Failed to download file\n${result.message}`
-    })
+    reportError(`Failed to download file\n${result.message}`)
   } else {
     const blob = new Blob([JSON.stringify(result.data)], {
       type: 'application/json'
@@ -122,11 +117,7 @@ const loadWorkflow = async (node: TreeNode) => {
   }
   const result = await userFileStore.getFileData(node.key)
   if (!result.success) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: `Failed to load file\n${result.message}`
-    })
+    reportError(`Failed to load file\n${result.message}`)
   } else {
     app.loadGraphData(result.data)
     app.resetView()
@@ -141,11 +132,7 @@ const createDefaultWorkflow = async (node: TreeNode) => {
   const path = generateWorkflowPath(folder)
   const result = await userFileStore.createDefaultWorkflow(path)
   if (!result.success) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: `Failed to create new workflow\n${result.message}`
-    })
+    reportError(`Failed to create new workflow\n${result.message}`)
   } else {
     const newNode = findNodeByKey(renderedRoot.value, path)
     editingNode.value = newNode
