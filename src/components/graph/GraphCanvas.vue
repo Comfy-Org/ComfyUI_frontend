@@ -33,7 +33,7 @@ const nodeSearchEnabled = computed<boolean>(
   () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
 watch(nodeSearchEnabled, (newVal) => {
-  comfyApp.canvas.allow_searchbox = !newVal
+  if (comfyApp.canvas) comfyApp.canvas.allow_searchbox = !newVal
 })
 
 let dropTargetCleanup = () => {}
