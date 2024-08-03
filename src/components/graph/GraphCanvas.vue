@@ -14,14 +14,7 @@
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
-import {
-  ref,
-  computed,
-  onUnmounted,
-  onBeforeMount,
-  watch,
-  onMounted
-} from 'vue'
+import { ref, computed, onUnmounted, watch, onMounted } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
