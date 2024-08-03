@@ -131,16 +131,15 @@ export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type ComfyWorkflowJSON = z.infer<typeof zComfyWorkflow>
 
-export async function parseComfyWorkflow(
-  data: string
-): Promise<ComfyWorkflowJSON> {
-  // Validate
-  const result = await zComfyWorkflow.safeParseAsync(JSON.parse(data))
+export async function validateComfyWorkflow(
+  data: any,
+  onError: (error: string) => void = console.warn
+): Promise<ComfyWorkflowJSON | null> {
+  const result = await zComfyWorkflow.safeParseAsync(data)
   if (!result.success) {
-    // TODO: Pretty print the error on UI modal.
     const error = fromZodError(result.error)
-    alert(`Invalid workflow against zod schema:\n${error}`)
-    throw error
+    onError(`Invalid workflow against zod schema:\n${error}`)
+    return null
   }
   return result.data
 }
