@@ -50,7 +50,7 @@ import SideBarTabTemplate from './SideBarTabTemplate.vue'
 import { MenuItem } from 'primevue/menuitem'
 import { useUserFileStore } from '@/stores/userFileStore'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import EditableText from './EditableText.vue'
@@ -116,6 +116,23 @@ const generateWorkflowPath = (folder: string) => {
   return folder + name
 }
 
+const loadWorkflow = async (node: TreeNode) => {
+  if (!node.leaf) {
+    return
+  }
+  const result = await userFileStore.getFileData(node.key)
+  if (!result.success) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: `Failed to load file\n${result.message}`
+    })
+  } else {
+    app.loadGraphData(result.data)
+    app.resetView()
+  }
+}
+
 const createDefaultWorkflow = async (node: TreeNode) => {
   const folder = node.leaf
     ? node.key.slice(0, node.key.lastIndexOf('/') + 1)
@@ -130,9 +147,9 @@ const createDefaultWorkflow = async (node: TreeNode) => {
       detail: `Failed to create new workflow\n${result.message}`
     })
   } else {
-    app.loadGraphData()
-    app.resetView()
-    editingNode.value = findNodeByKey(renderedRoot.value, path)
+    const newNode = findNodeByKey(renderedRoot.value, path)
+    editingNode.value = newNode
+    await loadWorkflow(newNode)
   }
 }
 
@@ -172,6 +189,15 @@ const menuItems = computed<MenuItem[]>(() => {
   ]
 })
 
+const selectedKeys = ref(null)
+watch(selectedKeys, async (newVal) => {
+  if (newVal) {
+    const key = Object.keys(newVal)[0]
+    const node = findNodeByKey(renderedRoot.value, key)
+    await loadWorkflow(node)
+  }
+})
+
 const isImageFile = (fileName: string): boolean => {
   const imageExtensions = [
     '.png',
@@ -198,7 +224,6 @@ const getFileIcon = (fileName: string) => {
 }
 
 const expandedKeys = ref({})
-const selectedKeys = ref(null)
 const userFileStore = useUserFileStore()
 const root = computed<TreeNode>(() => userFileStore.workflowsTree)
 const renderedRoot = computed(() => {
