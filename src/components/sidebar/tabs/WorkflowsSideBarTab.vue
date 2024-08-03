@@ -3,7 +3,7 @@
     <template #tool-buttons>
       <Button
         icon="pi pi-refresh"
-        @click="async () => await workflowStore.loadFiles()"
+        @click="async () => await userFileStore.loadFiles()"
         text
         severity="secondary"
       />
@@ -48,7 +48,7 @@ import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import SideBarTabTemplate from './SideBarTabTemplate.vue'
 import { MenuItem } from 'primevue/menuitem'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { useUserFileStore } from '@/stores/userFileStore'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import { computed, onMounted, ref } from 'vue'
 import { TreeNode } from 'primevue/treenode'
@@ -67,7 +67,7 @@ const renameNode = async (node: TreeNode, newName: string) => {
   if (newName !== node.label) {
     const oldPath = node.key
     const newPath = oldPath.slice(0, oldPath.lastIndexOf('/') + 1) + newName
-    const result = await workflowStore.renameFile(oldPath, newPath)
+    const result = await userFileStore.renameFile(oldPath, newPath)
     if (!result.success) {
       toast.add({
         severity: 'error',
@@ -80,7 +80,7 @@ const renameNode = async (node: TreeNode, newName: string) => {
 }
 
 const deleteNode = async (node: TreeNode) => {
-  const result = await workflowStore.deleteFile(node.key)
+  const result = await userFileStore.deleteFile(node.key)
   if (!result.success) {
     toast.add({
       severity: 'error',
@@ -91,7 +91,7 @@ const deleteNode = async (node: TreeNode) => {
 }
 
 const downloadWorkflow = async (node: TreeNode) => {
-  const result = await workflowStore.getFileData(node.key)
+  const result = await userFileStore.getFileData(node.key)
   if (!result.success) {
     toast.add({
       severity: 'error',
@@ -122,7 +122,7 @@ const createDefaultWorkflow = async (node: TreeNode) => {
     : node.key + '/'
 
   const path = generateWorkflowPath(folder)
-  const result = await workflowStore.createDefaultWorkflow(path)
+  const result = await userFileStore.createDefaultWorkflow(path)
   if (!result.success) {
     toast.add({
       severity: 'error',
@@ -199,8 +199,8 @@ const getFileIcon = (fileName: string) => {
 
 const expandedKeys = ref({})
 const selectedKeys = ref(null)
-const workflowStore = useWorkflowStore()
-const root = computed<TreeNode>(() => workflowStore.fileTree)
+const userFileStore = useUserFileStore()
+const root = computed<TreeNode>(() => userFileStore.workflowsTree)
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
@@ -224,6 +224,6 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
   }
 }
 onMounted(async () => {
-  await workflowStore.loadFiles()
+  await userFileStore.loadFiles()
 })
 </script>

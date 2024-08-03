@@ -3,12 +3,12 @@ import { api } from '@/scripts/api'
 import { TreeNode } from 'primevue/treenode'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
-export const useWorkflowStore = defineStore('workflow', {
+export const useUserFileStore = defineStore('userFile', {
   state: () => ({
     files: [] as string[]
   }),
   getters: {
-    fileTree(): TreeNode {
+    workflowsTree(): TreeNode {
       const rootPath = 'workflows'
       const root: TreeNode = {
         key: rootPath,
