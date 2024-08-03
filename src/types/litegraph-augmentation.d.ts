@@ -21,6 +21,13 @@ declare module '@comfyorg/litegraph' {
      * Allows for additional cleanup when removing a widget when converting to input.
      */
     onRemove?(): void
+
+    /**
+     * DOM element used for the widget
+     */
+    element?: HTMLElement
+
+    tooltip?: string
   }
 
   interface INodeOutputSlot {
@@ -42,5 +49,22 @@ declare module '@comfyorg/litegraph' {
 
   interface LGraphNode {
     widgets_values?: unknown[]
+  }
+
+  interface LGraphCanvas {
+    /** This is in the litegraph types but has incorrect return type */
+    isOverNodeInput(
+      node: LGraphNode,
+      canvasX: number,
+      canvasY: number,
+      slotPos: Vector2
+    ): number
+
+    isOverNodeOutput(
+      node: LGraphNode,
+      canvasX: number,
+      canvasY: number,
+      slotPos: Vector2
+    ): number
   }
 }

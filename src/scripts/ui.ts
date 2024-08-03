@@ -428,6 +428,13 @@ export class ComfyUI {
       defaultValue: 'default'
     })
 
+    this.settings.addSetting({
+      id: 'Comfy.EnableTooltips',
+      name: 'Enable Tooltips',
+      type: 'boolean',
+      defaultValue: true
+    })
+
     const fileInput = $el('input', {
       id: 'comfy-file-input',
       type: 'file',
@@ -437,7 +444,7 @@ export class ComfyUI {
       onchange: () => {
         app.handleFile(fileInput.files[0])
       }
-    }) as HTMLInputElement
+    })
 
     this.loadFile = () => fileInput.click()
 

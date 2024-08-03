@@ -8,12 +8,14 @@
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover v-if="nodeSearchEnabled" />
+  <NodeTooltip />
 </template>
 
 <script setup lang="ts">
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
+import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import { ref, computed, onUnmounted, watch, onMounted } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'

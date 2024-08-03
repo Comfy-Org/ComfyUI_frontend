@@ -272,6 +272,7 @@ const zComfyNodeDef = z.object({
   output: zComfyOutputTypesSpec,
   output_is_list: z.array(z.boolean()),
   output_name: z.array(z.string()),
+  output_tooltips: z.optional(z.array(z.string())),
   name: z.string(),
   display_name: z.string(),
   description: z.string(),

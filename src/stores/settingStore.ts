@@ -32,7 +32,7 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.setSettingValue(key, value)
     },
 
-    get(key: string) {
+    get<T = any>(key: string): T {
       return (
         this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
       )
