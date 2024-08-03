@@ -38,8 +38,11 @@ describe('example workflows', () => {
     lg.teardown(global)
   })
 
-  for (const file of readdirSync(WORKFLOW_DIR)) {
-    if (!file.endsWith('.json')) continue
+  const workflowFiles = readdirSync(WORKFLOW_DIR).filter((file) =>
+    file.endsWith('.json')
+  )
+
+  const workflows = workflowFiles.map((file) => {
     const { workflow, prompt } = JSON.parse(
       readFileSync(path.resolve(WORKFLOW_DIR, file), 'utf8')
     )
@@ -53,17 +56,24 @@ describe('example workflows', () => {
       skip = !!Object.keys(parsedWorkflow?.extra?.groupNodes ?? {}).length
     } catch (error) {}
 
-    ;(skip ? test.skip : test)(
-      'correctly generates prompt json for ' + file,
-      async () => {
-        if (!workflow || !prompt) throw new Error('Invalid example json')
+    return { file, workflow, prompt, parsedWorkflow, skip }
+  })
 
-        const { app } = await start()
-        await app.loadGraphData(parsedWorkflow)
+  describe.each(workflows)(
+    'Workflow Test: %s',
+    ({ file, workflow, prompt, parsedWorkflow, skip }) => {
+      ;(skip ? test.skip : test)(
+        'correctly generates prompt json for ' + file,
+        async () => {
+          if (!workflow || !prompt) throw new Error('Invalid example json')
 
-        const output = await app.graphToPrompt()
-        expect(output.output).toEqual(fixLegacyPrompt(JSON.parse(prompt)))
-      }
-    )
-  }
+          const { app } = await start()
+          await app.loadGraphData(parsedWorkflow)
+
+          const output = await app.graphToPrompt()
+          expect(output.output).toEqual(fixLegacyPrompt(JSON.parse(prompt)))
+        }
+      )
+    }
+  )
 })

@@ -17,7 +17,7 @@ import { applyTextReplacements, addStylesheet } from './utils'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
-  parseComfyWorkflow
+  validateComfyWorkflow
 } from '../types/comfyWorkflow'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { lightenColor } from '@/utils/colorUtil'
@@ -1114,12 +1114,12 @@ export class ComfyApp {
       let workflow: ComfyWorkflowJSON
       try {
         data = data.slice(data.indexOf('{'))
-        workflow = await parseComfyWorkflow(data)
+        workflow = JSON.parse(data)
       } catch (err) {
         try {
           data = data.slice(data.indexOf('workflow\n'))
           data = data.slice(data.indexOf('{'))
-          workflow = await parseComfyWorkflow(data)
+          workflow = JSON.parse(data)
         } catch (error) {
           console.error(error)
         }
@@ -1906,7 +1906,7 @@ export class ComfyApp {
     try {
       const loadWorkflow = async (json) => {
         if (json) {
-          const workflow = await parseComfyWorkflow(json)
+          const workflow = JSON.parse(json)
           const workflowName = getStorageValue('Comfy.PreviousWorkflow')
           await this.loadGraphData(workflow, true, true, workflowName)
           return true
@@ -2235,6 +2235,9 @@ export class ComfyApp {
     } catch (error) {
       console.error(error)
     }
+
+    graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
+    if (!graphData) return
 
     const missingNodeTypes = []
     await this.#invokeExtensionsAsync(
@@ -2662,7 +2665,7 @@ export class ComfyApp {
       const pngInfo = await getPngMetadata(file)
       if (pngInfo?.workflow) {
         await this.loadGraphData(
-          await parseComfyWorkflow(pngInfo.workflow),
+          JSON.parse(pngInfo.workflow),
           true,
           true,
           fileName
@@ -2683,12 +2686,7 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(
-          await parseComfyWorkflow(workflow),
-          true,
-          true,
-          fileName
-        )
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
@@ -2700,12 +2698,7 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(
-          await parseComfyWorkflow(workflow),
-          true,
-          true,
-          fileName
-        )
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
@@ -2724,11 +2717,7 @@ export class ComfyApp {
         } else if (this.isApiJson(jsonContent)) {
           this.loadApiJson(jsonContent, fileName)
         } else {
-          await this.loadGraphData(
-            await parseComfyWorkflow(readerResult),
-            true,
-            fileName
-          )
+          await this.loadGraphData(JSON.parse(readerResult), true, fileName)
         }
       }
       reader.readAsText(file)
@@ -2742,7 +2731,7 @@ export class ComfyApp {
       if (info.workflow) {
         await this.loadGraphData(
           // @ts-ignore
-          await parseComfyWorkflow(info.workflow),
+          JSON.parse(info.workflow),
           true,
           true,
           fileName

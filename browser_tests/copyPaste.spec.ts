@@ -22,6 +22,28 @@ test.describe('Copy Paste', () => {
     expect(resultString).toBe(originalString + originalString)
   })
 
+  test('Can copy and paste widget value', async ({ comfyPage }) => {
+    // Copy width value (512) from empty latent node to KSampler's seed.
+    // Empty latent node's width
+    await comfyPage.canvas.click({
+      position: {
+        x: 718,
+        y: 643
+      }
+    })
+    await comfyPage.ctrlC()
+    // KSampler's seed
+    await comfyPage.canvas.click({
+      position: {
+        x: 1005,
+        y: 281
+      }
+    })
+    await comfyPage.ctrlV()
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(comfyPage.canvas).toHaveScreenshot('copied-widget-value.png')
+  })
+
   /**
    * https://github.com/Comfy-Org/ComfyUI_frontend/issues/98
    */
