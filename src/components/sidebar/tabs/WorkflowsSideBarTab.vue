@@ -50,7 +50,7 @@ import SideBarTabTemplate from './SideBarTabTemplate.vue'
 import { MenuItem } from 'primevue/menuitem'
 import { useUserFileStore } from '@/stores/userFileStore'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import EditableText from './EditableText.vue'
@@ -134,9 +134,15 @@ const createDefaultWorkflow = async (node: TreeNode) => {
   if (!result.success) {
     reportError(`Failed to create new workflow\n${result.message}`)
   } else {
-    const newNode = findNodeByKey(renderedRoot.value, path)
-    editingNode.value = newNode
-    await loadWorkflow(newNode)
+    if (!node.leaf) {
+      // Expand the folder node to show the new workflow
+      expandedKeys.value[node.key] = true
+    }
+    nextTick(async () => {
+      const newNode = findNodeByKey(renderedRoot.value, path)
+      editingNode.value = newNode
+      await loadWorkflow(newNode)
+    })
   }
 }
 
