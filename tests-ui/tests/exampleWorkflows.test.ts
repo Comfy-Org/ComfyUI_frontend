@@ -50,6 +50,8 @@ describe('example workflows', () => {
     let skip = false
     let parsedWorkflow
     try {
+      // Workflows with group nodes dont generate the same IDs as the examples
+      // they'll need recreating so skip them for now.
       parsedWorkflow = JSON.parse(workflow)
       skip = !!Object.keys(parsedWorkflow?.extra?.groupNodes ?? {}).length
     } catch (error) {}
