@@ -92,4 +92,24 @@ test.describe('Menu', () => {
     // Verify the node is added to the canvas
     expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
   })
+
+  test.describe('Workflows sidebar tab', () => {
+    test('Can open and close workflows tab', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      expect(await tab.isOpen()).toBe(true)
+
+      await tab.close()
+      expect(await tab.isOpen()).toBe(false)
+    })
+
+    test('Can add / remove workflow', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await tab.addWorkflow()
+      expect(await tab.testWorkflowItem.isVisible()).toBe(true)
+      await tab.removeWorkflow()
+      expect(await tab.testWorkflowItem.isVisible()).toBe(false)
+    })
+  })
 })

@@ -9,7 +9,8 @@ const messages = {
       nodeLibrary: 'Node Library',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
-      }
+      },
+      workflows: 'Workflows'
     }
   },
   zh: {
@@ -20,7 +21,8 @@ const messages = {
       nodeLibrary: '节点库',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
-      }
+      },
+      workflows: '工作流'
     }
   }
   // TODO: Add more languages
