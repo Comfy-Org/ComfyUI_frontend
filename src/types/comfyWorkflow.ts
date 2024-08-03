@@ -74,7 +74,7 @@ const zGroup = z
     title: z.string(),
     bounding: z.tuple([z.number(), z.number(), z.number(), z.number()]),
     color: z.string(),
-    font_size: z.number(),
+    font_size: z.number().optional(),
     locked: z.boolean().optional()
   })
   .passthrough()
