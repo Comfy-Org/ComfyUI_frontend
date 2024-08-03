@@ -102,5 +102,14 @@ test.describe('Menu', () => {
       await tab.close()
       expect(await tab.isOpen()).toBe(false)
     })
+
+    test('Can add / remove workflow', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await tab.addWorkflow()
+      expect(await tab.testWorkflowItem.isVisible()).toBe(true)
+      await tab.removeWorkflow()
+      expect(await tab.testWorkflowItem.isVisible()).toBe(false)
+    })
   })
 })

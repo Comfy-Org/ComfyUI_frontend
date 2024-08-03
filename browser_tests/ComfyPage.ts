@@ -104,12 +104,37 @@ class NodeLibrarySideBarTab extends SideBarTab {
 }
 
 class WorkflowsSideBarTab extends SideBarTab {
+  public readonly testWorkflowName = 'test_workflow.json'
+
   constructor(public readonly page: Page) {
     super(page, 'workflows', 'Workflows')
   }
 
   get workflowTreeRoot() {
     return this.page.locator('.p-tree-node[aria-label="workflows"]')
+  }
+
+  get testWorkflowItem() {
+    return this.page.locator(
+      `.p-tree-node[aria-label="${this.testWorkflowName}"]`
+    )
+  }
+
+  async addWorkflow(workflowName: string = this.testWorkflowName) {
+    await this.workflowTreeRoot.click({ button: 'right' })
+    await this.page.getByLabel('New Workflow').locator('a').click()
+    const textbox = this.workflowTreeRoot.getByRole('textbox')
+    await textbox.fill(workflowName)
+    await textbox.press('Enter')
+    await this.page.waitForTimeout(100)
+  }
+
+  async removeWorkflow(workflowName: string = this.testWorkflowName) {
+    await this.workflowTreeRoot
+      .getByText(workflowName)
+      .click({ button: 'right' })
+    await this.page.getByLabel('Delete').locator('a').click()
+    await this.page.waitForTimeout(100)
   }
 }
 
