@@ -571,7 +571,8 @@ export function mergeIfValid(
       k !== 'forceInput' &&
       k !== 'defaultInput' &&
       k !== 'control_after_generate' &&
-      k !== 'multiline'
+      k !== 'multiline' &&
+      k !== 'tooltip'
     ) {
       let v1 = config1[1][k]
       let v2 = config2[1]?.[k]

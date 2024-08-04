@@ -8,7 +8,7 @@ import { TreeNode } from 'primevue/treenode'
 export class BaseInputSpec<T = any> {
   name: string
   type: string
-
+  tooltip?: string
   default?: T
 
   @Type(() => Boolean)
@@ -131,6 +131,10 @@ export class ComfyInputsSpec {
   get all() {
     return [...Object.values(this.required), ...Object.values(this.optional)]
   }
+
+  getInput(name: string): BaseInputSpec | undefined {
+    return this.required[name] ?? this.optional[name]
+  }
 }
 
 export class ComfyOutputSpec {
@@ -140,7 +144,8 @@ export class ComfyOutputSpec {
     public name: string,
     public type: string,
     public is_list: boolean,
-    public comboOptions?: any[]
+    public comboOptions?: any[],
+    public tooltip?: string
   ) {}
 }
 
@@ -166,7 +171,7 @@ export class ComfyNodeDefImpl {
   output: ComfyOutputsSpec
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
-    const { output, output_is_list, output_name } = obj
+    const { output, output_is_list, output_name, output_tooltips } = obj
     const result = output.map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
 
@@ -175,7 +180,8 @@ export class ComfyNodeDefImpl {
         output_name[index],
         typeString,
         output_is_list[index],
-        Array.isArray(type) ? type : undefined
+        Array.isArray(type) ? type : undefined,
+        output_tooltips?.[index]
       )
     })
     return new ComfyOutputsSpec(result)

@@ -226,11 +226,8 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
     if (elementWidgets.has(node)) {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
-        // @ts-expect-error
         if (w.element) {
-          // @ts-expect-error
           w.element.hidden = hidden
-          // @ts-expect-error
           w.element.style.display = hidden ? 'none' : undefined
           if (hidden) {
             w.options.onHide?.(w)
@@ -280,6 +277,13 @@ LGraphNode.prototype.addDOMWidget = function (
       }
     }
     document.addEventListener('mousedown', mouseDownHandler)
+  }
+
+  const { nodeData } = this.constructor
+  const tooltip = (nodeData?.input.required?.[name] ??
+    nodeData?.input.optional?.[name])?.[1]?.tooltip
+  if (tooltip && !element.title) {
+    element.title = tooltip
   }
 
   const widget: DOMWidget = {
