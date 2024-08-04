@@ -249,11 +249,17 @@ class ComfyApi extends EventTarget {
     const objectInfoUnsafe = await resp.json()
     const objectInfo: Record<string, ComfyNodeDef> = {}
     for (const key in objectInfoUnsafe) {
-      try {
-        objectInfo[key] = validateComfyNodeDef(objectInfoUnsafe[key])
-      } catch (e) {
-        console.warn('Ignore node definition: ', key)
-        console.error(e)
+      const validatedDef = await validateComfyNodeDef(
+        objectInfoUnsafe[key],
+        /* onError=*/ (errorMessage: string) => {
+          console.warn(
+            `Skipping invalid node definition: ${key}. See debug log for more information.`
+          )
+          console.debug(errorMessage)
+        }
+      )
+      if (validatedDef !== null) {
+        objectInfo[key] = validatedDef
       }
     }
     return objectInfo
