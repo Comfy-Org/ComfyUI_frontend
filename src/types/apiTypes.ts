@@ -285,11 +285,11 @@ export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 
-export async function validateComfyNodeDef(
+export function validateComfyNodeDef(
   data: any,
   onError: (error: string) => void = console.warn
-): Promise<ComfyNodeDef | null> {
-  const result = await zComfyNodeDef.safeParseAsync(data)
+): ComfyNodeDef | null {
+  const result = zComfyNodeDef.safeParse(data)
   if (!result.success) {
     const zodError = fromZodError(result.error)
     onError(

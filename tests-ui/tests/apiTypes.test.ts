@@ -21,7 +21,7 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 
 describe('validateNodeDef', () => {
   it('Should accept a valid node definition', async () => {
-    expect(await validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
+    expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
   describe.each([
@@ -37,14 +37,12 @@ describe('validateNodeDef', () => {
     (inputSpec, expected) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
         expect(
-          (
-            await validateComfyNodeDef({
-              ...EXAMPLE_NODE_DEF,
-              input: {
-                required: inputSpec
-              }
-            })
-          ).input.required.ckpt_name
+          validateComfyNodeDef({
+            ...EXAMPLE_NODE_DEF,
+            input: {
+              required: inputSpec
+            }
+          }).input.required.ckpt_name
         ).toEqual(expected)
       })
     }
@@ -61,7 +59,7 @@ describe('validateNodeDef', () => {
     (inputSpec) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
         expect(
-          await validateComfyNodeDef({
+          validateComfyNodeDef({
             ...EXAMPLE_NODE_DEF,
             input: {
               required: inputSpec
@@ -80,7 +78,7 @@ describe('validateNodeDef', () => {
     )
 
     for (const nodeDef of nodeDefs) {
-      expect(await validateComfyNodeDef(nodeDef)).not.toBeNull()
+      expect(validateComfyNodeDef(nodeDef)).not.toBeNull()
     }
   })
 })

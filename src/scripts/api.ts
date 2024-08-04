@@ -249,7 +249,7 @@ class ComfyApi extends EventTarget {
     const objectInfoUnsafe = await resp.json()
     const objectInfo: Record<string, ComfyNodeDef> = {}
     for (const key in objectInfoUnsafe) {
-      const validatedDef = await validateComfyNodeDef(
+      const validatedDef = validateComfyNodeDef(
         objectInfoUnsafe[key],
         /* onError=*/ (errorMessage: string) => {
           console.warn(
