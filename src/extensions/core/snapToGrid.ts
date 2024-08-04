@@ -66,9 +66,7 @@ app.registerExtension({
     }
 
     // Draw a preview of where the node will go if holding shift and the node is selected
-    // @ts-ignore
     const origDrawNode = LGraphCanvas.prototype.drawNode
-    // @ts-ignore
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
       if (
         app.shiftDown &&
@@ -81,14 +79,14 @@ app.registerExtension({
 
         let w, h
         if (node.flags.collapsed) {
-          // @ts-ignore
+          // @ts-expect-error
           w = node._collapsed_width
           h = LiteGraph.NODE_TITLE_HEIGHT
           shiftY -= LiteGraph.NODE_TITLE_HEIGHT
         } else {
           w = node.size[0]
           h = node.size[1]
-          // @ts-ignore
+          // @ts-expect-error
           let titleMode = node.constructor.title_mode
           if (
             titleMode !== LiteGraph.TRANSPARENT_TITLE &&
@@ -117,9 +115,7 @@ app.registerExtension({
      * Handles moving a group; tracking when a group has been moved (to show the ghost in `drawGroups`
      * below) as well as handle the last move call from LiteGraph's `processMouseUp`.
      */
-    // @ts-ignore
     const groupMove = LGraphGroup.prototype.move
-    // @ts-ignore
     LGraphGroup.prototype.move = function (deltax, deltay, ignore_nodes) {
       const v = groupMove.apply(this, arguments)
       // When we've started moving, set `selectedAndMovingGroup` as LiteGraph sets `selected_group`
@@ -143,7 +139,6 @@ app.registerExtension({
         for (const node of this._nodes) {
           node.alignToGrid()
         }
-        // @ts-ignore
         LGraphNode.prototype.alignToGrid.apply(this)
       }
       return v
@@ -154,22 +149,19 @@ app.registerExtension({
      * drawing a ghost box when one is actively being moved. This mimics the node snapping behavior for
      * both.
      */
-    // @ts-ignore
     const drawGroups = LGraphCanvas.prototype.drawGroups
-    // @ts-ignore
     LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
       if (this.selected_group && app.shiftDown) {
         if (this.selected_group_resizing) {
-          // @ts-ignore
           roundVectorToGrid(this.selected_group.size)
         } else if (selectedAndMovingGroup) {
-          // @ts-ignore
+          // @ts-expect-error
           const [x, y] = roundVectorToGrid([...selectedAndMovingGroup.pos])
           const f = ctx.fillStyle
           const s = ctx.strokeStyle
           ctx.fillStyle = 'rgba(100, 100, 100, 0.33)'
           ctx.strokeStyle = 'rgba(100, 100, 100, 0.66)'
-          // @ts-ignore
+          // @ts-expect-error
           ctx.rect(x, y, ...selectedAndMovingGroup.size)
           ctx.fill()
           ctx.stroke()
@@ -183,18 +175,16 @@ app.registerExtension({
     }
 
     /** Handles adding a group in a snapping-enabled state. */
-    // @ts-ignore
     const onGroupAdd = LGraphCanvas.onGroupAdd
-    // @ts-ignore
     LGraphCanvas.onGroupAdd = function () {
       const v = onGroupAdd.apply(app.canvas, arguments)
       if (app.shiftDown) {
-        // @ts-ignore
+        // @ts-expect-error
         const lastGroup = app.graph._groups[app.graph._groups.length - 1]
         if (lastGroup) {
-          // @ts-ignore
+          // @ts-expect-error
           roundVectorToGrid(lastGroup.pos)
-          // @ts-ignore
+          // @ts-expect-error
           roundVectorToGrid(lastGroup.size)
         }
       }

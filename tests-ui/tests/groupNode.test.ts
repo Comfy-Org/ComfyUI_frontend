@@ -790,7 +790,7 @@ describe('group node', () => {
     })
 
     expect(dialogShow).toBeCalledTimes(1)
-    // @ts-ignore
+    // @ts-expect-error
     const call = dialogShow.mock.calls[0][0].innerHTML
     expect(call).toContain('the following node types were not found')
     expect(call).toContain('NotKSampler')

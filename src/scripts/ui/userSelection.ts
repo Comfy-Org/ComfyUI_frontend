@@ -59,9 +59,9 @@ export class UserSelectionScreen {
           // Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
           input.disabled =
             select.disabled =
-            // @ts-ignore
+            // @ts-expect-error
             input.readonly =
-            // @ts-ignore
+            // @ts-expect-error
             select.readonly =
               true
           const spinner = createSpinner()
@@ -92,9 +92,9 @@ export class UserSelectionScreen {
             // Property 'readonly' does not exist on type 'HTMLInputElement'. Did you mean 'readOnly'?ts(2551)
             input.disabled =
               select.disabled =
-              // @ts-ignore
+              // @ts-expect-error
               input.readonly =
-              // @ts-ignore
+              // @ts-expect-error
               select.readonly =
                 false
             return

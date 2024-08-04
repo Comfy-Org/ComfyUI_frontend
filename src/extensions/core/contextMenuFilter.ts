@@ -7,7 +7,7 @@ const ext = {
   name: 'Comfy.ContextMenuFilter',
   init() {
     const ctxMenu = LiteGraph.ContextMenu
-    // @ts-ignore
+    // @ts-expect-error
     // TODO Very hacky way to modify Litegraph behaviour. Fix this later.
     LiteGraph.ContextMenu = function (values, options) {
       const ctx = ctxMenu.call(this, values, options)
@@ -27,7 +27,7 @@ const ext = {
 
         // We must request an animation frame for the current node of the active canvas to update.
         requestAnimationFrame(() => {
-          // @ts-ignore
+          // @ts-expect-error
           const currentNode = LGraphCanvas.active_canvas.current_node
           const clickedComboValue = currentNode.widgets
             ?.filter(

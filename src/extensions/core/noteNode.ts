@@ -23,7 +23,7 @@ app.registerExtension({
           this.properties = { text: '' }
         }
         ComfyWidgets.STRING(
-          // @ts-ignore
+          // @ts-expect-error
           // Should we extends LGraphNode?
           this,
           '',
@@ -40,7 +40,7 @@ app.registerExtension({
 
     LiteGraph.registerNodeType(
       'Note',
-      // @ts-ignore
+      // @ts-expect-error
       Object.assign(NoteNode, {
         title_mode: LiteGraph.NORMAL_TITLE,
         title: 'Note',

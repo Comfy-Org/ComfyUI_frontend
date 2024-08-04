@@ -48,13 +48,13 @@ app.registerExtension({
             // hack to get litegraph to use this event
             e.constructor = CustomEvent
           } catch (error) {}
-          // @ts-ignore
+          // @ts-expect-error
           e.clientX = lastTouch.clientX
-          // @ts-ignore
+          // @ts-expect-error
           e.clientY = lastTouch.clientY
 
           app.canvas.pointer_is_down = true
-          // @ts-ignore
+          // @ts-expect-error
           app.canvas._mousedown_callback(e)
         }
         touchTime = null
@@ -68,9 +68,9 @@ app.registerExtension({
         if (e.touches?.length === 2) {
           app.canvas.pointer_is_down = false
           touchZooming = true
-          // @ts-ignore
+          // @ts-expect-error
           LiteGraph.closeAllContextMenus()
-          // @ts-ignore
+          // @ts-expect-error
           app.canvas.search_box?.close()
           const newZoomPos = getMultiTouchPos(e)
 
@@ -94,9 +94,7 @@ app.registerExtension({
   }
 })
 
-// @ts-ignore
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
-// @ts-ignore
 LGraphCanvas.prototype.processMouseDown = function (e) {
   if (touchZooming || touchCount) {
     return
@@ -104,9 +102,7 @@ LGraphCanvas.prototype.processMouseDown = function (e) {
   return processMouseDown.apply(this, arguments)
 }
 
-// @ts-ignore
 const processMouseMove = LGraphCanvas.prototype.processMouseMove
-// @ts-ignore
 LGraphCanvas.prototype.processMouseMove = function (e) {
   if (touchZooming || touchCount > 1) {
     return

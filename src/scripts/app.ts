@@ -307,27 +307,27 @@ export class ComfyApp {
         if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = Object.values(node.widgets).find(
-              // @ts-ignoreg
+              // @ts-expect-errorg
               (obj) => obj.type === type && obj.name === name
             )
-            // @ts-ignore
+            // @ts-expect-error
             if (prop && prop.type != 'button') {
               if (
-                // @ts-ignore
+                // @ts-expect-error
                 prop.type != 'image' &&
-                // @ts-ignore
+                // @ts-expect-error
                 typeof prop.value == 'string' &&
                 value.filename
               ) {
-                // @ts-ignore
+                // @ts-expect-error
                 prop.value =
                   (value.subfolder ? value.subfolder + '/' : '') +
                   value.filename +
                   (value.type ? ` [${value.type}]` : '')
               } else {
-                // @ts-ignore
+                // @ts-expect-error
                 prop.value = value
-                // @ts-ignore
+                // @ts-expect-error
                 prop.callback(value)
               }
             }
@@ -391,10 +391,8 @@ export class ComfyApp {
   }
 
   #addRestoreWorkflowView() {
-    // @ts-ignore
     const serialize = LGraph.prototype.serialize
     const self = this
-    // @ts-ignore
     LGraph.prototype.serialize = function () {
       const workflow = serialize.apply(this, arguments)
 
@@ -1009,7 +1007,7 @@ export class ComfyApp {
       this.dragOverNode = null
       // Node handles file drop, we dont use the built in onDropFile handler as its buggy
       // If you drag multiple files it will call it multiple times with the same file
-      // @ts-ignore This is not a standard event. TODO fix it.
+      // @ts-expect-error This is not a standard event. TODO fix it.
       if (n && n.onDragDrop && (await n.onDragDrop(event))) {
         return
       }
@@ -1047,10 +1045,10 @@ export class ComfyApp {
       'dragover',
       (e) => {
         this.canvas.adjustMouseEvent(e)
-        // @ts-ignore: canvasX and canvasY are added by adjustMouseEvent in litegraph
+        // @ts-expect-error: canvasX and canvasY are added by adjustMouseEvent in litegraph
         const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY)
         if (node) {
-          // @ts-ignore This is not a standard event. TODO fix it.
+          // @ts-expect-error This is not a standard event. TODO fix it.
           if (node.onDragOver && node.onDragOver(e)) {
             this.dragOverNode = node
 
@@ -1076,7 +1074,7 @@ export class ComfyApp {
       // this is handled by litegraph
       if (this.shiftDown) return
 
-      // @ts-ignore: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
+      // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
       // Did you mean 'Clipboard'?ts(2551)
       // TODO: Not sure what the code wants to do.
       let data = e.clipboardData || window.clipboardData
@@ -1179,9 +1177,7 @@ export class ComfyApp {
   #addProcessMouseHandler() {
     const self = this
 
-    // @ts-ignore
     const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
-    // @ts-ignore
     LGraphCanvas.prototype.processMouseDown = function (e) {
       // prepare for ctrl+shift drag: zoom start
       if (e.ctrlKey && e.shiftKey && e.buttons) {
@@ -1201,9 +1197,9 @@ export class ComfyApp {
         // Move group by header
         if (
           LiteGraph.isInsideRectangle(
-            // @ts-ignore
+            // @ts-expect-error
             e.canvasX,
-            // @ts-ignore
+            // @ts-expect-error
             e.canvasY,
             this.selected_group.pos[0],
             this.selected_group.pos[1],
@@ -1217,9 +1213,7 @@ export class ComfyApp {
 
       return res
     }
-    // @ts-ignore
     const origProcessMouseMove = LGraphCanvas.prototype.processMouseMove
-    // @ts-ignore
     LGraphCanvas.prototype.processMouseMove = function (e) {
       // handle ctrl+shift drag
       if (e.ctrlKey && e.shiftKey && self.zoom_drag_start) {
@@ -1275,9 +1269,7 @@ export class ComfyApp {
    */
   #addProcessKeyHandler() {
     const self = this
-    // @ts-ignore
     const origProcessKey = LGraphCanvas.prototype.processKey
-    // @ts-ignore
     LGraphCanvas.prototype.processKey = function (e) {
       if (!this.graph) {
         return
@@ -1385,9 +1377,7 @@ export class ComfyApp {
    */
   #addDrawGroupsHandler() {
     const self = this
-    // @ts-ignore
     const origDrawGroups = LGraphCanvas.prototype.drawGroups
-    // @ts-ignore
     LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
       if (!this.graph) {
         return
@@ -1428,10 +1418,8 @@ export class ComfyApp {
    * Draws node highlights (executing, drag drop) and progress bar
    */
   #addDrawNodeHandler() {
-    // @ts-ignore
     const origDrawNodeShape = LGraphCanvas.prototype.drawNodeShape
     const self = this
-    // @ts-ignore
     LGraphCanvas.prototype.drawNodeShape = function (
       node,
       ctx,
@@ -1464,7 +1452,7 @@ export class ComfyApp {
 
       if (color) {
         const shape =
-          // @ts-ignore
+          // @ts-expect-error
           node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE
         ctx.lineWidth = lineWidth
         ctx.globalAlpha = 0.8
@@ -1547,9 +1535,7 @@ export class ComfyApp {
       return res
     }
 
-    // @ts-ignore
     const origDrawNode = LGraphCanvas.prototype.drawNode
-    // @ts-ignore
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
       var editor_alpha = this.editor_alpha
       var old_color = node.color
@@ -1561,7 +1547,7 @@ export class ComfyApp {
       }
 
       // ComfyUI's custom node mode enum value 4 => bypass/never.
-      // @ts-ignore
+      // @ts-expect-error
       if (node.mode === 4) {
         // never
         node.bgcolor = '#FF00FF'
@@ -1648,9 +1634,9 @@ export class ComfyApp {
       }
       const node = this.graph.getNodeById(detail.node)
       if (node) {
-        // @ts-ignore
+        // @ts-expect-error
         if (node.onExecuted)
-          // @ts-ignore
+          // @ts-expect-error
           node.onExecuted(detail.output)
       }
     })
@@ -1658,11 +1644,11 @@ export class ComfyApp {
     api.addEventListener('execution_start', ({ detail }) => {
       this.runningNodeId = null
       this.lastExecutionError = null
-      // @ts-ignore
+      // @ts-expect-error
       this.graph._nodes.forEach((node) => {
-        // @ts-ignore
+        // @ts-expect-error
         if (node.onExecutionStart)
-          // @ts-ignore
+          // @ts-expect-error
           node.onExecutionStart()
       })
     })
@@ -1680,7 +1666,7 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
-      // @ts-ignore
+      // @ts-expect-error
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -1698,10 +1684,8 @@ export class ComfyApp {
 
   #addConfigureHandler() {
     const app = this
-    // @ts-ignore
     const configure = LGraph.prototype.configure
     // Flag that the graph is configuring to prevent nodes from running checks while its still loading
-    // @ts-ignore
     LGraph.prototype.configure = function () {
       app.configuringGraph = true
       try {
@@ -1714,23 +1698,22 @@ export class ComfyApp {
 
   #addAfterConfigureHandler() {
     const app = this
-    // @ts-ignore
+    // @ts-expect-error
     const onConfigure = app.graph.onConfigure
-    // @ts-ignore
+    // @ts-expect-error
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      // @ts-ignore
+      // @ts-expect-error
       for (const node of app.graph._nodes) {
-        // @ts-ignore
+        // @ts-expect-error
         node.onGraphConfigured?.()
       }
 
       const r = onConfigure?.apply(this, arguments)
 
       // Fire after onConfigure, used by primitves to generate widget using input nodes config
-      // @ts-ignore _nodes is private.
+      // @ts-expect-error _nodes is private.
       for (const node of app.graph._nodes) {
-        // @ts-ignore
         node.onAfterGraphConfigured?.()
       }
 
@@ -2025,18 +2008,18 @@ export class ComfyApp {
             this.addInput(inputName, type)
             widgetCreated = false
           }
-          // @ts-ignore
+          // @ts-expect-error
           if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
-            // @ts-ignore
+            // @ts-expect-error
             if (!config.widget.options) config.widget.options = {}
-            // @ts-ignore
+            // @ts-expect-error
             config.widget.options.forceInput = inputData[1].forceInput
           }
-          // @ts-ignore
+          // @ts-expect-error
           if (widgetCreated && inputData[1]?.defaultInput && config?.widget) {
-            // @ts-ignore
+            // @ts-expect-error
             if (!config.widget.options) config.widget.options = {}
-            // @ts-ignore
+            // @ts-expect-error
             config.widget.options.defaultInput = inputData[1].defaultInput
           }
         }
@@ -2072,9 +2055,9 @@ export class ComfyApp {
     this.#addNodeKeyHandler(node)
 
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
-    // @ts-ignore
+    // @ts-expect-error
     LiteGraph.registerNodeType(nodeId, node)
-    // @ts-ignore
+    // @ts-expect-error
     node.category = nodeData.category
   }
 
@@ -2146,24 +2129,24 @@ export class ComfyApp {
             .map((t) => {
               let children = []
               if (typeof t === 'object') {
-                // @ts-ignore
+                // @ts-expect-error
                 if (seenTypes.has(t.type)) return null
-                // @ts-ignore
+                // @ts-expect-error
                 seenTypes.add(t.type)
-                // @ts-ignore
+                // @ts-expect-error
                 children.push($el('span', { textContent: t.type }))
-                // @ts-ignore
+                // @ts-expect-error
                 if (t.hint) {
-                  // @ts-ignore
+                  // @ts-expect-error
                   children.push($el('span', { textContent: t.hint }))
                 }
-                // @ts-ignore
+                // @ts-expect-error
                 if (t.action) {
                   children.push(
                     $el('button', {
-                      // @ts-ignore
+                      // @ts-expect-error
                       onclick: t.action.callback,
-                      // @ts-ignore
+                      // @ts-expect-error
                       textContent: t.action.text
                     })
                   )
@@ -2171,7 +2154,7 @@ export class ComfyApp {
               } else {
                 if (seenTypes.has(t)) return null
                 seenTypes.add(t)
-                // @ts-ignore
+                // @ts-expect-error
                 children.push($el('span', { textContent: t }))
               }
               return $el('li', children)
@@ -2266,7 +2249,7 @@ export class ComfyApp {
         this.enableWorkflowViewRestore.value &&
         graphData.extra?.ds
       ) {
-        // @ts-ignore
+        // @ts-expect-error
         // Need to set strict: true for zod to match the type [number, number]
         // https://github.com/colinhacks/zod/issues/3056
         this.canvas.ds.offset = graphData.extra.ds.offset
@@ -2327,17 +2310,15 @@ export class ComfyApp {
 
       return
     }
-    // @ts-ignore
+    // @ts-expect-error
     for (const node of this.graph._nodes) {
       const size = node.computeSize()
       size[0] = Math.max(node.size[0], size[0])
       size[1] = Math.max(node.size[1], size[1])
       node.size = size
-      // @ts-ignore
       if (node.widgets) {
         // If you break something in the backend and want to patch workflows in the frontend
         // This is the place to do this
-        // @ts-ignore
         for (let widget of node.widgets) {
           if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
             if (widget.name == 'sampler_name') {
@@ -2547,9 +2528,9 @@ export class ComfyApp {
       for (const [nodeID, nodeError] of Object.entries(
         error.response.node_errors
       )) {
-        // @ts-ignore
+        // @ts-expect-error
         message += '\n' + nodeError.class_type + ':'
-        // @ts-ignore
+        // @ts-expect-error
         for (const errorReason of nodeError.errors) {
           message +=
             '\n    - ' + errorReason.message + ': ' + errorReason.details
@@ -2619,9 +2600,9 @@ export class ComfyApp {
               for (const widget of node.widgets) {
                 // Allow widgets to run callbacks after a prompt has been queued
                 // e.g. random seed after every gen
-                // @ts-ignore
+                // @ts-expect-error
                 if (widget.afterQueued) {
-                  // @ts-ignore
+                  // @ts-expect-error
                   widget.afterQueued()
                 }
               }
@@ -2727,18 +2708,18 @@ export class ComfyApp {
     ) {
       const info = await getLatentMetadata(file)
       // TODO define schema to LatentMetadata
-      // @ts-ignore
+      // @ts-expect-error
       if (info.workflow) {
         await this.loadGraphData(
-          // @ts-ignore
+          // @ts-expect-error
           JSON.parse(info.workflow),
           true,
           true,
           fileName
         )
-        // @ts-ignore
+        // @ts-expect-error
       } else if (info.prompt) {
-        // @ts-ignore
+        // @ts-expect-error
         this.loadApiJson(JSON.parse(info.prompt))
       } else {
         this.showErrorOnFileLoad(file)
@@ -2749,18 +2730,18 @@ export class ComfyApp {
   }
 
   isApiJson(data) {
-    // @ts-ignore
+    // @ts-expect-error
     return Object.values(data).every((v) => v.class_type)
   }
 
   loadApiJson(apiData, fileName: string) {
     const missingNodeTypes = Object.values(apiData).filter(
-      // @ts-ignore
+      // @ts-expect-error
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
       this.showMissingNodesError(
-        // @ts-ignore
+        // @ts-expect-error
         missingNodeTypes.map((t) => t.class_type),
         false
       )
@@ -2772,7 +2753,7 @@ export class ComfyApp {
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
-      // @ts-ignore
+      // @ts-expect-error
       node.id = isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
       app.graph.add(node)
@@ -2792,7 +2773,7 @@ export class ComfyApp {
               try {
                 // Target has no matching input, most likely a converted widget
                 const widget = node.widgets?.find((w) => w.name === input)
-                // @ts-ignore
+                // @ts-expect-error
                 if (widget && node.convertWidgetToInput?.(widget)) {
                   toSlot = node.inputs?.length - 1
                 }
@@ -2805,7 +2786,7 @@ export class ComfyApp {
             const widget = node.widgets?.find((w) => w.name === input)
             if (widget) {
               widget.value = value
-              // @ts-ignore
+              // @ts-expect-error
               widget.callback?.(value)
             }
           }
@@ -2827,7 +2808,7 @@ export class ComfyApp {
             try {
               // Target has no matching input, most likely a converted widget
               const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-ignore
+              // @ts-expect-error
               if (widget && node.convertWidgetToInput?.(widget)) {
                 toSlot = node.inputs?.length - 1
               }
@@ -2840,7 +2821,7 @@ export class ComfyApp {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
             widget.value = value
-            // @ts-ignore
+            // @ts-expect-error
             widget.callback?.(value)
           }
         }
@@ -2873,12 +2854,12 @@ export class ComfyApp {
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
-    // @ts-ignore
+    // @ts-expect-error
     for (let nodeNum in this.graph._nodes) {
-      // @ts-ignore
+      // @ts-expect-error
       const node = this.graph._nodes[nodeNum]
       const def = defs[node.type]
-      // @ts-ignore
+      // @ts-expect-error
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
@@ -2897,7 +2878,7 @@ export class ComfyApp {
             !widget.options.values.includes(widget.value)
           ) {
             widget.value = widget.options.values[0]
-            // @ts-ignore
+            // @ts-expect-error
             widget.callback(widget.value)
           }
         }

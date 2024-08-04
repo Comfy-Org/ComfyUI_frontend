@@ -67,11 +67,9 @@ export function mockApi(config: APIConfig = {}) {
     apiURL: jest.fn((x) => 'src/' + x),
     fileURL: jest.fn((x) => 'src/' + x),
     createUser: jest.fn((username) => {
-      // @ts-ignore
       if (username in userConfig.users) {
         return { status: 400, json: () => 'Duplicate' }
       }
-      // @ts-ignore
       userConfig.users[username + '!'] = username
       return { status: 200, json: () => username + '!' }
     }),

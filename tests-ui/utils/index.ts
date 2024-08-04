@@ -50,7 +50,6 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
   app.canvasContainer.prepend(canvasEl)
   await app.setup(canvasEl)
 
-  // @ts-ignore
   return { ...Ez.graph(app, LiteGraph, LGraphCanvas), app }
 }
 
@@ -92,11 +91,8 @@ export function makeNodeDef(name, input, output = {}) {
     }, {})
   }
   for (const k in output) {
-    // @ts-ignore
     nodeDef.output.push(output[k])
-    // @ts-ignore
     nodeDef.output_name.push(k)
-    // @ts-ignore
     nodeDef.output_is_list.push(false)
   }
 

@@ -31,7 +31,7 @@ describe('LGraph', () => {
 
     const result1 = graph.serialize()
     expect(result1.nodes).not.toHaveLength(0)
-    // @ts-ignore
+    // @ts-expect-error
     graph._nodes = swapNodes(graph._nodes)
     const result2 = graph.serialize()
 
