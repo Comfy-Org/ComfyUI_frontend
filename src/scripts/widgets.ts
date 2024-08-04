@@ -457,7 +457,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
     if (inputData[1]?.control_after_generate) {
       // TODO make combo handle a widget node type?
-      // @ts-ignore
       res.widget.linkedWidgets = addValueControlWidgets(
         node,
         res.widget,
@@ -475,7 +474,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     app
   ) {
     // TODO make image upload handle a custom node type?
-    // @ts-ignore
     const imageWidget = node.widgets.find(
       (w) => w.name === (inputData[1]?.widget ?? 'image')
     )
@@ -484,7 +482,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     function showImage(name) {
       const img = new Image()
       img.onload = () => {
-        // @ts-ignore
+        // @ts-expect-error
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
       }
@@ -497,7 +495,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       img.src = api.apiURL(
         `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       )
-      // @ts-ignore
+      // @ts-expect-error
       node.setSizeForImage?.()
     }
 
@@ -531,7 +529,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 
     // Add our own callback to the combo widget to render an image when it changes
     // TODO: Explain this?
-    // @ts-ignore
+    // @ts-expect-error
     const cb = node.callback
     imageWidget.callback = function () {
       showImage(imageWidget.value)
@@ -603,7 +601,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     uploadWidget.serialize = false
 
     // Add handler to check if an image is being dragged over our node
-    // @ts-ignore
+    // @ts-expect-error
     node.onDragOver = function (e) {
       if (e.dataTransfer && e.dataTransfer.items) {
         const image = [...e.dataTransfer.items].find((f) => f.kind === 'file')
@@ -614,7 +612,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
 
     // On drop upload files
-    // @ts-ignore
+    // @ts-expect-error
     node.onDragDrop = function (e) {
       console.log('onDragDrop called')
       let handled = false
@@ -628,7 +626,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       return handled
     }
 
-    // @ts-ignore
+    // @ts-expect-error
     node.pasteFile = function (file) {
       if (file.type.startsWith('image/')) {
         const is_pasted =

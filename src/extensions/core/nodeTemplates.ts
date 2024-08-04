@@ -359,9 +359,7 @@ app.registerExtension({
       localStorage.setItem('litegrapheditor_clipboard', old)
     }
 
-    // @ts-ignore
     const orig = LGraphCanvas.prototype.getCanvasMenuOptions
-    // @ts-ignore
     LGraphCanvas.prototype.getCanvasMenuOptions = function () {
       const options = orig.apply(this, arguments)
 
@@ -380,20 +378,20 @@ app.registerExtension({
             const nodeIds = Object.keys(app.canvas.selected_nodes)
             for (let i = 0; i < nodeIds.length; i++) {
               const node = app.graph.getNodeById(Number.parseInt(nodeIds[i]))
-              // @ts-ignore
+              // @ts-expect-error
               const nodeData = node?.constructor.nodeData
 
               let groupData = GroupNodeHandler.getGroupData(node)
               if (groupData) {
                 groupData = groupData.nodeData
-                // @ts-ignore
+                // @ts-expect-error
                 if (!data.groupNodes) {
-                  // @ts-ignore
+                  // @ts-expect-error
                   data.groupNodes = {}
                 }
-                // @ts-ignore
+                // @ts-expect-error
                 data.groupNodes[nodeData.name] = groupData
-                // @ts-ignore
+                // @ts-expect-error
                 data.nodes[i].type = nodeData.name
               }
             }

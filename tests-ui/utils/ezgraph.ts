@@ -206,7 +206,6 @@ export class EzWidget {
   }
 
   get isConvertedToInput() {
-    // @ts-ignore : this type is valid for converted widgets
     return this.widget.type === 'converted-widget'
   }
 
@@ -297,12 +296,12 @@ export class EzNode {
   //  * @returns { Record<string, type extends "inputs" ? EzInput : EzOutput> & (type extends "inputs" ? EzInput [] : EzOutput[]) }
   //  */
   // #getSlotItems(type) {
-  //   // @ts-ignore : these items are correct
+  //   // @ts-expect-error : these items are correct
   //   return (this.node[type] ?? []).reduce((p, s, i) => {
   //     if (s.name in p) {
   //       throw new Error(`Unable to store input ${s.name} on array as name conflicts.`);
   //     }
-  //     // @ts-ignore
+  //     // @ts-expect-error
   //     p.push((p[s.name] = new (type === "inputs" ? EzInput : EzOutput)(this, i, s)));
   //     return p;
   //   }, Object.assign([], { $: this }));
@@ -320,24 +319,20 @@ export class EzNode {
       typeof nodeProperty === 'function'
         ? nodeProperty()
         : this.node[nodeProperty]
-    // @ts-ignore
     return (items ?? []).reduce(
       (p, s, i) => {
         if (!s) return p
 
         const name = s[nameProperty]
         const item = new ctor(this, i, s)
-        // @ts-ignore
         p.push(item)
         if (name) {
-          // @ts-ignore
           if (name in p) {
             throw new Error(
               `Unable to store ${nodeProperty} ${name} on array as name conflicts.`
             )
           }
         }
-        // @ts-ignore
         p[name] = item
         return p
       },
@@ -404,7 +399,7 @@ export class EzGraph {
       this.app.graph.clear()
       setTimeout(async () => {
         await this.app.loadGraphData(graph)
-        // @ts-ignore
+        // @ts-expect-error
         r()
       }, 10)
     })
@@ -419,7 +414,6 @@ export class EzGraph {
    * }>}> }
    */
   toPrompt() {
-    // @ts-ignore
     return this.app.graphToPrompt()
   }
 }
@@ -452,7 +446,6 @@ export const Ez = {
       app.graph.clear()
     }
 
-    // @ts-ignore : this proxy handles utility methods & node creation
     const factory = new Proxy(
       {},
       {

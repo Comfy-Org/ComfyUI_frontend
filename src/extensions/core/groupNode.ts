@@ -16,9 +16,8 @@ const Workflow = {
   isInUseGroupNode(name) {
     const id = `workflow/${name}`
     // Check if lready registered/in use in this workflow
-    // @ts-ignore
     if (app.graph.extra?.groupNodes?.[name]) {
-      // @ts-ignore
+      // @ts-expect-error
       if (app.graph._nodes.find((n) => n.type === id)) {
         return Workflow.InUse.InWorkflow
       } else {
@@ -28,9 +27,7 @@ const Workflow = {
     return Workflow.InUse.Free
   },
   storeGroupNode(name, data) {
-    // @ts-ignore
     let extra = app.graph.extra
-    // @ts-ignore
     if (!extra) app.graph.extra = extra = {}
     let groupNodes = extra.groupNodes
     if (!groupNodes) extra.groupNodes = groupNodes = {}
@@ -133,7 +130,7 @@ class GroupNodeBuilder {
     // Use the built in copyToClipboard function to generate the node data we need
     const backup = localStorage.getItem('litegrapheditor_clipboard')
     try {
-      // @ts-ignore
+      // @ts-expect-error
       // TODO Figure out if copyToClipboard is really taking this param
       app.canvas.copyToClipboard(this.nodes)
       const config = JSON.parse(
@@ -328,7 +325,6 @@ export class GroupNodeConfig {
               null,
               widget
             )
-            // @ts-ignore
             config = res?.customConfig ?? config
           }
         }
@@ -352,7 +348,7 @@ export class GroupNodeConfig {
         }
       }
 
-      // @ts-ignore
+      // @ts-expect-error
       config.forceInput = true
       return {
         input: {
@@ -743,7 +739,7 @@ export class GroupNodeHandler {
             let link = app.graph.links[linkId]
 
             // Use the outer link, but update the target to the inner node
-            // @ts-ignore
+            // @ts-expect-error
             // TODO: Fix this
             link = {
               ...link,
@@ -797,7 +793,7 @@ export class GroupNodeHandler {
           this.groupData.nodeData.nodes.map((n, i) => {
             const innerNode = LiteGraph.createNode(n.type)
             innerNode.configure(n)
-            // @ts-ignore
+            // @ts-expect-error
             innerNode.id = `${this.node.id}:${i}`
             return innerNode
           })
@@ -1411,9 +1407,7 @@ function addConvertToGroupOptions() {
   }
 
   // Add to canvas
-  // @ts-ignore
   const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions
-  // @ts-ignore
   LGraphCanvas.prototype.getCanvasMenuOptions = function () {
     const options = getCanvasMenuOptions.apply(this, arguments)
     const index =
@@ -1424,9 +1418,7 @@ function addConvertToGroupOptions() {
   }
 
   // Add to nodes
-  // @ts-ignore
   const getNodeMenuOptions = LGraphCanvas.prototype.getNodeMenuOptions
-  // @ts-ignore
   LGraphCanvas.prototype.getNodeMenuOptions = function (node) {
     const options = getNodeMenuOptions.apply(this, arguments)
     if (!GroupNodeHandler.isGroupNode(node)) {
