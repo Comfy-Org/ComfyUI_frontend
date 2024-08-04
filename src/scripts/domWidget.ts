@@ -226,11 +226,8 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
     if (elementWidgets.has(node)) {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
-        // @ts-expect-error
         if (w.element) {
-          // @ts-expect-error
           w.element.hidden = hidden
-          // @ts-expect-error
           w.element.style.display = hidden ? 'none' : undefined
           if (hidden) {
             w.options.onHide?.(w)
