@@ -16,7 +16,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 
-let idleTimeout: NodeJS.Timeout
+let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
 const settingStore = useSettingStore()
 const tooltipRef = ref<HTMLDivElement>()
@@ -126,7 +126,7 @@ const onMouseMove = (e: MouseEvent) => {
   clearTimeout(idleTimeout)
 
   if ((e.target as Node).nodeName !== 'CANVAS') return
-  idleTimeout = setTimeout(onIdle, 500)
+  idleTimeout = window.setTimeout(onIdle, 500)
 }
 
 watch(
