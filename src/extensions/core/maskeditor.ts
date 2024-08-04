@@ -252,9 +252,9 @@ class MaskEditorDialog extends ComfyDialog {
     brush.style.outline = '1px dashed black'
     brush.style.boxShadow = '0 0 0 1px white'
     brush.style.borderRadius = '50%'
-    // @ts-ignore
+    // @ts-expect-error
     brush.style.MozBorderRadius = '50%'
-    // @ts-ignore
+    // @ts-expect-error
     brush.style.WebkitBorderRadius = '50%'
     brush.style.position = 'absolute'
     brush.style.zIndex = '8889'

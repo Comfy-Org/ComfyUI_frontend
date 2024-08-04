@@ -221,16 +221,16 @@ const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
 //@ts-ignore
 LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   const visibleNodes = computeVisibleNodes.apply(this, arguments)
-  // @ts-ignore
+  // @ts-expect-error
   for (const node of app.graph._nodes) {
     if (elementWidgets.has(node)) {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
-        // @ts-ignore
+        // @ts-expect-error
         if (w.element) {
-          // @ts-ignore
+          // @ts-expect-error
           w.element.hidden = hidden
-          // @ts-ignore
+          // @ts-expect-error
           w.element.style.display = hidden ? 'none' : undefined
           if (hidden) {
             w.options.onHide?.(w)
@@ -343,7 +343,7 @@ LGraphNode.prototype.addDOMWidget = function (
         width: `${widgetWidth - margin * 2}px`,
         height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
         position: 'absolute',
-        // @ts-ignore
+        // @ts-expect-error
         zIndex: app.graph._nodes.indexOf(node)
       })
 

@@ -97,7 +97,7 @@ app.registerExtension({
           /* name=*/ 'audioUI',
           audio
         )
-        // @ts-ignore
+        // @ts-expect-error
         // TODO: Sort out the DOMWidget type.
         audioUIWidget.serialize = false
 

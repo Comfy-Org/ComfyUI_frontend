@@ -14,6 +14,25 @@ For Windows stand-alone build users, please edit the `run_cpu.bat` / `run_nvidia
 pause
 ```
 
+## Trouble Shooting
+<details>
+  <summary>Empty white screen</summary>
+
+  ### Behavior
+  After you enable the new frontend in commandline, and open ComfyUI in the browser, you see a blank screen. If you toggle dev tools with F12, you can observe `litegraph.core.js:1` 404 in console messages.
+
+  ### Cause
+  The browser is caching the `index.html` file previously served from `localhost:8188`.
+
+  ### How to fix
+  Step 1: Disable cache in devtools
+  
+  ![image](https://github.com/user-attachments/assets/c0cec519-93b7-49f8-aea1-7adb0aa5b073)
+
+  Step 2: Refresh your browser
+
+</details>
+
 ## Release Summary
 
 ### Major features

@@ -93,7 +93,6 @@ describe('widget inputs', () => {
       const input = w.getConvertedInput()
       expect(input).toBeTruthy()
 
-      // @ts-ignore : input is valid here
       await connectPrimitiveAndReload(
         ez,
         graph,
@@ -234,11 +233,11 @@ describe('widget inputs', () => {
     })
 
     expect(dialogShow).toBeCalledTimes(1)
-    // @ts-ignore
+    // @ts-expect-error
     expect(dialogShow.mock.calls[0][0].innerHTML).toContain(
       'the following node types were not found'
     )
-    // @ts-ignore
+    // @ts-expect-error
     expect(dialogShow.mock.calls[0][0].innerHTML).toContain('TestNode')
   })
 

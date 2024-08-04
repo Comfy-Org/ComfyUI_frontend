@@ -43,7 +43,6 @@ describe('users', () => {
           resolve()
           return res
         })
-      // @ts-ignore
       setTimeout(
         () => reject('timeout waiting for UserSelectionScreen to be shown.'),
         500

@@ -286,15 +286,17 @@ export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
 
-export function validateComfyNodeDef(data: any): ComfyNodeDef {
+export function validateComfyNodeDef(
+  data: any,
+  onError: (error: string) => void = console.warn
+): ComfyNodeDef | null {
   const result = zComfyNodeDef.safeParse(data)
   if (!result.success) {
     const zodError = fromZodError(result.error)
-    const error = new Error(
+    onError(
       `Invalid ComfyNodeDef: ${JSON.stringify(data)}\n${zodError.message}`
     )
-    error.cause = zodError
-    throw error
+    return null
   }
   return result.data
 }

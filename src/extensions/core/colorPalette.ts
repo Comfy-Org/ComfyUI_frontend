@@ -437,7 +437,7 @@ app.registerExtension({
      * @param {image} String
      * @param {clearBackgroundColor} String
      */
-    // @ts-ignore
+    // @ts-expect-error
     LGraphCanvas.prototype.updateBackground = function (
       image,
       clearBackgroundColor
@@ -633,12 +633,11 @@ app.registerExtension({
         // Sets the colors of node slots and links
         if (colorPalette.colors.node_slot) {
           Object.assign(
-            // @ts-ignore
+            // @ts-expect-error
             app.canvas.default_connection_color_byType,
             colorPalette.colors.node_slot
           )
           Object.assign(
-            // @ts-ignore
             LGraphCanvas.link_type_colors,
             colorPalette.colors.node_slot
           )
@@ -877,7 +876,7 @@ app.registerExtension({
           BACKGROUND_IMAGE = base.BACKGROUND_IMAGE
           CLEAR_BACKGROUND_COLOR = base.CLEAR_BACKGROUND_COLOR
         }
-        // @ts-ignore
+        // @ts-expect-error
         // litegraph.extensions.js
         app.canvas.updateBackground(BACKGROUND_IMAGE, CLEAR_BACKGROUND_COLOR)
       }

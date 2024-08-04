@@ -20,8 +20,8 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 }
 
 describe('validateNodeDef', () => {
-  it('Should accept a valid node definition', () => {
-    expect(() => validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toThrow()
+  it('Should accept a valid node definition', async () => {
+    expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
   })
 
   describe.each([
@@ -35,7 +35,7 @@ describe('validateNodeDef', () => {
   ])(
     'validateComfyNodeDef with various input spec formats',
     (inputSpec, expected) => {
-      it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, () => {
+      it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
         expect(
           validateComfyNodeDef({
             ...EXAMPLE_NODE_DEF,
@@ -57,15 +57,15 @@ describe('validateNodeDef', () => {
   ])(
     'validateComfyNodeDef rejects with various input spec formats',
     (inputSpec) => {
-      it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, () => {
-        expect(() =>
+      it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
+        expect(
           validateComfyNodeDef({
             ...EXAMPLE_NODE_DEF,
             input: {
               required: inputSpec
             }
           })
-        ).toThrow()
+        ).toBeNull()
       })
     }
   )
@@ -76,8 +76,9 @@ describe('validateNodeDef', () => {
         fs.readFileSync(path.resolve('./tests-ui/data/object_info.json'))
       )
     )
-    nodeDefs.forEach((nodeDef) => {
-      expect(() => validateComfyNodeDef(nodeDef)).not.toThrow()
-    })
+
+    for (const nodeDef of nodeDefs) {
+      expect(validateComfyNodeDef(nodeDef)).not.toBeNull()
+    }
   })
 })

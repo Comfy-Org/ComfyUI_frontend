@@ -110,7 +110,7 @@ export class ChangeTracker {
     window.addEventListener(
       'keydown',
       (e) => {
-        const activeEl = document.activeElement;
+        const activeEl = document.activeElement
         requestAnimationFrame(async () => {
           let bindInputEl
           // If we are auto queue in change mode then we do want to trigger on inputs
@@ -165,17 +165,13 @@ export class ChangeTracker {
     })
 
     // Handle litegraph clicks
-    // @ts-ignore
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
-    // @ts-ignore
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, arguments)
       changeTracker().checkState()
       return v
     }
-    // @ts-ignore
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
-    // @ts-ignore
     LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, arguments)
       changeTracker().checkState()

@@ -2,12 +2,13 @@ type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }
 
 function rgbToHsl({ r, g, b }: RGB): HSL {
-  ;(r /= 255), (g /= 255), (b /= 255)
+  r /= 255
+  g /= 255
+  b /= 255
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b)
-  let h: number,
-    s: number,
-    l: number = (max + min) / 2
+  let h: number, s: number
+  const l: number = (max + min) / 2
 
   if (max === min) {
     h = s = 0 // achromatic
@@ -93,7 +94,7 @@ function rgbToHex({ r, g, b }: RGB): string {
 
 export function lightenColor(hex: string, amount: number): string {
   let rgb = hexToRgb(hex)
-  let hsl = rgbToHsl(rgb)
+  const hsl = rgbToHsl(rgb)
   hsl.l = Math.min(1, hsl.l + amount)
   rgb = hslToRgb(hsl)
   return rgbToHex(rgb)

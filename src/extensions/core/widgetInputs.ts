@@ -97,7 +97,7 @@ class PrimitiveNode {
   onAfterGraphConfigured() {
     if (this.outputs[0].links?.length && !this.widgets?.length) {
       // TODO: Review this check
-      // @ts-ignore
+      // @ts-expect-error
       if (!this.#onFirstConnection()) return
 
       // Populate widget values from config data

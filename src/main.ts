@@ -13,8 +13,7 @@ import { i18n } from './i18n'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-ignore
-    primary: Aura.primitive.blue
+    primary: Aura['primitive'].blue
   }
 })
 
