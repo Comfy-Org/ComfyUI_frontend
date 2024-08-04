@@ -65,8 +65,6 @@ const closeDialog = () => {
 }
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  closeDialog()
-
   const node = app.addNodeOnGraph(nodeDef, { pos: getNewNodeLocation() })
 
   const eventDetail = triggerEvent.value.detail
@@ -75,6 +73,13 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
       ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
     })
   }
+
+  // TODO: This is not robust timing-wise.
+  // PrimeVue complains about the dialog being closed before the event selecting
+  // item is fully processed.
+  window.setTimeout(() => {
+    closeDialog()
+  }, 100)
 }
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
