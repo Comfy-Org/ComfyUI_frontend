@@ -73,7 +73,7 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
-import NodePreview from '@/components/NodePreview.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import SideBarTabTemplate from '@/components/sidebar/tabs/SideBarTabTemplate.vue'
 
 const nodeDefStore = useNodeDefStore()
