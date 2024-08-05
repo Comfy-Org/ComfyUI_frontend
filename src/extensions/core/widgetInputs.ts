@@ -5,7 +5,7 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import type { LGraphNode, INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 
 const CONVERTED_TYPE = 'converted-widget'
-const VALID_TYPES = ['STRING', 'combo', 'number', 'BOOLEAN']
+const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
 const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
 const TARGET = Symbol() // Used for reroutes to specify the real target widget
