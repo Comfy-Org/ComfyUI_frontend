@@ -1627,7 +1627,7 @@ export class ComfyApp {
           this.workflowManager.activeWorkflow
       )
         return
-      const output = this.nodeOutputs[detail.node]
+      const output = this.nodeOutputs[detail.display_node || detail.node]
       if (detail.merge && output) {
         for (const k in detail.output ?? {}) {
           const v = output[k]
@@ -1638,9 +1638,9 @@ export class ComfyApp {
           }
         }
       } else {
-        this.nodeOutputs[detail.node] = detail.output
+        this.nodeOutputs[detail.display_node || detail.node] = detail.output
       }
-      const node = this.graph.getNodeById(detail.node)
+      const node = this.graph.getNodeById(detail.display_node || detail.node)
       if (node) {
         // @ts-expect-error
         if (node.onExecuted)
