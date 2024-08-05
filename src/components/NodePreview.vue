@@ -73,11 +73,20 @@ const slotInputDefs = allInputDefs.filter(
 const widgetInputDefs = allInputDefs.filter((input) =>
   nodeDefStore.inputIsWidget(input)
 )
-const truncateDefaultValue = (value: any): string => {
-  if (value instanceof Object) {
-    return _.truncate(JSON.stringify(value), { length: 20 })
+const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
+  let stringValue: string
+
+  if (typeof value === 'object' && value !== null) {
+    stringValue = JSON.stringify(value)
+  } else if (Array.isArray(value)) {
+    stringValue = JSON.stringify(value)
+  } else if (typeof value === 'string') {
+    stringValue = value
+  } else {
+    stringValue = String(value)
   }
-  return value
+
+  return _.truncate(stringValue, { length: charLimit })
 }
 </script>
 
