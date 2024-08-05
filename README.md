@@ -16,7 +16,7 @@ pause
 
 ## Trouble Shooting
 <details>
-  <summary>Empty white screen</summary>
+  <summary>Empty white screen (Fixed by https://github.com/comfyanonymous/ComfyUI/pull/4211)</summary>
 
   ### Behavior
   After you enable the new frontend in commandline, and open ComfyUI in the browser, you see a blank screen. If you toggle dev tools with F12, you can observe `litegraph.core.js:1` 404 in console messages.
