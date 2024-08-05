@@ -6519,12 +6519,9 @@ LGraphNode.prototype.executeAction = function(action)
                         } else {
                             //check if I have a slot below de mouse
                             var slot = this.isOverNodeInput( node, e.canvasX, e.canvasY, pos );
-                            if (slot != -1 && node.inputs[slot]) {
-                                var slot_type = node.inputs[slot].type;
-                                if ( LiteGraph.isValidConnection( firstLink.output.type, slot_type ) ) {
-                                    this._highlight_input = pos;
-									this._highlight_input_slot = node.inputs[slot]; // XXX CHECK THIS
-                                }
+                            if (slot != -1 && node.inputs[slot] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[slot].type)) {
+                                this._highlight_input = pos;
+                                this._highlight_input_slot = node.inputs[slot]; // XXX CHECK THIS
                             } else {
                                 this._highlight_input = null;
 								this._highlight_input_slot = null;  // XXX CHECK THIS
@@ -6541,11 +6538,8 @@ LGraphNode.prototype.executeAction = function(action)
                         } else {
                             //check if I have a slot below de mouse
                             var slot = this.isOverNodeOutput( node, e.canvasX, e.canvasY, pos );
-                            if (slot != -1 && node.outputs[slot]) {
-                                var slot_type = node.outputs[slot].type;
-                                if ( LiteGraph.isValidConnection( firstLink.input.type, slot_type ) ) {
-                                    this._highlight_output = pos;
-                                }
+                            if (slot != -1 && node.outputs[slot] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[slot].type)) {
+                                this._highlight_output = pos;
                             } else {
                                 this._highlight_output = null;
                             }
@@ -7032,13 +7026,16 @@ LGraphNode.prototype.executeAction = function(action)
                         20
                     );
                 } else {
+                    // TODO: Find a cheap way to measure text, and do it on node label change instead of here
+                    // Input icon width + text approximation
+                    const width = 20 + (((input.label?.length ?? input.name?.length) || 3) * 7)
                     is_inside = isInsideRectangle(
                         canvasx,
                         canvasy,
                         link_pos[0] - 10,
-                        link_pos[1] - 5,
-                        40,
-                        10
+                        link_pos[1] - 10,
+                        width,
+                        20
                     );
                 }
                 if (is_inside) {
@@ -7082,9 +7079,9 @@ LGraphNode.prototype.executeAction = function(action)
                         canvasx,
                         canvasy,
                         link_pos[0] - 10,
-                        link_pos[1] - 5,
+                        link_pos[1] - 10,
                         40,
-                        10
+                        20
                     );
                 }
                 if (is_inside) {
