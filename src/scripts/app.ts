@@ -657,7 +657,7 @@ export class ComfyApp {
       }
     }
 
-    node.prototype.onDrawBackground = function (ctx) {
+    function unsafeDrawBackground(ctx) {
       if (!this.flags.collapsed) {
         let imgURLs = []
         let imagesChanged = false
@@ -990,6 +990,14 @@ export class ComfyApp {
             }
           }
         }
+      }
+    }
+
+    node.prototype.onDrawBackground = function (ctx) {
+      try {
+        unsafeDrawBackground.call(this, ctx)
+      } catch (error) {
+        console.error('Error drawing node background', error)
       }
     }
   }
