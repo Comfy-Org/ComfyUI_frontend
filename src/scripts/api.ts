@@ -171,7 +171,9 @@ class ComfyApi extends EventTarget {
               break
             case 'executing':
               this.dispatchEvent(
-                new CustomEvent('executing', { detail: msg.data.display_node })
+                new CustomEvent('executing', {
+                  detail: msg.data.display_node || msg.data.node
+                })
               )
               break
             case 'executed':

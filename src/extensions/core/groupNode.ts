@@ -1108,7 +1108,7 @@ export class GroupNodeHandler {
     const executed = handleEvent.call(
       this,
       'executed',
-      (d) => d?.display_node,
+      (d) => d?.display_node || d?.node,
       (d, id, node) => ({
         ...d,
         node: id,
