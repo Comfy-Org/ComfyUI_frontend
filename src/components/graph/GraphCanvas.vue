@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import SideToolBar from '@/components/sidebar/SideToolBar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
-import NodeSearchboxPopover from '@/components/NodeSearchBoxPopover.vue'
+import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import { ref, computed, onUnmounted, watch, onMounted } from 'vue'
 import { app as comfyApp } from '@/scripts/app'

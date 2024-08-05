@@ -54,13 +54,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AutoCompletePlus from './primevueOverride/AutoCompletePlus.vue'
+import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import Chip from 'primevue/chip'
 import Badge from 'primevue/badge'
-import NodeSearchFilter from '@/components/NodeSearchFilter.vue'
-import NodeSourceChip from '@/components/NodeSourceChip.vue'
+import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
+import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
-import NodePreview from './NodePreview.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 const props = defineProps({
