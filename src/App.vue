@@ -1,6 +1,7 @@
 <template>
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <BlockUI full-screen :blocked="isLoading" />
+  <GlobalDialog />
   <GraphCanvas />
 </template>
 
@@ -15,6 +16,7 @@ import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
+import GlobalDialog from './components/dialog/GlobalDialog.vue'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>

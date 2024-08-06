@@ -43,6 +43,9 @@ import {
 } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
+import { useDialogStore } from '@/stores/dialogStore'
+import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
+import { markRaw } from 'vue'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2123,62 +2126,14 @@ export class ComfyApp {
   }
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
-    let seenTypes = new Set()
-
-    this.ui.dialog.show(
-      $el('div.comfy-missing-nodes', [
-        $el('span', {
-          textContent:
-            'When loading the graph, the following node types were not found: '
-        }),
-        $el(
-          'ul',
-          Array.from(new Set(missingNodeTypes))
-            .map((t) => {
-              let children = []
-              if (typeof t === 'object') {
-                // @ts-expect-error
-                if (seenTypes.has(t.type)) return null
-                // @ts-expect-error
-                seenTypes.add(t.type)
-                // @ts-expect-error
-                children.push($el('span', { textContent: t.type }))
-                // @ts-expect-error
-                if (t.hint) {
-                  // @ts-expect-error
-                  children.push($el('span', { textContent: t.hint }))
-                }
-                // @ts-expect-error
-                if (t.action) {
-                  children.push(
-                    $el('button', {
-                      // @ts-expect-error
-                      onclick: t.action.callback,
-                      // @ts-expect-error
-                      textContent: t.action.text
-                    })
-                  )
-                }
-              } else {
-                if (seenTypes.has(t)) return null
-                seenTypes.add(t)
-                // @ts-expect-error
-                children.push($el('span', { textContent: t }))
-              }
-              return $el('li', children)
-            })
-            .filter(Boolean)
-        ),
-        ...(hasAddedNodes
-          ? [
-              $el('span', {
-                textContent:
-                  'Nodes that have failed to load will show as red on the graph.'
-              })
-            ]
-          : [])
-      ])
-    )
+    useDialogStore().showDialog({
+      title: 'Warnings loading graph',
+      component: markRaw(LoadWorkflowWarning),
+      props: {
+        missingNodeTypes,
+        hasAddedNodes
+      }
+    })
     this.logging.addEntry('Comfy.App', 'warn', {
       MissingNodes: missingNodeTypes
     })
