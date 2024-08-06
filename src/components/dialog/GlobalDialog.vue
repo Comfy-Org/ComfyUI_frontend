@@ -8,7 +8,7 @@
     dismissableMask
     @hide="dialogStore.closeDialog"
   >
-    <template #header>
+    <template #header v-if="dialogStore.title">
       <h3>{{ dialogStore.title }}</h3>
     </template>
 

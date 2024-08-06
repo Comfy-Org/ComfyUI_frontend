@@ -2127,7 +2127,6 @@ export class ComfyApp {
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
     useDialogStore().showDialog({
-      title: 'Warnings loading graph',
       component: markRaw(LoadWorkflowWarning),
       props: {
         missingNodeTypes,

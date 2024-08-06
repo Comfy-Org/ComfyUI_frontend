@@ -18,7 +18,7 @@ export const useDialogStore = defineStore('dialog', {
 
   actions: {
     showDialog(options: {
-      title: string
+      title?: string
       component: Component
       props?: Record<string, any>
     }) {

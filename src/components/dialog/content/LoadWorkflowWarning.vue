@@ -1,31 +1,42 @@
-<!-- Warnings generated when loading the workflow -->
 <template>
   <div class="comfy-missing-nodes">
-    <span
-      >When loading the graph, the following node types were not found:</span
+    <h4 class="warning-title">Warning: Missing Node Types</h4>
+    <p class="warning-description">
+      When loading the graph, the following node types were not found:
+    </p>
+    <ListBox
+      :options="uniqueNodes"
+      optionLabel="label"
+      class="missing-nodes-list"
+      :pt="{
+        list: { class: 'border-none' }
+      }"
     >
-    <ul>
-      <li v-for="(node, index) in uniqueNodes" :key="index">
-        <template v-if="typeof node === 'object'">
-          <span>{{ node.type }}</span>
-          <span v-if="node.hint">{{ node.hint }}</span>
-          <button v-if="node.action" @click="node.action.callback">
-            {{ node.action.text }}
-          </button>
-        </template>
-        <template v-else>
-          <span>{{ node }}</span>
-        </template>
-      </li>
-    </ul>
-    <span v-if="hasAddedNodes">
+      <template #option="slotProps">
+        <div class="missing-node-item">
+          <span class="node-type">{{ slotProps.option.label }}</span>
+          <span v-if="slotProps.option.hint" class="node-hint">{{
+            slotProps.option.hint
+          }}</span>
+          <Button
+            v-if="slotProps.option.action"
+            @click="slotProps.option.action.callback"
+            :label="slotProps.option.action.text"
+            class="p-button-sm p-button-outlined"
+          />
+        </div>
+      </template>
+    </ListBox>
+    <p v-if="hasAddedNodes" class="added-nodes-warning">
       Nodes that have failed to load will show as red on the graph.
-    </span>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import ListBox from 'primevue/listbox'
+import Button from 'primevue/button'
 
 interface NodeType {
   type: string
@@ -43,11 +54,81 @@ const props = defineProps<{
 
 const uniqueNodes = computed(() => {
   const seenTypes = new Set()
-  return props.missingNodeTypes.filter((node) => {
-    const type = typeof node === 'object' ? node.type : node
-    if (seenTypes.has(type)) return false
-    seenTypes.add(type)
-    return true
-  })
+  return props.missingNodeTypes
+    .filter((node) => {
+      const type = typeof node === 'object' ? node.type : node
+      if (seenTypes.has(type)) return false
+      seenTypes.add(type)
+      return true
+    })
+    .map((node) => {
+      if (typeof node === 'object') {
+        return {
+          label: node.type,
+          hint: node.hint,
+          action: node.action
+        }
+      }
+      return { label: node }
+    })
 })
 </script>
+
+<style>
+:root {
+  --red-600: #dc3545;
+}
+</style>
+
+<style scoped>
+.comfy-missing-nodes {
+  font-family: var(--font-family);
+  color: var(--text-color);
+  padding: 1.5rem;
+  background-color: var(--surface-ground);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.warning-title {
+  color: var(--red-600);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.warning-description {
+  margin-bottom: 1rem;
+}
+
+.missing-nodes-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.missing-node-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+}
+
+.node-type {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.node-hint {
+  margin-left: 0.5rem;
+  font-style: italic;
+  color: var(--text-color-secondary);
+}
+
+:deep(.p-button) {
+  margin-left: auto;
+}
+
+.added-nodes-warning {
+  margin-top: 1rem;
+  font-style: italic;
+  color: var(--red-600);
+}
+</style>
