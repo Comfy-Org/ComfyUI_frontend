@@ -1,4 +1,6 @@
+const globalExport = {};
 
+(function (globalThis) {
     // *************************************************************
     //   LiteGraph CLASS                                     *******
     // *************************************************************
@@ -14513,14 +14515,13 @@ LGraphNode.prototype.executeAction = function(action)
                 window.setTimeout(callback, 1000 / 60);
             };
     }
+})(globalExport)
 
-if (typeof exports != "undefined") {
-    exports.LiteGraph = globalThis.LiteGraph;
-    exports.LGraph = globalThis.LGraph;
-    exports.LLink = globalThis.LLink;
-    exports.LGraphNode = globalThis.LGraphNode;
-    exports.LGraphGroup = globalThis.LGraphGroup;
-    exports.DragAndScale = globalThis.DragAndScale;
-    exports.LGraphCanvas = globalThis.LGraphCanvas;
-    exports.ContextMenu = globalThis.ContextMenu;
-}
+export const LiteGraph = globalExport.LiteGraph;
+export const LGraph = globalExport.LGraph;
+export const LLink = globalExport.LLink;
+export const LGraphNode = globalExport.LGraphNode;
+export const LGraphGroup = globalExport.LGraphGroup;
+export const DragAndScale = globalExport.DragAndScale;
+export const LGraphCanvas = globalExport.LGraphCanvas;
+export const ContextMenu = globalExport.ContextMenu;

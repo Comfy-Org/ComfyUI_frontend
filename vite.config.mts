@@ -6,16 +6,10 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, 'src/litegraph.js'),
       name: 'litegraph.js',
-      // TODO: Below workaround ensures output matches pre-vite format.  Should be removed.
-      fileName: (moduleFormat, entryAlias) => 'src/litegraph.js',
-      formats: ['iife']
+      fileName: (format) => `litegraph.${format}.js`,
+      formats: ['es', 'umd']
     },
     minify: false,
     sourcemap: true,
-    rollupOptions: {
-      // Disabling tree-shaking
-      // Prevent vite remove unused exports
-      treeshake: false
-    }
   },
 })
