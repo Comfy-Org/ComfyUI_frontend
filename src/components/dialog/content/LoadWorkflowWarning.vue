@@ -7,7 +7,8 @@
     <ListBox
       :options="uniqueNodes"
       optionLabel="label"
-      class="missing-nodes-list"
+      scrollHeight="100%"
+      :class="'missing-nodes-list' + (props.maximized ? ' maximized' : '')"
       :pt="{
         list: { class: 'border-none' }
       }"
@@ -50,6 +51,7 @@ interface NodeType {
 const props = defineProps<{
   missingNodeTypes: (string | NodeType)[]
   hasAddedNodes: boolean
+  maximized: boolean
 }>()
 
 const uniqueNodes = computed(() => {
@@ -82,8 +84,8 @@ const uniqueNodes = computed(() => {
 
 <style scoped>
 .comfy-missing-nodes {
-  font-family: var(--font-family);
-  color: var(--text-color);
+  font-family: monospace;
+  color: var(--red-600);
   padding: 1.5rem;
   background-color: var(--surface-ground);
   border-radius: var(--border-radius);
@@ -91,7 +93,6 @@ const uniqueNodes = computed(() => {
 }
 
 .warning-title {
-  color: var(--red-600);
   margin-top: 0;
   margin-bottom: 1rem;
 }
@@ -103,6 +104,10 @@ const uniqueNodes = computed(() => {
 .missing-nodes-list {
   max-height: 300px;
   overflow-y: auto;
+}
+
+.missing-nodes-list.maximized {
+  max-height: unset;
 }
 
 .missing-node-item {
@@ -129,6 +134,5 @@ const uniqueNodes = computed(() => {
 .added-nodes-warning {
   margin-top: 1rem;
   font-style: italic;
-  color: var(--red-600);
 }
 </style>
