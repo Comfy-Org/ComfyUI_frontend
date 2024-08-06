@@ -1,52 +1,42 @@
 {
-    "name": "@comfyorg/litegraph",
-    "version": "0.7.35",
-    "description": "A graph node editor similar to PD or UDK Blueprints. It works in an HTML5 Canvas and allows to export graphs to be included in applications.",
-    "main": "src/litegraph.js",
-    "types": "src/litegraph.d.ts",
-    "directories": {
-        "doc": "doc"
-    },
-    "private": false,
-    "scripts": {
-        "prebuild": "rimraf build",
-        "build": "grunt build",
-        "start": "nodemon utils/server.js",
-        "test": "jest",
-        "test:allVersions": "./utils/test.sh",
-        "prettier": "npx prettier --write src/**/*.* css/**/*.*",
-        "lint": "npx eslint src",
-        "lint:fix": "npx eslint --fix src"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git@github.com:Comfy-Org/litegraph.js.git"
-    },
-    "author": "comfyorg",
-    "license": "MIT",
-    "files": [
-        "src/litegraph.js",
-        "css/litegraph.css",
-        "src/litegraph.d.ts"
-    ],
-    "bugs": {
-        "url": "https://github.com/Comfy-Org/litegraph.js/issues"
-    },
-    "homepage": "https://github.com/Comfy-Org/litegraph.js",
-    "devDependencies": {
-        "@types/jest": "^28.1.3",
-        "eslint": "^8.37.0 ",
-        "eslint-plugin-jest": "^27.2.1",
-        "express": "^4.17.1",
-        "google-closure-compiler": "^20230411.0.0",
-        "grunt": "^1.1.0",
-        "grunt-cli": "^1.2.0",
-        "grunt-closure-tools": "^1.0.0",
-        "grunt-contrib-concat": "^2.1.0",
-        "jest": "^28.1.3",
-        "jest-cli": "^28.1.3",
-        "nodemon": "^2.0.22",
-        "rimraf": "^5.0.0",
-        "yuidocjs": "^0.10.2"
-    }
+  "name": "@comfyorg/litegraph",
+  "version": "0.7.35",
+  "type": "module",
+  "description": "A graph node editor similar to PD or UDK Blueprints. It works in an HTML5 Canvas and allows to export graphs to be included in applications.",
+  "main": "src/litegraph.js",
+  "types": "src/litegraph.d.ts",
+  "directories": {
+    "doc": "doc"
+  },
+  "private": false,
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "deprecated-prebuild": "rimraf build",
+    "deprecated-start": "nodemon utils/server.js",
+    "deprecated-test": "jest",
+    "deprecated-test:allVersions": "./utils/test.sh",
+    "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
+    "deprecated-lint": "npx eslint src",
+    "deprecated-lint:fix": "npx eslint --fix src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Comfy-Org/litegraph.js.git"
+  },
+  "author": "comfyorg",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "bugs": {
+    "url": "https://github.com/Comfy-Org/litegraph.js/issues"
+  },
+  "homepage": "https://github.com/Comfy-Org/litegraph.js",
+  "devDependencies": {
+    "@types/node": "^22.1.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.3.4"
+  }
 }

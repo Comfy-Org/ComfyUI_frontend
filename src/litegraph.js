@@ -1,5 +1,4 @@
 
-(function(global) {
     // *************************************************************
     //   LiteGraph CLASS                                     *******
     // *************************************************************
@@ -11,7 +10,7 @@
      * @constructor
      */
 
-    var LiteGraph = (global.LiteGraph = {
+    var LiteGraph = (globalThis.LiteGraph = {
         VERSION: 0.4,
 
         CANVAS_GRID_SIZE: 10,
@@ -783,7 +782,7 @@
         }
     }
 
-    global.LGraph = LiteGraph.LGraph = LGraph;
+    globalThis.LGraph = LiteGraph.LGraph = LGraph;
 
     //default supported types
     LGraph.supported_types = ["number", "string", "boolean"];
@@ -2411,7 +2410,7 @@
         this._ctor(title);
     }
 
-    global.LGraphNode = LiteGraph.LGraphNode = LGraphNode;
+    globalThis.LGraphNode = LiteGraph.LGraphNode = LGraphNode;
 
     LGraphNode.prototype._ctor = function(title) {
         this.title = title || "Unnamed";
@@ -4904,7 +4903,7 @@ LGraphNode.prototype.executeAction = function(action)
         this._ctor(title);
     }
 
-    global.LGraphGroup = LiteGraph.LGraphGroup = LGraphGroup;
+    globalThis.LGraphGroup = LiteGraph.LGraphGroup = LGraphGroup;
 
     LGraphGroup.prototype._ctor = function(title) {
         this.title = title || "Group";
@@ -5360,7 +5359,7 @@ LGraphNode.prototype.executeAction = function(action)
         this.autoresize = options.autoresize;
     }
 
-    global.LGraphCanvas = LiteGraph.LGraphCanvas = LGraphCanvas;
+    globalThis.LGraphCanvas = LiteGraph.LGraphCanvas = LGraphCanvas;
 
 	LGraphCanvas.DEFAULT_BACKGROUND_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII=";
 
@@ -14504,7 +14503,7 @@ LGraphNode.prototype.executeAction = function(action)
     function clamp(v, a, b) {
         return a > v ? a : b < v ? b : v;
     };
-    global.clamp = clamp;
+    globalThis.clamp = clamp;
 
     if (typeof window != "undefined" && !window["requestAnimationFrame"]) {
         window.requestAnimationFrame =
@@ -14514,15 +14513,14 @@ LGraphNode.prototype.executeAction = function(action)
                 window.setTimeout(callback, 1000 / 60);
             };
     }
-})(this);
 
 if (typeof exports != "undefined") {
-    exports.LiteGraph = this.LiteGraph;
-    exports.LGraph = this.LGraph;
-    exports.LLink = this.LLink;
-    exports.LGraphNode = this.LGraphNode;
-    exports.LGraphGroup = this.LGraphGroup;
-    exports.DragAndScale = this.DragAndScale;
-    exports.LGraphCanvas = this.LGraphCanvas;
-    exports.ContextMenu = this.ContextMenu;
+    exports.LiteGraph = globalThis.LiteGraph;
+    exports.LGraph = globalThis.LGraph;
+    exports.LLink = globalThis.LLink;
+    exports.LGraphNode = globalThis.LGraphNode;
+    exports.LGraphGroup = globalThis.LGraphGroup;
+    exports.DragAndScale = globalThis.DragAndScale;
+    exports.LGraphCanvas = globalThis.LGraphCanvas;
+    exports.ContextMenu = globalThis.ContextMenu;
 }
