@@ -3,7 +3,9 @@ import type { JestConfigWithTsJest } from 'ts-jest'
 const jestConfig: JestConfigWithTsJest = {
   testMatch: ['**/tests-ui/**/*.test.ts'],
   testEnvironment: 'jsdom',
+  moduleFileExtensions: ['js', 'jsx', 'json', 'vue', 'ts', 'tsx'],
   transform: {
+    '^.+\\.vue$': '@vue/vue3-jest',
     '^.+\\.m?[tj]sx?$': [
       'ts-jest',
       {
