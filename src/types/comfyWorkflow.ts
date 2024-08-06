@@ -7,11 +7,7 @@ const ModelSchema = z.object({
   hash: z.string(),
   hash_type: z.string(),
   directory: z.string()
-});
-
-const ModelsSchema = z.object({
-  models: z.array(ModelSchema)
-});
+})
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
@@ -134,7 +130,7 @@ export const zComfyWorkflow = z
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
     version: z.number(),
-    models: ModelsSchema.optional()
+    models: z.array(ModelSchema).optional()
   })
   .passthrough()
 
