@@ -23,8 +23,6 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "deprecated-prebuild": "rimraf build",
-    "deprecated-start": "nodemon utils/server.js",
     "deprecated-test": "jest",
     "deprecated-test:allVersions": "./utils/test.sh",
     "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
