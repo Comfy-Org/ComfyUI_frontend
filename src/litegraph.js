@@ -6176,7 +6176,10 @@ LGraphNode.prototype.executeAction = function(action)
 							this.graph.beforeChange();
                             this.node_dragged = node;
                         }
-                        this.processNodeSelected(node, e);
+                        // Account for shift + click + drag
+                        if (!(e.shiftKey && !e.ctrlKey && !e.altKey) || !node.is_selected) {
+                            this.processNodeSelected(node, e);
+                        }
                     } else { // double-click
                         /**
                          * Don't call the function if the block is already selected.
@@ -7518,6 +7521,7 @@ LGraphNode.prototype.executeAction = function(action)
             node.onDeselected();
         }
         node.is_selected = false;
+        delete this.selected_nodes[node.id]
 
         if (this.onNodeDeselected) {
             this.onNodeDeselected(node);
