@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-const ModelSchema = z.object({
+// Definition of an AI model file used in the workflow.
+const ModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string(),
@@ -130,7 +131,7 @@ export const zComfyWorkflow = z
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
     version: z.number(),
-    models: z.array(ModelSchema).optional()
+    models: z.array(ModelFile).optional()
   })
   .passthrough()
 
