@@ -2124,7 +2124,9 @@ export class ComfyApp {
   }
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
-    showLoadWorkflowWarning(missingNodeTypes, hasAddedNodes)
+    if (this.vueAppReady)
+      showLoadWorkflowWarning(missingNodeTypes, hasAddedNodes)
+
     this.logging.addEntry('Comfy.App', 'warn', {
       MissingNodes: missingNodeTypes
     })
