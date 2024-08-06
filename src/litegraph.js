@@ -7616,14 +7616,15 @@ LGraphNode.prototype.executeAction = function(action)
      * @method centerOnNode
      **/
     LGraphCanvas.prototype.centerOnNode = function(node) {
+        const dpi = window?.devicePixelRatio || 1;
         this.ds.offset[0] =
             -node.pos[0] -
             node.size[0] * 0.5 +
-            (this.canvas.width * 0.5) / this.ds.scale;
+            (this.canvas.width * 0.5) / (this.ds.scale * dpi);
         this.ds.offset[1] =
             -node.pos[1] -
             node.size[1] * 0.5 +
-            (this.canvas.height * 0.5) / this.ds.scale;
+            (this.canvas.height * 0.5) / (this.ds.scale * dpi);
         this.setDirty(true, true);
     };
 
