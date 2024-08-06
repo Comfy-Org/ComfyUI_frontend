@@ -1,6 +1,18 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+const ModelSchema = z.object({
+  name: z.string(),
+  url: z.string().url(),
+  hash: z.string(),
+  hash_type: z.string(),
+  directory: z.string()
+});
+
+const ModelsSchema = z.object({
+  models: z.array(ModelSchema)
+});
+
 const zComfyLink = z.tuple([
   z.number(), // Link id
   z.number(), // Node id of source node
@@ -121,7 +133,8 @@ export const zComfyWorkflow = z
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
-    version: z.number()
+    version: z.number(),
+    models: ModelsSchema.optional()
   })
   .passthrough()
 
