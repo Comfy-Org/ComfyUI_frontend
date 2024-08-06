@@ -1,0 +1,102 @@
+# This action should be kept in sync with
+# https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/.github/workflows/test-ui.yaml
+
+name: Test ComfyUI Frontend
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test-comfyui-frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout litegraph
+      uses: actions/checkout@v4
+      with:
+        path: "litegraph"
+
+    - name: Checkout ComfyUI
+      uses: actions/checkout@v4
+      with:
+        repository: "comfyanonymous/ComfyUI"
+        path: "ComfyUI"
+        ref: master
+
+    - name: Checkout ComfyUI_frontend
+      uses: actions/checkout@v4
+      with:
+        repository: "Comfy-Org/ComfyUI_frontend"
+        path: "ComfyUI_frontend"
+
+    - name: Checkout ComfyUI_examples
+      uses: actions/checkout@v4
+      with:
+        repository: "comfyanonymous/ComfyUI_examples"
+        path: "ComfyUI_frontend/tests-ui/ComfyUI_examples"
+        ref: 58b2e103bb8e424b66044fd07f1d3a6d80834ed4
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: lts/*
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install ComfyUI requirements
+      run: |
+        python -m pip install --upgrade pip
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+        pip install -r requirements.txt
+        pip install wait-for-it
+      working-directory: ComfyUI
+
+    - name: Build litegraph
+      run: |
+        npm ci
+        npm run build
+      working-directory: litegraph
+
+    - name: Install updated litegraph in ComfyUI_frontend
+      run: |
+        npm ci
+        npm install ../litegraph
+        npm run build
+        rm -rf ../ComfyUI/web/*
+        mv dist/* ../ComfyUI/web/
+      working-directory: ComfyUI_frontend
+
+    - name: Start ComfyUI server
+      run: |
+        python main.py --cpu &
+        wait-for-it --service 127.0.0.1:8188 -t 600
+      working-directory: ComfyUI
+
+    - name: Run UI tests
+      run: |
+        npm run test:generate
+        npm run test:generate:examples
+        npm test -- --verbose
+      working-directory: ComfyUI_frontend
+
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium --with-deps
+      working-directory: ComfyUI_frontend
+
+    - name: Run Playwright tests
+      run: npx playwright test
+      working-directory: ComfyUI_frontend
+
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: ComfyUI_frontend/playwright-report/
+        retention-days: 30
