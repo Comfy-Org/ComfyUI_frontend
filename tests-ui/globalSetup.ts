@@ -12,4 +12,10 @@ module.exports = async function () {
   HTMLCanvasElement.prototype.getContext = nop
 
   localStorage['Comfy.Settings.Comfy.Logging.Enabled'] = 'false'
+
+  jest.mock('@/services/dialogService', () => {
+    return {
+      showLoadWorkflowWarning: jest.fn()
+    }
+  })
 }

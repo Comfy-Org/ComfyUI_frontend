@@ -43,9 +43,7 @@ import {
 } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
-import { useDialogStore } from '@/stores/dialogStore'
-import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
-import { markRaw } from 'vue'
+import { showLoadWorkflowWarning } from '@/services/dialogService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2126,13 +2124,7 @@ export class ComfyApp {
   }
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
-    useDialogStore().showDialog({
-      component: markRaw(LoadWorkflowWarning),
-      props: {
-        missingNodeTypes,
-        hasAddedNodes
-      }
-    })
+    showLoadWorkflowWarning(missingNodeTypes, hasAddedNodes)
     this.logging.addEntry('Comfy.App', 'warn', {
       MissingNodes: missingNodeTypes
     })
