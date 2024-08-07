@@ -14,6 +14,13 @@ declare module '@comfyorg/litegraph' {
      * If the node is a frontend only node and should not be serialized into the prompt.
      */
     isVirtualNode?: boolean
+
+    addDOMWidget(
+      name: string,
+      type: string,
+      element: HTMLElement,
+      options: Record<string, any>
+    ): DOMWidget
   }
 
   interface IWidget<TValue = any, TOptions = any> {
