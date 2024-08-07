@@ -2,7 +2,7 @@
 // Currently we need to bridge between legacy app code and Vue app with a Pinia store.
 
 import { defineStore } from 'pinia'
-import { Component } from 'vue'
+import { type Component, markRaw } from 'vue'
 
 interface DialogState {
   isVisible: boolean
@@ -26,7 +26,7 @@ export const useDialogStore = defineStore('dialog', {
       props?: Record<string, any>
     }) {
       this.title = options.title
-      this.component = options.component
+      this.component = markRaw(options.component)
       this.props = options.props || {}
       this.isVisible = true
     },

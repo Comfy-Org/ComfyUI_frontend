@@ -185,6 +185,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     }
 
     this.settingsParamLookup[id] = params
+    if (this.app.vueAppReady) {
+      useSettingStore().settings[id] = params
+    }
     this.settingsLookup[id] = {
       id,
       onChange,
