@@ -74,4 +74,8 @@ declare module '@comfyorg/litegraph' {
       slotPos: Vector2
     ): number
   }
+
+  interface ContextMenu {
+    root?: HTMLDivElement
+  }
 }
