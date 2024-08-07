@@ -33,12 +33,12 @@ import { type Component, computed, markRaw } from 'vue'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import Slider from 'primevue/slider'
 import Chip from 'primevue/chip'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
+import InputSlider from '@/components/dialog/content/setting/InputSlider.vue'
 
 const settingStore = useSettingStore()
 const sortedSettings = computed<SettingParams[]>(() => {
@@ -83,7 +83,7 @@ function getSettingComponent(setting: SettingParams): Component {
     case 'number':
       return InputNumber
     case 'slider':
-      return Slider
+      return InputSlider
     case 'combo':
       return Select
     default:
