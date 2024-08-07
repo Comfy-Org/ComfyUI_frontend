@@ -22,6 +22,16 @@ import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import {
+  LiteGraph,
+  LGraph,
+  LLink,
+  LGraphNode,
+  LGraphGroup,
+  DragAndScale,
+  LGraphCanvas,
+  ContextMenu
+} from '@comfyorg/litegraph'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -41,6 +51,17 @@ watch(nodeSearchEnabled, (newVal) => {
 let dropTargetCleanup = () => {}
 
 onMounted(async () => {
+  // Backward compatible
+  // Assign all properties of lg to window
+  window['LiteGraph'] = LiteGraph
+  window['LGraph'] = LGraph
+  window['LLink'] = LLink
+  window['LGraphNode'] = LGraphNode
+  window['LGraphGroup'] = LGraphGroup
+  window['DragAndScale'] = DragAndScale
+  window['LGraphCanvas'] = LGraphCanvas
+  window['ContextMenu'] = ContextMenu
+
   comfyApp.vueAppReady = true
 
   workspaceStore.spinner = true
