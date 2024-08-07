@@ -16,11 +16,11 @@
         </td>
         <td>
           <component
-            :is="getSettingComponent(setting)"
+            :is="markRaw(getSettingComponent(setting))"
             :id="setting.id"
-            :value="settingStore.get(setting.id)"
-            @update:value="settingStore.set(setting.id, $event)"
-            v-bind="setting.attrs"
+            :modelValue="settingStore.get(setting.id)"
+            @update:modelValue="updateSetting(setting, $event)"
+            v-bind="getSettingAttrs(setting)"
           />
         </td>
       </tr>
@@ -29,15 +29,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { type Component, computed, markRaw } from 'vue'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import Checkbox from 'primevue/checkbox'
 import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import Chip from 'primevue/chip'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
+import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
 
 const settingStore = useSettingStore()
 const sortedSettings = computed<SettingParams[]>(() => {
@@ -46,10 +47,30 @@ const sortedSettings = computed<SettingParams[]>(() => {
     .sort((a, b) => a.name.localeCompare(b.name))
 })
 
-function getSettingComponent(setting: SettingParams) {
+function getSettingAttrs(setting: SettingParams) {
+  const attrs = setting.attrs || {}
+  const settingType = setting.type
+  if (typeof settingType === 'function') {
+    attrs['renderFunction'] = () =>
+      settingType(
+        setting.name,
+        (v) => updateSetting(setting, v),
+        settingStore.get(setting.id),
+        setting.attrs
+      )
+  }
+  return attrs
+}
+
+function getSettingComponent(setting: SettingParams): Component {
+  if (typeof setting.type === 'function') {
+    // return setting.type(
+    //   setting.name, (v) => updateSetting(setting, v), settingStore.get(setting.id), setting.attrs)
+    return CustomSettingValue
+  }
   switch (setting.type) {
     case 'boolean':
-      return Checkbox
+      return ToggleSwitch
     case 'number':
       return InputNumber
     case 'slider':
@@ -59,6 +80,12 @@ function getSettingComponent(setting: SettingParams) {
     default:
       return InputText
   }
+}
+
+const updateSetting = (setting: SettingParams, value: any) => {
+  if (setting.onChange) setting.onChange(value, settingStore.get(setting.id))
+
+  settingStore.set(setting.id, value)
 }
 </script>
 
