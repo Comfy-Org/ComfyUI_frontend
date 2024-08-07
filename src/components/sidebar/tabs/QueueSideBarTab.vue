@@ -34,7 +34,6 @@
       }"
     >
       <template #header>
-        <Toast />
         <ConfirmPopup />
         <Button
           icon="pi pi-trash"
@@ -72,7 +71,6 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
-import Toast from 'primevue/toast'
 import Message from 'primevue/message'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
