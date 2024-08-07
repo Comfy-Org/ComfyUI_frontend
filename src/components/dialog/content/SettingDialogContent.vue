@@ -48,7 +48,7 @@ const sortedSettings = computed<SettingParams[]>(() => {
 })
 
 function getSettingAttrs(setting: SettingParams) {
-  const attrs = setting.attrs || {}
+  const attrs = { ...(setting.attrs || {}) }
   const settingType = setting.type
   if (typeof settingType === 'function') {
     attrs['renderFunction'] = () =>
@@ -68,6 +68,8 @@ function getSettingAttrs(setting: SettingParams) {
       }
       break
   }
+
+  attrs['class'] += ' comfy-vue-setting-input'
   return attrs
 }
 
@@ -101,6 +103,9 @@ const updateSetting = (setting: SettingParams, value: any) => {
 <style>
 .info-chip {
   background: transparent !important;
+}
+.comfy-vue-setting-input {
+  width: 100%;
 }
 </style>
 
