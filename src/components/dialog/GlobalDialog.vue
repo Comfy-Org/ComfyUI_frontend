@@ -11,8 +11,8 @@
     @maximize="maximized = true"
     @unmaximize="maximized = false"
   >
-    <template #header v-if="dialogStore.title">
-      <h3>{{ dialogStore.title }}</h3>
+    <template #header>
+      <h3>{{ dialogStore.title || ' ' }}</h3>
     </template>
 
     <component
