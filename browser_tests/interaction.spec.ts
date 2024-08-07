@@ -80,6 +80,23 @@ test.describe('Node Interaction', () => {
       'batch_move_links_moved.png'
     )
   })
+
+  test('Can batch disconnect links with ctrl+alt+click', async ({
+    comfyPage
+  }) => {
+    const loadCheckpointClipSlotPos = {
+      x: 332,
+      y: 508
+    }
+    await comfyPage.canvas.click({
+      modifiers: ['Control', 'Alt'],
+      position: loadCheckpointClipSlotPos
+    })
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'batch-disconnect-links-disconnected.png'
+    )
+  })
 })
 
 test.describe('Canvas Interaction', () => {
