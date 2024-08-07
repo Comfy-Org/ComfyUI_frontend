@@ -9,15 +9,18 @@
 
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
+import { SettingParams } from '@/types/settingTypes'
 import { defineStore } from 'pinia'
 
 interface State {
   settingValues: Record<string, any>
+  settings: Record<string, SettingParams>
 }
 
 export const useSettingStore = defineStore('setting', {
   state: (): State => ({
-    settingValues: {}
+    settingValues: {},
+    settings: {}
   }),
   actions: {
     addSettings(settings: ComfySettingsDialog) {
@@ -25,6 +28,7 @@ export const useSettingStore = defineStore('setting', {
         const value = settings.getSettingValue(id)
         this.settingValues[id] = value
       }
+      this.settings = settings.settingsParamLookup
     },
 
     set(key: string, value: any) {
