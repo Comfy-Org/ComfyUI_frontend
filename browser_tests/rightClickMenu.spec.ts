@@ -85,4 +85,36 @@ test.describe('Node Right Click Menu', () => {
       'right-click-node-widget-converted.png'
     )
   })
+
+  test('Can pin and unpin', async ({ comfyPage }) => {
+    await comfyPage.rightClickEmptyLatentNode()
+    await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
+    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.nextFrame()
+    await comfyPage.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
+    await comfyPage.rightClickEmptyLatentNode()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'right-click-pinned-node.png'
+    )
+    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.nextFrame()
+    await comfyPage.rightClickEmptyLatentNode()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'right-click-unpinned-node.png'
+    )
+  })
+
+  test('Can move after unpin', async ({ comfyPage }) => {
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.nextFrame()
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.nextFrame()
+    await comfyPage.page.waitForTimeout(256)
+    await comfyPage.dragAndDrop({ x: 496, y: 618 }, { x: 200, y: 590 })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'right-click-unpinned-node-moved.png'
+    )
+  })
 })
