@@ -7,10 +7,9 @@ const ext = {
   name: 'Comfy.ContextMenuFilter',
   init() {
     const ctxMenu = LiteGraph.ContextMenu
-    // @ts-expect-error
     // TODO Very hacky way to modify Litegraph behaviour. Fix this later.
-    LiteGraph.ContextMenu = function (values, options) {
-      const ctx = ctxMenu.call(this, values, options)
+    LiteGraph.ContextMenu.constructor = function (values, options) {
+      const ctx = new ctxMenu(values, options)
 
       // If we are a dark menu (only used for combo boxes) then add a filter input
       if (options?.className === 'dark' && values?.length > 10) {
