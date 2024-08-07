@@ -33,7 +33,7 @@ import {
 import { StorageLocation } from '@/types/settingTypes'
 
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
-import '@comfyorg/litegraph/css/litegraph.css'
+import '@comfyorg/litegraph/style.css'
 import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
 import {

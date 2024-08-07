@@ -13,7 +13,7 @@ declare module '@comfyorg/litegraph' {
     slot_types_default_in: Record<string, string[]>
   }
 
-  import type { LiteGraph as LG } from '@comfyorg/litegraph/src/litegraph'
+  import type { LiteGraph as LG } from '@comfyorg/litegraph/dist/litegraph'
   export const LiteGraph: LiteGraphExtended & typeof LG
-  export * from '@comfyorg/litegraph/src/litegraph'
+  export * from '@comfyorg/litegraph/dist/litegraph'
 }
