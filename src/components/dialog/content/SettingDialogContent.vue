@@ -19,7 +19,7 @@
             :value="category.label"
           >
             <SettingGroup
-              v-for="group in category.children"
+              v-for="group in sortedGroups(category)"
               :key="group.label"
               :group="{
                 label: group.label,
@@ -62,6 +62,12 @@ watch(activeCategory, (newCategory, oldCategory) => {
 onMounted(() => {
   activeCategory.value = categories.value[0]
 })
+
+const sortedGroups = (category: SettingTreeNode) => {
+  return [...(category.children || [])].sort((a, b) =>
+    a.label.localeCompare(b.label)
+  )
+}
 </script>
 
 <style>
@@ -83,7 +89,8 @@ onMounted(() => {
 
 .settings-sidebar {
   width: 250px;
-  flex-shrink: 0; /* Prevents sidebar from shrinking */
+  flex-shrink: 0;
+  /* Prevents sidebar from shrinking */
   overflow-y: auto;
   padding: 10px;
 }
