@@ -20,7 +20,7 @@
 import InputText from 'primevue/inputtext'
 import Slider from 'primevue/slider'
 
-const props = defineProps<{
+defineProps<{
   modelValue: number
   inputClass?: string
   sliderClass?: string
@@ -44,7 +44,6 @@ const updateValue = (newValue: string | number) => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  /* Adjust this value to control space between slider and input */
 }
 
 .slider-part {
@@ -52,7 +51,6 @@ const updateValue = (newValue: string | number) => {
 }
 
 .input-part {
-  width: 5rem;
-  /* Adjust this value to control input width */
+  width: 5rem !important;
 }
 </style>

@@ -51,6 +51,5 @@ const activeCategory = ref<SettingTreeNode | null>(null)
 
 onMounted(() => {
   activeCategory.value = categories.value[0]
-  console.log('activeCategory', activeCategory.value)
 })
 </script>

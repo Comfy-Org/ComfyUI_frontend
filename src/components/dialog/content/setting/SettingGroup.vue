@@ -1,6 +1,6 @@
-<!-- A single setting item -->
 <template>
   <div class="setting-group">
+    <Divider />
     <h3>{{ group.label }}</h3>
     <div
       v-for="setting in group.settings"
@@ -39,6 +39,7 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Chip from 'primevue/chip'
+import Divider from 'primevue/divider'
 import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
 import InputSlider from '@/components/dialog/content/setting/InputSlider.vue'
 
@@ -98,3 +99,46 @@ function getSettingComponent(setting: SettingParams): Component {
   }
 }
 </script>
+
+<style scoped>
+.info-chip {
+  background: transparent;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.setting-label {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.setting-input {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Ensure PrimeVue components take full width of their container */
+.setting-input :deep(.p-inputtext),
+.setting-input :deep(.input-slider),
+.setting-input :deep(.p-select),
+.setting-input :deep(.p-togglebutton) {
+  width: 100%;
+  max-width: 200px;
+}
+
+.setting-input :deep(.p-inputtext) {
+  max-width: unset;
+}
+
+/* Special case for ToggleSwitch to align it to the right */
+.setting-input :deep(.p-toggleswitch) {
+  margin-left: auto;
+}
+</style>
