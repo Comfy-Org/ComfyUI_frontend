@@ -10,7 +10,13 @@
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { SettingParams } from '@/types/settingTypes'
+import { buildTree } from '@/utils/treeUtil'
 import { defineStore } from 'pinia'
+import type { TreeNode } from 'primevue/treenode'
+
+export interface SettingTreeNode extends TreeNode {
+  data?: SettingParams
+}
 
 interface State {
   settingValues: Record<string, any>
@@ -22,6 +28,13 @@ export const useSettingStore = defineStore('setting', {
     settingValues: {},
     settings: {}
   }),
+  getters: {
+    settingTree(): SettingTreeNode {
+      return buildTree(Object.values(this.settings), (setting: SettingParams) =>
+        setting.id.split('.')
+      )
+    }
+  },
   actions: {
     addSettings(settings: ComfySettingsDialog) {
       for (const id in settings.settingsLookup) {

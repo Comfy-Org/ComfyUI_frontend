@@ -12,7 +12,11 @@
     @unmaximize="maximized = false"
   >
     <template #header>
-      <h3>{{ dialogStore.title || ' ' }}</h3>
+      <component
+        v-if="dialogStore.headerComponent"
+        :is="dialogStore.headerComponent"
+      />
+      <h3 v-else>{{ dialogStore.title || ' ' }}</h3>
     </template>
 
     <component

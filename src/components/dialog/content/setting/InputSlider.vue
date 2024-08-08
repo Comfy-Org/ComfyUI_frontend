@@ -5,37 +5,68 @@
       @update:modelValue="updateValue"
       class="slider-part"
       :class="sliderClass"
-      v-bind="$attrs"
+      :min="min"
+      :max="max"
+      :step="step"
     />
-    <InputText
-      :value="modelValue"
-      @input="updateValue"
+    <InputNumber
+      :modelValue="modelValue"
+      @update:modelValue="updateValue"
       class="input-part"
       :class="inputClass"
+      :min="min"
+      :max="max"
+      :step="step"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
+import { ref, watch } from 'vue'
+import InputNumber from 'primevue/inputnumber'
 import Slider from 'primevue/slider'
 
 const props = defineProps<{
   modelValue: number
   inputClass?: string
   sliderClass?: string
+  min?: number
+  max?: number
+  step?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: number): void
 }>()
 
-const updateValue = (newValue: string | number) => {
-  const numValue =
-    typeof newValue === 'string' ? parseFloat(newValue) : newValue
-  if (!isNaN(numValue)) {
-    emit('update:modelValue', numValue)
+const localValue = ref(props.modelValue)
+
+watch(
+  () => props.modelValue,
+  (newValue) => {
+    localValue.value = newValue
   }
+)
+
+const updateValue = (newValue: number | null) => {
+  if (newValue === null) {
+    // If the input is cleared, reset to the minimum value or 0
+    newValue = Number(props.min) || 0
+  }
+
+  const min = Number(props.min) || Number.NEGATIVE_INFINITY
+  const max = Number(props.max) || Number.POSITIVE_INFINITY
+  const step = Number(props.step) || 1
+
+  // Ensure the value is within the allowed range
+  newValue = Math.max(min, Math.min(max, newValue))
+
+  // Round to the nearest step
+  newValue = Math.round(newValue / step) * step
+
+  // Update local value and emit change
+  localValue.value = newValue
+  emit('update:modelValue', newValue)
 }
 </script>
 
@@ -44,7 +75,6 @@ const updateValue = (newValue: string | number) => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  /* Adjust this value to control space between slider and input */
 }
 
 .slider-part {
@@ -52,7 +82,6 @@ const updateValue = (newValue: string | number) => {
 }
 
 .input-part {
-  width: 5rem;
-  /* Adjust this value to control input width */
+  width: 5rem !important;
 }
 </style>
