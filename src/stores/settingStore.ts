@@ -30,9 +30,23 @@ export const useSettingStore = defineStore('setting', {
   }),
   getters: {
     settingTree(): SettingTreeNode {
-      return buildTree(Object.values(this.settings), (setting: SettingParams) =>
-        setting.id.split('.')
+      const root = buildTree(
+        Object.values(this.settings),
+        (setting: SettingParams) => setting.id.split('.')
       )
+
+      const floatingSettings = root.children.filter((node) => node.leaf)
+      if (floatingSettings.length) {
+        root.children = root.children.filter((node) => !node.leaf)
+        root.children.push({
+          key: 'Others',
+          label: 'Others',
+          leaf: false,
+          children: floatingSettings
+        })
+      }
+
+      return root
     }
   },
   actions: {
