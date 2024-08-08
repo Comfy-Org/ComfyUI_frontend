@@ -37,12 +37,11 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
-import Chip from 'primevue/chip'
 import Divider from 'primevue/divider'
 import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
 import InputSlider from '@/components/dialog/content/setting/InputSlider.vue'
 
-const props = defineProps<{
+defineProps<{
   group: {
     label: string
     settings: SettingParams[]
