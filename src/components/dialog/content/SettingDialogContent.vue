@@ -67,7 +67,7 @@ onMounted(() => {
 <style>
 /* Remove after we have tailwind setup */
 .border-none {
-  border: none;
+  border: none !important;
 }
 </style>
 
