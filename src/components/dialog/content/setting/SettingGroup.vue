@@ -134,6 +134,7 @@ function getSettingComponent(setting: SettingParams): Component {
 }
 
 .setting-input :deep(.p-inputtext) {
+  margin-left: 1rem;
   max-width: unset;
 }
 
