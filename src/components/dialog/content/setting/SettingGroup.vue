@@ -122,6 +122,7 @@ function getSettingComponent(setting: SettingParams): Component {
   flex: 1;
   display: flex;
   justify-content: flex-end;
+  margin-left: 1rem;
 }
 
 /* Ensure PrimeVue components take full width of their container */
@@ -134,7 +135,6 @@ function getSettingComponent(setting: SettingParams): Component {
 }
 
 .setting-input :deep(.p-inputtext) {
-  margin-left: 1rem;
   max-width: unset;
 }
 
