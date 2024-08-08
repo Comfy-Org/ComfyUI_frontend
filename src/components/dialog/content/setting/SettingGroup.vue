@@ -8,14 +8,13 @@
       class="setting-item"
     >
       <div class="setting-label">
-        <span>{{ setting.name }}</span>
-        <Chip
-          v-if="setting.tooltip"
-          icon="pi pi-info-circle"
-          severity="secondary"
-          v-tooltip="setting.tooltip"
-          class="info-chip"
-        />
+        <span
+          >{{ setting.name }}
+          <i
+            v-if="setting.tooltip"
+            class="pi pi-info-circle info-chip"
+            v-tooltip="setting.tooltip"
+        /></span>
       </div>
       <div class="setting-input">
         <component
