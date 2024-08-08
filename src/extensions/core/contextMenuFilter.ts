@@ -13,7 +13,6 @@ const ext = {
       const ctx = new ctxMenu(values, options)
 
       // If we are a dark menu (only used for combo boxes) then add a filter input
-      console.log(ctx)
       if (options?.className === 'dark' && values?.length > 4) {
         const filter = document.createElement('input')
         filter.classList.add('comfy-context-menu-filter')
