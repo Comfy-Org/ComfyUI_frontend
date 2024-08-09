@@ -2,7 +2,7 @@
   <div>
     <h2>
       <i class="pi pi-cog"></i>
-      <span>Settings</span>
+      <span>{{ $t('settings') }}</span>
       <Tag :value="frontendVersion" severity="secondary" class="version-tag" />
     </h2>
   </div>

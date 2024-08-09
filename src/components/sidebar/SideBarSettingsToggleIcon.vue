@@ -2,7 +2,7 @@
   <SideBarIcon
     icon="pi pi-cog"
     @click="showSetting"
-    :tooltip="$t('sideToolBar.settings')"
+    :tooltip="$t('settings')"
   />
 </template>
 
