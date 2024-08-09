@@ -8,19 +8,19 @@ const ext = {
   init() {
     const ctxMenu = LiteGraph.ContextMenu
     // @ts-expect-error
-    // TODO Very hacky way to modify Litegraph behaviour. Fix this later.
+    // TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
     LiteGraph.ContextMenu = function (values, options) {
-      const ctx = ctxMenu.call(this, values, options)
+      const ctx = new ctxMenu(values, options)
 
       // If we are a dark menu (only used for combo boxes) then add a filter input
-      if (options?.className === 'dark' && values?.length > 10) {
+      if (options?.className === 'dark' && values?.length > 4) {
         const filter = document.createElement('input')
         filter.classList.add('comfy-context-menu-filter')
         filter.placeholder = 'Filter list'
-        this.root.prepend(filter)
+        ctx.root.prepend(filter)
 
         const items = Array.from(
-          this.root.querySelectorAll('.litemenu-entry')
+          ctx.root.querySelectorAll('.litemenu-entry')
         ) as HTMLElement[]
         let displayedItems = [...items]
         let itemCount = displayedItems.length
@@ -61,16 +61,16 @@ const ext = {
           }
 
           const positionList = () => {
-            const rect = this.root.getBoundingClientRect()
+            const rect = ctx.root.getBoundingClientRect()
 
             // If the top is off-screen then shift the element with scaling applied
             if (rect.top < 0) {
               const scale =
                 1 -
-                this.root.getBoundingClientRect().height /
-                  this.root.clientHeight
-              const shift = (this.root.clientHeight * scale) / 2
-              this.root.style.top = -shift + 'px'
+                ctx.root.getBoundingClientRect().height /
+                  ctx.root.clientHeight
+              const shift = (ctx.root.clientHeight * scale) / 2
+              ctx.root.style.top = -shift + 'px'
             }
           }
 
@@ -109,7 +109,7 @@ const ext = {
                 selectedItem?.click()
                 break
               case 'Escape':
-                this.close()
+                ctx.close()
                 break
             }
           })
@@ -140,7 +140,7 @@ const ext = {
               let top = options.event.clientY - 10
 
               const bodyRect = document.body.getBoundingClientRect()
-              const rootRect = this.root.getBoundingClientRect()
+              const rootRect = ctx.root.getBoundingClientRect()
               if (
                 bodyRect.height &&
                 top > bodyRect.height - rootRect.height - 10
@@ -148,7 +148,7 @@ const ext = {
                 top = Math.max(0, bodyRect.height - rootRect.height - 10)
               }
 
-              this.root.style.top = top + 'px'
+              ctx.root.style.top = top + 'px'
               positionList()
             }
           })
