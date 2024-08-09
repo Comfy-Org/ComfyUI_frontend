@@ -2226,14 +2226,7 @@ const globalExport = {};
             //TODO
         }
     }
-    // Backward Compatibility for extending the functionality via prototype.
-    function LegacyLGraph(...args) {
-        return new LGraph(...args);
-    }
-    LegacyLGraph.prototype = LGraph.prototype;
-
-    globalThis.LGraph = LGraph;
-    globalThis.LegacyLGraph = LiteGraph.LGraph = LegacyLGraph;
+    globalThis.LGraph = LiteGraph.LGraph = LGraph;
 
     //this is the class in charge of storing link information
     function LLink(id, type, origin_id, origin_slot, target_id, target_slot) {
@@ -14455,8 +14448,7 @@ LGraphNode.prototype.executeAction = function(action)
 })(globalExport)
 
 export const LiteGraph = globalExport.LiteGraph;
-export const LGraphES6 = globalExport.LGraph;
-export const LGraph = globalExport.LegacyLGraph;
+export const LGraph = globalExport.LGraph;
 export const LLink = globalExport.LLink;
 export const LGraphNode = globalExport.LGraphNode;
 export const LGraphGroup = globalExport.LGraphGroup;
