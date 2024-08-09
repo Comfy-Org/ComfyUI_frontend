@@ -8,14 +8,8 @@ test.describe('Node search box', () => {
   })
 
   test('Can trigger on link release', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('Shift')
     await comfyPage.disconnectEdge()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
-  })
-
-  test('Does not trigger on link release (no shift)', async ({ comfyPage }) => {
-    await comfyPage.disconnectEdge()
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
   })
 
   test('Can add node', async ({ comfyPage }) => {
@@ -26,9 +20,7 @@ test.describe('Node search box', () => {
   })
 
   test('Can auto link node', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('Shift')
     await comfyPage.disconnectEdge()
-    await comfyPage.page.keyboard.up('Shift')
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode')
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
@@ -45,10 +37,7 @@ test.describe('Node search box', () => {
       y: 5
     }
 
-    await comfyPage.page.keyboard.down('Shift')
     await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
-    await comfyPage.page.keyboard.up('Shift')
-
     await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
