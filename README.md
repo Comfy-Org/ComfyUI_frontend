@@ -167,6 +167,10 @@ core extensions will be loaded.
 - `npm run test:generate:examples` to extract the example workflows
 - `npm run test` to execute all unit tests.
 
+### LiteGraph
+
+This repo is using litegraph package hosted on https://github.com/Comfy-Org/litegraph.js. Any changes to litegraph should be submitted in that repo instead.
+
 ## Deploy
 
 - Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
