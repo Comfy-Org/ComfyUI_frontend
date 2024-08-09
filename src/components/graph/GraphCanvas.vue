@@ -48,6 +48,7 @@ watch(
   nodeSearchEnabled,
   (newVal) => {
     LiteGraph.release_link_on_empty_shows_menu = !newVal
+    if (comfyApp.canvas) comfyApp.canvas.allow_searchbox = !newVal
   },
   { immediate: true }
 )
@@ -70,6 +71,7 @@ onMounted(async () => {
 
   workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
+  comfyApp.canvas.allow_searchbox = !nodeSearchEnabled.value
   workspaceStore.spinner = false
 
   window['app'] = comfyApp

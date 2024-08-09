@@ -36,8 +36,10 @@ test.describe('Node search box', () => {
       x: 5,
       y: 5
     }
-
+    await comfyPage.page.keyboard.down('Shift')
     await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
+    await comfyPage.page.keyboard.up('Shift')
+
     await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
