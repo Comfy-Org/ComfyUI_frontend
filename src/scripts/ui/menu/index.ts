@@ -11,7 +11,7 @@ import { getInteruptButton } from './interruptButton'
 import './menu.css'
 import type { ComfySettingsDialog } from '../settings'
 
-type MenuPosition = 'Disabled' | 'Top' | 'Bottom'
+type MenuPosition = 'Disabled' | 'Top' | 'Bottom' | 'Right'
 
 const collapseOnMobile = (t) => {
   ;(t.element ?? t).classList.add('comfyui-menu-mobile-collapse')
@@ -159,7 +159,7 @@ export class ComfyAppMenu {
       defaultValue: 'Disabled',
       name: '[Beta] Use new menu and workflow management. Note: On small screens the menu will always be at the top.',
       type: 'combo',
-      options: ['Disabled', 'Top', 'Bottom'],
+      options: ['Disabled', 'Top', 'Bottom', 'Right'],
       onChange: async (v: MenuPosition) => {
         if (v && v !== 'Disabled') {
           if (!resizeHandler) {
@@ -184,15 +184,34 @@ export class ComfyAppMenu {
     })
   }
 
+  #updateElementPositions(v: MenuPosition) {
+    const sideMenuClass = 'comfyui-menu-side'
+    let horizontal = 'right'
+    if (v !== 'Right') {
+      horizontal = 'left'
+      this.element.classList.remove(sideMenuClass)
+    }
+    else {
+      this.element.classList.add(sideMenuClass)
+    }
+    this.workflows.popup.horizontal = horizontal
+    this.saveButton.popup.horizontal = horizontal
+  }
+
   updatePosition(v: MenuPosition) {
     document.body.style.display = 'grid'
     this.app.ui.menuContainer.style.display = 'none'
     this.element.style.removeProperty('display')
     this.position = v
+    this.#updateElementPositions(v)
     if (v === 'Bottom') {
       this.app.bodyBottom.append(this.element)
-    } else {
+    } else if (v === 'Top') {
+      this.#updateElementPositions(v)
       this.app.bodyTop.prepend(this.element)
+    } else if (v === 'Right') {
+      this.#updateElementPositions(v)
+      this.app.bodyRight.append(this.element)
     }
     this.calculateSizeBreak()
   }
@@ -238,6 +257,22 @@ export class ComfyAppMenu {
   }
 
   calculateSizeBreak(direction = 0) {
+    // Support right side menu
+    const prefersSideMenu = this.menuPositionSetting.value === 'Right'
+    if (prefersSideMenu) {
+      const minWidth = 1024
+      const isViewportWideEnough = window.innerWidth > minWidth
+      const isSideMenu = this.position === 'Right'
+      if (isSideMenu) {
+        if (isViewportWideEnough) return
+        this.updatePosition('Top')
+      } else if (isViewportWideEnough) {
+        // Restore user position
+        this.updatePosition(this.menuPositionSetting.value)
+        return
+      }
+    }
+
     let idx = this.#sizeBreaks.indexOf(this.#sizeBreak)
     const currIdx = idx
     const innerSize = this.calculateInnerSize(idx)

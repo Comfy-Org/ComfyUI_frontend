@@ -130,10 +130,11 @@ export class ComfyPopup extends EventTarget {
     }
 
     const thisRect = this.element.getBoundingClientRect()
+    // TODO: Test if thisRect.height < this.element.scrollHeight works on all browsers
     if (thisRect.height < 30) {
       // Move up instead
       this.element.style.setProperty('--top', 'unset')
-      this.element.style.setProperty('--bottom', rect.height + 5 + 'px')
+      this.element.style.setProperty('--bottom', window.innerHeight - rect.top + 'px')
       this.element.style.setProperty('--limit', rect.height + 5 + 'px')
     }
   }

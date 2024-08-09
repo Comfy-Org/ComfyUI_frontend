@@ -143,6 +143,14 @@
   max-height: 90vh;
 }
 
+.comfyui-menu.comfyui-menu-side {
+  width: unset;
+  height: 100vh;
+  max-height: unset;
+  flex-direction: column;
+  padding: 1.5rem 0.75rem;
+}
+
 .comfyui-menu>* {
   flex-shrink: 0;
 }
