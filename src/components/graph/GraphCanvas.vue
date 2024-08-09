@@ -44,9 +44,14 @@ const betaMenuEnabled = computed(
 const nodeSearchEnabled = computed<boolean>(
   () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
-watch(nodeSearchEnabled, (newVal) => {
-  if (comfyApp.canvas) comfyApp.canvas.allow_searchbox = !newVal
-})
+watch(
+  nodeSearchEnabled,
+  (newVal) => {
+    LiteGraph.release_link_on_empty_shows_menu = !newVal
+    if (comfyApp.canvas) comfyApp.canvas.allow_searchbox = !newVal
+  },
+  { immediate: true }
+)
 
 let dropTargetCleanup = () => {}
 

@@ -29,6 +29,7 @@ import { LiteGraphCanvasEvent, ConnectingLink } from '@comfyorg/litegraph'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { ConnectingLinkImpl } from '@/types/litegraphTypes'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 interface LiteGraphPointerEvent extends Event {
   canvasX: number
@@ -83,13 +84,6 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
 }
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
-  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
-  // Ignore empty releases unless shift is pressed
-  // Empty release without shift is trigger right click menu
-  if (e.detail.subType === 'empty-release' && !shiftPressed) {
-    return
-  }
-
   if (e.detail.subType === 'empty-release') {
     const context = e.detail.linkReleaseContext
     if (context.links.length === 0) {
