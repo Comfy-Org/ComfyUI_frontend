@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass } from 'class-transformer'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
+import { buildTree } from '@/utils/treeUtil'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -262,34 +263,11 @@ export const useNodeDefStore = defineStore('nodeDef', {
     nodeSearchService(state) {
       return new NodeSearchService(Object.values(state.nodeDefsByName))
     },
-    nodeTree(state): TreeNode {
-      const root: TreeNode = {
-        key: 'root',
-        label: 'Nodes',
-        leaf: false,
-        children: []
-      }
-      for (const nodeDef of Object.values(state.nodeDefsByName)) {
-        const path = nodeDef.category.split('/')
-        let current = root
-        let key = 'root'
-        for (const part of path) {
-          key += `/${part}`
-          let next = current.children.find((child) => child.label === part)
-          if (!next) {
-            next = { key, label: part, children: [], leaf: false }
-            current.children.push(next)
-          }
-          current = next
-        }
-        current.children.push({
-          label: nodeDef.display_name,
-          data: nodeDef,
-          key: `${key}/${nodeDef.name}`,
-          leaf: true
-        })
-      }
-      return root
+    nodeTree(): TreeNode {
+      return buildTree(this.nodeDefs, (nodeDef: ComfyNodeDefImpl) => [
+        ...nodeDef.category.split('/'),
+        nodeDef.display_name
+      ])
     },
     sortedNodeTree(): TreeNode {
       return sortedTree(this.nodeTree)
