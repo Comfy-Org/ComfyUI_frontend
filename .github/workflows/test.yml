@@ -1,0 +1,30 @@
+name: Tests CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'dev*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - 'dev*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - uses: actions/setup-node@v3
+      with:
+        node-version: lts/*
+    - name: Build
+      run: |
+        npm ci
+        npm run build
+    - name: Run jest tests
+      run: |
+        npm test -- --verbose

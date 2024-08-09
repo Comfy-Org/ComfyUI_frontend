@@ -23,7 +23,7 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "deprecated-test": "jest",
+    "test": "jest",
     "deprecated-test:allVersions": "./utils/test.sh",
     "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
     "deprecated-lint": "npx eslint src",
@@ -43,7 +43,11 @@
   },
   "homepage": "https://github.com/Comfy-Org/litegraph.js",
   "devDependencies": {
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.2.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
     "vite": "^5.3.4"
   }
