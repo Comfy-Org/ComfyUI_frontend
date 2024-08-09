@@ -1983,7 +1983,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node = class DynamicComfyNode extends LGraphNode {
+    const node = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
@@ -2059,6 +2059,8 @@ export class ComfyApp {
         app.#invokeExtensionsAsync('nodeCreated', this)
       }
     }
+    // @ts-expect-error
+    node.prototype.comfyClass = nodeData.name
 
     this.#addNodeContextMenuHandler(node)
     this.#addDrawBackgroundHandler(node)
