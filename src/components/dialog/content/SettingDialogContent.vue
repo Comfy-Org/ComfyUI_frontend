@@ -80,7 +80,7 @@ const sortedGroups = (category: SettingTreeNode) => {
 <style scoped>
 .settings-container {
   display: flex;
-  height: 80vh;
+  height: 70vh;
   width: 60vw;
   max-width: 1000px;
   overflow: hidden;
