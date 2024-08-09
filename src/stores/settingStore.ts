@@ -39,8 +39,8 @@ export const useSettingStore = defineStore('setting', {
       if (floatingSettings.length) {
         root.children = root.children.filter((node) => !node.leaf)
         root.children.push({
-          key: 'Others',
-          label: 'Others',
+          key: 'Other',
+          label: 'Other',
           leaf: false,
           children: floatingSettings
         })
