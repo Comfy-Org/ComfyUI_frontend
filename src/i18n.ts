@@ -2,8 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    settings: 'Settings',
     sideToolBar: {
-      settings: 'Settings',
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
@@ -13,8 +13,8 @@ const messages = {
     }
   },
   zh: {
+    settings: '设置',
     sideToolBar: {
-      settings: '设置',
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
