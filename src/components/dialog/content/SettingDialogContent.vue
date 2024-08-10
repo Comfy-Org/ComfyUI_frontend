@@ -20,10 +20,10 @@
             value="Search Results"
           >
             <SettingGroup
-              :group="{
-                label: 'Search Results',
-                settings: searchResults
-              }"
+              v-for="(group, i) in searchResults"
+              :key="group.label"
+              :divider="i !== 0"
+              :group="group"
             />
           </TabPanel>
           <TabPanel
@@ -60,13 +60,18 @@ import SettingGroup from './setting/SettingGroup.vue'
 import SettingSearchBox from './setting/SettingSearchBox.vue'
 import { flattenTree } from '@/utils/treeUtil'
 
+interface ISettingGroup {
+  label: string
+  settings: SettingParams[]
+}
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(
   () => settingRoot.value.children || []
 )
 const activeCategory = ref<SettingTreeNode | null>(null)
-const searchResults = ref<SettingParams[]>([])
+const searchResults = ref<ISettingGroup[]>([])
 
 watch(activeCategory, (newCategory, oldCategory) => {
   if (newCategory === null) {
@@ -91,10 +96,26 @@ const handleSearch = (query: string) => {
   }
 
   const allSettings = flattenTree<SettingParams>(settingRoot.value)
-  searchResults.value = allSettings.filter(
+  const filteredSettings = allSettings.filter(
     (setting) =>
       setting.id.toLowerCase().includes(query.toLowerCase()) ||
       setting.name.toLowerCase().includes(query.toLowerCase())
+  )
+
+  const groupedSettings: { [key: string]: SettingParams[] } = {}
+  filteredSettings.forEach((setting) => {
+    const groupLabel = setting.id.split('.')[1]
+    if (!groupedSettings[groupLabel]) {
+      groupedSettings[groupLabel] = []
+    }
+    groupedSettings[groupLabel].push(setting)
+  })
+
+  searchResults.value = Object.entries(groupedSettings).map(
+    ([label, settings]) => ({
+      label,
+      settings
+    })
   )
 }
 
