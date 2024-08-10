@@ -34,8 +34,8 @@
               :python_module="option.python_module"
             />
           </div>
-          <div v-if="option.description" class="option-description">
-            {{ option.description }}
+          <div class="option-category">
+            {{ option.category.replaceAll('/', ' > ') }}
           </div>
         </div>
       </template>
@@ -144,17 +144,11 @@ const setHoverSuggestion = (index: number) => {
   @apply flex flex-col px-4 py-2 cursor-pointer overflow-hidden w-full;
 }
 
-.option-container:hover .option-description {
-  @apply overflow-visible;
-  /* Allows text to wrap */
-  white-space: normal;
-}
-
 .option-display-name {
   @apply font-semibold;
 }
 
-.option-description {
+.option-category {
   @apply text-sm text-gray-400 overflow-hidden text-ellipsis;
   /* Keeps the text on a single line by default */
   white-space: nowrap;
