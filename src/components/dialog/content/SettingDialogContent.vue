@@ -13,7 +13,7 @@
     <Divider layout="vertical" />
     <div class="settings-content">
       <Tabs :value="tabValue">
-        <TabPanels>
+        <TabPanels class="settings-tab-panels">
           <TabPanel
             v-if="searchResults.length > 0"
             key="search-results"
@@ -32,8 +32,9 @@
             :value="category.label"
           >
             <SettingGroup
-              v-for="group in sortedGroups(category)"
+              v-for="(group, i) in sortedGroups(category)"
               :key="group.label"
+              :divider="i !== 0"
               :group="{
                 label: group.label,
                 settings: flattenTree<SettingParams>(group)
@@ -108,6 +109,10 @@ const tabValue = computed(() =>
 /* Remove after we have tailwind setup */
 .border-none {
   border: none !important;
+}
+
+.settings-tab-panels {
+  padding-top: 0px !important;
 }
 </style>
 
