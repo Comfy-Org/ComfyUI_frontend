@@ -1,6 +1,7 @@
 <template>
   <div class="settings-container">
     <div class="settings-sidebar">
+      <SettingSearchBox class="settings-search-box" />
       <Listbox
         v-model="activeCategory"
         :options="categories"
@@ -43,6 +44,7 @@ import Divider from 'primevue/divider'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import SettingGroup from './setting/SettingGroup.vue'
+import SettingSearchBox from './setting/SettingSearchBox.vue'
 import { flattenTree } from '@/utils/treeUtil'
 
 const settingStore = useSettingStore()
@@ -93,6 +95,11 @@ const sortedGroups = (category: SettingTreeNode) => {
   /* Prevents sidebar from shrinking */
   overflow-y: auto;
   padding: 10px;
+}
+
+.settings-search-box {
+  width: 100%;
+  margin-bottom: 10px;
 }
 
 .settings-content {

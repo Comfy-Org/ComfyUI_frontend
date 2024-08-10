@@ -3,6 +3,7 @@ import { createI18n } from 'vue-i18n'
 const messages = {
   en: {
     settings: 'Settings',
+    searchSettings: 'Search Settings',
     sideToolBar: {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
@@ -14,6 +15,7 @@ const messages = {
   },
   zh: {
     settings: '设置',
+    searchSettings: '搜索设置',
     sideToolBar: {
       themeToggle: '主题切换',
       queue: '队列',
