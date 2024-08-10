@@ -3,6 +3,10 @@ import { createI18n } from 'vue-i18n'
 const messages = {
   en: {
     settings: 'Settings',
+    searchSettings: 'Search Settings',
+    noResultsFound: 'No Results Found',
+    searchFailedMessage:
+      "We couldn't find any settings matching your search. Try adjusting your search terms.",
     sideToolBar: {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
@@ -14,6 +18,10 @@ const messages = {
   },
   zh: {
     settings: '设置',
+    searchSettings: '搜索设置',
+    noResultsFound: '未找到结果',
+    searchFailedMessage:
+      '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
     sideToolBar: {
       themeToggle: '主题切换',
       queue: '队列',

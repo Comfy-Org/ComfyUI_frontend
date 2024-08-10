@@ -1,6 +1,6 @@
 <template>
   <div class="setting-group">
-    <Divider />
+    <Divider v-if="divider" />
     <h3>{{ group.label }}</h3>
     <div
       v-for="setting in group.settings"
@@ -46,6 +46,7 @@ defineProps<{
     label: string
     settings: SettingParams[]
   }
+  divider?: boolean
 }>()
 
 const settingStore = useSettingStore()
