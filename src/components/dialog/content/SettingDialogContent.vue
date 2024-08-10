@@ -30,8 +30,8 @@
             <NoResultsPlaceholder
               v-else
               icon="pi pi-search"
-              title="No Results Found"
-              message="We couldn't find any settings matching your search. Try adjusting your search terms."
+              :title="$t('noResultsFound')"
+              :message="$t('searchFailedMessage')"
             />
           </TabPanel>
           <TabPanel
