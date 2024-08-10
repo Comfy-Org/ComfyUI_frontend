@@ -1,8 +1,7 @@
 import { ZodType, z } from 'zod'
-import { zComfyWorkflow } from './comfyWorkflow'
+import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
 
-const zNodeId = z.union([z.number(), z.string()])
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
