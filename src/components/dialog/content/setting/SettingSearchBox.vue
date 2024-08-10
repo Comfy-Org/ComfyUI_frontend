@@ -3,29 +3,34 @@
     <InputIcon class="pi pi-search" />
     <InputText
       class="search-box-input"
-      v-model="searchQuery"
+      @input="handleInput"
+      :modelValue="props.modelValue"
       :placeholder="$t('searchSettings') + '...'"
-      @input="emitSearch"
     />
   </IconField>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { debounce } from 'lodash'
 
-const searchQuery = ref<string>('')
-
 const props = defineProps<{
   class?: string
+  modelValue: string
 }>()
-const emit = defineEmits(['search'])
-const emitSearch = debounce(() => {
-  emit('search', searchQuery.value)
+const emit = defineEmits(['update:modelValue', 'search'])
+const emitSearch = debounce((event: KeyboardEvent) => {
+  const target = event.target as HTMLInputElement
+  emit('search', target.value)
 }, 300)
+
+const handleInput = (event: KeyboardEvent) => {
+  const target = event.target as HTMLInputElement
+  emit('update:modelValue', target.value)
+  emitSearch(event)
+}
 </script>
 
 <style scoped>

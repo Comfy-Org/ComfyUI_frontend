@@ -1,7 +1,11 @@
 <template>
   <div class="settings-container">
     <div class="settings-sidebar">
-      <SettingSearchBox class="settings-search-box" @search="handleSearch" />
+      <SettingSearchBox
+        class="settings-search-box"
+        v-model:modelValue="searchQuery"
+        @search="handleSearch"
+      />
       <Listbox
         v-model="activeCategory"
         :options="categories"
@@ -14,16 +18,20 @@
     <div class="settings-content">
       <Tabs :value="tabValue">
         <TabPanels class="settings-tab-panels">
-          <TabPanel
-            v-if="searchResults.length > 0"
-            key="search-results"
-            value="Search Results"
-          >
-            <SettingGroup
-              v-for="(group, i) in searchResults"
-              :key="group.label"
-              :divider="i !== 0"
-              :group="group"
+          <TabPanel key="search-results" value="Search Results">
+            <div v-if="searchResults.length > 0">
+              <SettingGroup
+                v-for="(group, i) in searchResults"
+                :key="group.label"
+                :divider="i !== 0"
+                :group="group"
+              />
+            </div>
+            <NoResultsPlaceholder
+              v-else
+              icon="pi pi-search"
+              title="No Results Found"
+              message="We couldn't find any settings matching your search. Try adjusting your search terms."
             />
           </TabPanel>
           <TabPanel
@@ -58,6 +66,7 @@ import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import SettingGroup from './setting/SettingGroup.vue'
 import SettingSearchBox from './setting/SettingSearchBox.vue'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 
 interface ISettingGroup {
@@ -89,6 +98,7 @@ const sortedGroups = (category: SettingTreeNode) => {
   )
 }
 
+const searchQuery = ref<string>('')
 const handleSearch = (query: string) => {
   if (!query) {
     searchResults.value = []
@@ -120,9 +130,7 @@ const handleSearch = (query: string) => {
 }
 
 const tabValue = computed(() =>
-  searchResults.value.length > 0
-    ? 'Search Results'
-    : activeCategory.value?.label
+  searchQuery.value.length > 0 ? 'Search Results' : activeCategory.value?.label
 )
 </script>
 
