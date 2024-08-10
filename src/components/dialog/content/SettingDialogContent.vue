@@ -1,7 +1,7 @@
 <template>
   <div class="settings-container">
     <div class="settings-sidebar">
-      <SettingSearchBox class="settings-search-box" />
+      <SettingSearchBox class="settings-search-box" @search="handleSearch" />
       <Listbox
         v-model="activeCategory"
         :options="categories"
@@ -11,9 +11,21 @@
       />
     </div>
     <Divider layout="vertical" />
-    <div class="settings-content" v-if="activeCategory">
-      <Tabs :value="activeCategory.label">
+    <div class="settings-content">
+      <Tabs :value="tabValue">
         <TabPanels>
+          <TabPanel
+            v-if="searchResults.length > 0"
+            key="search-results"
+            value="Search Results"
+          >
+            <SettingGroup
+              :group="{
+                label: 'Search Results',
+                settings: searchResults
+              }"
+            />
+          </TabPanel>
           <TabPanel
             v-for="category in categories"
             :key="category.key"
@@ -52,8 +64,8 @@ const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(
   () => settingRoot.value.children || []
 )
-
 const activeCategory = ref<SettingTreeNode | null>(null)
+const searchResults = ref<SettingParams[]>([])
 
 watch(activeCategory, (newCategory, oldCategory) => {
   if (newCategory === null) {
@@ -70,6 +82,26 @@ const sortedGroups = (category: SettingTreeNode) => {
     a.label.localeCompare(b.label)
   )
 }
+
+const handleSearch = (query: string) => {
+  if (!query) {
+    searchResults.value = []
+    return
+  }
+
+  const allSettings = flattenTree<SettingParams>(settingRoot.value)
+  searchResults.value = allSettings.filter(
+    (setting) =>
+      setting.id.toLowerCase().includes(query.toLowerCase()) ||
+      setting.name.toLowerCase().includes(query.toLowerCase())
+  )
+}
+
+const tabValue = computed(() =>
+  searchResults.value.length > 0
+    ? 'Search Results'
+    : activeCategory.value?.label
+)
 </script>
 
 <style>
