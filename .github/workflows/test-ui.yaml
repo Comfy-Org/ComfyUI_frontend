@@ -36,9 +36,7 @@ jobs:
       with:
         repository: "comfyanonymous/ComfyUI_examples"
         path: "ComfyUI_frontend/tests-ui/ComfyUI_examples"
-        # Re-enable tracking latest master branch after fixing the issue
-        # https://github.com/Comfy-Org/ComfyUI_frontend/issues/277
-        ref: 58b2e103bb8e424b66044fd07f1d3a6d80834ed4
+        ref: master
     - name: Skip CI
       if: contains(steps.commit-message.outputs.message, '[skip ci]')
       run: echo "Skipping CI as commit contains '[skip ci]'"
