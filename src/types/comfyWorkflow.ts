@@ -82,7 +82,7 @@ const zGroup = z
   .object({
     title: z.string(),
     bounding: z.tuple([z.number(), z.number(), z.number(), z.number()]),
-    color: z.string(),
+    color: z.string().optional(),
     font_size: z.number().optional(),
     locked: z.boolean().optional()
   })
