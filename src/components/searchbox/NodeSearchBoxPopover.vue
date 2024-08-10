@@ -22,14 +22,17 @@
 
 <script setup lang="ts">
 import { app } from '@/scripts/app'
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
 import { LiteGraphCanvasEvent, ConnectingLink } from '@comfyorg/litegraph'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { ConnectingLinkImpl } from '@/types/litegraphTypes'
-import { LiteGraph } from '@comfyorg/litegraph'
+import { useSettingStore } from '@/stores/settingStore'
+import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
+
+const settingStore = useSettingStore()
 
 interface LiteGraphPointerEvent extends Event {
   canvasX: number
@@ -83,7 +86,24 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   }, 100)
 }
 
+const linkReleaseTriggerMode = computed<LinkReleaseTriggerMode>(() => {
+  return settingStore.get<LinkReleaseTriggerMode>(
+    'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger'
+  )
+})
+
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
+  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
+
+  if (
+    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
+      !shiftPressed) ||
+    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
+      shiftPressed)
+  ) {
+    return
+  }
+
   if (e.detail.subType === 'empty-release') {
     const context = e.detail.linkReleaseContext
     if (context.links.length === 0) {

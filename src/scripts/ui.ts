@@ -425,14 +425,6 @@ export class ComfyUI {
     })
 
     this.settings.addSetting({
-      id: 'Comfy.NodeSearchBoxImpl',
-      name: 'Node Search box implementation',
-      type: 'combo',
-      options: ['default', 'litegraph (legacy)'],
-      defaultValue: 'default'
-    })
-
-    this.settings.addSetting({
       id: 'Comfy.EnableTooltips',
       name: 'Enable Tooltips',
       type: 'boolean',
