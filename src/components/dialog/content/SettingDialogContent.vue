@@ -99,6 +99,9 @@ const sortedGroups = (category: SettingTreeNode) => {
 }
 
 const searchQuery = ref<string>('')
+const searchInProgress = ref<boolean>(false)
+watch(searchQuery, () => (searchInProgress.value = true))
+
 const handleSearch = (query: string) => {
   if (!query) {
     searchResults.value = []
@@ -127,10 +130,13 @@ const handleSearch = (query: string) => {
       settings
     })
   )
+  searchInProgress.value = false
 }
 
 const tabValue = computed(() =>
-  searchQuery.value.length > 0 ? 'Search Results' : activeCategory.value?.label
+  searchQuery.value.length > 0 && !searchInProgress.value
+    ? 'Search Results'
+    : activeCategory.value?.label
 )
 </script>
 
