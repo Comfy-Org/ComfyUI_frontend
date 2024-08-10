@@ -1,6 +1,20 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
+// GroupNode is hacking node id to be a string, so we need to allow that.
+// innerNode.id = `${this.node.id}:${i}`
+// Remove it after GroupNode is redesigned.
+export const zNodeId = z.union([z.number().int(), z.string()])
+export const zSlotIndex = z.union([
+  z.number().int(),
+  z
+    .string()
+    .transform((val) => parseInt(val))
+    .refine((val) => !isNaN(val), {
+      message: 'Invalid number'
+    })
+])
+
 // Definition of an AI model file used in the workflow.
 const zModelFile = z.object({
   name: z.string(),
@@ -12,10 +26,10 @@ const zModelFile = z.object({
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
-  z.number(), // Node id of source node
-  z.number(), // Output slot# of source node
-  z.number(), // Node id of destination node
-  z.number(), // Input slot# of destination node
+  zNodeId, // Node id of source node
+  zSlotIndex, // Output slot# of source node
+  zNodeId, // Node id of destination node
+  zSlotIndex, // Input slot# of destination node
   z.string() // Data type
 ])
 
@@ -24,7 +38,7 @@ const zNodeOutput = z
     name: z.string(),
     type: z.string(),
     links: z.array(z.number()).nullable(),
-    slot_index: z.number().optional()
+    slot_index: zSlotIndex.optional()
   })
   .passthrough()
 
@@ -33,7 +47,7 @@ const zNodeInput = z
     name: z.string(),
     type: z.string(),
     link: z.number().nullable(),
-    slot_index: z.number().optional()
+    slot_index: zSlotIndex.optional()
   })
   .passthrough()
 
@@ -62,7 +76,7 @@ const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
 
 const zComfyNode = z
   .object({
-    id: z.number(),
+    id: zNodeId,
     type: z.string(),
     pos: zVector2,
     size: zVector2,
@@ -123,7 +137,7 @@ const zExtra = z
 
 export const zComfyWorkflow = z
   .object({
-    last_node_id: z.number(),
+    last_node_id: zNodeId,
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),

@@ -88,4 +88,20 @@ describe('parseComfyWorkflow', () => {
     const validatedWorkflow = await validateComfyWorkflow(workflow)
     expect(validatedWorkflow.nodes[0].widgets_values).toEqual({ foo: 'bar' })
   })
+
+  it('workflow.links', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.links = [
+      [
+        1, // Link id
+        '100:1', // Node id of source node
+        '12', // Output slot# of source node
+        '100:2', // Node id of destination node
+        15, // Input slot# of destination node
+        'INT' // Data type
+      ]
+    ]
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+  })
 })
