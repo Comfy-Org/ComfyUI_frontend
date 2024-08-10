@@ -11,6 +11,7 @@
         :options="categories"
         optionLabel="label"
         scrollHeight="100%"
+        :disabled="inSearch"
         :pt="{ root: { class: 'border-none' } }"
       />
     </div>
@@ -133,10 +134,11 @@ const handleSearch = (query: string) => {
   searchInProgress.value = false
 }
 
+const inSearch = computed(
+  () => searchQuery.value.length > 0 && !searchInProgress.value
+)
 const tabValue = computed(() =>
-  searchQuery.value.length > 0 && !searchInProgress.value
-    ? 'Search Results'
-    : activeCategory.value?.label
+  inSearch.value ? 'Search Results' : activeCategory.value?.label
 )
 </script>
 
