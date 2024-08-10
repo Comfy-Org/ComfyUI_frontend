@@ -178,6 +178,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   font-style: italic;
   font-weight: 500;
   font-size: 0.9rem;
+  word-break: break-word;
 }
 
 ._sb_table {
