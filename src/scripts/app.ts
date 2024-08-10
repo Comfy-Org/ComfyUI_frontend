@@ -44,6 +44,7 @@ import {
 import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { showLoadWorkflowWarning } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2178,8 +2179,13 @@ export class ComfyApp {
       console.error(error)
     }
 
-    graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
-    if (!graphData) return
+    if (
+      this.vueAppReady &&
+      useSettingStore().get<boolean>('Comfy.Validation.Workflows')
+    ) {
+      graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
+      if (!graphData) return
+    }
 
     const missingNodeTypes = []
     await this.#invokeExtensionsAsync(

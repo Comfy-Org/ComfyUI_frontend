@@ -56,6 +56,13 @@ export const useSettingStore = defineStore('setting', {
         this.settingValues[id] = value
       }
       this.settings = settings.settingsParamLookup
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validate workflows',
+        type: 'boolean',
+        defaultValue: true
+      })
     },
 
     set(key: string, value: any) {
