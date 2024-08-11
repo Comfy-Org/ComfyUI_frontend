@@ -5,6 +5,7 @@ import { ComfySplitButton } from '../components/splitButton'
 import { ComfyQueueOptions } from './queueOptions'
 import { prop } from '../../utils'
 import type { ComfyApp } from '@/scripts/app'
+import { StatusWsMessageStatus } from '@/types/apiTypes'
 
 export class ComfyQueueButton {
   element = $el('div.comfyui-queue-button')
@@ -86,22 +87,25 @@ export class ComfyQueueButton {
       }
     })
 
-    api.addEventListener('status', ({ detail }) => {
-      this.#internalQueueSize = detail?.exec_info?.queue_remaining
-      if (this.#internalQueueSize != null) {
-        this.queueSizeElement.textContent =
-          this.#internalQueueSize > 99 ? '99+' : this.#internalQueueSize + ''
-        this.queueSizeElement.title = `${this.#internalQueueSize} prompts in queue`
-        if (!this.#internalQueueSize && !app.lastExecutionError) {
-          if (
-            this.autoQueueMode === 'instant' ||
-            (this.autoQueueMode === 'change' && this.graphHasChanged)
-          ) {
-            this.graphHasChanged = false
-            this.queuePrompt()
+    api.addEventListener(
+      'status',
+      ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
+        this.#internalQueueSize = detail.exec_info.queue_remaining
+        if (this.#internalQueueSize != null) {
+          this.queueSizeElement.textContent =
+            this.#internalQueueSize > 99 ? '99+' : this.#internalQueueSize + ''
+          this.queueSizeElement.title = `${this.#internalQueueSize} prompts in queue`
+          if (!this.#internalQueueSize && !app.lastExecutionError) {
+            if (
+              this.autoQueueMode === 'instant' ||
+              (this.autoQueueMode === 'change' && this.graphHasChanged)
+            ) {
+              this.graphHasChanged = false
+              this.queuePrompt()
+            }
           }
         }
       }
-    })
+    )
   }
 }
