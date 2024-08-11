@@ -17,8 +17,8 @@ class PrimitiveNode extends LGraphNode {
   controlValues: any[]
   lastType: string
   static category: string
-  constructor() {
-    super()
+  constructor(title?: string) {
+    super(title)
     this.addOutput('connect to widget input', '*')
     this.serialize_widgets = true
     this.isVirtualNode = true

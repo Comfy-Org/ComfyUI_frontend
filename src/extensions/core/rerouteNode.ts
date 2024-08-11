@@ -15,8 +15,8 @@ app.registerExtension({
       static category: string | undefined
       static defaultVisibility = false
 
-      constructor() {
-        super()
+      constructor(title?: string) {
+        super(title)
         if (!this.properties) {
           this.properties = {}
         }

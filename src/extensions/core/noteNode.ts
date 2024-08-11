@@ -17,8 +17,8 @@ app.registerExtension({
       collapsable: boolean
       title_mode: number
 
-      constructor() {
-        super()
+      constructor(title?: string) {
+        super(title)
         if (!this.properties) {
           this.properties = { text: '' }
         }
