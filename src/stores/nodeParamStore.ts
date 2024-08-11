@@ -152,8 +152,8 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
       const widget = node.widgets.find((widget) => widget.name === widgetTitle)
       if (widget) {
         widget.value = newValue
-        // @ts-expect-error
         if (widget.type === 'combo') {
+          // @ts-expect-error
           widget.callback()
         }
       }
