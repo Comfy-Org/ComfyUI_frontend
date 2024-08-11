@@ -27,9 +27,7 @@ app
       options: {
         prefix: 'p',
         cssLayer: false,
-        // This is a workaround for the issue with the dark mode selector
-        // https://github.com/primefaces/primevue/issues/5515
-        darkModeSelector: '.dark-theme, :root:has(.dark-theme)'
+        darkModeSelector: '.dark-theme'
       }
     }
   })
