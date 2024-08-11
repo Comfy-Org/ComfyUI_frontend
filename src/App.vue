@@ -17,7 +17,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
-
+import NodeParamSideBarTab from './components/sidebar/tabs/NodeParamSideBarTab.vue'
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
   useSettingStore().get('Comfy.ColorPalette')
@@ -54,6 +54,14 @@ const init = () => {
     title: t('sideToolBar.nodeLibrary'),
     tooltip: t('sideToolBar.nodeLibrary'),
     component: markRaw(NodeLibrarySideBarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'node-param',
+    icon: 'pi pi-sliders-h',
+    title: t('sideToolBar.nodeParam'),
+    tooltip: t('sideToolBar.nodeParam'),
+    component: markRaw(NodeParamSideBarTab),
     type: 'vue'
   })
 }

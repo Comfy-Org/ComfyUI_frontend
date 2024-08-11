@@ -13,6 +13,7 @@ const messages = {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
+      nodeParam: 'Node Param',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       }
@@ -30,6 +31,7 @@ const messages = {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
+      nodeParam: '节点参数',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       }
