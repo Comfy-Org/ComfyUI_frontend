@@ -60,9 +60,11 @@
     </Column>
   </DataTable>
   <div v-else>
-    <Message icon="pi pi-info" severity="error">
-      <span class="ml-2">No tasks</span>
-    </Message>
+    <NoResultsPlaceholder
+      icon="pi pi-info-circle"
+      :title="$t('noTasksFound')"
+      :message="$t('noTasksFoundMessage')"
+    />
   </div>
 </template>
 
@@ -73,7 +75,7 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
-import Message from 'primevue/message'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import {
