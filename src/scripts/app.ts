@@ -19,7 +19,7 @@ import {
   type ComfyWorkflowJSON,
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { lightenColor } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
@@ -1586,9 +1586,12 @@ export class ComfyApp {
    * Handles updates from the API socket
    */
   #addApiUpdateHandlers() {
-    api.addEventListener('status', ({ detail }) => {
-      this.ui.setStatus(detail)
-    })
+    api.addEventListener(
+      'status',
+      ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
+        this.ui.setStatus(detail)
+      }
+    )
 
     api.addEventListener('reconnecting', () => {
       this.ui.dialog.show('Reconnecting...')
