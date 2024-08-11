@@ -21,22 +21,17 @@ export class ComfyQueueButton {
   }
   queueOptions: ComfyQueueOptions
   app: ComfyApp
-  queueSizeElement: HTMLElement
   autoQueueMode: string
   graphHasChanged: boolean
 
   constructor(app: ComfyApp) {
     this.app = app
-    this.queueSizeElement = $el('span.comfyui-queue-count', {
-      textContent: '?'
-    })
 
     const queue = new ComfyButton({
       content: $el('div', [
         $el('span', {
           textContent: 'Queue'
-        }),
-        this.queueSizeElement
+        })
       ]),
       icon: 'play',
       classList: 'comfyui-button',
@@ -92,9 +87,6 @@ export class ComfyQueueButton {
       ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
         this.#internalQueueSize = detail.exec_info.queue_remaining
         if (this.#internalQueueSize != null) {
-          this.queueSizeElement.textContent =
-            this.#internalQueueSize > 99 ? '99+' : this.#internalQueueSize + ''
-          this.queueSizeElement.title = `${this.#internalQueueSize} prompts in queue`
           if (!this.#internalQueueSize && !app.lastExecutionError) {
             if (
               this.autoQueueMode === 'instant' ||
