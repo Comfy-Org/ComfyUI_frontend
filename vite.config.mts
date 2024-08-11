@@ -105,7 +105,7 @@ export default defineConfig({
     comfyAPIPlugin(),
   ],
   build: {
-    minify: false,
+    minify: true,
     sourcemap: true,
     rollupOptions: {
       // Disabling tree-shaking
