@@ -15,6 +15,11 @@ export const zSlotIndex = z.union([
     })
 ])
 
+// TODO: Investigate usage of array and number as data type usage in custom nodes.
+// Known usage:
+// - https://github.com/rgthree/rgthree-comfy Context Big node is using array as type.
+export const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
+
 // Definition of an AI model file used in the workflow.
 const zModelFile = z.object({
   name: z.string(),
@@ -30,13 +35,13 @@ const zComfyLink = z.tuple([
   zSlotIndex, // Output slot# of source node
   zNodeId, // Node id of destination node
   zSlotIndex, // Input slot# of destination node
-  z.string() // Data type
+  zDataType // Data type
 ])
 
 const zNodeOutput = z
   .object({
     name: z.string(),
-    type: z.string(),
+    type: zDataType,
     links: z.array(z.number()).nullable(),
     slot_index: zSlotIndex.optional()
   })
@@ -45,7 +50,7 @@ const zNodeOutput = z
 const zNodeInput = z
   .object({
     name: z.string(),
-    type: z.string(),
+    type: zDataType,
     link: z.number().nullable(),
     slot_index: zSlotIndex.optional()
   })
