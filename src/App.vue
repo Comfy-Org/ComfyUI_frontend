@@ -46,6 +46,10 @@ const init = () => {
   app.extensionManager.registerSidebarTab({
     id: 'queue',
     icon: 'pi pi-history',
+    iconBadge: () => {
+      const value = useQueuePendingTaskCountStore().count.toString()
+      return value === '0' ? null : value
+    },
     title: t('sideToolBar.queue'),
     tooltip: t('sideToolBar.queue'),
     component: markRaw(QueueSideBarTab),
