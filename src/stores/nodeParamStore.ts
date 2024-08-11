@@ -164,12 +164,12 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
     app.graph.setDirtyCanvas(true)
   }
   const clickWidgetButton = (nodeId: number, widgetTitle: string) => {
-    // @ts-expect-error
+    // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
     const node = app.graph._nodes.find((node) => node.id === nodeId)
     if (node) {
       const widget = node.widgets.find((widget) => widget.name === widgetTitle)
       if (widget) {
-        // @ts-expect-error
+        // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
         widget.callback()
       }
     }
@@ -181,7 +181,7 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
     fav: boolean
   ) => {
     isEditing = true
-    // @ts-expect-error
+    // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
     const graphNode = app.graph._nodes.find((node) => node.id === nodeId)
 
     //update graphNode favWidgets
@@ -190,7 +190,8 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
         (widget) => widget.name === widgetTitle
       ).fav = fav
     } else {
-      // @ts-expect-error
+      // @ts-expect-error LGraphNode.addProperty is not defined in types
+      // add this to save to workflow.json
       graphNode.addProperty('favWidgets', [])
       graphNode.properties.favWidgets = graphNode.widgets.map((widget) => ({
         name: widget.name,
