@@ -5,6 +5,7 @@
         v-for="tab in tabs"
         :key="tab.id"
         :icon="tab.icon"
+        :iconBadge="tab.iconBadge"
         :tooltip="tab.tooltip"
         :selected="tab === selectedTab"
         :class="tab.id + '-tab-button'"

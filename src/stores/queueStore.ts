@@ -6,7 +6,8 @@ import {
   TaskType,
   TaskPrompt,
   TaskStatus,
-  TaskOutput
+  TaskOutput,
+  StatusWsMessageStatus
 } from '@/types/apiTypes'
 import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
@@ -204,3 +205,17 @@ export const useQueueStore = defineStore('queue', {
     }
   }
 })
+
+export const useQueuePendingTaskCountStore = defineStore(
+  'queuePendingTaskCount',
+  {
+    state: () => ({
+      count: 0
+    }),
+    actions: {
+      update(e: CustomEvent<StatusWsMessageStatus>) {
+        this.count = e.detail.exec_info.queue_remaining
+      }
+    }
+  }
+)

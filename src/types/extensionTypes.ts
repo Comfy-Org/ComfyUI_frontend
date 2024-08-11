@@ -4,6 +4,7 @@ export interface BaseSidebarTabExtension {
   id: string
   title: string
   icon?: string
+  iconBadge?: string | (() => string | null)
   order?: number
   tooltip?: string
 }
