@@ -47,8 +47,8 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
   const filterNodes = ref(nodes)
   const categories = computed<category[]>(() => {
     let favCount = 0
-    for (let node of nodes.value) {
-      for (let widget of node.widgets)
+    for (const node of nodes.value) {
+      for (const widget of node.widgets)
         if (widget.fav) {
           favCount++
         }
@@ -72,13 +72,13 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
   }
   // Actions
   const updateNodes = () => {
-    // @ts-expect-error
+    // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
     const graphNodes = ref([...app.graph._nodes])
 
     //todo: remove this when app.graph._nodes supports ref()
     setInterval(() => {
       if (!isEditing) {
-        // @ts-expect-error
+        // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
         graphNodes.value = [...app.graph._nodes]
       }
     }, 1000)
@@ -93,7 +93,7 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
           order: null,
           color: graphNode.color,
           bgcolor: graphNode.bgcolor,
-          // @ts-expect-error
+          // @ts-expect-error graphNode.mode = 4 is not defined in types
           bypass: graphNode.mode === 4 || graphNode.mode === 2,
           mode: graphNode.mode,
           category: 'null',
@@ -109,7 +109,8 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
             ? graphNode.widgets.map((widget) => ({
                 title: widget.name,
                 type: widget.type,
-                // @ts-expect-error
+                // @ts-expect-error widget.label is not defined in types
+                // get button widget label text
                 label: widget.label ? widget.label : null,
                 value: widget.value,
                 fav: graphNode.properties.favWidgets
@@ -127,12 +128,13 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
   }
 
   const updateNodeMode = (nodeId: number, isOn: boolean) => {
-    // @ts-expect-error
+    // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
     const graphNode = app.graph._nodes.find((node) => node.id === nodeId)
 
     if (graphNode) {
       if (isOn) {
-        // @ts-expect-error
+        // @ts-expect-error graphNode.mode = 4 is not defined in types
+        // bypass graphNode
         graphNode.mode = 4
       } else {
         graphNode.mode = 0
@@ -146,14 +148,15 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
     widgetTitle: string,
     newValue: any
   ) => {
-    // @ts-expect-error
+    // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
     const node = app.graph._nodes.find((node) => node.id === nodeId)
     if (node) {
       const widget = node.widgets.find((widget) => widget.name === widgetTitle)
       if (widget) {
         widget.value = newValue
         if (widget.type === 'combo') {
-          // @ts-expect-error
+          // @ts-expect-error widget.callback() is not defined in types
+          // trigger on combo option selected to update LGraphCanvas
           widget.callback()
         }
       }
