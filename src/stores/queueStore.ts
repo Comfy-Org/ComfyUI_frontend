@@ -156,13 +156,15 @@ interface State {
   runningTasks: TaskItemImpl[]
   pendingTasks: TaskItemImpl[]
   historyTasks: TaskItemImpl[]
+  maxHistoryItems: number
 }
 
 export const useQueueStore = defineStore('queue', {
   state: (): State => ({
     runningTasks: [],
     pendingTasks: [],
-    historyTasks: []
+    historyTasks: [],
+    maxHistoryItems: 64
   }),
   getters: {
     tasks(state) {
@@ -171,6 +173,9 @@ export const useQueueStore = defineStore('queue', {
         ...state.runningTasks,
         ...state.historyTasks
       ]
+    },
+    lastHistoryQueueIndex(state) {
+      return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
     }
   },
   actions: {
@@ -178,7 +183,7 @@ export const useQueueStore = defineStore('queue', {
     async update() {
       const [queue, history] = await Promise.all([
         api.getQueue(),
-        api.getHistory(/* maxItems=*/ 64)
+        api.getHistory(this.maxHistoryItems)
       ])
 
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
@@ -191,7 +196,18 @@ export const useQueueStore = defineStore('queue', {
 
       this.runningTasks = toClassAll(queue.Running)
       this.pendingTasks = toClassAll(queue.Pending)
-      this.historyTasks = toClassAll(history.History)
+
+      // Process history items
+      const newHistoryItems = history.History.filter(
+        (item) => item.prompt[0] > this.lastHistoryQueueIndex
+      )
+
+      if (newHistoryItems.length > 0) {
+        const newProcessedItems = toClassAll(newHistoryItems)
+        this.historyTasks = [...newProcessedItems, ...this.historyTasks]
+          .slice(0, this.maxHistoryItems)
+          .sort((a, b) => b.queueIndex - a.queueIndex)
+      }
     },
     async clear() {
       await Promise.all(
