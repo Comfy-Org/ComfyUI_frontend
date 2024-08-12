@@ -13,15 +13,13 @@ const zImageResult = z.object({
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
-  exec_info: z
-    .object({
-      queue_remaining: z.number().int().optional()
-    })
-    .optional()
+  exec_info: z.object({
+    queue_remaining: z.number().int()
+  })
 })
 
 const zStatusWsMessage = z.object({
-  status: zStatusWsMessageStatus
+  status: zStatusWsMessageStatus.nullable().optional()
 })
 
 const zProgressWsMessage = z.object({
