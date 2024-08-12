@@ -65,7 +65,10 @@
                 v-model="widget.value"
                 class="custom-textarea"
                 @input="onEdit"
-                @blur="onChange(node.id, widget.title, $event.target.value)"
+                @update:model-value="
+                  (newValue) => onChange(node.id, widget.title, newValue)
+                "
+                @blur="onCompleteEdit()"
               />
               <ToggleButton
                 v-model="widget.fav"
@@ -82,7 +85,7 @@
           <template v-if="widget.type === 'number'">
             <div class="sidebar-widget">
               <span class="widget-title">{{ widget.title }}</span>
-              <Slider
+              <!-- <Slider
                 class="custom-slider"
                 v-model="widget.value"
                 :min="widget.options.min"
@@ -92,7 +95,7 @@
                 @slideend="
                   (event) => onChange(node.id, widget.title, event.value)
                 "
-              />
+              /> -->
               <InputNumber
                 class="custom-input-number"
                 showButtons
@@ -100,7 +103,10 @@
                 :min="widget.options.min"
                 :max="widget.options.max"
                 @input="onEdit"
-                @blur="onChange(node.id, widget.title, $event.target.value)"
+                @update:model-value="
+                  (newValue) => onChange(node.id, widget.title, newValue)
+                "
+                @blur="onCompleteEdit"
                 :maxFractionDigits="widget.options.precision"
               />
               <ToggleButton
@@ -122,7 +128,10 @@
                 class="custom-text"
                 v-model.number="widget.value"
                 @input="onEdit"
-                @blur="onChange(node.id, widget.title, $event.target.value)"
+                @update:model-value="
+                  (newValue) => onChange(node.id, widget.title, newValue)
+                "
+                @blur="onCompleteEdit"
               />
               <ToggleButton
                 v-model="widget.fav"
@@ -148,6 +157,7 @@
                 @update:modelValue="
                   (newValue) => onChange(node.id, widget.title, newValue)
                 "
+                @blur="onCompleteEdit"
               />
               <ToggleButton
                 v-model="widget.fav"
@@ -216,6 +226,9 @@ const onChange = (nodeID: number, widgetTitle: string, newValue: any) => {
   nodeParamStore.updateWidgetValue(nodeID, widgetTitle, newValue)
   nodeParamStore.setIsEditing(false)
 }
+const onCompleteEdit = () => {
+  nodeParamStore.setIsEditing(false)
+}
 const onFav = (nodeID: number, widgetTitle: string, newValue: any) => {
   console.log('onFav', newValue)
   nodeParamStore.updateWidgetFav(nodeID, widgetTitle, newValue)
@@ -230,6 +243,7 @@ const onWidgetBtnClick = (nodeID: number, widgetTitle: string) => {
 }
 
 const onSelectCata = (newValue) => {
+  console.log('onSelectCata', newValue)
   if (newValue) {
     nodeParamStore.updateCatagories(newValue.name)
   } else {
@@ -243,8 +257,8 @@ const onSelectCata = (newValue) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin: 8px 0;
+  gap: 1rem;
+  margin: 0.6rem 0;
 }
 .custom-header.bypass {
   opacity: 0.3;
@@ -254,7 +268,7 @@ const onSelectCata = (newValue) => {
 }
 .custom-toggle {
   width: 5%;
-  padding: 8px;
+  padding: 0.6rem;
   border: none;
   background-color: transparent !important;
 }
@@ -264,16 +278,20 @@ const onSelectCata = (newValue) => {
 .custom-select-button {
   display: flex;
   justify-content: center;
-  margin: 8px;
+  padding: 0.6rem;
+  box-sizing: border-box;
+  background-color: var(--p-accordion-header-background);
+  border-radius: 0;
+  border-bottom: var(--p-accordion-header-border-color) 1px solid;
 }
 .custom-select {
   width: 65%;
-  font-size: medium;
+  font-size: 1rem;
   overflow: hidden;
 }
 .widget-title {
   width: 30%;
-  font-size: medium;
+  font-size: 1rem;
   overflow: hidden;
 }
 .custom-toggle:deep(.p-togglebutton-label) {
@@ -284,15 +302,14 @@ const onSelectCata = (newValue) => {
   width: 50%;
 }
 
-.custom-input-number:deep(input) {
-  width: 10%;
-  padding: 8px;
-  font-size: small;
+.custom-input-number {
+  width: 65%;
+  font-size: 1rem;
   overflow: hidden;
 }
 .custom-text {
   width: 65%;
-  font-size: medium;
+  font-size: 1rem;
   overflow: hidden;
 }
 .custom-Button {
@@ -307,6 +324,6 @@ const onSelectCata = (newValue) => {
 }
 
 :deep(.p-accordioncontent-content) {
-  padding: 18px !important;
+  padding: 1.2rem !important;
 }
 </style>

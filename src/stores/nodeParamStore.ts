@@ -44,7 +44,7 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
   // State
   const nodes = ref<Node[]>([])
   const widgetFav = ref<Widget[]>([])
-  const filterNodes = ref(nodes)
+  let filterNodes = ref(nodes)
   const categories = computed<category[]>(() => {
     let favCount = 0
     for (const node of nodes.value) {
@@ -208,36 +208,33 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
   const updateCatagories = (category) => {
     switch (category) {
       case 'All':
-        filterNodes.value = nodes.value
+        filterNodes = ref(nodes)
         break
       case 'Star':
         filterFavNodes()
         break
       case 'Notnull':
-        filterNodes.value = nodes.value.filter(
-          (node) => node.widgets.length > 0
-        )
-        break
-      case null:
-        filterNodes.value = nodes.value
+        filterNodes = ref(nodes.value.filter((node) => node.widgets.length > 0))
         break
       default:
         break
     }
   }
   const filterFavNodes = () => {
-    filterNodes.value = nodes.value
-      .map((node) => {
-        const favWidgets = node.widgets.filter((widget) => widget.fav)
-        if (favWidgets.length > 0) {
-          return {
-            ...node,
-            widgets: favWidgets
+    filterNodes = ref(
+      nodes.value
+        .map((node) => {
+          const favWidgets = node.widgets.filter((widget) => widget.fav)
+          if (favWidgets.length > 0) {
+            return {
+              ...node,
+              widgets: favWidgets
+            }
           }
-        }
-        return null
-      })
-      .filter((node) => node !== null) // 过滤掉 null 值
+          return null
+        })
+        .filter((node) => node !== null)
+    ) // 过滤掉 null 值
   }
 
   // const addGalleryImage = (image: string) => {
