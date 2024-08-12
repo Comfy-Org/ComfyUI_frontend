@@ -65,7 +65,7 @@
                 v-model="widget.value"
                 class="custom-textarea"
                 @input="onEdit"
-                @change="onChange"
+                @blur="onChange(node.id, widget.title, $event.target.value)"
               />
               <ToggleButton
                 v-model="widget.fav"
@@ -100,9 +100,7 @@
                 :min="widget.options.min"
                 :max="widget.options.max"
                 @input="onEdit"
-                @update:modelValue="
-                  (newValue) => onChange(node.id, widget.title, newValue)
-                "
+                @blur="onChange(node.id, widget.title, $event.target.value)"
                 :maxFractionDigits="widget.options.precision"
               />
               <ToggleButton
@@ -124,9 +122,7 @@
                 class="custom-text"
                 v-model.number="widget.value"
                 @input="onEdit"
-                @update:modelValue="
-                  (newValue) => onChange(node.id, widget.title, newValue)
-                "
+                @blur="onChange(node.id, widget.title, $event.target.value)"
               />
               <ToggleButton
                 v-model="widget.fav"
@@ -216,7 +212,7 @@ const onEdit = () => {
   nodeParamStore.setIsEditing(true)
 }
 const onChange = (nodeID: number, widgetTitle: string, newValue: any) => {
-  console.log('onChange')
+  console.log('onChange', newValue)
   nodeParamStore.updateWidgetValue(nodeID, widgetTitle, newValue)
   nodeParamStore.setIsEditing(false)
 }
