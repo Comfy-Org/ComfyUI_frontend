@@ -85,7 +85,7 @@ export class ComfyQueueButton {
     api.addEventListener(
       'status',
       ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
-        this.#internalQueueSize = detail.exec_info.queue_remaining
+        this.#internalQueueSize = detail?.exec_info?.queue_remaining
         if (this.#internalQueueSize != null) {
           if (!this.#internalQueueSize && !app.lastExecutionError) {
             if (
