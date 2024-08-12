@@ -83,7 +83,7 @@ import {
   TaskItemImpl,
   useQueueStore
 } from '@/stores/queueStore'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { api } from '@/scripts/api'
 
 const confirm = useConfirm()
@@ -145,12 +145,15 @@ const confirmRemoveAll = (event) => {
     }
   })
 }
+
+const onStatus = () => queueStore.update()
 onMounted(() => {
-  api.addEventListener('status', () => {
-    queueStore.update()
-  })
+  api.addEventListener('status', onStatus)
 
   queueStore.update()
+})
+onUnmounted(() => {
+  api.removeEventListener('status', onStatus)
 })
 </script>
 

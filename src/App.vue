@@ -6,7 +6,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, watch } from 'vue'
+import { computed, markRaw, onMounted, onUnmounted, watch } from 'vue'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
@@ -18,6 +18,10 @@ import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import NodeParamSideBarTab from './components/sidebar/tabs/NodeParamSideBarTab.vue'
+import { api } from './scripts/api'
+import { StatusWsMessageStatus } from './types/apiTypes'
+import { useQueuePendingTaskCountStore } from './stores/queueStore'
+
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
   useSettingStore().get('Comfy.ColorPalette')
@@ -43,6 +47,10 @@ const init = () => {
   app.extensionManager.registerSidebarTab({
     id: 'queue',
     icon: 'pi pi-history',
+    iconBadge: () => {
+      const value = useQueuePendingTaskCountStore().count.toString()
+      return value === '0' ? null : value
+    },
     title: t('sideToolBar.queue'),
     tooltip: t('sideToolBar.queue'),
     component: markRaw(QueueSideBarTab),
@@ -66,12 +74,21 @@ const init = () => {
   })
 }
 
+const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const onStatus = (e: CustomEvent<StatusWsMessageStatus>) =>
+  queuePendingTaskCountStore.update(e)
+
 onMounted(() => {
+  api.addEventListener('status', onStatus)
   try {
     init()
   } catch (e) {
     console.error('Failed to init Vue app', e)
   }
+})
+
+onUnmounted(() => {
+  api.removeEventListener('status', onStatus)
 })
 </script>
 

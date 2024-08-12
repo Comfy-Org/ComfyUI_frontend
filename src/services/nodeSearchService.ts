@@ -113,13 +113,13 @@ export class NodeSearchService {
     this.nodeFuseSearch = new FuseSearch(data, {
       keys: ['name', 'display_name', 'description'],
       includeScore: true,
-      threshold: 0.6,
+      threshold: 0.3,
       shouldSort: true
     })
 
     const filterSearchOptions = {
       includeScore: true,
-      threshold: 0.6,
+      threshold: 0.3,
       shouldSort: true
     }
 

@@ -5,6 +5,85 @@ import { fromZodError } from 'zod-validation-error'
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
+const zImageResult = z.object({
+  filename: z.string(),
+  subfolder: z.string().optional(),
+  type: z.string()
+})
+
+// WS messages
+const zStatusWsMessageStatus = z.object({
+  exec_info: z.object({
+    queue_remaining: z.number().int()
+  })
+})
+
+const zStatusWsMessage = z.object({
+  status: zStatusWsMessageStatus
+})
+
+const zProgressWsMessage = z.object({
+  value: z.number().int(),
+  max: z.number().int(),
+  prompt_id: zPromptId,
+  node: zNodeId
+})
+
+const zExecutingWsMessage = z.object({
+  node: zNodeId,
+  display_node: zNodeId,
+  prompt_id: zPromptId
+})
+
+const zExecutedWsMessage = zExecutingWsMessage.extend({
+  outputs: z
+    .object({
+      images: z.array(zImageResult)
+    })
+    .passthrough()
+})
+
+const zExecutionWsMessageBase = z.object({
+  prompt_id: zPromptId,
+  timestamp: z.number().int()
+})
+
+const zExecutionStartWsMessage = zExecutionWsMessageBase
+const zExecutionSuccessWsMessage = zExecutionWsMessageBase
+const zExecutionCachedWsMessage = zExecutionWsMessageBase.extend({
+  nodes: z.array(zNodeId)
+})
+const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
+  node_id: zNodeId,
+  node_type: zNodeType,
+  executed: z.array(zNodeId)
+})
+const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
+  node_id: zNodeId,
+  node_type: zNodeType,
+  executed: z.array(zNodeId),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  traceback: z.string(),
+  current_inputs: z.any(),
+  current_outputs: z.any()
+})
+
+export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
+export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
+export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
+export type ExecutingWsMessage = z.infer<typeof zExecutingWsMessage>
+export type ExecutedWsMessage = z.infer<typeof zExecutedWsMessage>
+export type ExecutionStartWsMessage = z.infer<typeof zExecutionStartWsMessage>
+export type ExecutionSuccessWsMessage = z.infer<
+  typeof zExecutionSuccessWsMessage
+>
+export type ExecutionCachedWsMessage = z.infer<typeof zExecutionCachedWsMessage>
+export type ExecutionInterruptedWsMessage = z.infer<
+  typeof zExecutionInterruptedWsMessage
+>
+export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
+// End of ws messages
 
 const zPromptInputItem = z.object({
   inputs: z.record(z.string(), z.any()),
@@ -25,51 +104,29 @@ const zExtraData = z.object({
 })
 const zOutputsToExecute = z.array(zNodeId)
 
-const zMessageDetailBase = z.object({
-  prompt_id: zPromptId,
-  timestamp: z.number()
-})
-
 const zExecutionStartMessage = z.tuple([
   z.literal('execution_start'),
-  zMessageDetailBase
+  zExecutionStartWsMessage
 ])
 
 const zExecutionSuccessMessage = z.tuple([
   z.literal('execution_success'),
-  zMessageDetailBase
+  zExecutionSuccessWsMessage
 ])
 
 const zExecutionCachedMessage = z.tuple([
   z.literal('execution_cached'),
-  zMessageDetailBase.extend({
-    nodes: z.array(zNodeId)
-  })
+  zExecutionCachedWsMessage
 ])
 
 const zExecutionInterruptedMessage = z.tuple([
   z.literal('execution_interrupted'),
-  zMessageDetailBase.extend({
-    // InterruptProcessingException
-    node_id: zNodeId,
-    node_type: zNodeType,
-    executed: z.array(zNodeId)
-  })
+  zExecutionInterruptedWsMessage
 ])
 
 const zExecutionErrorMessage = z.tuple([
   z.literal('execution_error'),
-  zMessageDetailBase.extend({
-    node_id: zNodeId,
-    node_type: zNodeType,
-    executed: z.array(zNodeId),
-
-    exception_message: z.string(),
-    exception_type: z.string(),
-    traceback: z.string(),
-    current_inputs: z.any(),
-    current_outputs: z.any()
-  })
+  zExecutionErrorWsMessage
 ])
 
 const zStatusMessage = z.union([

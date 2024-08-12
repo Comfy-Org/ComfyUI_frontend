@@ -254,7 +254,6 @@ export function addDomClippingSetting(): void {
   })
 }
 
-//@ts-ignore
 LGraphNode.prototype.addDOMWidget = function (
   name: string,
   type: string,
