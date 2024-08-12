@@ -105,13 +105,20 @@ export default defineConfig({
     comfyAPIPlugin(),
   ],
   build: {
-    minify: false,
+    minify: 'esbuild',
+    target: 'es2015',
     sourcemap: true,
     rollupOptions: {
       // Disabling tree-shaking
       // Prevent vite remove unused exports
       treeshake: false
     }
+  },
+  esbuild: {
+    minifyIdentifiers: false,
+    keepNames: true,
+    minifySyntax: true,
+    minifyWhitespace: true,
   },
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
