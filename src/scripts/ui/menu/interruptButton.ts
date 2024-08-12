@@ -16,7 +16,7 @@ export function getInteruptButton(visibility: string) {
   api.addEventListener(
     'status',
     ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
-      const sz = detail.exec_info.queue_remaining
+      const sz = detail?.exec_info?.queue_remaining
       btn.enabled = sz > 0
     }
   )
