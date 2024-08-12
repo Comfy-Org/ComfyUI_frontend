@@ -11,12 +11,11 @@ app.registerExtension({
       __outputType?: string
     }
 
-    class RerouteNode extends LGraphNode {
+    class RerouteNode {
       static category: string | undefined
       static defaultVisibility = false
 
-      constructor(title?: string) {
-        super(title)
+      constructor() {
         if (!this.properties) {
           this.properties = {}
         }
