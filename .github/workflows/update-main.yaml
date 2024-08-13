@@ -33,21 +33,39 @@ jobs:
           path: ComfyUI
           ref: master
 
+      - name: Create new branch from latest master
+        run: |
+          git checkout -b update-frontend-assets-pr-${{ github.event.pull_request.number }}
+        working-directory: ComfyUI
+
       - name: Copy compiled assets
         run: |
           rm -rf ./ComfyUI/web/*
           cp -R dist/* ./ComfyUI/web/
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.PAT }}
-          commit-message: 'Update frontend assets from PR #${{ github.event.pull_request.number }}'
-          title: 'Update frontend assets from PR #${{ github.event.pull_request.number }}'
-          body: |
-            This PR updates the compiled frontend assets from PR #${{ github.event.pull_request.number }} in the frontend repo.
+      - name: Config Git
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git remote add comfyorg https://github.com/Comfy-Org/ComfyUI.git
+        working-directory: ComfyUI
 
-            Frontend PR: ${{ github.event.pull_request.html_url }}
-          branch: update-frontend-assets-pr-${{ github.event.pull_request.number }}
-          base: main
-          path: ComfyUI
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "Update frontend assets from PR #${{ github.event.pull_request.number }}"
+          git push -u comfyorg update-frontend-assets-pr-${{ github.event.pull_request.number }}
+        working-directory: ComfyUI
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ secrets.COMFYORGPAT }}
+        run: |
+          gh pr create \
+            --repo comfyanonymous/ComfyUI \
+            --base master \
+            --head update-frontend-assets-pr-${{ github.event.pull_request.number }} \
+            --title "Update frontend assets from PR #${{ github.event.pull_request.number }}" \
+            --body "This PR updates the compiled frontend assets from PR #${{ github.event.pull_request.number }} in the frontend repo.
+
+            Frontend PR: ${{ github.event.pull_request.html_url }}"
