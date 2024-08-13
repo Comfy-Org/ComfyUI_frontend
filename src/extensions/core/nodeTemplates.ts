@@ -184,7 +184,7 @@ class ManageTemplates extends ComfyDialog {
               'div',
               {
                 dataset: { id: i.toString() },
-                className: 'tempateManagerRow',
+                className: 'templateManagerRow',
                 style: {
                   display: 'grid',
                   gridTemplateColumns: '1fr auto',
@@ -206,7 +206,7 @@ class ManageTemplates extends ComfyDialog {
 
                   // rearrange the elements
                   this.element
-                    .querySelectorAll('.tempateManagerRow')
+                    .querySelectorAll('.templateManagerRow')
                     .forEach((el: HTMLElement, i) => {
                       var prev_i = Number.parseInt(el.dataset.id)
 
@@ -329,7 +329,7 @@ class ManageTemplates extends ComfyDialog {
                       var that = this
                       setTimeout(function () {
                         that.element
-                          .querySelectorAll('.tempateManagerRow')
+                          .querySelectorAll('.templateManagerRow')
                           .forEach((el: HTMLElement, i) => {
                             el.dataset.id = i.toString()
                           })
