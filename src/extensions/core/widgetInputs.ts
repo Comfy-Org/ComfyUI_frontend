@@ -384,7 +384,7 @@ function getConfig(widgetName) {
   )
 }
 
-function isConvertableWidget(widget, config) {
+function isConvertibleWidget(widget, config) {
   return (
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
     !widget.options?.forceInput
@@ -677,7 +677,7 @@ app.registerExtension({
         widget.type,
         widget.options || {}
       ]
-      if (!isConvertableWidget(widget, config)) return false
+      if (!isConvertibleWidget(widget, config)) return false
       convertToInput(this, widget, config)
       return true
     }
@@ -703,7 +703,7 @@ app.registerExtension({
               w.type,
               w.options || {}
             ]
-            if (isConvertableWidget(w, config)) {
+            if (isConvertibleWidget(w, config)) {
               toInput.push({
                 content: `Convert ${w.name} to input`,
                 callback: () => convertToInput(this, w, config)
