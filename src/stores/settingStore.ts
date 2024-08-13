@@ -89,6 +89,14 @@ export const useSettingStore = defineStore('setting', {
         options: ['left', 'right'],
         defaultValue: 'left'
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.SideBar.Size',
+        name: 'Sidebar size',
+        type: 'combo',
+        options: ['normal', 'small'],
+        defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
+      })
     },
 
     set(key: string, value: any) {
