@@ -2,11 +2,20 @@
   <div>
     <Dialog
       v-model:visible="visible"
-      pt:root="invisible-dialog-root"
-      pt:mask="node-search-box-dialog-mask"
       modal
       :dismissable-mask="dismissable"
       @hide="clearFilters"
+      :pt="{
+        root: { class: 'invisible-dialog-root' },
+        mask: { class: 'node-search-box-dialog-mask' },
+        transition: {
+          enterFromClass: 'opacity-0 scale-75',
+          // 100ms is the duration of the transition in the dialog component
+          enterActiveClass: 'transition-all duration-100 ease-out',
+          leaveActiveClass: 'transition-all duration-100 ease-in',
+          leaveToClass: 'opacity-0 scale-75'
+        }
+      }"
     >
       <template #container>
         <NodeSearchBox
