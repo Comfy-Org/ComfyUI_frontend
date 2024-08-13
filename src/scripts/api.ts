@@ -54,6 +54,9 @@ class ComfyApi extends EventTarget {
     if (!options.headers) {
       options.headers = {}
     }
+    if (!options.cache) {
+        options.cache = 'no-cache'
+    }
     options.headers['Comfy-User'] = this.user
     return fetch(this.apiURL(route), options)
   }
