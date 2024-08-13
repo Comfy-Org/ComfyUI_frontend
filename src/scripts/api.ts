@@ -30,6 +30,8 @@ class ComfyApi extends EventTarget {
   socket?: WebSocket
   clientId?: string
 
+  reportedUnknownMessageTypes = new Set<string>()
+
   constructor() {
     super()
     this.api_host = location.host
@@ -206,7 +208,8 @@ class ComfyApi extends EventTarget {
                 this.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
-              } else {
+              } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
+                this.reportedUnknownMessageTypes.add(msg.type)
                 throw new Error(`Unknown message type ${msg.type}`)
               }
           }
