@@ -1,6 +1,6 @@
 <template>
   <teleport :to="teleportTarget">
-    <nav class="side-tool-bar-container">
+    <nav :class="'side-tool-bar-container' + (isSmall ? ' small-sidebar' : '')">
       <SideBarIcon
         v-for="tab in tabs"
         :key="tab.id"
@@ -55,6 +55,10 @@ const teleportTarget = computed(() =>
     : '.comfyui-body-right'
 )
 
+const isSmall = computed(
+  () => settingStore.get('Comfy.SideBar.Size') === 'small'
+)
+
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed<SidebarTabExtension | null>(() => {
   const tabId = workspaceStore.activeSidebarTab
@@ -81,6 +85,10 @@ onBeforeUnmount(() => {
 :root {
   --sidebar-width: 64px;
   --sidebar-icon-size: 1.5rem;
+}
+:root .small-sidebar {
+  --sidebar-width: 40px;
+  --sidebar-icon-size: 1rem;
 }
 </style>
 
