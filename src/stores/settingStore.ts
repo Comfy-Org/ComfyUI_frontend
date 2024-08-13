@@ -95,7 +95,7 @@ export const useSettingStore = defineStore('setting', {
         name: 'Sidebar size',
         type: 'combo',
         options: ['normal', 'small'],
-        defaultValue: 'normal'
+        defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
       })
     },
 
