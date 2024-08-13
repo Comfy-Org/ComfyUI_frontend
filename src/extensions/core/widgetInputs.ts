@@ -485,7 +485,7 @@ function isValidCombo(combo, obj) {
     console.log(`connection rejected: tried to connect combo to ${obj}`)
     return false
   }
-  // New imput combo has a different size
+  // New input combo has a different size
   if (combo.length !== obj.length) {
     console.log(`connection rejected: combo lists dont match`)
     return false
