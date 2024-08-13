@@ -51,6 +51,8 @@ jobs:
         working-directory: ComfyUI
 
       - name: Commit changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.COMFYORGPAT }}
         run: |
           git add .
           git commit -m "Update frontend assets from PR #${{ github.event.pull_request.number }}"
