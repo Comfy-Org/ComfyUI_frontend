@@ -25,7 +25,6 @@ function comfyAPIPlugin(): Plugin {
       if (IS_DEV)
         return null;
 
-      // TODO: Remove second condition after all js files are converted to ts
       if (isLegacyFile(id)) {
         const result = transformExports(code, id);
 
