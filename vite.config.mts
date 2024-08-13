@@ -11,6 +11,13 @@ interface ShimResult {
   exports: string[];
 }
 
+function isLegacyFile(id: string): boolean {
+  return id.endsWith('.ts') && (
+    id.includes("src/extensions/core") ||
+    id.includes("src/scripts")
+  );
+}
+
 function comfyAPIPlugin(): Plugin {
   return {
     name: 'comfy-api-plugin',
@@ -19,7 +26,7 @@ function comfyAPIPlugin(): Plugin {
         return null;
 
       // TODO: Remove second condition after all js files are converted to ts
-      if (id.endsWith('.ts') || (id.endsWith('.js') && id.includes("extensions/core"))) {
+      if (isLegacyFile(id)) {
         const result = transformExports(code, id);
 
         if (result.exports.length > 0) {
