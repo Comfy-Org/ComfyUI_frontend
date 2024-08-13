@@ -114,7 +114,8 @@ export class NodeSearchService {
       keys: ['name', 'display_name', 'description'],
       includeScore: true,
       threshold: 0.3,
-      shouldSort: true
+      shouldSort: true,
+      useExtendedSearch: true
     })
 
     const filterSearchOptions = {
