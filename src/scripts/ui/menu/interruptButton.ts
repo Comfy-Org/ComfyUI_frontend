@@ -2,7 +2,7 @@ import { StatusWsMessageStatus } from '@/types/apiTypes'
 import { api } from '../../api'
 import { ComfyButton } from '../components/button'
 
-export function getInteruptButton(visibility: string) {
+export function getInterruptButton(visibility: string) {
   const btn = new ComfyButton({
     icon: 'close',
     tooltip: 'Cancel current generation',

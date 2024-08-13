@@ -1724,7 +1724,7 @@ export class ComfyApp {
 
       const r = onConfigure?.apply(this, arguments)
 
-      // Fire after onConfigure, used by primitves to generate widget using input nodes config
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
       // @ts-expect-error _nodes is private.
       for (const node of app.graph._nodes) {
         node.onAfterGraphConfigured?.()

@@ -384,7 +384,7 @@ function getConfig(widgetName) {
   )
 }
 
-function isConvertableWidget(widget, config) {
+function isConvertibleWidget(widget, config) {
   return (
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
     !widget.options?.forceInput
@@ -485,7 +485,7 @@ function isValidCombo(combo, obj) {
     console.log(`connection rejected: tried to connect combo to ${obj}`)
     return false
   }
-  // New imput combo has a different size
+  // New input combo has a different size
   if (combo.length !== obj.length) {
     console.log(`connection rejected: combo lists dont match`)
     return false
@@ -670,14 +670,14 @@ app.registerExtension({
     })
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    // Add menu options to conver to/from widgets
+    // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     nodeType.prototype.convertWidgetToInput = function (widget) {
       const config = getConfig.call(this, widget.name) ?? [
         widget.type,
         widget.options || {}
       ]
-      if (!isConvertableWidget(widget, config)) return false
+      if (!isConvertibleWidget(widget, config)) return false
       convertToInput(this, widget, config)
       return true
     }
@@ -703,7 +703,7 @@ app.registerExtension({
               w.type,
               w.options || {}
             ]
-            if (isConvertableWidget(w, config)) {
+            if (isConvertibleWidget(w, config)) {
               toInput.push({
                 content: `Convert ${w.name} to input`,
                 callback: () => convertToInput(this, w, config)
