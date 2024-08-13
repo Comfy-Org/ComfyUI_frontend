@@ -5,20 +5,36 @@
       :minSize="10"
       :size="20"
       v-show="sideBarPanelVisible"
+      v-if="sideBarLocation === 'left'"
     >
       <slot name="side-bar-panel"></slot>
     </SplitterPanel>
     <SplitterPanel class="graph-canvas-panel" :size="100">
       <div></div>
     </SplitterPanel>
+    <SplitterPanel
+      class="side-bar-panel"
+      :minSize="10"
+      :size="20"
+      v-show="sideBarPanelVisible"
+      v-if="sideBarLocation === 'right'"
+    >
+      <slot name="side-bar-panel"></slot>
+    </SplitterPanel>
   </Splitter>
 </template>
 
 <script setup lang="ts">
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
+
+const settingStore = useSettingStore()
+const sideBarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.SideBar.Location')
+)
 
 const sideBarPanelVisible = computed(
   () => useWorkspaceStore().activeSidebarTab !== null

@@ -81,6 +81,14 @@ export const useSettingStore = defineStore('setting', {
         options: Object.values(LinkReleaseTriggerMode),
         defaultValue: LinkReleaseTriggerMode.ALWAYS
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.SideBar.Location',
+        name: 'Sidebar location',
+        type: 'combo',
+        options: ['left', 'right'],
+        defaultValue: 'left'
+      })
     },
 
     set(key: string, value: any) {

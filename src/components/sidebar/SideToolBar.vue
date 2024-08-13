@@ -1,5 +1,5 @@
 <template>
-  <teleport to=".comfyui-body-left">
+  <teleport :to="teleportTarget">
     <nav class="side-tool-bar-container">
       <SideBarIcon
         v-for="tab in tabs"
@@ -40,12 +40,21 @@ import SideBarThemeToggleIcon from './SideBarThemeToggleIcon.vue'
 import SideBarSettingsToggleIcon from './SideBarSettingsToggleIcon.vue'
 import { computed, onBeforeUnmount } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useSettingStore } from '@/stores/settingStore'
 import {
   CustomSidebarTabExtension,
   SidebarTabExtension
 } from '@/types/extensionTypes'
 
 const workspaceStore = useWorkspaceStore()
+const settingStore = useSettingStore()
+
+const teleportTarget = computed(() =>
+  settingStore.get('Comfy.SideBar.Location') === 'left'
+    ? '.comfyui-body-left'
+    : '.comfyui-body-right'
+)
+
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed<SidebarTabExtension | null>(() => {
   const tabId = workspaceStore.activeSidebarTab

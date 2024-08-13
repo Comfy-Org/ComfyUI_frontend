@@ -70,8 +70,13 @@ const shouldShowBadge = computed(() => !!overlayValue.value)
   border-radius: 0;
 }
 
-.side-bar-button.side-bar-button-selected,
-.side-bar-button.side-bar-button-selected:hover {
+.comfyui-body-left .side-bar-button.side-bar-button-selected,
+.comfyui-body-left .side-bar-button.side-bar-button-selected:hover {
   border-left: 4px solid var(--p-button-text-primary-color);
+}
+
+.comfyui-body-right .side-bar-button.side-bar-button-selected,
+.comfyui-body-right .side-bar-button.side-bar-button-selected:hover {
+  border-right: 4px solid var(--p-button-text-primary-color);
 }
 </style>
