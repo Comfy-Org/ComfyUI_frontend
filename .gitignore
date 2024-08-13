@@ -36,5 +36,6 @@ tests-ui/workflows/examples
 /playwright/.cache/
 
 .env
+.vscode/settings.json
 
 dist.zip
