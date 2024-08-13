@@ -1,0 +1,53 @@
+name: Update Main Repo from PR
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  update-main-repo:
+    if: github.event.label.name == 'Update Main Repo'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout frontend repo PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Checkout ComfyUI
+        uses: actions/checkout@v4
+        with:
+          repository: "comfyanonymous/ComfyUI"
+          path: ComfyUI
+          ref: master
+
+      - name: Copy compiled assets
+        run: |
+          rm -rf ./ComfyUI/web/*
+          cp -R dist/* ./ComfyUI/web/
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.PAT }}
+          commit-message: 'Update frontend assets from PR #${{ github.event.pull_request.number }}'
+          title: 'Update frontend assets from PR #${{ github.event.pull_request.number }}'
+          body: |
+            This PR updates the compiled frontend assets from PR #${{ github.event.pull_request.number }} in the frontend repo.
+
+            Frontend PR: ${{ github.event.pull_request.html_url }}
+          branch: update-frontend-assets-pr-${{ github.event.pull_request.number }}
+          base: main
+          path: ComfyUI
