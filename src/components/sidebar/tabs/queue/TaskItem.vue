@@ -1,6 +1,5 @@
 <template>
-  <ContextMenu ref="menu" :model="menuItems" />
-  <div class="task-item" @contextmenu="menu.show($event)">
+  <div class="task-item" @contextmenu="handleContextMenu">
     <div
       v-if="task.isHistory"
       :class="['image-grid', { compact: !isExpanded }]"
@@ -47,25 +46,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import Image from 'primevue/image'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
-import ContextMenu from 'primevue/contextmenu'
 import { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
-import { type MenuItem } from 'primevue/menuitem'
-import { useI18n } from 'vue-i18n'
 import ProgressSpinner from 'primevue/progressspinner'
-
-const { t } = useI18n()
 
 const props = defineProps<{
   task: TaskItemImpl
 }>()
 
 const emit = defineEmits<{
-  (e: 'remove', task: TaskItemImpl): void
+  (e: 'contextmenu', { task: TaskItemImpl, event: MouseEvent }): void
 }>()
+
+const handleContextMenu = (e: MouseEvent) => {
+  emit('contextmenu', { task: props.task, event: e })
+}
 
 const isExpanded = ref(false)
 
@@ -94,22 +92,6 @@ const formatTime = (time?: number) => {
   }
   return `${time.toFixed(2)}s`
 }
-
-const menu = ref(null)
-const menuItems = computed<MenuItem[]>(() => {
-  return [
-    {
-      label: t('delete'),
-      icon: 'pi pi-trash',
-      command: () => emit('remove', props.task)
-    },
-    {
-      label: t('loadWorkflow'),
-      icon: 'pi pi-file-export',
-      command: () => props.task.loadWorkflow()
-    }
-  ]
-})
 </script>
 
 <style scoped>
