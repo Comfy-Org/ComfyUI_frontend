@@ -44,7 +44,7 @@ test.describe('Menu', () => {
   })
 
   test('Can register sidebar tab', async ({ comfyPage }) => {
-    const initialChildrenCount = await comfyPage.menu.sideToolBar.evaluate(
+    const initialChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
       (el) => el.children.length
     )
 
@@ -62,7 +62,7 @@ test.describe('Menu', () => {
     })
     await comfyPage.nextFrame()
 
-    const newChildrenCount = await comfyPage.menu.sideToolBar.evaluate(
+    const newChildrenCount = await comfyPage.menu.sideToolbar.evaluate(
       (el) => el.children.length
     )
     expect(newChildrenCount).toBe(initialChildrenCount + 1)

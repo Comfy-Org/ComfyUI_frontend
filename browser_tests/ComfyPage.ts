@@ -37,7 +37,7 @@ class ComfyNodeSearchBox {
   }
 }
 
-class NodeLibrarySideBarTab {
+class NodeLibrarySidebarTab {
   public readonly tabId: string = 'node-library'
   constructor(public readonly page: Page) {}
 
@@ -74,16 +74,16 @@ class NodeLibrarySideBarTab {
 }
 
 class ComfyMenu {
-  public readonly sideToolBar: Locator
+  public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
 
   constructor(public readonly page: Page) {
-    this.sideToolBar = page.locator('.side-tool-bar-container')
+    this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
   }
 
   get nodeLibraryTab() {
-    return new NodeLibrarySideBarTab(this.page)
+    return new NodeLibrarySidebarTab(this.page)
   }
 
   async toggleTheme() {
