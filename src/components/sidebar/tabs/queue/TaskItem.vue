@@ -1,5 +1,6 @@
 <template>
-  <div class="task-item">
+  <ContextMenu ref="menu" :model="menuItems" />
+  <div class="task-item" @contextmenu="menu.show($event)">
     <div :class="['image-grid', { compact: !isExpanded }]">
       <div v-if="!isExpanded" class="image-container">
         <Image
@@ -46,30 +47,21 @@
         <i v-else-if="task.isRunning" class="pi pi-spin pi-spinner"></i>
         <span v-else>...</span>
       </div>
-      <div class="task-actions">
-        <Button
-          icon="pi pi-file-export"
-          text
-          severity="primary"
-          @click="task.loadWorkflow()"
-        />
-        <Button
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          @click="$emit('remove', task)"
-        />
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Image from 'primevue/image'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
+import ContextMenu from 'primevue/contextmenu'
 import { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
+import { type MenuItem } from 'primevue/menuitem'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   task: TaskItemImpl
@@ -106,6 +98,22 @@ const formatTime = (time?: number) => {
   }
   return `${time.toFixed(2)}s`
 }
+
+const menu = ref(null)
+const menuItems = computed<MenuItem[]>(() => {
+  return [
+    {
+      label: t('delete'),
+      icon: 'pi pi-trash',
+      command: () => emit('remove', props.task)
+    },
+    {
+      label: t('loadWorkflow'),
+      icon: 'pi pi-file-export',
+      command: () => props.task.loadWorkflow()
+    }
+  ]
+})
 </script>
 
 <style scoped>

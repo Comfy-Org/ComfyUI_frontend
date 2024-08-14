@@ -1,5 +1,14 @@
 <template>
   <SideBarTabTemplate :title="$t('queue')">
+    <template #tool-buttons>
+      <Button
+        icon="pi pi-trash"
+        text
+        severity="primary"
+        @click="confirmRemoveAll($event)"
+        class="clear-all-button"
+      />
+    </template>
     <template #body>
       <div v-if="tasks.length > 0" class="queue-grid">
         <TaskItem
@@ -20,13 +29,6 @@
   </SideBarTabTemplate>
   <Toast />
   <ConfirmPopup />
-  <Button
-    icon="pi pi-trash"
-    text
-    severity="primary"
-    @click="confirmRemoveAll($event)"
-    class="clear-all-button"
-  />
 </template>
 
 <script setup lang="ts">
@@ -103,11 +105,5 @@ onUnmounted(() => {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
   padding: 1rem;
-}
-
-.clear-all-button {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
 }
 </style>
