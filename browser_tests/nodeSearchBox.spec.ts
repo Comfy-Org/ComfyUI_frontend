@@ -2,9 +2,23 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Node search box', () => {
-  test('Can trigger on empty canvas double click', async ({ comfyPage }) => {
-    await comfyPage.doubleClickCanvas()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+      'always'
+    )
+  })
+  ;['always', 'hold shift', 'NOT hold shift'].forEach((triggerMode) => {
+    test(`Can trigger on empty canvas double click (${triggerMode})`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting(
+        'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+        triggerMode
+      )
+      await comfyPage.doubleClickCanvas()
+      await expect(comfyPage.searchBox.input).toHaveCount(1)
+    })
   })
 
   test('Can trigger on link release', async ({ comfyPage }) => {
