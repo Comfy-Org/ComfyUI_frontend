@@ -10,7 +10,7 @@ app.registerExtension({
       // Queue prompt using (ctrl or command) + enter
       if (modifierPressed && event.key === 'Enter') {
         // Cancel current prompt using (ctrl or command) + alt + enter
-        if(event.altKey) {
+        if (event.altKey) {
           api.interrupt()
           return
         }
@@ -63,8 +63,8 @@ app.registerExtension({
       }
 
       const keyIdMap = {
-        q: '#comfy-view-queue-button',
-        h: '#comfy-view-history-button',
+        q: '.queue-tab-button.side-bar-button',
+        h: '.queue-tab-button.side-bar-button',
         r: '#comfy-refresh-button'
       }
 
