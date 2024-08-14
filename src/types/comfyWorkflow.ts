@@ -42,7 +42,7 @@ const zNodeOutput = z
   .object({
     name: z.string(),
     type: zDataType,
-    links: z.array(z.number()).nullable(),
+    links: z.array(z.number()).nullable().optional(),
     slot_index: zSlotIndex.optional()
   })
   .passthrough()
@@ -51,7 +51,7 @@ const zNodeInput = z
   .object({
     name: z.string(),
     type: zDataType,
-    link: z.number().nullable(),
+    link: z.number().nullable().optional(),
     slot_index: zSlotIndex.optional()
   })
   .passthrough()
