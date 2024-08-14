@@ -1,71 +1,75 @@
 <template>
-  <DataTable
-    v-if="tasks.length > 0"
-    :value="tasks"
-    dataKey="promptId"
-    class="queue-table"
-  >
-    <Column header="STATUS">
-      <template #body="{ data }">
-        <Tag :severity="taskTagSeverity(data.displayStatus)">
-          {{ data.displayStatus.toUpperCase() }}
-        </Tag>
-      </template>
-    </Column>
-    <Column header="TIME" :pt="{ root: { class: 'queue-time-cell' } }">
-      <template #body="{ data }">
-        <div v-if="data.isHistory" class="queue-time-cell-content">
-          {{ formatTime(data.executionTimeInSeconds) }}
-        </div>
-        <div v-else-if="data.isRunning" class="queue-time-cell-content">
-          <i class="pi pi-spin pi-spinner"></i>
-        </div>
-        <div v-else class="queue-time-cell-content">...</div>
-      </template>
-    </Column>
-    <Column
-      :pt="{
-        headerCell: {
-          class: 'queue-tool-header-cell'
-        },
-        bodyCell: {
-          class: 'queue-tool-body-cell'
-        }
-      }"
-    >
-      <template #header>
-        <Toast />
-        <ConfirmPopup />
-        <Button
-          icon="pi pi-trash"
-          text
-          severity="primary"
-          @click="confirmRemoveAll($event)"
+  <SideBarTabTemplate :title="$t('queue')">
+    <template #body>
+      <DataTable
+        v-if="tasks.length > 0"
+        :value="tasks"
+        dataKey="promptId"
+        class="queue-table"
+      >
+        <Column header="STATUS">
+          <template #body="{ data }">
+            <Tag :severity="taskTagSeverity(data.displayStatus)">
+              {{ data.displayStatus.toUpperCase() }}
+            </Tag>
+          </template>
+        </Column>
+        <Column header="TIME" :pt="{ root: { class: 'queue-time-cell' } }">
+          <template #body="{ data }">
+            <div v-if="data.isHistory" class="queue-time-cell-content">
+              {{ formatTime(data.executionTimeInSeconds) }}
+            </div>
+            <div v-else-if="data.isRunning" class="queue-time-cell-content">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+            <div v-else class="queue-time-cell-content">...</div>
+          </template>
+        </Column>
+        <Column
+          :pt="{
+            headerCell: {
+              class: 'queue-tool-header-cell'
+            },
+            bodyCell: {
+              class: 'queue-tool-body-cell'
+            }
+          }"
+        >
+          <template #header>
+            <Toast />
+            <ConfirmPopup />
+            <Button
+              icon="pi pi-trash"
+              text
+              severity="primary"
+              @click="confirmRemoveAll($event)"
+            />
+          </template>
+          <template #body="{ data }">
+            <Button
+              icon="pi pi-file-export"
+              text
+              severity="primary"
+              @click="data.loadWorkflow()"
+            />
+            <Button
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              @click="removeTask(data)"
+            />
+          </template>
+        </Column>
+      </DataTable>
+      <div v-else>
+        <NoResultsPlaceholder
+          icon="pi pi-info-circle"
+          :title="$t('noTasksFound')"
+          :message="$t('noTasksFoundMessage')"
         />
-      </template>
-      <template #body="{ data }">
-        <Button
-          icon="pi pi-file-export"
-          text
-          severity="primary"
-          @click="data.loadWorkflow()"
-        />
-        <Button
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          @click="removeTask(data)"
-        />
-      </template>
-    </Column>
-  </DataTable>
-  <div v-else>
-    <NoResultsPlaceholder
-      icon="pi pi-info-circle"
-      :title="$t('noTasksFound')"
-      :message="$t('noTasksFoundMessage')"
-    />
-  </div>
+      </div>
+    </template>
+  </SideBarTabTemplate>
 </template>
 
 <script setup lang="ts">
@@ -75,6 +79,7 @@ import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
+import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'

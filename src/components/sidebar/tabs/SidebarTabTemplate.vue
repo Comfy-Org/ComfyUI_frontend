@@ -42,6 +42,7 @@ const props = defineProps({
   border-top: none;
   border-radius: 0;
   padding: 0.25rem 1rem;
+  min-height: 2.5rem;
 }
 
 .comfy-vue-side-bar-header-span {
