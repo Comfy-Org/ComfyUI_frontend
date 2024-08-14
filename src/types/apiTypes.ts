@@ -5,11 +5,18 @@ import { fromZodError } from 'zod-validation-error'
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
-const zImageResult = z.object({
+const zResultItem = z.object({
   filename: z.string(),
   subfolder: z.string().optional(),
   type: z.string()
 })
+export type ResultItem = z.infer<typeof zResultItem>
+const zOutputs = z
+  .object({
+    audio: z.array(zResultItem).optional(),
+    images: z.array(zResultItem).optional()
+  })
+  .passthrough()
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -36,11 +43,7 @@ const zExecutingWsMessage = z.object({
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
-  outputs: z
-    .object({
-      images: z.array(zImageResult)
-    })
-    .passthrough()
+  outputs: zOutputs
 })
 
 const zExecutionWsMessageBase = z.object({
@@ -143,9 +146,6 @@ const zStatus = z.object({
   messages: z.array(zStatusMessage)
 })
 
-// TODO: this is a placeholder
-const zOutput = z.any()
-
 const zTaskPrompt = z.tuple([
   zQueueIndex,
   zPromptId,
@@ -169,7 +169,7 @@ const zPendingTaskItem = z.object({
   prompt: zTaskPrompt
 })
 
-const zTaskOutput = z.record(zNodeId, zOutput)
+const zTaskOutput = z.record(zNodeId, zOutputs)
 
 const zHistoryTaskItem = z.object({
   taskType: z.literal('History'),

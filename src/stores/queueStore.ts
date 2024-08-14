@@ -1,15 +1,17 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import {
-  validateTaskItem,
+import type {
   TaskItem,
   TaskType,
   TaskPrompt,
   TaskStatus,
+  StatusWsMessageStatus,
   TaskOutput,
-  StatusWsMessageStatus
+  ResultItem
 } from '@/types/apiTypes'
-import { plainToClass } from 'class-transformer'
+import { validateTaskItem } from '@/types/apiTypes'
+import type { NodeId } from '@/types/comfyWorkflow'
+import { Transform, plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -25,11 +27,46 @@ export enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+export class ResultItemImpl {
+  filename: string
+  subfolder?: string
+  type: string
+
+  nodeId: NodeId
+  // 'audio' | 'images' | ...
+  mediaType: string
+
+  get url(): string {
+    return `./view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
+					subfolder=${encodeURIComponent(this.subfolder || '')}&t=${+new Date()}`
+  }
+}
+
 export class TaskItemImpl {
   taskType: TaskType
   prompt: TaskPrompt
   status?: TaskStatus
-  outputs?: TaskOutput
+
+  @Transform(({ obj }) => TaskItemImpl.flattenOutputs(obj.outputs))
+  outputs: ResultItemImpl[]
+
+  private static flattenOutputs(outputs: TaskOutput | null): ResultItemImpl[] {
+    console.log(`TaskItemImpl.flattenOutputs(${outputs})`)
+    if (!outputs) {
+      return []
+    }
+    return Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
+      Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+        (items as ResultItem[]).flatMap((item: ResultItem) =>
+          plainToClass(ResultItemImpl, {
+            ...item,
+            nodeId,
+            mediaType
+          })
+        )
+      )
+    )
+  }
 
   get apiTaskType(): APITaskType {
     switch (this.taskType) {
