@@ -1,7 +1,10 @@
 <template>
   <ContextMenu ref="menu" :model="menuItems" />
   <div class="task-item" @contextmenu="menu.show($event)">
-    <div :class="['image-grid', { compact: !isExpanded }]">
+    <div
+      v-if="task.isHistory"
+      :class="['image-grid', { compact: !isExpanded }]"
+    >
       <div
         v-for="(output, index) in isExpanded
           ? task.flatOutputs
@@ -18,6 +21,9 @@
         />
       </div>
     </div>
+    <ProgressSpinner v-else-if="task.isRunning" />
+    <div v-else>...</div>
+
     <div class="task-item-details">
       <div class="status-and-toggle">
         <Tag :severity="taskTagSeverity(task.displayStatus)">
@@ -35,8 +41,6 @@
         <span v-if="task.isHistory">
           {{ formatTime(task.executionTimeInSeconds) }}
         </span>
-        <i v-else-if="task.isRunning" class="pi pi-spin pi-spinner"></i>
-        <span v-else>...</span>
       </div>
     </div>
   </div>
@@ -51,6 +55,7 @@ import ContextMenu from 'primevue/contextmenu'
 import { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
 import { type MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const { t } = useI18n()
 
