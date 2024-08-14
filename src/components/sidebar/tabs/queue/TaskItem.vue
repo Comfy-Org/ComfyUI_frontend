@@ -2,30 +2,21 @@
   <ContextMenu ref="menu" :model="menuItems" />
   <div class="task-item" @contextmenu="menu.show($event)">
     <div :class="['image-grid', { compact: !isExpanded }]">
-      <div v-if="!isExpanded" class="image-container">
+      <div
+        v-for="(output, index) in isExpanded
+          ? task.flatOutputs
+          : task.flatOutputs.slice(0, 1)"
+        :key="index"
+        class="image-container"
+      >
         <Image
-          :src="task.flatOutputs[0]?.url"
+          :src="output.url"
           alt="Task Output"
           width="100%"
           height="100%"
           preview
         />
       </div>
-      <template v-else>
-        <div
-          v-for="(output, index) in task.flatOutputs"
-          :key="index"
-          class="image-container"
-        >
-          <Image
-            :src="output.url"
-            alt="Task Output"
-            width="100%"
-            height="100%"
-            preview
-          />
-        </div>
-      </template>
     </div>
     <div class="task-item-details">
       <div class="status-and-toggle">
