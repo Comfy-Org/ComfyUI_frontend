@@ -95,7 +95,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   padding: 2px;
 }
 
-/* Original N-SideBar styles */
+/* Original N-Sidebar styles */
 ._sb_dot {
   width: 8px;
   height: 8px;

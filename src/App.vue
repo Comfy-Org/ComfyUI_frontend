@@ -10,12 +10,12 @@ import { computed, markRaw, onMounted, onUnmounted, watch } from 'vue'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
-import QueueSideBarTab from '@/components/sidebar/tabs/QueueSideBarTab.vue'
+import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
-import NodeLibrarySideBarTab from './components/sidebar/tabs/NodeLibrarySideBarTab.vue'
+import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import { api } from './scripts/api'
 import { StatusWsMessageStatus } from './types/apiTypes'
@@ -50,17 +50,17 @@ const init = () => {
       const value = useQueuePendingTaskCountStore().count.toString()
       return value === '0' ? null : value
     },
-    title: t('sideToolBar.queue'),
-    tooltip: t('sideToolBar.queue'),
-    component: markRaw(QueueSideBarTab),
+    title: t('sideToolbar.queue'),
+    tooltip: t('sideToolbar.queue'),
+    component: markRaw(QueueSidebarTab),
     type: 'vue'
   })
   app.extensionManager.registerSidebarTab({
     id: 'node-library',
     icon: 'pi pi-book',
-    title: t('sideToolBar.nodeLibrary'),
-    tooltip: t('sideToolBar.nodeLibrary'),
-    component: markRaw(NodeLibrarySideBarTab),
+    title: t('sideToolbar.nodeLibrary'),
+    tooltip: t('sideToolbar.nodeLibrary'),
+    component: markRaw(NodeLibrarySidebarTab),
     type: 'vue'
   })
 }

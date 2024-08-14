@@ -19,14 +19,14 @@ pause
   <summary>Empty white screen (Fixed by https://github.com/comfyanonymous/ComfyUI/pull/4211)</summary>
 
   ### Behavior
-  After you enable the new frontend in commandline, and open ComfyUI in the browser, you see a blank screen. If you toggle dev tools with F12, you can observe `litegraph.core.js:1` 404 in console messages.
+  After you enable the new frontend in the command line, and open ComfyUI in the browser, you see a blank screen. If you toggle dev tools with F12, you can observe `litegraph.core.js:1` 404 in console messages.
 
   ### Cause
   The browser is caching the `index.html` file previously served from `localhost:8188`.
 
   ### How to fix
   Step 1: Disable cache in devtools
-  
+
   ![image](https://github.com/user-attachments/assets/c0cec519-93b7-49f8-aea1-7adb0aa5b073)
 
   Step 2: Refresh your browser
@@ -67,7 +67,7 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 
 <details>
   <summary>v1.2.7: **Litegraph** drags multiple links with shift pressed</summary>
-  
+
 https://github.com/user-attachments/assets/68826715-bb55-4b2a-be6e-675cfc424afe
 
 https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
@@ -92,9 +92,9 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 
 ### Node developers API
 <details>
-  <summary>v1.2.4: Extension API to register custom side bar tab</summary>
+  <summary>v1.2.4: Extension API to register custom sidebar tab</summary>
 
-  Extensions now can call following API to register a sidebar tab.
+  Extensions now can call the following API to register a sidebar tab.
 
 ```js
   app.extensionManager.registerSidebarTab({
@@ -109,9 +109,9 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
   });
 ```
 
-The list of supported icons can be find here: https://primevue.org/icons/#list
+The list of supported icons can be found here: <https://primevue.org/icons/#list>
 
-We will support custom icon later.
+We will support custom icons later.
 
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
 </details>
@@ -122,7 +122,7 @@ We will support custom icon later.
 ### What has been done
 
 - Migrate all code to TypeScript with minimal change modification to the original logic.
-- Bundle all code with vite's rollup build.
+- Bundle all code with Vite's rollup build.
 - Added a shim layer to be backward compatible with the existing extension system. <https://github.com/huchenlei/ComfyUI_frontend/pull/15>
 - Front-end dev server.
 - Zod schema for input validation on ComfyUI workflow.

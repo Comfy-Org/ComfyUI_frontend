@@ -1,5 +1,5 @@
 <template>
-  <SideBarTabTemplate :title="$t('sideToolBar.nodeLibrary')">
+  <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
       <ToggleButton
         v-model:model-value="alphabeticalSort"
@@ -9,7 +9,7 @@
         :pt="{
           label: { style: { display: 'none' } }
         }"
-        v-tooltip="$t('sideToolBar.nodeLibraryTab.sortOrder')"
+        v-tooltip="$t('sideToolbar.nodeLibraryTab.sortOrder')"
       >
       </ToggleButton>
     </template>
@@ -63,7 +63,7 @@
         ></NodePreview>
       </div>
     </template>
-  </SideBarTabTemplate>
+  </SidebarTabTemplate>
 </template>
 
 <script setup lang="ts">
@@ -74,7 +74,7 @@ import { computed, ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
-import SideBarTabTemplate from '@/components/sidebar/tabs/SideBarTabTemplate.vue'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)

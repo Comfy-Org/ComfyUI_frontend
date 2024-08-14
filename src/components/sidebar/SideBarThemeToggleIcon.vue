@@ -1,15 +1,15 @@
 <template>
-  <SideBarIcon
+  <SidebarIcon
     :icon="icon"
     @click="toggleTheme"
-    :tooltip="$t('sideToolBar.themeToggle')"
+    :tooltip="$t('sideToolbar.themeToggle')"
     class="comfy-vue-theme-toggle"
   />
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import SideBarIcon from './SideBarIcon.vue'
+import SidebarIcon from './SidebarIcon.vue'
 import { useSettingStore } from '@/stores/settingStore'
 
 const previousDarkTheme = ref('dark')

@@ -1,5 +1,5 @@
 <template>
-  <SideBarIcon
+  <SidebarIcon
     icon="pi pi-cog"
     @click="showSetting"
     :tooltip="$t('settings')"
@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import SideBarIcon from './SideBarIcon.vue'
+import SidebarIcon from './SidebarIcon.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'

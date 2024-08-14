@@ -9,7 +9,7 @@ const messages = {
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
     noTasksFound: 'No Tasks Found',
     noTasksFoundMessage: 'There are no tasks in the queue.',
-    sideToolBar: {
+    sideToolbar: {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
@@ -26,7 +26,7 @@ const messages = {
     noTasksFoundMessage: '队列中没有任务。',
     searchFailedMessage:
       '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
-    sideToolBar: {
+    sideToolbar: {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
