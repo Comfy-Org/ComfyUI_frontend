@@ -15,7 +15,7 @@
           v-for="task in tasks"
           :key="task.promptId"
           :task="task"
-          @remove="removeTask"
+          @contextmenu="handleContextMenu"
         />
       </div>
       <div v-else>
@@ -29,24 +29,29 @@
   </SideBarTabTemplate>
   <Toast />
   <ConfirmPopup />
+  <ContextMenu ref="menu" :model="menuItems" />
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Toast from 'primevue/toast'
+import ContextMenu from 'primevue/contextmenu'
 import TaskItem from './queue/TaskItem.vue'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { type MenuItem } from 'primevue/menuitem'
 import { api } from '@/scripts/api'
 
 const confirm = useConfirm()
 const toast = useToast()
 const queueStore = useQueueStore()
+const { t } = useI18n()
 
 const tasks = computed(() => queueStore.tasks)
 
@@ -88,6 +93,27 @@ const confirmRemoveAll = (event) => {
 }
 
 const onStatus = () => queueStore.update()
+
+const menu = ref(null)
+const menuTargetTask = ref<TaskItemImpl | null>(null)
+const menuItems = computed<MenuItem[]>(() => {
+  return [
+    {
+      label: t('delete'),
+      icon: 'pi pi-trash',
+      command: () => removeTask(menuTargetTask.value!)
+    },
+    {
+      label: t('loadWorkflow'),
+      icon: 'pi pi-file-export',
+      command: () => menuTargetTask.value?.loadWorkflow()
+    }
+  ]
+})
+const handleContextMenu = ({ task, event }) => {
+  menuTargetTask.value = task
+  menu.value.show(event)
+}
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
