@@ -1,46 +1,37 @@
 <template>
   <div class="task-item" @contextmenu="handleContextMenu">
-    <div
-      v-if="task.isHistory"
-      :class="['image-grid', { compact: !isExpanded }]"
-    >
+    <div class="task-result-preview">
       <div
-        v-for="(output, index) in isExpanded
-          ? task.flatOutputs
-          : task.flatOutputs.slice(0, 1)"
-        :key="index"
-        class="image-container"
+        v-if="task.isHistory"
+        :class="['image-grid', { compact: !isExpanded }]"
       >
-        <Image
-          :src="output.url"
-          alt="Task Output"
-          width="100%"
-          height="100%"
-          preview
-        />
+        <div
+          v-for="(output, index) in isExpanded
+            ? task.flatOutputs
+            : task.flatOutputs.slice(0, 1)"
+          :key="index"
+          class="image-container"
+        >
+          <Image
+            :src="output.url"
+            alt="Task Output"
+            width="100%"
+            height="100%"
+            preview
+          />
+        </div>
       </div>
+      <ProgressSpinner v-else-if="task.isRunning" />
+      <div v-else>...</div>
     </div>
-    <ProgressSpinner v-else-if="task.isRunning" />
-    <div v-else>...</div>
 
     <div class="task-item-details">
-      <div class="status-and-toggle">
-        <Tag :severity="taskTagSeverity(task.displayStatus)">
-          {{ task.displayStatus.toUpperCase() }}
-        </Tag>
-        <Button
-          v-if="task.flatOutputs.length > 1"
-          :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-          text
-          severity="secondary"
-          @click="toggleExpand"
-        />
-      </div>
-      <div class="task-time">
-        <span v-if="task.isHistory">
+      <Tag :severity="taskTagSeverity(task.displayStatus)">
+        <span v-html="taskStatusText(task.displayStatus)"></span>
+        <span v-if="task.isHistory" class="task-time">
           {{ formatTime(task.executionTimeInSeconds) }}
         </span>
-      </div>
+      </Tag>
     </div>
   </div>
 </template>
@@ -49,7 +40,6 @@
 import { ref } from 'vue'
 import Image from 'primevue/image'
 import Tag from 'primevue/tag'
-import Button from 'primevue/button'
 import { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
 import ProgressSpinner from 'primevue/progressspinner'
 
@@ -86,6 +76,21 @@ const taskTagSeverity = (status: TaskItemDisplayStatus) => {
   }
 }
 
+const taskStatusText = (status: TaskItemDisplayStatus) => {
+  switch (status) {
+    case TaskItemDisplayStatus.Pending:
+      return 'Pending'
+    case TaskItemDisplayStatus.Running:
+      return 'Running'
+    case TaskItemDisplayStatus.Completed:
+      return '<i class="pi pi-check" style="font-weight: bold"></i>'
+    case TaskItemDisplayStatus.Failed:
+      return 'Failed'
+    case TaskItemDisplayStatus.Cancelled:
+      return 'Cancelled'
+  }
+}
+
 const formatTime = (time?: number) => {
   if (time === undefined) {
     return ''
@@ -98,15 +103,14 @@ const formatTime = (time?: number) => {
 .task-item {
   display: flex;
   flex-direction: column;
-  border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
+  position: relative;
 }
 
 .image-grid {
   display: grid;
-  gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.25rem;
 }
 
 .image-grid.compact {
@@ -129,24 +133,8 @@ const formatTime = (time?: number) => {
 }
 
 .task-item-details {
-  padding: 0.5rem;
-}
-
-.status-and-toggle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.task-time {
-  margin-top: 0.5rem;
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.task-actions {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.5rem;
+  position: absolute;
+  bottom: 0;
+  padding: 0.6rem;
 }
 </style>
