@@ -104,16 +104,16 @@ const linkReleaseTriggerMode = computed<LinkReleaseTriggerMode>(() => {
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
 
-  if (
-    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
-      !shiftPressed) ||
-    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
-      shiftPressed)
-  ) {
-    return
-  }
-
   if (e.detail.subType === 'empty-release') {
+    if (
+      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
+        !shiftPressed) ||
+      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
+        shiftPressed)
+    ) {
+      return
+    }
+
     const context = e.detail.linkReleaseContext
     if (context.links.length === 0) {
       console.warn('Empty release with no links! This should never happen')

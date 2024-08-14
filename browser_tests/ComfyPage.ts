@@ -170,6 +170,15 @@ export class ComfyPage {
     await this.resetView()
   }
 
+  async setSetting(settingId: string, settingValue: any) {
+    return await this.page.evaluate(
+      async ({ id, value }) => {
+        await window['app'].ui.settings.setSettingValueAsync(id, value)
+      },
+      { id: settingId, value: settingValue }
+    )
+  }
+
   async realod() {
     await this.page.reload({ timeout: 15000 })
     await this.setup()
