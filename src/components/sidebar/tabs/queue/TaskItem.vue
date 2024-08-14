@@ -44,8 +44,7 @@
 import { ref } from 'vue'
 import Image from 'primevue/image'
 import Tag from 'primevue/tag'
-import { TaskItemDisplayStatus, TaskItemImpl } from '@/stores/queueStore'
-import ProgressSpinner from 'primevue/progressspinner'
+import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 
 const props = defineProps<{
   task: TaskItemImpl
