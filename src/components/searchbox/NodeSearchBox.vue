@@ -28,7 +28,9 @@
       <template v-slot:option="{ option }">
         <div class="option-container">
           <div class="option-display-name">
-            {{ option.display_name }}
+            <span
+              v-html="highlightQuery(option.display_name, currentQuery)"
+            ></span>
             <NodeSourceChip
               v-if="option.python_module !== undefined"
               :python_module="option.python_module"
@@ -76,11 +78,13 @@ const props = defineProps({
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
+const currentQuery = ref('')
 const placeholder = computed(() => {
   return props.filters.length === 0 ? 'Search for nodes' : ''
 })
 
 const search = (query: string) => {
+  currentQuery.value = query
   suggestions.value = useNodeDefStore().nodeSearchService.searchNode(
     query,
     props.filters,
@@ -88,6 +92,12 @@ const search = (query: string) => {
       limit: props.searchLimit
     }
   )
+}
+
+const highlightQuery = (text: string, query: string) => {
+  if (!query) return text
+  const regex = new RegExp(`(${query})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
@@ -168,5 +178,14 @@ const setHoverSuggestion = (index: number) => {
 
 .s-badge {
   @apply bg-yellow-500;
+}
+
+:deep(.highlight) {
+  background-color: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font-weight: bold;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem 0.125rem;
 }
 </style>
