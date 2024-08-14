@@ -21,8 +21,12 @@
           />
         </div>
       </div>
-      <ProgressSpinner v-else-if="task.isRunning" />
-      <div v-else>...</div>
+      <div v-else-if="task.isRunning" class="placeholder-container">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
+      <div v-else class="placeholder-container">
+        <span>...</span>
+      </div>
     </div>
 
     <div class="task-item-details">
@@ -100,6 +104,24 @@ const formatTime = (time?: number) => {
 </script>
 
 <style scoped>
+.task-result-preview {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.placeholder-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.placeholder-container i,
+.placeholder-container span {
+  font-size: 2rem;
+}
+
 .task-item {
   display: flex;
   flex-direction: column;
