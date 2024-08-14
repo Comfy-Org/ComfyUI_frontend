@@ -198,16 +198,20 @@ export const useQueueStore = defineStore('queue', {
       this.pendingTasks = toClassAll(queue.Pending)
 
       // Process history items
-      const newHistoryItems = history.History.filter(
-        (item) => item.prompt[0] > this.lastHistoryQueueIndex
+      const allIndex = new Set(
+        history.History.map((item: TaskItem) => item.prompt[0])
       )
-
-      if (newHistoryItems.length > 0) {
-        const newProcessedItems = toClassAll(newHistoryItems)
-        this.historyTasks = [...newProcessedItems, ...this.historyTasks]
-          .slice(0, this.maxHistoryItems)
-          .sort((a, b) => b.queueIndex - a.queueIndex)
-      }
+      const newHistoryItems = toClassAll(
+        history.History.filter(
+          (item) => item.prompt[0] > this.lastHistoryQueueIndex
+        )
+      )
+      const existingHistoryItems = this.historyTasks.filter(
+        (item: TaskItemImpl) => allIndex.has(item.queueIndex)
+      )
+      this.historyTasks = [...newHistoryItems, ...existingHistoryItems]
+        .slice(0, this.maxHistoryItems)
+        .sort((a, b) => b.queueIndex - a.queueIndex)
     },
     async clear() {
       await Promise.all(
