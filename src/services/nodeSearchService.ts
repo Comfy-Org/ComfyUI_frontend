@@ -111,11 +111,12 @@ export class NodeSearchService {
 
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
-      keys: ['name', 'display_name', 'description'],
+      keys: ['name', 'display_name'],
       includeScore: true,
       threshold: 0.3,
       shouldSort: true,
-      useExtendedSearch: true
+      useExtendedSearch: true,
+      minMatchCharLength: 2
     })
 
     const filterSearchOptions = {
