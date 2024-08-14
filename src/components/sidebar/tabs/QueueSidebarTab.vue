@@ -128,8 +128,6 @@ onUnmounted(() => {
 <style scoped>
 .queue-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 </style>
