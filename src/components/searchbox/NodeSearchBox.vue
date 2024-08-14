@@ -1,6 +1,6 @@
 <template>
   <div class="comfy-vue-node-search-container">
-    <div class="comfy-vue-node-preview-container">
+    <div class="comfy-vue-node-preview-container" v-if="enableNodePreview">
       <NodePreview
         :nodeDef="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
@@ -64,6 +64,12 @@ import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+
+const settingStore = useSettingStore()
+const enableNodePreview = computed(() =>
+  settingStore.get<boolean>('Comfy.NodeSearchBoxImpl.NodePreview')
+)
 
 const props = defineProps({
   filters: {

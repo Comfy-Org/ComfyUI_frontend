@@ -83,6 +83,14 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.NodeSearchBoxImpl.NodePreview',
+        name: 'Node Preview',
+        tooltip: 'Only applies to the default implementation',
+        type: 'boolean',
+        defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.SideBar.Location',
         name: 'Sidebar location',
         type: 'combo',
