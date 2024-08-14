@@ -1,66 +1,51 @@
 <template>
-  <SideBarTabTemplate :title="$t('queue')">
+  <SideBarTabTemplate :title="$t('sideToolbar.queue')">
     <template #body>
-      <DataTable
-        v-if="tasks.length > 0"
-        :value="tasks"
-        dataKey="promptId"
-        class="queue-table"
-      >
-        <Column header="STATUS">
-          <template #body="{ data }">
-            <Tag :severity="taskTagSeverity(data.displayStatus)">
-              {{ data.displayStatus.toUpperCase() }}
+      <div v-if="tasks.length > 0" class="queue-grid">
+        <div v-for="task in tasks" :key="task.promptId" class="queue-item">
+          <div class="image-grid">
+            <div
+              v-for="(output, index) in task.flatOutputs"
+              :key="index"
+              class="image-container"
+            >
+              <Image
+                :src="output.url"
+                alt="Task Output"
+                width="100%"
+                height="100%"
+                preview
+              />
+            </div>
+          </div>
+          <div class="queue-item-details">
+            <Tag :severity="taskTagSeverity(task.displayStatus)">
+              {{ task.displayStatus.toUpperCase() }}
             </Tag>
-          </template>
-        </Column>
-        <Column header="TIME" :pt="{ root: { class: 'queue-time-cell' } }">
-          <template #body="{ data }">
-            <div v-if="data.isHistory" class="queue-time-cell-content">
-              {{ formatTime(data.executionTimeInSeconds) }}
+            <div class="queue-time">
+              <span v-if="task.isHistory">
+                {{ formatTime(task.executionTimeInSeconds) }}
+              </span>
+              <i v-else-if="task.isRunning" class="pi pi-spin pi-spinner"></i>
+              <span v-else>...</span>
             </div>
-            <div v-else-if="data.isRunning" class="queue-time-cell-content">
-              <i class="pi pi-spin pi-spinner"></i>
+            <div class="queue-actions">
+              <Button
+                icon="pi pi-file-export"
+                text
+                severity="primary"
+                @click="task.loadWorkflow()"
+              />
+              <Button
+                icon="pi pi-times"
+                text
+                severity="secondary"
+                @click="removeTask(task)"
+              />
             </div>
-            <div v-else class="queue-time-cell-content">...</div>
-          </template>
-        </Column>
-        <Column
-          :pt="{
-            headerCell: {
-              class: 'queue-tool-header-cell'
-            },
-            bodyCell: {
-              class: 'queue-tool-body-cell'
-            }
-          }"
-        >
-          <template #header>
-            <Toast />
-            <ConfirmPopup />
-            <Button
-              icon="pi pi-trash"
-              text
-              severity="primary"
-              @click="confirmRemoveAll($event)"
-            />
-          </template>
-          <template #body="{ data }">
-            <Button
-              icon="pi pi-file-export"
-              text
-              severity="primary"
-              @click="data.loadWorkflow()"
-            />
-            <Button
-              icon="pi pi-times"
-              text
-              severity="secondary"
-              @click="removeTask(data)"
-            />
-          </template>
-        </Column>
-      </DataTable>
+          </div>
+        </div>
+      </div>
       <div v-else>
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
@@ -73,12 +58,9 @@
 </template>
 
 <script setup lang="ts">
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import Image from 'primevue/image'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
-import ConfirmPopup from 'primevue/confirmpopup'
-import Toast from 'primevue/toast'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { useConfirm } from 'primevue/useconfirm'
@@ -162,20 +144,59 @@ onUnmounted(() => {
 })
 </script>
 
-<style>
-.queue-tool-header-cell {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.queue-tool-body-cell {
-  display: table-cell;
-  text-align: right !important;
-}
-</style>
-
 <style scoped>
-.queue-time-cell-content {
-  width: fit-content;
+.queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.queue-item {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.image-container {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.image-container img {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+
+.queue-item-details {
+  padding: 0.5rem;
+}
+
+.queue-time {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.queue-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.clear-all-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 </style>

@@ -37,8 +37,8 @@ export class ResultItemImpl {
   mediaType: string
 
   get url(): string {
-    return `./view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
-					subfolder=${encodeURIComponent(this.subfolder || '')}&t=${+new Date()}`
+    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
+					subfolder=${encodeURIComponent(this.subfolder || '')}&t=${+new Date()}`)
   }
 }
 
@@ -46,16 +46,13 @@ export class TaskItemImpl {
   taskType: TaskType
   prompt: TaskPrompt
   status?: TaskStatus
+  outputs: TaskOutput
 
-  @Transform(({ obj }) => TaskItemImpl.flattenOutputs(obj.outputs))
-  outputs: ResultItemImpl[]
-
-  private static flattenOutputs(outputs: TaskOutput | null): ResultItemImpl[] {
-    console.log(`TaskItemImpl.flattenOutputs(${outputs})`)
-    if (!outputs) {
+  get flatOutputs(): ResultItemImpl[] {
+    if (!this.outputs) {
       return []
     }
-    return Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
+    return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
         (items as ResultItem[]).flatMap((item: ResultItem) =>
           plainToClass(ResultItemImpl, {
