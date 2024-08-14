@@ -115,8 +115,7 @@ export class NodeSearchService {
       includeScore: true,
       threshold: 0.3,
       shouldSort: true,
-      useExtendedSearch: true,
-      minMatchCharLength: 2
+      useExtendedSearch: true
     })
 
     const filterSearchOptions = {
