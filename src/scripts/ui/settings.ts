@@ -4,6 +4,7 @@ import { ComfyDialog } from './dialog'
 import type { ComfyApp } from '../app'
 import type { Setting, SettingParams } from '@/types/settingTypes'
 import { useSettingStore } from '@/stores/settingStore'
+import { Settings } from '@/types/apiTypes'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
@@ -98,16 +99,19 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return id
   }
 
-  getSettingValue<T>(id: string, defaultValue?: T): T {
+  getSettingValue<K extends keyof Settings>(
+    id: K,
+    defaultValue?: Settings[K]
+  ): Settings[K] {
     let value = this.settingsValues[this.getId(id)]
     if (value != null) {
       if (this.app.storageLocation === 'browser') {
         try {
-          value = JSON.parse(value) as T
+          value = JSON.parse(value)
         } catch (error) {}
       }
     }
-    return value ?? defaultValue
+    return (value ?? defaultValue) as Settings[K]
   }
 
   getSettingDefaultValue(id: string) {
@@ -115,7 +119,10 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return param?.defaultValue
   }
 
-  async setSettingValueAsync(id: string, value: any) {
+  async setSettingValueAsync<K extends keyof Settings>(
+    id: K,
+    value: Settings[K]
+  ) {
     const json = JSON.stringify(value)
     localStorage['Comfy.Settings.' + id] = json // backwards compatibility for extensions keep setting in storage
 
@@ -130,14 +137,14 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     await api.storeSetting(id, value)
   }
 
-  setSettingValue(id: string, value: any) {
+  setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
     this.setSettingValueAsync(id, value).catch((err) => {
       alert(`Error saving setting '${id}'`)
       console.error(err)
     })
   }
 
-  refreshSetting(id: string) {
+  refreshSetting(id: keyof Settings) {
     const value = this.getSettingValue(id)
     this.settingsLookup[id].onChange?.(value)
     this.#dispatchChange(id, value)

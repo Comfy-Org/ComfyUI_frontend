@@ -2186,7 +2186,7 @@ export class ComfyApp {
 
     if (
       this.vueAppReady &&
-      useSettingStore().get<boolean>('Comfy.Validation.Workflows')
+      useSettingStore().get('Comfy.Validation.Workflows')
     ) {
       graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
       if (!graphData) return

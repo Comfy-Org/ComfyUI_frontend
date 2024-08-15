@@ -88,7 +88,7 @@ const paletteSchema = z.object({
   colors: colorsSchema
 })
 
-const colorPalettesSchema = z.record(paletteSchema)
+export const colorPalettesSchema = z.record(paletteSchema)
 
 export type Colors = z.infer<typeof colorsSchema>
 export type Palette = z.infer<typeof paletteSchema>

@@ -68,7 +68,7 @@ import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 const enableNodePreview = computed(() =>
-  settingStore.get<boolean>('Comfy.NodeSearchBoxImpl.NodePreview')
+  settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
 )
 
 const props = defineProps({

@@ -95,10 +95,8 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   }, 100)
 }
 
-const linkReleaseTriggerMode = computed<LinkReleaseTriggerMode>(() => {
-  return settingStore.get<LinkReleaseTriggerMode>(
-    'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger'
-  )
+const linkReleaseTriggerMode = computed(() => {
+  return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseTrigger')
 })
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
