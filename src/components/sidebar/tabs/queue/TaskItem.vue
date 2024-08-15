@@ -3,22 +3,16 @@
     <div class="task-result-preview">
       <div
         v-if="task.displayStatus === TaskItemDisplayStatus.Completed"
-        :class="['image-grid', { compact: !isExpanded }]"
+        :class="['result-grid', { compact: !isExpanded }]"
       >
         <div
           v-for="(output, index) in isExpanded
             ? task.flatOutputs
             : task.flatOutputs.slice(0, 1)"
           :key="index"
-          class="image-container"
+          class="result-container"
         >
-          <Image
-            :src="output.url"
-            alt="Task Output"
-            width="100%"
-            height="100%"
-            preview
-          />
+          <ResultItem :result="output" />
         </div>
       </div>
       <i
@@ -62,8 +56,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Button from 'primevue/button'
-import Image from 'primevue/image'
 import Tag from 'primevue/tag'
+import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 
 const props = defineProps<{
@@ -146,25 +140,25 @@ const formatTime = (time?: number) => {
   position: relative;
 }
 
-.image-grid {
+.result-grid {
   display: grid;
   padding: 0.25rem;
 }
 
-.image-grid.compact {
+.result-grid.compact {
   grid-template-columns: 1fr;
 }
 
-.image-grid:not(.compact) {
+.result-grid:not(.compact) {
   grid-template-columns: repeat(2, 1fr);
 }
 
-.image-container {
+.result-container {
   aspect-ratio: 1 / 1;
   overflow: hidden;
 }
 
-.image-container img {
+.result-container img {
   object-fit: cover;
   width: 100%;
   height: 100%;
