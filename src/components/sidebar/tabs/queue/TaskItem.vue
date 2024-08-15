@@ -3,16 +3,10 @@
     <div class="task-result-preview">
       <div
         v-if="task.displayStatus === TaskItemDisplayStatus.Completed"
-        :class="['result-grid', { compact: !isExpanded }]"
+        class="result-grid"
       >
-        <div
-          v-for="(output, index) in isExpanded
-            ? task.flatOutputs
-            : task.flatOutputs.slice(0, 1)"
-          :key="index"
-          class="result-container"
-        >
-          <ResultItem :result="output" />
+        <div class="result-container">
+          <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
         </div>
       </div>
       <i
@@ -33,29 +27,24 @@
     </div>
 
     <div class="task-item-details">
-      <Tag :severity="taskTagSeverity(task.displayStatus)">
-        <span v-html="taskStatusText(task.displayStatus)"></span>
-        <span v-if="task.isHistory" class="task-time">
-          {{ formatTime(task.executionTimeInSeconds) }}
-        </span>
-      </Tag>
-      <Tag v-if="task.isHistory" :style="{ marginLeft: '10px' }">
-        <span>{{ task.flatOutputs.length }}</span>
-      </Tag>
-      <Button
-        v-if="task.flatOutputs.length > 1"
-        :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-        text
-        severity="secondary"
-        @click="toggleExpand"
-      />
+      <div class="tag-wrapper">
+        <Tag :severity="taskTagSeverity(task.displayStatus)">
+          <span v-html="taskStatusText(task.displayStatus)"></span>
+          <span v-if="task.isHistory" class="task-time">
+            {{ formatTime(task.executionTimeInSeconds) }}
+          </span>
+        </Tag>
+      </div>
+      <div class="tag-wrapper">
+        <Tag v-if="task.isHistory && flatOutputs.length > 1">
+          <span>{{ flatOutputs.length }}</span>
+        </Tag>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
@@ -64,18 +53,14 @@ const props = defineProps<{
   task: TaskItemImpl
 }>()
 
+const flatOutputs = props.task.flatOutputs
+
 const emit = defineEmits<{
   (e: 'contextmenu', { task: TaskItemImpl, event: MouseEvent }): void
 }>()
 
 const handleContextMenu = (e: MouseEvent) => {
   emit('contextmenu', { task: props.task, event: e })
-}
-
-const isExpanded = ref(false)
-
-const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value
 }
 
 const taskTagSeverity = (status: TaskItemDisplayStatus) => {
@@ -162,5 +147,16 @@ const formatTime = (time?: number) => {
   position: absolute;
   bottom: 0;
   padding: 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* In dark mode, transparent background color for tags is not ideal for tags that
+are floating on top of images. */
+.tag-wrapper {
+  background-color: var(--p-primary-contrast-color);
+  border-radius: 6px;
+  display: inline-flex;
 }
 </style>
