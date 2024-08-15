@@ -2,7 +2,7 @@
   <div class="task-item" @contextmenu="handleContextMenu">
     <div class="task-result-preview">
       <div
-        v-if="task.isHistory"
+        v-if="task.displayStatus === TaskItemDisplayStatus.Completed"
         :class="['image-grid', { compact: !isExpanded }]"
       >
         <div
@@ -21,11 +21,23 @@
           />
         </div>
       </div>
-      <div v-else-if="task.isRunning" class="placeholder-container">
+      <div
+        v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
+        class="placeholder-container"
+      >
         <i class="pi pi-spin pi-spinner"></i>
       </div>
-      <div v-else class="placeholder-container">
+      <div
+        v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
+        class="placeholder-container"
+      >
         <span>...</span>
+      </div>
+      <div
+        v-else-if="task.displayStatus === TaskItemDisplayStatus.Cancelled"
+        class="placeholder-container"
+      >
+        <i class="pi pi-exclamation-triangle"></i>
       </div>
     </div>
 
@@ -36,12 +48,23 @@
           {{ formatTime(task.executionTimeInSeconds) }}
         </span>
       </Tag>
+      <Tag v-if="task.isHistory" :style="{ marginLeft: '10px' }">
+        <span>{{ task.flatOutputs.length }}</span>
+      </Tag>
+      <Button
+        v-if="task.flatOutputs.length > 1"
+        :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        text
+        severity="secondary"
+        @click="toggleExpand"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import Button from 'primevue/button'
 import Image from 'primevue/image'
 import Tag from 'primevue/tag'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
@@ -75,7 +98,7 @@ const taskTagSeverity = (status: TaskItemDisplayStatus) => {
     case TaskItemDisplayStatus.Failed:
       return 'danger'
     case TaskItemDisplayStatus.Cancelled:
-      return 'warning'
+      return 'warn'
   }
 }
 
