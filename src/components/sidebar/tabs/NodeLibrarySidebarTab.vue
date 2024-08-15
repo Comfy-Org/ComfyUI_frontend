@@ -26,19 +26,8 @@
           nodeLabel: 'node-lib-tree-node-label',
           nodeChildren: ({ props }) => ({
             'data-comfy-node-name': props.node?.data?.name,
-            onMouseenter: (event: MouseEvent) => {
-              hoveredComfyNodeName = props.node?.data?.name
-
-              const hoverTarget = event.target as HTMLElement
-              const targetRect = hoverTarget.getBoundingClientRect()
-              if (sidebarLocation === 'left') {
-                nodePreviewStyle.top = `${targetRect.top - 40}px`
-                nodePreviewStyle.left = `${targetRect.right}px`
-              } else {
-                nodePreviewStyle.top = `${targetRect.top - 40}px`
-                nodePreviewStyle.left = `${targetRect.left - 400}px`
-              }
-            },
+            onMouseenter: (event: MouseEvent) =>
+              handleNodeHover(event, props.node?.data?.name),
             onMouseleave: () => {
               hoveredComfyNodeName = null
             }
@@ -63,6 +52,7 @@
         :style="nodePreviewStyle"
       >
         <NodePreview
+          ref="previewRef"
           :key="hoveredComfyNode.name"
           :nodeDef="hoveredComfyNode"
         ></NodePreview>
@@ -75,7 +65,7 @@
 import Badge from 'primevue/badge'
 import ToggleButton from 'primevue/togglebutton'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -92,6 +82,7 @@ const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
   }
   return nodeDefStore.nodeDefsByName[hoveredComfyNodeName.value] || null
 })
+const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
@@ -126,6 +117,32 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
     totalNodes: node.leaf
       ? 1
       : children.reduce((acc, child) => acc + child.totalNodes, 0)
+  }
+}
+
+const handleNodeHover = async (
+  event: MouseEvent,
+  nodeName: string | undefined
+) => {
+  hoveredComfyNodeName.value = nodeName || null
+
+  if (!nodeName) return
+
+  const hoverTarget = event.target as HTMLElement
+  const targetRect = hoverTarget.getBoundingClientRect()
+
+  await nextTick()
+
+  const previewHeight = previewRef.value?.$el.offsetHeight || 0
+  const availableSpaceBelow = window.innerHeight - targetRect.bottom
+
+  nodePreviewStyle.value.top = previewHeight > availableSpaceBelow
+      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
+      : `${targetRect.top - 40}px`
+  if (sidebarLocation.value === 'left') {
+    nodePreviewStyle.value.left = `${targetRect.right}px`
+  } else {
+    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 }
 </script>
