@@ -1,3 +1,5 @@
+import { Settings } from './apiTypes'
+
 export type StorageLocation = 'browser' | 'server'
 
 export type SettingInputType =
@@ -21,14 +23,14 @@ export interface SettingOption {
 }
 
 export interface Setting {
-  id: string
+  id: keyof Settings
   onChange?: (value: any, oldValue?: any) => void
   name: string
   render: () => HTMLElement
 }
 
 export interface SettingParams {
-  id: string
+  id: keyof Settings
   name: string
   type: SettingInputType | SettingCustomRenderer
   defaultValue: any

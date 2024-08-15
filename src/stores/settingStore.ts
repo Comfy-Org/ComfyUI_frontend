@@ -9,6 +9,7 @@
 
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
+import { Settings } from '@/types/apiTypes'
 import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
 import { SettingParams } from '@/types/settingTypes'
 import { buildTree } from '@/utils/treeUtil'
@@ -107,12 +108,12 @@ export const useSettingStore = defineStore('setting', {
       })
     },
 
-    set(key: string, value: any) {
+    set<K extends keyof Settings>(key: K, value: Settings[K]) {
       this.settingValues[key] = value
       app.ui.settings.setSettingValue(key, value)
     },
 
-    get<T = any>(key: string): T {
+    get<K extends keyof Settings>(key: K): Settings[K] {
       return (
         this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
       )

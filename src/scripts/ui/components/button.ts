@@ -4,6 +4,7 @@ import { prop } from '../../utils'
 import type { ComfyPopup } from './popup'
 import type { ComfyComponent } from '.'
 import type { ComfyApp } from '@/scripts/app'
+import { Settings } from '@/types/apiTypes'
 
 type ComfyButtonProps = {
   icon?: string
@@ -14,7 +15,7 @@ type ComfyButtonProps = {
   enabled?: boolean
   action?: (e: Event, btn: ComfyButton) => void
   classList?: ClassList
-  visibilitySetting?: { id: string; showValue: any }
+  visibilitySetting?: { id: keyof Settings; showValue: boolean }
   app?: ComfyApp
 }
 
