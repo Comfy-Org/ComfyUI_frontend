@@ -35,7 +35,7 @@ const props = defineProps<{
 }
 
 .p-image-preview {
-  position: static !important;
-  display: contents !important;
+  position: static;
+  display: contents;
 }
 </style>
