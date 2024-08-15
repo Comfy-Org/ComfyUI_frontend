@@ -31,8 +31,13 @@
 
               const hoverTarget = event.target as HTMLElement
               const targetRect = hoverTarget.getBoundingClientRect()
-              nodePreviewStyle.top = `${targetRect.top - 40}px`
-              nodePreviewStyle.left = `${targetRect.right}px`
+              if (sidebarLocation === 'left') {
+                nodePreviewStyle.top = `${targetRect.top - 40}px`
+                nodePreviewStyle.left = `${targetRect.right}px`
+              } else {
+                nodePreviewStyle.top = `${targetRect.top - 40}px`
+                nodePreviewStyle.left = `${targetRect.left - 400}px`
+              }
             },
             onMouseleave: () => {
               hoveredComfyNodeName = null
@@ -75,6 +80,7 @@ import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import { useSettingStore } from '@/stores/settingStore'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -86,6 +92,11 @@ const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
   }
   return nodeDefStore.nodeDefsByName[hoveredComfyNodeName.value] || null
 })
+
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
 const nodePreviewStyle = ref<Record<string, string>>({
   position: 'absolute',
   top: '0px',
