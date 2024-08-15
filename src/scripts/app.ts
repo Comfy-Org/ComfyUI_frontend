@@ -1155,6 +1155,9 @@ export class ComfyApp {
    */
   #addCopyHandler() {
     document.addEventListener('copy', (e) => {
+      if (!(e.target instanceof Element)) {
+        return
+      }
       if (
         (e.target instanceof HTMLTextAreaElement &&
           e.target.type === 'textarea') ||
@@ -1163,13 +1166,12 @@ export class ComfyApp {
         // Default system copy
         return
       }
+      const isTargetInGraph =
+        e.target.classList.contains('litegraph') ||
+        e.target.classList.contains('graph-canvas-container')
 
       // copy nodes and clear clipboard
-      if (
-        e.target instanceof Element &&
-        e.target.classList.contains('litegraph') &&
-        this.canvas.selected_nodes
-      ) {
+      if (isTargetInGraph && this.canvas.selected_nodes) {
         this.canvas.copyToClipboard()
         e.clipboardData.setData('text', ' ') //clearData doesn't remove images from clipboard
         e.preventDefault()
