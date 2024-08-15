@@ -21,24 +21,21 @@
           />
         </div>
       </div>
-      <div
+      <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
-        class="placeholder-container"
+        class="pi pi-spin pi-spinner"
+      ></i>
+      <span v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
+        >...</span
       >
-        <i class="pi pi-spin pi-spinner"></i>
-      </div>
-      <div
-        v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
-        class="placeholder-container"
-      >
-        <span>...</span>
-      </div>
-      <div
+      <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Cancelled"
-        class="placeholder-container"
-      >
-        <i class="pi pi-exclamation-triangle"></i>
-      </div>
+        class="pi pi-exclamation-triangle"
+      ></i>
+      <i
+        v-else-if="task.displayStatus === TaskItemDisplayStatus.Failed"
+        class="pi pi-exclamation-circle"
+      ></i>
     </div>
 
     <div class="task-item-details">
@@ -129,9 +126,6 @@ const formatTime = (time?: number) => {
 .task-result-preview {
   aspect-ratio: 1 / 1;
   overflow: hidden;
-}
-
-.placeholder-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -139,8 +133,8 @@ const formatTime = (time?: number) => {
   height: 100%;
 }
 
-.placeholder-container i,
-.placeholder-container span {
+.task-result-preview i,
+.task-result-preview span {
   font-size: 2rem;
 }
 
