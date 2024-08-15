@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const IS_DEV = process.env.NODE_ENV === 'development';
+const SHOULD_MINIFY = process.env.ENABLE_MINIFY !== 'false';
 
 interface ShimResult {
   code: string;
@@ -111,7 +112,7 @@ export default defineConfig({
     comfyAPIPlugin(),
   ],
   build: {
-    minify: 'esbuild',
+    minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2015',
     sourcemap: true,
     rollupOptions: {
@@ -123,8 +124,8 @@ export default defineConfig({
   esbuild: {
     minifyIdentifiers: false,
     keepNames: true,
-    minifySyntax: true,
-    minifyWhitespace: true,
+    minifySyntax: SHOULD_MINIFY,
+    minifyWhitespace: SHOULD_MINIFY,
   },
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
