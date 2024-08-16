@@ -1,6 +1,5 @@
 <template>
-  <!-- @contextmenu="handleContextMenu" -->
-  <div class="task-item">
+  <div class="task-item" @contextmenu="handleContextMenu">
     <div class="task-result-preview">
       <div v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
         <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
