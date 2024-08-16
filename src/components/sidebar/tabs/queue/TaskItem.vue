@@ -5,9 +5,7 @@
         v-if="task.displayStatus === TaskItemDisplayStatus.Completed"
         class="result-grid"
       >
-        <div class="result-container">
-          <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
-        </div>
+        <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
       </div>
       <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
@@ -140,11 +138,6 @@ const formatTime = (time?: number) => {
 
 .result-grid:not(.compact) {
   grid-template-columns: repeat(2, 1fr);
-}
-
-.result-container {
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
 }
 
 .task-item-details {
