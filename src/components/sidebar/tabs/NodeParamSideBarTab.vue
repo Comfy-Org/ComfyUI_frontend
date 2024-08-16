@@ -111,7 +111,7 @@ import { computed, ref } from 'vue'
 const nodeParamStore = useNodeParamStore()
 nodeParamStore.updateNodes()
 const selectedCategory = ref()
-let selectedNode = ref()
+let selectedNode
 
 const getComponent = (widget: Widget) => {
   switch (widget.type) {
