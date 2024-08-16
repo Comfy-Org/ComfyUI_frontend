@@ -183,11 +183,7 @@ const getComponentProps = (node: Node, widget: Widget) => {
       return baseProps
   }
 }
-// const selectNode = (nodeID: number) => {
-//   selectedNode = computed(() =>
-//     nodeParamStore.nodes.find((node) => node.id === nodeID)
-//   )
-// }
+
 const isSelectedNode = (NodeID: number) => {
   if (selectedNode.value) {
     if (NodeID === selectedNode.value.id) {
