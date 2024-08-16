@@ -57,7 +57,13 @@ export abstract class NodeFilter<FilterOptionT = string> {
   public abstract getNodeOptions(node: ComfyNodeDefImpl): FilterOptionT[]
 
   public matches(node: ComfyNodeDefImpl, value: FilterOptionT): boolean {
-    return this.getNodeOptions(node).includes(value)
+    if (value === '*') {
+      return true
+    }
+    const options = this.getNodeOptions(node)
+    return (
+      options.includes(value) || _.some(options, (option) => option === '*')
+    )
   }
 }
 
