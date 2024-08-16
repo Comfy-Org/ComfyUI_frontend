@@ -2,6 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    delete: 'Delete',
+    loadWorkflow: 'Load Workflow',
     settings: 'Settings',
     searchSettings: 'Search Settings',
     noResultsFound: 'No Results Found',
@@ -15,10 +17,15 @@ const messages = {
       nodeLibrary: 'Node Library',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
+      },
+      queueTab: {
+        showFlatList: 'Show Flat List'
       }
     }
   },
   zh: {
+    delete: '删除',
+    loadWorkflow: '加载工作流',
     settings: '设置',
     searchSettings: '搜索设置',
     noResultsFound: '未找到结果',
@@ -32,6 +39,9 @@ const messages = {
       nodeLibrary: '节点库',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
+      },
+      queueTab: {
+        showFlatList: '平铺结果'
       }
     }
   }

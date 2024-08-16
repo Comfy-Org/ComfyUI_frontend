@@ -1,15 +1,17 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import {
-  validateTaskItem,
+import type {
   TaskItem,
   TaskType,
   TaskPrompt,
   TaskStatus,
+  StatusWsMessageStatus,
   TaskOutput,
-  StatusWsMessageStatus
+  ResultItem
 } from '@/types/apiTypes'
-import { plainToClass } from 'class-transformer'
+import { validateTaskItem } from '@/types/apiTypes'
+import type { NodeId } from '@/types/comfyWorkflow'
+import { instanceToPlain, plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -25,11 +27,43 @@ export enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+export class ResultItemImpl {
+  filename: string
+  subfolder?: string
+  type: string
+
+  nodeId: NodeId
+  // 'audio' | 'images' | ...
+  mediaType: string
+
+  get url(): string {
+    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
+					subfolder=${encodeURIComponent(this.subfolder || '')}&t=${+new Date()}`)
+  }
+}
+
 export class TaskItemImpl {
   taskType: TaskType
   prompt: TaskPrompt
   status?: TaskStatus
-  outputs?: TaskOutput
+  outputs: TaskOutput
+
+  get flatOutputs(): ResultItemImpl[] {
+    if (!this.outputs) {
+      return []
+    }
+    return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
+      Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+        (items as ResultItem[]).flatMap((item: ResultItem) =>
+          plainToClass(ResultItemImpl, {
+            ...item,
+            nodeId,
+            mediaType
+          })
+        )
+      )
+    )
+  }
 
   get apiTaskType(): APITaskType {
     switch (this.taskType) {
@@ -39,6 +73,10 @@ export class TaskItemImpl {
       case 'History':
         return 'history'
     }
+  }
+
+  get key() {
+    return this.promptId + this.displayStatus
   }
 
   get queueIndex() {
@@ -173,6 +211,31 @@ export const useQueueStore = defineStore('queue', {
         ...state.runningTasks,
         ...state.historyTasks
       ]
+    },
+    flatTasks(): TaskItemImpl[] {
+      return this.tasks.flatMap((task: TaskItemImpl) => {
+        if (task.displayStatus !== TaskItemDisplayStatus.Completed) {
+          return [task]
+        }
+
+        return task.flatOutputs.map((output: ResultItemImpl, i: number) =>
+          plainToClass(TaskItemImpl, {
+            ...instanceToPlain(task),
+            prompt: [
+              task.queueIndex,
+              `${task.promptId}-${i}`,
+              task.promptInputs,
+              task.extraData,
+              task.outputsToExecute
+            ],
+            outputs: {
+              [output.nodeId]: {
+                [output.mediaType]: [instanceToPlain(output)]
+              }
+            }
+          })
+        )
+      })
     },
     lastHistoryQueueIndex(state) {
       return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
