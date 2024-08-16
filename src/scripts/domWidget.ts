@@ -227,9 +227,13 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
         if (w.element) {
-          w.element.hidden = hidden
-          w.element.style.display = hidden ? 'none' : undefined
-          if (hidden) {
+          w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
+          const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
+          const wasHidden = w.element.hidden
+          const actualHidden = hidden || shouldOtherwiseHide
+          w.element.hidden = actualHidden
+          w.element.style.display = actualHidden ? 'none' : undefined
+          if (actualHidden && !wasHidden) {
             w.options.onHide?.(w)
           }
         }
@@ -313,9 +317,13 @@ LGraphNode.prototype.addDOMWidget = function (
         widget.computedHeight <= 0 ||
         widget.type === 'converted-widget' ||
         widget.type === 'hidden'
-      element.hidden = hidden
-      element.style.display = hidden ? 'none' : null
-      if (hidden) {
+      element.dataset.shouldHide = hidden ? 'true' : 'false'
+      const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
+      const actualHidden = hidden || !isInVisibleNodes
+      const wasHidden = element.hidden
+      element.hidden = actualHidden
+      element.style.display = actualHidden ? 'none' : null
+      if (actualHidden && !wasHidden) {
         widget.options.onHide?.(widget)
         return
       }
