@@ -55,7 +55,8 @@ export class ConnectingLinkImpl implements ConnectingLink {
     const newNodeSlots =
       this.releaseSlotType === 'output' ? newNode.outputs : newNode.inputs
     const newNodeSlot = newNodeSlots.findIndex(
-      (slot: INodeSlot) => slot.type === this.type
+      (slot: INodeSlot) =>
+        slot.type === this.type || slot.type === '*' || this.type === '*'
     )
 
     if (newNodeSlot === -1) {
