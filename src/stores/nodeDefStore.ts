@@ -104,7 +104,8 @@ export class ComfyInputsSpec {
   ): BaseInputSpec {
     if (!BaseInputSpec.isInputSpec(value)) return value
 
-    const [typeRaw, spec] = value
+    const [typeRaw, _spec] = value
+    const spec = _spec ?? {}
     const type = Array.isArray(typeRaw) ? 'COMBO' : value[0]
 
     switch (type) {
