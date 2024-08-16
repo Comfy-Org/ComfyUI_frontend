@@ -325,6 +325,8 @@ LGraphNode.prototype.addDOMWidget = function (
       element.style.display = actualHidden ? 'none' : null
       if (actualHidden && !wasHidden) {
         widget.options.onHide?.(widget)
+      }
+      if (actualHidden) {
         return
       }
 
