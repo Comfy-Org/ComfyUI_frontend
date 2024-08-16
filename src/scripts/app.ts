@@ -2188,8 +2188,14 @@ export class ComfyApp {
       this.vueAppReady &&
       useSettingStore().get('Comfy.Validation.Workflows')
     ) {
-      graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
-      if (!graphData) return
+      // TODO: Show validation error in a dialog.
+      const validatedGraphData = await validateComfyWorkflow(
+        graphData,
+        /* onError=*/ alert
+      )
+      // If the validation failed, use the original graph data.
+      // Ideally we should not block users from loading the workflow.
+      graphData = validatedGraphData ?? graphData
     }
 
     const missingNodeTypes = []
