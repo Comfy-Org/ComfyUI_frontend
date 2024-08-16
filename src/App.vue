@@ -6,7 +6,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, markRaw, onMounted, onUnmounted, watch } from 'vue'
+import {
+  computed,
+  markRaw,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect
+} from 'vue'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
@@ -38,6 +45,14 @@ watch(
   },
   { immediate: true }
 )
+
+watchEffect(() => {
+  const fontSize = useSettingStore().get('Comfy.TextareaWidget.FontSize')
+  document.documentElement.style.setProperty(
+    '--comfy-textarea-font-size',
+    `${fontSize}px`
+  )
+})
 
 const { t } = useI18n()
 const init = () => {

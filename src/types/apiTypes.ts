@@ -424,6 +424,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Sidebar.Size': z.number(),
       'Comfy.SwitchUser': z.any(),
       'Comfy.SnapToGrid.GridSize': z.number(),
+      'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean()
     })

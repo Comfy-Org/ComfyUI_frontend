@@ -131,7 +131,7 @@ body {
   resize: none;
   border: none;
   box-sizing: border-box;
-  font-size: 10px;
+  font-size: var(--comfy-textarea-font-size);
 }
 
 .comfy-modal {
