@@ -1964,12 +1964,37 @@ export class ComfyApp {
     // Load node definitions from the backend
     const defs = await api.getNodeDefs()
     await this.registerNodesFromDefs(defs)
+    await this.#invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
+      // Frontend only nodes registered by custom nodes.
+      // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
+      const rawDefs = Object.fromEntries(
+        Object.entries(LiteGraph.registered_node_types).map(([name, _]) => [
+          name,
+          {
+            name,
+            display_name: name,
+            category: '__frontend_only__',
+            input: { required: {}, optional: {} },
+            output: [],
+            output_name: [],
+            output_is_list: [],
+            python_module: 'custom_nodes.frontend_only',
+            description: `Frontend only node for ${name}`
+          }
+        ])
+      )
+
+      const allNodeDefs = {
+        ...rawDefs,
+        ...defs,
+        ...SYSTEM_NODE_DEFS
+      }
+
       const nodeDefStore = useNodeDefStore()
-      nodeDefStore.updateNodeDefs([...Object.values(defs), ...SYSTEM_NODE_DEFS])
+      nodeDefStore.updateNodeDefs(Object.values(allNodeDefs))
       nodeDefStore.updateWidgets(this.widgets)
     }
-    await this.#invokeExtensionsAsync('registerCustomNodes')
   }
 
   getWidgetType(inputData, inputName) {
