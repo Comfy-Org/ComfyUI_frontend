@@ -1979,7 +1979,7 @@ export class ComfyApp {
             output: [],
             output_name: [],
             output_is_list: [],
-            python_module: 'nodes',
+            python_module: 'Unknown',
             description: `Frontend only node for ${name}`
           }
         ])
