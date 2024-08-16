@@ -1,10 +1,8 @@
 <template>
-  <div class="task-item" @contextmenu="handleContextMenu">
+  <!-- @contextmenu="handleContextMenu" -->
+  <div class="task-item">
     <div class="task-result-preview">
-      <div
-        v-if="task.displayStatus === TaskItemDisplayStatus.Completed"
-        class="result-grid"
-      >
+      <div v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
         <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
       </div>
       <i
@@ -125,19 +123,6 @@ const formatTime = (time?: number) => {
   border-radius: 4px;
   overflow: hidden;
   position: relative;
-}
-
-.result-grid {
-  display: grid;
-  padding: 0.25rem;
-}
-
-.result-grid.compact {
-  grid-template-columns: 1fr;
-}
-
-.result-grid:not(.compact) {
-  grid-template-columns: repeat(2, 1fr);
 }
 
 .task-item-details {

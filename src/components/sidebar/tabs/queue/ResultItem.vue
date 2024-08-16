@@ -6,6 +6,8 @@
       alt="Task Output"
       width="100%"
       height="100%"
+      preview
+      :pt="{ previewMask: { class: 'image-preview-mask' } }"
     />
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
@@ -54,5 +56,26 @@ onMounted(() => {
 .p-image-preview {
   position: static;
   display: contents;
+}
+
+:deep(.image-preview-mask) {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  padding: 10px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--p-image-preview-mask-color);
+  transition:
+    opacity var(--p-image-transition-duration),
+    background var(--p-image-transition-duration);
+  border-radius: 50%;
 }
 </style>
