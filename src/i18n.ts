@@ -17,6 +17,9 @@ const messages = {
       nodeLibrary: 'Node Library',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
+      },
+      queueTab: {
+        showFlatList: 'Show Flat List'
       }
     }
   },
@@ -36,6 +39,9 @@ const messages = {
       nodeLibrary: '节点库',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
+      },
+      queueTab: {
+        showFlatList: '平铺结果'
       }
     }
   }

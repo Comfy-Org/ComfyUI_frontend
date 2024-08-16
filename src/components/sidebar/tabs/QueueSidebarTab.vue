@@ -1,6 +1,14 @@
 <template>
-  <SideBarTabTemplate :title="$t('queue')">
+  <SideBarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
+      <Button
+        :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        text
+        severity="secondary"
+        @click="isExpanded = !isExpanded"
+        class="toggle-expanded-button"
+        v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+      />
       <Button
         icon="pi pi-trash"
         text
@@ -53,7 +61,9 @@ const toast = useToast()
 const queueStore = useQueueStore()
 const { t } = useI18n()
 
-const tasks = computed(() => queueStore.tasks)
+const tasks = computed(() =>
+  isExpanded.value ? queueStore.flatTasks : queueStore.tasks
+)
 
 const removeTask = (task: TaskItemImpl) => {
   if (task.isRunning) {
@@ -123,6 +133,8 @@ onMounted(() => {
 onUnmounted(() => {
   api.removeEventListener('status', onStatus)
 })
+
+const isExpanded = ref(false)
 </script>
 
 <style scoped>

@@ -11,7 +11,7 @@ import type {
 } from '@/types/apiTypes'
 import { validateTaskItem } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
-import { Transform, plainToClass } from 'class-transformer'
+import { instanceToPlain, plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -207,6 +207,27 @@ export const useQueueStore = defineStore('queue', {
         ...state.runningTasks,
         ...state.historyTasks
       ]
+    },
+    flatTasks(): TaskItemImpl[] {
+      return this.tasks.flatMap((task: TaskItemImpl) =>
+        task.flatOutputs.map((output: ResultItemImpl, i: number) =>
+          plainToClass(TaskItemImpl, {
+            ...instanceToPlain(task),
+            prompt: [
+              task.queueIndex,
+              `${task.promptId}-${i}`,
+              task.promptInputs,
+              task.extraData,
+              task.outputsToExecute
+            ],
+            outputs: {
+              [output.nodeId]: {
+                [output.mediaType]: [instanceToPlain(output)]
+              }
+            }
+          })
+        )
+      )
     },
     lastHistoryQueueIndex(state) {
       return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
