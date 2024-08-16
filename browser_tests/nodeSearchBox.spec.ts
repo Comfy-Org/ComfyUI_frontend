@@ -35,7 +35,10 @@ test.describe('Node search box', () => {
 
   test('Can auto link node', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
-    await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode')
+    // Select the second item as the first item is always reroute
+    await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
+      suggestionIndex: 1
+    })
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
 
@@ -54,7 +57,10 @@ test.describe('Node search box', () => {
     await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
     await comfyPage.page.keyboard.up('Shift')
 
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint')
+    // Select the second item as the first item is always reroute
+    await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
+      suggestionIndex: 1
+    })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
     )
