@@ -21,7 +21,7 @@
       <div v-if="tasks.length > 0" class="queue-grid">
         <TaskItem
           v-for="task in tasks"
-          :key="task.promptId"
+          :key="task.key"
           :task="task"
           :isFlatTask="isExpanded"
           @contextmenu="handleContextMenu"

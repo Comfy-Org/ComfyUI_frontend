@@ -75,6 +75,10 @@ export class TaskItemImpl {
     }
   }
 
+  get key() {
+    return this.promptId + this.displayStatus
+  }
+
   get queueIndex() {
     return this.prompt[0]
   }
