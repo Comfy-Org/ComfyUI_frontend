@@ -106,6 +106,17 @@ export const useSettingStore = defineStore('setting', {
         options: ['normal', 'small'],
         defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.TextareaWidget.FontSize',
+        name: 'Textarea widget font size',
+        type: 'slider',
+        defaultValue: 10,
+        attrs: {
+          min: 8,
+          max: 24
+        }
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
