@@ -213,8 +213,12 @@ export const useQueueStore = defineStore('queue', {
       ]
     },
     flatTasks(): TaskItemImpl[] {
-      return this.tasks.flatMap((task: TaskItemImpl) =>
-        task.flatOutputs.map((output: ResultItemImpl, i: number) =>
+      return this.tasks.flatMap((task: TaskItemImpl) => {
+        if (task.displayStatus !== TaskItemDisplayStatus.Completed) {
+          return [task]
+        }
+
+        return task.flatOutputs.map((output: ResultItemImpl, i: number) =>
           plainToClass(TaskItemImpl, {
             ...instanceToPlain(task),
             prompt: [
@@ -231,7 +235,7 @@ export const useQueueStore = defineStore('queue', {
             }
           })
         )
-      )
+      })
     },
     lastHistoryQueueIndex(state) {
       return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
