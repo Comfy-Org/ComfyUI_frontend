@@ -6,7 +6,6 @@
       alt="Task Output"
       width="100%"
       height="100%"
-      preview
     />
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
@@ -19,26 +18,20 @@
 <script setup lang="ts">
 import { ResultItemImpl } from '@/stores/queueStore'
 import Image from 'primevue/image'
-import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 const props = defineProps<{
   result: ResultItemImpl
 }>()
 
 const resultContainer = ref<HTMLElement | null>(null)
-let cleanup: () => void
 
 onMounted(() => {
   if (props.result.mediaType === 'images') {
-    cleanup = draggable({
-      element: resultContainer.value
+    resultContainer.value.querySelectorAll('img').forEach((img) => {
+      img.draggable = true
     })
   }
-})
-
-onBeforeUnmount(() => {
-  cleanup?.()
 })
 </script>
 
