@@ -30,7 +30,7 @@
             { selected: isSelectedNode(slotProps.item.id) }
           ]"
           :style="{ backgroundColor: slotProps.item.color }"
-          @click="() => selectNode(slotProps.item.id)"
+          @click="() => (selectedNodeID = slotProps.item.id)"
         >
           <div class="custom-header-hover"></div>
           <ToggleButton
@@ -111,8 +111,14 @@ import { computed, ref } from 'vue'
 const nodeParamStore = useNodeParamStore()
 nodeParamStore.updateNodes()
 const selectedCategory = ref()
-let selectedNode
-
+const selectedNodeID = ref(null)
+const selectedNode = computed(() => {
+  if (selectedNodeID.value) {
+    return nodeParamStore.nodes.find((node) => node.id === selectedNodeID.value)
+  } else {
+    return nodeParamStore.nodes[0]
+  }
+})
 const getComponent = (widget: Widget) => {
   switch (widget.type) {
     case 'customtext':
@@ -177,11 +183,11 @@ const getComponentProps = (node: Node, widget: Widget) => {
       return baseProps
   }
 }
-const selectNode = (nodeID: number) => {
-  selectedNode = computed(() =>
-    nodeParamStore.nodes.find((node) => node.id === nodeID)
-  )
-}
+// const selectNode = (nodeID: number) => {
+//   selectedNode = computed(() =>
+//     nodeParamStore.nodes.find((node) => node.id === nodeID)
+//   )
+// }
 const isSelectedNode = (NodeID: number) => {
   if (selectedNode.value) {
     if (NodeID === selectedNode.value.id) {
@@ -223,14 +229,7 @@ const filteredNodes = computed(() => {
 </script>
 
 <style scoped>
-.sidebar-widget {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 0.6rem 0;
-}
+/* node style */
 .custom-header {
   height: 4rem;
   padding: 1rem;
@@ -245,7 +244,7 @@ const filteredNodes = computed(() => {
   height: 4rem;
   position: absolute;
   margin: -1rem;
-  z-index: -1;
+  z-index: 1;
   background-color: transparent;
 }
 .custom-header-hover:hover {
@@ -259,6 +258,8 @@ const filteredNodes = computed(() => {
   color: var(--p-splitter-color);
   border-bottom: 2px solid var(--p-button-text-primary-color);
 }
+
+/* widget area style */
 .custom-content {
   height: 40%;
   overflow-y: scroll;
@@ -271,19 +272,8 @@ const filteredNodes = computed(() => {
 .custom-content.bypass {
   opacity: 0.3;
 }
-.custom-toggle-button {
-  width: 5%;
-  padding: 0.6rem;
-  z-index: 2;
-  border: none;
-  background-color: transparent !important;
-}
-.custom-toggle-button:deep(.p-togglebutton-label) {
-  display: none !important;
-}
-.custom-toggle-button::before {
-  background-color: transparent !important;
-}
+
+/* catergory style */
 .custom-select-button {
   height: 10%;
   display: flex;
@@ -293,6 +283,16 @@ const filteredNodes = computed(() => {
   background-color: var(--p-accordion-header-background);
   border-radius: 0;
   border-bottom: 1px solid var(--p-toolbar-border-color);
+}
+
+/* widget style */
+.sidebar-widget {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.6rem 0;
 }
 .custom-combo {
   width: 65%;
@@ -310,7 +310,6 @@ const filteredNodes = computed(() => {
 .custom-slider {
   width: 50%;
 }
-
 .custom-number {
   width: 65%;
   font-size: 1rem;
@@ -334,6 +333,8 @@ const filteredNodes = computed(() => {
   min-height: 150px;
   resize: vertical;
 }
+
+/* container style */
 :deep(.p-accordioncontent-content) {
   padding: 1.2rem !important;
 }
@@ -342,5 +343,18 @@ const filteredNodes = computed(() => {
 }
 .empty-avoid-auto-refresh {
   height: 500px;
+}
+.custom-toggle-button {
+  width: 5%;
+  padding: 0.6rem;
+  z-index: 2;
+  border: none;
+  background-color: transparent !important;
+}
+.custom-toggle-button:deep(.p-togglebutton-label) {
+  display: none !important;
+}
+.custom-toggle-button::before {
+  background-color: transparent !important;
 }
 </style>
