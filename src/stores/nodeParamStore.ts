@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue'
 import { app } from '@/scripts/app'
 
 // todo: Use Litegraph.js types here when we have a Litegraph ts version or Zod Schema
-interface Widget {
+export interface Widget {
   title: string
   type: string
   label: string
@@ -13,7 +13,7 @@ interface Widget {
   fav: boolean
 }
 
-interface Node {
+export interface Node {
   title: string
   id: number
   order: number
@@ -26,25 +26,21 @@ interface Node {
   widgets: Widget[]
 }
 
-interface FavWidgets {
+export interface FavWidgets {
   name: string
   fav: boolean
 }
 
-// interface Gallery {
-//     images: string[];
-// }
-
-interface category {
+export interface category {
   name: string
   count: number
 }
 
 export const useNodeParamStore = defineStore('nodeParam', () => {
   // State
-  const nodes = ref<Node[]>([])
+  // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
+  const nodes = ref<Node[]>([...app.graph._nodes])
   const widgetFav = ref<Widget[]>([])
-  let filterNodes = ref(nodes)
   const categories = computed<category[]>(() => {
     let favCount = 0
     for (const node of nodes.value) {
@@ -62,14 +58,32 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
       }
     ]
   })
-  // const gallery = ref<Gallery>({ images: [] });
 
+  //getters
   let isEditing = false
-
-  //Setters
   const setIsEditing = (value: boolean) => {
     isEditing = value
   }
+  const allNodes = computed(() => nodes.value)
+
+  const favNodes = computed(() =>
+    nodes.value
+      .map((node) => {
+        const favWidgets = node.widgets.filter((widget) => widget.fav)
+        if (favWidgets.length > 0) {
+          return {
+            ...node,
+            widgets: favWidgets
+          }
+        }
+        return null
+      })
+      .filter((node) => node !== null)
+  )
+
+  const notNullNodes = computed(() =>
+    nodes.value.filter((node) => node.widgets.length > 0)
+  )
   // Actions
   const updateNodes = () => {
     // @ts-expect-error app.graph._nodes is private, there's no export functions to access it
@@ -123,7 +137,7 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
             : []
         }))
       },
-      { deep: true, immediate: true }
+      { immediate: true }
     )
   }
 
@@ -142,7 +156,6 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
       app.graph.setDirtyCanvas(true)
     }
   }
-
   const updateWidgetValue = (
     nodeId: number,
     widgetTitle: string,
@@ -205,57 +218,8 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
     isEditing = false
   }
 
-  const updateCatagories = (category) => {
-    switch (category) {
-      case 'All':
-        filterNodes = ref(nodes)
-        break
-      case 'Star':
-        filterFavNodes()
-        break
-      case 'Notnull':
-        filterNodes = ref(nodes.value.filter((node) => node.widgets.length > 0))
-        break
-      default:
-        break
-    }
-  }
-  const filterFavNodes = () => {
-    filterNodes = ref(
-      nodes.value
-        .map((node) => {
-          const favWidgets = node.widgets.filter((widget) => widget.fav)
-          if (favWidgets.length > 0) {
-            return {
-              ...node,
-              widgets: favWidgets
-            }
-          }
-          return null
-        })
-        .filter((node) => node !== null)
-    ) // 过滤掉 null 值
-  }
-
-  // const addGalleryImage = (image: string) => {
-  //     gallery.value.images.push(image);
-  // };
-
-  // const removeGalleryImage = (image: string) => {
-  //     gallery.value.images = gallery.value.images.filter(img => img !== image);
-  // };
-
-  // //todo: manual edit orders
-  // const updateNodeOrder = (nodeId: number, order: number) => {
-  //     const node = nodes.value.find(node => node.id === nodeId);
-  //     if (node) {
-  //         node.order = order;
-  //     }
-  // };
-
   return {
     nodes,
-    filterNodes,
     widgetFav,
     setIsEditing,
     categories,
@@ -263,11 +227,9 @@ export const useNodeParamStore = defineStore('nodeParam', () => {
     updateNodeMode,
     updateWidgetValue,
     updateWidgetFav,
-    updateCatagories,
+    allNodes,
+    favNodes,
+    notNullNodes,
     clickWidgetButton
-    // updateNodeOrder,
-    // gallery,
-    // addGalleryImage,
-    // removeGalleryImage,
   }
 })
