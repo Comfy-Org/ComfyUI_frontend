@@ -33,6 +33,9 @@
           <span v-if="task.isHistory" class="task-time">
             {{ formatTime(task.executionTimeInSeconds) }}
           </span>
+          <span v-if="isFlatTask" class="task-prompt-id">
+            {{ task.promptId.split('-')[0] }}
+          </span>
         </Tag>
       </div>
       <div class="tag-wrapper">
@@ -51,6 +54,7 @@ import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 
 const props = defineProps<{
   task: TaskItemImpl
+  isFlatTask: boolean
 }>()
 
 const flatOutputs = props.task.flatOutputs

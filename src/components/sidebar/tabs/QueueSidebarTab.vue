@@ -23,6 +23,7 @@
           v-for="task in tasks"
           :key="task.promptId"
           :task="task"
+          :isFlatTask="isExpanded"
           @contextmenu="handleContextMenu"
         />
       </div>
