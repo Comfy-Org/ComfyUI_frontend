@@ -2699,7 +2699,12 @@ export class ComfyApp {
         } else if (this.isApiJson(jsonContent)) {
           this.loadApiJson(jsonContent, fileName)
         } else {
-          await this.loadGraphData(JSON.parse(readerResult), true, fileName)
+          await this.loadGraphData(
+            JSON.parse(readerResult),
+            true,
+            false,
+            fileName
+          )
         }
       }
       reader.readAsText(file)
