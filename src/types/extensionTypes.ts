@@ -1,3 +1,4 @@
+import type { ToastMessageOptions } from 'primevue/toast'
 import { Component } from 'vue'
 
 export interface BaseSidebarTabExtension {
@@ -24,8 +25,18 @@ export type SidebarTabExtension =
   | VueSidebarTabExtension
   | CustomSidebarTabExtension
 
+export type ToastManager = {
+  add(message: ToastMessageOptions): void
+  remove(message: ToastMessageOptions): void
+  removeAll(): void
+}
+
 export interface ExtensionManager {
+  // Sidebar tabs
   registerSidebarTab(tab: SidebarTabExtension): void
   unregisterSidebarTab(id: string): void
   getSidebarTabs(): SidebarTabExtension[]
+
+  // Toast
+  toast: ToastManager
 }
