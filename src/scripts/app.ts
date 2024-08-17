@@ -45,6 +45,8 @@ import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { showLoadWorkflowWarning } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import type { ToastMessageOptions } from 'primevue/toast'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2851,6 +2853,13 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: 'Update',
+      detail: 'Update requested'
+    }
+    if (this.vueAppReady) useToastStore().add(requestToastMessage)
+
     const defs = await api.getNodeDefs()
 
     for (const nodeId in defs) {
@@ -2888,6 +2897,16 @@ export class ComfyApp {
     }
 
     await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+
+    if (this.vueAppReady) {
+      useToastStore().remove(requestToastMessage)
+      useToastStore().add({
+        severity: 'success',
+        summary: 'Updated',
+        detail: 'Node definitions updated',
+        life: 1000
+      })
+    }
   }
 
   resetView() {

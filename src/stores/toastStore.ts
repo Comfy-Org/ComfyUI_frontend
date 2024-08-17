@@ -6,18 +6,20 @@ import type { ToastMessageOptions } from 'primevue/toast'
 
 export const useToastStore = defineStore('toast', {
   state: () => ({
-    messages: [] as ToastMessageOptions[]
+    messagesToAdd: [] as ToastMessageOptions[],
+    messagesToRemove: [] as ToastMessageOptions[],
+    removeAllRequested: false
   }),
 
   actions: {
     add(message: ToastMessageOptions) {
-      this.messages = [...this.messages, message]
+      this.messagesToAdd = [...this.messagesToAdd, message]
     },
     remove(message: ToastMessageOptions) {
-      this.messages = this.messages.filter((msg) => msg !== message)
+      this.messagesToRemove = [...this.messagesToRemove, message]
     },
     removeAll() {
-      this.messages = []
+      this.removeAllRequested = true
     }
   }
 })
