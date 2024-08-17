@@ -21,7 +21,6 @@ app.registerExtension({
       const floatWeight = parseFloat(weight)
       if (isNaN(floatWeight)) return weight
       const newWeight = floatWeight + delta
-      if (newWeight < 0) return '0'
       return String(Number(newWeight.toFixed(10)))
     }
 
@@ -143,7 +142,7 @@ app.registerExtension({
       // Increment the weight
       const weightDelta = event.key === 'ArrowUp' ? delta : -delta
       const updatedText = selectedText.replace(
-        /\((.*):(\d+(?:\.\d+)?)\)/,
+        /\((.*):([+-]?\d+(?:\.\d+)?)\)/,
         (match, text, weight) => {
           weight = incrementWeight(weight, weightDelta)
           if (weight == 1) {
