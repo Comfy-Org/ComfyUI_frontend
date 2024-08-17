@@ -137,13 +137,13 @@ export class TaskItemImpl {
       case 'Pending':
         return TaskItemDisplayStatus.Pending
       case 'History':
+        if (this.interrupted) return TaskItemDisplayStatus.Cancelled
+
         switch (this.status!.status_str) {
           case 'success':
             return TaskItemDisplayStatus.Completed
           case 'error':
-            return this.interrupted
-              ? TaskItemDisplayStatus.Cancelled
-              : TaskItemDisplayStatus.Failed
+            return TaskItemDisplayStatus.Failed
         }
     }
   }
