@@ -1,5 +1,6 @@
-import { SidebarTabExtension } from '@/types/extensionTypes'
+import { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
+import { useToastStore } from './toastStore'
 
 interface WorkspaceState {
   spinner: boolean
@@ -13,6 +14,11 @@ export const useWorkspaceStore = defineStore('workspace', {
     activeSidebarTab: null,
     sidebarTabs: []
   }),
+  getters: {
+    toast(): ToastManager {
+      return useToastStore()
+    }
+  },
   actions: {
     updateActiveSidebarTab(tabId: string) {
       this.activeSidebarTab = tabId
