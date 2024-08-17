@@ -116,6 +116,21 @@ We will support custom icons later.
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
 </details>
 
+<details>
+  <summary>v1.2.27: Extension API to add toast message</summary>
+
+  Extensions can call the following API to add toast messages.
+
+```js
+  app.extensionManager.toast.add({
+    severity: 'info',
+    summary: 'Loaded!',
+    detail: 'Extension loaded!'
+  })
+```
+
+![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
+</details>
 
 ## Road Map
 
