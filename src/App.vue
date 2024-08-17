@@ -2,6 +2,7 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <BlockUI full-screen :blocked="isLoading" />
   <GlobalDialog />
+  <GlobalToast />
   <GraphCanvas />
 </template>
 
@@ -24,6 +25,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
+import GlobalToast from './components/toast/GlobalToast.vue'
 import { api } from './scripts/api'
 import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'

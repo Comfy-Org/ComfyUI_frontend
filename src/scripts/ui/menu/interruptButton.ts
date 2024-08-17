@@ -1,14 +1,21 @@
 import { StatusWsMessageStatus } from '@/types/apiTypes'
 import { api } from '../../api'
 import { ComfyButton } from '../components/button'
+import { useToastStore } from '@/stores/toastStore'
 
 export function getInterruptButton(visibility: string) {
   const btn = new ComfyButton({
     icon: 'close',
     tooltip: 'Cancel current generation',
     enabled: false,
-    action: () => {
-      api.interrupt()
+    action: async () => {
+      await api.interrupt()
+      useToastStore().add({
+        severity: 'info',
+        summary: 'Interrupted',
+        detail: 'Execution has been interrupted',
+        life: 1000
+      })
     },
     classList: ['comfyui-button', 'comfyui-interrupt-button', visibility]
   })
