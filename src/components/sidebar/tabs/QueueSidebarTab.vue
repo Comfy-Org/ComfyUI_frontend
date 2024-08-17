@@ -36,7 +36,6 @@
       </div>
     </template>
   </SideBarTabTemplate>
-  <Toast />
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
@@ -44,7 +43,6 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
-import Toast from 'primevue/toast'
 import ContextMenu from 'primevue/contextmenu'
 import TaskItem from './queue/TaskItem.vue'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'

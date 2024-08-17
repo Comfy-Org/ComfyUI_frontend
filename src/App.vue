@@ -2,6 +2,7 @@
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <BlockUI full-screen :blocked="isLoading" />
   <GlobalDialog />
+  <Toast />
   <GraphCanvas />
 </template>
 
@@ -15,6 +16,7 @@ import {
   watchEffect
 } from 'vue'
 import BlockUI from 'primevue/blockui'
+import Toast from 'primevue/toast'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
