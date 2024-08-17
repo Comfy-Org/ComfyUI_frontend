@@ -54,7 +54,7 @@ import { useToast } from 'primevue/usetoast'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from 'primevue/menuitem'
 import { api } from '@/scripts/api'
 
 const confirm = useConfirm()
