@@ -3,7 +3,8 @@ import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { toggleSwitch } from './ui/toggleSwitch'
 import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
-import { StatusWsMessageStatus, TaskItem } from '@/types/apiTypes'
+import { TaskItem } from '@/types/apiTypes'
+import { showSettingsDialog } from '@/services/dialogService'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -505,7 +506,7 @@ export class ComfyUI {
           $el('div.comfy-menu-actions', [
             $el('button.comfy-settings-btn', {
               textContent: '⚙️',
-              onclick: () => this.settings.show()
+              onclick: showSettingsDialog
             }),
             $el('button.comfy-close-menu-btn', {
               textContent: '\u00d7',
