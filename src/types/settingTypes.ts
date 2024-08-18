@@ -43,4 +43,5 @@ export interface SettingParams {
   // default category from id.
   // Note: Like id, category value need to be unique.
   category?: string[]
+  experimental?: boolean
 }
