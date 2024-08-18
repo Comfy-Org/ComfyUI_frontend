@@ -29,8 +29,9 @@
             :key="task.key"
             :task="task"
             :isFlatTask="isExpanded"
+            @contextmenu="handleContextMenu"
+            @preview="handlePreview"
           />
-          <!-- @contextmenu="handleContextMenu" -->
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
       </div>
@@ -187,6 +188,10 @@ const handleContextMenu = ({
 }) => {
   menuTargetTask.value = task
   menu.value?.show(event)
+}
+
+const handlePreview = (task: TaskItemImpl) => {
+  console.log('Preview task', task)
 }
 
 onMounted(() => {
