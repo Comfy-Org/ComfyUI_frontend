@@ -662,9 +662,7 @@ app.registerExtension({
   init() {
     useConversionSubmenusSetting = app.ui.settings.addSetting({
       id: 'Comfy.NodeInputConversionSubmenus',
-      name: 'Node widget/input conversion sub-menus',
-      tooltip:
-        'In the node context menu, place the entries that convert between input/widget in sub-menus.',
+      name: 'In the node context menu, place the entries that convert between input/widget in sub-menus.',
       type: 'boolean',
       defaultValue: true
     })

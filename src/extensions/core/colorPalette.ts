@@ -1,4 +1,3 @@
-import { lightenColor } from '@/utils/colorUtil'
 import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPalette'
@@ -749,12 +748,6 @@ app.registerExtension({
         ) as HTMLSelectElement
 
         return $el('tr', [
-          $el('td', [
-            $el('label', {
-              for: id.replaceAll('.', '-'),
-              textContent: 'Color palette'
-            })
-          ]),
           $el('td', [
             els.select,
             $el(
