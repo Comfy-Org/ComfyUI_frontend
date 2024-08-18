@@ -1,14 +1,18 @@
 <template>
   <div class="result-container" ref="resultContainer">
-    <Image
+    <template
       v-if="result.mediaType === 'images' || result.mediaType === 'gifs'"
-      :src="result.url"
-      alt="Task Output"
-      width="100%"
-      height="100%"
-      preview
-      :pt="{ previewMask: { class: 'image-preview-mask' } }"
-    />
+    >
+      <div class="image-preview-mask">
+        <Button
+          icon="pi pi-eye"
+          severity="secondary"
+          @click="emit('preview', result)"
+          rounded
+        />
+      </div>
+      <img :src="result.url" class="task-output-image" />
+    </template>
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
       <i class="pi pi-file"></i>
@@ -19,18 +23,22 @@
 
 <script setup lang="ts">
 import { ResultItemImpl } from '@/stores/queueStore'
-import Image from 'primevue/image'
+import Button from 'primevue/button'
 import { onMounted, ref } from 'vue'
 
 const props = defineProps<{
   result: ResultItemImpl
 }>()
 
+const emit = defineEmits<{
+  (e: 'preview', ResultItemImpl): void
+}>()
+
 const resultContainer = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   if (props.result.mediaType === 'images') {
-    resultContainer.value.querySelectorAll('img').forEach((img) => {
+    resultContainer.value?.querySelectorAll('img').forEach((img) => {
       img.draggable = true
     })
   }
@@ -39,43 +47,33 @@ onMounted(() => {
 
 <style scoped>
 .result-container {
+  width: 100%;
+  height: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+  position: relative;
 }
 
-:deep(img) {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+.task-output-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
-.p-image-preview {
-  position: static;
-  display: contents;
-}
-
-:deep(.image-preview-mask) {
+.image-preview-mask {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: auto;
-  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  padding: 10px;
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.5);
-  color: var(--p-image-preview-mask-color);
-  transition:
-    opacity var(--p-image-transition-duration),
-    background var(--p-image-transition-duration);
-  border-radius: 50%;
+  transition: opacity 0.3s ease;
+}
+
+.result-container:hover .image-preview-mask {
+  opacity: 1;
 }
 </style>

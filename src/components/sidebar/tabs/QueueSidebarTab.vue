@@ -29,8 +29,8 @@
             :key="task.key"
             :task="task"
             :isFlatTask="isExpanded"
-            @contextmenu="handleContextMenu"
           />
+          <!-- @contextmenu="handleContextMenu" -->
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
       </div>

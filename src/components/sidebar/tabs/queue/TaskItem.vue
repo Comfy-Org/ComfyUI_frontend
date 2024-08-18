@@ -1,9 +1,9 @@
 <template>
   <div class="task-item" @contextmenu="handleContextMenu">
     <div class="task-result-preview">
-      <div v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
+      <template v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
         <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
-      </div>
+      </template>
       <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
         class="pi pi-spin pi-spinner"
