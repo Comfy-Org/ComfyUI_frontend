@@ -69,7 +69,8 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl',
         category: ['Comfy', 'Node Search Box', 'Implementation'],
-        name: 'Node Search box implementation',
+        experimental: true,
+        name: 'Node search box implementation',
         type: 'combo',
         options: ['default', 'litegraph (legacy)'],
         defaultValue: 'default'
@@ -88,7 +89,7 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl.NodePreview',
         category: ['Comfy', 'Node Search Box', 'NodePreview'],
-        name: 'Node Preview',
+        name: 'Node preview',
         tooltip: 'Only applies to the default implementation',
         type: 'boolean',
         defaultValue: true

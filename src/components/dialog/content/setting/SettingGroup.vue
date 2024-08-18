@@ -8,8 +8,9 @@
       class="setting-item"
     >
       <div class="setting-label">
-        <span
-          >{{ setting.name }}
+        <span>
+          <Tag v-if="setting.experimental" :value="$t('experimental')" />
+          {{ setting.name }}
           <i
             v-if="setting.tooltip"
             class="pi pi-info-circle info-chip"
@@ -38,6 +39,7 @@ import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Divider from 'primevue/divider'
+import Tag from 'primevue/tag'
 import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
 import InputSlider from '@/components/dialog/content/setting/InputSlider.vue'
 import { formatCamelCase } from '@/utils/formatUtil'
