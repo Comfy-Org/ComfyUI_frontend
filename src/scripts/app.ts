@@ -1955,16 +1955,17 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
-  updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>) {
+  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>) {
     // Frontend only nodes registered by custom nodes.
     // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
     const rawDefs = Object.fromEntries(
-      Object.entries(LiteGraph.registered_node_types).map(([name, _]) => [
+      Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
         name,
         {
           name,
           display_name: name,
-          category: '__frontend_only__',
+          // @ts-expect-error
+          category: node.category || '__frontend_only__',
           input: { required: {}, optional: {} },
           output: [],
           output_name: [],
