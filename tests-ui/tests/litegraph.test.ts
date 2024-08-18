@@ -29,9 +29,9 @@ describe('LGraph', () => {
     const node2 = new DummyNode()
     const graph = createGraph(node1, node2)
 
-    const result1 = graph.serialize()
+    const result1 = graph.serialize({ sortNode: true })
     expect(result1.nodes).not.toHaveLength(0)
-    // @ts-expect-error
+    // @ts-expect-error Access private property.
     graph._nodes = swapNodes(graph._nodes)
     const result2 = graph.serialize()
 
