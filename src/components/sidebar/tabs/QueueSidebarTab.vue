@@ -48,8 +48,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useInfiniteScroll } from '@vueuse/core'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useInfiniteScroll, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
@@ -74,6 +74,7 @@ const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 
 const ITEMS_PER_PAGE = 8
+const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
 
 const allTasks = computed(() =>
   isExpanded.value ? queueStore.flatTasks : queueStore.tasks
@@ -88,6 +89,15 @@ const loadMoreItems = () => {
   visibleTasks.value.push(...newTasks)
 }
 
+const checkAndLoadMore = () => {
+  if (!scrollContainer.value) return
+
+  const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value
+  if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
+    loadMoreItems()
+  }
+}
+
 useInfiniteScroll(
   scrollContainer,
   () => {
@@ -95,8 +105,15 @@ useInfiniteScroll(
       loadMoreItems()
     }
   },
-  { distance: 10 }
+  { distance: SCROLL_THRESHOLD }
 )
+
+// Use ResizeObserver to detect container size changes
+useResizeObserver(scrollContainer, () => {
+  nextTick(() => {
+    checkAndLoadMore()
+  })
+})
 
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
@@ -190,6 +207,10 @@ watch(
     ) {
       visibleTasks.value = newTasks.slice(0, ITEMS_PER_PAGE)
     }
+
+    nextTick(() => {
+      checkAndLoadMore()
+    })
   },
   { immediate: true }
 )
