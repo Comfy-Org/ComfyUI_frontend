@@ -379,7 +379,7 @@ export function getWidgetConfig(slot) {
 function getConfig(widgetName) {
   const { nodeData } = this.constructor
   return (
-    nodeData?.input?.required[widgetName] ??
+    nodeData?.input?.required?.[widgetName] ??
     nodeData?.input?.optional?.[widgetName]
   )
 }
