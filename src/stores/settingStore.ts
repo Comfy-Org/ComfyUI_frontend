@@ -34,7 +34,7 @@ export const useSettingStore = defineStore('setting', {
     settingTree(): SettingTreeNode {
       const root = buildTree(
         Object.values(this.settings),
-        (setting: SettingParams) => setting.id.split('.')
+        (setting: SettingParams) => setting.category || setting.id.split('.')
       )
 
       const floatingSettings = root.children.filter((node) => node.leaf)

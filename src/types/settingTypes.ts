@@ -38,4 +38,8 @@ export interface SettingParams {
   attrs?: any
   tooltip?: string
   options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
+  // By default category is id.split('.'). However, changing id to assign
+  // new category has poor backward compatibility. Use this field to overwrite
+  // default category from id.
+  category?: string[]
 }
