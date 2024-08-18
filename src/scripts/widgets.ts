@@ -347,12 +347,10 @@ function isSlider(display, app) {
 export function initWidgets(app) {
   app.ui.settings.addSetting({
     id: 'Comfy.WidgetControlMode',
-    name: 'Widget Value Control Mode',
+    name: 'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
     type: 'combo',
     defaultValue: 'after',
     options: ['before', 'after'],
-    tooltip:
-      'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
     onChange(value) {
       controlValueRunBefore = value === 'before'
       for (const n of app.graph._nodes) {

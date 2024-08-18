@@ -401,7 +401,7 @@ export class ComfyUI {
 
     this.settings.addSetting({
       id: 'Comfy.DisableSliders',
-      name: 'Disable sliders.',
+      name: 'Disable node widget sliders',
       type: 'boolean',
       defaultValue: false
     })
@@ -746,9 +746,9 @@ export class ComfyUI {
       })
     ]) as HTMLDivElement
 
-    const devMode = this.settings.addSetting({
+    this.settings.addSetting({
       id: 'Comfy.DevMode',
-      name: 'Enable Dev mode Options',
+      name: 'Enable dev mode options (API save, etc.)',
       type: 'boolean',
       defaultValue: false,
       onChange: function (value) {
