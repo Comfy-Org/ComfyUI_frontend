@@ -9937,6 +9937,7 @@ LGraphNode.prototype.executeAction = function(action)
                                 if (availableWidth <= ellipsisWidth) {
                                     v = "\u2024"; // One dot leader
                                 } else {
+                                    v = `${v}`
                                     const overflowWidth = (textWidth + ellipsisWidth) - availableWidth;
                                     // Only first 3 characters need to be measured precisely
                                     if ( overflowWidth + charWidthAvg * 3 > availableWidth) {
