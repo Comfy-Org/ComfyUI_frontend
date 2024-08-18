@@ -69,6 +69,7 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl',
         category: ['Comfy', 'Node Search Box', 'Implementation'],
+        experimental: true,
         name: 'Node Search box implementation',
         type: 'combo',
         options: ['default', 'litegraph (legacy)'],
