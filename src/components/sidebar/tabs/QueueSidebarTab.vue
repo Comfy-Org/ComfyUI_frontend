@@ -158,8 +158,8 @@ const confirmRemoveAll = (event: Event) => {
   })
 }
 
-const onStatus = () => {
-  queueStore.update()
+const onStatus = async () => {
+  await queueStore.update()
   visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
 }
 
