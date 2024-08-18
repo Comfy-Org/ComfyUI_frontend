@@ -418,6 +418,7 @@ export class ComfyApp {
     }
     this.enableWorkflowViewRestore = this.ui.settings.addSetting({
       id: 'Comfy.EnableWorkflowViewRestore',
+      category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
       name: 'Save and restore canvas position and zoom level in workflows',
       type: 'boolean',
       defaultValue: true

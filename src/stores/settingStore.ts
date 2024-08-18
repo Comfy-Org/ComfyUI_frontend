@@ -68,6 +68,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl',
+        category: ['Comfy', 'Node Search Box', 'Implementation'],
         name: 'Node Search box implementation',
         type: 'combo',
         options: ['default', 'litegraph (legacy)'],
@@ -76,6 +77,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+        category: ['Comfy', 'Node Search Box', 'LinkReleaseTrigger'],
         name: 'Trigger on link release',
         tooltip: 'Only applies to the default implementation',
         type: 'combo',
@@ -85,6 +87,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl.NodePreview',
+        category: ['Comfy', 'Node Search Box', 'NodePreview'],
         name: 'Node Preview',
         tooltip: 'Only applies to the default implementation',
         type: 'boolean',
@@ -93,6 +96,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.Sidebar.Location',
+        category: ['Comfy', 'Sidebar', 'Location'],
         name: 'Sidebar location',
         type: 'combo',
         options: ['left', 'right'],
@@ -101,6 +105,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.Sidebar.Size',
+        category: ['Comfy', 'Sidebar', 'Size'],
         name: 'Sidebar size',
         type: 'combo',
         options: ['normal', 'small'],
@@ -109,6 +114,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.TextareaWidget.FontSize',
+        category: ['Comfy', 'Node Widget', 'TextareaWidget', 'FontSize'],
         name: 'Textarea widget font size',
         type: 'slider',
         defaultValue: 10,
@@ -120,7 +126,7 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.Workflow.SortNodeIdOnSave',
-        name: 'Sort node IDs on save',
+        name: 'Sort node IDs when saving workflow',
         type: 'boolean',
         defaultValue: false
       })

@@ -11,7 +11,9 @@ app.registerExtension({
     LiteGraph.middle_click_slot_add_default_node = true
     this.suggestionsNumber = app.ui.settings.addSetting({
       id: 'Comfy.NodeSuggestions.number',
+      category: ['Comfy', 'Node Search Box', 'NodeSuggestions'],
       name: 'Number of nodes suggestions',
+      tooltip: 'Only for litegraph searchbox/context menu',
       type: 'slider',
       attrs: {
         min: 1,

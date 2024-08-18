@@ -41,5 +41,6 @@ export interface SettingParams {
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
   // default category from id.
+  // Note: Like id, category value need to be unique.
   category?: string[]
 }

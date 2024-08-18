@@ -6,6 +6,7 @@ const ext = {
   async setup(app) {
     app.ui.settings.addSetting({
       id,
+      category: ['Comfy', 'Graph', 'LinkRenderMode'],
       name: 'Link Render Mode',
       defaultValue: 2,
       type: 'combo',

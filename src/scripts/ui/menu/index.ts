@@ -158,8 +158,10 @@ export class ComfyAppMenu {
     let resizeHandler: () => void
     this.menuPositionSetting = app.ui.settings.addSetting({
       id: 'Comfy.UseNewMenu',
+      category: ['Comfy', 'Menu', 'UseNewMenu'],
       defaultValue: 'Disabled',
-      name: '[Beta] Use new menu and workflow management. Note: On small screens the menu will always be at the top.',
+      name: '[Beta] Use new menu and workflow management.',
+      tooltip: 'On small screens the menu will always be at the top.',
       type: 'combo',
       options: ['Disabled', 'Top', 'Bottom'],
       onChange: async (v: MenuPosition) => {

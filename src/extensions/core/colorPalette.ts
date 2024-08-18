@@ -714,6 +714,7 @@ app.registerExtension({
 
     app.ui.settings.addSetting({
       id,
+      category: ['Comfy', 'ColorPalette'],
       name: 'Color Palette',
       type: (name, setter, value) => {
         const options = [
