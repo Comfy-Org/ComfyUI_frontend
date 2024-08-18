@@ -2958,6 +2958,11 @@ export class ComfyApp {
       ([p, o1, o2]) => (p - o2) / this.canvas.ds.scale - o1
     ) as Vector2
   }
+
+  getCanvasCenter() {
+    const [x, y, w, h] = app.canvas.ds.visible_area
+    return [x + w / 2, y + h / 2]
+  }
 }
 
 export const app = new ComfyApp()

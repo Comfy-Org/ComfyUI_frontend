@@ -24,12 +24,28 @@
         dragSelector=".p-tree-node-leaf"
         :pt="{
           nodeLabel: 'node-lib-tree-node-label',
+          nodeContent: ({ props }) => ({
+            onClick: () => {
+              if (!props.node.key) return
+              if (props.node.type === 'folder') {
+                toggleNode(props.node.key)
+              } else {
+                insertNode(props.node.data)
+              }
+            }
+          }),
           nodeChildren: ({ props }) => ({
             'data-comfy-node-name': props.node?.data?.name,
             onMouseenter: (event: MouseEvent) =>
               handleNodeHover(event, props.node?.data?.name),
             onMouseleave: () => {
               hoveredComfyNodeName = null
+            }
+          }),
+          nodeToggleButton: () => ({
+            onClick: (e: MouseEvent) => {
+              // Prevent toggle action as the node controls it
+              e.stopImmediatePropagation()
             }
           })
         }"
@@ -71,6 +87,8 @@ import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
+import { ComfyNodeDef } from '@/types/apiTypes'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -136,7 +154,8 @@ const handleNodeHover = async (
   const previewHeight = previewRef.value?.$el.offsetHeight || 0
   const availableSpaceBelow = window.innerHeight - targetRect.bottom
 
-  nodePreviewStyle.value.top = previewHeight > availableSpaceBelow
+  nodePreviewStyle.value.top =
+    previewHeight > availableSpaceBelow
       ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
       : `${targetRect.top - 40}px`
   if (sidebarLocation.value === 'left') {
@@ -145,4 +164,24 @@ const handleNodeHover = async (
     nodePreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 }
+
+const toggleNode = (id: string) => {
+  if (id in expandedKeys.value) {
+    delete expandedKeys.value[id]
+  } else {
+    expandedKeys.value[id] = true
+  }
+}
+
+const insertNode = (nodeDef: ComfyNodeDef) => {
+  app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
+}
 </script>
+
+<style>
+.node-lib-tree-node-label {
+  display: flex;
+  align-items: center;
+  margin-left: var(--p-tree-node-gap);
+}
+</style>
