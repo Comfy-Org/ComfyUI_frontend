@@ -117,6 +117,13 @@ export const useSettingStore = defineStore('setting', {
           max: 24
         }
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Workflow.SortNodeIdOnSave',
+        name: 'Sort node IDs on save',
+        type: 'boolean',
+        defaultValue: false
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

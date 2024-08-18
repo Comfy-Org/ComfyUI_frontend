@@ -426,7 +426,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.UseNewMenu': z.any(),
-      'Comfy.Validation.Workflows': z.boolean()
+      'Comfy.Validation.Workflows': z.boolean(),
+      'Comfy.Workflow.SortNodeIdOnSave': z.boolean()
     })
     .optional()
 )
