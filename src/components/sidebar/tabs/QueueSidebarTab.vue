@@ -73,7 +73,7 @@ const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 
-const ITEMS_PER_PAGE = 16
+const ITEMS_PER_PAGE = 8
 
 const allTasks = computed(() =>
   isExpanded.value ? queueStore.flatTasks : queueStore.tasks
