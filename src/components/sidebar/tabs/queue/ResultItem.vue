@@ -1,7 +1,7 @@
 <template>
   <div class="result-container" ref="resultContainer">
     <Image
-      v-if="result.mediaType === 'images'"
+      v-if="result.mediaType === 'images' || result.mediaType === 'gifs'"
       :src="result.url"
       alt="Task Output"
       width="100%"
