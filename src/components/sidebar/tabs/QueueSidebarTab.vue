@@ -5,7 +5,7 @@
         :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
         text
         severity="secondary"
-        @click="isExpanded = !isExpanded"
+        @click="toggleExpanded"
         class="toggle-expanded-button"
         v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
       />
@@ -18,14 +18,21 @@
       />
     </template>
     <template #body>
-      <div v-if="tasks.length > 0" class="queue-grid">
-        <TaskItem
-          v-for="task in tasks"
-          :key="task.key"
-          :task="task"
-          :isFlatTask="isExpanded"
-          @contextmenu="handleContextMenu"
-        />
+      <div
+        v-if="visibleTasks.length > 0"
+        ref="scrollContainer"
+        class="scroll-container"
+      >
+        <div class="queue-grid">
+          <TaskItem
+            v-for="task in visibleTasks"
+            :key="task.key"
+            :task="task"
+            :isFlatTask="isExpanded"
+            @contextmenu="handleContextMenu"
+          />
+        </div>
+        <div ref="loadMoreTrigger" style="height: 1px" />
       </div>
       <div v-else>
         <NoResultsPlaceholder
@@ -41,18 +48,19 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useInfiniteScroll, useResizeObserver } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem } from 'primevue/menuitem'
 import TaskItem from './queue/TaskItem.vue'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { MenuItem } from 'primevue/menuitem'
 import { api } from '@/scripts/api'
 
 const confirm = useConfirm()
@@ -60,9 +68,58 @@ const toast = useToast()
 const queueStore = useQueueStore()
 const { t } = useI18n()
 
-const tasks = computed(() =>
+const isExpanded = ref(false)
+const visibleTasks = ref<TaskItemImpl[]>([])
+const scrollContainer = ref<HTMLElement | null>(null)
+const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+const ITEMS_PER_PAGE = 8
+const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
+
+const allTasks = computed(() =>
   isExpanded.value ? queueStore.flatTasks : queueStore.tasks
 )
+
+const loadMoreItems = () => {
+  const currentLength = visibleTasks.value.length
+  const newTasks = allTasks.value.slice(
+    currentLength,
+    currentLength + ITEMS_PER_PAGE
+  )
+  visibleTasks.value.push(...newTasks)
+}
+
+const checkAndLoadMore = () => {
+  if (!scrollContainer.value) return
+
+  const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value
+  if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
+    loadMoreItems()
+  }
+}
+
+useInfiniteScroll(
+  scrollContainer,
+  () => {
+    if (visibleTasks.value.length < allTasks.value.length) {
+      loadMoreItems()
+    }
+  },
+  { distance: SCROLL_THRESHOLD }
+)
+
+// Use ResizeObserver to detect container size changes
+// This is necessary as the sidebar tab can change size when user drags the splitter.
+useResizeObserver(scrollContainer, () => {
+  nextTick(() => {
+    checkAndLoadMore()
+  })
+})
+
+const toggleExpanded = () => {
+  isExpanded.value = !isExpanded.value
+  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+}
 
 const removeTask = (task: TaskItemImpl) => {
   if (task.isRunning) {
@@ -75,9 +132,9 @@ const removeAllTasks = async () => {
   await queueStore.clear()
 }
 
-const confirmRemoveAll = (event) => {
+const confirmRemoveAll = (event: Event) => {
   confirm.require({
-    target: event.currentTarget,
+    target: event.currentTarget as HTMLElement,
     message: 'Do you want to delete all tasks?',
     icon: 'pi pi-info-circle',
     rejectProps: {
@@ -101,27 +158,35 @@ const confirmRemoveAll = (event) => {
   })
 }
 
-const onStatus = () => queueStore.update()
+const onStatus = () => {
+  queueStore.update()
+  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+}
 
 const menu = ref(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
-const menuItems = computed<MenuItem[]>(() => {
-  return [
-    {
-      label: t('delete'),
-      icon: 'pi pi-trash',
-      command: () => removeTask(menuTargetTask.value!)
-    },
-    {
-      label: t('loadWorkflow'),
-      icon: 'pi pi-file-export',
-      command: () => menuTargetTask.value?.loadWorkflow()
-    }
-  ]
-})
-const handleContextMenu = ({ task, event }) => {
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('delete'),
+    icon: 'pi pi-trash',
+    command: () => menuTargetTask.value && removeTask(menuTargetTask.value)
+  },
+  {
+    label: t('loadWorkflow'),
+    icon: 'pi pi-file-export',
+    command: () => menuTargetTask.value?.loadWorkflow()
+  }
+])
+
+const handleContextMenu = ({
+  task,
+  event
+}: {
+  task: TaskItemImpl
+  event: Event
+}) => {
   menuTargetTask.value = task
-  menu.value.show(event)
+  menu.value?.show(event)
 }
 
 onMounted(() => {
@@ -133,10 +198,31 @@ onUnmounted(() => {
   api.removeEventListener('status', onStatus)
 })
 
-const isExpanded = ref(false)
+// Watch for changes in allTasks and reset visibleTasks if necessary
+watch(
+  allTasks,
+  (newTasks) => {
+    if (
+      visibleTasks.value.length === 0 ||
+      visibleTasks.value.length > newTasks.length
+    ) {
+      visibleTasks.value = newTasks.slice(0, ITEMS_PER_PAGE)
+    }
+
+    nextTick(() => {
+      checkAndLoadMore()
+    })
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
+.scroll-container {
+  height: 100%;
+  overflow-y: auto;
+}
+
 .queue-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
