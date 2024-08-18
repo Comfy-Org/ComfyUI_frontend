@@ -38,7 +38,15 @@ export class ResultItemImpl {
 
   get url(): string {
     return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
-					subfolder=${encodeURIComponent(this.subfolder || '')}&t=${+new Date()}`)
+					subfolder=${encodeURIComponent(this.subfolder || '')}`)
+  }
+
+  get urlWithTimestamp(): string {
+    return `${this.url}&t=${+new Date()}`
+  }
+
+  get supportsPreview(): boolean {
+    return ['images', 'gifs'].includes(this.mediaType)
   }
 }
 
@@ -63,6 +71,10 @@ export class TaskItemImpl {
         )
       )
     )
+  }
+
+  get previewOutput(): ResultItemImpl | undefined {
+    return this.flatOutputs.find((output) => output.supportsPreview)
   }
 
   get apiTaskType(): APITaskType {
