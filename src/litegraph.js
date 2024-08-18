@@ -2042,9 +2042,13 @@ const globalExport = {};
              * @method serialize
              * @return {Object} value of the node
              */
-        serialize() {
+        serialize(option = { sortNodes: false }) {
             var nodes_info = [];
-            nodes_info = [...this._nodes].sort((a, b) => a.id - b.id).map(node => node.serialize());
+            nodes_info = (
+                option?.sortNodes ?
+                [...this._nodes].sort((a, b) => a.id - b.id) :
+                this._nodes
+            ).map(node => node.serialize());
 
             //pack link info into a non-verbose format
             var links = [];

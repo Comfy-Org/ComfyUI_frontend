@@ -584,7 +584,7 @@ export declare class LGraph {
     /** Destroys a link */
     removeLink(link_id: number): void;
     /** Creates a Object containing all the info about this graph, it can be serialized */
-    serialize<T extends serializedLGraph>(): T;
+    serialize<T extends serializedLGraph>(option?: { sortNodes: boolean }): T;
     /**
      * Configure a graph from a JSON string
      * @param data configure a graph from a JSON string
