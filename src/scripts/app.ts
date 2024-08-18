@@ -1925,7 +1925,10 @@ export class ComfyApp {
 
     // Save current workflow automatically
     setInterval(() => {
-      const workflow = JSON.stringify(this.graph.serialize())
+      const sortNode =
+        this.vueAppReady &&
+        useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      const workflow = JSON.stringify(this.graph.serialize({ sortNode }))
       localStorage.setItem('workflow', workflow)
       if (api.clientId) {
         sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
@@ -2396,7 +2399,10 @@ export class ComfyApp {
       }
     }
 
-    const workflow = graph.serialize()
+    const sortNode =
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    const workflow = graph.serialize({ sortNode })
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
