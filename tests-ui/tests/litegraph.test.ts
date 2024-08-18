@@ -33,7 +33,7 @@ describe('LGraph', () => {
     expect(result1.nodes).not.toHaveLength(0)
     // @ts-expect-error Access private property.
     graph._nodes = swapNodes(graph._nodes)
-    const result2 = graph.serialize()
+    const result2 = graph.serialize({ sortNode: true })
 
     expect(result1).toEqual(result2)
   })
