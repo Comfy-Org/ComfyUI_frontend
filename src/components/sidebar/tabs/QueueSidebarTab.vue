@@ -109,6 +109,7 @@ useInfiniteScroll(
 )
 
 // Use ResizeObserver to detect container size changes
+// This is necessary as the sidebar tab can change size when user drags the splitter.
 useResizeObserver(scrollContainer, () => {
   nextTick(() => {
     checkAndLoadMore()
