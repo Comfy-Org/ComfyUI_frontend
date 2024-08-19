@@ -46,21 +46,10 @@
   </SideBarTabTemplate>
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
-  <Galleria
-    v-model:visible="galleryVisible"
+  <ResultGallery
     v-model:activeIndex="galleryActiveIndex"
-    :value="allGalleryItems"
-    :showIndicators="false"
-    changeItemOnIndicatorHover
-    showItemNavigators
-    fullScreen
-    circular
-    :showThumbnails="false"
-  >
-    <template #item="{ item }">
-      <img :src="item.url" alt="gallery item" class="galleria-image" />
-    </template>
-  </Galleria>
+    :allGalleryItems="allGalleryItems"
+  />
 </template>
 
 <script setup lang="ts">
@@ -73,8 +62,8 @@ import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Galleria from 'primevue/galleria'
 import TaskItem from './queue/TaskItem.vue'
+import ResultGallery from './queue/ResultGallery.vue'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -89,8 +78,7 @@ const isExpanded = ref(false)
 const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
-const galleryVisible = ref(false)
-const galleryActiveIndex = ref(0)
+const galleryActiveIndex = ref(-1)
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
@@ -218,7 +206,6 @@ const handlePreview = (task: TaskItemImpl) => {
   galleryActiveIndex.value = allGalleryItems.value.findIndex(
     (item) => item.url === task.previewOutput?.url
   )
-  galleryVisible.value = true
 }
 
 onMounted(() => {
@@ -260,13 +247,5 @@ watch(
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   padding: 0.5rem;
   gap: 0.5rem;
-}
-
-.galleria-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  /* Set z-index so the close button don't get hide behind the image when image is large */
-  z-index: -1;
 }
 </style>
