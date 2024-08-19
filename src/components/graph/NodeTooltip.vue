@@ -130,7 +130,7 @@ const onMouseMove = (e: MouseEvent) => {
 }
 
 watch(
-  () => settingStore.get<boolean>('Comfy.EnableTooltips'),
+  () => settingStore.get('Comfy.EnableTooltips'),
   (enabled) => {
     if (enabled) {
       window.addEventListener('mousemove', onMouseMove)

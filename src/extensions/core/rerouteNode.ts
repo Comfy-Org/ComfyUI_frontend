@@ -11,12 +11,11 @@ app.registerExtension({
       __outputType?: string
     }
 
-    class RerouteNode extends LGraphNode {
+    class RerouteNode {
       static category: string | undefined
       static defaultVisibility = false
 
-      constructor(title?: string) {
-        super(title)
+      constructor() {
         if (!this.properties) {
           this.properties = {}
         }
@@ -257,7 +256,7 @@ app.registerExtension({
           {
             // naming is inverted with respect to LiteGraphNode.horizontal
             // LiteGraphNode.horizontal == true means that
-            // each slot in the inputs and outputs are layed out horizontally,
+            // each slot in the inputs and outputs are laid out horizontally,
             // which is the opposite of the visual orientation of the inputs and outputs as a node
             content:
               'Set ' + (this.properties.horizontal ? 'Horizontal' : 'Vertical'),

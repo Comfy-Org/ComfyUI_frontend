@@ -3,7 +3,8 @@ import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { toggleSwitch } from './ui/toggleSwitch'
 import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
-import { StatusWsMessageStatus, TaskItem } from '@/types/apiTypes'
+import { TaskItem } from '@/types/apiTypes'
+import { showSettingsDialog } from '@/services/dialogService'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -166,7 +167,8 @@ function dragElement(dragEl, settings): () => void {
   let savePos = undefined
   settings.addSetting({
     id: 'Comfy.MenuPosition',
-    name: 'Save menu position',
+    category: ['Comfy', 'Menu', 'MenuPosition'],
+    name: "Save legacy menu's position",
     type: 'boolean',
     defaultValue: savePos,
     onChange(value) {
@@ -368,6 +370,7 @@ export class ComfyUI {
 
     const confirmClear = this.settings.addSetting({
       id: 'Comfy.ConfirmClear',
+      category: ['Comfy', 'Workflow', 'ConfirmClear'],
       name: 'Require confirmation when clearing workflow',
       type: 'boolean',
       defaultValue: true
@@ -375,6 +378,7 @@ export class ComfyUI {
 
     const promptFilename = this.settings.addSetting({
       id: 'Comfy.PromptFilename',
+      category: ['Comfy', 'Workflow', 'PromptFilename'],
       name: 'Prompt for filename when saving workflow',
       type: 'boolean',
       defaultValue: true
@@ -393,28 +397,37 @@ export class ComfyUI {
      */
     const previewImage = this.settings.addSetting({
       id: 'Comfy.PreviewFormat',
-      name: 'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
+      category: ['Comfy', 'Node Widget', 'PreviewFormat'],
+      name: 'Preview image format',
+      tooltip:
+        'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
       type: 'text',
       defaultValue: ''
     })
 
     this.settings.addSetting({
       id: 'Comfy.DisableSliders',
-      name: 'Disable sliders.',
+      category: ['Comfy', 'Node Widget', 'DisableSliders'],
+      name: 'Disable node widget sliders',
       type: 'boolean',
       defaultValue: false
     })
 
     this.settings.addSetting({
       id: 'Comfy.DisableFloatRounding',
-      name: 'Disable rounding floats (requires page reload).',
+      category: ['Comfy', 'Node Widget', 'DisableFloatRounding'],
+      name: 'Disable default float widget rounding.',
+      tooltip:
+        '(requires page reload) Cannot disable round when round is set by the node in the backend.',
       type: 'boolean',
       defaultValue: false
     })
 
     this.settings.addSetting({
       id: 'Comfy.FloatRoundingPrecision',
-      name: 'Decimal places [0 = auto] (requires page reload).',
+      category: ['Comfy', 'Node Widget', 'FloatRoundingPrecision'],
+      name: 'Float widget rounding decimal places [0 = auto].',
+      tooltip: '(requires page reload)',
       type: 'slider',
       attrs: {
         min: 0,
@@ -426,6 +439,7 @@ export class ComfyUI {
 
     this.settings.addSetting({
       id: 'Comfy.EnableTooltips',
+      category: ['Comfy', 'Node', 'EnableTooltips'],
       name: 'Enable Tooltips',
       type: 'boolean',
       defaultValue: true
@@ -505,7 +519,7 @@ export class ComfyUI {
           $el('div.comfy-menu-actions', [
             $el('button.comfy-settings-btn', {
               textContent: '⚙️',
-              onclick: () => this.settings.show()
+              onclick: showSettingsDialog
             }),
             $el('button.comfy-close-menu-btn', {
               textContent: '\u00d7',
@@ -745,9 +759,9 @@ export class ComfyUI {
       })
     ]) as HTMLDivElement
 
-    const devMode = this.settings.addSetting({
+    this.settings.addSetting({
       id: 'Comfy.DevMode',
-      name: 'Enable Dev mode Options',
+      name: 'Enable dev mode options (API save, etc.)',
       type: 'boolean',
       defaultValue: false,
       onChange: function (value) {

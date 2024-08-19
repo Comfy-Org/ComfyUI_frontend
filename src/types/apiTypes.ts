@@ -1,15 +1,23 @@
 import { ZodType, z } from 'zod'
 import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
+import { colorPalettesSchema } from './colorPalette'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
-const zImageResult = z.object({
+const zResultItem = z.object({
   filename: z.string(),
   subfolder: z.string().optional(),
   type: z.string()
 })
+export type ResultItem = z.infer<typeof zResultItem>
+const zOutputs = z
+  .object({
+    audio: z.array(zResultItem).optional(),
+    images: z.array(zResultItem).optional()
+  })
+  .passthrough()
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -19,7 +27,7 @@ const zStatusWsMessageStatus = z.object({
 })
 
 const zStatusWsMessage = z.object({
-  status: zStatusWsMessageStatus
+  status: zStatusWsMessageStatus.nullable().optional()
 })
 
 const zProgressWsMessage = z.object({
@@ -36,11 +44,7 @@ const zExecutingWsMessage = z.object({
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
-  outputs: z
-    .object({
-      images: z.array(zImageResult)
-    })
-    .passthrough()
+  outputs: zOutputs
 })
 
 const zExecutionWsMessageBase = z.object({
@@ -143,9 +147,6 @@ const zStatus = z.object({
   messages: z.array(zStatusMessage)
 })
 
-// TODO: this is a placeholder
-const zOutput = z.any()
-
 const zTaskPrompt = z.tuple([
   zQueueIndex,
   zPromptId,
@@ -169,7 +170,7 @@ const zPendingTaskItem = z.object({
   prompt: zTaskPrompt
 })
 
-const zTaskOutput = z.record(zNodeId, zOutput)
+const zTaskOutput = z.record(zNodeId, zOutputs)
 
 const zHistoryTaskItem = z.object({
   taskType: z.literal('History'),
@@ -356,3 +357,85 @@ export function validateComfyNodeDef(
   }
   return result.data
 }
+
+const zEmbeddingsResponse = z.array(z.string())
+const zExtensionsResponse = z.array(z.string())
+const zPromptResponse = z.object({
+  node_errors: z.array(z.string()).optional(),
+  prompt_id: z.string().optional(),
+  exec_info: z
+    .object({
+      queue_remaining: z.number().optional()
+    })
+    .optional()
+})
+export const zSystemStats = z.object({
+  system: z.object({
+    os: z.string(),
+    python_version: z.string(),
+    embedded_python: z.boolean()
+  }),
+  devices: z.array(
+    z.object({
+      name: z.string(),
+      type: z.string(),
+      index: z.number().optional(),
+      vram_total: z.number(),
+      vram_free: z.number(),
+      torch_vram_total: z.number(),
+      torch_vram_free: z.number()
+    })
+  )
+})
+const zUser = z.object({
+  storage: z.enum(['server', 'browser']),
+  migrated: z.boolean(),
+  users: z.record(z.string(), z.unknown())
+})
+const zUserData = z.array(z.array(z.string(), z.string()))
+const zSettings = z.record(z.any()).and(
+  z
+    .object({
+      'Comfy.ColorPalette': z.string(),
+      'Comfy.CustomColorPalettes': colorPalettesSchema,
+      'Comfy.ConfirmClear': z.boolean(),
+      'Comfy.DevMode': z.boolean(),
+      'Comfy.DisableFloatRounding': z.boolean(),
+      'Comfy.DisableSliders': z.boolean(),
+      'Comfy.DOMClippingEnabled': z.boolean(),
+      'Comfy.EditAttention.Delta': z.number(),
+      'Comfy.EnableTooltips': z.boolean(),
+      'Comfy.EnableWorkflowViewRestore': z.boolean(),
+      'Comfy.FloatRoundingPrecision': z.number(),
+      'Comfy.InvertMenuScrolling': z.boolean(),
+      'Comfy.Logging.Enabled': z.boolean(),
+      'Comfy.NodeInputConversionSubmenus': z.boolean(),
+      'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger': z.enum([
+        'always',
+        'hold shift',
+        'NOT hold shift'
+      ]),
+      'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
+      'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+      'Comfy.NodeSuggestions.number': z.number(),
+      'Comfy.PreviewFormat': z.string(),
+      'Comfy.PromptFilename': z.boolean(),
+      'Comfy.Sidebar.Location': z.enum(['left', 'right']),
+      'Comfy.Sidebar.Size': z.number(),
+      'Comfy.SwitchUser': z.any(),
+      'Comfy.SnapToGrid.GridSize': z.number(),
+      'Comfy.TextareaWidget.FontSize': z.number(),
+      'Comfy.UseNewMenu': z.any(),
+      'Comfy.Validation.Workflows': z.boolean(),
+      'Comfy.Workflow.SortNodeIdOnSave': z.boolean()
+    })
+    .optional()
+)
+
+export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
+export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
+export type PromptResponse = z.infer<typeof zPromptResponse>
+export type Settings = z.infer<typeof zSettings>
+export type SystemStats = z.infer<typeof zSystemStats>
+export type User = z.infer<typeof zUser>
+export type UserData = z.infer<typeof zUserData>

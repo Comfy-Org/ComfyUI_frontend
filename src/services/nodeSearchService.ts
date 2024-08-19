@@ -57,7 +57,13 @@ export abstract class NodeFilter<FilterOptionT = string> {
   public abstract getNodeOptions(node: ComfyNodeDefImpl): FilterOptionT[]
 
   public matches(node: ComfyNodeDefImpl, value: FilterOptionT): boolean {
-    return this.getNodeOptions(node).includes(value)
+    if (value === '*') {
+      return true
+    }
+    const options = this.getNodeOptions(node)
+    return (
+      options.includes(value) || _.some(options, (option) => option === '*')
+    )
   }
 }
 
@@ -111,10 +117,11 @@ export class NodeSearchService {
 
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
-      keys: ['name', 'display_name', 'description'],
+      keys: ['name', 'display_name'],
       includeScore: true,
       threshold: 0.3,
-      shouldSort: true
+      shouldSort: true,
+      useExtendedSearch: true
     })
 
     const filterSearchOptions = {

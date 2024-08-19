@@ -1,17 +1,24 @@
 import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
+import { useToastStore } from '@/stores/toastStore'
 
 app.registerExtension({
   name: 'Comfy.Keybinds',
   init() {
-    const keybindListener = function (event) {
+    const keybindListener = async function (event) {
       const modifierPressed = event.ctrlKey || event.metaKey
 
       // Queue prompt using (ctrl or command) + enter
       if (modifierPressed && event.key === 'Enter') {
         // Cancel current prompt using (ctrl or command) + alt + enter
-        if(event.altKey) {
-          api.interrupt()
+        if (event.altKey) {
+          await api.interrupt()
+          useToastStore().add({
+            severity: 'info',
+            summary: 'Interrupted',
+            detail: 'Execution has been interrupted',
+            life: 1000
+          })
           return
         }
         // Queue prompt as first for generation using (ctrl or command) + shift + enter
@@ -63,8 +70,8 @@ app.registerExtension({
       }
 
       const keyIdMap = {
-        q: '#comfy-view-queue-button',
-        h: '#comfy-view-history-button',
+        q: '.queue-tab-button.side-bar-button',
+        h: '.queue-tab-button.side-bar-button',
         r: '#comfy-refresh-button'
       }
 

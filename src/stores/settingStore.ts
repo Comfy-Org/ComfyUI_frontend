@@ -9,6 +9,7 @@
 
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
+import { Settings } from '@/types/apiTypes'
 import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
 import { SettingParams } from '@/types/settingTypes'
 import { buildTree } from '@/utils/treeUtil'
@@ -33,7 +34,7 @@ export const useSettingStore = defineStore('setting', {
     settingTree(): SettingTreeNode {
       const root = buildTree(
         Object.values(this.settings),
-        (setting: SettingParams) => setting.id.split('.')
+        (setting: SettingParams) => setting.category || setting.id.split('.')
       )
 
       const floatingSettings = root.children.filter((node) => node.leaf)
@@ -67,7 +68,9 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl',
-        name: 'Node Search box implementation',
+        category: ['Comfy', 'Node Search Box', 'Implementation'],
+        experimental: true,
+        name: 'Node search box implementation',
         type: 'combo',
         options: ['default', 'litegraph (legacy)'],
         defaultValue: 'default'
@@ -75,20 +78,67 @@ export const useSettingStore = defineStore('setting', {
 
       app.ui.settings.addSetting({
         id: 'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+        category: ['Comfy', 'Node Search Box', 'LinkReleaseTrigger'],
         name: 'Trigger on link release',
         tooltip: 'Only applies to the default implementation',
         type: 'combo',
         options: Object.values(LinkReleaseTriggerMode),
         defaultValue: LinkReleaseTriggerMode.ALWAYS
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeSearchBoxImpl.NodePreview',
+        category: ['Comfy', 'Node Search Box', 'NodePreview'],
+        name: 'Node preview',
+        tooltip: 'Only applies to the default implementation',
+        type: 'boolean',
+        defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Sidebar.Location',
+        category: ['Comfy', 'Sidebar', 'Location'],
+        name: 'Sidebar location',
+        type: 'combo',
+        options: ['left', 'right'],
+        defaultValue: 'left'
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Sidebar.Size',
+        category: ['Comfy', 'Sidebar', 'Size'],
+        name: 'Sidebar size',
+        type: 'combo',
+        options: ['normal', 'small'],
+        defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.TextareaWidget.FontSize',
+        category: ['Comfy', 'Node Widget', 'TextareaWidget', 'FontSize'],
+        name: 'Textarea widget font size',
+        type: 'slider',
+        defaultValue: 10,
+        attrs: {
+          min: 8,
+          max: 24
+        }
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Workflow.SortNodeIdOnSave',
+        name: 'Sort node IDs when saving workflow',
+        type: 'boolean',
+        defaultValue: false
+      })
     },
 
-    set(key: string, value: any) {
+    set<K extends keyof Settings>(key: K, value: Settings[K]) {
       this.settingValues[key] = value
       app.ui.settings.setSettingValue(key, value)
     },
 
-    get<T = any>(key: string): T {
+    get<K extends keyof Settings>(key: K): Settings[K] {
       return (
         this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
       )

@@ -23,7 +23,8 @@ app.registerExtension({
     }
     app.ui.settings.addSetting({
       id,
-      name: 'Invert Menu Scrolling',
+      category: ['Comfy', 'Graph', 'InvertMenuScrolling'],
+      name: 'Invert Context Menu Scrolling',
       type: 'boolean',
       defaultValue: false,
       onChange(value) {

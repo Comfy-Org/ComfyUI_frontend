@@ -1,7 +1,7 @@
 <template>
-  <teleport to=".comfyui-body-left">
-    <nav class="side-tool-bar-container">
-      <SideBarIcon
+  <teleport :to="teleportTarget">
+    <nav :class="'side-tool-bar-container' + (isSmall ? ' small-sidebar' : '')">
+      <SidebarIcon
         v-for="tab in tabs"
         :key="tab.id"
         :icon="tab.icon"
@@ -12,8 +12,8 @@
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
-        <SideBarThemeToggleIcon />
-        <SideBarSettingsToggleIcon />
+        <SidebarThemeToggleIcon />
+        <SidebarSettingsToggleIcon />
       </div>
     </nav>
   </teleport>
@@ -35,17 +35,30 @@
 </template>
 
 <script setup lang="ts">
-import SideBarIcon from './SideBarIcon.vue'
-import SideBarThemeToggleIcon from './SideBarThemeToggleIcon.vue'
-import SideBarSettingsToggleIcon from './SideBarSettingsToggleIcon.vue'
+import SidebarIcon from './SidebarIcon.vue'
+import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
+import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
 import { computed, onBeforeUnmount } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useSettingStore } from '@/stores/settingStore'
 import {
   CustomSidebarTabExtension,
   SidebarTabExtension
 } from '@/types/extensionTypes'
 
 const workspaceStore = useWorkspaceStore()
+const settingStore = useSettingStore()
+
+const teleportTarget = computed(() =>
+  settingStore.get('Comfy.Sidebar.Location') === 'left'
+    ? '.comfyui-body-left'
+    : '.comfyui-body-right'
+)
+
+const isSmall = computed(
+  () => settingStore.get('Comfy.Sidebar.Size') === 'small'
+)
+
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed<SidebarTabExtension | null>(() => {
   const tabId = workspaceStore.activeSidebarTab
@@ -72,6 +85,10 @@ onBeforeUnmount(() => {
 :root {
   --sidebar-width: 64px;
   --sidebar-icon-size: 1.5rem;
+}
+:root .small-sidebar {
+  --sidebar-width: 40px;
+  --sidebar-icon-size: 1rem;
 }
 </style>
 

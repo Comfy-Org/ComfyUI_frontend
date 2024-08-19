@@ -1,15 +1,16 @@
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import {
-  validateTaskItem,
+import type {
   TaskItem,
   TaskType,
   TaskPrompt,
   TaskStatus,
+  StatusWsMessageStatus,
   TaskOutput,
-  StatusWsMessageStatus
+  ResultItem
 } from '@/types/apiTypes'
-import { plainToClass } from 'class-transformer'
+import type { NodeId } from '@/types/comfyWorkflow'
+import { instanceToPlain, plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -25,11 +26,70 @@ export enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+export class ResultItemImpl {
+  filename: string
+  subfolder?: string
+  type: string
+
+  nodeId: NodeId
+  // 'audio' | 'images' | ...
+  mediaType: string
+
+  get url(): string {
+    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
+					subfolder=${encodeURIComponent(this.subfolder || '')}`)
+  }
+
+  get urlWithTimestamp(): string {
+    return `${this.url}&t=${+new Date()}`
+  }
+
+  get supportsPreview(): boolean {
+    return ['images', 'gifs'].includes(this.mediaType)
+  }
+}
+
 export class TaskItemImpl {
-  taskType: TaskType
-  prompt: TaskPrompt
-  status?: TaskStatus
-  outputs?: TaskOutput
+  readonly taskType: TaskType
+  readonly prompt: TaskPrompt
+  readonly status?: TaskStatus
+  readonly outputs: TaskOutput
+  readonly flatOutputs: ReadonlyArray<ResultItemImpl>
+
+  constructor(
+    taskType: TaskType,
+    prompt: TaskPrompt,
+    status: TaskStatus | undefined,
+    outputs: TaskOutput,
+    flatOutputs?: ReadonlyArray<ResultItemImpl>
+  ) {
+    this.taskType = taskType
+    this.prompt = prompt
+    this.status = status
+    this.outputs = outputs
+    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
+  }
+
+  private calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
+    if (!this.outputs) {
+      return []
+    }
+    return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
+      Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+        (items as ResultItem[]).map((item: ResultItem) =>
+          plainToClass(ResultItemImpl, {
+            ...item,
+            nodeId,
+            mediaType
+          })
+        )
+      )
+    )
+  }
+
+  get previewOutput(): ResultItemImpl | undefined {
+    return this.flatOutputs.find((output) => output.supportsPreview)
+  }
 
   get apiTaskType(): APITaskType {
     switch (this.taskType) {
@@ -39,6 +99,10 @@ export class TaskItemImpl {
       case 'History':
         return 'history'
     }
+  }
+
+  get key() {
+    return this.promptId + this.displayStatus
   }
 
   get queueIndex() {
@@ -99,13 +163,13 @@ export class TaskItemImpl {
       case 'Pending':
         return TaskItemDisplayStatus.Pending
       case 'History':
+        if (this.interrupted) return TaskItemDisplayStatus.Cancelled
+
         switch (this.status!.status_str) {
           case 'success':
             return TaskItemDisplayStatus.Completed
           case 'error':
-            return this.interrupted
-              ? TaskItemDisplayStatus.Cancelled
-              : TaskItemDisplayStatus.Failed
+            return TaskItemDisplayStatus.Failed
         }
     }
   }
@@ -156,13 +220,15 @@ interface State {
   runningTasks: TaskItemImpl[]
   pendingTasks: TaskItemImpl[]
   historyTasks: TaskItemImpl[]
+  maxHistoryItems: number
 }
 
 export const useQueueStore = defineStore('queue', {
   state: (): State => ({
     runningTasks: [],
     pendingTasks: [],
-    historyTasks: []
+    historyTasks: [],
+    maxHistoryItems: 64
   }),
   getters: {
     tasks(state) {
@@ -171,6 +237,37 @@ export const useQueueStore = defineStore('queue', {
         ...state.runningTasks,
         ...state.historyTasks
       ]
+    },
+    flatTasks(): TaskItemImpl[] {
+      return this.tasks.flatMap((task: TaskItemImpl) => {
+        if (task.displayStatus !== TaskItemDisplayStatus.Completed) {
+          return [task]
+        }
+
+        return task.flatOutputs.map(
+          (output: ResultItemImpl, i: number) =>
+            new TaskItemImpl(
+              task.taskType,
+              [
+                task.queueIndex,
+                `${task.promptId}-${i}`,
+                task.promptInputs,
+                task.extraData,
+                task.outputsToExecute
+              ],
+              task.status,
+              {
+                [output.nodeId]: {
+                  [output.mediaType]: [output]
+                }
+              },
+              [output]
+            )
+        )
+      })
+    },
+    lastHistoryQueueIndex(state) {
+      return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
     }
   },
   actions: {
@@ -178,20 +275,41 @@ export const useQueueStore = defineStore('queue', {
     async update() {
       const [queue, history] = await Promise.all([
         api.getQueue(),
-        api.getHistory(/* maxItems=*/ 64)
+        api.getHistory(this.maxHistoryItems)
       ])
 
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
         tasks
-          .map((task) => validateTaskItem(task))
-          .filter((result) => result.success)
-          .map((result) => plainToClass(TaskItemImpl, result.data))
+          .map(
+            (task: TaskItem) =>
+              new TaskItemImpl(
+                task.taskType,
+                task.prompt,
+                task['status'],
+                task['outputs'] || {}
+              )
+          )
           // Desc order to show the latest tasks first
           .sort((a, b) => b.queueIndex - a.queueIndex)
 
       this.runningTasks = toClassAll(queue.Running)
       this.pendingTasks = toClassAll(queue.Pending)
-      this.historyTasks = toClassAll(history.History)
+
+      // Process history items
+      const allIndex = new Set(
+        history.History.map((item: TaskItem) => item.prompt[0])
+      )
+      const newHistoryItems = toClassAll(
+        history.History.filter(
+          (item) => item.prompt[0] > this.lastHistoryQueueIndex
+        )
+      )
+      const existingHistoryItems = this.historyTasks.filter(
+        (item: TaskItemImpl) => allIndex.has(item.queueIndex)
+      )
+      this.historyTasks = [...newHistoryItems, ...existingHistoryItems]
+        .slice(0, this.maxHistoryItems)
+        .sort((a, b) => b.queueIndex - a.queueIndex)
     },
     async clear() {
       await Promise.all(
@@ -214,7 +332,7 @@ export const useQueuePendingTaskCountStore = defineStore(
     }),
     actions: {
       update(e: CustomEvent<StatusWsMessageStatus>) {
-        this.count = e.detail.exec_info.queue_remaining
+        this.count = e.detail?.exec_info?.queue_remaining || 0
       }
     }
   }

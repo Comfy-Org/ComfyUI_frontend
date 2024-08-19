@@ -5,6 +5,7 @@ import { fromZodError } from 'zod-validation-error'
 // innerNode.id = `${this.node.id}:${i}`
 // Remove it after GroupNode is redesigned.
 export const zNodeId = z.union([z.number().int(), z.string()])
+export type NodeId = z.infer<typeof zNodeId>
 export const zSlotIndex = z.union([
   z.number().int(),
   z
@@ -42,7 +43,7 @@ const zNodeOutput = z
   .object({
     name: z.string(),
     type: zDataType,
-    links: z.array(z.number()).nullable(),
+    links: z.array(z.number()).nullable().optional(),
     slot_index: zSlotIndex.optional()
   })
   .passthrough()
@@ -51,7 +52,7 @@ const zNodeInput = z
   .object({
     name: z.string(),
     type: zDataType,
-    link: z.number().nullable(),
+    link: z.number().nullable().optional(),
     slot_index: zSlotIndex.optional()
   })
   .passthrough()

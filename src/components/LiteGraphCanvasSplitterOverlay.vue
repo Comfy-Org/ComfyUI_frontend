@@ -4,27 +4,43 @@
       class="side-bar-panel"
       :minSize="10"
       :size="20"
-      v-show="sideBarPanelVisible"
+      v-show="sidebarPanelVisible"
+      v-if="sidebarLocation === 'left'"
     >
       <slot name="side-bar-panel"></slot>
     </SplitterPanel>
     <SplitterPanel class="graph-canvas-panel" :size="100">
       <div></div>
     </SplitterPanel>
+    <SplitterPanel
+      class="side-bar-panel"
+      :minSize="10"
+      :size="20"
+      v-show="sidebarPanelVisible"
+      v-if="sidebarLocation === 'right'"
+    >
+      <slot name="side-bar-panel"></slot>
+    </SplitterPanel>
   </Splitter>
 </template>
 
 <script setup lang="ts">
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 
-const sideBarPanelVisible = computed(
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+
+const sidebarPanelVisible = computed(
   () => useWorkspaceStore().activeSidebarTab !== null
 )
 const gutterClass = computed(() => {
-  return sideBarPanelVisible.value ? '' : 'gutter-hidden'
+  return sidebarPanelVisible.value ? '' : 'gutter-hidden'
 })
 </script>
 

@@ -2,7 +2,7 @@
   <teleport to=".graph-canvas-container">
     <LiteGraphCanvasSplitterOverlay v-if="betaMenuEnabled">
       <template #side-bar-panel>
-        <SideToolBar />
+        <SideToolbar />
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import SideToolBar from '@/components/sidebar/SideToolBar.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'

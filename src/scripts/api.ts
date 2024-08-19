@@ -4,7 +4,13 @@ import {
   PendingTaskItem,
   RunningTaskItem,
   ComfyNodeDef,
-  validateComfyNodeDef
+  validateComfyNodeDef,
+  EmbeddingsResponse,
+  ExtensionsResponse,
+  PromptResponse,
+  SystemStats,
+  User,
+  Settings
 } from '@/types/apiTypes'
 
 interface QueuePromptRequestBody {
@@ -30,6 +36,8 @@ class ComfyApi extends EventTarget {
   socket?: WebSocket
   clientId?: string
 
+  reportedUnknownMessageTypes = new Set<string>()
+
   constructor() {
     super()
     this.api_host = location.host
@@ -45,18 +53,25 @@ class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
-  fetchApi(route, options?) {
+  fetchApi(route: string, options?: RequestInit) {
     if (!options) {
       options = {}
     }
     if (!options.headers) {
       options.headers = {}
     }
+    if (!options.cache) {
+      options.cache = 'no-cache'
+    }
     options.headers['Comfy-User'] = this.user
     return fetch(this.apiURL(route), options)
   }
 
-  addEventListener(type, callback, options?) {
+  addEventListener(
+    type: string,
+    callback: any,
+    options?: AddEventListenerOptions
+  ) {
     super.addEventListener(type, callback, options)
     this.#registered.add(type)
   }
@@ -80,7 +95,7 @@ class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?) {
+  #createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
@@ -206,7 +221,8 @@ class ComfyApi extends EventTarget {
                 this.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
-              } else {
+              } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
+                this.reportedUnknownMessageTypes.add(msg.type)
                 throw new Error(`Unknown message type ${msg.type}`)
               }
           }
@@ -226,18 +242,16 @@ class ComfyApi extends EventTarget {
 
   /**
    * Gets a list of extension urls
-   * @returns An array of script urls to import
    */
-  async getExtensions() {
+  async getExtensions(): Promise<ExtensionsResponse> {
     const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
     return await resp.json()
   }
 
   /**
    * Gets a list of embedding names
-   * @returns An array of script urls to import
    */
-  async getEmbeddings() {
+  async getEmbeddings(): Promise<EmbeddingsResponse> {
     const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
     return await resp.json()
   }
@@ -272,7 +286,10 @@ class ComfyApi extends EventTarget {
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
    */
-  async queuePrompt(number: number, { output, workflow }) {
+  async queuePrompt(
+    number: number,
+    { output, workflow }
+  ): Promise<PromptResponse> {
     const body: QueuePromptRequestBody = {
       client_id: this.clientId,
       prompt: output,
@@ -307,7 +324,7 @@ class ComfyApi extends EventTarget {
    * @param {string} type The type of items to load, queue or history
    * @returns The items of the specified type grouped by their status
    */
-  async getItems(type) {
+  async getItems(type: 'queue' | 'history') {
     if (type === 'queue') {
       return this.getQueue()
     }
@@ -352,10 +369,12 @@ class ComfyApi extends EventTarget {
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
       const res = await this.fetchApi(`/history?max_items=${max_items}`)
+      const json: Promise<HistoryTaskItem[]> = await res.json()
       return {
-        History: Object.values(await res.json()).map(
-          (item: HistoryTaskItem) => ({ ...item, taskType: 'History' })
-        )
+        History: Object.values(json).map((item) => ({
+          ...item,
+          taskType: 'History'
+        }))
       }
     } catch (error) {
       console.error(error)
@@ -367,7 +386,7 @@ class ComfyApi extends EventTarget {
    * Gets system & device stats
    * @returns System stats such as python version, OS, per device info
    */
-  async getSystemStats() {
+  async getSystemStats(): Promise<SystemStats> {
     const res = await this.fetchApi('/system_stats')
     return await res.json()
   }
@@ -377,7 +396,7 @@ class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type, body) {
+  async #postItem(type: string, body: any) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -396,7 +415,7 @@ class ComfyApi extends EventTarget {
    * @param {string} type The type of item to delete, queue or history
    * @param {number} id The id of the item to delete
    */
-  async deleteItem(type, id) {
+  async deleteItem(type: string, id: string) {
     await this.#postItem(type, { delete: [id] })
   }
 
@@ -404,7 +423,7 @@ class ComfyApi extends EventTarget {
    * Clears the specified list
    * @param {string} type The type of list to clear, queue or history
    */
-  async clearItems(type) {
+  async clearItems(type: string) {
     await this.#postItem(type, { clear: true })
   }
 
@@ -417,9 +436,8 @@ class ComfyApi extends EventTarget {
 
   /**
    * Gets user configuration data and where data should be stored
-   * @returns { Promise<{ storage: "server" | "browser", users?: Promise<string, unknown>, migrated?: boolean }> }
    */
-  async getUserConfig() {
+  async getUserConfig(): Promise<User> {
     return (await this.fetchApi('/users')).json()
   }
 
@@ -428,7 +446,7 @@ class ComfyApi extends EventTarget {
    * @param { string } username
    * @returns The fetch response
    */
-  createUser(username) {
+  createUser(username: string) {
     return this.fetchApi('/users', {
       method: 'POST',
       headers: {
@@ -442,7 +460,7 @@ class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings() {
+  async getSettings(): Promise<Settings> {
     return (await this.fetchApi('/settings')).json()
   }
 
@@ -451,16 +469,14 @@ class ComfyApi extends EventTarget {
    * @param { string } id The id of the setting to fetch
    * @returns { Promise<unknown> } The setting value
    */
-  async getSetting(id) {
+  async getSetting(id: keyof Settings): Promise<Settings[keyof Settings]> {
     return (await this.fetchApi(`/settings/${encodeURIComponent(id)}`)).json()
   }
 
   /**
    * Stores a dictionary of settings for the current user
-   * @param { Record<string, unknown> } settings Dictionary of setting id -> value to save
-   * @returns { Promise<void> }
    */
-  async storeSettings(settings) {
+  async storeSettings(settings: Settings) {
     return this.fetchApi(`/settings`, {
       method: 'POST',
       body: JSON.stringify(settings)
@@ -469,11 +485,8 @@ class ComfyApi extends EventTarget {
 
   /**
    * Stores a setting for the current user
-   * @param { string } id The id of the setting to update
-   * @param { unknown } value The value of the setting
-   * @returns { Promise<void> }
    */
-  async storeSetting(id, value) {
+  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
       method: 'POST',
       body: JSON.stringify(value)
@@ -482,11 +495,8 @@ class ComfyApi extends EventTarget {
 
   /**
    * Gets a user data file for the current user
-   * @param { string } file The name of the userdata file to load
-   * @param { RequestInit } [options]
-   * @returns { Promise<unknown> } The fetch response object
    */
-  async getUserData(file, options?) {
+  async getUserData(file: string, options?: RequestInit) {
     return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options)
   }
 
@@ -499,7 +509,7 @@ class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: unknown,
+    data: any,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -527,7 +537,7 @@ class ComfyApi extends EventTarget {
    * Deletes a user data file for the current user
    * @param { string } file The name of the userdata file to delete
    */
-  async deleteUserData(file) {
+  async deleteUserData(file: string) {
     const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
       method: 'DELETE'
     })
@@ -543,7 +553,11 @@ class ComfyApi extends EventTarget {
    * @param { string } source The userdata file to move
    * @param { string } dest The destination for the file
    */
-  async moveUserData(source, dest, options = { overwrite: false }) {
+  async moveUserData(
+    source: string,
+    dest: string,
+    options = { overwrite: false }
+  ) {
     const resp = await this.fetchApi(
       `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
       {
@@ -559,7 +573,7 @@ class ComfyApi extends EventTarget {
    * @param { string } dir The directory in which to list files
    * @param { boolean } [recurse] If the listing should be recursive
    * @param { true } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[][]>> } The list of split file paths in the format [fullPath, ...splitPath]
+   * @returns { Promise<string[][]> } The list of split file paths in the format [fullPath, ...splitPath]
    */
   /**
    * @overload
@@ -569,6 +583,16 @@ class ComfyApi extends EventTarget {
    * @param { false | undefined } [split] If the paths should be split based on the os path separator
    * @returns { Promise<string[]> } The list of files
    */
+  async listUserData(
+    dir: string,
+    recurse: true,
+    split?: boolean
+  ): Promise<string[][]>
+  async listUserData(
+    dir: string,
+    recurse: false,
+    split?: boolean
+  ): Promise<string[]>
   async listUserData(dir, recurse, split) {
     const resp = await this.fetchApi(
       `/userdata?${new URLSearchParams({

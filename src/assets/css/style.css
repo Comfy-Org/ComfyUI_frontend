@@ -103,6 +103,7 @@ body {
 #graph-canvas {
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .comfyui-body-right {
@@ -131,7 +132,7 @@ body {
   resize: none;
   border: none;
   box-sizing: border-box;
-  font-size: 10px;
+  font-size: var(--comfy-textarea-font-size);
 }
 
 .comfy-modal {

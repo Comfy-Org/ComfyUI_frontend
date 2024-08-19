@@ -23,7 +23,8 @@ app.registerExtension({
     // Add setting to control grid size
     app.ui.settings.addSetting({
       id: 'Comfy.SnapToGrid.GridSize',
-      name: 'Grid Size',
+      category: ['Comfy', 'Graph', 'GridSize'],
+      name: 'Snap to gird size',
       type: 'slider',
       attrs: {
         min: 1,
@@ -130,7 +131,7 @@ app.registerExtension({
 
       // LiteGraph will call group.move both on mouse-move as well as mouse-up though we only want
       // to snap on a mouse-up which we can determine by checking if `app.canvas.last_mouse_dragging`
-      // has been set to `false`. Essentially, this check here is the equivilant to calling an
+      // has been set to `false`. Essentially, this check here is the equivalent to calling an
       // `LGraphGroup.prototype.onNodeMoved` if it had existed.
       if (app.canvas.last_mouse_dragging === false && app.shiftDown) {
         // After moving a group (while app.shiftDown), snap all the child nodes and, finally,

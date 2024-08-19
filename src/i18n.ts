@@ -2,6 +2,9 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    delete: 'Delete',
+    experimental: 'BETA',
+    loadWorkflow: 'Load Workflow',
     settings: 'Settings',
     searchSettings: 'Search Settings',
     noResultsFound: 'No Results Found',
@@ -9,17 +12,22 @@ const messages = {
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
     noTasksFound: 'No Tasks Found',
     noTasksFoundMessage: 'There are no tasks in the queue.',
-    sideToolBar: {
+    sideToolbar: {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
       nodeParam: 'Node Param',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
+      },
+      queueTab: {
+        showFlatList: 'Show Flat List'
       }
     }
   },
   zh: {
+    delete: '删除',
+    loadWorkflow: '加载工作流',
     settings: '设置',
     searchSettings: '搜索设置',
     noResultsFound: '未找到结果',
@@ -27,13 +35,16 @@ const messages = {
     noTasksFoundMessage: '队列中没有任务。',
     searchFailedMessage:
       '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
-    sideToolBar: {
+    sideToolbar: {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
       nodeParam: '节点参数',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
+      },
+      queueTab: {
+        showFlatList: '平铺结果'
       }
     }
   }

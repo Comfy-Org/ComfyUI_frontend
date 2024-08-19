@@ -245,6 +245,7 @@ let enableDomClipping = true
 export function addDomClippingSetting(): void {
   app.ui.settings.addSetting({
     id: 'Comfy.DOMClippingEnabled',
+    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
     name: 'Enable DOM element clipping (enabling may reduce performance)',
     type: 'boolean',
     defaultValue: enableDomClipping,
@@ -254,6 +255,7 @@ export function addDomClippingSetting(): void {
   })
 }
 
+//@ts-ignore
 LGraphNode.prototype.addDOMWidget = function (
   name: string,
   type: string,

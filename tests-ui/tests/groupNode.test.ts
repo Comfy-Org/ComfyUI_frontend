@@ -950,7 +950,7 @@ describe('group node', () => {
     expect(group.outputs[0].connections.length).toBe(1)
     expect(group.outputs[0].connections[0].targetNode.id).toBe(preview2.id)
 
-    // Convert back and ensure bothe previews are still connected
+    // Convert back and ensure both previews are still connected
     group.menu['Convert to nodes'].call()
     decode = graph.find(decode)
     expect(decode.outputs[0].connections.length).toBe(2)

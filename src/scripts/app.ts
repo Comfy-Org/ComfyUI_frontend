@@ -45,6 +45,8 @@ import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { showLoadWorkflowWarning } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import type { ToastMessageOptions } from 'primevue/toast'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -416,6 +418,7 @@ export class ComfyApp {
     }
     this.enableWorkflowViewRestore = this.ui.settings.addSetting({
       id: 'Comfy.EnableWorkflowViewRestore',
+      category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
       name: 'Save and restore canvas position and zoom level in workflows',
       type: 'boolean',
       defaultValue: true
@@ -1155,6 +1158,9 @@ export class ComfyApp {
    */
   #addCopyHandler() {
     document.addEventListener('copy', (e) => {
+      if (!(e.target instanceof Element)) {
+        return
+      }
       if (
         (e.target instanceof HTMLTextAreaElement &&
           e.target.type === 'textarea') ||
@@ -1163,13 +1169,12 @@ export class ComfyApp {
         // Default system copy
         return
       }
+      const isTargetInGraph =
+        e.target.classList.contains('litegraph') ||
+        e.target.classList.contains('graph-canvas-container')
 
       // copy nodes and clear clipboard
-      if (
-        e.target instanceof Element &&
-        e.target.classList.contains('litegraph') &&
-        this.canvas.selected_nodes
-      ) {
+      if (isTargetInGraph && this.canvas.selected_nodes) {
         this.canvas.copyToClipboard()
         e.clipboardData.setData('text', ' ') //clearData doesn't remove images from clipboard
         e.preventDefault()
@@ -1724,7 +1729,7 @@ export class ComfyApp {
 
       const r = onConfigure?.apply(this, arguments)
 
-      // Fire after onConfigure, used by primitves to generate widget using input nodes config
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
       // @ts-expect-error _nodes is private.
       for (const node of app.graph._nodes) {
         node.onAfterGraphConfigured?.()
@@ -1853,10 +1858,6 @@ export class ComfyApp {
     this.canvasEl = canvasEl
     await this.#setUser()
 
-    // Create and mount the LiteGraph in the DOM
-    const mainCanvas = document.createElement('canvas')
-    mainCanvas.style.touchAction = 'none'
-
     this.resizeCanvas()
 
     await Promise.all([
@@ -1925,7 +1926,10 @@ export class ComfyApp {
 
     // Save current workflow automatically
     setInterval(() => {
-      const workflow = JSON.stringify(this.graph.serialize())
+      const sortNodes =
+        this.vueAppReady &&
+        useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
       localStorage.setItem('workflow', workflow)
       if (api.clientId) {
         sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
@@ -1955,6 +1959,38 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
+  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>) {
+    // Frontend only nodes registered by custom nodes.
+    // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
+    const rawDefs = Object.fromEntries(
+      Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
+        name,
+        {
+          name,
+          display_name: name,
+          // @ts-expect-error
+          category: node.category || '__frontend_only__',
+          input: { required: {}, optional: {} },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          python_module: 'custom_nodes.frontend_only',
+          description: `Frontend only node for ${name}`
+        }
+      ])
+    )
+
+    const allNodeDefs = {
+      ...rawDefs,
+      ...defs,
+      ...SYSTEM_NODE_DEFS
+    }
+
+    const nodeDefStore = useNodeDefStore()
+    nodeDefStore.updateNodeDefs(Object.values(allNodeDefs))
+    nodeDefStore.updateWidgets(this.widgets)
+  }
+
   /**
    * Registers nodes with the graph
    */
@@ -1962,12 +1998,10 @@ export class ComfyApp {
     // Load node definitions from the backend
     const defs = await api.getNodeDefs()
     await this.registerNodesFromDefs(defs)
-    if (this.vueAppReady) {
-      const nodeDefStore = useNodeDefStore()
-      nodeDefStore.updateNodeDefs([...Object.values(defs), ...SYSTEM_NODE_DEFS])
-      nodeDefStore.updateWidgets(this.widgets)
-    }
     await this.#invokeExtensionsAsync('registerCustomNodes')
+    if (this.vueAppReady) {
+      this.updateVueAppNodeDefs(defs)
+    }
   }
 
   getWidgetType(inputData, inputName) {
@@ -1986,15 +2020,8 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node = class ComfyNode extends LGraphNode {
-      static comfyClass? = nodeData.name
-      // TODO: change to "title?" once litegraph.d.ts has been updated
-      static title = nodeData.display_name || nodeData.name
-      static nodeData? = nodeData
-      static category?: string
-
-      constructor(title?: string) {
-        super(title)
+    const node = Object.assign(
+      function ComfyNode() {
         var inputs = nodeData['input']['required']
         if (nodeData['input']['optional'] != undefined) {
           inputs = Object.assign(
@@ -2060,9 +2087,13 @@ export class ComfyApp {
         this.serialize_widgets = true
 
         app.#invokeExtensionsAsync('nodeCreated', this)
+      },
+      {
+        title: nodeData.display_name || nodeData.name,
+        comfyClass: nodeData.name,
+        nodeData
       }
-    }
-    // @ts-expect-error
+    )
     node.prototype.comfyClass = nodeData.name
 
     this.#addNodeContextMenuHandler(node)
@@ -2070,7 +2101,9 @@ export class ComfyApp {
     this.#addNodeKeyHandler(node)
 
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
+    // @ts-expect-error
     LiteGraph.registerNodeType(nodeId, node)
+    // @ts-expect-error
     node.category = nodeData.category
   }
 
@@ -2185,10 +2218,16 @@ export class ComfyApp {
 
     if (
       this.vueAppReady &&
-      useSettingStore().get<boolean>('Comfy.Validation.Workflows')
+      useSettingStore().get('Comfy.Validation.Workflows')
     ) {
-      graphData = await validateComfyWorkflow(graphData, /* onError=*/ alert)
-      if (!graphData) return
+      // TODO: Show validation error in a dialog.
+      const validatedGraphData = await validateComfyWorkflow(
+        graphData,
+        /* onError=*/ alert
+      )
+      // If the validation failed, use the original graph data.
+      // Ideally we should not block users from loading the workflow.
+      graphData = validatedGraphData ?? graphData
     }
 
     const missingNodeTypes = []
@@ -2361,7 +2400,10 @@ export class ComfyApp {
       }
     }
 
-    const workflow = graph.serialize()
+    const sortNodes =
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    const workflow = graph.serialize({ sortNodes })
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
@@ -2667,7 +2709,12 @@ export class ComfyApp {
         } else if (this.isApiJson(jsonContent)) {
           this.loadApiJson(jsonContent, fileName)
         } else {
-          await this.loadGraphData(JSON.parse(readerResult), true, fileName)
+          await this.loadGraphData(
+            JSON.parse(readerResult),
+            true,
+            false,
+            fileName
+          )
         }
       }
       reader.readAsText(file)
@@ -2818,6 +2865,13 @@ export class ComfyApp {
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: 'Update',
+      detail: 'Update requested'
+    }
+    if (this.vueAppReady) useToastStore().add(requestToastMessage)
+
     const defs = await api.getNodeDefs()
 
     for (const nodeId in defs) {
@@ -2855,6 +2909,17 @@ export class ComfyApp {
     }
 
     await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+
+    if (this.vueAppReady) {
+      this.updateVueAppNodeDefs(defs)
+      useToastStore().remove(requestToastMessage)
+      useToastStore().add({
+        severity: 'success',
+        summary: 'Updated',
+        detail: 'Node definitions updated',
+        life: 1000
+      })
+    }
   }
 
   resetView() {

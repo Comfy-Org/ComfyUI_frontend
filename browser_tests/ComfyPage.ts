@@ -26,18 +26,24 @@ class ComfyNodeSearchBox {
     )
   }
 
-  async fillAndSelectFirstNode(nodeName: string) {
+  async fillAndSelectFirstNode(
+    nodeName: string,
+    options?: { suggestionIndex: number }
+  ) {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
     await this.dropdown.waitFor({ state: 'visible' })
     // Wait for some time for the auto complete list to update.
     // The auto complete list is debounced and may take some time to update.
     await this.page.waitForTimeout(500)
-    await this.dropdown.locator('li').nth(0).click()
+    await this.dropdown
+      .locator('li')
+      .nth(options?.suggestionIndex || 0)
+      .click()
   }
 }
 
-class NodeLibrarySideBarTab {
+class NodeLibrarySidebarTab {
   public readonly tabId: string = 'node-library'
   constructor(public readonly page: Page) {}
 
@@ -74,16 +80,16 @@ class NodeLibrarySideBarTab {
 }
 
 class ComfyMenu {
-  public readonly sideToolBar: Locator
+  public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
 
   constructor(public readonly page: Page) {
-    this.sideToolBar = page.locator('.side-tool-bar-container')
+    this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
   }
 
   get nodeLibraryTab() {
-    return new NodeLibrarySideBarTab(this.page)
+    return new NodeLibrarySidebarTab(this.page)
   }
 
   async toggleTheme() {
@@ -168,6 +174,15 @@ export class ComfyPage {
     // Reset view to force re-rendering of canvas. So that info fields like fps
     // become hidden.
     await this.resetView()
+  }
+
+  async setSetting(settingId: string, settingValue: any) {
+    return await this.page.evaluate(
+      async ({ id, value }) => {
+        await window['app'].ui.settings.setSettingValueAsync(id, value)
+      },
+      { id: settingId, value: settingValue }
+    )
   }
 
   async realod() {

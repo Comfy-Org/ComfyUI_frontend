@@ -1,8 +1,8 @@
 import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
-import { LiteGraph, LGraphNode } from '@comfyorg/litegraph'
-import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
+import type { LGraphNode, INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
@@ -13,12 +13,11 @@ const TARGET = Symbol() // Used for reroutes to specify the real target widget
 interface PrimitiveNode extends LGraphNode {}
 
 const replacePropertyName = 'Run widget replace on values'
-class PrimitiveNode extends LGraphNode {
+class PrimitiveNode {
   controlValues: any[]
   lastType: string
   static category: string
-  constructor(title?: string) {
-    super(title)
+  constructor() {
     this.addOutput('connect to widget input', '*')
     this.serialize_widgets = true
     this.isVirtualNode = true
@@ -380,12 +379,12 @@ export function getWidgetConfig(slot) {
 function getConfig(widgetName) {
   const { nodeData } = this.constructor
   return (
-    nodeData?.input?.required[widgetName] ??
+    nodeData?.input?.required?.[widgetName] ??
     nodeData?.input?.optional?.[widgetName]
   )
 }
 
-function isConvertableWidget(widget, config) {
+function isConvertibleWidget(widget, config) {
   return (
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
     !widget.options?.forceInput
@@ -486,7 +485,7 @@ function isValidCombo(combo, obj) {
     console.log(`connection rejected: tried to connect combo to ${obj}`)
     return false
   }
-  // New imput combo has a different size
+  // New input combo has a different size
   if (combo.length !== obj.length) {
     console.log(`connection rejected: combo lists dont match`)
     return false
@@ -663,22 +662,20 @@ app.registerExtension({
   init() {
     useConversionSubmenusSetting = app.ui.settings.addSetting({
       id: 'Comfy.NodeInputConversionSubmenus',
-      name: 'Node widget/input conversion sub-menus',
-      tooltip:
-        'In the node context menu, place the entries that convert between input/widget in sub-menus.',
+      name: 'In the node context menu, place the entries that convert between input/widget in sub-menus.',
       type: 'boolean',
       defaultValue: true
     })
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    // Add menu options to conver to/from widgets
+    // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     nodeType.prototype.convertWidgetToInput = function (widget) {
       const config = getConfig.call(this, widget.name) ?? [
         widget.type,
         widget.options || {}
       ]
-      if (!isConvertableWidget(widget, config)) return false
+      if (!isConvertibleWidget(widget, config)) return false
       convertToInput(this, widget, config)
       return true
     }
@@ -704,7 +701,7 @@ app.registerExtension({
               w.type,
               w.options || {}
             ]
-            if (isConvertableWidget(w, config)) {
+            if (isConvertibleWidget(w, config)) {
               toInput.push({
                 content: `Convert ${w.name} to input`,
                 callback: () => convertToInput(this, w, config)

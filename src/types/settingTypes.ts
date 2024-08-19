@@ -1,3 +1,5 @@
+import { Settings } from './apiTypes'
+
 export type StorageLocation = 'browser' | 'server'
 
 export type SettingInputType =
@@ -21,14 +23,14 @@ export interface SettingOption {
 }
 
 export interface Setting {
-  id: string
+  id: keyof Settings
   onChange?: (value: any, oldValue?: any) => void
   name: string
   render: () => HTMLElement
 }
 
 export interface SettingParams {
-  id: string
+  id: keyof Settings
   name: string
   type: SettingInputType | SettingCustomRenderer
   defaultValue: any
@@ -36,4 +38,10 @@ export interface SettingParams {
   attrs?: any
   tooltip?: string
   options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
+  // By default category is id.split('.'). However, changing id to assign
+  // new category has poor backward compatibility. Use this field to overwrite
+  // default category from id.
+  // Note: Like id, category value need to be unique.
+  category?: string[]
+  experimental?: boolean
 }

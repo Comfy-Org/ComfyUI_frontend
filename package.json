@@ -1,7 +1,7 @@
 {
   "name": "comfyui-frontend",
   "private": true,
-  "version": "1.2.17",
+  "version": "1.2.28",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -56,9 +56,10 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.2.1",
-    "@comfyorg/litegraph": "^0.7.44",
+    "@comfyorg/litegraph": "^0.7.47",
     "@primevue/themes": "^4.0.0-rc.2",
     "@vitejs/plugin-vue": "^5.0.5",
+    "@vueuse/core": "^11.0.0",
     "class-transformer": "^0.5.1",
     "dotenv": "^16.4.5",
     "fuse.js": "^7.0.0",

@@ -12,7 +12,7 @@ export interface ComfyExtension {
    */
   init?(app: ComfyApp): Promise<void>
   /**
-   * Allows any additonal setup, called after the application is fully set up and running
+   * Allows any additional setup, called after the application is fully set up and running
    * @param app The ComfyUI app instance
    */
   setup?(app: ComfyApp): Promise<void>

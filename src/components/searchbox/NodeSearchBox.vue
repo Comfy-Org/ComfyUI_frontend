@@ -1,6 +1,6 @@
 <template>
   <div class="comfy-vue-node-search-container">
-    <div class="comfy-vue-node-preview-container">
+    <div class="comfy-vue-node-preview-container" v-if="enableNodePreview">
       <NodePreview
         :nodeDef="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
@@ -28,7 +28,9 @@
       <template v-slot:option="{ option }">
         <div class="option-container">
           <div class="option-display-name">
-            {{ option.display_name }}
+            <span
+              v-html="highlightQuery(option.display_name, currentQuery)"
+            ></span>
             <NodeSourceChip
               v-if="option.python_module !== undefined"
               :python_module="option.python_module"
@@ -62,6 +64,12 @@ import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+
+const settingStore = useSettingStore()
+const enableNodePreview = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
+)
 
 const props = defineProps({
   filters: {
@@ -70,24 +78,38 @@ const props = defineProps({
   searchLimit: {
     type: Number,
     default: 64
+  },
+  // TODO: Find a more flexible mechanism to add pinned nodes
+  includeReroute: {
+    type: Boolean,
+    default: false
   }
 })
 
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
+const currentQuery = ref('')
 const placeholder = computed(() => {
   return props.filters.length === 0 ? 'Search for nodes' : ''
 })
 
 const search = (query: string) => {
-  suggestions.value = useNodeDefStore().nodeSearchService.searchNode(
-    query,
-    props.filters,
-    {
+  currentQuery.value = query
+  suggestions.value = [
+    ...(props.includeReroute
+      ? [useNodeDefStore().nodeDefsByName['Reroute']]
+      : []),
+    ...useNodeDefStore().nodeSearchService.searchNode(query, props.filters, {
       limit: props.searchLimit
-    }
-  )
+    })
+  ]
+}
+
+const highlightQuery = (text: string, query: string) => {
+  if (!query) return text
+  const regex = new RegExp(`(${query})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
@@ -168,5 +190,14 @@ const setHoverSuggestion = (index: number) => {
 
 .s-badge {
   @apply bg-yellow-500;
+}
+
+:deep(.highlight) {
+  background-color: var(--p-primary-color);
+  color: var(--p-primary-contrast-color);
+  font-weight: bold;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  margin: -0.125rem 0.125rem;
 }
 </style>

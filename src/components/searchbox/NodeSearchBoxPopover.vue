@@ -2,15 +2,25 @@
   <div>
     <Dialog
       v-model:visible="visible"
-      pt:root="invisible-dialog-root"
-      pt:mask="node-search-box-dialog-mask"
       modal
       :dismissable-mask="dismissable"
       @hide="clearFilters"
+      :pt="{
+        root: { class: 'invisible-dialog-root' },
+        mask: { class: 'node-search-box-dialog-mask' },
+        transition: {
+          enterFromClass: 'opacity-0 scale-75',
+          // 100ms is the duration of the transition in the dialog component
+          enterActiveClass: 'transition-all duration-100 ease-out',
+          leaveActiveClass: 'transition-all duration-100 ease-in',
+          leaveToClass: 'opacity-0 scale-75'
+        }
+      }"
     >
       <template #container>
         <NodeSearchBox
           :filters="nodeFilters"
+          :includeReroute="includeReroute"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @add-node="addNode"
@@ -52,6 +62,7 @@ const getNewNodeLocation = (): [number, number] => {
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
 const nodeFilters = reactive([])
+const includeReroute = ref(false)
 const addFilter = (filter: FilterAndValue) => {
   nodeFilters.push(filter)
 }
@@ -86,25 +97,24 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   }, 100)
 }
 
-const linkReleaseTriggerMode = computed<LinkReleaseTriggerMode>(() => {
-  return settingStore.get<LinkReleaseTriggerMode>(
-    'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger'
-  )
+const linkReleaseTriggerMode = computed(() => {
+  return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseTrigger')
 })
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
+  includeReroute.value = false
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
 
-  if (
-    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
-      !shiftPressed) ||
-    (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
-      shiftPressed)
-  ) {
-    return
-  }
-
   if (e.detail.subType === 'empty-release') {
+    if (
+      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
+        !shiftPressed) ||
+      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
+        shiftPressed)
+    ) {
+      return
+    }
+
     const context = e.detail.linkReleaseContext
     if (context.links.length === 0) {
       console.warn('Empty release with no links! This should never happen')
@@ -116,6 +126,7 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
     )
     const dataType = firstLink.type
     addFilter([filter, dataType])
+    includeReroute.value = true
   }
   triggerEvent.value = e
   visible.value = true

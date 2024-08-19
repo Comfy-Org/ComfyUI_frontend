@@ -7,7 +7,7 @@ import { ComfyButtonGroup } from '../components/buttonGroup'
 import { ComfySplitButton } from '../components/splitButton'
 import { ComfyQueueButton } from './queueButton'
 import { ComfyWorkflowsMenu } from './workflows'
-import { getInteruptButton } from './interruptButton'
+import { getInterruptButton } from './interruptButton'
 import './menu.css'
 import type { ComfySettingsDialog } from '../settings'
 
@@ -126,7 +126,9 @@ export class ComfyAppMenu {
     // Keep the settings group as there are custom scripts attaching extra
     // elements to it.
     this.settingsGroup = new ComfyButtonGroup()
-    this.viewGroup = new ComfyButtonGroup(getInteruptButton('nlg-hide').element)
+    this.viewGroup = new ComfyButtonGroup(
+      getInterruptButton('nlg-hide').element
+    )
     this.mobileMenuButton = new ComfyButton({
       icon: 'menu',
       action: (_, btn) => {
@@ -148,7 +150,7 @@ export class ComfyAppMenu {
       collapseOnMobile(this.settingsGroup).element,
       collapseOnMobile(this.viewGroup).element,
 
-      getInteruptButton('lt-lg-show').element,
+      getInterruptButton('lt-lg-show').element,
       this.queueButton.element,
       showOnMobile(this.mobileMenuButton).element
     ])
@@ -156,8 +158,11 @@ export class ComfyAppMenu {
     let resizeHandler: () => void
     this.menuPositionSetting = app.ui.settings.addSetting({
       id: 'Comfy.UseNewMenu',
+      category: ['Comfy', 'Menu', 'UseNewMenu'],
       defaultValue: 'Disabled',
-      name: '[Beta] Use new menu and workflow management. Note: On small screens the menu will always be at the top.',
+      name: 'Use new menu and workflow management.',
+      experimental: true,
+      tooltip: 'On small screens the menu will always be at the top.',
       type: 'combo',
       options: ['Disabled', 'Top', 'Bottom'],
       onChange: async (v: MenuPosition) => {

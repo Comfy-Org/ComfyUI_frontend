@@ -104,7 +104,8 @@ export class ComfyInputsSpec {
   ): BaseInputSpec {
     if (!BaseInputSpec.isInputSpec(value)) return value
 
-    const [typeRaw, spec] = value
+    const [typeRaw, _spec] = value
+    const spec = _spec ?? {}
     const type = Array.isArray(typeRaw) ? 'COMBO' : value[0]
 
     switch (type) {
@@ -189,8 +190,8 @@ export class ComfyNodeDefImpl {
   }
 }
 
-export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
-  {
+export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
+  PrimitiveNode: {
     name: 'PrimitiveNode',
     display_name: 'Primitive',
     category: 'utils',
@@ -201,7 +202,7 @@ export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
     python_module: 'nodes',
     description: 'Primitive values like numbers, strings, and booleans.'
   },
-  {
+  Reroute: {
     name: 'Reroute',
     display_name: 'Reroute',
     category: 'utils',
@@ -212,7 +213,7 @@ export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
     python_module: 'nodes',
     description: 'Reroute the connection to another node.'
   },
-  {
+  Note: {
     name: 'Note',
     display_name: 'Note',
     category: 'utils',
@@ -223,7 +224,7 @@ export const SYSTEM_NODE_DEFS: ComfyNodeDef[] = [
     python_module: 'nodes',
     description: 'Node that add notes to your project'
   }
-]
+}
 
 function sortedTree(node: TreeNode): TreeNode {
   // Create a new node with the same label and data

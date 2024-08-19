@@ -2,9 +2,23 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Node search box', () => {
-  test('Can trigger on empty canvas double click', async ({ comfyPage }) => {
-    await comfyPage.doubleClickCanvas()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+      'always'
+    )
+  })
+  ;['always', 'hold shift', 'NOT hold shift'].forEach((triggerMode) => {
+    test(`Can trigger on empty canvas double click (${triggerMode})`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting(
+        'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
+        triggerMode
+      )
+      await comfyPage.doubleClickCanvas()
+      await expect(comfyPage.searchBox.input).toHaveCount(1)
+    })
   })
 
   test('Can trigger on link release', async ({ comfyPage }) => {
@@ -21,7 +35,10 @@ test.describe('Node search box', () => {
 
   test('Can auto link node', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
-    await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode')
+    // Select the second item as the first item is always reroute
+    await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
+      suggestionIndex: 1
+    })
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
 
@@ -40,7 +57,10 @@ test.describe('Node search box', () => {
     await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
     await comfyPage.page.keyboard.up('Shift')
 
-    await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint')
+    // Select the second item as the first item is always reroute
+    await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
+      suggestionIndex: 1
+    })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
     )
