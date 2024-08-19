@@ -122,4 +122,20 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.pan({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')
   })
+
+  test('Can pan very far and back', async ({ comfyPage }) => {
+    // intentionally slice the edge of where the clip text encode dom widgets are
+    await comfyPage.pan({ x: 800, y: 300 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-step-one.png')
+    await comfyPage.pan({ x: 200, y: 0 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-step-two.png')
+    await comfyPage.pan({ x: 2200, y: 2200 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-far-away.png')
+    await comfyPage.pan({ x: -2200, y: -2200 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-from-far.png')
+    await comfyPage.pan({ x: -200, y: 0 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-two.png')
+    await comfyPage.pan({ x: -800, y: -300 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
+  })
 })

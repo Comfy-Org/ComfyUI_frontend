@@ -230,7 +230,7 @@ export class ComfyPage {
     await this.canvas.click({
       position: {
         x: 430,
-        y: 170
+        y: 171
       }
     })
     await this.nextFrame()
