@@ -50,12 +50,15 @@
     v-model:visible="galleryVisible"
     v-model:activeIndex="galleryActiveIndex"
     :value="allGalleryItems"
+    :showIndicators="false"
+    changeItemOnIndicatorHover
     showItemNavigators
     fullScreen
     circular
+    :showThumbnails="false"
   >
     <template #item="{ item }">
-      <img :src="item.url" />
+      <img :src="item.url" alt="gallery item" class="galleria-image" />
     </template>
   </Galleria>
 </template>
@@ -257,5 +260,13 @@ watch(
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   padding: 0.5rem;
   gap: 0.5rem;
+}
+
+.galleria-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* Set z-index so the close button don't get hide behind the image when image is large */
+  z-index: -1;
 }
 </style>
