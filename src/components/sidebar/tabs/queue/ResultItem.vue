@@ -11,7 +11,7 @@
           rounded
         />
       </div>
-      <ComfyImage :src="result.urlWithTimestamp" class="task-output-image" />
+      <ComfyImage :src="result.url" class="task-output-image" />
     </template>
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">

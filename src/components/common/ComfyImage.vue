@@ -20,7 +20,7 @@ const props = defineProps<{
 }>()
 
 const imageBroken = ref(false)
-const handleImageError = () => {
+const handleImageError = (e: Event) => {
   imageBroken.value = true
 }
 
@@ -48,6 +48,7 @@ const classArray = computed(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
+  margin: 2rem;
 }
 
 .broken-image-placeholder i {
