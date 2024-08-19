@@ -86,8 +86,10 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-:deep(.galleria-image) {
+<style>
+/* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
+cannot use scoped style here. */
+img.galleria-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
