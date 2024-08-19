@@ -11,7 +11,7 @@
           rounded
         />
       </div>
-      <img :src="result.url" class="task-output-image" />
+      <ComfyImage :src="result.urlWithTimestamp" class="task-output-image" />
     </template>
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { ResultItemImpl } from '@/stores/queueStore'
+import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from 'primevue/button'
 import { onMounted, ref } from 'vue'
 
@@ -31,7 +32,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'preview', ResultItemImpl): void
+  (e: 'preview', result: ResultItemImpl): void
 }>()
 
 const resultContainer = ref<HTMLElement | null>(null)
@@ -57,7 +58,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.task-output-image {
+:deep(.task-output-image) {
   width: 100%;
   height: 100%;
   object-fit: cover;
