@@ -65,6 +65,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       navigateImage(1)
       break
     case 'Escape':
+      handleActiveIndexChange(-1)
       galleryVisible.value = false
       break
   }
