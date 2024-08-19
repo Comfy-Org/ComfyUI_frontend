@@ -29,6 +29,8 @@ import GlobalToast from './components/toast/GlobalToast.vue'
 import { api } from './scripts/api'
 import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -86,8 +88,28 @@ const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const onStatus = (e: CustomEvent<StatusWsMessageStatus>) =>
   queuePendingTaskCountStore.update(e)
 
+const toast = useToast()
+const reconnectingMessage: ToastMessageOptions = {
+  severity: 'error',
+  summary: t('reconnecting')
+}
+const onReconnecting = () => {
+  toast.remove(reconnectingMessage)
+  toast.add(reconnectingMessage)
+}
+const onReconnected = () => {
+  toast.remove(reconnectingMessage)
+  toast.add({
+    severity: 'success',
+    summary: t('reconnected'),
+    life: 2000
+  })
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
+  api.addEventListener('reconnecting', onReconnecting)
+  api.addEventListener('reconnected', onReconnected)
   try {
     init()
   } catch (e) {
@@ -97,6 +119,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   api.removeEventListener('status', onStatus)
+  api.removeEventListener('reconnecting', onReconnecting)
+  api.removeEventListener('reconnected', onReconnected)
 })
 </script>
 

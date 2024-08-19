@@ -1598,14 +1598,6 @@ export class ComfyApp {
       }
     )
 
-    api.addEventListener('reconnecting', () => {
-      this.ui.dialog.show('Reconnecting...')
-    })
-
-    api.addEventListener('reconnected', () => {
-      this.ui.dialog.close()
-    })
-
     api.addEventListener('progress', ({ detail }) => {
       if (
         this.workflowManager.activePrompt?.workflow &&
