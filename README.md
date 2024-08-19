@@ -1,6 +1,30 @@
+<div align="center">
+
 # ComfyUI_frontend
 
+[![][github-release-shield]][github-release-link]
+[![][github-release-date-shield]][github-release-link]
+[![][github-downloads-shield]][github-downloads-link]
+[![][github-downloads-latest-shield]][github-downloads-link]
+[![][github-stars-shield]][github-stars-link]
+[![][github-forks-shield]][github-forks-link]
+[![][github-issues-shield]][github-issues-link]
+
+[github-release-shield]: https://img.shields.io/github/v/release/Comfy-Org/ComfyUI_frontend?style=flat&sort=semver
+[github-release-link]: https://github.com/Comfy-Org/ComfyUI_frontend/releases
+[github-release-date-shield]: https://img.shields.io/github/release-date/Comfy-Org/ComfyUI_frontend?style=flat
+[github-downloads-shield]: https://img.shields.io/github/downloads/Comfy-Org/ComfyUI_frontend/total?style=flat
+[github-downloads-latest-shield]: https://img.shields.io/github/downloads/Comfy-Org/ComfyUI_frontend/latest/total?style=flat&label=downloads%40latest
+[github-downloads-link]: https://github.com/Comfy-Org/ComfyUI_frontend/releases
+[github-stars-shield]: https://img.shields.io/github/stars/Comfy-Org/ComfyUI_frontend?style=flat
+[github-stars-link]: https://github.com/Comfy-Org/ComfyUI_frontend/stargazers
+[github-forks-shield]: https://img.shields.io/github/forks/Comfy-Org/ComfyUI_frontend?style=flat
+[github-forks-link]: https://github.com/Comfy-Org/ComfyUI_frontend/network/members
+[github-issues-shield]: https://img.shields.io/github/issues/Comfy-Org/ComfyUI_frontend?style=flat
+[github-issues-link]: https://github.com/Comfy-Org/ComfyUI_frontend/issues
+
 Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
+</div>
 
 ## Release Schedule
 
