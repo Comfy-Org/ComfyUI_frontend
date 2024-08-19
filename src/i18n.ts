@@ -2,6 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    reconnecting: 'Reconnecting',
+    reconnected: 'Reconnected',
     delete: 'Delete',
     experimental: 'BETA',
     loadWorkflow: 'Load Workflow',
@@ -25,6 +27,8 @@ const messages = {
     }
   },
   zh: {
+    reconnecting: '重新连接中',
+    reconnected: '已重新连接',
     delete: '删除',
     loadWorkflow: '加载工作流',
     settings: '设置',
