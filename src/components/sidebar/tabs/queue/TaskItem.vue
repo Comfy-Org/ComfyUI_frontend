@@ -1,9 +1,13 @@
 <template>
   <div class="task-item" @contextmenu="handleContextMenu">
     <div class="task-result-preview">
-      <div v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
-        <ResultItem v-if="flatOutputs.length" :result="flatOutputs[0]" />
-      </div>
+      <template v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
+        <ResultItem
+          v-if="flatOutputs.length"
+          :result="flatOutputs[0]"
+          @preview="handlePreview"
+        />
+      </template>
       <i
         v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
         class="pi pi-spin pi-spinner"
@@ -55,11 +59,16 @@ const props = defineProps<{
 const flatOutputs = props.task.flatOutputs
 
 const emit = defineEmits<{
-  (e: 'contextmenu', { task: TaskItemImpl, event: MouseEvent }): void
+  (e: 'contextmenu', value: { task: TaskItemImpl; event: MouseEvent }): void
+  (e: 'preview', value: TaskItemImpl): void
 }>()
 
 const handleContextMenu = (e: MouseEvent) => {
   emit('contextmenu', { task: props.task, event: e })
+}
+
+const handlePreview = () => {
+  emit('preview', props.task)
 }
 
 const taskTagSeverity = (status: TaskItemDisplayStatus) => {

@@ -30,6 +30,7 @@
             :task="task"
             :isFlatTask="isExpanded"
             @contextmenu="handleContextMenu"
+            @preview="handlePreview"
           />
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
@@ -45,6 +46,10 @@
   </SideBarTabTemplate>
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
+  <ResultGallery
+    v-model:activeIndex="galleryActiveIndex"
+    :allGalleryItems="allGalleryItems"
+  />
 </template>
 
 <script setup lang="ts">
@@ -58,6 +63,7 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import TaskItem from './queue/TaskItem.vue'
+import ResultGallery from './queue/ResultGallery.vue'
 import SideBarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -72,12 +78,19 @@ const isExpanded = ref(false)
 const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
+const galleryActiveIndex = ref(-1)
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
 
 const allTasks = computed(() =>
   isExpanded.value ? queueStore.flatTasks : queueStore.tasks
+)
+const allGalleryItems = computed(() =>
+  allTasks.value.flatMap((task: TaskItemImpl) => {
+    const previewOutput = task.previewOutput
+    return previewOutput ? [previewOutput] : []
+  })
 )
 
 const loadMoreItems = () => {
@@ -187,6 +200,12 @@ const handleContextMenu = ({
 }) => {
   menuTargetTask.value = task
   menu.value?.show(event)
+}
+
+const handlePreview = (task: TaskItemImpl) => {
+  galleryActiveIndex.value = allGalleryItems.value.findIndex(
+    (item) => item.url === task.previewOutput?.url
+  )
 }
 
 onMounted(() => {
