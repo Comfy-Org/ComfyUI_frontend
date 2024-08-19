@@ -4,7 +4,7 @@
       <template v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
         <ResultItem
           v-if="flatOutputs.length"
-          :result="flatOutputs[0]"
+          :result="task.previewOutput || flatOutputs[0]"
           @preview="handlePreview"
         />
       </template>
