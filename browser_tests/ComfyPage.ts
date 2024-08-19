@@ -226,6 +226,16 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async clickTextEncodeNodeToggler() {
+    await this.canvas.click({
+      position: {
+        x: 621,
+        y: 359
+      }
+    })
+    await this.nextFrame()
+  }
+
   async clickTextEncodeNode2() {
     await this.canvas.click({
       position: {

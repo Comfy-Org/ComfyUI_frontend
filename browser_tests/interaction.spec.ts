@@ -100,6 +100,14 @@ test.describe('Node Interaction', () => {
       'batch-disconnect-links-disconnected.png'
     )
   })
+
+  test('Can toggle dom widget node open/closed', async ({ comfyPage }) => {
+    await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+    await comfyPage.clickTextEncodeNodeToggler()
+    await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-off.png')
+    await comfyPage.clickTextEncodeNodeToggler()
+    await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+  })
 })
 
 test.describe('Canvas Interaction', () => {
