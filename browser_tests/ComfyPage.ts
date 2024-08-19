@@ -185,7 +185,7 @@ export class ComfyPage {
     )
   }
 
-  async realod() {
+  async reload() {
     await this.page.reload({ timeout: 15000 })
     await this.setup()
   }
