@@ -118,6 +118,13 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out.png')
   })
 
+  test('Can zoom very far out', async ({ comfyPage }) => {
+    await comfyPage.zoom(1200)
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-very-far-out.png')
+    await comfyPage.zoom(-1200)
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-back-in.png')
+  })
+
   test('Can pan', async ({ comfyPage }) => {
     await comfyPage.pan({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')
