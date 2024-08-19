@@ -60,13 +60,14 @@ export class TaskItemImpl {
     taskType: TaskType,
     prompt: TaskPrompt,
     status: TaskStatus | undefined,
-    outputs: TaskOutput
+    outputs: TaskOutput,
+    flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
     this.taskType = taskType
     this.prompt = prompt
     this.status = status
     this.outputs = outputs
-    this.flatOutputs = this.calculateFlatOutputs()
+    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
   private calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
@@ -243,22 +244,25 @@ export const useQueueStore = defineStore('queue', {
           return [task]
         }
 
-        return task.flatOutputs.map((output: ResultItemImpl, i: number) =>
-          plainToClass(TaskItemImpl, {
-            ...instanceToPlain(task),
-            prompt: [
-              task.queueIndex,
-              `${task.promptId}-${i}`,
-              task.promptInputs,
-              task.extraData,
-              task.outputsToExecute
-            ],
-            outputs: {
-              [output.nodeId]: {
-                [output.mediaType]: [instanceToPlain(output)]
-              }
-            }
-          })
+        return task.flatOutputs.map(
+          (output: ResultItemImpl, i: number) =>
+            new TaskItemImpl(
+              task.taskType,
+              [
+                task.queueIndex,
+                `${task.promptId}-${i}`,
+                task.promptInputs,
+                task.extraData,
+                task.outputsToExecute
+              ],
+              task.status,
+              {
+                [output.nodeId]: {
+                  [output.mediaType]: [output]
+                }
+              },
+              [output]
+            )
         )
       })
     },
