@@ -9,7 +9,6 @@ import type {
   TaskOutput,
   ResultItem
 } from '@/types/apiTypes'
-import { validateTaskItem } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
 import { instanceToPlain, plainToClass } from 'class-transformer'
 import _ from 'lodash'
@@ -51,18 +50,32 @@ export class ResultItemImpl {
 }
 
 export class TaskItemImpl {
-  taskType: TaskType
-  prompt: TaskPrompt
-  status?: TaskStatus
-  outputs: TaskOutput
+  readonly taskType: TaskType
+  readonly prompt: TaskPrompt
+  readonly status?: TaskStatus
+  readonly outputs: TaskOutput
+  readonly flatOutputs: ReadonlyArray<ResultItemImpl>
 
-  get flatOutputs(): ResultItemImpl[] {
+  constructor(
+    taskType: TaskType,
+    prompt: TaskPrompt,
+    status: TaskStatus | undefined,
+    outputs: TaskOutput
+  ) {
+    this.taskType = taskType
+    this.prompt = prompt
+    this.status = status
+    this.outputs = outputs
+    this.flatOutputs = this.calculateFlatOutputs()
+  }
+
+  private calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
     if (!this.outputs) {
       return []
     }
     return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).flatMap((item: ResultItem) =>
+        (items as ResultItem[]).map((item: ResultItem) =>
           plainToClass(ResultItemImpl, {
             ...item,
             nodeId,
@@ -263,9 +276,15 @@ export const useQueueStore = defineStore('queue', {
 
       const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
         tasks
-          .map((task) => validateTaskItem(task))
-          .filter((result) => result.success)
-          .map((result) => plainToClass(TaskItemImpl, result.data))
+          .map(
+            (task: TaskItem) =>
+              new TaskItemImpl(
+                task.taskType,
+                task.prompt,
+                task['status'],
+                task['outputs'] || {}
+              )
+          )
           // Desc order to show the latest tasks first
           .sort((a, b) => b.queueIndex - a.queueIndex)
 
