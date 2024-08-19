@@ -119,9 +119,9 @@ test.describe('Canvas Interaction', () => {
   })
 
   test('Can zoom very far out', async ({ comfyPage }) => {
-    await comfyPage.zoom(1200)
+    await comfyPage.zoom(100, 12)
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-very-far-out.png')
-    await comfyPage.zoom(-1200)
+    await comfyPage.zoom(-100, 12)
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-back-in.png')
   })
 
