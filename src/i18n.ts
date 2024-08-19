@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    imageFailedToLoad: 'Image failed to load',
     reconnecting: 'Reconnecting',
     reconnected: 'Reconnected',
     delete: 'Delete',
@@ -27,6 +28,7 @@ const messages = {
     }
   },
   zh: {
+    imageFailedToLoad: '图像加载失败',
     reconnecting: '重新连接中',
     reconnected: '已重新连接',
     delete: '删除',

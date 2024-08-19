@@ -13,7 +13,7 @@
     :showThumbnails="false"
   >
     <template #item="{ item }">
-      <img :src="item.url" alt="gallery item" class="galleria-image" />
+      <ComfyImage :key="item.url" :src="item.url" class="galleria-image" />
     </template>
   </Galleria>
 </template>
@@ -22,6 +22,7 @@
 import { defineProps, ref, watch, onMounted, onUnmounted } from 'vue'
 import Galleria from 'primevue/galleria'
 import { ResultItemImpl } from '@/stores/queueStore'
+import ComfyImage from '@/components/common/ComfyImage.vue'
 
 const galleryVisible = ref(false)
 
@@ -85,8 +86,10 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-.galleria-image {
+<style>
+/* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
+cannot use scoped style here. */
+img.galleria-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
