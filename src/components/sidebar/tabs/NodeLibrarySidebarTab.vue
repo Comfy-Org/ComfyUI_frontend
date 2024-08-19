@@ -173,7 +173,7 @@ const toggleNode = (id: string) => {
   }
 }
 
-const insertNode = (nodeDef: ComfyNodeDef) => {
+const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
 </script>
