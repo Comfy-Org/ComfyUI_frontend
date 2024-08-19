@@ -66,6 +66,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'Escape':
       galleryVisible.value = false
+      handleVisibilityChange(false)
       break
   }
 }
