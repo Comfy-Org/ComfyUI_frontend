@@ -315,6 +315,9 @@ export class ComfyPage {
     safeSpot = safeSpot || { x: 10, y: 10 }
     await this.page.mouse.move(safeSpot.x, safeSpot.y)
     await this.page.mouse.down()
+    // TEMPORARY HACK: Multiple pans open the search menu, so cheat and keep it closed.
+    // TODO: Fix that (double-click at not-the-same-coordinations should not open the menu)
+    await this.page.keyboard.press('Escape')
     await this.page.mouse.move(offset.x + safeSpot.x, offset.y + safeSpot.y)
     await this.page.mouse.up()
     await this.nextFrame()
