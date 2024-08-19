@@ -1,37 +1,35 @@
 # ComfyUI_frontend
 
-Front-end of [ComfyUI](https://github.com/comfyanonymous/ComfyUI) modernized. This repo is fully compatible with the existing extension system.
+Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
 
-## How To Use
+## Release Schedule
 
-Add command line argument `--front-end-version Comfy-Org/ComfyUI_frontend@latest` to your
-ComfyUI launch script.
+### Nightly Release
 
-For Windows stand-alone build users, please edit the `run_cpu.bat` / `run_nvidia_gpu.bat` file as following
+Nightly releases are published daily at [https://github.com/Comfy-Org/ComfyUI_frontend/releases](https://github.com/Comfy-Org/ComfyUI_frontend/releases). 
+
+To use the latest nightly release, add the following command line argument to your ComfyUI launch script:
+
+```
+--front-end-version Comfy-Org/ComfyUI_frontend@latest
+```
+
+#### For Windows Stand-alone Build Users
+
+Edit your `run_cpu.bat` or `run_nvidia_gpu.bat` file as follows:
 
 ```bat
 .\python_embeded\python.exe -s ComfyUI\main.py --windows-standalone-build --front-end-version Comfy-Org/ComfyUI_frontend@latest
 pause
 ```
 
-## Trouble Shooting
-<details>
-  <summary>Empty white screen (Fixed by https://github.com/comfyanonymous/ComfyUI/pull/4211)</summary>
+### Stable Release
 
-  ### Behavior
-  After you enable the new frontend in the command line, and open ComfyUI in the browser, you see a blank screen. If you toggle dev tools with F12, you can observe `litegraph.core.js:1` 404 in console messages.
+Stable releases are published weekly in the ComfyUI main repository, aligned with ComfyUI backend's stable release schedule.
 
-  ### Cause
-  The browser is caching the `index.html` file previously served from `localhost:8188`.
+#### Feature Freeze
 
-  ### How to fix
-  Step 1: Disable cache in devtools
-
-  ![image](https://github.com/user-attachments/assets/c0cec519-93b7-49f8-aea1-7adb0aa5b073)
-
-  Step 2: Refresh your browser
-
-</details>
+There will be a 2-day feature freeze before each stable release. During this period, no new major features will be merged.
 
 ## Release Summary
 
@@ -190,7 +188,3 @@ This repo is using litegraph package hosted on https://github.com/Comfy-Org/lite
 
 - Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
 - Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
-
-## Breaking changes
-
-- api.api_url now adds a prefix `api/` to every url going through the method. If the custom node registers a new api endpoint but does not offer the `api/` prefixed alt endpoint, it will have issue. Luckily there aren't many extensions that do that. We can perform an audit before launching to resolve this issue.
