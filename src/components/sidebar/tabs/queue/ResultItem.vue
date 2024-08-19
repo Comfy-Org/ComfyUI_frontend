@@ -52,6 +52,9 @@ onMounted(() => {
   aspect-ratio: 1 / 1;
   overflow: hidden;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .task-output-image {
