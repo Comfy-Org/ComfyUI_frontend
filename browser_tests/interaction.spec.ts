@@ -110,6 +110,23 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out.png')
   })
 
+  test('Can zoom in/out with ctrl+shift+vertical-drag', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.keyboard.down('Shift')
+    await comfyPage.dragAndDrop({ x: 10, y: 100 }, { x: 10, y: 40 })
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-in-ctrl-shift.png')
+    await comfyPage.dragAndDrop({ x: 10, y: 40 }, { x: 10, y: 160 })
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out-ctrl-shift.png')
+    await comfyPage.dragAndDrop({ x: 10, y: 280 }, { x: 10, y: 220 })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'zoomed-default-ctrl-shift.png'
+    )
+    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.page.keyboard.up('Shift')
+  })
+
   test('Can pan', async ({ comfyPage }) => {
     await comfyPage.pan({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')

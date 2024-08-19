@@ -1245,8 +1245,8 @@ export class ComfyApp {
         let scale = startScale - deltaY / 100
 
         this.ds.changeScale(scale, [
-          this.ds.element.width / 2,
-          this.ds.element.height / 2
+          self.zoom_drag_start[0],
+          self.zoom_drag_start[1]
         ])
         this.graph.change()
 
