@@ -1,7 +1,7 @@
 import type { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 
 /**
- * @typedef { import("./src/scripts/app")["app"] } app
+ * @typedef { import("../../src/scripts/app")["app"] } app
  * @typedef { import("../../src/types/litegraph") } LG
  * @typedef { import("../../src/types/litegraph").IWidget } IWidget
  * @typedef { import("../../src/types/litegraph").ContextMenuItem } ContextMenuItem
