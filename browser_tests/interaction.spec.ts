@@ -105,6 +105,7 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('default.png')
     await comfyPage.clickTextEncodeNodeToggler()
     await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-off.png')
+    await comfyPage.delay(1000)
     await comfyPage.clickTextEncodeNodeToggler()
     await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-back-open.png')
   })
