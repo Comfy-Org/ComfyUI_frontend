@@ -91,8 +91,8 @@ onUnmounted(() => {
 /* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
 cannot use scoped style here. */
 img.galleria-image {
-  max-width: 100%;
-  max-height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
   object-fit: contain;
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
   z-index: -1;

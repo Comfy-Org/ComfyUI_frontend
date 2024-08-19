@@ -2,13 +2,17 @@
 
 # ComfyUI_frontend
 
+**Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).**
+
+[![Website][website-shield]][website-url]
+[![Discord][discord-shield]][discord-url]
+[![Matrix][matrix-shield]][matrix-url]
+<br>
 [![][github-release-shield]][github-release-link]
 [![][github-release-date-shield]][github-release-link]
 [![][github-downloads-shield]][github-downloads-link]
 [![][github-downloads-latest-shield]][github-downloads-link]
-[![][github-stars-shield]][github-stars-link]
-[![][github-forks-shield]][github-forks-link]
-[![][github-issues-shield]][github-issues-link]
+
 
 [github-release-shield]: https://img.shields.io/github/v/release/Comfy-Org/ComfyUI_frontend?style=flat&sort=semver
 [github-release-link]: https://github.com/Comfy-Org/ComfyUI_frontend/releases
@@ -16,14 +20,13 @@
 [github-downloads-shield]: https://img.shields.io/github/downloads/Comfy-Org/ComfyUI_frontend/total?style=flat
 [github-downloads-latest-shield]: https://img.shields.io/github/downloads/Comfy-Org/ComfyUI_frontend/latest/total?style=flat&label=downloads%40latest
 [github-downloads-link]: https://github.com/Comfy-Org/ComfyUI_frontend/releases
-[github-stars-shield]: https://img.shields.io/github/stars/Comfy-Org/ComfyUI_frontend?style=flat
-[github-stars-link]: https://github.com/Comfy-Org/ComfyUI_frontend/stargazers
-[github-forks-shield]: https://img.shields.io/github/forks/Comfy-Org/ComfyUI_frontend?style=flat
-[github-forks-link]: https://github.com/Comfy-Org/ComfyUI_frontend/network/members
-[github-issues-shield]: https://img.shields.io/github/issues/Comfy-Org/ComfyUI_frontend?style=flat
-[github-issues-link]: https://github.com/Comfy-Org/ComfyUI_frontend/issues
+[matrix-shield]: https://img.shields.io/badge/Matrix-000000?style=flat&logo=matrix&logoColor=white
+[matrix-url]: https://app.element.io/#/room/%23comfyui_space%3Amatrix.org
+[website-shield]: https://img.shields.io/badge/ComfyOrg-4285F4?style=flat
+[website-url]: https://www.comfy.org/
+[discord-shield]: https://img.shields.io/discord/1218270712402415686?style=flat&logo=discord&logoColor=white&label=Discord
+[discord-url]: https://www.comfy.org/discord
 
-Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
 </div>
 
 ## Release Schedule
