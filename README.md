@@ -2,9 +2,11 @@
 
 # ComfyUI_frontend
 
+**Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).**
+
 [![Website][website-shield]][website-url]
-[![Matrix][matrix-shield]][matrix-url]
 [![Discord][discord-shield]][discord-url]
+[![Matrix][matrix-shield]][matrix-url]
 <br>
 [![][github-release-shield]][github-release-link]
 [![][github-release-date-shield]][github-release-link]
@@ -25,7 +27,6 @@
 [discord-shield]: https://img.shields.io/discord/1218270712402415686?style=flat&logo=discord&logoColor=white&label=Discord
 [discord-url]: https://www.comfy.org/discord
 
-Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).
 </div>
 
 ## Release Schedule
