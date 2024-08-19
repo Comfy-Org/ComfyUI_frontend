@@ -229,8 +229,9 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
         if (w.element) {
           w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
           const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
+          const isCollapsed = w.element.dataset.collapsed === 'true'
           const wasHidden = w.element.hidden
-          const actualHidden = hidden || shouldOtherwiseHide
+          const actualHidden = hidden || shouldOtherwiseHide || isCollapsed
           w.element.hidden = actualHidden
           w.element.style.display = actualHidden ? 'none' : null
           if (actualHidden && !wasHidden) {
@@ -312,14 +313,14 @@ LGraphNode.prototype.addDOMWidget = function (
       }
 
       const hidden =
-        node.flags?.collapsed ||
         (!!options.hideOnZoom && app.canvas.ds.scale < 0.5) ||
         widget.computedHeight <= 0 ||
         widget.type === 'converted-widget' ||
         widget.type === 'hidden'
       element.dataset.shouldHide = hidden ? 'true' : 'false'
       const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
-      const actualHidden = hidden || !isInVisibleNodes
+      const isCollapsed = element.dataset.collapsed === 'true'
+      const actualHidden = hidden || !isInVisibleNodes || isCollapsed
       const wasHidden = element.hidden
       element.hidden = actualHidden
       element.style.display = actualHidden ? 'none' : null
@@ -388,6 +389,7 @@ LGraphNode.prototype.addDOMWidget = function (
       element.hidden = true
       element.style.display = 'none'
     }
+    element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
   }
 
   const onRemoved = this.onRemoved
