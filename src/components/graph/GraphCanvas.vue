@@ -52,6 +52,16 @@ watch(
   },
   { immediate: true }
 )
+const canvasInfoEnabled = computed<boolean>(() =>
+  settingStore.get('Comfy.Graph.CanvasInfo')
+)
+watch(
+  canvasInfoEnabled,
+  (newVal) => {
+    if (comfyApp.canvas) comfyApp.canvas.show_info = newVal
+  },
+  { immediate: true }
+)
 
 let dropTargetCleanup = () => {}
 
@@ -72,6 +82,7 @@ onMounted(async () => {
   workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
   comfyApp.canvas.allow_searchbox = !nodeSearchEnabled.value
+  comfyApp.canvas.show_info = canvasInfoEnabled.value
   workspaceStore.spinner = false
 
   window['app'] = comfyApp

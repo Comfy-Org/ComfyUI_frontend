@@ -131,6 +131,13 @@ export const useSettingStore = defineStore('setting', {
         type: 'boolean',
         defaultValue: false
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Graph.CanvasInfo',
+        name: 'Show canvas info (fps, etc.)',
+        type: 'boolean',
+        defaultValue: true
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
