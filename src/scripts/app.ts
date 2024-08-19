@@ -2952,9 +2952,10 @@ export class ComfyApp {
     ) as Vector2
   }
 
-  getCanvasCenter() {
+  getCanvasCenter(): Vector2 {
+    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
-    return [x + w / 2, y + h / 2]
+    return [x + w / dpi / 2, y + h / dpi / 2]
   }
 }
 
