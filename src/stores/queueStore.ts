@@ -70,7 +70,7 @@ export class TaskItemImpl {
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
-  private calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
+  calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
     if (!this.outputs) {
       return []
     }
