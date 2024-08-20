@@ -31,14 +31,14 @@
             <span
               v-html="highlightQuery(option.display_name, currentQuery)"
             ></span>
-            <NodeSourceChip
-              v-if="option.python_module !== undefined"
-              :python_module="option.python_module"
-            />
+            <div v-if="showCategory" class="option-category">
+              {{ option.category.replaceAll('/', ' > ') }}
+            </div>
           </div>
-          <div v-if="showCategory" class="option-category">
-            {{ option.category.replaceAll('/', ' > ') }}
-          </div>
+          <NodeSourceChip
+            v-if="option.python_module !== undefined"
+            :python_module="option.python_module"
+          />
         </div>
       </template>
       <!-- FilterAndValue -->
@@ -158,15 +158,15 @@ const setHoverSuggestion = (index: number) => {
 }
 
 .option-container {
-  @apply flex flex-col px-2 py-0 cursor-pointer overflow-hidden w-full;
+  @apply flex justify-between items-center px-2 py-0 cursor-pointer overflow-hidden w-full;
 }
 
 .option-display-name {
-  @apply font-semibold flex justify-between items-center;
+  @apply font-semibold flex flex-col;
 }
 
 .option-category {
-  @apply text-sm text-gray-400 overflow-hidden text-ellipsis;
+  @apply font-light text-sm text-gray-400 overflow-hidden text-ellipsis;
   /* Keeps the text on a single line by default */
   white-space: nowrap;
 }
