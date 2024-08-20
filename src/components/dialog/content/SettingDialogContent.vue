@@ -1,10 +1,11 @@
 <template>
   <div class="settings-container">
     <div class="settings-sidebar">
-      <SettingSearchBox
+      <SearchBox
         class="settings-search-box"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
+        :placeholder="$t('searchSettings') + '...'"
       />
       <Listbox
         v-model="activeCategory"
@@ -66,7 +67,7 @@ import Divider from 'primevue/divider'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import SettingGroup from './setting/SettingGroup.vue'
-import SettingSearchBox from './setting/SettingSearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 

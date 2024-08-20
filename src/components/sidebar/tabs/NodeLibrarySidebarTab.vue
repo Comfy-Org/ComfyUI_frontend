@@ -14,13 +14,17 @@
       </ToggleButton>
     </template>
     <template #body>
+      <SearchBox
+        class="node-lib-search-box"
+        v-model:modelValue="searchQuery"
+        @search="handleSearch"
+        :placeholder="$t('searchNodes') + '...'"
+      />
       <TreePlus
         class="node-lib-tree"
         v-model:expandedKeys="expandedKeys"
         selectionMode="single"
         :value="renderedRoot.children"
-        :filter="true"
-        filterMode="lenient"
         dragSelector=".p-tree-node-leaf"
         :pt="{
           nodeLabel: 'node-lib-tree-node-label',
@@ -85,10 +89,10 @@ import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { ComfyNodeDef } from '@/types/apiTypes'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -101,6 +105,7 @@ const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
   return nodeDefStore.nodeDefsByName[hoveredComfyNodeName.value] || null
 })
 const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
+const searchQuery = ref<string>('')
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
@@ -176,6 +181,10 @@ const toggleNode = (id: string) => {
 const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
+
+const handleSearch = (query: string) => {
+  console.log(searchQuery)
+}
 </script>
 
 <style>
@@ -183,5 +192,11 @@ const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   display: flex;
   align-items: center;
   margin-left: var(--p-tree-node-gap);
+}
+</style>
+
+<style scoped>
+:deep(.node-lib-search-box) {
+  @apply mx-4 mt-4;
 }
 </style>

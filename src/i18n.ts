@@ -10,6 +10,7 @@ const messages = {
     loadWorkflow: 'Load Workflow',
     settings: 'Settings',
     searchSettings: 'Search Settings',
+    searchNodes: 'Search Nodes',
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
@@ -35,6 +36,7 @@ const messages = {
     loadWorkflow: '加载工作流',
     settings: '设置',
     searchSettings: '搜索设置',
+    searchNodes: '搜索节点',
     noResultsFound: '未找到结果',
     noTasksFound: '未找到任务',
     noTasksFoundMessage: '队列中没有任务。',
