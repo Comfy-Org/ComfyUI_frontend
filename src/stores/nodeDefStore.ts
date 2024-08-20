@@ -166,6 +166,9 @@ export class ComfyNodeDefImpl {
   python_module: string
   description: string
 
+  @Transform(({ value, obj }) => value || obj.category === '')
+  deprecated: boolean
+
   @Type(() => ComfyInputsSpec)
   input: ComfyInputsSpec
 

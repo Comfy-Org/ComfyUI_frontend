@@ -335,7 +335,8 @@ const zComfyNodeDef = z.object({
   description: z.string(),
   category: z.string(),
   output_node: z.boolean(),
-  python_module: z.string()
+  python_module: z.string(),
+  deprecated: z.boolean().optional()
 })
 
 // `/object_info`
