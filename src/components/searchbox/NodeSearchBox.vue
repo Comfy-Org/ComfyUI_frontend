@@ -66,8 +66,11 @@ import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useI18n } from 'vue-i18n'
 
 const settingStore = useSettingStore()
+const { t } = useI18n()
+
 const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
 )
@@ -90,7 +93,7 @@ const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
 const placeholder = computed(() => {
-  return props.filters.length === 0 ? 'Search for nodes' : ''
+  return props.filters.length === 0 ? t('searchNodes') + '...' : ''
 })
 
 const search = (query: string) => {
