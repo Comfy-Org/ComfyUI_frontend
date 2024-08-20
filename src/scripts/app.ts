@@ -47,6 +47,7 @@ import { showLoadWorkflowWarning } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { ToastMessageOptions } from 'primevue/toast'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1792,6 +1793,9 @@ export class ComfyApp {
     let user = localStorage['Comfy.userId']
     const users = userConfig.users ?? {}
     if (!user || !users[user]) {
+      // Lift spinner / BlockUI for user selection.
+      if (this.vueAppReady) useWorkspaceStore().spinner = false
+
       // This will rarely be hit so move the loading to on demand
       const { UserSelectionScreen } = await import('./ui/userSelection')
 
