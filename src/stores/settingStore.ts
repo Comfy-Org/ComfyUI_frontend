@@ -151,6 +151,8 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.addSetting({
         id: 'Comfy.Node.ShowDeprecated',
         name: 'Show deprecated nodes in search',
+        tooltip:
+          'Deprecated nodes are hidden by default in the UI, but remain functional in existing workflows that use them.',
         type: 'boolean',
         defaultValue: false
       })
@@ -158,6 +160,8 @@ export const useSettingStore = defineStore('setting', {
       app.ui.settings.addSetting({
         id: 'Comfy.Node.ShowExperimental',
         name: 'Show experimental nodes in search',
+        tooltip:
+          'Experimental nodes are marked as such in the UI and may be subject to significant changes or removal in future versions. Use with caution in production workflows',
         type: 'boolean',
         defaultValue: true
       })
