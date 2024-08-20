@@ -17,6 +17,7 @@
       append-to="self"
       :suggestions="suggestions"
       :min-length="0"
+      :delay="100"
       @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
