@@ -147,6 +147,13 @@ export const useSettingStore = defineStore('setting', {
         type: 'boolean',
         defaultValue: true
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Node.ShowDeprecated',
+        name: 'Show deprecated nodes in search',
+        type: 'boolean',
+        defaultValue: false
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

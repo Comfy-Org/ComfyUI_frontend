@@ -420,6 +420,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
       'Comfy.NodeSuggestions.number': z.number(),
+      'Comfy.Node.ShowDeprecated': z.boolean(),
       'Comfy.PreviewFormat': z.string(),
       'Comfy.PromptFilename': z.boolean(),
       'Comfy.Sidebar.Location': z.enum(['left', 'right']),

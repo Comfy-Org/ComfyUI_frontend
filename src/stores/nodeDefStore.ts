@@ -1,7 +1,7 @@
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
-import { Type, Transform, plainToClass } from 'class-transformer'
+import { Type, Transform, plainToClass, Expose } from 'class-transformer'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
@@ -166,7 +166,11 @@ export class ComfyNodeDefImpl {
   python_module: string
   description: string
 
-  @Transform(({ value, obj }) => value || obj.category === '')
+  @Transform(({ value, obj }) => value ?? obj.category === '', {
+    toClassOnly: true
+  })
+  @Type(() => Boolean)
+  @Expose()
   deprecated: boolean
 
   @Type(() => ComfyInputsSpec)
@@ -232,22 +236,32 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDefImpl>
   widgets: Record<string, ComfyWidgetConstructor>
+  showDeprecated: boolean
 }
 
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
     nodeDefsByName: {},
-    widgets: {}
+    widgets: {},
+    showDeprecated: false
   }),
   getters: {
     nodeDefs(state) {
       return Object.values(state.nodeDefsByName)
     },
-    nodeSearchService(state) {
-      return new NodeSearchService(Object.values(state.nodeDefsByName))
+    // Node defs that are not deprecated
+    visibleNodeDefs(state) {
+      return state.showDeprecated
+        ? this.nodeDefs
+        : this.nodeDefs.filter(
+            (nodeDef: ComfyNodeDefImpl) => !nodeDef.deprecated
+          )
+    },
+    nodeSearchService() {
+      return new NodeSearchService(this.visibleNodeDefs)
     },
     nodeTree(): TreeNode {
-      return buildTree(this.nodeDefs, (nodeDef: ComfyNodeDefImpl) => [
+      return buildTree(this.visibleNodeDefs, (nodeDef: ComfyNodeDefImpl) => [
         ...nodeDef.category.split('/'),
         nodeDef.display_name
       ])

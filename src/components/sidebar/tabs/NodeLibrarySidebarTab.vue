@@ -112,6 +112,7 @@ const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
+
 const nodePreviewStyle = ref<Record<string, string>>({
   position: 'absolute',
   top: '0px',
