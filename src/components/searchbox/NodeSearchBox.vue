@@ -36,7 +36,7 @@
               :python_module="option.python_module"
             />
           </div>
-          <div class="option-category">
+          <div v-if="showCategory" class="option-category">
             {{ option.category.replaceAll('/', ' > ') }}
           </div>
         </div>
@@ -69,6 +69,9 @@ import { useSettingStore } from '@/stores/settingStore'
 const settingStore = useSettingStore()
 const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
+)
+const showCategory = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
 )
 
 const props = defineProps({

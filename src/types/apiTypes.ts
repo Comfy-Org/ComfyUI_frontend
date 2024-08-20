@@ -417,6 +417,7 @@ const zSettings = z.record(z.any()).and(
       ]),
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
+      'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
       'Comfy.NodeSuggestions.number': z.number(),
       'Comfy.PreviewFormat': z.string(),
       'Comfy.PromptFilename': z.boolean(),
