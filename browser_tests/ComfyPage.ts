@@ -185,7 +185,7 @@ export class ComfyPage {
     )
   }
 
-  async realod() {
+  async reload() {
     await this.page.reload({ timeout: 15000 })
     await this.setup()
   }
@@ -198,6 +198,10 @@ export class ComfyPage {
     await this.page.evaluate(() => {
       return new Promise<number>(requestAnimationFrame)
     })
+  }
+
+  async delay(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   async loadWorkflow(workflowName: string) {
@@ -221,6 +225,16 @@ export class ComfyPage {
       position: {
         x: 618,
         y: 191
+      }
+    })
+    await this.nextFrame()
+  }
+
+  async clickTextEncodeNodeToggler() {
+    await this.canvas.click({
+      position: {
+        x: 430,
+        y: 171
       }
     })
     await this.nextFrame()
@@ -295,16 +309,22 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async zoom(deltaY: number) {
+  async zoom(deltaY: number, steps: number = 1) {
     await this.page.mouse.move(10, 10)
-    await this.page.mouse.wheel(0, deltaY)
+    for (let i = 0; i < steps; i++) {
+      await this.page.mouse.wheel(0, deltaY)
+    }
     await this.nextFrame()
   }
 
-  async pan(offset: Position) {
-    await this.page.mouse.move(10, 10)
+  async pan(offset: Position, safeSpot?: Position) {
+    safeSpot = safeSpot || { x: 10, y: 10 }
+    await this.page.mouse.move(safeSpot.x, safeSpot.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(offset.x, offset.y)
+    // TEMPORARY HACK: Multiple pans open the search menu, so cheat and keep it closed.
+    // TODO: Fix that (double-click at not-the-same-coordinations should not open the menu)
+    await this.page.keyboard.press('Escape')
+    await this.page.mouse.move(offset.x + safeSpot.x, offset.y + safeSpot.y)
     await this.page.mouse.up()
     await this.nextFrame()
   }

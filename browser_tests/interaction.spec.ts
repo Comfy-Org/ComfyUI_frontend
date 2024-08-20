@@ -100,6 +100,15 @@ test.describe('Node Interaction', () => {
       'batch-disconnect-links-disconnected.png'
     )
   })
+
+  test('Can toggle dom widget node open/closed', async ({ comfyPage }) => {
+    await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+    await comfyPage.clickTextEncodeNodeToggler()
+    await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-off.png')
+    await comfyPage.delay(1000)
+    await comfyPage.clickTextEncodeNodeToggler()
+    await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-back-open.png')
+  })
 })
 
 test.describe('Canvas Interaction', () => {
@@ -108,6 +117,13 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-in.png')
     await comfyPage.zoom(200)
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out.png')
+  })
+
+  test('Can zoom very far out', async ({ comfyPage }) => {
+    await comfyPage.zoom(100, 12)
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-very-far-out.png')
+    await comfyPage.zoom(-100, 12)
+    await expect(comfyPage.canvas).toHaveScreenshot('zoomed-back-in.png')
   })
 
   test('Can zoom in/out with ctrl+shift+vertical-drag', async ({
@@ -130,5 +146,21 @@ test.describe('Canvas Interaction', () => {
   test('Can pan', async ({ comfyPage }) => {
     await comfyPage.pan({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')
+  })
+
+  test('Can pan very far and back', async ({ comfyPage }) => {
+    // intentionally slice the edge of where the clip text encode dom widgets are
+    await comfyPage.pan({ x: -800, y: -300 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-step-one.png')
+    await comfyPage.pan({ x: -200, y: 0 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-step-two.png')
+    await comfyPage.pan({ x: -2200, y: -2200 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-far-away.png')
+    await comfyPage.pan({ x: 2200, y: 2200 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-from-far.png')
+    await comfyPage.pan({ x: 200, y: 0 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-two.png')
+    await comfyPage.pan({ x: 800, y: 300 }, { x: 1000, y: 10 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
   })
 })
