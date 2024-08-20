@@ -37,7 +37,7 @@ test.describe('Node search box', () => {
     await comfyPage.disconnectEdge()
     // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
-      suggestionIndex: 1
+      suggestionIndex: 0
     })
     await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
   })
@@ -59,7 +59,7 @@ test.describe('Node search box', () => {
 
     // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('Load Checkpoint', {
-      suggestionIndex: 1
+      suggestionIndex: 0
     })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'auto-linked-node-batch.png'
