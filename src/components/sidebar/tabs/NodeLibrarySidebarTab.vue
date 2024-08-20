@@ -93,7 +93,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { buildTree } from '@/utils/treeUtil'
+import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -118,13 +118,10 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
-const root = computed(
-  () =>
-    filteredRoot.value ||
-    (alphabeticalSort.value
-      ? nodeDefStore.sortedNodeTree
-      : nodeDefStore.nodeTree)
-)
+const root = computed(() => {
+  const root = filteredRoot.value || nodeDefStore.nodeTree
+  return alphabeticalSort.value ? sortedTree(root) : root
+})
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
