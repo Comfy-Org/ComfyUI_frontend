@@ -7,20 +7,6 @@ const id = 'Comfy.InvertMenuScrolling'
 app.registerExtension({
   name: id,
   init() {
-    const ctxMenu = LiteGraph.ContextMenu
-    const replace = () => {
-      // @ts-expect-error
-      LiteGraph.ContextMenu = function (values, options) {
-        options = options || {}
-        if (options.scroll_speed) {
-          options.scroll_speed *= -1
-        } else {
-          options.scroll_speed = -0.1
-        }
-        return ctxMenu.call(this, values, options)
-      }
-      LiteGraph.ContextMenu.prototype = ctxMenu.prototype
-    }
     app.ui.settings.addSetting({
       id,
       category: ['Comfy', 'Graph', 'InvertMenuScrolling'],
@@ -28,11 +14,8 @@ app.registerExtension({
       type: 'boolean',
       defaultValue: false,
       onChange(value) {
-        if (value) {
-          replace()
-        } else {
-          LiteGraph.ContextMenu = ctxMenu
-        }
+        // @ts-expect-error Error will self-correct when decl maps are auto-generated.
+        LiteGraph.CONTEXT_MENU_SCROLL_MULTIPLIER = value ? -1 : 1
       }
     })
   }
