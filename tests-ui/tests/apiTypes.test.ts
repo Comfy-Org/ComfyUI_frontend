@@ -16,7 +16,9 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   description: '',
   python_module: 'nodes',
   category: 'loaders',
-  output_node: false
+  output_node: false,
+  experimental: false,
+  deprecated: false
 }
 
 describe('validateNodeDef', () => {

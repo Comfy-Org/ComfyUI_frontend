@@ -335,7 +335,9 @@ const zComfyNodeDef = z.object({
   description: z.string(),
   category: z.string(),
   output_node: z.boolean(),
-  python_module: z.string()
+  python_module: z.string(),
+  deprecated: z.boolean().optional(),
+  experimental: z.boolean().optional()
 })
 
 // `/object_info`
@@ -419,6 +421,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
       'Comfy.NodeSuggestions.number': z.number(),
+      'Comfy.Node.ShowDeprecated': z.boolean(),
+      'Comfy.Node.ShowExperimental': z.boolean(),
       'Comfy.PreviewFormat': z.string(),
       'Comfy.PromptFilename': z.boolean(),
       'Comfy.Sidebar.Location': z.enum(['left', 'right']),

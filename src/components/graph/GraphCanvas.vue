@@ -16,7 +16,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import { ref, computed, onUnmounted, watch, onMounted } from 'vue'
+import { ref, computed, onUnmounted, watch, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
@@ -36,6 +36,7 @@ import {
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const settingStore = useSettingStore()
+const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 
 const betaMenuEnabled = computed(
@@ -62,6 +63,16 @@ watch(
   },
   { immediate: true }
 )
+
+watchEffect(() => {
+  nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
+})
+
+watchEffect(() => {
+  nodeDefStore.showExperimental = settingStore.get(
+    'Comfy.Node.ShowExperimental'
+  )
+})
 
 let dropTargetCleanup = () => {}
 
@@ -98,7 +109,7 @@ onMounted(async () => {
       const comfyNodeName = event.source.element.getAttribute(
         'data-comfy-node-name'
       )
-      const nodeDef = useNodeDefStore().nodeDefsByName[comfyNodeName]
+      const nodeDef = nodeDefStore.nodeDefsByName[comfyNodeName]
       comfyApp.addNodeOnGraph(nodeDef, { pos })
     }
   })

@@ -194,6 +194,52 @@ describe('ComfyNodeDefImpl', () => {
         is_list: false
       }
     ])
+    expect(result.deprecated).toBe(false)
+  })
+
+  it('should transform a deprecated basic node definition', () => {
+    const plainObject = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: {
+        required: {
+          intInput: ['INT', { min: 0, max: 100, default: 50 }]
+        }
+      },
+      output: ['INT'],
+      output_is_list: [false],
+      output_name: ['intOutput'],
+      deprecated: true
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    expect(result.deprecated).toBe(true)
+  })
+
+  // Legacy way of marking a node as deprecated
+  it('should mark deprecated with empty category', () => {
+    const plainObject = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      // Empty category should be treated as deprecated
+      category: '',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: {
+        required: {
+          intInput: ['INT', { min: 0, max: 100, default: 50 }]
+        }
+      },
+      output: ['INT'],
+      output_is_list: [false],
+      output_name: ['intOutput']
+    }
+
+    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    expect(result.deprecated).toBe(true)
   })
 
   it('should handle multiple outputs including COMBO type', () => {
