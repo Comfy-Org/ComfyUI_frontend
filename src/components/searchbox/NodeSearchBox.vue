@@ -81,11 +81,6 @@ const props = defineProps({
   searchLimit: {
     type: Number,
     default: 64
-  },
-  // TODO: Find a more flexible mechanism to add pinned nodes
-  includeReroute: {
-    type: Boolean,
-    default: false
   }
 })
 
@@ -100,9 +95,6 @@ const placeholder = computed(() => {
 const search = (query: string) => {
   currentQuery.value = query
   suggestions.value = [
-    ...(props.includeReroute
-      ? [useNodeDefStore().nodeDefsByName['Reroute']]
-      : []),
     ...useNodeDefStore().nodeSearchService.searchNode(query, props.filters, {
       limit: props.searchLimit
     })

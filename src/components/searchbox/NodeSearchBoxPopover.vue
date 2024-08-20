@@ -20,7 +20,6 @@
       <template #container>
         <NodeSearchBox
           :filters="nodeFilters"
-          :includeReroute="includeReroute"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @add-node="addNode"
@@ -62,7 +61,6 @@ const getNewNodeLocation = (): [number, number] => {
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
 const nodeFilters = reactive([])
-const includeReroute = ref(false)
 const addFilter = (filter: FilterAndValue) => {
   nodeFilters.push(filter)
 }
@@ -102,7 +100,6 @@ const linkReleaseTriggerMode = computed(() => {
 })
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
-  includeReroute.value = false
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
 
   if (e.detail.subType === 'empty-release') {
@@ -126,7 +123,6 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
     )
     const dataType = firstLink.type
     addFilter([filter, dataType])
-    includeReroute.value = true
   }
   triggerEvent.value = e
   visible.value = true
