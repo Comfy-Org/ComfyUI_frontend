@@ -193,7 +193,7 @@ const setHoverSuggestion = (index: number) => {
   color: var(--p-primary-contrast-color);
   font-weight: bold;
   border-radius: 0.25rem;
-  padding: 0.125rem 0.25rem;
+  padding: 0rem 0.125rem;
   margin: -0.125rem 0.125rem;
 }
 </style>
