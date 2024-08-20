@@ -63,6 +63,16 @@
           ></Badge>
         </template>
         <template #node="{ node }">
+          <Tag
+            v-if="node.data.experimental"
+            :value="$t('experimental')"
+            severity="primary"
+          />
+          <Tag
+            v-if="node.data.deprecated"
+            :value="$t('deprecated')"
+            severity="danger"
+          />
           <span class="node-label">{{ node.label }}</span>
         </template>
       </TreePlus>
@@ -83,6 +93,7 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
+import Tag from 'primevue/tag'
 import ToggleButton from 'primevue/togglebutton'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { computed, ref, nextTick } from 'vue'

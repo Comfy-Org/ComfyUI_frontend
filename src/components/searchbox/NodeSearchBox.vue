@@ -36,10 +36,22 @@
               {{ option.category.replaceAll('/', ' > ') }}
             </div>
           </div>
-          <NodeSourceChip
-            v-if="option.python_module !== undefined"
-            :python_module="option.python_module"
-          />
+          <div class="option-badges">
+            <Tag
+              v-if="option.experimental"
+              :value="$t('experimental')"
+              severity="primary"
+            />
+            <Tag
+              v-if="option.deprecated"
+              :value="$t('deprecated')"
+              severity="danger"
+            />
+            <NodeSourceChip
+              v-if="option.python_module !== undefined"
+              :python_module="option.python_module"
+            />
+          </div>
         </div>
       </template>
       <!-- FilterAndValue -->
@@ -60,6 +72,7 @@ import { computed, onMounted, ref } from 'vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import Chip from 'primevue/chip'
 import Badge from 'primevue/badge'
+import Tag from 'primevue/tag'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
