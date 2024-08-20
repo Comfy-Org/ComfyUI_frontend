@@ -68,6 +68,12 @@ watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
+watchEffect(() => {
+  nodeDefStore.showExperimental = settingStore.get(
+    'Comfy.Node.ShowExperimental'
+  )
+})
+
 let dropTargetCleanup = () => {}
 
 onMounted(async () => {

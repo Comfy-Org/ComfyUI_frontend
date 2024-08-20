@@ -154,6 +154,13 @@ export const useSettingStore = defineStore('setting', {
         type: 'boolean',
         defaultValue: false
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Node.ShowExperimental',
+        name: 'Show experimental nodes in search',
+        type: 'boolean',
+        defaultValue: true
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

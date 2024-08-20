@@ -173,6 +173,16 @@ export class ComfyNodeDefImpl {
   @Expose()
   deprecated: boolean
 
+  @Transform(
+    ({ value, obj }) => value ?? obj.category.startsWith('_for_testing'),
+    {
+      toClassOnly: true
+    }
+  )
+  @Type(() => Boolean)
+  @Expose()
+  experimental: boolean
+
   @Type(() => ComfyInputsSpec)
   input: ComfyInputsSpec
 
@@ -237,13 +247,15 @@ interface State {
   nodeDefsByName: Record<string, ComfyNodeDefImpl>
   widgets: Record<string, ComfyWidgetConstructor>
   showDeprecated: boolean
+  showExperimental: boolean
 }
 
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
     nodeDefsByName: {},
     widgets: {},
-    showDeprecated: false
+    showDeprecated: false,
+    showExperimental: false
   }),
   getters: {
     nodeDefs(state) {
@@ -251,11 +263,11 @@ export const useNodeDefStore = defineStore('nodeDef', {
     },
     // Node defs that are not deprecated
     visibleNodeDefs(state) {
-      return state.showDeprecated
-        ? this.nodeDefs
-        : this.nodeDefs.filter(
-            (nodeDef: ComfyNodeDefImpl) => !nodeDef.deprecated
-          )
+      return this.nodeDefs.filter(
+        (nodeDef: ComfyNodeDefImpl) =>
+          (state.showDeprecated || !nodeDef.deprecated) &&
+          (state.showExperimental || !nodeDef.experimental)
+      )
     },
     nodeSearchService() {
       return new NodeSearchService(this.visibleNodeDefs)
