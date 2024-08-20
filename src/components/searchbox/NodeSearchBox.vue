@@ -166,7 +166,7 @@ const setHoverSuggestion = (index: number) => {
 }
 
 .option-container {
-  @apply flex flex-col px-2 py-1 cursor-pointer overflow-hidden w-full;
+  @apply flex flex-col px-2 py-0 cursor-pointer overflow-hidden w-full;
 }
 
 .option-display-name {
