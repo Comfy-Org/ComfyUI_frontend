@@ -238,4 +238,8 @@ const expandNode = (node: TreeNode) => {
 :deep(.node-lib-search-box) {
   @apply mx-4 mt-4;
 }
+
+:deep(.comfy-vue-side-bar-body) {
+  background: var(--p-tree-background);
+}
 </style>
