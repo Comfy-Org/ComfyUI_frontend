@@ -227,9 +227,14 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
         if (w.element) {
-          w.element.hidden = hidden
-          w.element.style.display = hidden ? 'none' : undefined
-          if (hidden) {
+          w.element.dataset.isInVisibleNodes = hidden ? 'false' : 'true'
+          const shouldOtherwiseHide = w.element.dataset.shouldHide === 'true'
+          const isCollapsed = w.element.dataset.collapsed === 'true'
+          const wasHidden = w.element.hidden
+          const actualHidden = hidden || shouldOtherwiseHide || isCollapsed
+          w.element.hidden = actualHidden
+          w.element.style.display = actualHidden ? 'none' : null
+          if (actualHidden && !wasHidden) {
             w.options.onHide?.(w)
           }
         }
@@ -309,15 +314,21 @@ LGraphNode.prototype.addDOMWidget = function (
       }
 
       const hidden =
-        node.flags?.collapsed ||
         (!!options.hideOnZoom && app.canvas.ds.scale < 0.5) ||
         widget.computedHeight <= 0 ||
         widget.type === 'converted-widget' ||
         widget.type === 'hidden'
-      element.hidden = hidden
-      element.style.display = hidden ? 'none' : null
-      if (hidden) {
+      element.dataset.shouldHide = hidden ? 'true' : 'false'
+      const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
+      const isCollapsed = element.dataset.collapsed === 'true'
+      const actualHidden = hidden || !isInVisibleNodes || isCollapsed
+      const wasHidden = element.hidden
+      element.hidden = actualHidden
+      element.style.display = actualHidden ? 'none' : null
+      if (actualHidden && !wasHidden) {
         widget.options.onHide?.(widget)
+      }
+      if (actualHidden) {
         return
       }
 
@@ -379,6 +390,7 @@ LGraphNode.prototype.addDOMWidget = function (
       element.hidden = true
       element.style.display = 'none'
     }
+    element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
   }
 
   const onRemoved = this.onRemoved
