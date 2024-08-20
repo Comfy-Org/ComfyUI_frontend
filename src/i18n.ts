@@ -7,6 +7,7 @@ const messages = {
     reconnected: 'Reconnected',
     delete: 'Delete',
     experimental: 'BETA',
+    deprecated: 'DEPR',
     loadWorkflow: 'Load Workflow',
     settings: 'Settings',
     searchSettings: 'Search Settings',
