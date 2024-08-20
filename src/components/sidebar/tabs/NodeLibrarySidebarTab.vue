@@ -93,6 +93,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
+import { buildTree } from '@/utils/treeUtil'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -117,8 +118,12 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
-const root = computed(() =>
-  alphabeticalSort.value ? nodeDefStore.sortedNodeTree : nodeDefStore.nodeTree
+const root = computed(
+  () =>
+    filteredRoot.value ||
+    (alphabeticalSort.value
+      ? nodeDefStore.sortedNodeTree
+      : nodeDefStore.nodeTree)
 )
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
@@ -182,8 +187,33 @@ const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
 
+const filteredRoot = ref<TreeNode | null>(null)
 const handleSearch = (query: string) => {
-  console.log(searchQuery)
+  if (query.length < 3) {
+    filteredRoot.value = null
+    expandedKeys.value = {}
+    return
+  }
+
+  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(query, [], {
+    limit: 64
+  })
+
+  filteredRoot.value = buildTree(matchedNodes, (nodeDef: ComfyNodeDefImpl) => [
+    ...nodeDef.category.split('/'),
+    nodeDef.display_name
+  ])
+  expandNode(filteredRoot.value)
+}
+
+const expandNode = (node: TreeNode) => {
+  if (node.children && node.children.length) {
+    expandedKeys.value[node.key] = true
+
+    for (let child of node.children) {
+      expandNode(child)
+    }
+  }
 }
 </script>
 
