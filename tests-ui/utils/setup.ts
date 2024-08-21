@@ -26,7 +26,7 @@ export interface APIConfig {
 }
 
 /**
- * @typedef { import("./src/types/comfy").ComfyObjectInfo } ComfyObjectInfo
+ * @typedef { import("../../src/types/comfy").ComfyObjectInfo } ComfyObjectInfo
  */
 
 /**
