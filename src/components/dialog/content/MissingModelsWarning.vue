@@ -16,19 +16,30 @@
       <template #option="slotProps">
         <div class="missing-model-item" :style="{ '--progress': `${slotProps.option.progress}%` }">
           <div class="model-info">
-            <span class="model-type">{{ slotProps.option.label }}</span>
-            <span v-if="slotProps.option.hint" class="model-hint">{{
-              slotProps.option.hint
-            }}</span>
+            <div class="model-details">
+              <span class="model-type">{{ slotProps.option.label }}</span>
+              <span v-if="slotProps.option.hint" class="model-hint">{{
+                slotProps.option.hint
+              }}</span>
+            </div>
+            <div v-if="slotProps.option.error" class="model-error">{{ slotProps.option.error }}</div>
           </div>
-          <Button
-            v-if="slotProps.option.action && !slotProps.option.downloading"
-            @click="slotProps.option.action.callback"
-            :label="slotProps.option.action.text"
-            class="p-button-sm p-button-outlined model-download-button"
-          />
-          <div v-if="slotProps.option.downloading" class="download-progress">
-            <span class="progress-text">{{ slotProps.option.progress.toFixed(2) }}%</span>
+          <div class="model-action">
+            <Button
+              v-if="slotProps.option.action && !slotProps.option.downloading && !slotProps.option.completed && !slotProps.option.error"
+              @click="slotProps.option.action.callback"
+              :label="slotProps.option.action.text"
+              class="p-button-sm p-button-outlined model-action-button"
+            />
+            <div v-if="slotProps.option.downloading" class="download-progress">
+              <span class="progress-text">{{ slotProps.option.progress.toFixed(2) }}%</span>
+            </div>
+            <div v-if="slotProps.option.completed" class="download-complete">
+              <i class="pi pi-check" style="color: var(--green-500);"></i>
+            </div>
+            <div v-if="slotProps.option.error" class="download-error">
+              <i class="pi pi-times" style="color: var(--red-600);"></i>
+            </div>
           </div>
         </div>
       </template>
@@ -48,9 +59,12 @@ const allowedSources = ['https://civitai.com/', 'https://huggingface.co/']
 interface ModelInfo {
   name: string
   directory: string
+  directory_invalid?: boolean
   url: string
   downloading?: boolean
+  completed?: boolean
   progress?: number
+  error?: string
 }
 
 const props = defineProps<{
@@ -59,16 +73,26 @@ const props = defineProps<{
 }>()
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
+let lastModel: string | null = null
 
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
-  console.log('download_progress', detail)
   if (detail.status === 'in_progress') {
     const model = detail.message.split(' ', 2)[1] // TODO: better way to track which model is being downloaded?
+    lastModel = model
     const progress = detail.progress_percentage
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress }
+    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress, completed: false }
+  } else if (detail.status === 'pending') {
+    const model = detail.message.split(' ', 4)[3]
+    lastModel = model
+    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress: 0, completed: false }
   } else if (detail.status === 'completed') {
     const model = detail.message.split(' ', 3)[2]
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: false, progress: 100 }
+    lastModel = model
+    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: false, progress: 100, completed: true }
+  } else if (detail.status === 'error') {
+    if (lastModel) {
+      modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: false, progress: 0, error: detail.message, completed: false }
+    }
   }
   // TODO: other statuses?
 }
@@ -90,14 +114,24 @@ const missingModels = computed(() => {
       if (!allowedSources.some((source) => model.url.startsWith(source))) {
         return {
           label: model.name,
-          hint: 'Download not allowed from this source'
+          hint: model.url,
+          error: 'Download not allowed from this source'
+        }
+      }
+      if (model.directory_invalid) {
+        return {
+          label: model.name,
+          hint: model.url,
+          error: 'Invalid directory specified (does this require custom nodes?)'
         }
       }
       return {
         label: model.name,
         hint: model.url,
         downloading: downloadInfo?.downloading ?? false,
+        completed: downloadInfo?.completed ?? false,
         progress: downloadInfo?.progress ?? 0,
+        error: downloadInfo?.error,
         action: {
           text: 'Download',
           callback: () => triggerDownload(model.url, model.directory, model.name)
@@ -144,10 +178,11 @@ const missingModels = computed(() => {
 
 .missing-model-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   padding: 0.5rem;
   position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 .missing-model-item::before {
@@ -163,8 +198,16 @@ const missingModels = computed(() => {
 }
 
 .model-info {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  margin-right: 1rem;
+  overflow: hidden;
+}
+
+.model-details {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -174,30 +217,49 @@ const missingModels = computed(() => {
   font-weight: 600;
   color: var(--text-color);
   margin-right: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .model-hint {
   font-style: italic;
   color: var(--text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.model-download-button {
-  margin-left: 1rem;
+.model-error {
+  color: var(--red-600);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
 }
 
-.download-progress {
+.model-action {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+.model-action-button {
+  min-width: 80px;
+}
+
+.download-progress, .download-complete, .download-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
 }
 
 .progress-text {
   font-size: 0.8rem;
   color: var(--text-color);
-  z-index: 1;
 }
 
-:deep(.p-button) {
-  margin-left: auto;
-  z-index: 1;
+.download-complete i, .download-error i {
+  font-size: 1.2rem;
 }
 </style>
