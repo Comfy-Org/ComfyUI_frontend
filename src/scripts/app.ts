@@ -2158,7 +2158,9 @@ export class ComfyApp {
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
     if (
-      !this.ui.settings.getSettingValue('Comfy.Dialog.ShowMissingNodesWarning')
+      !this.ui.settings.getSettingValue(
+        'Comfy.Workflow.ShowMissingNodesWarning'
+      )
     )
       return
 

@@ -167,7 +167,7 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.Dialog.ShowMissingNodesWarning',
+        id: 'Comfy.Workflow.ShowMissingNodesWarning',
         name: 'Show missing nodes warning',
         type: 'boolean',
         defaultValue: true
