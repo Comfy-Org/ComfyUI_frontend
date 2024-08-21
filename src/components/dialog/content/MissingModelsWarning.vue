@@ -110,20 +110,20 @@ const missingModels = computed(() => {
       const downloadInfo = modelDownloads.value[model.name]
       if (!allowedSources.some((source) => model.url.startsWith(source))) {
         return {
-          label: model.name,
+          label: `${model.directory} / ${model.name}`,
           hint: model.url,
           error: 'Download not allowed from this source'
         }
       }
       if (model.directory_invalid) {
         return {
-          label: model.name,
+          label: `${model.directory} / ${model.name}`,
           hint: model.url,
           error: 'Invalid directory specified (does this require custom nodes?)'
         }
       }
       return {
-        label: model.name,
+        label: `${model.directory} / ${model.name}`,
         hint: model.url,
         downloading: downloadInfo?.downloading ?? false,
         completed: downloadInfo?.completed ?? false,
