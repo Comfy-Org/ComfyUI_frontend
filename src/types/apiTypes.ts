@@ -412,6 +412,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.ConfirmClear': z.boolean(),
       'Comfy.DevMode': z.boolean(),
       'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
+      'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
       'Comfy.DisableFloatRounding': z.boolean(),
       'Comfy.DisableSliders': z.boolean(),
       'Comfy.DOMClippingEnabled': z.boolean(),
