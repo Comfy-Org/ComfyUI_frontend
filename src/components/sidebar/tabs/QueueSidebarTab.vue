@@ -1,5 +1,5 @@
 <template>
-  <SideBarTabTemplate :title="$t('sideToolbar.queue')">
+  <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
       <Button
         :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
@@ -43,7 +43,7 @@
         />
       </div>
     </template>
-  </SideBarTabTemplate>
+  </SidebarTabTemplate>
   <ConfirmPopup />
   <ContextMenu ref="menu" :model="menuItems" />
   <ResultGallery
@@ -64,7 +64,7 @@ import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import TaskItem from './queue/TaskItem.vue'
 import ResultGallery from './queue/ResultGallery.vue'
-import SideBarTabTemplate from './SidebarTabTemplate.vue'
+import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
