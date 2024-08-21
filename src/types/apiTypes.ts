@@ -402,7 +402,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.CustomColorPalettes': colorPalettesSchema,
       'Comfy.ConfirmClear': z.boolean(),
       'Comfy.DevMode': z.boolean(),
-      'Comfy.Dialog.ShowMissingNodeWarning': z.boolean(),
+      'Comfy.Dialog.ShowMissingNodesWarning': z.boolean(),
       'Comfy.DisableFloatRounding': z.boolean(),
       'Comfy.DisableSliders': z.boolean(),
       'Comfy.DOMClippingEnabled': z.boolean(),
