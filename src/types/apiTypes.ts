@@ -73,6 +73,13 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   current_outputs: z.any()
 })
 
+const zDownloadModelStatus = z.object({
+  status: z.string(),
+  progress_percentage: z.number(),
+  message: z.string(),
+  already_existed: z.boolean(),
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -87,6 +94,8 @@ export type ExecutionInterruptedWsMessage = z.infer<
   typeof zExecutionInterruptedWsMessage
 >
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
+
+export type DownloadModelStatus = z.infer<typeof zDownloadModelStatus>
 // End of ws messages
 
 const zPromptInputItem = z.object({
