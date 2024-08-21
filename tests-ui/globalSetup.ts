@@ -15,7 +15,8 @@ module.exports = async function () {
 
   jest.mock('@/services/dialogService', () => {
     return {
-      showLoadWorkflowWarning: jest.fn()
+      showLoadWorkflowWarning: jest.fn(),
+      showMissingModelsWarning: jest.fn()
     }
   })
 }
