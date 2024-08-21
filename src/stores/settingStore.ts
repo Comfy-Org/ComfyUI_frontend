@@ -142,18 +142,6 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.Graph.ZoomSpeed',
-        name: 'Canvas zoom speed',
-        type: 'slider',
-        defaultValue: 1.1,
-        attrs: {
-          min: 1.01,
-          max: 2.0,
-          step: 0.01
-        }
-      })
-
-      app.ui.settings.addSetting({
         id: 'Comfy.Graph.CanvasInfo',
         name: 'Show canvas info (fps, etc.)',
         type: 'boolean',
