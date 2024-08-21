@@ -2177,13 +2177,9 @@ export class ComfyApp {
 
   showMissingModelsError(missingModels) {
     if (
-      !this.ui.settings.getSettingValue(
-        'Comfy.Workflow.ShowMissingModelsWarning'
-      )
-    )
-      return
-
-    if (this.vueAppReady) {
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
       showMissingModelsWarning({
         missingModels,
         maximizable: true
