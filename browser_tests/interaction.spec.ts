@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { ComfyPage, comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Node Interaction', () => {
   test('Can enter prompt', async ({ comfyPage }) => {
@@ -104,10 +104,14 @@ test.describe('Node Interaction', () => {
   test('Can toggle dom widget node open/closed', async ({ comfyPage }) => {
     await expect(comfyPage.canvas).toHaveScreenshot('default.png')
     await comfyPage.clickTextEncodeNodeToggler()
-    await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-off.png')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'text-encode-toggled-off.png'
+    )
     await comfyPage.delay(1000)
     await comfyPage.clickTextEncodeNodeToggler()
-    await expect(comfyPage.canvas).toHaveScreenshot('text-encode-toggled-back-open.png')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'text-encode-toggled-back-open.png'
+    )
   })
 })
 
