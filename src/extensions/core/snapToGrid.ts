@@ -24,7 +24,7 @@ app.registerExtension({
     app.ui.settings.addSetting({
       id: 'Comfy.SnapToGrid.GridSize',
       category: ['Comfy', 'Graph', 'GridSize'],
-      name: 'Snap to gird size',
+      name: 'Snap to grid size',
       type: 'slider',
       attrs: {
         min: 1,
