@@ -185,6 +185,12 @@ export class ComfyPage {
     )
   }
 
+  async getSetting(settingId: string) {
+    return await this.page.evaluate(async (id) => {
+      return await window['app'].ui.settings.getSettingValue(id)
+    }, settingId)
+  }
+
   async reload() {
     await this.page.reload({ timeout: 15000 })
     await this.setup()
@@ -201,7 +207,7 @@ export class ComfyPage {
   }
 
   async delay(ms: number) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   async loadWorkflow(workflowName: string) {
