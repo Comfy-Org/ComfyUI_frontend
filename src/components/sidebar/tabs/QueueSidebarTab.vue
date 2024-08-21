@@ -2,20 +2,31 @@
   <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
       <Button
-        :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        v-if="isInFolderView"
+        icon="pi pi-arrow-left"
         text
         severity="secondary"
-        @click="toggleExpanded"
-        class="toggle-expanded-button"
-        v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+        @click="exitFolderView"
+        class="back-button"
+        v-tooltip="$t('sideToolbar.queueTab.backToAllTasks')"
       />
-      <Button
-        icon="pi pi-trash"
-        text
-        severity="primary"
-        @click="confirmRemoveAll($event)"
-        class="clear-all-button"
-      />
+      <template v-else>
+        <Button
+          :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          text
+          severity="secondary"
+          @click="toggleExpanded"
+          class="toggle-expanded-button"
+          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+        />
+        <Button
+          icon="pi pi-trash"
+          text
+          severity="primary"
+          @click="confirmRemoveAll($event)"
+          class="clear-all-button"
+        />
+      </template>
     </template>
     <template #body>
       <div
@@ -28,9 +39,10 @@
             v-for="task in visibleTasks"
             :key="task.key"
             :task="task"
-            :isFlatTask="isExpanded"
+            :isFlatTask="isExpanded || isInFolderView"
             @contextmenu="handleContextMenu"
             @preview="handlePreview"
+            @taskOutputLengthClicked="enterFolderView($event)"
           />
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
@@ -74,17 +86,27 @@ const toast = useToast()
 const queueStore = useQueueStore()
 const { t } = useI18n()
 
+// Expanded view: show all outputs in a flat list.
 const isExpanded = ref(false)
 const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const galleryActiveIndex = ref(-1)
+// Folder view: only show outputs from a single selected task.
+const folderTask = ref<TaskItemImpl | null>(null)
+const isInFolderView = computed(() => folderTask.value !== null)
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
 
 const allTasks = computed(() =>
-  isExpanded.value ? queueStore.flatTasks : queueStore.tasks
+  isInFolderView.value
+    ? folderTask.value
+      ? folderTask.value.flatten()
+      : []
+    : isExpanded.value
+      ? queueStore.flatTasks
+      : queueStore.tasks
 )
 const allGalleryItems = computed(() =>
   allTasks.value.flatMap((task: TaskItemImpl) => {
@@ -129,9 +151,13 @@ useResizeObserver(scrollContainer, () => {
   })
 })
 
+const updateVisibleTasks = () => {
+  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+}
+
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+  updateVisibleTasks()
 }
 
 const removeTask = (task: TaskItemImpl) => {
@@ -173,7 +199,7 @@ const confirmRemoveAll = (event: Event) => {
 
 const onStatus = async () => {
   await queueStore.update()
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+  updateVisibleTasks()
 }
 
 const menu = ref(null)
@@ -182,7 +208,8 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('delete'),
     icon: 'pi pi-trash',
-    command: () => menuTargetTask.value && removeTask(menuTargetTask.value)
+    command: () => menuTargetTask.value && removeTask(menuTargetTask.value),
+    disabled: isExpanded.value || isInFolderView.value
   },
   {
     label: t('loadWorkflow'),
@@ -208,6 +235,16 @@ const handlePreview = (task: TaskItemImpl) => {
   )
 }
 
+const enterFolderView = (task: TaskItemImpl) => {
+  folderTask.value = task
+  updateVisibleTasks()
+}
+
+const exitFolderView = () => {
+  folderTask.value = null
+  updateVisibleTasks()
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   queueStore.update()
@@ -225,7 +262,7 @@ watch(
       visibleTasks.value.length === 0 ||
       visibleTasks.value.length > newTasks.length
     ) {
-      visibleTasks.value = newTasks.slice(0, ITEMS_PER_PAGE)
+      updateVisibleTasks()
     }
 
     nextTick(() => {
