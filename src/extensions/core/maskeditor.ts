@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { ComfyApp } from '../../scripts/app'
@@ -6,7 +5,7 @@ import { api } from '../../scripts/api'
 import { ClipspaceDialog } from './clipspace'
 
 // Helper function to convert a data URL to a Blob object
-function dataURLToBlob(dataURL) {
+function dataURLToBlob(dataURL: string) {
   const parts = dataURL.split(';base64,')
   const contentType = parts[0].split(':')[1]
   const byteString = atob(parts[1])
@@ -18,13 +17,16 @@ function dataURLToBlob(dataURL) {
   return new Blob([arrayBuffer], { type: contentType })
 }
 
-function loadedImageToBlob(image) {
+function loadedImageToBlob(image: HTMLImageElement) {
   const canvas = document.createElement('canvas')
 
   canvas.width = image.width
   canvas.height = image.height
 
   const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Failed to create context')
+  }
 
   ctx.drawImage(image, 0, 0)
 
@@ -34,7 +36,7 @@ function loadedImageToBlob(image) {
   return blob
 }
 
-function loadImage(imagePath) {
+function loadImage(imagePath: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
 
@@ -46,7 +48,14 @@ function loadImage(imagePath) {
   })
 }
 
-async function uploadMask(filepath, formData) {
+async function uploadMask(
+  filepath: {
+    filename: string
+    subfolder: string
+    type: string
+  },
+  formData: FormData
+) {
   await api
     .fetchApi('/upload/mask', {
       method: 'POST',
@@ -71,7 +80,12 @@ async function uploadMask(filepath, formData) {
   ClipspaceDialog.invalidatePreview()
 }
 
-function prepare_mask(image, maskCanvas, maskCtx, maskColor) {
+function prepare_mask(
+  image: HTMLImageElement,
+  maskCanvas: HTMLCanvasElement,
+  maskCtx: CanvasRenderingContext2D,
+  maskColor: { r: number; g: number; b: number }
+) {
   // paste mask data into alpha channel
   maskCtx.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height)
   const maskData = maskCtx.getImageData(
@@ -107,18 +121,19 @@ enum CompositionOperation {
 }
 
 class MaskEditorDialog extends ComfyDialog {
-  static instance = null
+  static instance: MaskEditorDialog | null = null
   static mousedown_x: number | null = null
   static mousedown_y: number | null = null
-
   brush: HTMLDivElement
-  maskCtx: any
+  maskCtx: CanvasRenderingContext2D
   maskCanvas: HTMLCanvasElement
   brush_size_slider: HTMLDivElement
   brush_opacity_slider: HTMLDivElement
   colorButton: HTMLButtonElement
   saveButton: HTMLButtonElement
   zoom_ratio: number
+  zoom_lasty: number
+  last_zoom_ratio: number
   pan_x: number
   pan_y: number
   imgCanvas: HTMLCanvasElement
@@ -127,6 +142,7 @@ class MaskEditorDialog extends ComfyDialog {
   image: HTMLImageElement
   handler_registered: boolean
   brush_slider_input: HTMLInputElement
+  opacity_slider_input?: HTMLInputElement
   cursorX: number
   cursorY: number
   mousedown_pan_x: number
@@ -156,7 +172,7 @@ class MaskEditorDialog extends ComfyDialog {
     return []
   }
 
-  createButton(name, callback): HTMLButtonElement {
+  createButton(name: string, callback: () => void): HTMLButtonElement {
     var button = document.createElement('button')
     button.style.pointerEvents = 'auto'
     button.innerText = name
@@ -164,21 +180,25 @@ class MaskEditorDialog extends ComfyDialog {
     return button
   }
 
-  createLeftButton(name, callback) {
+  createLeftButton(name: string, callback: () => void) {
     var button = this.createButton(name, callback)
     button.style.cssFloat = 'left'
     button.style.marginRight = '4px'
     return button
   }
 
-  createRightButton(name, callback) {
+  createRightButton(name: string, callback: () => void) {
     var button = this.createButton(name, callback)
     button.style.cssFloat = 'right'
     button.style.marginLeft = '4px'
     return button
   }
 
-  createLeftSlider(self, name, callback): HTMLDivElement {
+  createLeftSlider(
+    self: MaskEditorDialog,
+    name: string,
+    callback: (event: Event) => void
+  ): HTMLDivElement {
     const divElement = document.createElement('div')
     divElement.id = 'maskeditor-slider'
     divElement.style.cssFloat = 'left'
@@ -212,7 +232,11 @@ class MaskEditorDialog extends ComfyDialog {
     return divElement
   }
 
-  createOpacitySlider(self, name, callback): HTMLDivElement {
+  createOpacitySlider(
+    self: MaskEditorDialog,
+    name: string,
+    callback: (event: Event) => void
+  ): HTMLDivElement {
     const divElement = document.createElement('div')
     divElement.id = 'maskeditor-opacity-slider'
     divElement.style.cssFloat = 'left'
@@ -247,7 +271,7 @@ class MaskEditorDialog extends ComfyDialog {
     return divElement
   }
 
-  createPointerTypeSelect(self: any): HTMLDivElement {
+  createPointerTypeSelect(self: MaskEditorDialog): HTMLDivElement {
     const divElement = document.createElement('div')
     divElement.id = 'maskeditor-pointer-type'
     divElement.style.cssFloat = 'left'
@@ -289,7 +313,7 @@ class MaskEditorDialog extends ComfyDialog {
 
     selectElement.addEventListener('change', (event: Event) => {
       const target = event.target as HTMLSelectElement
-      self.pointer_type = target.value
+      self.pointer_type = target.value as PointerType
       this.setBrushBorderRadius(self)
     })
 
@@ -299,7 +323,7 @@ class MaskEditorDialog extends ComfyDialog {
     return divElement
   }
 
-  setBrushBorderRadius(self: any): void {
+  setBrushBorderRadius(self: MaskEditorDialog): void {
     if (self.pointer_type === PointerType.Rect) {
       this.brush.style.borderRadius = '0%'
       // @ts-expect-error
@@ -357,7 +381,7 @@ class MaskEditorDialog extends ComfyDialog {
       self,
       'Thickness',
       (event) => {
-        self.brush_size = event.target.value
+        self.brush_size = Number((event.target as HTMLInputElement).value)
         self.updateBrushPreview(self)
       }
     )
@@ -366,7 +390,7 @@ class MaskEditorDialog extends ComfyDialog {
       self,
       'Opacity',
       (event) => {
-        self.brush_opacity = event.target.value
+        self.brush_opacity = Number((event.target as HTMLInputElement).value)
         if (self.brush_color_mode !== 'negative') {
           self.maskCanvas.style.opacity = self.brush_opacity.toString()
         }
@@ -499,7 +523,7 @@ class MaskEditorDialog extends ComfyDialog {
     return this.element.style.display == 'block'
   }
 
-  invalidateCanvas(orig_image, mask_image) {
+  invalidateCanvas(orig_image: HTMLImageElement, mask_image: HTMLImageElement) {
     this.imgCanvas.width = orig_image.width
     this.imgCanvas.height = orig_image.height
 
@@ -511,22 +535,21 @@ class MaskEditorDialog extends ComfyDialog {
       willReadFrequently: true
     })
 
-    imgCtx.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
-    prepare_mask(mask_image, this.maskCanvas, maskCtx, this.getMaskColor())
+    imgCtx!.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
+    prepare_mask(mask_image, this.maskCanvas, maskCtx!, this.getMaskColor())
   }
 
-  async setImages(imgCanvas) {
+  async setImages(imgCanvas: HTMLCanvasElement) {
     let self = this
 
     const imgCtx = imgCanvas.getContext('2d', { willReadFrequently: true })
     const maskCtx = this.maskCtx
     const maskCanvas = this.maskCanvas
-
+    if (!imgCtx || !maskCtx) {
+      throw new Error('Failed to create context')
+    }
     imgCtx.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
-
-    // image load
-    const filepath = ComfyApp.clipspace.images
 
     const alpha_url = new URL(
       ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
@@ -534,7 +557,7 @@ class MaskEditorDialog extends ComfyDialog {
     alpha_url.searchParams.delete('channel')
     alpha_url.searchParams.delete('preview')
     alpha_url.searchParams.set('channel', 'a')
-    let mask_image = await loadImage(alpha_url)
+    let mask_image = await loadImage(alpha_url.toString())
 
     // original image load
     const rgb_url = new URL(
@@ -610,7 +633,7 @@ class MaskEditorDialog extends ComfyDialog {
     this.imgCanvas.style.top = top
   }
 
-  setEventHandler(maskCanvas) {
+  setEventHandler(maskCanvas: HTMLCanvasElement) {
     const self = this
 
     if (!this.handler_registered) {
@@ -625,6 +648,7 @@ class MaskEditorDialog extends ComfyDialog {
         this.pointMoveEvent(self, event)
       )
       this.element.addEventListener('touchmove', (event) =>
+        // @ts-expect-error
         this.pointMoveEvent(self, event)
       )
 
@@ -742,14 +766,15 @@ class MaskEditorDialog extends ComfyDialog {
   lasty = -1
   lasttime = 0
 
-  static handleKeyDown(event) {
+  static handleKeyDown(event: KeyboardEvent) {
     const self = MaskEditorDialog.instance
+    if (!self) return
     if (event.key === ']') {
       self.brush_size = Math.min(self.brush_size + 2, 100)
-      self.brush_slider_input.value = self.brush_size
+      self.brush_slider_input.value = String(self.brush_size)
     } else if (event.key === '[') {
       self.brush_size = Math.max(self.brush_size - 2, 1)
-      self.brush_slider_input.value = self.brush_size
+      self.brush_slider_input.value = String(self.brush_size)
     } else if (event.key === 'Enter') {
       self.save()
     }
@@ -757,7 +782,7 @@ class MaskEditorDialog extends ComfyDialog {
     self.updateBrushPreview(self)
   }
 
-  static handlePointerUp(event) {
+  static handlePointerUp(event: PointerEvent) {
     event.preventDefault()
 
     this.mousedown_x = null
@@ -766,7 +791,7 @@ class MaskEditorDialog extends ComfyDialog {
     MaskEditorDialog.instance.drawing_mode = false
   }
 
-  updateBrushPreview(self) {
+  updateBrushPreview(self: MaskEditorDialog) {
     const brush = self.brush
 
     var centerX = self.cursorX
@@ -778,7 +803,7 @@ class MaskEditorDialog extends ComfyDialog {
     brush.style.top = centerY - self.brush_size * this.zoom_ratio + 'px'
   }
 
-  handleWheelEvent(self, event) {
+  handleWheelEvent(self: MaskEditorDialog, event: WheelEvent) {
     event.preventDefault()
 
     if (event.ctrlKey) {
@@ -801,7 +826,7 @@ class MaskEditorDialog extends ComfyDialog {
     }
   }
 
-  pointMoveEvent(self, event) {
+  pointMoveEvent(self: MaskEditorDialog, event: PointerEvent) {
     this.cursorX = event.pageX
     this.cursorY = event.pageY
 
@@ -812,8 +837,7 @@ class MaskEditorDialog extends ComfyDialog {
       self.pan_move(self, event)
     }
 
-    let left_button_down =
-      (window.TouchEvent && event instanceof TouchEvent) || event.buttons == 1
+    const left_button_down = this.is_left_button_down(event)
 
     if (event.shiftKey && left_button_down) {
       self.drawing_mode = false
@@ -830,7 +854,7 @@ class MaskEditorDialog extends ComfyDialog {
     }
   }
 
-  pan_move(self, event) {
+  pan_move(self: MaskEditorDialog, event: PointerEvent) {
     if (event.buttons == 1) {
       if (MaskEditorDialog.mousedown_x) {
         let deltaX = MaskEditorDialog.mousedown_x - event.clientX
@@ -844,40 +868,57 @@ class MaskEditorDialog extends ComfyDialog {
     }
   }
 
-  draw_move(self, event) {
+  is_left_button_down(event: PointerEvent | TouchEvent) {
+    if (window.TouchEvent && event instanceof TouchEvent) {
+      return true
+    }
+    if ('buttons' in event) {
+      return event.buttons == 1
+    }
+    return false
+  }
+  is_right_button_down(event: PointerEvent | TouchEvent) {
+    if ('buttons' in event) {
+      return [2, 5, 32].includes(event.buttons)
+    }
+    return false
+  }
+  get_event_coords(self: MaskEditorDialog, event: PointerEvent | TouchEvent) {
+    if (event instanceof PointerEvent) {
+      return {
+        x: event.offsetX / self.zoom_ratio,
+        y: event.offsetY / self.zoom_ratio
+      }
+    }
+    if (window.TouchEvent && event instanceof TouchEvent) {
+      const maskRect = self.maskCanvas.getBoundingClientRect()
+      return {
+        x: (event.targetTouches[0].clientX - maskRect.left) / self.zoom_ratio,
+        y: (event.targetTouches[0].clientY - maskRect.top) / self.zoom_ratio
+      }
+    }
+  }
+
+  draw_move(self: MaskEditorDialog, event: PointerEvent | TouchEvent) {
     if (event.ctrlKey || event.shiftKey) {
       return
     }
 
     event.preventDefault()
 
-    this.cursorX = event.pageX
-    this.cursorY = event.pageY
+    if (event instanceof PointerEvent) {
+      this.cursorX = event.pageX
+      this.cursorY = event.pageY
+    }
 
     self.updateBrushPreview(self)
 
-    let left_button_down =
-      (window.TouchEvent && event instanceof TouchEvent) || event.buttons == 1
-    let right_button_down = [2, 5, 32].includes(event.buttons)
+    const left_button_down = this.is_left_button_down(event)
+    const right_button_down = this.is_right_button_down(event)
 
     if (!event.altKey && left_button_down) {
       var diff = performance.now() - self.lasttime
-
-      const maskRect = self.maskCanvas.getBoundingClientRect()
-
-      var x = event.offsetX
-      var y = event.offsetY
-
-      if (event.offsetX == null) {
-        x = event.targetTouches[0].clientX - maskRect.left
-      }
-
-      if (event.offsetY == null) {
-        y = event.targetTouches[0].clientY - maskRect.top
-      }
-
-      x /= self.zoom_ratio
-      y /= self.zoom_ratio
+      let { x, y } = self.get_event_coords(self, event)
 
       var brush_size = this.brush_size
       if (event instanceof PointerEvent && event.pointerType == 'pen') {
@@ -923,13 +964,7 @@ class MaskEditorDialog extends ComfyDialog {
 
       self.lasttime = performance.now()
     } else if ((event.altKey && left_button_down) || right_button_down) {
-      const maskRect = self.maskCanvas.getBoundingClientRect()
-      const x =
-        (event.offsetX || event.targetTouches[0].clientX - maskRect.left) /
-        self.zoom_ratio
-      const y =
-        (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
-        self.zoom_ratio
+      let { x, y } = self.get_event_coords(self, event)
 
       var brush_size = this.brush_size
       if (event instanceof PointerEvent && event.pointerType == 'pen') {
@@ -977,7 +1012,7 @@ class MaskEditorDialog extends ComfyDialog {
     }
   }
 
-  handlePointerDown(self, event) {
+  handlePointerDown(self: MaskEditorDialog, event: PointerEvent) {
     if (event.ctrlKey) {
       if (event.buttons == 1) {
         MaskEditorDialog.mousedown_x = event.clientX
@@ -1006,13 +1041,7 @@ class MaskEditorDialog extends ComfyDialog {
         return
       }
 
-      const maskRect = self.maskCanvas.getBoundingClientRect()
-      const x =
-        (event.offsetX || event.targetTouches[0].clientX - maskRect.left) /
-        self.zoom_ratio
-      const y =
-        (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
-        self.zoom_ratio
+      let { x, y } = self.get_event_coords(self, event)
 
       if (!event.altKey && event.button == 0) {
         self.init_shape(self, CompositionOperation.SourceOver)
@@ -1056,6 +1085,9 @@ class MaskEditorDialog extends ComfyDialog {
     const backupCtx = backupCanvas.getContext('2d', {
       willReadFrequently: true
     })
+    if (!backupCtx) {
+      throw new Error('Failed to create backup context')
+    }
     backupCanvas.width = this.image.width
     backupCanvas.height = this.image.height
 
@@ -1144,7 +1176,7 @@ class MaskEditorDialog extends ComfyDialog {
 
 app.registerExtension({
   name: 'Comfy.MaskEditor',
-  init(app) {
+  init(app: unknown) {
     ComfyApp.open_maskeditor = function () {
       const dlg = MaskEditorDialog.getInstance()
       if (!dlg.isOpened()) {
