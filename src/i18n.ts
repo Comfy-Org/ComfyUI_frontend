@@ -25,7 +25,8 @@ const messages = {
         sortOrder: 'Sort Order'
       },
       queueTab: {
-        showFlatList: 'Show Flat List'
+        showFlatList: 'Show Flat List',
+        backToAllTasks: 'Back to All Tasks'
       }
     }
   },
@@ -51,7 +52,8 @@ const messages = {
         sortOrder: '排序顺序'
       },
       queueTab: {
-        showFlatList: '平铺结果'
+        showFlatList: '平铺结果',
+        backToAllTasks: '返回'
       }
     }
   }
