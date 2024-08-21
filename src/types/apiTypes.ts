@@ -410,6 +410,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.EnableTooltips': z.boolean(),
       'Comfy.EnableWorkflowViewRestore': z.boolean(),
       'Comfy.FloatRoundingPrecision': z.number(),
+      'Comfy.Graph.ZoomSpeed': z.number(),
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),

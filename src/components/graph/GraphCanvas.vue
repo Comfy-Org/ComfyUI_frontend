@@ -64,6 +64,15 @@ watch(
   { immediate: true }
 )
 
+const zoomSpeed = computed(() => settingStore.get('Comfy.Graph.ZoomSpeed'))
+watch(
+  zoomSpeed,
+  (newVal: number) => {
+    if (comfyApp.canvas) comfyApp.canvas['zoom_speed'] = newVal
+  },
+  { immediate: true }
+)
+
 watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
@@ -94,6 +103,7 @@ onMounted(async () => {
   await comfyApp.setup(canvasRef.value)
   comfyApp.canvas.allow_searchbox = !nodeSearchEnabled.value
   comfyApp.canvas.show_info = canvasInfoEnabled.value
+  comfyApp.canvas['zoom_speed'] = zoomSpeed.value
   workspaceStore.spinner = false
 
   window['app'] = comfyApp
