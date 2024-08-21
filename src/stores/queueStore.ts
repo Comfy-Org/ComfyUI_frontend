@@ -10,7 +10,7 @@ import type {
   ResultItem
 } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
-import { instanceToPlain, plainToClass } from 'class-transformer'
+import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -88,7 +88,12 @@ export class TaskItemImpl {
   }
 
   get previewOutput(): ResultItemImpl | undefined {
-    return this.flatOutputs.find((output) => output.supportsPreview)
+    return (
+      this.flatOutputs.find(
+        // Prefer saved media files over the temp previews
+        (output) => output.type === 'output' && output.supportsPreview
+      ) ?? this.flatOutputs.find((output) => output.supportsPreview)
+    )
   }
 
   get apiTaskType(): APITaskType {
