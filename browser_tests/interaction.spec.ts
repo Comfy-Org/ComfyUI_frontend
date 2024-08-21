@@ -113,6 +113,23 @@ test.describe('Node Interaction', () => {
       'text-encode-toggled-back-open.png'
     )
   })
+
+  test('Can close prompt dialog with canvas click', async ({ comfyPage }) => {
+    await comfyPage.canvas.click({
+      position: {
+        x: 724,
+        y: 645
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
+    await comfyPage.canvas.click({
+      position: {
+        x: 10,
+        y: 10
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+  })
 })
 
 test.describe('Canvas Interaction', () => {
@@ -162,7 +179,7 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.1)
   })
 
-  test('Can zoom in/out after increasing canvas zoom speed setting', async ({
+  test('Can zoom in/out after increasing canvas zoom speed', async ({
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.5)
