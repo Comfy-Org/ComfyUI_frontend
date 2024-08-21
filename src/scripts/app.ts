@@ -2884,7 +2884,6 @@ export class ComfyApp {
       return this.modelsInFolderCache[folder]
     }
     // TODO: needs a lock to avoid overlapping calls
-    // TODO: handle 404 errors cleanly (prompt user that directory is invalid?)
     const models = await api.getModels(folder)
     this.modelsInFolderCache[folder] = models
     return models
