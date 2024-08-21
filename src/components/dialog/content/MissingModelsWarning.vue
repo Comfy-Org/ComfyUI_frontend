@@ -17,10 +17,7 @@
         <div class="missing-model-item" :style="{ '--progress': `${slotProps.option.progress}%` }">
           <div class="model-info">
             <div class="model-details">
-              <span class="model-type">{{ slotProps.option.label }}</span>
-              <span v-if="slotProps.option.hint" class="model-hint">{{
-                slotProps.option.hint
-              }}</span>
+              <span class="model-type" :title=slotProps.option.hint>{{ slotProps.option.label }}</span>
             </div>
             <div v-if="slotProps.option.error" class="model-error">{{ slotProps.option.error }}</div>
           </div>
