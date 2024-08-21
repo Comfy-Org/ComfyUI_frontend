@@ -332,6 +332,9 @@ class ComfyApi extends EventTarget {
    */
   async getModels(folder: string) {
     const res = await this.fetchApi(`/models/${folder}`)
+    if (res.status === 404) {
+      return null
+    }
     return await res.json()
   }
 

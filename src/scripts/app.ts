@@ -2264,6 +2264,10 @@ export class ComfyApp {
     if (graphData.models) {
       for (let m of graphData.models) {
         const models_available = await this.getModelsInFolderCached(m.directory)
+        if (models_available === null) {
+          // TODO: Notify the user that the directory is unavailable
+          continue
+        }
         if (!models_available.includes(m.name)) {
           missingModels.push(m)
         }
