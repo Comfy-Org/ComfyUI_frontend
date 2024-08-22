@@ -2,6 +2,9 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    findIssues: 'Find Issues',
+    copyToClipboard: 'Copy to Clipboard',
+    openNewIssue: 'Open New Issue',
     showReport: 'Show Report',
     imageFailedToLoad: 'Image failed to load',
     reconnecting: 'Reconnecting',

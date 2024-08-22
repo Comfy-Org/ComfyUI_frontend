@@ -17,17 +17,18 @@
     <div class="action-container">
       <FindIssueButton
         :errorMessage="props.error.exception_message"
-        repoOwner="comfyanonymous"
-        repoName="ComfyUI"
+        :repoOwner="repoOwner"
+        :repoName="repoName"
       />
       <Button
-        label="Open GitHub Issue"
-        icon="pi pi-external-link"
-        @click="openGitHubIssue"
+        :label="$t('openNewIssue')"
+        icon="pi pi-github"
+        @click="openNewGithubIssue"
         class="p-button-secondary"
       />
       <Button
-        label="Copy to Clipboard"
+        v-if="reportOpen"
+        :label="$t('copyToClipboard')"
         icon="pi pi-copy"
         @click="copyReportToClipboard"
       />
@@ -50,6 +51,8 @@ const props = defineProps<{
   error: ExecutionErrorWsMessage
 }>()
 
+const repoOwner = 'comfyanonymous'
+const repoName = 'ComfyUI'
 const reportContent = ref('')
 const reportOpen = ref(false)
 const showReport = () => {
@@ -124,12 +127,12 @@ const copyReportToClipboard = async () => {
   }
 }
 
-const openGitHubIssue = () => {
+const openNewGithubIssue = () => {
   const issueTitle = encodeURIComponent(
     `[Bug]: ${props.error.exception_type} in ${props.error.node_type}`
   )
   const issueBody = encodeURIComponent(reportContent.value)
-  const url = `https://github.com/comfyanonymous/ComfyUI/issues/new?title=${issueTitle}&body=${issueBody}`
+  const url = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${issueTitle}&body=${issueBody}`
   window.open(url, '_blank')
 }
 </script>

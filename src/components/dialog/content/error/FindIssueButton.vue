@@ -14,6 +14,7 @@ import { computed } from 'vue'
 import { useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import Button from 'primevue/button'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   errorMessage: string
@@ -41,12 +42,13 @@ const {
   execute
 } = useAsyncState(getIssueCount, 0)
 
+const { t } = useI18n()
 const buttonLabel = computed(() => {
-  return isLoading.value ? 'Loading...' : 'Find Issues'
+  return isLoading.value ? 'Loading...' : t('findIssues')
 })
 
 const openGitHubIssues = () => {
-  const query = encodeURIComponent(queryString.value + ' is:issue')
+  const query = encodeURIComponent(queryString.value)
   const url = `https://github.com/${props.repoOwner}/${props.repoName}/issues?q=${query}`
   window.open(url, '_blank')
 }
