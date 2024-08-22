@@ -121,7 +121,14 @@ export class NodeSearchService {
       includeScore: true,
       threshold: 0.3,
       shouldSort: true,
-      useExtendedSearch: true
+      useExtendedSearch: true,
+      // Sort by score, then by length of the display name, then by index
+      // Source: https://github.com/Comfy-Org/ComfyUI_frontend/issues/562#issuecomment-2303239027
+      sortFn: (a, b) =>
+        Math.min(a.score, b.score) < 0.0001 ||
+        Math.abs(a.score - b.score) > 0.01
+          ? a.score - b.score
+          : a.item[1]['v']['length'] - b.item[1]['v']['length'] || a.idx - b.idx
     })
 
     const filterSearchOptions = {
