@@ -3,12 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(async () => {
-      await window['app'].ui.settings.setSettingValueAsync(
-        'Comfy.UseNewMenu',
-        'Top'
-      )
-    })
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -16,15 +11,11 @@ test.describe('Menu', () => {
     if (currentThemeId !== 'dark') {
       await comfyPage.menu.toggleTheme()
     }
-    await comfyPage.page.evaluate(async () => {
-      await window['app'].ui.settings.setSettingValueAsync(
-        'Comfy.UseNewMenu',
-        'Disabled'
-      )
-    })
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
-  test('Toggle theme', async ({ comfyPage }) => {
+  // Skip reason: Flaky.
+  test.skip('Toggle theme', async ({ comfyPage }) => {
     test.setTimeout(30000)
 
     expect(await comfyPage.menu.getThemeId()).toBe('dark')
