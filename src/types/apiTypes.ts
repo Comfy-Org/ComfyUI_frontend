@@ -68,7 +68,7 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   executed: z.array(zNodeId),
   exception_message: z.string(),
   exception_type: z.string(),
-  traceback: z.string(),
+  traceback: z.array(z.string()),
   current_inputs: z.any(),
   current_outputs: z.any()
 })

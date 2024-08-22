@@ -44,6 +44,7 @@ defineEmits(['action'])
 .no-results-placeholder :deep(.p-card) {
   background-color: var(--surface-ground);
   text-align: center;
+  box-shadow: unset;
 }
 
 .no-results-placeholder h3 {

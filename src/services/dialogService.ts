@@ -29,7 +29,6 @@ export function showSettingsDialog() {
 
 export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
   useDialogStore().showDialog({
-    title: 'Error',
     component: ExecutionErrorDialogContent,
     props: {
       error

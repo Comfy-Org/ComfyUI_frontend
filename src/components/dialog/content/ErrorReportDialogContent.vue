@@ -1,38 +1,20 @@
 <template>
-  <Dialog
-    v-model:visible="visible"
-    :modal="true"
-    header="Error Report"
-    :style="{ width: '70vw' }"
-    :breakpoints="{ '960px': '75vw', '641px': '100vw' }"
-  >
-    <ScrollPanel style="width: 100%; height: 70vh">
-      <Editor v-model="reportContent" :readonly="false" style="height: 100%" />
-    </ScrollPanel>
-    <template #footer>
-      <Button
-        label="Close"
-        icon="pi pi-times"
-        @click="closeDialog"
-        class="p-button-text"
-      />
-      <Button
-        label="Copy to Clipboard"
-        icon="pi pi-copy"
-        @click="copyReportToClipboard"
-      />
-    </template>
-  </Dialog>
+  <ScrollPanel style="width: 100%; height: 70vh">
+    <pre>{{ reportContent }}</pre>
+  </ScrollPanel>
+  <Button
+    label="Copy to Clipboard"
+    icon="pi pi-copy"
+    @click="copyReportToClipboard"
+  />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
-import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import ScrollPanel from 'primevue/scrollpanel'
-import Editor from 'primevue/editor'
 
 const props = defineProps({
   error: {
@@ -47,7 +29,6 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const visible = ref(true)
 const reportContent = ref('')
 
 const toast = useToast()
@@ -68,7 +49,7 @@ const generateReport = () => {
 
 ## Stack Trace
 \`\`\`
-${props.error.traceback}
+${props.error.traceback.join('\n')}
 \`\`\`
 
 ## System Information
@@ -94,11 +75,6 @@ ${props.systemStats.devices
 (Please add any additional context or steps to reproduce the error here)
 
 `
-}
-
-const closeDialog = () => {
-  visible.value = false
-  emit('close')
 }
 
 const copyReportToClipboard = async () => {

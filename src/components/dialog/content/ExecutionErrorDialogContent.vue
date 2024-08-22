@@ -1,46 +1,40 @@
 <template>
-  <div class="error-content">
-    <h3>Error in {{ error.node_type }}</h3>
-    <p>{{ error.exception_message }}</p>
-    <Divider />
-    <h4>Stack Trace</h4>
-    <Button
-      @click="toggleStackTrace"
-      :label="showStackTrace ? 'Hide Stack Trace' : 'Show Stack Trace'"
-      class="p-button-text"
-    />
-    <ScrollPanel v-if="showStackTrace" style="width: 100%; max-height: 300px">
-      <pre>{{ error.traceback }}</pre>
-    </ScrollPanel>
-    <Button
-      label="Generate Report"
-      icon="pi pi-file"
-      @click="openReportDialog"
-    />
-  </div>
+  <NoResultsPlaceholder
+    icon="pi pi-exclamation-circle"
+    :title="error.node_type"
+    :message="error.exception_message"
+    :buttonLabel="$t('showReport')"
+    @action="openReportDialog"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import Button from 'primevue/button'
-import ScrollPanel from 'primevue/scrollpanel'
-import Divider from 'primevue/divider'
 import { ExecutionErrorWsMessage } from '@/types/apiTypes'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+import ErrorReportDialogContent from './ErrorReportDialogContent.vue'
+import { api } from '@/scripts/api'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage
 }>()
+
 const error = props.error
+const dialogStore = useDialogStore()
 
-const emit = defineEmits(['generateReport'])
-
-const showStackTrace = ref(false)
-
-const openReportDialog = () => {
-  emit('generateReport')
-}
-
-const toggleStackTrace = (): void => {
-  showStackTrace.value = !showStackTrace.value
+const openReportDialog = async () => {
+  dialogStore.showDialog({
+    component: ErrorReportDialogContent,
+    props: {
+      error: error,
+      systemStats: await api.getSystemStats()
+    }
+  })
 }
 </script>
+
+<style scoped>
+.no-results-placeholder {
+  padding-top: 0;
+}
+</style>
