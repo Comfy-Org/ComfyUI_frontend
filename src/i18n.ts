@@ -2,6 +2,10 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    findIssues: 'Find Issues',
+    copyToClipboard: 'Copy to Clipboard',
+    openNewIssue: 'Open New Issue',
+    showReport: 'Show Report',
     imageFailedToLoad: 'Image failed to load',
     reconnecting: 'Reconnecting',
     reconnected: 'Reconnected',
@@ -31,6 +35,7 @@ const messages = {
     }
   },
   zh: {
+    showReport: '显示报告',
     imageFailedToLoad: '图像加载失败',
     reconnecting: '重新连接中',
     reconnected: '已重新连接',

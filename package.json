@@ -60,6 +60,7 @@
     "@primevue/themes": "^4.0.0-rc.2",
     "@vitejs/plugin-vue": "^5.0.5",
     "@vueuse/core": "^11.0.0",
+    "axios": "^1.7.4",
     "class-transformer": "^0.5.1",
     "dotenv": "^16.4.5",
     "fuse.js": "^7.0.0",
