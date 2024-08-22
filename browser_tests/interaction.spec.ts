@@ -121,6 +121,9 @@ test.describe('Node Interaction', () => {
         y: 645
       }
     })
+    // Wait for 1s so that it does not trigger the search box.
+    await comfyPage.page.waitForTimeout(1000)
+
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
     await comfyPage.canvas.click({
       position: {
