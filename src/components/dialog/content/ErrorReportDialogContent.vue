@@ -7,6 +7,12 @@
     icon="pi pi-copy"
     @click="copyReportToClipboard"
   />
+  <Button
+    label="Open GitHub Issue"
+    icon="pi pi-external-link"
+    @click="openGitHubIssue"
+    class="p-button-secondary"
+  />
   <FindIssueButton
     :errorMessage="props.error.exception_message"
     repoOwner="comfyanonymous"
@@ -33,10 +39,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close'])
-
 const reportContent = ref('')
-
 const toast = useToast()
 const { copy, isSupported } = useClipboard()
 
@@ -47,22 +50,18 @@ onMounted(() => {
 const generateReport = () => {
   reportContent.value = `
 # ComfyUI Error Report
-
 ## Error Details
 - **Node Type:** ${props.error.node_type}
 - **Exception Type:** ${props.error.exception_type}
 - **Exception Message:** ${props.error.exception_message}
-
 ## Stack Trace
 \`\`\`
 ${props.error.traceback.join('\n')}
 \`\`\`
-
 ## System Information
 - **OS:** ${props.systemStats.system.os}
 - **Python Version:** ${props.systemStats.system.python_version}
 - **Embedded Python:** ${props.systemStats.system.embedded_python}
-
 ## Devices
 ${props.systemStats.devices
   .map(
@@ -76,10 +75,8 @@ ${props.systemStats.devices
 `
   )
   .join('\n')}
-
 ## Additional Context
 (Please add any additional context or steps to reproduce the error here)
-
 `
 }
 
@@ -109,5 +106,14 @@ const copyReportToClipboard = async () => {
       life: 3000
     })
   }
+}
+
+const openGitHubIssue = () => {
+  const issueTitle = encodeURIComponent(
+    `[Bug]: ${props.error.exception_type} in ${props.error.node_type}`
+  )
+  const issueBody = encodeURIComponent(reportContent.value)
+  const url = `https://github.com/comfyanonymous/ComfyUI/issues/new?title=${issueTitle}&body=${issueBody}`
+  window.open(url, '_blank')
 }
 </script>
