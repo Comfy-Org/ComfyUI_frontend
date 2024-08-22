@@ -7,6 +7,11 @@
     icon="pi pi-copy"
     @click="copyReportToClipboard"
   />
+  <FindIssueButton
+    :errorMessage="props.error.exception_message"
+    repoOwner="comfyanonymous"
+    repoName="ComfyUI"
+  />
 </template>
 
 <script setup>
@@ -15,6 +20,7 @@ import { useClipboard } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import ScrollPanel from 'primevue/scrollpanel'
+import FindIssueButton from './error/FindIssueButton.vue'
 
 const props = defineProps({
   error: {
