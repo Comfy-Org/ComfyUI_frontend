@@ -1,6 +1,7 @@
 :root {
   --fg-color: #000;
   --bg-color: #fff;
+  --bg-img: #fff;
   --comfy-menu-bg: #353535;
   --comfy-input-bg: #222;
   --input-text: #ddd;
@@ -24,6 +25,7 @@
   :root {
     --fg-color: #fff;
     --bg-color: #202020;
+    --bg-img: #202020;
     --content-bg: #4e4e4e;
     --content-fg: #fff;
     --content-hover-bg: #222;
@@ -38,7 +40,7 @@ body {
   overflow: hidden;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto 1fr auto;
-  background-color: var(--bg-color);
+  background: var(--bg-img) no-repeat center /cover;
   color: var(--fg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
