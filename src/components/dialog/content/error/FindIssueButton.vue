@@ -4,10 +4,8 @@
     :label="buttonLabel"
     severity="secondary"
     icon="pi pi-github"
+    :badge="issueCount.toString()"
   >
-    <template #badge>
-      <Badge :value="issueCount.toString()" severity="danger" />
-    </template>
   </Button>
 </template>
 
@@ -16,7 +14,6 @@ import { computed } from 'vue'
 import { useAsyncState } from '@vueuse/core'
 import axios from 'axios'
 import Button from 'primevue/button'
-import Badge from 'primevue/badge'
 
 const props = defineProps<{
   errorMessage: string
@@ -26,8 +23,9 @@ const props = defineProps<{
 
 const GITHUB_API_URL = 'https://api.github.com/search/issues'
 
+const queryString = computed(() => props.errorMessage + ' is:issue')
 const getIssueCount = async () => {
-  const query = `${props.errorMessage} is:issue repo:${props.repoOwner}/${props.repoName}`
+  const query = `${queryString.value} repo:${props.repoOwner}/${props.repoName}`
   const response = await axios.get(GITHUB_API_URL, {
     params: {
       q: query,
@@ -44,12 +42,11 @@ const {
 } = useAsyncState(getIssueCount, 0)
 
 const buttonLabel = computed(() => {
-  if (isLoading.value) return 'Loading...'
-  return `Find Issues (${issueCount.value})`
+  return isLoading.value ? 'Loading...' : 'Find Issues'
 })
 
 const openGitHubIssues = () => {
-  const query = encodeURIComponent(props.errorMessage)
+  const query = encodeURIComponent(queryString.value + ' is:issue')
   const url = `https://github.com/${props.repoOwner}/${props.repoName}/issues?q=${query}`
   window.open(url, '_blank')
 }
