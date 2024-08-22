@@ -124,6 +124,7 @@ export class ComfyPage {
 
   // Buttons
   public readonly resetViewButton: Locator
+  public readonly queueButton: Locator
 
   // Inputs
   public readonly workflowUploadInput: Locator
@@ -137,6 +138,7 @@ export class ComfyPage {
     this.canvas = page.locator('#graph-canvas')
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
+    this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)

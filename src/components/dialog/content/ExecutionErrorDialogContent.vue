@@ -4,7 +4,7 @@
     :title="props.error.node_type"
     :message="props.error.exception_message"
   />
-  <div class="error-report">
+  <div class="comfy-error-report">
     <Button
       v-show="!reportOpen"
       :label="$t('showReport')"
@@ -159,7 +159,7 @@ const openNewGithubIssue = () => {
 </script>
 
 <style scoped>
-.error-report {
+.comfy-error-report {
   display: flex;
   flex-direction: column;
   gap: 1rem;
