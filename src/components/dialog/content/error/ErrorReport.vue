@@ -8,8 +8,8 @@
     />
     <template v-if="reportOpen">
       <Divider />
-      <ScrollPanel style="width: 100%; max-height: 70vh">
-        <pre>{{ reportContent }}</pre>
+      <ScrollPanel style="width: 100%; height: 400px; max-width: 80vw">
+        <pre class="wrapper-pre">{{ reportContent }}</pre>
       </ScrollPanel>
       <Divider />
     </template>
@@ -46,6 +46,7 @@ import ScrollPanel from 'primevue/scrollpanel'
 import FindIssueButton from './FindIssueButton.vue'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage
@@ -67,6 +68,13 @@ onMounted(async () => {
 })
 
 const generateReport = (systemStats: SystemStats) => {
+  const MAX_JSON_LENGTH = 50000
+  const workflowJSONString = JSON.stringify(app.graph.serialize())
+  const workflowText =
+    workflowJSONString.length > MAX_JSON_LENGTH
+      ? 'Workflow too large. Please manually upload the workflow from local file system.'
+      : workflowJSONString
+
   reportContent.value = `
 # ComfyUI Error Report
 ## Error Details
@@ -94,6 +102,13 @@ ${systemStats.devices
 `
   )
   .join('\n')}
+
+## Attached Workflow
+Please make sure that workflow does not contain any sensitive information such as API keys or passwords.
+\`\`\`
+${workflowText}
+\`\`\`
+
 ## Additional Context
 (Please add any additional context or steps to reproduce the error here)
 `
@@ -148,5 +163,10 @@ const openNewGithubIssue = () => {
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
+}
+
+.wrapper-pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>
