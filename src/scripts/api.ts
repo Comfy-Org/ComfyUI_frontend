@@ -541,11 +541,7 @@ class ComfyApi extends EventTarget {
     const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
       method: 'DELETE'
     })
-    if (resp.status !== 204) {
-      throw new Error(
-        `Error removing user data file '${file}': ${resp.status} ${resp.statusText}`
-      )
-    }
+    return resp
   }
 
   /**

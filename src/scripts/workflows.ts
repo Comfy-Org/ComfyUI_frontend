@@ -399,19 +399,21 @@ export class ComfyWorkflow {
   async delete() {
     // TODO: fix delete of current workflow - should mark workflow as unsaved and when saving use old name by default
 
-    try {
-      if (this.isFavorite) {
-        await this.favorite(false)
-      }
-      await api.deleteUserData('workflows/' + this.path)
-      this.unsaved = true
-      this.#path = null
-      this.#pathParts = null
-      this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
-      this.manager.dispatchEvent(new CustomEvent('delete', { detail: this }))
-    } catch (error) {
-      alert(`Error deleting workflow: ${error.message || error}`)
+    if (this.isFavorite) {
+      await this.favorite(false)
     }
+    const resp = await api.deleteUserData('workflows/' + this.path)
+    if (resp.status !== 204) {
+      alert(
+        `Error removing user data file '${this.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+
+    this.unsaved = true
+    this.#path = null
+    this.#pathParts = null
+    this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
+    this.manager.dispatchEvent(new CustomEvent('delete', { detail: this }))
   }
 
   track() {
