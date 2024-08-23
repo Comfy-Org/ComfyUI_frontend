@@ -581,13 +581,13 @@ class ComfyApi extends EventTarget {
    */
   async listUserData(
     dir: string,
-    recurse: true,
-    split?: boolean
+    recurse: boolean,
+    split?: true
   ): Promise<string[][]>
   async listUserData(
     dir: string,
-    recurse: false,
-    split?: boolean
+    recurse: boolean,
+    split?: false
   ): Promise<string[]>
   async listUserData(dir, recurse, split) {
     const resp = await this.fetchApi(
