@@ -74,7 +74,8 @@ onMounted(async () => {
 })
 
 const generateReport = (systemStats: SystemStats) => {
-  const MAX_JSON_LENGTH = 50000
+  // The default JSON workflow has about 3000 characters.
+  const MAX_JSON_LENGTH = 20000
   const workflowJSONString = JSON.stringify(app.graph.serialize())
   const workflowText =
     workflowJSONString.length > MAX_JSON_LENGTH
@@ -134,25 +135,26 @@ const copyReportToClipboard = async () => {
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to copy report',
-        life: 3000
+        detail: 'Failed to copy report'
       })
     }
   } else {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Clipboard API not supported in your browser',
-      life: 3000
+      detail: 'Clipboard API not supported in your browser'
     })
   }
 }
 
-const openNewGithubIssue = () => {
+const openNewGithubIssue = async () => {
+  await copyReportToClipboard()
   const issueTitle = encodeURIComponent(
     `[Bug]: ${props.error.exception_type} in ${props.error.node_type}`
   )
-  const issueBody = encodeURIComponent(reportContent.value)
+  const issueBody = encodeURIComponent(
+    'The report has been copied to the clipboard. Please paste it here.'
+  )
   const url = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${issueTitle}&body=${issueBody}`
   window.open(url, '_blank')
 }
