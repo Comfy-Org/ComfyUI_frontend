@@ -198,4 +198,15 @@ const tabValue = computed(() =>
 .settings-content::-webkit-scrollbar-thumb {
   background-color: transparent;
 }
+
+@media (max-width: 768px) {
+  .settings-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+  }
+}
 </style>
