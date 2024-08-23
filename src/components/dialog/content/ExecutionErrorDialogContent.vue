@@ -135,16 +135,14 @@ const copyReportToClipboard = async () => {
       toast.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to copy report',
-        life: 3000
+        detail: 'Failed to copy report'
       })
     }
   } else {
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'Clipboard API not supported in your browser',
-      life: 3000
+      detail: 'Clipboard API not supported in your browser'
     })
   }
 }
