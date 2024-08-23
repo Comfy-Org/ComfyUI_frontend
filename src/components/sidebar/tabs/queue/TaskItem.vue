@@ -38,15 +38,20 @@
         </Tag>
       </div>
       <div class="tag-wrapper">
-        <Tag v-if="task.isHistory && flatOutputs.length > 1">
-          <span>{{ flatOutputs.length }}</span>
-        </Tag>
+        <Button
+          v-if="task.isHistory && flatOutputs.length > 1"
+          outlined
+          @click="handleOutputLengthClick"
+        >
+          <span style="font-weight: bold">{{ flatOutputs.length }}</span>
+        </Button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
@@ -61,6 +66,7 @@ const flatOutputs = props.task.flatOutputs
 const emit = defineEmits<{
   (e: 'contextmenu', value: { task: TaskItemImpl; event: MouseEvent }): void
   (e: 'preview', value: TaskItemImpl): void
+  (e: 'task-output-length-clicked', value: TaskItemImpl): void
 }>()
 
 const handleContextMenu = (e: MouseEvent) => {
@@ -69,6 +75,10 @@ const handleContextMenu = (e: MouseEvent) => {
 
 const handlePreview = () => {
   emit('preview', props.task)
+}
+
+const handleOutputLengthClick = () => {
+  emit('task-output-length-clicked', props.task)
 }
 
 const taskTagSeverity = (status: TaskItemDisplayStatus) => {

@@ -2,6 +2,10 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    findIssues: 'Find Issues',
+    copyToClipboard: 'Copy to Clipboard',
+    openNewIssue: 'Open New Issue',
+    showReport: 'Show Report',
     imageFailedToLoad: 'Image failed to load',
     reconnecting: 'Reconnecting',
     reconnected: 'Reconnected',
@@ -25,11 +29,13 @@ const messages = {
         sortOrder: 'Sort Order'
       },
       queueTab: {
-        showFlatList: 'Show Flat List'
+        showFlatList: 'Show Flat List',
+        backToAllTasks: 'Back to All Tasks'
       }
     }
   },
   zh: {
+    showReport: '显示报告',
     imageFailedToLoad: '图像加载失败',
     reconnecting: '重新连接中',
     reconnected: '已重新连接',
@@ -51,7 +57,8 @@ const messages = {
         sortOrder: '排序顺序'
       },
       queueTab: {
-        showFlatList: '平铺结果'
+        showFlatList: '平铺结果',
+        backToAllTasks: '返回'
       }
     }
   }

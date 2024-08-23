@@ -94,7 +94,10 @@ img.galleria-image {
   max-width: 100vw;
   max-height: 100vh;
   object-fit: contain;
+}
+
+.p-galleria-close-button {
   /* Set z-index so the close button doesn't get hidden behind the image when image is large */
-  z-index: -1;
+  z-index: 1;
 }
 </style>

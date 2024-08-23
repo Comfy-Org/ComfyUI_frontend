@@ -43,7 +43,11 @@ import {
 } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
-import { showLoadWorkflowWarning, showMissingModelsWarning } from '@/services/dialogService'
+import {
+  showExecutionErrorDialog,
+  showLoadWorkflowWarning,
+  showMissingModelsWarning
+} from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { ToastMessageOptions } from 'primevue/toast'
@@ -1668,8 +1672,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       this.lastExecutionError = detail
-      const formattedError = this.#formatExecutionError(detail)
-      this.ui.dialog.show(formattedError)
+      showExecutionErrorDialog(detail)
       this.canvas.draw(true, true)
     })
 
@@ -2587,18 +2590,6 @@ export class ComfyApp {
       return message
     }
     return '(unknown error)'
-  }
-
-  #formatExecutionError(error) {
-    if (error == null) {
-      return '(unknown error)'
-    }
-
-    const traceback = error.traceback.join('')
-    const nodeId = error.node_id
-    const nodeType = error.node_type
-
-    return `Error occurred when executing ${nodeType}:\n\n${error.exception_message}\n\n${traceback}`
   }
 
   async queuePrompt(number, batchCount = 1) {

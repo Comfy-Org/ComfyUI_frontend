@@ -124,6 +124,7 @@ export class ComfyPage {
 
   // Buttons
   public readonly resetViewButton: Locator
+  public readonly queueButton: Locator
 
   // Inputs
   public readonly workflowUploadInput: Locator
@@ -137,6 +138,7 @@ export class ComfyPage {
     this.canvas = page.locator('#graph-canvas')
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
+    this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
@@ -185,6 +187,12 @@ export class ComfyPage {
     )
   }
 
+  async getSetting(settingId: string) {
+    return await this.page.evaluate(async (id) => {
+      return await window['app'].ui.settings.getSettingValue(id)
+    }, settingId)
+  }
+
   async reload() {
     await this.page.reload({ timeout: 15000 })
     await this.setup()
@@ -201,7 +209,7 @@ export class ComfyPage {
   }
 
   async delay(ms: number) {
-      return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   async loadWorkflow(workflowName: string) {

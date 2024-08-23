@@ -113,6 +113,25 @@ test.describe('Node Interaction', () => {
       'text-encode-toggled-back-open.png'
     )
   })
+
+  test('Can close prompt dialog with canvas click', async ({ comfyPage }) => {
+    await comfyPage.canvas.click({
+      position: {
+        x: 724,
+        y: 645
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
+    // Wait for 1s so that it does not trigger the search box by double click.
+    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.canvas.click({
+      position: {
+        x: 10,
+        y: 10
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+  })
 })
 
 test.describe('Canvas Interaction', () => {
@@ -145,6 +164,36 @@ test.describe('Canvas Interaction', () => {
     )
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.page.keyboard.up('Shift')
+  })
+
+  test('Can zoom in/out after decreasing canvas zoom speed setting', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.05)
+    await comfyPage.zoom(-100, 4)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'zoomed-in-low-zoom-speed.png'
+    )
+    await comfyPage.zoom(100, 8)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'zoomed-out-low-zoom-speed.png'
+    )
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.1)
+  })
+
+  test('Can zoom in/out after increasing canvas zoom speed', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.5)
+    await comfyPage.zoom(-100, 4)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'zoomed-in-high-zoom-speed.png'
+    )
+    await comfyPage.zoom(100, 8)
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'zoomed-out-high-zoom-speed.png'
+    )
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.1)
   })
 
   test('Can pan', async ({ comfyPage }) => {

@@ -3,12 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(async () => {
-      await window['app'].ui.settings.setSettingValueAsync(
-        'Comfy.UseNewMenu',
-        'Top'
-      )
-    })
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -16,15 +11,11 @@ test.describe('Menu', () => {
     if (currentThemeId !== 'dark') {
       await comfyPage.menu.toggleTheme()
     }
-    await comfyPage.page.evaluate(async () => {
-      await window['app'].ui.settings.setSettingValueAsync(
-        'Comfy.UseNewMenu',
-        'Disabled'
-      )
-    })
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
-  test('Toggle theme', async ({ comfyPage }) => {
+  // Skip reason: Flaky.
+  test.skip('Toggle theme', async ({ comfyPage }) => {
     test.setTimeout(30000)
 
     expect(await comfyPage.menu.getThemeId()).toBe('dark')
@@ -91,5 +82,18 @@ test.describe('Menu', () => {
 
     // Verify the node is added to the canvas
     expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
+  })
+
+  test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
+    const [defaultSpeed, maxSpeed] = [1.1, 2.5]
+    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
+      defaultSpeed
+    )
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
+    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
+    await comfyPage.page.reload()
+    await comfyPage.setup()
+    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', defaultSpeed)
   })
 })

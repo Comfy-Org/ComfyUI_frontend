@@ -6,7 +6,7 @@
     closable
     closeOnEscape
     dismissableMask
-    :maximizable="dialogStore.props.maximizable ?? false"
+    :maximizable="maximizable"
     @hide="dialogStore.closeDialog"
     @maximize="maximized = true"
     @unmaximize="maximized = false"
@@ -19,20 +19,20 @@
       <h3 v-else>{{ dialogStore.title || ' ' }}</h3>
     </template>
 
-    <component
-      :is="dialogStore.component"
-      v-bind="dialogStore.props"
-      :maximized="maximized"
-    />
+    <component :is="dialogStore.component" v-bind="contentProps" />
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import Dialog from 'primevue/dialog'
 
 const dialogStore = useDialogStore()
-
+const maximizable = dialogStore.props.maximizable ?? false
 const maximized = ref(false)
+const contentProps = computed(() => ({
+  ...dialogStore.props,
+  ...(dialogStore.props.maximizable ? { maximized } : {})
+}))
 </script>

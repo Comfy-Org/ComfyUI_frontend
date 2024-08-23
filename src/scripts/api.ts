@@ -588,11 +588,7 @@ class ComfyApi extends EventTarget {
     const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
       method: 'DELETE'
     })
-    if (resp.status !== 204) {
-      throw new Error(
-        `Error removing user data file '${file}': ${resp.status} ${resp.statusText}`
-      )
-    }
+    return resp
   }
 
   /**
@@ -632,13 +628,13 @@ class ComfyApi extends EventTarget {
    */
   async listUserData(
     dir: string,
-    recurse: true,
-    split?: boolean
+    recurse: boolean,
+    split?: true
   ): Promise<string[][]>
   async listUserData(
     dir: string,
-    recurse: false,
-    split?: boolean
+    recurse: boolean,
+    split?: false
   ): Promise<string[]>
   async listUserData(dir, recurse, split) {
     const resp = await this.fetchApi(

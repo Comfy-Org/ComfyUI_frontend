@@ -68,7 +68,7 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   executed: z.array(zNodeId),
   exception_message: z.string(),
   exception_type: z.string(),
-  traceback: z.string(),
+  traceback: z.array(z.string()),
   current_inputs: z.any(),
   current_outputs: z.any()
 })
@@ -420,6 +420,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.EnableTooltips': z.boolean(),
       'Comfy.EnableWorkflowViewRestore': z.boolean(),
       'Comfy.FloatRoundingPrecision': z.number(),
+      'Comfy.Graph.ZoomSpeed': z.number(),
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),

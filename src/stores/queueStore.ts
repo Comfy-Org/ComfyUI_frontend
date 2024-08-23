@@ -10,7 +10,7 @@ import type {
   ResultItem
 } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
-import { instanceToPlain, plainToClass } from 'class-transformer'
+import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -88,7 +88,12 @@ export class TaskItemImpl {
   }
 
   get previewOutput(): ResultItemImpl | undefined {
-    return this.flatOutputs.find((output) => output.supportsPreview)
+    return (
+      this.flatOutputs.find(
+        // Prefer saved media files over the temp previews
+        (output) => output.type === 'output' && output.supportsPreview
+      ) ?? this.flatOutputs.find((output) => output.supportsPreview)
+    )
   }
 
   get apiTaskType(): APITaskType {
@@ -214,6 +219,33 @@ export class TaskItemImpl {
       app.nodeOutputs = toRaw(this.outputs)
     }
   }
+
+  public flatten(): TaskItemImpl[] {
+    if (this.displayStatus !== TaskItemDisplayStatus.Completed) {
+      return [this]
+    }
+
+    return this.flatOutputs.map(
+      (output: ResultItemImpl, i: number) =>
+        new TaskItemImpl(
+          this.taskType,
+          [
+            this.queueIndex,
+            `${this.promptId}-${i}`,
+            this.promptInputs,
+            this.extraData,
+            this.outputsToExecute
+          ],
+          this.status,
+          {
+            [output.nodeId]: {
+              [output.mediaType]: [output]
+            }
+          },
+          [output]
+        )
+    )
+  }
 }
 
 interface State {
@@ -239,32 +271,7 @@ export const useQueueStore = defineStore('queue', {
       ]
     },
     flatTasks(): TaskItemImpl[] {
-      return this.tasks.flatMap((task: TaskItemImpl) => {
-        if (task.displayStatus !== TaskItemDisplayStatus.Completed) {
-          return [task]
-        }
-
-        return task.flatOutputs.map(
-          (output: ResultItemImpl, i: number) =>
-            new TaskItemImpl(
-              task.taskType,
-              [
-                task.queueIndex,
-                `${task.promptId}-${i}`,
-                task.promptInputs,
-                task.extraData,
-                task.outputsToExecute
-              ],
-              task.status,
-              {
-                [output.nodeId]: {
-                  [output.mediaType]: [output]
-                }
-              },
-              [output]
-            )
-        )
-      })
+      return this.tasks.flatMap((task: TaskItemImpl) => task.flatten())
     },
     lastHistoryQueueIndex(state) {
       return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
