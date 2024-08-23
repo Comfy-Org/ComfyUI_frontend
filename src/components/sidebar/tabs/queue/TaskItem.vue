@@ -26,7 +26,10 @@
     </div>
 
     <div class="task-item-details">
-      <div class="tag-wrapper">
+      <div class="tag-wrapper status-tag-group">
+        <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
+          {{ node?.type }} (#{{ node?.id }})
+        </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
           <span v-html="taskStatusText(task.displayStatus)"></span>
           <span v-if="task.isHistory" class="task-time">
@@ -45,9 +48,6 @@
         >
           <span style="font-weight: bold">{{ flatOutputs.length }}</span>
         </Button>
-        <Tag v-if="isFlatTask" class="node-name-tag">
-          {{ node?.type }}
-        </Tag>
       </div>
     </div>
   </div>
@@ -66,11 +66,15 @@ const props = defineProps<{
 }>()
 
 const flatOutputs = props.task.flatOutputs
-const coverResult = props.task.previewOutput || flatOutputs[0]
+const coverResult = flatOutputs.length
+  ? props.task.previewOutput || flatOutputs[0]
+  : null
 // Using `==` instead of `===` because NodeId can be a string or a number
-const node: ComfyNode | undefined = props.task.workflow.nodes.find(
-  (n: ComfyNode) => n.id == coverResult.nodeId
-)
+const node: ComfyNode | null = flatOutputs.length
+  ? props.task.workflow.nodes.find(
+      (n: ComfyNode) => n.id == coverResult.nodeId
+    ) ?? null
+  : null
 
 const emit = defineEmits<{
   (e: 'contextmenu', value: { task: TaskItemImpl; event: MouseEvent }): void
@@ -158,6 +162,7 @@ const formatTime = (time?: number) => {
   padding: 0.6rem;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   width: 100%;
 }
 
@@ -171,5 +176,10 @@ are floating on top of images. */
 
 .node-name-tag {
   word-break: break-all;
+}
+
+.status-tag-group {
+  display: flex;
+  flex-direction: column;
 }
 </style>
