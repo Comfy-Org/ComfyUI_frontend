@@ -27,7 +27,12 @@ app.registerExtension({
       }
 
       const target = event.composedPath()[0]
-      if (['INPUT', 'TEXTAREA'].includes(target.tagName)) {
+      if (
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'INPUT' ||
+        (target.tagName === 'SPAN' &&
+          target.classList.contains('property_value'))
+      ) {
         return
       }
 
