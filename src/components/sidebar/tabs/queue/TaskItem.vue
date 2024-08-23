@@ -4,7 +4,7 @@
       <template v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
         <ResultItem
           v-if="flatOutputs.length"
-          :result="task.previewOutput || flatOutputs[0]"
+          :result="coverResult"
           @preview="handlePreview"
         />
       </template>
@@ -45,6 +45,9 @@
         >
           <span style="font-weight: bold">{{ flatOutputs.length }}</span>
         </Button>
+        <Tag v-if="isFlatTask" class="node-name-tag">
+          {{ node?.type }}
+        </Tag>
       </div>
     </div>
   </div>
@@ -55,6 +58,7 @@ import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
+import { ComfyNode } from '@/types/comfyWorkflow'
 
 const props = defineProps<{
   task: TaskItemImpl
@@ -62,6 +66,11 @@ const props = defineProps<{
 }>()
 
 const flatOutputs = props.task.flatOutputs
+const coverResult = props.task.previewOutput || flatOutputs[0]
+// Using `==` instead of `===` because NodeId can be a string or a number
+const node: ComfyNode | undefined = props.task.workflow.nodes.find(
+  (n: ComfyNode) => n.id == coverResult.nodeId
+)
 
 const emit = defineEmits<{
   (e: 'contextmenu', value: { task: TaskItemImpl; event: MouseEvent }): void
@@ -158,5 +167,9 @@ are floating on top of images. */
   background-color: var(--p-primary-contrast-color);
   border-radius: 6px;
   display: inline-flex;
+}
+
+.node-name-tag {
+  word-break: break-all;
 }
 </style>
