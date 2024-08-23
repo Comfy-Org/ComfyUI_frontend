@@ -3,6 +3,7 @@
 // about importing primevue components.
 import { useDialogStore } from '@/stores/dialogStore'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
+import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
@@ -16,6 +17,17 @@ export function showLoadWorkflowWarning(props: {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: LoadWorkflowWarning,
+    props
+  })
+}
+
+export function showMissingModelsWarning(props: {
+  missingModels: any[]
+  [key: string]: any
+}) {
+  const dialogStore = useDialogStore()
+  dialogStore.showDialog({
+    component: MissingModelsWarning,
     props
   })
 }

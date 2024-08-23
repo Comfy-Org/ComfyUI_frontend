@@ -174,6 +174,13 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.Workflow.ShowMissingModelsWarning',
+        name: 'Show missing models warning',
+        type: 'boolean',
+        defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.Graph.ZoomSpeed',
         name: 'Canvas zoom speed',
         type: 'slider',

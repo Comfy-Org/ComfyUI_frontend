@@ -1,5 +1,6 @@
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
+  DownloadModelStatus,
   HistoryTaskItem,
   PendingTaskItem,
   RunningTaskItem,
@@ -216,6 +217,11 @@ class ComfyApi extends EventTarget {
                 new CustomEvent('execution_cached', { detail: msg.data })
               )
               break
+            case 'download_progress':
+              this.dispatchEvent(
+                new CustomEvent('download_progress', { detail: msg.data })
+              )
+              break
             default:
               if (this.#registered.has(msg.type)) {
                 this.dispatchEvent(
@@ -316,6 +322,47 @@ class ComfyApi extends EventTarget {
       }
     }
 
+    return await res.json()
+  }
+
+  /**
+   * Gets a list of models in the specified folder
+   * @param {string} folder The folder to list models from, such as 'checkpoints'
+   * @returns The list of model filenames within the specified folder
+   */
+  async getModels(folder: string) {
+    const res = await this.fetchApi(`/models/${folder}`)
+    if (res.status === 404) {
+      return null
+    }
+    return await res.json()
+  }
+
+  /**
+   * Tells the server to download a model from the specified URL to the specified directory and filename
+   * @param {string} url The URL to download the model from
+   * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
+   * @param {string} model_filename The filename to save the model as
+   * @param {number} progress_interval The interval in seconds at which to report download progress (via 'download_progress' event)
+   */
+  async internalDownloadModel(
+    url: string,
+    model_directory: string,
+    model_filename: string,
+    progress_interval: number
+  ): Promise<DownloadModelStatus> {
+    const res = await this.fetchApi('/internal/models/download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url,
+        model_directory,
+        model_filename,
+        progress_interval
+      })
+    })
     return await res.json()
   }
 

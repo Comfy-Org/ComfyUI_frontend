@@ -133,14 +133,5 @@ export const defaultGraph: ComfyWorkflowJSON = {
   groups: [],
   config: {},
   extra: {},
-  version: 0.4,
-  models: [
-    {
-      name: 'v1-5-pruned-emaonly.ckpt',
-      url: 'https://huggingface.co/runwayml/stable-diffusion-v1-5/resolve/main/v1-5-pruned-emaonly.ckpt',
-      hash: 'cc6cb27103417325ff94f52b7a5d2dde45a7515b25c255d8e396c90014281516',
-      hash_type: 'SHA256',
-      directory: 'checkpoints'
-    }
-  ]
+  version: 0.4
 }

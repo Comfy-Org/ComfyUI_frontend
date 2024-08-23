@@ -45,7 +45,8 @@ import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import {
   showExecutionErrorDialog,
-  showLoadWorkflowWarning
+  showLoadWorkflowWarning,
+  showMissingModelsWarning
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -134,6 +135,7 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
+  modelsInFolderCache: Record<string, string[]>
 
   constructor() {
     this.vueAppReady = false
@@ -148,6 +150,7 @@ export class ComfyApp {
       parent: document.body
     })
     this.menu = new ComfyAppMenu(this)
+    this.modelsInFolderCache = {}
 
     /**
      * List of extensions that are registered with the app
@@ -2175,6 +2178,22 @@ export class ComfyApp {
     })
   }
 
+  showMissingModelsError(missingModels) {
+    if (
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
+      showMissingModelsWarning({
+        missingModels,
+        maximizable: true
+      })
+    }
+    
+    this.logging.addEntry('Comfy.App', 'warn', {
+      MissingModels: missingModels
+    })
+  }
+
   async changeWorkflow(callback, workflow = null) {
     try {
       this.workflowManager.activeWorkflow?.changeTracker?.store()
@@ -2233,10 +2252,12 @@ export class ComfyApp {
     }
 
     const missingNodeTypes = []
+    const missingModels = []
     await this.#invokeExtensionsAsync(
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
+      // TODO: missingModels
     )
     for (let n of graphData.nodes) {
       // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
@@ -2249,6 +2270,19 @@ export class ComfyApp {
       if (!(n.type in LiteGraph.registered_node_types)) {
         missingNodeTypes.push(n.type)
         n.type = sanitizeNodeName(n.type)
+      }
+    }
+    if (graphData.models && useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
+      for (let m of graphData.models) {
+        const models_available = await this.getModelsInFolderCached(m.directory)
+        if (models_available === null) {
+          // @ts-expect-error
+          m.directory_invalid = true
+          missingModels.push(m)
+        }
+        else if (!models_available.includes(m.name)) {
+          missingModels.push(m)
+        }
       }
     }
 
@@ -2366,8 +2400,12 @@ export class ComfyApp {
       this.#invokeExtensions('loadedGraphNode', node)
     }
 
+    // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes)
+    }
+    if (missingModels.length) {
+      this.showMissingModelsError(missingModels)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
     requestAnimationFrame(() => {
@@ -2838,6 +2876,19 @@ export class ComfyApp {
   }
 
   /**
+   * Gets the list of model names in a folder, using a temporary local cache
+   */
+  async getModelsInFolderCached(folder: string): Promise<string[]> {
+    if (folder in this.modelsInFolderCache) {
+      return this.modelsInFolderCache[folder]
+    }
+    // TODO: needs a lock to avoid overlapping calls
+    const models = await api.getModels(folder)
+    this.modelsInFolderCache[folder] = models
+    return models
+  }
+
+  /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
    */
@@ -2861,6 +2912,8 @@ export class ComfyApp {
       detail: 'Update requested'
     }
     if (this.vueAppReady) useToastStore().add(requestToastMessage)
+
+    this.modelsInFolderCache = {}
 
     const defs = await api.getNodeDefs()
 

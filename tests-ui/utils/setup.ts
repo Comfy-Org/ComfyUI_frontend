@@ -73,6 +73,7 @@ export function mockApi(config: APIConfig = {}) {
       userConfig.users[username + '!'] = username
       return { status: 200, json: () => username + '!' }
     }),
+    getModels: jest.fn(() => []),
     getUserConfig: jest.fn(
       () => userConfig ?? { storage: 'browser', migrated: false }
     ),
