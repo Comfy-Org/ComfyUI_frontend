@@ -77,7 +77,7 @@ const zDownloadModelStatus = z.object({
   status: z.string(),
   progress_percentage: z.number(),
   message: z.string(),
-  already_existed: z.boolean(),
+  already_existed: z.boolean()
 })
 
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
@@ -423,6 +423,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Graph.ZoomSpeed': z.number(),
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
+      'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),
       'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger': z.enum([
         'always',
