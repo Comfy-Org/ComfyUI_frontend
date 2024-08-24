@@ -148,14 +148,20 @@ const toggleBookmark = (bookmark: string) => {
   }
 }
 const bookmarkedRoot = computed<TreeNode>(() => {
-  const bookmarkNodes = bookmarks.value.map((bookmark: string) => {
-    const parts = bookmark.split('/')
-    const nodeName = parts.pop()
-    const category = parts.join('/')
-    const nodeDef = _.clone(nodeDefStore.nodeDefsByDisplayName[nodeName])
-    nodeDef.category = category
-    return nodeDef
-  })
+  const bookmarkNodes = bookmarks.value
+    .map((bookmark: string) => {
+      const parts = bookmark.split('/')
+      const displayName = parts.pop()
+      const category = parts.join('/')
+      const srcNodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
+      if (!srcNodeDef) {
+        return null
+      }
+      const nodeDef = _.clone(srcNodeDef)
+      nodeDef.category = category
+      return nodeDef
+    })
+    .filter((nodeDef) => nodeDef !== null)
   return buildNodeDefTree(bookmarkNodes)
 })
 

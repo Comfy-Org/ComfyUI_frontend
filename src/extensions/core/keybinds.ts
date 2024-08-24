@@ -16,7 +16,7 @@ app.registerExtension({
           useToastStore().add({
             severity: 'info',
             summary: 'Interrupted',
-            detail: 'Execution has been interrupted',
+            detail: 'Execution has been interfrupted',
             life: 1000
           })
           return

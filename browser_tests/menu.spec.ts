@@ -59,29 +59,65 @@ test.describe('Menu', () => {
     expect(newChildrenCount).toBe(initialChildrenCount + 1)
   })
 
-  test('Sidebar node preview and drag to canvas', async ({ comfyPage }) => {
-    // Open the sidebar
-    const tab = comfyPage.menu.nodeLibraryTab
-    await tab.open()
-    await tab.toggleFirstFolder()
+  test.describe('Node library sidebar', () => {
+    test('Node preview and drag to canvas', async ({ comfyPage }) => {
+      // Open the sidebar
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.open()
+      await tab.getFolder('sampling').click()
 
-    // Hover over a node to display the preview
-    const nodeSelector = '.p-tree-node-leaf'
-    await comfyPage.page.hover(nodeSelector)
+      // Hover over a node to display the preview
+      const nodeSelector = '.p-tree-node-leaf'
+      await comfyPage.page.hover(nodeSelector)
 
-    // Verify the preview is displayed
-    const previewVisible = await comfyPage.page.isVisible(
-      '.node-lib-node-preview'
-    )
-    expect(previewVisible).toBe(true)
+      // Verify the preview is displayed
+      const previewVisible = await comfyPage.page.isVisible(
+        '.node-lib-node-preview'
+      )
+      expect(previewVisible).toBe(true)
 
-    const count = await comfyPage.getGraphNodesCount()
-    // Drag the node onto the canvas
-    const canvasSelector = '#graph-canvas'
-    await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector)
+      const count = await comfyPage.getGraphNodesCount()
+      // Drag the node onto the canvas
+      const canvasSelector = '#graph-canvas'
+      await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector)
 
-    // Verify the node is added to the canvas
-    expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
+      // Verify the node is added to the canvas
+      expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
+    })
+
+    test('Bookmark node', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
+
+      // Open the sidebar
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.open()
+      await tab.getFolder('sampling').click()
+
+      // Bookmark the node
+      await tab
+        .getNode('KSampler (Advanced)')
+        .locator('.bookmark-button')
+        .click()
+
+      // Verify the bookmark is added to the bookmarks tab
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['KSampler (Advanced)']
+      )
+      // Verify the bookmark node with the same name is added to the tree.
+      expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
+    })
+
+    test('Ignores unrecognized node', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo'])
+
+      // Open the sidebar
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.open()
+
+      expect(await tab.getFolder('sampling').count()).toBe(1)
+      expect(await tab.getNode('foo').count()).toBe(0)
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
+    })
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
