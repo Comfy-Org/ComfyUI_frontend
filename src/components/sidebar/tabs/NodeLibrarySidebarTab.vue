@@ -25,7 +25,6 @@
         v-model:expandedKeys="expandedKeys"
         selectionMode="single"
         :value="renderedRoot.children"
-        dragSelector=".p-tree-node-leaf"
         :pt="{
           nodeLabel: 'node-lib-tree-node-label',
           nodeContent: ({ props }) => ({
