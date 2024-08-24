@@ -74,8 +74,16 @@ class NodeLibrarySidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
-  async toggleFirstFolder() {
-    await this.page.locator('.p-tree-node-toggle-button').nth(0).click()
+  getFolder(folderName: string) {
+    return this.page.locator(
+      `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.folder-label:has-text("${folderName}")))`
+    )
+  }
+
+  getNode(nodeName: string) {
+    return this.page.locator(
+      `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.node-label:has-text("${nodeName}")))`
+    )
   }
 }
 
