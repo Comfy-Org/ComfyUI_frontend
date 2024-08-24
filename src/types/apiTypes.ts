@@ -287,7 +287,12 @@ const zStringInputSpec = inputSpec([
   zBaseInputSpecValue.extend({
     default: z.string().optional(),
     multiline: z.boolean().optional(),
-    dynamicPrompts: z.boolean().optional()
+    dynamicPrompts: z.boolean().optional(),
+
+    // Multiline-only fields
+    defaultVal: z.string().optional(),
+    placeholder: z.string().optional(),
+    spellcheck: z.boolean().optional()
   })
 ])
 
