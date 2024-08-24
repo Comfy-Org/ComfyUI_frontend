@@ -54,7 +54,7 @@ export function useTreeExpansion() {
     }
   }
 
-  const onNonLeafClick = (e: MouseEvent, node: TreeNode) => {
+  const toggleNodeOnEvent = (e: MouseEvent | KeyboardEvent, node: TreeNode) => {
     if (e.ctrlKey) {
       toggleNodeRecursive(node)
     } else {
@@ -68,6 +68,6 @@ export function useTreeExpansion() {
     toggleNodeRecursive,
     expandNode,
     collapseNode,
-    onNonLeafClick
+    toggleNodeOnEvent
   }
 }

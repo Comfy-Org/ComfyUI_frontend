@@ -95,7 +95,7 @@ import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 
 const nodeDefStore = useNodeDefStore()
-const { expandedKeys, expandNode, onNonLeafClick } = useTreeExpansion()
+const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
 const alphabeticalSort = ref(false)
 const hoveredComfyNodeName = ref<string | null>(null)
@@ -252,7 +252,7 @@ const handleSearch = (query: string) => {
 const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
   if (!node.key) return
   if (node.type === 'folder') {
-    onNonLeafClick(e, node)
+    toggleNodeOnEvent(e, node)
   } else {
     insertNode(node.data)
   }
