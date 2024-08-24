@@ -1,17 +1,13 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
-      <ToggleButton
-        v-model:model-value="alphabeticalSort"
-        on-icon="pi pi-sort-alpha-down"
-        off-icon="pi pi-sort-alt"
-        aria-label="Sort"
-        :pt="{
-          label: { style: { display: 'none' } }
-        }"
+      <Button
+        :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
+        text
+        severity="secondary"
+        @click="alphabeticalSort = !alphabeticalSort"
         v-tooltip="$t('sideToolbar.nodeLibraryTab.sortOrder')"
-      >
-      </ToggleButton>
+      />
     </template>
     <template #body>
       <SearchBox
@@ -79,7 +75,7 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
-import ToggleButton from 'primevue/togglebutton'
+import Button from 'primevue/button'
 import {
   buildNodeDefTree,
   ComfyNodeDefImpl,
