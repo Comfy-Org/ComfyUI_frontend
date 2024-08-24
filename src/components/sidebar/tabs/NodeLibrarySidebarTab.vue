@@ -97,10 +97,12 @@ import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { sortedTree } from '@/utils/treeUtil'
 import _ from 'lodash'
+import { useTreeExpansion } from '@/hooks/treeHooks'
 
 const nodeDefStore = useNodeDefStore()
+const { expandedKeys, expandNode, onNonLeafClick } = useTreeExpansion()
+
 const alphabeticalSort = ref(false)
-const expandedKeys = ref({})
 const hoveredComfyNodeName = ref<string | null>(null)
 const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
   if (!hoveredComfyNodeName.value) {
@@ -232,22 +234,6 @@ const handleNodeHover = async (
   }
 }
 
-const toggleNode = (node: TreeNode) => {
-  if (node.key in expandedKeys.value) {
-    delete expandedKeys.value[node.key]
-  } else {
-    expandedKeys.value[node.key] = true
-  }
-}
-
-const toggleNodeRecursive = (node: TreeNode) => {
-  if (node.key in expandedKeys.value) {
-    collapseNode(node)
-  } else {
-    expandNode(node)
-  }
-}
-
 const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
@@ -268,34 +254,10 @@ const handleSearch = (query: string) => {
   expandNode(filteredRoot.value)
 }
 
-const expandNode = (node: TreeNode) => {
-  if (node.children && node.children.length) {
-    expandedKeys.value[node.key] = true
-
-    for (let child of node.children) {
-      expandNode(child)
-    }
-  }
-}
-
-const collapseNode = (node: TreeNode) => {
-  if (node.children && node.children.length) {
-    delete expandedKeys.value[node.key]
-
-    for (let child of node.children) {
-      collapseNode(child)
-    }
-  }
-}
-
 const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
   if (!node.key) return
   if (node.type === 'folder') {
-    if (e.ctrlKey) {
-      toggleNodeRecursive(node)
-    } else {
-      toggleNode(node)
-    }
+    onNonLeafClick(e, node)
   } else {
     insertNode(node.data)
   }
