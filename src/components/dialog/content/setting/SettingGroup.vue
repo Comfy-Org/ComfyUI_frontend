@@ -68,7 +68,10 @@ function getSettingAttrs(setting: SettingParams) {
   }
   switch (setting.type) {
     case 'combo':
-      attrs['options'] = setting.options
+      attrs['options'] =
+        typeof setting.options === 'function'
+          ? setting.options(settingStore.get(setting.id))
+          : setting.options
       if (typeof setting.options[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
