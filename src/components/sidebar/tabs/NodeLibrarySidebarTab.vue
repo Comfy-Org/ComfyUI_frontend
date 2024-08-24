@@ -63,24 +63,10 @@
           ></Badge>
         </template>
         <template #node="{ node }">
-          <Tag
-            v-if="node.data.experimental"
-            :value="$t('experimental')"
-            severity="primary"
-          />
-          <Tag
-            v-if="node.data.deprecated"
-            :value="$t('deprecated')"
-            severity="danger"
-          />
-          <span class="node-label">{{ node.data.display_name }}</span>
-          <Button
-            :icon="
-              isBookmarked(node.data) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
-            "
-            text
-            severity="secondary"
-            @click.stop="toggleBookmark(node.data.display_name)"
+          <NodeTreeLeaf
+            :node="node.data"
+            :isBookmarked="isBookmarked(node.data)"
+            @toggleBookmark="toggleBookmark(node.data.display_name)"
           />
         </template>
       </TreePlus>
@@ -100,9 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Badge from 'primevue/badge'
-import Tag from 'primevue/tag'
 import ToggleButton from 'primevue/togglebutton'
 import {
   buildNodeDefTree,
@@ -111,6 +95,7 @@ import {
 } from '@/stores/nodeDefStore'
 import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
+import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -292,6 +277,7 @@ const expandNode = (node: TreeNode) => {
   display: flex;
   align-items: center;
   margin-left: var(--p-tree-node-gap);
+  flex-grow: 1;
 }
 </style>
 
