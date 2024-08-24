@@ -2,6 +2,13 @@
   <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
       <Button
+        icon="pi pi-folder-plus"
+        text
+        severity="secondary"
+        @click="addNewBookmarkFolder"
+        v-tooltip="$t('newFolder')"
+      />
+      <Button
         :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
         text
         severity="secondary"
@@ -140,6 +147,13 @@ const toggleBookmark = (bookmark: string) => {
       bookmark
     ])
   }
+}
+const addNewBookmarkFolder = () => {
+  const newFolderName = 'New Folder/'
+  settingStore.set('Comfy.NodeLibrary.Bookmarks', [
+    ...bookmarks.value,
+    newFolderName
+  ])
 }
 const bookmarkedRoot = computed<TreeNode>(() => {
   const bookmarkNodes = bookmarks.value
