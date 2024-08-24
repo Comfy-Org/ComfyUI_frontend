@@ -73,7 +73,15 @@
             :value="$t('deprecated')"
             severity="danger"
           />
-          <span class="node-label">{{ node.label }}</span>
+          <span class="node-label">{{ node.data.display_name }}</span>
+          <Button
+            :icon="
+              isBookmarked(node.data) ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'
+            "
+            text
+            severity="secondary"
+            @click.stop="toggleBookmark(node.data.display_name)"
+          />
         </template>
       </TreePlus>
       <div
@@ -92,10 +100,15 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Badge from 'primevue/badge'
 import Tag from 'primevue/tag'
 import ToggleButton from 'primevue/togglebutton'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  buildNodeDefTree,
+  ComfyNodeDefImpl,
+  useNodeDefStore
+} from '@/stores/nodeDefStore'
 import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import TreePlus from '@/components/primevueOverride/TreePlus.vue'
@@ -104,7 +117,8 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { buildTree, sortedTree } from '@/utils/treeUtil'
+import { sortedTree } from '@/utils/treeUtil'
+import _ from 'lodash'
 
 const nodeDefStore = useNodeDefStore()
 const alphabeticalSort = ref(false)
@@ -130,13 +144,63 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
+// Bookmarks are in format of category/display_name. e.g. "comfy/conditioning/CLIPTextEncode"
+const bookmarks = computed(() =>
+  settingStore.get('Comfy.NodeLibrary.Bookmarks')
+)
+const bookmarkedNodes = computed(
+  () =>
+    new Set(
+      bookmarks.value.map((bookmark: string) => bookmark.split('/').pop())
+    )
+)
+const isBookmarked = (node: ComfyNodeDefImpl) =>
+  bookmarkedNodes.value.has(node.display_name)
+const toggleBookmark = (bookmark: string) => {
+  if (bookmarks.value.includes(bookmark)) {
+    settingStore.set(
+      'Comfy.NodeLibrary.Bookmarks',
+      bookmarks.value.filter((b: string) => b !== bookmark)
+    )
+  } else {
+    settingStore.set('Comfy.NodeLibrary.Bookmarks', [
+      ...bookmarks.value,
+      bookmark
+    ])
+  }
+}
+const bookmarkedRoot = computed<TreeNode>(() => {
+  const bookmarkNodes = bookmarks.value.map((bookmark: string) => {
+    const parts = bookmark.split('/')
+    const nodeName = parts.pop()
+    const category = parts.join('/')
+    const nodeDef = _.clone(nodeDefStore.nodeDefsByDisplayName[nodeName])
+    nodeDef.category = category
+    return nodeDef
+  })
+  return buildNodeDefTree(bookmarkNodes)
+})
+
+const allNodesRoot = computed<TreeNode>(() => {
+  return {
+    key: 'all-nodes',
+    label: 'All Nodes',
+    children: [
+      ...(bookmarkedRoot.value?.children ?? []),
+      ...nodeDefStore.nodeTree.children
+    ]
+  }
+})
+
 const root = computed(() => {
-  const root = filteredRoot.value || nodeDefStore.nodeTree
+  const root = filteredRoot.value || allNodesRoot.value
   return alphabeticalSort.value ? sortedTree(root) : root
 })
+
 const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
+
 const fillNodeInfo = (node: TreeNode): TreeNode => {
   const isExpanded = expandedKeys.value[node.key]
   const icon = node.leaf
@@ -208,10 +272,7 @@ const handleSearch = (query: string) => {
     limit: 64
   })
 
-  filteredRoot.value = buildTree(matchedNodes, (nodeDef: ComfyNodeDefImpl) => [
-    ...nodeDef.category.split('/'),
-    nodeDef.display_name
-  ])
+  filteredRoot.value = buildNodeDefTree(matchedNodes)
   expandNode(filteredRoot.value)
 }
 

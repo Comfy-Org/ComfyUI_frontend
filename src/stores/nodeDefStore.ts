@@ -243,8 +243,16 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
   }
 }
 
+export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
+  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) => [
+    ...nodeDef.category.split('/').filter((s) => s !== ''),
+    nodeDef.display_name
+  ])
+}
+
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDefImpl>
+  nodeDefsByDisplayName: Record<string, ComfyNodeDefImpl>
   widgets: Record<string, ComfyWidgetConstructor>
   showDeprecated: boolean
   showExperimental: boolean
@@ -253,6 +261,7 @@ interface State {
 export const useNodeDefStore = defineStore('nodeDef', {
   state: (): State => ({
     nodeDefsByName: {},
+    nodeDefsByDisplayName: {},
     widgets: {},
     showDeprecated: false,
     showExperimental: false
@@ -262,7 +271,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
       return Object.values(state.nodeDefsByName)
     },
     // Node defs that are not deprecated
-    visibleNodeDefs(state) {
+    visibleNodeDefs(state): ComfyNodeDefImpl[] {
       return this.nodeDefs.filter(
         (nodeDef: ComfyNodeDefImpl) =>
           (state.showDeprecated || !nodeDef.deprecated) &&
@@ -273,22 +282,20 @@ export const useNodeDefStore = defineStore('nodeDef', {
       return new NodeSearchService(this.visibleNodeDefs)
     },
     nodeTree(): TreeNode {
-      return buildTree(this.visibleNodeDefs, (nodeDef: ComfyNodeDefImpl) => [
-        ...nodeDef.category.split('/'),
-        nodeDef.display_name
-      ])
+      return buildNodeDefTree(this.visibleNodeDefs)
     }
   },
   actions: {
     updateNodeDefs(nodeDefs: ComfyNodeDef[]) {
       const newNodeDefsByName: { [key: string]: ComfyNodeDefImpl } = {}
+      const nodeDefsByDisplayName: { [key: string]: ComfyNodeDefImpl } = {}
       for (const nodeDef of nodeDefs) {
-        newNodeDefsByName[nodeDef.name] = plainToClass(
-          ComfyNodeDefImpl,
-          nodeDef
-        )
+        const nodeDefImpl = plainToClass(ComfyNodeDefImpl, nodeDef)
+        newNodeDefsByName[nodeDef.name] = nodeDefImpl
+        nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
       }
       this.nodeDefsByName = newNodeDefsByName
+      this.nodeDefsByDisplayName = nodeDefsByDisplayName
     },
     updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
       this.widgets = widgets

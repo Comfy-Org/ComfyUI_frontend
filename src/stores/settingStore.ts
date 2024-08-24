@@ -191,6 +191,15 @@ export const useSettingStore = defineStore('setting', {
           step: 0.01
         }
       })
+
+      // Bookmarks are stored in the settings store.
+      // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeLibrary.Bookmarks',
+        name: 'Node library bookmarks',
+        type: 'hidden',
+        defaultValue: []
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
