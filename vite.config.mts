@@ -114,7 +114,7 @@ export default defineConfig({
   ],
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
-    target: 'es2015',
+    target: 'es2022',
     sourcemap: true,
     rollupOptions: {
       // Disabling tree-shaking
