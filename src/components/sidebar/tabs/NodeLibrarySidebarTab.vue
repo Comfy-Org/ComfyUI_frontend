@@ -29,14 +29,7 @@
         :pt="{
           nodeLabel: 'node-lib-tree-node-label',
           nodeContent: ({ props }) => ({
-            onClick: () => {
-              if (!props.node.key) return
-              if (props.node.type === 'folder') {
-                toggleNode(props.node.key)
-              } else {
-                insertNode(props.node.data)
-              }
-            }
+            onClick: (e: MouseEvent) => onNodeContentClick(e, props.node)
           }),
           nodeChildren: ({ props }) => ({
             'data-comfy-node-name': props.node?.data?.name,
@@ -233,11 +226,19 @@ const handleNodeHover = async (
   }
 }
 
-const toggleNode = (id: string) => {
-  if (id in expandedKeys.value) {
-    delete expandedKeys.value[id]
+const toggleNode = (node: TreeNode) => {
+  if (node.key in expandedKeys.value) {
+    delete expandedKeys.value[node.key]
   } else {
-    expandedKeys.value[id] = true
+    expandedKeys.value[node.key] = true
+  }
+}
+
+const toggleNodeRecursive = (node: TreeNode) => {
+  if (node.key in expandedKeys.value) {
+    collapseNode(node)
+  } else {
+    expandNode(node)
   }
 }
 
@@ -268,6 +269,29 @@ const expandNode = (node: TreeNode) => {
     for (let child of node.children) {
       expandNode(child)
     }
+  }
+}
+
+const collapseNode = (node: TreeNode) => {
+  if (node.children && node.children.length) {
+    delete expandedKeys.value[node.key]
+
+    for (let child of node.children) {
+      collapseNode(child)
+    }
+  }
+}
+
+const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
+  if (!node.key) return
+  if (node.type === 'folder') {
+    if (e.ctrlKey) {
+      toggleNodeRecursive(node)
+    } else {
+      toggleNode(node)
+    }
+  } else {
+    insertNode(node.data)
   }
 }
 </script>
