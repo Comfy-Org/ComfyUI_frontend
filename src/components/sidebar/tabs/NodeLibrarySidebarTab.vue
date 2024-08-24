@@ -20,7 +20,7 @@
         @search="handleSearch"
         :placeholder="$t('searchNodes') + '...'"
       />
-      <TreePlus
+      <Tree
         class="node-lib-tree"
         v-model:expandedKeys="expandedKeys"
         selectionMode="single"
@@ -62,7 +62,7 @@
             @toggleBookmark="toggleBookmark(node.data.display_name)"
           />
         </template>
-      </TreePlus>
+      </Tree>
       <div
         v-if="hoveredComfyNode"
         class="node-lib-node-preview"
@@ -89,7 +89,7 @@ import {
 import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
-import TreePlus from '@/components/primevueOverride/TreePlus.vue'
+import Tree from 'primevue/tree'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'

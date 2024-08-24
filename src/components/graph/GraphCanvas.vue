@@ -20,7 +20,7 @@ import { ref, computed, onUnmounted, watch, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
   LiteGraph,
@@ -113,14 +113,18 @@ onMounted(async () => {
     element: canvasRef.value,
     onDrop: (event) => {
       const loc = event.location.current.input
-      // Add an offset on x to make sure after adding the node, the cursor
-      // is on the node (top left corner)
-      const pos = comfyApp.clientPosToCanvasPos([loc.clientX - 20, loc.clientY])
-      const comfyNodeName = event.source.element.getAttribute(
-        'data-comfy-node-name'
-      )
-      const nodeDef = nodeDefStore.nodeDefsByName[comfyNodeName]
-      comfyApp.addNodeOnGraph(nodeDef, { pos })
+      const dndData = event.source.data
+
+      if (dndData.type === 'add-node') {
+        const nodeDef = dndData.data as ComfyNodeDefImpl
+        // Add an offset on x to make sure after adding the node, the cursor
+        // is on the node (top left corner)
+        const pos = comfyApp.clientPosToCanvasPos([
+          loc.clientX - 20,
+          loc.clientY
+        ])
+        comfyApp.addNodeOnGraph(nodeDef, { pos })
+      }
     }
   })
   emit('ready')

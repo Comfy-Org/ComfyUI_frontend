@@ -1,5 +1,5 @@
 <template>
-  <div class="node-tree-leaf">
+  <div class="node-tree-leaf" ref="container">
     <div class="node-content">
       <Tag
         v-if="node.experimental"
@@ -24,6 +24,9 @@
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { CanvasDragAndDropData } from '@/types/litegraphTypes'
 
 const props = defineProps<{
   node: ComfyNodeDefImpl
@@ -37,6 +40,26 @@ const emit = defineEmits<{
 const toggleBookmark = () => {
   emit('toggle-bookmark', props.node)
 }
+
+const container = ref<HTMLElement | null>(null)
+let draggableCleanup: () => void
+onMounted(() => {
+  const treeNodeElement = container.value?.closest(
+    '.p-tree-node'
+  ) as HTMLElement
+  draggableCleanup = draggable({
+    element: treeNodeElement,
+    getInitialData() {
+      return {
+        type: 'add-node',
+        data: props.node
+      } as CanvasDragAndDropData<ComfyNodeDefImpl>
+    }
+  })
+})
+onUnmounted(() => {
+  draggableCleanup()
+})
 </script>
 
 <style scoped>

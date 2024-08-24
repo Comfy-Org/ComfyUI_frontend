@@ -73,3 +73,8 @@ export class ConnectingLinkImpl implements ConnectingLink {
     }
   }
 }
+
+export type CanvasDragAndDropData<T = any> = {
+  type: 'add-node'
+  data: T
+}
