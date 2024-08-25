@@ -106,7 +106,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { sortedTree } from '@/utils/treeUtil'
+import { findNodeByKey, sortedTree } from '@/utils/treeUtil'
 import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type { MenuItem } from 'primevue/menuitem'
@@ -141,7 +141,7 @@ const nodePreviewStyle = ref<Record<string, string>>({
 })
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-const { isBookmarked, toggleBookmark, addNewBookmarkFolder } = nodeBookmarkStore
+const { isBookmarked, toggleBookmark } = nodeBookmarkStore
 
 const allNodesRoot = computed<TreeNode>(() => {
   return {
@@ -300,6 +300,14 @@ const handleRename = (node: TreeNode, newName: string) => {
     }
   }
   renameEditingNode.value = null
+}
+
+const addNewBookmarkFolder = () => {
+  const newFolderKey =
+    'root/' + nodeBookmarkStore.addNewBookmarkFolder().slice(0, -1)
+  nextTick(() => {
+    renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+  })
 }
 </script>
 

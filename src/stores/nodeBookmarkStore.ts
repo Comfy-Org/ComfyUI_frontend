@@ -78,6 +78,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       suffix++
     }
     addBookmark(newFolderPath)
+    return newFolderPath
   }
 
   const renameBookmarkFolder = (
@@ -88,25 +89,23 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       throw new Error('Cannot rename non-folder node')
     }
 
-    const newCategory = folderNode.category
-      .split('/')
-      .slice(0, -1)
-      .concat(newName)
-      .join('/')
+    const newNodePath =
+      folderNode.category.split('/').slice(0, -1).concat(newName).join('/') +
+      '/'
 
-    if (newCategory === folderNode.category) {
+    if (newNodePath === folderNode.nodePath) {
       return
     }
 
-    if (bookmarks.value.some((b: string) => b.startsWith(newCategory))) {
-      throw new Error(`Folder name "${newName}" already exists`)
+    if (bookmarks.value.some((b: string) => b.startsWith(newNodePath))) {
+      throw new Error(`Folder name "${newNodePath}" already exists`)
     }
 
     settingStore.set(
       'Comfy.NodeLibrary.Bookmarks',
       bookmarks.value.map((b: string) =>
-        b.startsWith(folderNode.category)
-          ? b.replace(folderNode.category, newCategory)
+        b.startsWith(folderNode.nodePath)
+          ? b.replace(folderNode.nodePath, newNodePath)
           : b
       )
     )
@@ -120,7 +119,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       'Comfy.NodeLibrary.Bookmarks',
       bookmarks.value.filter(
         (b: string) =>
-          b !== folderNode.category && !b.startsWith(folderNode.category)
+          b !== folderNode.nodePath && !b.startsWith(folderNode.nodePath)
       )
     )
   }
