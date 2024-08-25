@@ -281,7 +281,9 @@ const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
 }
 
 const handleRename = (node: TreeNode, newName: string) => {
-  console.log('rename', node, newName)
+  if (node.data && node.data.isDummyFolder) {
+    nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+  }
   renameEditingNode.value = null
 }
 </script>

@@ -75,6 +75,31 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     addBookmark(newFolderPath)
   }
 
+  const renameBookmarkFolder = (
+    folderNode: ComfyNodeDefImpl,
+    newName: string
+  ) => {
+    if (!folderNode.isDummyFolder) {
+      console.error('Cannot rename non-folder node')
+      return
+    }
+
+    const newCategory = folderNode.category
+      .split('/')
+      .slice(0, -1)
+      .concat(newName)
+      .join('/')
+
+    settingStore.set(
+      'Comfy.NodeLibrary.Bookmarks',
+      bookmarks.value.map((b: string) =>
+        b.startsWith(folderNode.category)
+          ? b.replace(folderNode.category, newCategory)
+          : b
+      )
+    )
+  }
+
   return {
     bookmarks,
     bookmarkedNodes,
@@ -82,6 +107,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     toggleBookmark,
     addBookmark,
     addNewBookmarkFolder,
+    renameBookmarkFolder,
     bookmarkedRoot
   }
 })
