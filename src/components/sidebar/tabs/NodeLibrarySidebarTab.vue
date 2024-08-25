@@ -47,18 +47,16 @@
         }"
       >
         <template #folder="{ node }">
-          <span class="folder-label">{{ node.label }}</span>
-          <Badge
-            :value="node.totalNodes"
-            severity="secondary"
-            :style="{ marginLeft: '0.5rem' }"
-          ></Badge>
+          <NodeTreeFolder
+            :node="node"
+            :isBookmarkFolder="node.data && isBookmarked(node.data)"
+          />
         </template>
         <template #node="{ node }">
           <NodeTreeLeaf
             :node="node.data"
             :isBookmarked="isBookmarked(node.data)"
-            @toggleBookmark="toggleBookmark(node.data.display_name)"
+            @toggleBookmark="toggleBookmark(node.data)"
           />
         </template>
       </Tree>
@@ -78,7 +76,6 @@
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
 import Button from 'primevue/button'
 import {
   buildNodeDefTree,
@@ -89,6 +86,7 @@ import {
 import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
+import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
 import Tree from 'primevue/tree'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -136,16 +134,19 @@ const bookmarkedNodes = computed(
 )
 const isBookmarked = (node: ComfyNodeDefImpl) =>
   bookmarkedNodes.value.has(node.display_name)
-const toggleBookmark = (bookmark: string) => {
-  if (bookmarks.value.includes(bookmark)) {
+const toggleBookmark = (node: ComfyNodeDefImpl) => {
+  if (isBookmarked(node)) {
     settingStore.set(
       'Comfy.NodeLibrary.Bookmarks',
-      bookmarks.value.filter((b: string) => b !== bookmark)
+      bookmarks.value.filter(
+        (b: string) =>
+          b !== node.display_name && !b.endsWith('/' + node.display_name)
+      )
     )
   } else {
     settingStore.set('Comfy.NodeLibrary.Bookmarks', [
       ...bookmarks.value,
-      bookmark
+      node.display_name
     ])
   }
 }
