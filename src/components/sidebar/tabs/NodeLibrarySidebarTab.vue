@@ -5,7 +5,7 @@
         icon="pi pi-folder-plus"
         text
         severity="secondary"
-        @click="addNewBookmarkFolder"
+        @click="addNewBookmarkFolder()"
         v-tooltip="$t('newFolder')"
       />
       <Button
@@ -170,11 +170,11 @@ const getTreeNodeIcon = (node: TreeNode) => {
 
   // If the node is a bookmark folder, show a bookmark icon
   if (node.data && isBookmarked(node.data)) {
-    return 'pi pi-bookmark'
+    return 'pi pi-bookmark-fill'
   }
 
   const isExpanded = expandedKeys.value[node.key]
-  return isExpanded ? 'pi pi-folder' : 'pi pi-folder-open'
+  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 
 const fillNodeInfo = (node: TreeNode): TreeNode => {
@@ -256,6 +256,15 @@ const menuTargetNode = ref<TreeNode | null>(null)
 const renameEditingNode = ref<TreeNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => [
   {
+    label: t('newFolder'),
+    icon: 'pi pi-folder-plus',
+    command: () => {
+      if (menuTargetNode.value?.data) {
+        addNewBookmarkFolder(menuTargetNode.value?.data)
+      }
+    }
+  },
+  {
     label: t('delete'),
     icon: 'pi pi-trash',
     command: () => {
@@ -302,9 +311,9 @@ const handleRename = (node: TreeNode, newName: string) => {
   renameEditingNode.value = null
 }
 
-const addNewBookmarkFolder = () => {
+const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
   const newFolderKey =
-    'root/' + nodeBookmarkStore.addNewBookmarkFolder().slice(0, -1)
+    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
   nextTick(() => {
     renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
   })

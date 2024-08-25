@@ -70,11 +70,12 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     ])
   }
 
-  const addNewBookmarkFolder = () => {
-    let newFolderPath = 'New Folder/'
+  const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+    const parentPath = parent ? parent.nodePath : ''
+    let newFolderPath = parentPath + 'New Folder/'
     let suffix = 1
     while (bookmarks.value.some((b: string) => b.startsWith(newFolderPath))) {
-      newFolderPath = `New Folder ${suffix}/`
+      newFolderPath = parentPath + `New Folder ${suffix}/`
       suffix++
     }
     addBookmark(newFolderPath)
