@@ -299,4 +299,24 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
 :deep(.comfy-vue-side-bar-body) {
   background: var(--p-tree-background);
 }
+
+/*
+ * The following styles are necessary to avoid layout shift when dragging nodes over folders.
+ * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
+ * we can create a visual indicator for the drop target without affecting the layout of other elements.
+ */
+:deep(.p-tree-node:has(.node-tree-folder)) {
+  position: relative;
+}
+
+:deep(.p-tree-node:has(.node-tree-folder.can-drop))::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid var(--p-content-color);
+  pointer-events: none;
+}
 </style>

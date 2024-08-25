@@ -207,7 +207,7 @@ export class ComfyNodeDefImpl {
   }
 
   get nodePath(): string {
-    return this.category + '/' + this.display_name
+    return (this.category ? this.category + '/' : '') + this.display_name
   }
 }
 

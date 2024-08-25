@@ -1,5 +1,11 @@
 <template>
-  <div class="node-tree-folder" ref="container">
+  <div
+    :class="[
+      'node-tree-folder',
+      { bookmark: props.isBookmarkFolder, 'can-drop': canDrop }
+    ]"
+    ref="container"
+  >
     <span class="folder-label">{{ props.node.label }}</span>
     <Badge
       :value="props.node.totalNodes"
@@ -43,6 +49,7 @@ const addNodeToBookmarkFolder = (node: ComfyNodeDefImpl) => {
 }
 
 const container = ref<HTMLElement | null>(null)
+const canDrop = ref(false)
 
 let dropTargetCleanup = () => {}
 onMounted(() => {
@@ -58,6 +65,15 @@ onMounted(() => {
       if (dndData.type === 'add-node') {
         addNodeToBookmarkFolder(dndData.data)
       }
+    },
+    onDragEnter: (event) => {
+      const dndData = event.source.data as CanvasDragAndDropData
+      if (dndData.type === 'add-node') {
+        canDrop.value = true
+      }
+    },
+    onDragLeave: (event) => {
+      canDrop.value = false
     }
   })
 })
