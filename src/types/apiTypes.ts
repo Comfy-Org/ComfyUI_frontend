@@ -291,8 +291,7 @@ const zStringInputSpec = inputSpec([
 
     // Multiline-only fields
     defaultVal: z.string().optional(),
-    placeholder: z.string().optional(),
-    spellcheck: z.boolean().optional()
+    placeholder: z.string().optional()
   })
 ])
 
@@ -448,6 +447,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.SwitchUser': z.any(),
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
+      'Comfy.TextareaWidget.Spellcheck': z.boolean(),
       'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean()
