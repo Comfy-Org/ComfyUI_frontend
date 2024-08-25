@@ -197,18 +197,26 @@ const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
 
-const fillNodeInfo = (node: TreeNode): TreeNode => {
+const getTreeNodeIcon = (node: TreeNode) => {
+  if (node.leaf) {
+    return 'pi pi-circle-fill'
+  }
+
+  // If the node is a bookmark folder, show a bookmark icon
+  if (node.data && isBookmarked(node.data)) {
+    return 'pi pi-bookmark'
+  }
+
   const isExpanded = expandedKeys.value[node.key]
-  const icon = node.leaf
-    ? 'pi pi-circle-fill'
-    : isExpanded
-      ? 'pi pi-folder-open'
-      : 'pi pi-folder'
+  return isExpanded ? 'pi pi-folder' : 'pi pi-folder-open'
+}
+
+const fillNodeInfo = (node: TreeNode): TreeNode => {
   const children = node.children?.map(fillNodeInfo)
 
   return {
     ...node,
-    icon,
+    icon: getTreeNodeIcon(node),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalNodes: node.leaf
