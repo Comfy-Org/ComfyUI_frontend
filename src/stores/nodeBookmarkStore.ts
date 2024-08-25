@@ -11,7 +11,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
 
-  const bookmarks = computed(() =>
+  const bookmarks = computed<string[]>(() =>
     settingStore.get('Comfy.NodeLibrary.Bookmarks')
   )
 
@@ -20,6 +20,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       new Set(
         bookmarks.value.map((bookmark: string) => bookmark.split('/').pop())
       )
+  )
+
+  const bookmarkedRoot = computed<TreeNode>(() =>
+    buildBookmarkTree(bookmarks.value)
   )
 
   const isBookmarked = (node: ComfyNodeDefImpl) =>
@@ -39,8 +43,8 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
   }
 
-  const bookmarkedRoot = computed<TreeNode>(() => {
-    const bookmarkNodes = bookmarks.value
+  const buildBookmarkTree = (bookmarks: string[]) => {
+    const bookmarkNodes = bookmarks
       .map((bookmark: string) => {
         if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
 
@@ -57,7 +61,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       })
       .filter((nodeDef) => nodeDef !== null)
     return buildNodeDefTree(bookmarkNodes)
-  })
+  }
 
   const addBookmark = (nodePath: string) => {
     settingStore.set('Comfy.NodeLibrary.Bookmarks', [

@@ -131,15 +131,14 @@ const nodePreviewStyle = ref<Record<string, string>>({
 })
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-const { isBookmarked, toggleBookmark, addNewBookmarkFolder, bookmarkedRoot } =
-  nodeBookmarkStore
+const { isBookmarked, toggleBookmark, addNewBookmarkFolder } = nodeBookmarkStore
 
 const allNodesRoot = computed<TreeNode>(() => {
   return {
     key: 'all-nodes',
     label: 'All Nodes',
     children: [
-      ...(bookmarkedRoot.children ?? []),
+      ...(nodeBookmarkStore.bookmarkedRoot.children ?? []),
       ...nodeDefStore.nodeTree.children
     ]
   }
