@@ -258,7 +258,11 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('delete'),
     icon: 'pi pi-trash',
-    command: () => console.log('delete')
+    command: () => {
+      if (menuTargetNode.value?.data) {
+        nodeBookmarkStore.deleteBookmarkFolder(menuTargetNode.value.data)
+      }
+    }
   },
   {
     label: t('rename'),

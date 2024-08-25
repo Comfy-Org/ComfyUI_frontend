@@ -71,7 +71,12 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   }
 
   const addNewBookmarkFolder = () => {
-    const newFolderPath = 'New Folder/'
+    let newFolderPath = 'New Folder/'
+    let suffix = 1
+    while (bookmarks.value.some((b: string) => b.startsWith(newFolderPath))) {
+      newFolderPath = `New Folder ${suffix}/`
+      suffix++
+    }
     addBookmark(newFolderPath)
   }
 
@@ -89,6 +94,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       .concat(newName)
       .join('/')
 
+    if (newCategory === folderNode.category) {
+      return
+    }
+
     if (bookmarks.value.some((b: string) => b.startsWith(newCategory))) {
       throw new Error(`Folder name "${newName}" already exists`)
     }
@@ -103,14 +112,28 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     )
   }
 
+  const deleteBookmarkFolder = (folderNode: ComfyNodeDefImpl) => {
+    if (!folderNode.isDummyFolder) {
+      throw new Error('Cannot delete non-folder node')
+    }
+    settingStore.set(
+      'Comfy.NodeLibrary.Bookmarks',
+      bookmarks.value.filter(
+        (b: string) =>
+          b !== folderNode.category && !b.startsWith(folderNode.category)
+      )
+    )
+  }
+
   return {
     bookmarks,
     bookmarkedNodes,
+    bookmarkedRoot,
     isBookmarked,
     toggleBookmark,
     addBookmark,
     addNewBookmarkFolder,
     renameBookmarkFolder,
-    bookmarkedRoot
+    deleteBookmarkFolder
   }
 })

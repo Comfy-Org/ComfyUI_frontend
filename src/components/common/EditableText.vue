@@ -11,6 +11,7 @@
       v-model:modelValue="inputValue"
       ref="inputRef"
       @keyup.enter="finishEditing"
+      @click.stop
       :pt="{
         root: {
           onBlur: finishEditing
