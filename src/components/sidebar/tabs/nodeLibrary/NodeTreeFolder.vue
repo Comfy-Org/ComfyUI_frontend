@@ -64,6 +64,7 @@ onMounted(() => {
       const dndData = event.source.data as CanvasDragAndDropData
       if (dndData.type === 'add-node') {
         addNodeToBookmarkFolder(dndData.data)
+        canDrop.value = false
       }
     },
     onDragEnter: (event) => {
