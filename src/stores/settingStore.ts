@@ -33,7 +33,9 @@ export const useSettingStore = defineStore('setting', {
   getters: {
     settingTree(): SettingTreeNode {
       const root = buildTree(
-        Object.values(this.settings),
+        Object.values(this.settings).filter(
+          (setting: SettingParams) => setting.type !== 'hidden'
+        ),
         (setting: SettingParams) => setting.category || setting.id.split('.')
       )
 
