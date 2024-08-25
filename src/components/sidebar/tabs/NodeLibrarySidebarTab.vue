@@ -51,10 +51,16 @@
           <NodeTreeFolder
             :node="node"
             :isBookmarkFolder="!!node.data && isBookmarked(node.data)"
-            :isRenaming="renameEditingNode?.key === node.key"
             @itemDropped="handleItemDropped"
-            @rename="handleRename"
-          />
+          >
+            <template #folder-label="{ node }">
+              <EditableText
+                :modelValue="node.label"
+                :isEditing="renameEditingNode?.key === node.key"
+                @edit="(newName: string) => handleRename(node, newName)"
+              />
+            </template>
+          </NodeTreeFolder>
         </template>
         <template #node="{ node }">
           <NodeTreeLeaf
@@ -94,6 +100,7 @@ import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
 import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
 import Tree from 'primevue/tree'
 import ContextMenu from 'primevue/contextmenu'
+import EditableText from '@/components/common/EditableText.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
