@@ -49,7 +49,7 @@
         <template #folder="{ node }">
           <NodeTreeFolder
             :node="node"
-            :isBookmarkFolder="node.data && isBookmarked(node.data)"
+            :isBookmarkFolder="!!node.data && isBookmarked(node.data)"
             @itemDropped="handleItemDropped"
           />
         </template>
@@ -78,10 +78,10 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import {
   buildNodeDefTree,
   ComfyNodeDefImpl,
-  createDummyFolderNodeDef,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
 import { computed, ref, nextTick } from 'vue'
@@ -123,67 +123,16 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
-// Bookmarks are in format of category/display_name. e.g. "comfy/conditioning/CLIPTextEncode"
-const bookmarks = computed(() =>
-  settingStore.get('Comfy.NodeLibrary.Bookmarks')
-)
-const bookmarkedNodes = computed(
-  () =>
-    new Set(
-      bookmarks.value.map((bookmark: string) => bookmark.split('/').pop())
-    )
-)
-const isBookmarked = (node: ComfyNodeDefImpl) =>
-  bookmarkedNodes.value.has(node.display_name)
-const toggleBookmark = (node: ComfyNodeDefImpl) => {
-  if (isBookmarked(node)) {
-    settingStore.set(
-      'Comfy.NodeLibrary.Bookmarks',
-      bookmarks.value.filter(
-        (b: string) =>
-          b !== node.display_name && !b.endsWith('/' + node.display_name)
-      )
-    )
-  } else {
-    settingStore.set('Comfy.NodeLibrary.Bookmarks', [
-      ...bookmarks.value,
-      node.display_name
-    ])
-  }
-}
-const addNewBookmarkFolder = () => {
-  const newFolderPath = 'New Folder/'
-  settingStore.set('Comfy.NodeLibrary.Bookmarks', [
-    ...bookmarks.value,
-    newFolderPath
-  ])
-}
-const bookmarkedRoot = computed<TreeNode>(() => {
-  const bookmarkNodes = bookmarks.value
-    .map((bookmark: string) => {
-      if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
-
-      const parts = bookmark.split('/')
-      const displayName = parts.pop()
-      const category = parts.join('/')
-      const srcNodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
-      if (!srcNodeDef) {
-        return null
-      }
-      const nodeDef = _.clone(srcNodeDef)
-      nodeDef.category = category
-      return nodeDef
-    })
-    .filter((nodeDef) => nodeDef !== null)
-  return buildNodeDefTree(bookmarkNodes)
-})
+const nodeBookmarkStore = useNodeBookmarkStore()
+const { isBookmarked, toggleBookmark, addNewBookmarkFolder, bookmarkedRoot } =
+  nodeBookmarkStore
 
 const allNodesRoot = computed<TreeNode>(() => {
   return {
     key: 'all-nodes',
     label: 'All Nodes',
     children: [
-      ...(bookmarkedRoot.value?.children ?? []),
+      ...(bookmarkedRoot.children ?? []),
       ...nodeDefStore.nodeTree.children
     ]
   }
