@@ -105,6 +105,12 @@ test.describe('Menu', () => {
       )
       // Verify the bookmark node with the same name is added to the tree.
       expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
+
+      // Hover on the bookmark node to display the preview
+      await comfyPage.page.hover('.node-tree-leaf.bookmark')
+      expect(await comfyPage.page.isVisible('.node-lib-node-preview')).toBe(
+        true
+      )
     })
 
     test('Ignores unrecognized node', async ({ comfyPage }) => {
