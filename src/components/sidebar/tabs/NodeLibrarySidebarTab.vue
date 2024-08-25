@@ -36,7 +36,9 @@
               handleNodeHover(event, props.node?.data?.name),
             onMouseleave: () => {
               hoveredComfyNodeName = null
-            }
+            },
+            onContextmenu: (e: MouseEvent) =>
+              handleContextMenu(props.node.data, e)
           }),
           nodeToggleButton: () => ({
             onClick: (e: MouseEvent) => {
@@ -74,6 +76,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
+  <ContextMenu ref="menu" :model="menuItems" />
 </template>
 
 <script setup lang="ts">
@@ -89,6 +92,7 @@ import type { TreeNode } from 'primevue/treenode'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
 import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
 import Tree from 'primevue/tree'
+import ContextMenu from 'primevue/contextmenu'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -97,7 +101,10 @@ import { app } from '@/scripts/app'
 import { sortedTree } from '@/utils/treeUtil'
 import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+import type { MenuItem } from 'primevue/menuitem'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const nodeDefStore = useNodeDefStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
@@ -232,6 +239,33 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
     toggleNodeOnEvent(e, node)
   } else {
     insertNode(node.data)
+  }
+}
+
+const menu = ref(null)
+const menuTargetNode = ref<ComfyNodeDefImpl | null>(null)
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('delete'),
+    icon: 'pi pi-trash',
+    command: () => console.log('delete')
+  },
+  {
+    label: t('rename'),
+    icon: 'pi pi-file-edit',
+    command: () => console.log('rename')
+  },
+  {
+    label: t('customize'),
+    icon: 'pi pi-palette',
+    command: () => console.log('customize')
+  }
+])
+
+const handleContextMenu = (node: ComfyNodeDefImpl, e: MouseEvent) => {
+  if (isBookmarked(node) && node.isDummyFolder) {
+    menuTargetNode.value = node
+    menu.value?.show(e)
   }
 }
 </script>

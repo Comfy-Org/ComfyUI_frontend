@@ -209,6 +209,10 @@ export class ComfyNodeDefImpl {
   get nodePath(): string {
     return (this.category ? this.category + '/' : '') + this.display_name
   }
+
+  get isDummyFolder(): boolean {
+    return this.name === ''
+  }
 }
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
