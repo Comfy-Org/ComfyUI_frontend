@@ -24,16 +24,16 @@
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
 import { nextTick, ref, watch } from 'vue'
-const props = defineProps({
-  modelValue: {
-    type: String,
-    required: true
-  },
-  isEditing: {
-    type: Boolean,
-    default: false
-  }
+
+interface EditableTextProps {
+  modelValue: string
+  isEditing?: boolean
+}
+
+const props = withDefaults(defineProps<EditableTextProps>(), {
+  isEditing: false
 })
+
 const emit = defineEmits(['update:modelValue', 'edit'])
 const inputValue = ref<string>(props.modelValue)
 const isEditingFinished = ref<boolean>(false)
@@ -70,9 +70,6 @@ const vFocus = {
 <style scoped>
 .editable-text {
   display: inline-block;
-  min-width: 50px;
-  padding: 2px;
-  cursor: pointer;
 }
 .editable-text input {
   width: 100%;

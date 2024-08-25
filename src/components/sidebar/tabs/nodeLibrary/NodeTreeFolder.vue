@@ -6,7 +6,13 @@
     ]"
     ref="container"
   >
-    <span class="folder-label">{{ props.node.label }}</span>
+    <span class="folder-label">
+      <EditableText
+        :modelValue="props.node.label"
+        :isEditing="isRenaming"
+        @edit="handleRename"
+      />
+    </span>
     <Badge
       :value="props.node.totalNodes"
       severity="secondary"
@@ -19,6 +25,7 @@
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { CanvasDragAndDropData } from '@/types/litegraphTypes'
+import EditableText from '@/components/common/EditableText.vue'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import Badge from 'primevue/badge'
 import type { TreeNode } from 'primevue/treenode'
@@ -27,11 +34,17 @@ import { onMounted, onUnmounted, ref } from 'vue'
 const props = defineProps<{
   node: TreeNode
   isBookmarkFolder: boolean
+  isRenaming: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'itemDropped', node: TreeNode): void
+  (e: 'rename', node: TreeNode, newName: string): void
 }>()
+
+const handleRename = (newName: string) => {
+  emit('rename', props.node, newName)
+}
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 

@@ -37,8 +37,7 @@
             onMouseleave: () => {
               hoveredComfyNodeName = null
             },
-            onContextmenu: (e: MouseEvent) =>
-              handleContextMenu(props.node.data, e)
+            onContextmenu: (e: MouseEvent) => handleContextMenu(props.node, e)
           }),
           nodeToggleButton: () => ({
             onClick: (e: MouseEvent) => {
@@ -52,7 +51,9 @@
           <NodeTreeFolder
             :node="node"
             :isBookmarkFolder="!!node.data && isBookmarked(node.data)"
+            :isRenaming="renameEditingNode?.key === node.key"
             @itemDropped="handleItemDropped"
+            @rename="handleRename"
           />
         </template>
         <template #node="{ node }">
@@ -242,7 +243,8 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
 }
 
 const menu = ref(null)
-const menuTargetNode = ref<ComfyNodeDefImpl | null>(null)
+const menuTargetNode = ref<TreeNode | null>(null)
+const renameEditingNode = ref<TreeNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('delete'),
@@ -252,7 +254,9 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('rename'),
     icon: 'pi pi-file-edit',
-    command: () => console.log('rename')
+    command: () => {
+      renameEditingNode.value = menuTargetNode.value
+    }
   },
   {
     label: t('customize'),
@@ -261,11 +265,17 @@ const menuItems = computed<MenuItem[]>(() => [
   }
 ])
 
-const handleContextMenu = (node: ComfyNodeDefImpl, e: MouseEvent) => {
-  if (isBookmarked(node) && node.isDummyFolder) {
+const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
+  const nodeDef = node.data as ComfyNodeDefImpl
+  if (isBookmarked(nodeDef) && nodeDef?.isDummyFolder) {
     menuTargetNode.value = node
     menu.value?.show(e)
   }
+}
+
+const handleRename = (node: TreeNode, newName: string) => {
+  console.log('rename', node, newName)
+  renameEditingNode.value = null
 }
 </script>
 
