@@ -53,7 +53,9 @@ watch(
       isEditingFinished.value = false
       nextTick(() => {
         if (!inputRef.value) return
-        const fileName = inputValue.value.split('.').slice(0, -1).join('.')
+        const fileName = inputValue.value.includes('.')
+          ? inputValue.value.split('.').slice(0, -1).join('.')
+          : inputValue.value
         const start = 0
         const end = fileName.length
         const inputElement = inputRef.value.$el
