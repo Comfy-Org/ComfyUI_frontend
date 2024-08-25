@@ -83,6 +83,7 @@ import Button from 'primevue/button'
 import {
   buildNodeDefTree,
   ComfyNodeDefImpl,
+  createDummyFolderNodeDef,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
 import { computed, ref, nextTick } from 'vue'
@@ -149,15 +150,17 @@ const toggleBookmark = (bookmark: string) => {
   }
 }
 const addNewBookmarkFolder = () => {
-  const newFolderName = 'New Folder/'
+  const newFolderPath = 'New Folder/'
   settingStore.set('Comfy.NodeLibrary.Bookmarks', [
     ...bookmarks.value,
-    newFolderName
+    newFolderPath
   ])
 }
 const bookmarkedRoot = computed<TreeNode>(() => {
   const bookmarkNodes = bookmarks.value
     .map((bookmark: string) => {
+      if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
+
       const parts = bookmark.split('/')
       const displayName = parts.pop()
       const category = parts.join('/')

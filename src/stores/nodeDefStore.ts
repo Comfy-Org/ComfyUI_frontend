@@ -250,6 +250,16 @@ export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
   ])
 }
 
+export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
+  return plainToClass(ComfyNodeDefImpl, {
+    name: '',
+    display_name: '',
+    category: folderPath,
+    python_module: 'nodes',
+    description: 'Dummy Folder Node (User should never see this string)'
+  })
+}
+
 interface State {
   nodeDefsByName: Record<string, ComfyNodeDefImpl>
   nodeDefsByDisplayName: Record<string, ComfyNodeDefImpl>
