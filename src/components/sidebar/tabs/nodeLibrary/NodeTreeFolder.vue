@@ -29,6 +29,10 @@ const props = defineProps<{
   isBookmarkFolder: boolean
 }>()
 
+const emit = defineEmits<{
+  (e: 'itemDropped', node: TreeNode): void
+}>()
+
 const settingStore = useSettingStore()
 // Bookmarks are in format of category/display_name. e.g. "comfy/conditioning/CLIPTextEncode"
 const bookmarks = computed(() =>
@@ -65,6 +69,7 @@ onMounted(() => {
       if (dndData.type === 'add-node') {
         addNodeToBookmarkFolder(dndData.data)
         canDrop.value = false
+        emit('itemDropped', props.node)
       }
     },
     onDragEnter: (event) => {

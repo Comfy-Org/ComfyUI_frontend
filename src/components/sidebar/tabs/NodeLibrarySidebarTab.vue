@@ -50,6 +50,7 @@
           <NodeTreeFolder
             :node="node"
             :isBookmarkFolder="node.data && isBookmarked(node.data)"
+            @itemDropped="handleItemDropped"
           />
         </template>
         <template #node="{ node }">
@@ -250,6 +251,10 @@ const handleNodeHover = async (
   } else {
     nodePreviewStyle.value.left = `${targetRect.left - 400}px`
   }
+}
+
+const handleItemDropped = (node: TreeNode) => {
+  expandedKeys.value[node.key] = true
 }
 
 const insertNode = (nodeDef: ComfyNodeDefImpl) => {
