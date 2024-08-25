@@ -83,6 +83,18 @@ watchEffect(() => {
   )
 })
 
+watchEffect(() => {
+  const spellcheckEnabled = settingStore.get('Comfy.TextareaWidget.Spellcheck')
+  const textareas = document.querySelectorAll('textarea.comfy-multiline-input')
+
+  textareas.forEach((textarea: HTMLTextAreaElement) => {
+    textarea.spellcheck = spellcheckEnabled
+    // Force recheck to ensure visual update
+    textarea.focus()
+    textarea.blur()
+  })
+})
+
 let dropTargetCleanup = () => {}
 
 onMounted(async () => {

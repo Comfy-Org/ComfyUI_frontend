@@ -3,6 +3,7 @@ import './domWidget'
 import type { ComfyApp } from './app'
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import { ComfyNodeDef } from '@/types/apiTypes'
+import { useSettingStore } from '@/stores/settingStore'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -312,12 +313,16 @@ function createIntWidget(
   }
 }
 
-function addMultilineWidget(node, name, opts, app) {
+function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.value = opts.defaultVal
   inputEl.placeholder = opts.placeholder || name
-  inputEl.spellcheck = opts.spellcheck || false
+  if (app.vueAppReady) {
+    inputEl.spellcheck = useSettingStore().get(
+      'Comfy.TextareaWidget.Spellcheck'
+    )
+  }
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue() {

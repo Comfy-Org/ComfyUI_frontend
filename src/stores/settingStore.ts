@@ -135,6 +135,14 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.TextareaWidget.Spellcheck',
+        category: ['Comfy', 'Node Widget', 'TextareaWidget', 'Spellcheck'],
+        name: 'Textarea widget spellcheck',
+        type: 'boolean',
+        defaultValue: false
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.Workflow.SortNodeIdOnSave',
         name: 'Sort node IDs when saving workflow',
         type: 'boolean',
