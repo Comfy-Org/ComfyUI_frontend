@@ -24,10 +24,7 @@
         :pt="{
           nodeLabel: 'node-lib-tree-node-label',
           nodeContent: ({ props }) => ({
-            onClick: (e: MouseEvent) => onNodeContentClick(e, props.node)
-          }),
-          nodeChildren: ({ props }) => ({
-            'data-comfy-node-name': props.node?.data?.name,
+            onClick: (e: MouseEvent) => onNodeContentClick(e, props.node),
             onMouseenter: (event: MouseEvent) =>
               handleNodeHover(event, props.node?.data?.name),
             onMouseleave: () => {

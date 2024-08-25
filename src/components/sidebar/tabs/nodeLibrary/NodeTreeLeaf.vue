@@ -1,5 +1,5 @@
 <template>
-  <div class="node-tree-leaf" ref="container">
+  <div :class="['node-tree-leaf', { bookmark: isBookmarked }]" ref="container">
     <div class="node-content">
       <Tag
         v-if="node.experimental"
