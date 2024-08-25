@@ -11432,8 +11432,9 @@ LGraphNode.prototype.executeAction = function(action)
 
         setTimeout(function() {
             input.focus();
+            const clickTime = Date.now();
             function handleOutsideClick(e) {
-                if (e.target === canvas) {
+                if (e.target === canvas && Date.now() - clickTime > 256) {
                     dialog.close();
                     canvas.parentNode.removeEventListener("click", handleOutsideClick);
                     canvas.parentNode.removeEventListener("touchend", handleOutsideClick);
