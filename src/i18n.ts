@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    error: 'Error',
     findIssues: 'Find Issues',
     copyToClipboard: 'Copy to Clipboard',
     openNewIssue: 'Open New Issue',
@@ -38,6 +39,7 @@ const messages = {
     }
   },
   zh: {
+    error: '错误',
     showReport: '显示报告',
     imageFailedToLoad: '图像加载失败',
     reconnecting: '重新连接中',

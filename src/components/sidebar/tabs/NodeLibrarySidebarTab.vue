@@ -111,8 +111,10 @@ import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
 
 const { t } = useI18n()
+const toast = useToast()
 const nodeDefStore = useNodeDefStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
@@ -282,7 +284,16 @@ const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
 
 const handleRename = (node: TreeNode, newName: string) => {
   if (node.data && node.data.isDummyFolder) {
-    nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+    try {
+      nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+    } catch (e) {
+      toast.add({
+        severity: 'error',
+        summary: t('error'),
+        detail: e.message,
+        life: 3000
+      })
+    }
   }
   renameEditingNode.value = null
 }

@@ -80,8 +80,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     newName: string
   ) => {
     if (!folderNode.isDummyFolder) {
-      console.error('Cannot rename non-folder node')
-      return
+      throw new Error('Cannot rename non-folder node')
     }
 
     const newCategory = folderNode.category
@@ -89,6 +88,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       .slice(0, -1)
       .concat(newName)
       .join('/')
+
+    if (bookmarks.value.some((b: string) => b.startsWith(newCategory))) {
+      throw new Error(`Folder name "${newName}" already exists`)
+    }
 
     settingStore.set(
       'Comfy.NodeLibrary.Bookmarks',
