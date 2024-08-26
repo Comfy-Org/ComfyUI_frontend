@@ -413,6 +413,27 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async ctrlZ() {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.press('KeyZ')
+    await this.page.keyboard.up('Control')
+    await this.nextFrame()
+  }
+
+  async ctrlArrowUp() {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.press('ArrowUp')
+    await this.page.keyboard.up('Control')
+    await this.nextFrame()
+  }
+
+  async ctrlArrowDown() {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.press('ArrowDown')
+    await this.page.keyboard.up('Control')
+    await this.nextFrame()
+  }
+
   async closeMenu() {
     await this.page.click('button.comfy-close-menu-btn')
     await this.nextFrame()

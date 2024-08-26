@@ -217,3 +217,28 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
   })
 })
+
+test.describe('Widget Interaction', () => {
+  test('Undo text input', async ({ comfyPage }) => {
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('')
+    await expect(textBox).toHaveValue('')
+    await textBox.fill('Hello World')
+    await expect(textBox).toHaveValue('Hello World')
+    await comfyPage.ctrlZ()
+    await expect(textBox).toHaveValue('')
+  })
+
+  test('Undo attention edit', async ({ comfyPage }) => {
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('1girl')
+    await expect(textBox).toHaveValue('1girl')
+    await textBox.selectText()
+    await comfyPage.ctrlArrowUp()
+    await expect(textBox).toHaveValue('(1girl:1.1)')
+    await comfyPage.ctrlZ()
+    await expect(textBox).toHaveValue('1girl')
+  })
+})
