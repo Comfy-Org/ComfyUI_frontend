@@ -12,7 +12,7 @@
           <template #option="slotProps">
             <i
               :class="['pi', slotProps.option.value, 'mr-2']"
-              :style="{ color: selectedColor }"
+              :style="{ color: selectedColor.value }"
             ></i>
           </template>
         </SelectButton>
@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
@@ -72,8 +72,8 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const props = defineProps<{
   modelValue: boolean
-  currentIcon?: string
-  currentColor?: string
+  initialIcon?: string
+  initialColor?: string
 }>()
 
 const emit = defineEmits<{
@@ -87,12 +87,6 @@ const visible = computed({
 })
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-const selectedIcon = ref(
-  props.currentIcon || nodeBookmarkStore.defaultBookmarkIcon
-)
-const selectedColor = ref(
-  props.currentColor || nodeBookmarkStore.defaultBookmarkColor
-)
 
 const iconOptions = [
   { name: 'Bookmark', value: nodeBookmarkStore.defaultBookmarkIcon },
@@ -116,19 +110,43 @@ const colorOptions = [
   { name: 'Yellow', value: '#ffc107' }
 ]
 
+const defaultIcon = iconOptions.find(
+  (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
+)
+const defaultColor = colorOptions.find(
+  (option) => option.value === nodeBookmarkStore.defaultBookmarkColor
+)
+
+const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
+const selectedColor = ref<{ name: string; value: string }>(defaultColor)
+
 const closeDialog = () => {
   visible.value = false
 }
 
 const confirmCustomization = () => {
-  emit('confirm', selectedIcon.value, selectedColor.value)
+  emit('confirm', selectedIcon.value.value, selectedColor.value.value)
   closeDialog()
 }
 
 const resetCustomization = () => {
-  selectedIcon.value = nodeBookmarkStore.defaultBookmarkIcon
-  selectedColor.value = nodeBookmarkStore.defaultBookmarkColor
+  selectedIcon.value = iconOptions.find(
+    (option) => option.value === (props.initialIcon || defaultIcon?.value)
+  )
+  selectedColor.value = colorOptions.find(
+    (option) => option.value === (props.initialColor || defaultColor?.value)
+  )
 }
+
+watch(
+  () => props.modelValue,
+  (newValue: boolean) => {
+    if (newValue) {
+      resetCustomization()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
