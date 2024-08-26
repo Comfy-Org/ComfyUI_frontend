@@ -145,13 +145,19 @@ export abstract class NodeFilter<FilterOptionT = string> {
 
   public abstract getNodeOptions(node: ComfyNodeDefImpl): FilterOptionT[]
 
-  public matches(node: ComfyNodeDefImpl, value: FilterOptionT): boolean {
-    if (value === '*') {
+  public matches(
+    node: ComfyNodeDefImpl,
+    value: FilterOptionT,
+    searchOptions?: FuseSearchOptions
+  ): boolean {
+    const checkWildcard = searchOptions?.supportWildcard !== false
+    if (checkWildcard && value === '*') {
       return true
     }
     const options = this.getNodeOptions(node)
     return (
-      options.includes(value) || _.some(options, (option) => option === '*')
+      options.includes(value) ||
+      (checkWildcard && _.some(options, (option) => option === '*'))
     )
   }
 }
@@ -249,7 +255,7 @@ export class NodeSearchService {
     const results = matchedNodes.filter((node) => {
       return _.every(filters, (filterAndValue) => {
         const [filter, value] = filterAndValue
-        return filter.matches(node, value)
+        return filter.matches(node, value, options)
       })
     })
 

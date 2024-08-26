@@ -7,7 +7,22 @@
         v-if="hoveredSuggestion"
       />
     </div>
-    <NodeSearchFilter @addFilter="onAddFilter" />
+
+    <Button
+      icon="pi pi-filter"
+      severity="secondary"
+      class="_filter-button"
+      @click="nodeSearchFilterVisible = true"
+    />
+    <Dialog v-model:visible="nodeSearchFilterVisible" class="_dialog">
+      <template #header>
+        <h3>Add node filter condition</h3>
+      </template>
+      <div class="_dialog-body">
+        <NodeSearchFilter @addFilter="onAddFilter"></NodeSearchFilter>
+      </div>
+    </Dialog>
+
     <AutoCompletePlus
       :model-value="props.filters"
       class="comfy-vue-node-search-box"
@@ -56,12 +71,12 @@
       </template>
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
-        <Chip removable @remove="onRemoveFilter($event, value)">
-          <Badge size="small" :class="value[0].invokeSequence + '-badge'">
-            {{ value[0].invokeSequence.toUpperCase() }}
-          </Badge>
-          {{ value[1] }}
-        </Chip>
+        <SearchFilterChip
+          @remove="onRemoveFilter($event, value)"
+          :text="value[1]"
+          :badge="value[0].invokeSequence.toUpperCase()"
+          :badge-class="value[0].invokeSequence + '-badge'"
+        />
       </template>
     </AutoCompletePlus>
   </div>
@@ -70,9 +85,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
-import Chip from 'primevue/chip'
-import Badge from 'primevue/badge'
 import Tag from 'primevue/tag'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
@@ -80,6 +95,7 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useI18n } from 'vue-i18n'
+import SearchFilterChip from '../common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
@@ -101,6 +117,7 @@ const props = defineProps({
   }
 })
 
+const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
@@ -136,6 +153,7 @@ const reFocusInput = () => {
 
 onMounted(reFocusInput)
 const onAddFilter = (filterAndValue: FilterAndValue) => {
+  nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
   reFocusInput()
 }
@@ -188,22 +206,6 @@ const setHoverSuggestion = (index: number) => {
   white-space: nowrap;
 }
 
-.i-badge {
-  @apply bg-green-500 text-white;
-}
-
-.o-badge {
-  @apply bg-red-500 text-white;
-}
-
-.c-badge {
-  @apply bg-blue-500 text-white;
-}
-
-.s-badge {
-  @apply bg-yellow-500;
-}
-
 :deep(.highlight) {
   background-color: var(--p-primary-color);
   color: var(--p-primary-contrast-color);
@@ -211,5 +213,13 @@ const setHoverSuggestion = (index: number) => {
   border-radius: 0.25rem;
   padding: 0rem 0.125rem;
   margin: -0.125rem 0.125rem;
+}
+
+._filter-button {
+  z-index: 10;
+}
+
+._dialog {
+  @apply min-w-96;
 }
 </style>
