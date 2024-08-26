@@ -345,11 +345,11 @@ const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
  * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
  * we can create a visual indicator for the drop target without affecting the layout of other elements.
  */
-:deep(.p-tree-node:has(.node-tree-folder)) {
+:deep(.p-tree-node-content:has(.node-tree-folder)) {
   position: relative;
 }
 
-:deep(.p-tree-node:has(.node-tree-folder.can-drop))::after {
+:deep(.p-tree-node-content:has(.node-tree-folder.can-drop))::after {
   content: '';
   position: absolute;
   top: 0;

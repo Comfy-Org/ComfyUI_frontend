@@ -61,7 +61,7 @@ onMounted(() => {
   if (!props.isBookmarkFolder) return
 
   const treeNodeElement = container.value?.closest(
-    '.p-tree-node'
+    '.p-tree-node-content'
   ) as HTMLElement
   dropTargetCleanup = dropTargetForElements({
     element: treeNodeElement,
