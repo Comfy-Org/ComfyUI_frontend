@@ -260,6 +260,7 @@ interface State {
   pendingTasks: TaskItemImpl[]
   historyTasks: TaskItemImpl[]
   maxHistoryItems: number
+  loadingHistory: boolean
 }
 
 export const useQueueStore = defineStore('queue', {
@@ -267,7 +268,8 @@ export const useQueueStore = defineStore('queue', {
     runningTasks: [],
     pendingTasks: [],
     historyTasks: [],
-    maxHistoryItems: 64
+    maxHistoryItems: 64,
+    loadingHistory: false
   }),
   getters: {
     tasks(state) {
@@ -287,43 +289,48 @@ export const useQueueStore = defineStore('queue', {
   actions: {
     // Fetch the queue data from the API
     async update() {
-      const [queue, history] = await Promise.all([
-        api.getQueue(),
-        api.getHistory(this.maxHistoryItems)
-      ])
+      this.loadingHistory = true
+      try {
+        const [queue, history] = await Promise.all([
+          api.getQueue(),
+          api.getHistory(this.maxHistoryItems)
+        ])
 
-      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-        tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                task['status'],
-                task['outputs'] || {}
-              )
-          )
-          // Desc order to show the latest tasks first
-          .sort((a, b) => b.queueIndex - a.queueIndex)
+        const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
+          tasks
+            .map(
+              (task: TaskItem) =>
+                new TaskItemImpl(
+                  task.taskType,
+                  task.prompt,
+                  task['status'],
+                  task['outputs'] || {}
+                )
+            )
+            // Desc order to show the latest tasks first
+            .sort((a, b) => b.queueIndex - a.queueIndex)
 
-      this.runningTasks = toClassAll(queue.Running)
-      this.pendingTasks = toClassAll(queue.Pending)
+        this.runningTasks = toClassAll(queue.Running)
+        this.pendingTasks = toClassAll(queue.Pending)
 
-      // Process history items
-      const allIndex = new Set(
-        history.History.map((item: TaskItem) => item.prompt[0])
-      )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt[0] > this.lastHistoryQueueIndex
+        // Process history items
+        const allIndex = new Set(
+          history.History.map((item: TaskItem) => item.prompt[0])
         )
-      )
-      const existingHistoryItems = this.historyTasks.filter(
-        (item: TaskItemImpl) => allIndex.has(item.queueIndex)
-      )
-      this.historyTasks = [...newHistoryItems, ...existingHistoryItems]
-        .slice(0, this.maxHistoryItems)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
+        const newHistoryItems = toClassAll(
+          history.History.filter(
+            (item) => item.prompt[0] > this.lastHistoryQueueIndex
+          )
+        )
+        const existingHistoryItems = this.historyTasks.filter(
+          (item: TaskItemImpl) => allIndex.has(item.queueIndex)
+        )
+        this.historyTasks = [...newHistoryItems, ...existingHistoryItems]
+          .slice(0, this.maxHistoryItems)
+          .sort((a, b) => b.queueIndex - a.queueIndex)
+      } finally {
+        this.loadingHistory = false
+      }
     },
     async clear() {
       await Promise.all(

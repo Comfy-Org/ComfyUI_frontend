@@ -59,6 +59,11 @@
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
       </div>
+      <div v-else-if="queueStore.loadingHistory">
+        <ProgressSpinner
+          style="width: 50px; left: 50%; transform: translateX(-50%)"
+        />
+      </div>
       <div v-else>
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
@@ -86,6 +91,7 @@ import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
+import ProgressSpinner from 'primevue/progressspinner'
 import TaskItem from './queue/TaskItem.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
