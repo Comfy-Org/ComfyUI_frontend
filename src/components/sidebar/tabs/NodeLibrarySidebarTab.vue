@@ -280,12 +280,13 @@ const menuItems = computed<MenuItem[]>(() => [
     command: () => {
       renameEditingNode.value = menuTargetNode.value
     }
-  },
-  {
-    label: t('customize'),
-    icon: 'pi pi-palette',
-    command: () => console.log('customize')
   }
+  // TODO: Add customize color and icon feature.
+  // {
+  //   label: t('customize'),
+  //   icon: 'pi pi-palette',
+  //   command: () => console.log('customize')
+  // }
 ])
 
 const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
