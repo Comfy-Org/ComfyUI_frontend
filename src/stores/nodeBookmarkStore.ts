@@ -30,6 +30,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const toggleBookmark = (node: ComfyNodeDefImpl) => {
     if (isBookmarked(node)) {
       deleteBookmark(node.nodePath)
+      // Delete the bookmark at the top level if it exists
+      // This is used for clicking the bookmark button in the node library, i.e.
+      // the node is inside original/standard node library tree node
+      deleteBookmark(node.display_name)
     } else {
       addBookmark(node.display_name)
     }

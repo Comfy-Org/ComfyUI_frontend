@@ -206,13 +206,31 @@ test.describe('Menu', () => {
       )
     })
 
-    test('Can unbookmark node', async ({ comfyPage }) => {
+    test('Can unbookmark node (Top level bookmark)', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
         'KSampler (Advanced)'
       ])
       const tab = comfyPage.menu.nodeLibraryTab
       await tab
         .getNode('KSampler (Advanced)')
+        .locator('.bookmark-button')
+        .click()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        []
+      )
+    })
+
+    test('Can unbookmark node (Library node bookmark)', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
+        'KSampler (Advanced)'
+      ])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('sampling').click()
+      await comfyPage.page
+        .locator(tab.nodeSelector('KSampler (Advanced)'))
+        .nth(1)
         .locator('.bookmark-button')
         .click()
       expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
