@@ -2,6 +2,7 @@
   <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
       <Button
+        class="new-folder-button"
         icon="pi pi-folder-plus"
         text
         severity="secondary"
@@ -9,6 +10,7 @@
         v-tooltip="$t('newFolder')"
       />
       <Button
+        class="sort-button"
         :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
         text
         severity="secondary"

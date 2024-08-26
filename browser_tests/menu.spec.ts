@@ -60,10 +60,15 @@ test.describe('Menu', () => {
   })
 
   test.describe('Node library sidebar', () => {
-    test('Node preview and drag to canvas', async ({ comfyPage }) => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
       // Open the sidebar
       const tab = comfyPage.menu.nodeLibraryTab
       await tab.open()
+    })
+
+    test('Node preview and drag to canvas', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.nodeLibraryTab
       await tab.getFolder('sampling').click()
 
       // Hover over a node to display the preview
@@ -86,11 +91,7 @@ test.describe('Menu', () => {
     })
 
     test('Bookmark node', async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
-
-      // Open the sidebar
       const tab = comfyPage.menu.nodeLibraryTab
-      await tab.open()
       await tab.getFolder('sampling').click()
 
       // Bookmark the node
@@ -116,13 +117,107 @@ test.describe('Menu', () => {
     test('Ignores unrecognized node', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo'])
 
-      // Open the sidebar
       const tab = comfyPage.menu.nodeLibraryTab
-      await tab.open()
-
       expect(await tab.getFolder('sampling').count()).toBe(1)
       expect(await tab.getNode('foo').count()).toBe(0)
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
+    })
+
+    test('Displays empty bookmarks folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      expect(await tab.getFolder('foo').count()).toBe(1)
+    })
+
+    test('Can add new bookmark folder', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.newFolderButton.click()
+      await comfyPage.page.keyboard.press('Enter')
+      expect(await tab.getFolder('New Folder').count()).toBe(1)
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['New Folder/']
+      )
+    })
+
+    test('Can add nested bookmark folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('New Folder').click()
+      await comfyPage.page.keyboard.press('Enter')
+
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['foo/', 'foo/New Folder/']
+      )
+    })
+
+    test('Can delete bookmark folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Delete').click()
+
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        []
+      )
+    })
+
+    test('Can rename bookmark folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Rename').click()
+      await comfyPage.page.keyboard.insertText('bar')
+      await comfyPage.page.keyboard.press('Enter')
+
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['bar/']
+      )
+    })
+
+    test('Can add bookmark by dragging node to bookmark folder', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('sampling').click()
+      await comfyPage.page.dragAndDrop(
+        tab.nodeSelector('KSampler (Advanced)'),
+        tab.folderSelector('foo')
+      )
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['foo/', 'foo/KSampler (Advanced)']
+      )
+    })
+
+    test('Can add bookmark by clicking bookmark button', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('sampling').click()
+      await tab
+        .getNode('KSampler (Advanced)')
+        .locator('.bookmark-button')
+        .click()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['KSampler (Advanced)']
+      )
+    })
+
+    test('Can unbookmark node', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
+        'KSampler (Advanced)'
+      ])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab
+        .getNode('KSampler (Advanced)')
+        .locator('.bookmark-button')
+        .click()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        []
+      )
     })
   })
 

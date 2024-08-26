@@ -65,6 +65,14 @@ class NodeLibrarySidebarTab {
     return this.page.locator('.node-lib-node-preview')
   }
 
+  get tabContainer() {
+    return this.page.locator('.sidebar-content-container')
+  }
+
+  get newFolderButton() {
+    return this.tabContainer.locator('.new-folder-button')
+  }
+
   async open() {
     if (await this.selectedTabButton.isVisible()) {
       return
@@ -74,16 +82,20 @@ class NodeLibrarySidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
+  folderSelector(folderName: string) {
+    return `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.folder-label:has-text("${folderName}")))`
+  }
+
   getFolder(folderName: string) {
-    return this.page.locator(
-      `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.folder-label:has-text("${folderName}")))`
-    )
+    return this.page.locator(this.folderSelector(folderName))
+  }
+
+  nodeSelector(nodeName: string) {
+    return `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.node-label:has-text("${nodeName}")))`
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(
-      `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.node-label:has-text("${nodeName}")))`
-    )
+    return this.page.locator(this.nodeSelector(nodeName))
   }
 }
 
