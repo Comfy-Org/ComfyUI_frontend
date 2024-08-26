@@ -15,29 +15,21 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     settingStore.get('Comfy.NodeLibrary.Bookmarks')
   )
 
-  const bookmarkedNodes = computed<Set<string>>(
-    () =>
-      new Set(
-        bookmarks.value.map((bookmark: string) => bookmark.split('/').pop())
-      )
-  )
+  const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
 
   const bookmarkedRoot = computed<TreeNode>(() =>
     buildBookmarkTree(bookmarks.value)
   )
 
+  // For a node in custom bookmark folders, check if its nodePath is in bookmarksSet
+  // For a node in the nodeDefStore, check if its name is bookmarked at top level
   const isBookmarked = (node: ComfyNodeDefImpl) =>
-    bookmarkedNodes.value.has(node.display_name)
+    bookmarksSet.value.has(node.nodePath) ||
+    bookmarksSet.value.has(node.display_name)
 
   const toggleBookmark = (node: ComfyNodeDefImpl) => {
     if (isBookmarked(node)) {
-      settingStore.set(
-        'Comfy.NodeLibrary.Bookmarks',
-        bookmarks.value.filter(
-          (b: string) =>
-            b !== node.display_name && !b.endsWith('/' + node.display_name)
-        )
-      )
+      deleteBookmark(node.nodePath)
     } else {
       addBookmark(node.display_name)
     }
@@ -68,6 +60,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       ...bookmarks.value,
       nodePath
     ])
+  }
+
+  const deleteBookmark = (nodePath: string) => {
+    settingStore.set(
+      'Comfy.NodeLibrary.Bookmarks',
+      bookmarks.value.filter((b: string) => b !== nodePath)
+    )
   }
 
   const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
@@ -127,7 +126,6 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   return {
     bookmarks,
-    bookmarkedNodes,
     bookmarkedRoot,
     isBookmarked,
     toggleBookmark,

@@ -44,6 +44,10 @@ const addNodeToBookmarkFolder = (node: ComfyNodeDefImpl) => {
     console.error('Bookmark folder does not have data!')
     return
   }
+  if (nodeBookmarkStore.isBookmarked(node)) {
+    nodeBookmarkStore.toggleBookmark(node)
+  }
+
   const folderNodeDef = props.node.data as ComfyNodeDefImpl
   const nodePath = folderNodeDef.category + '/' + node.display_name
   nodeBookmarkStore.addBookmark(nodePath)

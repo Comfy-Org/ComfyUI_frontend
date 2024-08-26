@@ -50,7 +50,7 @@
         <template #folder="{ node }">
           <NodeTreeFolder
             :node="node"
-            :isBookmarkFolder="!!node.data && isBookmarked(node.data)"
+            :isBookmarkFolder="!!node.data && node.data.isDummyFolder"
             @itemDropped="handleItemDropped"
           >
             <template #folder-label="{ node }">
@@ -65,8 +65,8 @@
         <template #node="{ node }">
           <NodeTreeLeaf
             :node="node.data"
-            :isBookmarked="isBookmarked(node.data)"
-            @toggleBookmark="toggleBookmark(node.data)"
+            :isBookmarked="nodeBookmarkStore.isBookmarked(node.data)"
+            @toggleBookmark="nodeBookmarkStore.toggleBookmark(node.data)"
           />
         </template>
       </Tree>
@@ -141,7 +141,6 @@ const nodePreviewStyle = ref<Record<string, string>>({
 })
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-const { isBookmarked, toggleBookmark } = nodeBookmarkStore
 
 const allNodesRoot = computed<TreeNode>(() => {
   return {
@@ -169,7 +168,7 @@ const getTreeNodeIcon = (node: TreeNode) => {
   }
 
   // If the node is a bookmark folder, show a bookmark icon
-  if (node.data && isBookmarked(node.data)) {
+  if (node.data && node.data.isDummyFolder) {
     return 'pi pi-bookmark-fill'
   }
 
@@ -289,7 +288,7 @@ const menuItems = computed<MenuItem[]>(() => [
 
 const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
   const nodeDef = node.data as ComfyNodeDefImpl
-  if (isBookmarked(nodeDef) && nodeDef?.isDummyFolder) {
+  if (nodeDef?.isDummyFolder) {
     menuTargetNode.value = node
     menu.value?.show(e)
   }
