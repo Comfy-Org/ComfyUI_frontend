@@ -143,7 +143,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     })
   }
 
-  const defaultBookmarkIcon = 'pi-bookmark'
+  const defaultBookmarkIcon = 'pi-bookmark-fill'
   const defaultBookmarkColor = '#a1a1aa'
 
   return {
