@@ -54,6 +54,8 @@ export class ConnectingLinkImpl implements ConnectingLink {
   connectTo(newNode: LGraphNode) {
     const newNodeSlots =
       this.releaseSlotType === 'output' ? newNode.outputs : newNode.inputs
+    if (!newNodeSlots) return
+
     const newNodeSlot = newNodeSlots.findIndex(
       (slot: INodeSlot) =>
         slot.type === this.type || slot.type === '*' || this.type === '*'
