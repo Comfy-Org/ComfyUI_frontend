@@ -231,13 +231,14 @@ test.describe('Widget Interaction', () => {
   })
 
   test('Undo attention edit', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.EditAttention.Delta', 0.05)
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
     await textBox.fill('1girl')
     await expect(textBox).toHaveValue('1girl')
     await textBox.selectText()
     await comfyPage.ctrlArrowUp()
-    await expect(textBox).toHaveValue('(1girl:1.1)')
+    await expect(textBox).toHaveValue('(1girl:1.05)')
     await comfyPage.ctrlZ()
     await expect(textBox).toHaveValue('1girl')
   })
