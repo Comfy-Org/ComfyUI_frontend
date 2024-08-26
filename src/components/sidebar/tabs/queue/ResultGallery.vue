@@ -13,7 +13,12 @@
     :showThumbnails="false"
   >
     <template #item="{ item }">
-      <ComfyImage :key="item.url" :src="item.url" class="galleria-image" />
+      <ComfyImage
+        :key="item.url"
+        :src="item.url"
+        :contain="false"
+        class="galleria-image"
+      />
     </template>
   </Galleria>
 </template>

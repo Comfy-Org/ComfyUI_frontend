@@ -219,6 +219,14 @@ export const useSettingStore = defineStore('setting', {
         type: 'hidden',
         defaultValue: {}
       })
+
+      // Hidden setting used by the queue for how to fit images
+      app.ui.settings.addSetting({
+        id: 'Comfy.Queue.ImageFit',
+        name: 'Queue image fit',
+        type: 'hidden',
+        defaultValue: 'cover'
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

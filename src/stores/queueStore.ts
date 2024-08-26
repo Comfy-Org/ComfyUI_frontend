@@ -9,7 +9,7 @@ import type {
   TaskOutput,
   ResultItem
 } from '@/types/apiTypes'
-import type { NodeId } from '@/types/comfyWorkflow'
+import type { ComfyNode, NodeId } from '@/types/comfyWorkflow'
 import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
@@ -218,6 +218,13 @@ export class TaskItemImpl {
     if (this.outputs) {
       app.nodeOutputs = toRaw(this.outputs)
     }
+  }
+
+  public goToNode(node: ComfyNode | string | number) {
+    const id = typeof node === 'object' ? node.id : node
+    const graphNode = app.graph.getNodeById(id as number)
+    if (!graphNode) return
+    app.canvas.centerOnNode(graphNode)
   }
 
   public flatten(): TaskItemImpl[] {

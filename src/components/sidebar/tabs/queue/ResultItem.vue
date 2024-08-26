@@ -3,6 +3,11 @@
     <template
       v-if="result.mediaType === 'images' || result.mediaType === 'gifs'"
     >
+      <ComfyImage
+        :src="result.url"
+        class="task-output-image"
+        :contain="imageFit === 'contain'"
+      />
       <div class="image-preview-mask">
         <Button
           icon="pi pi-eye"
@@ -11,7 +16,6 @@
           rounded
         />
       </div>
-      <ComfyImage :src="result.url" class="task-output-image" />
     </template>
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
@@ -25,7 +29,8 @@
 import { ResultItemImpl } from '@/stores/queueStore'
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from 'primevue/button'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useSettingStore } from '@/stores/settingStore'
 
 const props = defineProps<{
   result: ResultItemImpl
@@ -36,6 +41,10 @@ const emit = defineEmits<{
 }>()
 
 const resultContainer = ref<HTMLElement | null>(null)
+const settingStore = useSettingStore()
+const imageFit = computed<string>(() =>
+  settingStore.get('Comfy.Queue.ImageFit')
+)
 
 onMounted(() => {
   if (props.result.mediaType === 'images') {
@@ -58,13 +67,6 @@ onMounted(() => {
   align-items: center;
 }
 
-:deep(.task-output-image) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
 .image-preview-mask {
   position: absolute;
   left: 50%;
@@ -75,6 +77,7 @@ onMounted(() => {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
+  z-index: 1;
 }
 
 .result-container:hover .image-preview-mask {
