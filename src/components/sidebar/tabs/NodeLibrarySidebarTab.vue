@@ -30,7 +30,7 @@
         :filters
       />
 
-      <Popover ref="searchFilter">
+      <Popover ref="searchFilter" class="node-lib-filter-popup">
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
 
@@ -339,7 +339,6 @@ const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
 }
 
 const onAddFilter = (filterAndValue: FilterAndValue) => {
-  searchFilter.value.hide()
   filters.value.push({
     filter: filterAndValue,
     badge: filterAndValue[0].invokeSequence.toUpperCase(),
@@ -366,6 +365,10 @@ const onRemoveFilter = (filterAndValue) => {
   align-items: center;
   margin-left: var(--p-tree-node-gap);
   flex-grow: 1;
+}
+
+.node-lib-filter-popup {
+  margin-left: -13px;
 }
 </style>
 
