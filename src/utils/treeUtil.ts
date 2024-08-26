@@ -17,7 +17,12 @@ export function buildTree<T>(
   for (const item of items) {
     const keys = typeof key === 'string' ? item[key] : key(item)
     let parent = root
-    for (const k of keys) {
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i]
+      // 'a/b/c/' represents an empty folder 'c' in folder 'b' in folder 'a'
+      // 'a/b/c/' is split into ['a', 'b', 'c', '']
+      if (k === '' && i === keys.length - 1) break
+
       const id = parent.key + '/' + k
       if (!map[id]) {
         const node: TreeNode = {
@@ -31,7 +36,7 @@ export function buildTree<T>(
       }
       parent = map[id]
     }
-    parent.leaf = true
+    parent.leaf = keys[keys.length - 1] !== ''
     parent.data = item
   }
   return root
@@ -67,4 +72,20 @@ export function sortedTree(node: TreeNode): TreeNode {
   }
 
   return newNode
+}
+
+export const findNodeByKey = (root: TreeNode, key: string): TreeNode | null => {
+  if (root.key === key) {
+    return root
+  }
+  if (!root.children) {
+    return null
+  }
+  for (const child of root.children) {
+    const result = findNodeByKey(child, key)
+    if (result) {
+      return result
+    }
+  }
+  return null
 }

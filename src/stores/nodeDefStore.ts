@@ -205,6 +205,14 @@ export class ComfyNodeDefImpl {
     })
     return new ComfyOutputsSpec(result)
   }
+
+  get nodePath(): string {
+    return (this.category ? this.category + '/' : '') + this.display_name
+  }
+
+  get isDummyFolder(): boolean {
+    return this.name === ''
+  }
 }
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
@@ -244,10 +252,19 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
 }
 
 export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
-  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) => [
-    ...nodeDef.category.split('/').filter((s) => s !== ''),
-    nodeDef.display_name
-  ])
+  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) =>
+    nodeDef.nodePath.split('/')
+  )
+}
+
+export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
+  return plainToClass(ComfyNodeDefImpl, {
+    name: '',
+    display_name: '',
+    category: folderPath.endsWith('/') ? folderPath.slice(0, -1) : folderPath,
+    python_module: 'nodes',
+    description: 'Dummy Folder Node (User should never see this string)'
+  })
 }
 
 interface State {

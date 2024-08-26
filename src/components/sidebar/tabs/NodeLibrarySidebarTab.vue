@@ -2,6 +2,15 @@
   <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
     <template #tool-buttons>
       <Button
+        class="new-folder-button"
+        icon="pi pi-folder-plus"
+        text
+        severity="secondary"
+        @click="addNewBookmarkFolder()"
+        v-tooltip="$t('newFolder')"
+      />
+      <Button
+        class="sort-button"
         :icon="alphabeticalSort ? 'pi pi-sort-alpha-down' : 'pi pi-sort-alt'"
         text
         severity="secondary"
@@ -29,7 +38,8 @@
               handleNodeHover(event, props.node?.data?.name),
             onMouseleave: () => {
               hoveredComfyNodeName = null
-            }
+            },
+            onContextmenu: (e: MouseEvent) => handleContextMenu(props.node, e)
           }),
           nodeToggleButton: () => ({
             onClick: (e: MouseEvent) => {
@@ -40,18 +50,25 @@
         }"
       >
         <template #folder="{ node }">
-          <span class="folder-label">{{ node.label }}</span>
-          <Badge
-            :value="node.totalNodes"
-            severity="secondary"
-            :style="{ marginLeft: '0.5rem' }"
-          ></Badge>
+          <NodeTreeFolder
+            :node="node"
+            :isBookmarkFolder="!!node.data && node.data.isDummyFolder"
+            @itemDropped="handleItemDropped"
+          >
+            <template #folder-label="{ node }">
+              <EditableText
+                :modelValue="node.label"
+                :isEditing="renameEditingNode?.key === node.key"
+                @edit="(newName: string) => handleRename(node, newName)"
+              />
+            </template>
+          </NodeTreeFolder>
         </template>
         <template #node="{ node }">
           <NodeTreeLeaf
             :node="node.data"
-            :isBookmarked="isBookmarked(node.data)"
-            @toggleBookmark="toggleBookmark(node.data.display_name)"
+            :isBookmarked="nodeBookmarkStore.isBookmarked(node.data)"
+            @toggleBookmark="nodeBookmarkStore.toggleBookmark(node.data)"
           />
         </template>
       </Tree>
@@ -68,11 +85,12 @@
       </div>
     </template>
   </SidebarTabTemplate>
+  <ContextMenu ref="menu" :model="menuItems" />
 </template>
 
 <script setup lang="ts">
-import Badge from 'primevue/badge'
 import Button from 'primevue/button'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import {
   buildNodeDefTree,
   ComfyNodeDefImpl,
@@ -81,16 +99,24 @@ import {
 import { computed, ref, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
+import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
 import Tree from 'primevue/tree'
+import ContextMenu from 'primevue/contextmenu'
+import EditableText from '@/components/common/EditableText.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { sortedTree } from '@/utils/treeUtil'
+import { findNodeByKey, sortedTree } from '@/utils/treeUtil'
 import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+import type { MenuItem } from 'primevue/menuitem'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
 
+const { t } = useI18n()
+const toast = useToast()
 const nodeDefStore = useNodeDefStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
@@ -116,55 +142,14 @@ const nodePreviewStyle = ref<Record<string, string>>({
   left: '0px'
 })
 
-// Bookmarks are in format of category/display_name. e.g. "comfy/conditioning/CLIPTextEncode"
-const bookmarks = computed(() =>
-  settingStore.get('Comfy.NodeLibrary.Bookmarks')
-)
-const bookmarkedNodes = computed(
-  () =>
-    new Set(
-      bookmarks.value.map((bookmark: string) => bookmark.split('/').pop())
-    )
-)
-const isBookmarked = (node: ComfyNodeDefImpl) =>
-  bookmarkedNodes.value.has(node.display_name)
-const toggleBookmark = (bookmark: string) => {
-  if (bookmarks.value.includes(bookmark)) {
-    settingStore.set(
-      'Comfy.NodeLibrary.Bookmarks',
-      bookmarks.value.filter((b: string) => b !== bookmark)
-    )
-  } else {
-    settingStore.set('Comfy.NodeLibrary.Bookmarks', [
-      ...bookmarks.value,
-      bookmark
-    ])
-  }
-}
-const bookmarkedRoot = computed<TreeNode>(() => {
-  const bookmarkNodes = bookmarks.value
-    .map((bookmark: string) => {
-      const parts = bookmark.split('/')
-      const displayName = parts.pop()
-      const category = parts.join('/')
-      const srcNodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
-      if (!srcNodeDef) {
-        return null
-      }
-      const nodeDef = _.clone(srcNodeDef)
-      nodeDef.category = category
-      return nodeDef
-    })
-    .filter((nodeDef) => nodeDef !== null)
-  return buildNodeDefTree(bookmarkNodes)
-})
+const nodeBookmarkStore = useNodeBookmarkStore()
 
 const allNodesRoot = computed<TreeNode>(() => {
   return {
     key: 'all-nodes',
     label: 'All Nodes',
     children: [
-      ...(bookmarkedRoot.value?.children ?? []),
+      ...(nodeBookmarkStore.bookmarkedRoot.children ?? []),
       ...nodeDefStore.nodeTree.children
     ]
   }
@@ -179,18 +164,26 @@ const renderedRoot = computed(() => {
   return fillNodeInfo(root.value)
 })
 
-const fillNodeInfo = (node: TreeNode): TreeNode => {
+const getTreeNodeIcon = (node: TreeNode) => {
+  if (node.leaf) {
+    return 'pi pi-circle-fill'
+  }
+
+  // If the node is a bookmark folder, show a bookmark icon
+  if (node.data && node.data.isDummyFolder) {
+    return 'pi pi-bookmark-fill'
+  }
+
   const isExpanded = expandedKeys.value[node.key]
-  const icon = node.leaf
-    ? 'pi pi-circle-fill'
-    : isExpanded
-      ? 'pi pi-folder-open'
-      : 'pi pi-folder'
+  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
+}
+
+const fillNodeInfo = (node: TreeNode): TreeNode => {
   const children = node.children?.map(fillNodeInfo)
 
   return {
     ...node,
-    icon,
+    icon: getTreeNodeIcon(node),
     children,
     type: node.leaf ? 'node' : 'folder',
     totalNodes: node.leaf
@@ -226,6 +219,10 @@ const handleNodeHover = async (
   }
 }
 
+const handleItemDropped = (node: TreeNode) => {
+  expandedKeys.value[node.key] = true
+}
+
 const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
@@ -254,6 +251,75 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
     insertNode(node.data)
   }
 }
+
+const menu = ref(null)
+const menuTargetNode = ref<TreeNode | null>(null)
+const renameEditingNode = ref<TreeNode | null>(null)
+const menuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('newFolder'),
+    icon: 'pi pi-folder-plus',
+    command: () => {
+      if (menuTargetNode.value?.data) {
+        addNewBookmarkFolder(menuTargetNode.value?.data)
+      }
+    }
+  },
+  {
+    label: t('delete'),
+    icon: 'pi pi-trash',
+    command: () => {
+      if (menuTargetNode.value?.data) {
+        nodeBookmarkStore.deleteBookmarkFolder(menuTargetNode.value.data)
+      }
+    }
+  },
+  {
+    label: t('rename'),
+    icon: 'pi pi-file-edit',
+    command: () => {
+      renameEditingNode.value = menuTargetNode.value
+    }
+  }
+  // TODO: Add customize color and icon feature.
+  // {
+  //   label: t('customize'),
+  //   icon: 'pi pi-palette',
+  //   command: () => console.log('customize')
+  // }
+])
+
+const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
+  const nodeDef = node.data as ComfyNodeDefImpl
+  if (nodeDef?.isDummyFolder) {
+    menuTargetNode.value = node
+    menu.value?.show(e)
+  }
+}
+
+const handleRename = (node: TreeNode, newName: string) => {
+  if (node.data && node.data.isDummyFolder) {
+    try {
+      nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+    } catch (e) {
+      toast.add({
+        severity: 'error',
+        summary: t('error'),
+        detail: e.message,
+        life: 3000
+      })
+    }
+  }
+  renameEditingNode.value = null
+}
+
+const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+  const newFolderKey =
+    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
+  nextTick(() => {
+    renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+  })
+}
 </script>
 
 <style>
@@ -272,5 +338,25 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
 
 :deep(.comfy-vue-side-bar-body) {
   background: var(--p-tree-background);
+}
+
+/*
+ * The following styles are necessary to avoid layout shift when dragging nodes over folders.
+ * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
+ * we can create a visual indicator for the drop target without affecting the layout of other elements.
+ */
+:deep(.p-tree-node-content:has(.node-tree-folder)) {
+  position: relative;
+}
+
+:deep(.p-tree-node-content:has(.node-tree-folder.can-drop))::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid var(--p-content-color);
+  pointer-events: none;
 }
 </style>
