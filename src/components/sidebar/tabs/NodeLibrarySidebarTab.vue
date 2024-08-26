@@ -24,7 +24,7 @@
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"
-        @filter-removed="handleSearch(searchQuery)"
+        @remove-filter="onRemoveFilter"
         :placeholder="$t('searchNodes') + '...'"
         filter-icon="pi pi-filter"
         :filters
@@ -105,7 +105,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
@@ -241,9 +241,8 @@ const insertNode = (nodeDef: ComfyNodeDefImpl) => {
 }
 
 const filteredRoot = ref<TreeNode | null>(null)
-const filters = ref<Array<SearchFilter & { filter: FilterAndValue<string> }>>(
-  []
-)
+const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
+  ref([])
 const handleSearch = (query: string) => {
   if (query.length < 3 && !filters.value.length) {
     filteredRoot.value = null
@@ -349,6 +348,14 @@ const onAddFilter = (filterAndValue: FilterAndValue) => {
     id: +new Date()
   })
 
+  handleSearch(searchQuery.value)
+}
+
+const onRemoveFilter = (filterAndValue) => {
+  const index = filters.value.findIndex((f) => f === filterAndValue)
+  if (index !== -1) {
+    filters.value.splice(index, 1)
+  }
   handleSearch(searchQuery.value)
 }
 </script>

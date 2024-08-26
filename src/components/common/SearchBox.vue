@@ -25,7 +25,7 @@
         :text="filter.text"
         :badge="filter.badge"
         :badge-class="filter.badgeClass"
-        @remove="onFilterRemoved(filter)"
+        @remove="$emit('removeFilter', filter)"
       />
     </div>
   </div>
@@ -63,7 +63,7 @@ const emit = defineEmits([
   'update:modelValue',
   'search',
   'showFilter',
-  'filterRemoved'
+  'removeFilter'
 ])
 
 const emitSearch = debounce((value: string) => {
@@ -74,14 +74,6 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
   emit('update:modelValue', target.value)
   emitSearch(target.value)
-}
-
-const onFilterRemoved = (filter) => {
-  const index = props.filters.findIndex((f) => f === filter)
-  if (index !== -1) {
-    props.filters.splice(index, 1)
-    emit('filterRemoved', filter)
-  }
 }
 </script>
 
