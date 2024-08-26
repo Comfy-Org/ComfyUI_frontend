@@ -16,10 +16,6 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     settingStore.get('Comfy.NodeLibrary.Bookmarks')
   )
 
-  const bookmarksCustomization = computed<
-    Record<string, BookmarkCustomization>
-  >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
-
   const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
 
   const bookmarkedRoot = computed<TreeNode>(() =>
@@ -133,15 +129,36 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     )
   }
 
+  const bookmarksCustomization = computed<
+    Record<string, BookmarkCustomization>
+  >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
+
+  const updateBookmarkCustomization = (
+    nodePath: string,
+    customization: BookmarkCustomization
+  ) => {
+    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+      ...bookmarksCustomization.value,
+      [nodePath]: customization
+    })
+  }
+
+  const defaultBookmarkIcon = 'pi-bookmark'
+  const defaultBookmarkColor = '#a1a1aa'
+
   return {
     bookmarks,
     bookmarkedRoot,
-    bookmarksCustomization,
     isBookmarked,
     toggleBookmark,
     addBookmark,
     addNewBookmarkFolder,
     renameBookmarkFolder,
-    deleteBookmarkFolder
+    deleteBookmarkFolder,
+
+    bookmarksCustomization,
+    updateBookmarkCustomization,
+    defaultBookmarkIcon,
+    defaultBookmarkColor
   }
 })

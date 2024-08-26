@@ -86,6 +86,12 @@
     </template>
   </SidebarTabTemplate>
   <ContextMenu ref="menu" :model="menuItems" />
+  <FolderCustomizationDialog
+    v-model="showCustomizationDialog"
+    @confirm="updateCustomization"
+    :initialIcon="initialIcon"
+    :initialColor="initialColor"
+  />
 </template>
 
 <script setup lang="ts">
@@ -105,6 +111,7 @@ import ContextMenu from 'primevue/contextmenu'
 import EditableText from '@/components/common/EditableText.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
+import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
@@ -285,13 +292,22 @@ const menuItems = computed<MenuItem[]>(() => [
     command: () => {
       renameEditingNode.value = menuTargetNode.value
     }
+  },
+  {
+    label: t('customize'),
+    icon: 'pi pi-palette',
+    command: () => {
+      initialIcon.value =
+        nodeBookmarkStore.bookmarksCustomization[
+          menuTargetNode.value.data.nodePath
+        ]?.icon || nodeBookmarkStore.defaultBookmarkIcon
+      initialColor.value =
+        nodeBookmarkStore.bookmarksCustomization[
+          menuTargetNode.value.data.nodePath
+        ]?.color || nodeBookmarkStore.defaultBookmarkColor
+      showCustomizationDialog.value = true
+    }
   }
-  // TODO: Add customize color and icon feature.
-  // {
-  //   label: t('customize'),
-  //   icon: 'pi pi-palette',
-  //   command: () => console.log('customize')
-  // }
 ])
 
 const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
@@ -324,6 +340,18 @@ const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
   nextTick(() => {
     renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
   })
+}
+
+const showCustomizationDialog = ref(false)
+const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
+const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
+const updateCustomization = (icon: string, color: string) => {
+  if (menuTargetNode.value?.data) {
+    nodeBookmarkStore.updateBookmarkCustomization(
+      menuTargetNode.value.data.nodePath,
+      { icon, color }
+    )
+  }
 }
 </script>
 
