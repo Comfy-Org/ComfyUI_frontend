@@ -211,6 +211,14 @@ export const useSettingStore = defineStore('setting', {
         type: 'hidden',
         defaultValue: []
       })
+
+      // Stores mapping from bookmark folder name to its customization.
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeLibrary.BookmarksCustomization',
+        name: 'Node library bookmarks customization',
+        type: 'hidden',
+        defaultValue: {}
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

@@ -26,7 +26,8 @@ import type { CanvasDragAndDropData } from '@/types/litegraphTypes'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import Badge from 'primevue/badge'
 import type { TreeNode } from 'primevue/treenode'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import type { BookmarkCustomization } from '@/types/apiTypes'
 
 const props = defineProps<{
   node: TreeNode
@@ -38,6 +39,10 @@ const emit = defineEmits<{
 }>()
 
 const nodeBookmarkStore = useNodeBookmarkStore()
+
+const customization = computed<BookmarkCustomization | undefined>(() => {
+  return nodeBookmarkStore.bookmarksCustomization[props.node.data.nodePath]
+})
 
 const addNodeToBookmarkFolder = (node: ComfyNodeDefImpl) => {
   if (!props.node.data) {
@@ -83,6 +88,15 @@ onMounted(() => {
       canDrop.value = false
     }
   })
+
+  if (customization.value) {
+    const iconElement = treeNodeElement.querySelector(
+      ':scope > .p-tree-node-icon'
+    ) as HTMLElement
+    if (iconElement) {
+      iconElement.style.color = customization.value.color
+    }
+  }
 })
 onUnmounted(() => {
   dropTargetCleanup()

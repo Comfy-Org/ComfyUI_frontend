@@ -171,6 +171,11 @@ const getTreeNodeIcon = (node: TreeNode) => {
 
   // If the node is a bookmark folder, show a bookmark icon
   if (node.data && node.data.isDummyFolder) {
+    const customization =
+      nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
+    if (customization?.icon) {
+      return 'pi ' + customization.icon
+    }
     return 'pi pi-bookmark-fill'
   }
 

@@ -6,6 +6,7 @@ import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
 import { buildNodeDefTree } from './nodeDefStore'
 import type { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
+import type { BookmarkCustomization } from '@/types/apiTypes'
 
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
@@ -14,6 +15,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const bookmarks = computed<string[]>(() =>
     settingStore.get('Comfy.NodeLibrary.Bookmarks')
   )
+
+  const bookmarksCustomization = computed<
+    Record<string, BookmarkCustomization>
+  >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
 
   const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
 
@@ -131,6 +136,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   return {
     bookmarks,
     bookmarkedRoot,
+    bookmarksCustomization,
     isBookmarked,
     toggleBookmark,
     addBookmark,
