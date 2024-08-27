@@ -730,34 +730,6 @@ export class ComfyApp {
           }
         }
 
-        const calculateGrid = (w, h, n) => {
-          let columns, rows, cellsize
-
-          if (w > h) {
-            cellsize = h
-            columns = Math.ceil(w / cellsize)
-            rows = Math.ceil(n / columns)
-          } else {
-            cellsize = w
-            rows = Math.ceil(h / cellsize)
-            columns = Math.ceil(n / rows)
-          }
-
-          while (columns * rows < n) {
-            cellsize++
-            if (w >= h) {
-              columns = Math.ceil(w / cellsize)
-              rows = Math.ceil(n / columns)
-            } else {
-              rows = Math.ceil(h / cellsize)
-              columns = Math.ceil(n / rows)
-            }
-          }
-
-          const cell_size = Math.min(w / columns, h / rows)
-          return { cell_size, columns, rows }
-        }
-
         const is_all_same_aspect_ratio = (imgs) => {
           // assume: imgs.length >= 2
           let ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
@@ -838,17 +810,23 @@ export class ComfyApp {
             if (!compact_mode) {
               // use rectangle cell style and border line
               cell_padding = 2
-              const { cell_size, columns, rows } = calculateGrid(
-                dw,
-                dh,
-                numImages
+              // Prevent infinite canvas2d scale-up
+              const largestDimension = this.imgs.reduce(
+                (acc, current) =>
+                  Math.max(acc, current.naturalWidth, current.naturalHeight),
+                0
               )
-              cols = columns
-
-              cellWidth = cell_size
-              cellHeight = cell_size
-              shiftX = (dw - cell_size * cols) / 2
-              shiftY = (dh - cell_size * rows) / 2 + top
+              const fakeImgs = []
+              fakeImgs.length = this.imgs.length
+              fakeImgs[0] = {
+                naturalWidth: largestDimension,
+                naturalHeight: largestDimension
+              }
+              ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
+                fakeImgs,
+                dw,
+                dh
+              ))
             } else {
               cell_padding = 0
               ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
