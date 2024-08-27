@@ -14,12 +14,17 @@ export function useDownload() {
   const toast = useToastStore()
   const downloadState = ref<DownloadState>(DownloadState.Idle)
   const progress = ref(0)
+  const currentFilePath = ref<string | null>(null)
 
   const reportError = (message: string) => {
     toast.add({ severity: 'error', summary: 'Error', detail: message })
   }
 
   const handleDownloadProgress = (detail: DownloadModelStatus) => {
+    if (detail.download_path !== currentFilePath.value) {
+      return
+    }
+
     if (detail.status === 'in_progress') {
       downloadState.value = DownloadState.Downloading
       progress.value = detail.progress_percentage
@@ -47,22 +52,26 @@ export function useDownload() {
 
     progress.value = 0
     try {
-      const download = await api.internalDownloadModel(
+      const status: DownloadModelStatus = await api.internalDownloadModel(
         url,
         directory,
         filename,
         1
       )
-      handleDownloadProgress(download)
+      handleDownloadProgress(status)
+      currentFilePath.value = status.download_path
     } catch (err) {
       reportError(`Failed to start download: ${err}`)
       downloadState.value = DownloadState.Error
     }
   }
 
-  api.addEventListener('download_progress', (event) => {
-    handleDownloadProgress(event.detail)
-  })
+  api.addEventListener(
+    'download_progress',
+    (event: CustomEvent<DownloadModelStatus>) => {
+      handleDownloadProgress(event.detail)
+    }
+  )
 
   return {
     downloadState,
