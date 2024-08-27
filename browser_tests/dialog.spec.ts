@@ -30,6 +30,8 @@ test.describe('Missing models warning', () => {
   test('Should display a warning when missing models are found', async ({
     comfyPage
   }) => {
+    // The fake_model.safetensors is served by
+    // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
     await comfyPage.loadWorkflow('model_download')
 
     // Wait for the element with the .comfy-missing-models selector to be visible
