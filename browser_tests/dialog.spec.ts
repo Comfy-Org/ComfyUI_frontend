@@ -27,6 +27,15 @@ test.describe('Execution error', () => {
 })
 
 test.describe('Missing models warning', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSources', [
+      'http://localhost:8188'
+    ])
+    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSuffixes', [
+      '.safetensors'
+    ])
+  })
+
   test('Should display a warning when missing models are found', async ({
     comfyPage
   }) => {
