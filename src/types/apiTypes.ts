@@ -408,6 +408,13 @@ const zUser = z.object({
   users: z.record(z.string(), z.unknown())
 })
 const zUserData = z.array(z.array(z.string(), z.string()))
+
+const zBookmarkCustomization = z.object({
+  icon: z.string().optional(),
+  color: z.string().optional()
+})
+export type BookmarkCustomization = z.infer<typeof zBookmarkCustomization>
+
 const zSettings = z.record(z.any()).and(
   z
     .object({
@@ -428,6 +435,10 @@ const zSettings = z.record(z.any()).and(
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
+      'Comfy.NodeLibrary.BookmarksCustomization': z.record(
+        z.string(),
+        zBookmarkCustomization
+      ),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),
       'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger': z.enum([
         'always',

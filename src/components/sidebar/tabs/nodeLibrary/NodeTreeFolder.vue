@@ -26,7 +26,8 @@ import type { CanvasDragAndDropData } from '@/types/litegraphTypes'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import Badge from 'primevue/badge'
 import type { TreeNode } from 'primevue/treenode'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { BookmarkCustomization } from '@/types/apiTypes'
 
 const props = defineProps<{
   node: TreeNode
@@ -38,6 +39,10 @@ const emit = defineEmits<{
 }>()
 
 const nodeBookmarkStore = useNodeBookmarkStore()
+
+const customization = computed<BookmarkCustomization | undefined>(() => {
+  return nodeBookmarkStore.bookmarksCustomization[props.node.data.nodePath]
+})
 
 const addNodeToBookmarkFolder = (node: ComfyNodeDefImpl) => {
   if (!props.node.data) {
@@ -56,15 +61,20 @@ const addNodeToBookmarkFolder = (node: ComfyNodeDefImpl) => {
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 
+const treeNodeElement = ref<HTMLElement | null>(null)
+const iconElement = ref<HTMLElement | null>(null)
+
 let dropTargetCleanup = () => {}
+let stopWatchCustomization: (() => void) | null = null
+
 onMounted(() => {
   if (!props.isBookmarkFolder) return
 
-  const treeNodeElement = container.value?.closest(
+  treeNodeElement.value = container.value?.closest(
     '.p-tree-node-content'
   ) as HTMLElement
   dropTargetCleanup = dropTargetForElements({
-    element: treeNodeElement,
+    element: treeNodeElement.value,
     onDrop: (event) => {
       const dndData = event.source.data as CanvasDragAndDropData
       if (dndData.type === 'add-node') {
@@ -83,8 +93,34 @@ onMounted(() => {
       canDrop.value = false
     }
   })
+
+  iconElement.value = treeNodeElement.value.querySelector(
+    ':scope > .p-tree-node-icon'
+  ) as HTMLElement
+
+  updateIconColor()
+
+  // Start watching after the component is mounted
+  stopWatchCustomization = watch(customization, updateIconColor, { deep: true })
 })
+
+const updateIconColor = () => {
+  if (iconElement.value && customization.value) {
+    iconElement.value.style.color = customization.value.color
+  }
+}
+
 onUnmounted(() => {
   dropTargetCleanup()
+  if (stopWatchCustomization) {
+    stopWatchCustomization()
+  }
 })
 </script>
+
+<style scoped>
+.node-tree-folder {
+  display: flex;
+  align-items: center;
+}
+</style>

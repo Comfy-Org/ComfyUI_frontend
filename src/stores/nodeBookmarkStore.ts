@@ -6,6 +6,7 @@ import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
 import { buildNodeDefTree } from './nodeDefStore'
 import type { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
+import type { BookmarkCustomization } from '@/types/apiTypes'
 
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
@@ -113,6 +114,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
           : b
       )
     )
+    renameBookmarkCustomization(folderNode.nodePath, newNodePath)
   }
 
   const deleteBookmarkFolder = (folderNode: ComfyNodeDefImpl) => {
@@ -126,7 +128,63 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
           b !== folderNode.nodePath && !b.startsWith(folderNode.nodePath)
       )
     )
+    deleteBookmarkCustomization(folderNode.nodePath)
   }
+
+  const bookmarksCustomization = computed<
+    Record<string, BookmarkCustomization>
+  >(() => settingStore.get('Comfy.NodeLibrary.BookmarksCustomization'))
+
+  const updateBookmarkCustomization = (
+    nodePath: string,
+    customization: BookmarkCustomization
+  ) => {
+    const currentCustomization = bookmarksCustomization.value[nodePath] || {}
+    const newCustomization = { ...currentCustomization, ...customization }
+
+    // Remove attributes that are set to default values
+    if (newCustomization.icon === defaultBookmarkIcon) {
+      delete newCustomization.icon
+    }
+    if (newCustomization.color === defaultBookmarkColor) {
+      delete newCustomization.color
+    }
+
+    // If the customization is empty, remove it entirely
+    if (Object.keys(newCustomization).length === 0) {
+      deleteBookmarkCustomization(nodePath)
+    } else {
+      settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+        ...bookmarksCustomization.value,
+        [nodePath]: newCustomization
+      })
+    }
+  }
+
+  const deleteBookmarkCustomization = (nodePath: string) => {
+    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+      ...bookmarksCustomization.value,
+      [nodePath]: undefined
+    })
+  }
+
+  const renameBookmarkCustomization = (
+    oldNodePath: string,
+    newNodePath: string
+  ) => {
+    const updatedCustomization = { ...bookmarksCustomization.value }
+    if (updatedCustomization[oldNodePath]) {
+      updatedCustomization[newNodePath] = updatedCustomization[oldNodePath]
+      delete updatedCustomization[oldNodePath]
+    }
+    settingStore.set(
+      'Comfy.NodeLibrary.BookmarksCustomization',
+      updatedCustomization
+    )
+  }
+
+  const defaultBookmarkIcon = 'pi-bookmark-fill'
+  const defaultBookmarkColor = '#a1a1aa'
 
   return {
     bookmarks,
@@ -136,6 +194,13 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     addBookmark,
     addNewBookmarkFolder,
     renameBookmarkFolder,
-    deleteBookmarkFolder
+    deleteBookmarkFolder,
+
+    bookmarksCustomization,
+    updateBookmarkCustomization,
+    deleteBookmarkCustomization,
+    renameBookmarkCustomization,
+    defaultBookmarkIcon,
+    defaultBookmarkColor
   }
 })
