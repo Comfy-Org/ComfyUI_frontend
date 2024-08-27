@@ -73,23 +73,18 @@ const modelDownloads = ref<Record<string, ModelInfo>>({})
 let lastModel: string | null = null
 
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
+  if (detail.download_path) {
+    lastModel = detail.download_path.split('/', 2)[1]
+  }
+  if (!lastModel) return
   if (detail.status === 'in_progress') {
-    const model = detail.message.split(' ', 2)[1] // TODO: better way to track which model is being downloaded?
-    lastModel = model
-    const progress = detail.progress_percentage
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress, completed: false }
+    modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: true, progress: detail.progress_percentage, completed: false }
   } else if (detail.status === 'pending') {
-    const model = detail.message.split(' ', 4)[3]
-    lastModel = model
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress: 0, completed: false }
+    modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: true, progress: 0, completed: false }
   } else if (detail.status === 'completed') {
-    const model = detail.message.split(' ', 3)[2]
-    lastModel = model
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: false, progress: 100, completed: true }
+    modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: false, progress: 100, completed: true }
   } else if (detail.status === 'error') {
-    if (lastModel) {
-      modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: false, progress: 0, error: detail.message, completed: false }
-    }
+    modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: false, progress: 0, error: detail.message, completed: false }
   }
   // TODO: other statuses?
 }
