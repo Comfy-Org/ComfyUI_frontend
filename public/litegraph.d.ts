@@ -1007,14 +1007,14 @@ export declare class LGraphNode {
     ): void;
 
     onInputDblClick?(
+        slot: number,
         event: MouseEvent,
-        pos: Vector2,
         graphCanvas: LGraphCanvas
     ): void;
 
     onOutputDblClick?(
+        slot: number,
         event: MouseEvent,
-        pos: Vector2,
         graphCanvas: LGraphCanvas
     ): void;
 

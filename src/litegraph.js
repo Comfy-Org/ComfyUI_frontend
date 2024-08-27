@@ -6075,7 +6075,9 @@ LGraphNode.prototype.executeAction = function(action)
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
                         //check if it's a double click on the title bar
                         if (pos[1] < LiteGraph.NODE_TITLE_HEIGHT) {
-                            node?.onNodeTitleDblClick(e, pos, this);
+                            if (node.onNodeTitleDblClick) {
+                                node.onNodeTitleDblClick(e, pos, this);
+                            }
                         }
                         //double click node
                         if (node.onDblClick) {
