@@ -68,8 +68,9 @@ app.registerExtension({
       }
     }
 
-    function editAttention(event) {
-      const inputField = event.composedPath()[0]
+    function editAttention(event: KeyboardEvent) {
+      // @ts-expect-error Runtime narrowing not impl.
+      const inputField: HTMLTextAreaElement = event.composedPath()[0]
       const delta = parseFloat(editAttentionDelta.value)
 
       if (inputField.tagName !== 'TEXTAREA') return
@@ -153,7 +154,10 @@ app.registerExtension({
         }
       )
 
-      inputField.setRangeText(updatedText, start, end, 'select')
+      inputField.setSelectionRange(start, end)
+      // Intentional use of deprecated: https://developer.mozilla.org/docs/Web/API/Document/execCommand#using_inserttext
+      document.execCommand('insertText', false, updatedText)
+      inputField.setSelectionRange(start, start + updatedText.length)
     }
     window.addEventListener('keydown', editAttention)
   }

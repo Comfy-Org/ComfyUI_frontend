@@ -62,6 +62,7 @@ test.describe('Menu', () => {
   test.describe('Node library sidebar', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [])
+      await comfyPage.setSetting('Comfy.NodeLibrary.BookmarksCustomization', {})
       // Open the sidebar
       const tab = comfyPage.menu.nodeLibraryTab
       await tab.open()
@@ -206,7 +207,7 @@ test.describe('Menu', () => {
       )
     })
 
-    test('Can unbookmark node', async ({ comfyPage }) => {
+    test('Can unbookmark node (Top level bookmark)', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
         'KSampler (Advanced)'
       ])
@@ -218,6 +219,111 @@ test.describe('Menu', () => {
       expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
         []
       )
+    })
+
+    test('Can unbookmark node (Library node bookmark)', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
+        'KSampler (Advanced)'
+      ])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('sampling').click()
+      await comfyPage.page
+        .locator(tab.nodeSelector('KSampler (Advanced)'))
+        .nth(1)
+        .locator('.bookmark-button')
+        .click()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        []
+      )
+    })
+    test('Can customize icon', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Customize').click()
+      await comfyPage.page
+        .locator('.icon-field .p-selectbutton > *:nth-child(2)')
+        .click()
+      await comfyPage.page
+        .locator('.color-field .p-selectbutton > *:nth-child(2)')
+        .click()
+      await comfyPage.page.getByLabel('Confirm').click()
+      await comfyPage.nextFrame()
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({
+        'foo/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+    })
+    // If color is left as default, it should not be saved
+    test('Can customize icon (default field)', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Customize').click()
+      await comfyPage.page
+        .locator('.icon-field .p-selectbutton > *:nth-child(2)')
+        .click()
+      await comfyPage.page.getByLabel('Confirm').click()
+      await comfyPage.nextFrame()
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({
+        'foo/': {
+          icon: 'pi-folder'
+        }
+      })
+    })
+    test('Can rename customized bookmark folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      await comfyPage.setSetting('Comfy.NodeLibrary.BookmarksCustomization', {
+        'foo/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Rename').click()
+      await comfyPage.page.keyboard.insertText('bar')
+      await comfyPage.page.keyboard.press('Enter')
+      await comfyPage.nextFrame()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        ['bar/']
+      )
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({
+        'bar/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+    })
+
+    test('Can delete customized bookmark folder', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', ['foo/'])
+      await comfyPage.setSetting('Comfy.NodeLibrary.BookmarksCustomization', {
+        'foo/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Delete').click()
+      await comfyPage.nextFrame()
+      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
+        []
+      )
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({})
     })
   })
 

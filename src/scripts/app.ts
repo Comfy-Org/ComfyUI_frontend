@@ -17,6 +17,7 @@ import { applyTextReplacements, addStylesheet } from './utils'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
+  type NodeId,
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
 import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
@@ -2188,7 +2189,7 @@ export class ComfyApp {
         maximizable: true
       })
     }
-    
+
     this.logging.addEntry('Comfy.App', 'warn', {
       MissingModels: missingModels
     })
@@ -2272,15 +2273,17 @@ export class ComfyApp {
         n.type = sanitizeNodeName(n.type)
       }
     }
-    if (graphData.models && useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
+    if (
+      graphData.models &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
       for (let m of graphData.models) {
         const models_available = await this.getModelsInFolderCached(m.directory)
         if (models_available === null) {
           // @ts-expect-error
           m.directory_invalid = true
           missingModels.push(m)
-        }
-        else if (!models_available.includes(m.name)) {
+        } else if (!models_available.includes(m.name)) {
           missingModels.push(m)
         }
       }
@@ -3003,10 +3006,25 @@ export class ComfyApp {
     ) as Vector2
   }
 
+  canvasPosToClientPos(pos: Vector2): Vector2 {
+    const rect = this.canvasContainer.getBoundingClientRect()
+    const containerOffsets = [rect.left, rect.top]
+    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
+      ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
+    ) as Vector2
+  }
+
   getCanvasCenter(): Vector2 {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
     return [x + w / dpi / 2, y + h / dpi / 2]
+  }
+
+  public goToNode(nodeId: NodeId) {
+    // @ts-expect-error TODO: Update litegraph's nodeId type to string | number
+    const graphNode = this.graph.getNodeById(nodeId)
+    if (!graphNode) return
+    this.canvas.centerOnNode(graphNode)
   }
 }
 

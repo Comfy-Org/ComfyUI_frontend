@@ -132,6 +132,32 @@ test.describe('Node Interaction', () => {
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
   })
+
+  test('Can double click node title to edit', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 10
+      }
+    })
+    await comfyPage.page.keyboard.type('Hello World')
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(comfyPage.canvas).toHaveScreenshot('node-title-edited.png')
+  })
+
+  test('Double click node body does not trigger edit', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 50
+      }
+    })
+    expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
+  })
 })
 
 test.describe('Canvas Interaction', () => {
@@ -215,5 +241,31 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-two.png')
     await comfyPage.pan({ x: 800, y: 300 }, { x: 1000, y: 10 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
+  })
+})
+
+test.describe('Widget Interaction', () => {
+  test('Undo text input', async ({ comfyPage }) => {
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('')
+    await expect(textBox).toHaveValue('')
+    await textBox.fill('Hello World')
+    await expect(textBox).toHaveValue('Hello World')
+    await comfyPage.ctrlZ()
+    await expect(textBox).toHaveValue('')
+  })
+
+  test('Undo attention edit', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.EditAttention.Delta', 0.05)
+    const textBox = comfyPage.widgetTextBox
+    await textBox.click()
+    await textBox.fill('1girl')
+    await expect(textBox).toHaveValue('1girl')
+    await textBox.selectText()
+    await comfyPage.ctrlArrowUp()
+    await expect(textBox).toHaveValue('(1girl:1.05)')
+    await comfyPage.ctrlZ()
+    await expect(textBox).toHaveValue('1girl')
   })
 })

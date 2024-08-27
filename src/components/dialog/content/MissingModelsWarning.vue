@@ -14,28 +14,42 @@
       }"
     >
       <template #option="slotProps">
-        <div class="missing-model-item" :style="{ '--progress': `${slotProps.option.progress}%` }">
+        <div
+          class="missing-model-item"
+          :style="{ '--progress': `${slotProps.option.progress}%` }"
+        >
           <div class="model-info">
             <div class="model-details">
-              <span class="model-type" :title=slotProps.option.hint>{{ slotProps.option.label }}</span>
+              <span class="model-type" :title="slotProps.option.hint">{{
+                slotProps.option.label
+              }}</span>
             </div>
-            <div v-if="slotProps.option.error" class="model-error">{{ slotProps.option.error }}</div>
+            <div v-if="slotProps.option.error" class="model-error">
+              {{ slotProps.option.error }}
+            </div>
           </div>
           <div class="model-action">
             <Button
-              v-if="slotProps.option.action && !slotProps.option.downloading && !slotProps.option.completed && !slotProps.option.error"
+              v-if="
+                slotProps.option.action &&
+                !slotProps.option.downloading &&
+                !slotProps.option.completed &&
+                !slotProps.option.error
+              "
               @click="slotProps.option.action.callback"
               :label="slotProps.option.action.text"
               class="p-button-sm p-button-outlined model-action-button"
             />
             <div v-if="slotProps.option.downloading" class="download-progress">
-              <span class="progress-text">{{ slotProps.option.progress.toFixed(2) }}%</span>
+              <span class="progress-text"
+                >{{ slotProps.option.progress.toFixed(2) }}%</span
+              >
             </div>
             <div v-if="slotProps.option.completed" class="download-complete">
-              <i class="pi pi-check" style="color: var(--green-500);"></i>
+              <i class="pi pi-check" style="color: var(--green-500)"></i>
             </div>
             <div v-if="slotProps.option.error" class="download-error">
-              <i class="pi pi-times" style="color: var(--red-600);"></i>
+              <i class="pi pi-times" style="color: var(--red-600)"></i>
             </div>
           </div>
         </div>
@@ -73,29 +87,55 @@ const modelDownloads = ref<Record<string, ModelInfo>>({})
 let lastModel: string | null = null
 
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
+  if (detail.download_path) {
+    lastModel = detail.download_path.split('/', 2)[1]
+  }
+  if (!lastModel) return
   if (detail.status === 'in_progress') {
-    const model = detail.message.split(' ', 2)[1] // TODO: better way to track which model is being downloaded?
-    lastModel = model
-    const progress = detail.progress_percentage
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress, completed: false }
+    modelDownloads.value[lastModel] = {
+      ...modelDownloads.value[lastModel],
+      downloading: true,
+      progress: detail.progress_percentage,
+      completed: false
+    }
   } else if (detail.status === 'pending') {
-    const model = detail.message.split(' ', 4)[3]
-    lastModel = model
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: true, progress: 0, completed: false }
+    modelDownloads.value[lastModel] = {
+      ...modelDownloads.value[lastModel],
+      downloading: true,
+      progress: 0,
+      completed: false
+    }
   } else if (detail.status === 'completed') {
-    const model = detail.message.split(' ', 3)[2]
-    lastModel = model
-    modelDownloads.value[model] = { ...modelDownloads.value[model], downloading: false, progress: 100, completed: true }
+    modelDownloads.value[lastModel] = {
+      ...modelDownloads.value[lastModel],
+      downloading: false,
+      progress: 100,
+      completed: true
+    }
   } else if (detail.status === 'error') {
-    if (lastModel) {
-      modelDownloads.value[lastModel] = { ...modelDownloads.value[lastModel], downloading: false, progress: 0, error: detail.message, completed: false }
+    modelDownloads.value[lastModel] = {
+      ...modelDownloads.value[lastModel],
+      downloading: false,
+      progress: 0,
+      error: detail.message,
+      completed: false
     }
   }
   // TODO: other statuses?
 }
 
-const triggerDownload = async (url: string, directory: string, filename: string) => {
-  modelDownloads.value[filename] = { name: filename, directory, url, downloading: true, progress: 0 }
+const triggerDownload = async (
+  url: string,
+  directory: string,
+  filename: string
+) => {
+  modelDownloads.value[filename] = {
+    name: filename,
+    directory,
+    url,
+    downloading: true,
+    progress: 0
+  }
   const download = await api.internalDownloadModel(url, directory, filename, 1)
   handleDownloadProgress(download)
 }
@@ -105,36 +145,42 @@ api.addEventListener('download_progress', (event) => {
 })
 
 const missingModels = computed(() => {
-  return props.missingModels
-    .map((model) => {
-      const downloadInfo = modelDownloads.value[model.name]
-      if (!allowedSources.some((source) => model.url.startsWith(source))) {
-        return {
-          label: `${model.directory} / ${model.name}`,
-          hint: model.url,
-          error: 'Download not allowed from this source'
-        }
-      }
-      if (model.directory_invalid) {
-        return {
-          label: `${model.directory} / ${model.name}`,
-          hint: model.url,
-          error: 'Invalid directory specified (does this require custom nodes?)'
-        }
-      }
+  return props.missingModels.map((model) => {
+    const downloadInfo = modelDownloads.value[model.name]
+    if (!allowedSources.some((source) => model.url.startsWith(source))) {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
-        downloading: downloadInfo?.downloading ?? false,
-        completed: downloadInfo?.completed ?? false,
-        progress: downloadInfo?.progress ?? 0,
-        error: downloadInfo?.error,
-        action: {
-          text: 'Download',
-          callback: () => triggerDownload(model.url, model.directory, model.name)
-        }
+        error: 'Download not allowed from this source'
       }
-    })
+    }
+    if (!model.name.endsWith('.safetensors') && !model.name.endsWith('.sft')) {
+      return {
+        label: `${model.directory} / ${model.name}`,
+        hint: model.url,
+        error: 'Only .safetensors models are allowed'
+      }
+    }
+    if (model.directory_invalid) {
+      return {
+        label: `${model.directory} / ${model.name}`,
+        hint: model.url,
+        error: 'Invalid directory specified (does this require custom nodes?)'
+      }
+    }
+    return {
+      label: `${model.directory} / ${model.name}`,
+      hint: model.url,
+      downloading: downloadInfo?.downloading ?? false,
+      completed: downloadInfo?.completed ?? false,
+      progress: downloadInfo?.progress ?? 0,
+      error: downloadInfo?.error,
+      action: {
+        text: 'Download',
+        callback: () => triggerDownload(model.url, model.directory, model.name)
+      }
+    }
+  })
 })
 </script>
 
@@ -244,7 +290,9 @@ const missingModels = computed(() => {
   min-width: 80px;
 }
 
-.download-progress, .download-complete, .download-error {
+.download-progress,
+.download-complete,
+.download-error {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,7 +304,8 @@ const missingModels = computed(() => {
   color: var(--text-color);
 }
 
-.download-complete i, .download-error i {
+.download-complete i,
+.download-error i {
   font-size: 1.2rem;
 }
 </style>

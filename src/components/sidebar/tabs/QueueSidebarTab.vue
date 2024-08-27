@@ -2,6 +2,18 @@
   <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
       <Button
+        :icon="
+          imageFit === 'cover'
+            ? 'pi pi-arrow-down-left-and-arrow-up-right-to-center'
+            : 'pi pi-arrow-up-right-and-arrow-down-left-from-center'
+        "
+        text
+        severity="secondary"
+        @click="toggleImageFit"
+        class="toggle-expanded-button"
+        v-tooltip="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
+      />
+      <Button
         v-if="isInFolderView"
         icon="pi pi-arrow-left"
         text
@@ -12,7 +24,7 @@
       />
       <template v-else>
         <Button
-          :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          :icon="isExpanded ? 'pi pi-images' : 'pi pi-image'"
           text
           severity="secondary"
           @click="toggleExpanded"
@@ -47,6 +59,11 @@
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
       </div>
+      <div v-else-if="queueStore.isLoading">
+        <ProgressSpinner
+          style="width: 50px; left: 50%; transform: translateX(-50%)"
+        />
+      </div>
       <div v-else>
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
@@ -74,16 +91,22 @@ import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
+import ProgressSpinner from 'primevue/progressspinner'
 import TaskItem from './queue/TaskItem.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
+import { ComfyNode } from '@/types/comfyWorkflow'
+import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
 
+const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()
 const toast = useToast()
 const queueStore = useQueueStore()
+const settingStore = useSettingStore()
 const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
@@ -95,6 +118,7 @@ const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
 const isInFolderView = computed(() => folderTask.value !== null)
+const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
@@ -204,6 +228,7 @@ const onStatus = async () => {
 
 const menu = ref(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
+const menuTargetNode = ref<ComfyNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('delete'),
@@ -215,17 +240,26 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t('loadWorkflow'),
     icon: 'pi pi-file-export',
     command: () => menuTargetTask.value?.loadWorkflow()
+  },
+  {
+    label: t('goToNode'),
+    icon: 'pi pi-arrow-circle-right',
+    command: () => app.goToNode(menuTargetNode.value?.id),
+    visible: !!menuTargetNode.value
   }
 ])
 
 const handleContextMenu = ({
   task,
-  event
+  event,
+  node
 }: {
   task: TaskItemImpl
   event: Event
+  node?: ComfyNode
 }) => {
   menuTargetTask.value = task
+  menuTargetNode.value = node
   menu.value?.show(event)
 }
 
@@ -243,6 +277,10 @@ const enterFolderView = (task: TaskItemImpl) => {
 const exitFolderView = () => {
   folderTask.value = null
   updateVisibleTasks()
+}
+
+const toggleImageFit = () => {
+  settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
 }
 
 onMounted(() => {

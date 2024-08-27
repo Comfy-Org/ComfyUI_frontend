@@ -28,7 +28,13 @@
     <div class="task-item-details">
       <div class="tag-wrapper status-tag-group">
         <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
-          {{ node?.type }} (#{{ node?.id }})
+          <Button
+            class="task-node-link"
+            :label="`${node?.type} (#${node?.id})`"
+            link
+            size="small"
+            @click="app.goToNode(node?.id)"
+          />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
           <span v-html="taskStatusText(task.displayStatus)"></span>
@@ -59,6 +65,7 @@ import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
+import { app } from '@/scripts/app'
 
 const props = defineProps<{
   task: TaskItemImpl
@@ -77,13 +84,16 @@ const node: ComfyNode | null = flatOutputs.length
   : null
 
 const emit = defineEmits<{
-  (e: 'contextmenu', value: { task: TaskItemImpl; event: MouseEvent }): void
+  (
+    e: 'contextmenu',
+    value: { task: TaskItemImpl; event: MouseEvent; node?: ComfyNode }
+  ): void
   (e: 'preview', value: TaskItemImpl): void
   (e: 'task-output-length-clicked', value: TaskItemImpl): void
 }>()
 
 const handleContextMenu = (e: MouseEvent) => {
-  emit('contextmenu', { task: props.task, event: e })
+  emit('contextmenu', { task: props.task, event: e, node })
 }
 
 const handlePreview = () => {
@@ -164,6 +174,11 @@ const formatTime = (time?: number) => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  z-index: 1;
+}
+
+.task-node-link {
+  padding: 2px;
 }
 
 /* In dark mode, transparent background color for tags is not ideal for tags that

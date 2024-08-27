@@ -77,6 +77,7 @@ const zDownloadModelStatus = z.object({
   status: z.string(),
   progress_percentage: z.number(),
   message: z.string(),
+  download_path: z.string(),
   already_existed: z.boolean()
 })
 
@@ -408,6 +409,13 @@ const zUser = z.object({
   users: z.record(z.string(), z.unknown())
 })
 const zUserData = z.array(z.array(z.string(), z.string()))
+
+const zBookmarkCustomization = z.object({
+  icon: z.string().optional(),
+  color: z.string().optional()
+})
+export type BookmarkCustomization = z.infer<typeof zBookmarkCustomization>
+
 const zSettings = z.record(z.any()).and(
   z
     .object({
@@ -428,6 +436,10 @@ const zSettings = z.record(z.any()).and(
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
+      'Comfy.NodeLibrary.BookmarksCustomization': z.record(
+        z.string(),
+        zBookmarkCustomization
+      ),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),
       'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger': z.enum([
         'always',
@@ -450,7 +462,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
       'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean(),
-      'Comfy.Workflow.SortNodeIdOnSave': z.boolean()
+      'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+      'Comfy.Queue.ImageFit': z.enum(['contain', 'cover'])
     })
     .optional()
 )
