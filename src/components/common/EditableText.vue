@@ -63,7 +63,8 @@ watch(
         inputElement.setSelectionRange(start, end)
       })
     }
-  }
+  },
+  { immediate: true }
 )
 const vFocus = {
   mounted: (el: HTMLElement) => el.focus()

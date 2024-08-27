@@ -132,6 +132,32 @@ test.describe('Node Interaction', () => {
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
   })
+
+  test('Can double click node title to edit', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 10
+      }
+    })
+    await comfyPage.page.keyboard.type('Hello World')
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(comfyPage.canvas).toHaveScreenshot('node-title-edited.png')
+  })
+
+  test('Double click node body does not trigger edit', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 50
+      }
+    })
+    expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
+  })
 })
 
 test.describe('Canvas Interaction', () => {

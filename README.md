@@ -91,6 +91,13 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.2.38: **Litegraph** Double click node title to edit</summary>
+
+https://github.com/user-attachments/assets/d61d5d0e-f200-4153-b293-3e3f6a212b30
+
+</details>
+
+<details>
   <summary>v1.2.7: **Litegraph** drags multiple links with shift pressed</summary>
 
 https://github.com/user-attachments/assets/68826715-bb55-4b2a-be6e-675cfc424afe
