@@ -110,6 +110,13 @@ const missingModels = computed(() => {
           error: 'Download not allowed from this source'
         }
       }
+      if (!model.name.endsWith('.safetensors') && !model.name.endsWith('.sft')) {
+        return {
+          label: `${model.directory} / ${model.name}`,
+          hint: model.url,
+          error: 'Only .safetensors models are allowed'
+        }
+      }
       if (model.directory_invalid) {
         return {
           label: `${model.directory} / ${model.name}`,
