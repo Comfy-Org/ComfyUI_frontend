@@ -7,9 +7,10 @@
     closeOnEscape
     dismissableMask
     :maximizable="maximizable"
+    :maximized="maximized"
     @hide="dialogStore.closeDialog"
-    @maximize="maximized = true"
-    @unmaximize="maximized = false"
+    @maximize="onMaximize"
+    @unmaximize="onUnmaximize"
   >
     <template #header>
       <component
@@ -29,10 +30,19 @@ import { useDialogStore } from '@/stores/dialogStore'
 import Dialog from 'primevue/dialog'
 
 const dialogStore = useDialogStore()
-const maximizable = dialogStore.props.maximizable ?? false
+const maximizable = computed(() => dialogStore.props.maximizable ?? false)
 const maximized = ref(false)
+
+const onMaximize = () => {
+  maximized.value = true
+}
+
+const onUnmaximize = () => {
+  maximized.value = false
+}
+
 const contentProps = computed(() => ({
   ...dialogStore.props,
-  ...(dialogStore.props.maximizable ? { maximized } : {})
+  maximized: maximized.value
 }))
 </script>
