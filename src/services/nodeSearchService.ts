@@ -5,6 +5,10 @@ import _ from 'lodash'
 
 type SearchAuxScore = [number, number, number, number]
 
+interface ExtraSearchOptions {
+  matchWildcards?: boolean
+}
+
 export class FuseSearch<T> {
   private fuse: Fuse<T>
   private readonly keys: string[]
@@ -148,16 +152,16 @@ export abstract class NodeFilter<FilterOptionT = string> {
   public matches(
     node: ComfyNodeDefImpl,
     value: FilterOptionT,
-    searchOptions?: FuseSearchOptions
+    extraOptions?: ExtraSearchOptions
   ): boolean {
-    const checkWildcard = searchOptions?.supportWildcard !== false
-    if (checkWildcard && value === '*') {
+    const matchWildcards = extraOptions?.matchWildcards !== false
+    if (matchWildcards && value === '*') {
       return true
     }
     const options = this.getNodeOptions(node)
     return (
       options.includes(value) ||
-      (checkWildcard && _.some(options, (option) => option === '*'))
+      (matchWildcards && _.some(options, (option) => option === '*'))
     )
   }
 }
@@ -248,14 +252,15 @@ export class NodeSearchService {
   public searchNode(
     query: string,
     filters: FilterAndValue<string>[] = [],
-    options?: FuseSearchOptions
+    options?: FuseSearchOptions,
+    extraOptions?: ExtraSearchOptions
   ): ComfyNodeDefImpl[] {
     const matchedNodes = this.nodeFuseSearch.search(query)
 
     const results = matchedNodes.filter((node) => {
       return _.every(filters, (filterAndValue) => {
         const [filter, value] = filterAndValue
-        return filter.matches(node, value, options)
+        return filter.matches(node, value, extraOptions)
       })
     })
 

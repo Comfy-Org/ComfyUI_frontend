@@ -263,10 +263,16 @@ const handleSearch = (query: string) => {
   }
 
   const f = filters.value.map((f) => f.filter as FilterAndValue<string>)
-  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(query, f, {
-    limit: 64,
-    supportWildcard: false
-  })
+  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(
+    query,
+    f,
+    {
+      limit: 64
+    },
+    {
+      matchWildcards: false
+    }
+  )
 
   filteredRoot.value = buildNodeDefTree(matchedNodes)
   expandNode(filteredRoot.value)
