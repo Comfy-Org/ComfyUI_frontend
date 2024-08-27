@@ -77,6 +77,7 @@ const zDownloadModelStatus = z.object({
   status: z.string(),
   progress_percentage: z.number(),
   message: z.string(),
+  download_path: z.string(),
   already_existed: z.boolean()
 })
 
