@@ -177,6 +177,8 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
     bookmarksCustomization,
     updateBookmarkCustomization,
+    deleteBookmarkCustomization,
+    renameBookmarkCustomization,
     defaultBookmarkIcon,
     defaultBookmarkColor
   }
