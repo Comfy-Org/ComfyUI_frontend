@@ -25,8 +25,8 @@ export const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
 const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
-  hash: z.string(),
-  hash_type: z.string(),
+  hash: z.string().optional(),
+  hash_type: z.string().optional(),
   directory: z.string()
 })
 
