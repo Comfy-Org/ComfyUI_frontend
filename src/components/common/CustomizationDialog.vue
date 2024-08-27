@@ -20,23 +20,36 @@
       <Divider />
       <div class="field">
         <label for="color">Color</label>
-        <SelectButton
-          v-model="selectedColor"
-          :options="colorOptions"
-          optionLabel="name"
-          dataKey="value"
-        >
-          <template #option="slotProps">
-            <div
-              :style="{
-                width: '20px',
-                height: '20px',
-                backgroundColor: slotProps.option.value,
-                borderRadius: '50%'
-              }"
-            ></div>
-          </template>
-        </SelectButton>
+        <div class="color-picker-container">
+          <SelectButton
+            v-model="selectedColor"
+            :options="colorOptions"
+            optionLabel="name"
+            dataKey="value"
+          >
+            <template #option="slotProps">
+              <div
+                v-if="slotProps.option.value !== 'custom'"
+                :style="{
+                  width: '20px',
+                  height: '20px',
+                  backgroundColor: slotProps.option.value,
+                  borderRadius: '50%'
+                }"
+              ></div>
+              <i
+                v-else
+                class="pi pi-palette"
+                :style="{ fontSize: '1.2rem' }"
+                v-tooltip="'Custom Color'"
+              ></i>
+            </template>
+          </SelectButton>
+          <ColorPicker
+            v-if="selectedColor.value === 'custom'"
+            v-model="customColor"
+          />
+        </div>
       </div>
     </div>
     <template #footer>
@@ -68,6 +81,7 @@ import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import ColorPicker from 'primevue/colorpicker'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const props = defineProps<{
@@ -101,13 +115,12 @@ const iconOptions = [
 
 const colorOptions = [
   { name: 'Default', value: nodeBookmarkStore.defaultBookmarkColor },
-  { name: 'Orange', value: '#FFA500' },
   { name: 'Blue', value: '#007bff' },
   { name: 'Green', value: '#28a745' },
   { name: 'Red', value: '#dc3545' },
-  { name: 'Purple', value: '#6f42c1' },
   { name: 'Pink', value: '#e83e8c' },
-  { name: 'Yellow', value: '#ffc107' }
+  { name: 'Yellow', value: '#ffc107' },
+  { name: 'Custom', value: 'custom' }
 ]
 
 const defaultIcon = iconOptions.find(
@@ -119,23 +132,36 @@ const defaultColor = colorOptions.find(
 
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
 const selectedColor = ref<{ name: string; value: string }>(defaultColor)
+const customColor = ref('000000')
 
 const closeDialog = () => {
   visible.value = false
 }
 
 const confirmCustomization = () => {
-  emit('confirm', selectedIcon.value.value, selectedColor.value.value)
+  const finalColor =
+    selectedColor.value.value === 'custom'
+      ? `#${customColor.value}`
+      : selectedColor.value.value
+  emit('confirm', selectedIcon.value.value, finalColor)
   closeDialog()
 }
 
 const resetCustomization = () => {
-  selectedIcon.value = iconOptions.find(
-    (option) => option.value === (props.initialIcon || defaultIcon?.value)
+  selectedIcon.value =
+    iconOptions.find((option) => option.value === props.initialIcon) ||
+    defaultIcon
+  const colorOption = colorOptions.find(
+    (option) => option.value === props.initialColor
   )
-  selectedColor.value = colorOptions.find(
-    (option) => option.value === (props.initialColor || defaultColor?.value)
-  )
+  if (!props.initialColor) {
+    selectedColor.value = defaultColor
+  } else if (!colorOption) {
+    customColor.value = props.initialColor.replace('#', '')
+    selectedColor.value = { name: 'Custom', value: 'custom' }
+  } else {
+    selectedColor.value = colorOption
+  }
 }
 
 watch(
@@ -153,6 +179,7 @@ watch(
 .p-selectbutton .p-button {
   padding: 0.5rem;
 }
+
 .p-selectbutton .p-button .pi {
   font-size: 1.5rem;
 }
@@ -160,6 +187,12 @@ watch(
 .field {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+}
+
+.color-picker-container {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
 }
 </style>
