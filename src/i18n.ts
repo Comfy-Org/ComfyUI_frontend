@@ -2,6 +2,17 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    customizeFolder: 'Customize Folder',
+    icon: 'Icon',
+    color: 'Color',
+    bookmark: 'Bookmark',
+    folder: 'Folder',
+    star: 'Star',
+    heart: 'Heart',
+    file: 'File',
+    inbox: 'Inbox',
+    box: 'Box',
+    briefcase: 'Briefcase',
     error: 'Error',
     findIssues: 'Find Issues',
     copyToClipboard: 'Copy to Clipboard',
@@ -39,6 +50,17 @@ const messages = {
     }
   },
   zh: {
+    customizeFolder: '定制文件夹',
+    icon: '图标',
+    color: '颜色',
+    bookmark: '书签',
+    folder: '文件夹',
+    star: '星星',
+    heart: '心',
+    file: '文件',
+    inbox: '收件箱',
+    box: '盒子',
+    briefcase: '公文包',
     error: '错误',
     showReport: '显示报告',
     imageFailedToLoad: '图像加载失败',

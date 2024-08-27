@@ -1,8 +1,8 @@
 <template>
-  <Dialog v-model:visible="visible" :header="'Customize Folder'">
+  <Dialog v-model:visible="visible" :header="$t('customizeFolder')">
     <div class="p-fluid">
       <div class="field">
-        <label for="icon">Icon</label>
+        <label for="icon">{{ $t('icon') }}</label>
         <SelectButton
           v-model="selectedIcon"
           :options="iconOptions"
@@ -19,7 +19,7 @@
       </div>
       <Divider />
       <div class="field">
-        <label for="color">Color</label>
+        <label for="color">{{ $t('color') }}</label>
         <div class="color-picker-container">
           <SelectButton
             v-model="selectedColor"
@@ -41,7 +41,7 @@
                 v-else
                 class="pi pi-palette"
                 :style="{ fontSize: '1.2rem' }"
-                v-tooltip="'Custom Color'"
+                v-tooltip="$t('customColor')"
               ></i>
             </template>
           </SelectButton>
@@ -54,19 +54,19 @@
     </div>
     <template #footer>
       <Button
-        label="Reset"
+        :label="$t('reset')"
         icon="pi pi-refresh"
         @click="resetCustomization"
         class="p-button-text"
       />
       <Button
-        label="Cancel"
+        :label="$t('cancel')"
         icon="pi pi-times"
         @click="closeDialog"
         class="p-button-text"
       />
       <Button
-        label="Confirm"
+        :label="$t('confirm')"
         icon="pi pi-check"
         @click="confirmCustomization"
         autofocus
@@ -83,6 +83,9 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ColorPicker from 'primevue/colorpicker'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
@@ -103,24 +106,24 @@ const visible = computed({
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const iconOptions = [
-  { name: 'Bookmark', value: nodeBookmarkStore.defaultBookmarkIcon },
-  { name: 'Folder', value: 'pi-folder' },
-  { name: 'Star', value: 'pi-star' },
-  { name: 'Heart', value: 'pi-heart' },
-  { name: 'File', value: 'pi-file' },
-  { name: 'Inbox', value: 'pi-inbox' },
-  { name: 'Box', value: 'pi-box' },
-  { name: 'Briefcase', value: 'pi-briefcase' }
+  { name: t('bookmark'), value: nodeBookmarkStore.defaultBookmarkIcon },
+  { name: t('folder'), value: 'pi-folder' },
+  { name: t('star'), value: 'pi-star' },
+  { name: t('heart'), value: 'pi-heart' },
+  { name: t('file'), value: 'pi-file' },
+  { name: t('inbox'), value: 'pi-inbox' },
+  { name: t('box'), value: 'pi-box' },
+  { name: t('briefcase'), value: 'pi-briefcase' }
 ]
 
 const colorOptions = [
-  { name: 'Default', value: nodeBookmarkStore.defaultBookmarkColor },
-  { name: 'Blue', value: '#007bff' },
-  { name: 'Green', value: '#28a745' },
-  { name: 'Red', value: '#dc3545' },
-  { name: 'Pink', value: '#e83e8c' },
-  { name: 'Yellow', value: '#ffc107' },
-  { name: 'Custom', value: 'custom' }
+  { name: t('default'), value: nodeBookmarkStore.defaultBookmarkColor },
+  { name: t('blue'), value: '#007bff' },
+  { name: t('green'), value: '#28a745' },
+  { name: t('red'), value: '#dc3545' },
+  { name: t('pink'), value: '#e83e8c' },
+  { name: t('yellow'), value: '#ffc107' },
+  { name: t('custom'), value: 'custom' }
 ]
 
 const defaultIcon = iconOptions.find(
