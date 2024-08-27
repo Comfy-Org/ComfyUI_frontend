@@ -220,13 +220,6 @@ export class TaskItemImpl {
     }
   }
 
-  public goToNode(node: ComfyNode | string | number) {
-    const id = typeof node === 'object' ? node.id : node
-    const graphNode = app.graph.getNodeById(id as number)
-    if (!graphNode) return
-    app.canvas.centerOnNode(graphNode)
-  }
-
   public flatten(): TaskItemImpl[] {
     if (this.displayStatus !== TaskItemDisplayStatus.Completed) {
       return [this]
@@ -260,7 +253,7 @@ interface State {
   pendingTasks: TaskItemImpl[]
   historyTasks: TaskItemImpl[]
   maxHistoryItems: number
-  loadingHistory: boolean
+  isLoading: boolean
 }
 
 export const useQueueStore = defineStore('queue', {
@@ -269,7 +262,7 @@ export const useQueueStore = defineStore('queue', {
     pendingTasks: [],
     historyTasks: [],
     maxHistoryItems: 64,
-    loadingHistory: false
+    isLoading: false
   }),
   getters: {
     tasks(state) {
@@ -289,7 +282,7 @@ export const useQueueStore = defineStore('queue', {
   actions: {
     // Fetch the queue data from the API
     async update() {
-      this.loadingHistory = true
+      this.isLoading = true
       try {
         const [queue, history] = await Promise.all([
           api.getQueue(),
@@ -329,7 +322,7 @@ export const useQueueStore = defineStore('queue', {
           .slice(0, this.maxHistoryItems)
           .sort((a, b) => b.queueIndex - a.queueIndex)
       } finally {
-        this.loadingHistory = false
+        this.isLoading = false
       }
     },
     async clear() {

@@ -33,7 +33,7 @@
             :label="`${node?.type} (#${node?.id})`"
             link
             size="small"
-            @click="task.goToNode(node?.id)"
+            @click="app.goToNode(node?.id)"
           />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
@@ -65,6 +65,7 @@ import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
+import { app } from '@/scripts/app'
 
 const props = defineProps<{
   task: TaskItemImpl

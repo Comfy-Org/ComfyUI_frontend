@@ -8,6 +8,7 @@
     <img
       v-if="contain"
       :src="src"
+      @error="handleImageError"
       :data-test="src"
       class="comfy-image-blur"
       :style="{ 'background-image': `url(${src})` }"

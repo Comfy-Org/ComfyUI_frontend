@@ -59,7 +59,7 @@
         </div>
         <div ref="loadMoreTrigger" style="height: 1px" />
       </div>
-      <div v-else-if="queueStore.loadingHistory">
+      <div v-else-if="queueStore.isLoading">
         <ProgressSpinner
           style="width: 50px; left: 50%; transform: translateX(-50%)"
         />
@@ -100,6 +100,7 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()
@@ -243,7 +244,7 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('goToNode'),
     icon: 'pi pi-arrow-circle-right',
-    command: () => menuTargetTask.value?.goToNode(menuTargetNode.value),
+    command: () => app.goToNode(menuTargetNode.value?.id),
     visible: !!menuTargetNode.value
   }
 ])
