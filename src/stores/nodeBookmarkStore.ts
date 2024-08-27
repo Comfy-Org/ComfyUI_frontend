@@ -114,6 +114,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
           : b
       )
     )
+    renameBookmarkCustomization(folderNode.nodePath, newNodePath)
   }
 
   const deleteBookmarkFolder = (folderNode: ComfyNodeDefImpl) => {
@@ -127,6 +128,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
           b !== folderNode.nodePath && !b.startsWith(folderNode.nodePath)
       )
     )
+    deleteBookmarkCustomization(folderNode.nodePath)
   }
 
   const bookmarksCustomization = computed<
@@ -140,6 +142,23 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
       ...bookmarksCustomization.value,
       [nodePath]: customization
+    })
+  }
+
+  const deleteBookmarkCustomization = (nodePath: string) => {
+    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+      ...bookmarksCustomization.value,
+      [nodePath]: undefined
+    })
+  }
+
+  const renameBookmarkCustomization = (
+    oldNodePath: string,
+    newNodePath: string
+  ) => {
+    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+      ...bookmarksCustomization.value,
+      [newNodePath]: bookmarksCustomization.value[oldNodePath]
     })
   }
 
