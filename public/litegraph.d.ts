@@ -994,6 +994,30 @@ export declare class LGraphNode {
     ): void;
     onKey?(event: KeyboardEvent, pos: Vector2, graphCanvas: LGraphCanvas): void;
 
+    onDblClick?(
+        event: MouseEvent,
+        pos: Vector2,
+        graphCanvas: LGraphCanvas
+    ): void;
+
+    onNodeTitleDblClick?(
+        event: MouseEvent,
+        pos: Vector2,
+        graphCanvas: LGraphCanvas
+    ): void;
+
+    onInputDblClick?(
+        event: MouseEvent,
+        pos: Vector2,
+        graphCanvas: LGraphCanvas
+    ): void;
+
+    onOutputDblClick?(
+        event: MouseEvent,
+        pos: Vector2,
+        graphCanvas: LGraphCanvas
+    ): void;
+
     /** Called by `LGraphCanvas.selectNodes` */
     onSelected?(): void;
     /** Called by `LGraphCanvas.deselectNode` */

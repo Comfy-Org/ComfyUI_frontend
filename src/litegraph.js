@@ -2317,6 +2317,7 @@ const globalExport = {};
 		+ onGetOutputs: returns an array of possible outputs
 		+ onBounding: in case this node has a bigger bounding than the node itself (the callback receives the bounding as [x,y,w,h])
 		+ onDblClick: double clicked in the node
+		+ onNodeTitleDblClick: double clicked in the node title
 		+ onInputDblClick: input slot double clicked (can be used to automatically create a node connected)
 		+ onOutputDblClick: output slot double clicked (can be used to automatically create a node connected)
 		+ onConfigure: called after the node has been configured
@@ -5956,7 +5957,7 @@ LGraphNode.prototype.executeAction = function(action)
 
                                     if (is_double_click) {
                                         if (node.onOutputDblClick) {
-                                            node.onOutputDblClick(i, e);
+                                            node.onOutputDblClick(i, e, this);
                                         }
                                     } else {
                                         if (node.onOutputClick) {
@@ -5987,7 +5988,7 @@ LGraphNode.prototype.executeAction = function(action)
                                 ) {
                                     if (is_double_click) {
                                         if (node.onInputDblClick) {
-                                            node.onInputDblClick(i, e);
+                                            node.onInputDblClick(i, e, this);
                                         }
                                     } else {
                                         if (node.onInputClick) {
@@ -6072,6 +6073,10 @@ LGraphNode.prototype.executeAction = function(action)
 
                     //double clicking
                     if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
+                        //check if it's a double click on the title bar
+                        if (pos[1] < LiteGraph.NODE_TITLE_HEIGHT) {
+                            node?.onNodeTitleDblClick(e, pos, this);
+                        }
                         //double click node
                         if (node.onDblClick) {
                             node.onDblClick( e, pos, this );
