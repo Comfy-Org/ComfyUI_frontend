@@ -60,12 +60,6 @@
         class="p-button-text"
       />
       <Button
-        :label="$t('cancel')"
-        icon="pi pi-times"
-        @click="closeDialog"
-        class="p-button-text"
-      />
-      <Button
         :label="$t('confirm')"
         icon="pi pi-check"
         @click="confirmCustomization"
