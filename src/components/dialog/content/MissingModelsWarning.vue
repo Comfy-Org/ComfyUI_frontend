@@ -304,26 +304,7 @@ const missingModels = computed(() => {
   z-index: 1;
 }
 
-.model-action-button {
+:deep(.download-button-container) {
   min-width: 80px;
-}
-
-.download-progress,
-.download-complete,
-.download-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 80px;
-}
-
-.progress-text {
-  font-size: 0.8rem;
-  color: var(--text-color);
-}
-
-.download-complete i,
-.download-error i {
-  font-size: 1.2rem;
 }
 </style>

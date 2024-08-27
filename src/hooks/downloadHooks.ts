@@ -10,6 +10,12 @@ export enum DownloadState {
   Error = 'error'
 }
 
+export interface DownloadTask {
+  url: string
+  directory: string
+  filename: string
+}
+
 export function useDownload() {
   const toast = useToastStore()
   const downloadState = ref<DownloadState>(DownloadState.Idle)
@@ -41,11 +47,7 @@ export function useDownload() {
     }
   }
 
-  const triggerDownload = async (
-    url: string,
-    directory: string,
-    filename: string
-  ) => {
+  const triggerDownload = async (downloadTask: DownloadTask) => {
     if (downloadState.value !== DownloadState.Idle) {
       return
     }
@@ -53,9 +55,9 @@ export function useDownload() {
     progress.value = 0
     try {
       const status: DownloadModelStatus = await api.internalDownloadModel(
-        url,
-        directory,
-        filename,
+        downloadTask.url,
+        downloadTask.directory,
+        downloadTask.filename,
         1
       )
       handleDownloadProgress(status)
