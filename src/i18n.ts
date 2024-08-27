@@ -27,6 +27,7 @@ const messages = {
     experimental: 'BETA',
     deprecated: 'DEPR',
     loadWorkflow: 'Load Workflow',
+    goToNode: 'Go to Node',
     settings: 'Settings',
     searchSettings: 'Search Settings',
     searchNodes: 'Search Nodes',
@@ -45,7 +46,9 @@ const messages = {
       },
       queueTab: {
         showFlatList: 'Show Flat List',
-        backToAllTasks: 'Back to All Tasks'
+        backToAllTasks: 'Back to All Tasks',
+        containImagePreview: 'Fill Image Preview',
+        coverImagePreview: 'Fit Image Preview'
       }
     }
   },

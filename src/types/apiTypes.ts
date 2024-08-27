@@ -461,7 +461,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
       'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean(),
-      'Comfy.Workflow.SortNodeIdOnSave': z.boolean()
+      'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
+      'Comfy.Queue.ImageFit': z.enum(['contain', 'cover'])
     })
     .optional()
 )
