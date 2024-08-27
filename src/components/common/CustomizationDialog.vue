@@ -12,7 +12,7 @@
           <template #option="slotProps">
             <i
               :class="['pi', slotProps.option.value, 'mr-2']"
-              :style="{ color: selectedColor.value }"
+              :style="{ color: finalColor }"
             ></i>
           </template>
         </SelectButton>
@@ -132,6 +132,12 @@ const defaultColor = colorOptions.find(
 
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
 const selectedColor = ref<{ name: string; value: string }>(defaultColor)
+const finalColor = computed(() =>
+  selectedColor.value.value === 'custom'
+    ? `#${customColor.value}`
+    : selectedColor.value.value
+)
+
 const customColor = ref('000000')
 
 const closeDialog = () => {
@@ -139,11 +145,7 @@ const closeDialog = () => {
 }
 
 const confirmCustomization = () => {
-  const finalColor =
-    selectedColor.value.value === 'custom'
-      ? `#${customColor.value}`
-      : selectedColor.value.value
-  emit('confirm', selectedIcon.value.value, finalColor)
+  emit('confirm', selectedIcon.value.value, finalColor.value)
   closeDialog()
 }
 
