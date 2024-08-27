@@ -227,6 +227,20 @@ export const useSettingStore = defineStore('setting', {
         type: 'hidden',
         defaultValue: 'cover'
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Workflow.ModelDownload.AllowedSources',
+        name: 'Allowed model download sources',
+        type: 'hidden',
+        defaultValue: ['https://huggingface.co/', 'https://civitai.com/']
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Workflow.ModelDownload.AllowedSuffixes',
+        name: 'Allowed model download suffixes',
+        type: 'hidden',
+        defaultValue: ['.safetensors', '.sft']
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

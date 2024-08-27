@@ -463,7 +463,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
-      'Comfy.Queue.ImageFit': z.enum(['contain', 'cover'])
+      'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
+      'Comfy.Workflow.ModelDownload.AllowedSources': z.array(z.string()),
+      'Comfy.Workflow.ModelDownload.AllowedSuffixes': z.array(z.string())
     })
     .optional()
 )
