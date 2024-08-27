@@ -25,3 +25,15 @@ test.describe('Execution error', () => {
     await expect(executionError).toBeVisible()
   })
 })
+
+test.describe('Missing models warning', () => {
+  test('Should display a warning when missing models are found', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('model_download')
+
+    // Wait for the element with the .comfy-missing-models selector to be visible
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+  })
+})
