@@ -41,7 +41,7 @@ test.describe('Missing models warning', () => {
   }) => {
     // The fake_model.safetensors is served by
     // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
-    await comfyPage.loadWorkflow('model_download')
+    await comfyPage.loadWorkflow('missing_models')
 
     // Wait for the element with the .comfy-missing-models selector to be visible
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
