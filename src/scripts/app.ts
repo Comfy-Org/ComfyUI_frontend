@@ -3006,6 +3006,14 @@ export class ComfyApp {
     ) as Vector2
   }
 
+  canvasPosToClientPos(pos: Vector2): Vector2 {
+    const rect = this.canvasContainer.getBoundingClientRect()
+    const containerOffsets = [rect.left, rect.top]
+    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
+      ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
+    ) as Vector2
+  }
+
   getCanvasCenter(): Vector2 {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const [x, y, w, h] = app.canvas.ds.visible_area
