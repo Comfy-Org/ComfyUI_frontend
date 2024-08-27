@@ -1,7 +1,7 @@
 <template>
   <Dialog v-model:visible="visible" :header="$t('customizeFolder')">
     <div class="p-fluid">
-      <div class="field">
+      <div class="field icon-field">
         <label for="icon">{{ $t('icon') }}</label>
         <SelectButton
           v-model="selectedIcon"
@@ -18,7 +18,7 @@
         </SelectButton>
       </div>
       <Divider />
-      <div class="field">
+      <div class="field color-field">
         <label for="color">{{ $t('color') }}</label>
         <div class="color-picker-container">
           <SelectButton

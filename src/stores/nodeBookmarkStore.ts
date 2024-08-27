@@ -139,10 +139,26 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     nodePath: string,
     customization: BookmarkCustomization
   ) => {
-    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
-      ...bookmarksCustomization.value,
-      [nodePath]: customization
-    })
+    const currentCustomization = bookmarksCustomization.value[nodePath] || {}
+    const newCustomization = { ...currentCustomization, ...customization }
+
+    // Remove attributes that are set to default values
+    if (newCustomization.icon === defaultBookmarkIcon) {
+      delete newCustomization.icon
+    }
+    if (newCustomization.color === defaultBookmarkColor) {
+      delete newCustomization.color
+    }
+
+    // If the customization is empty, remove it entirely
+    if (Object.keys(newCustomization).length === 0) {
+      deleteBookmarkCustomization(nodePath)
+    } else {
+      settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
+        ...bookmarksCustomization.value,
+        [nodePath]: newCustomization
+      })
+    }
   }
 
   const deleteBookmarkCustomization = (nodePath: string) => {
@@ -156,10 +172,15 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     oldNodePath: string,
     newNodePath: string
   ) => {
-    settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
-      ...bookmarksCustomization.value,
-      [newNodePath]: bookmarksCustomization.value[oldNodePath]
-    })
+    const updatedCustomization = { ...bookmarksCustomization.value }
+    if (updatedCustomization[oldNodePath]) {
+      updatedCustomization[newNodePath] = updatedCustomization[oldNodePath]
+      delete updatedCustomization[oldNodePath]
+    }
+    settingStore.set(
+      'Comfy.NodeLibrary.BookmarksCustomization',
+      updatedCustomization
+    )
   }
 
   const defaultBookmarkIcon = 'pi-bookmark-fill'
