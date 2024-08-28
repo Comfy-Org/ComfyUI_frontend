@@ -339,6 +339,19 @@ class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets the metadata for a model
+   * @param {string} folder The folder containing the model
+   * @param {string} model The model to get metadata for
+   * @returns The metadata for the model
+   */
+  async viewMetadata(folder: string, model: string) {
+    const res = await this.fetchApi(
+      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
+    )
+    return await res.json()
+  }
+
+  /**
    * Tells the server to download a model from the specified URL to the specified directory and filename
    * @param {string} url The URL to download the model from
    * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
