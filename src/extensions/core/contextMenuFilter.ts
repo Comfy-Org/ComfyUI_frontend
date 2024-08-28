@@ -67,8 +67,7 @@ const ext = {
             if (rect.top < 0) {
               const scale =
                 1 -
-                ctx.root.getBoundingClientRect().height /
-                  ctx.root.clientHeight
+                ctx.root.getBoundingClientRect().height / ctx.root.clientHeight
               const shift = (ctx.root.clientHeight * scale) / 2
               ctx.root.style.top = -shift + 'px'
             }
