@@ -91,6 +91,13 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.2.39: **Litegraph** Group selected nodes with Ctrl + G</summary>
+
+https://github.com/user-attachments/assets/7805dc54-0854-4a28-8bcd-4b007fa01151
+
+</details>
+
+<details>
   <summary>v1.2.38: **Litegraph** Double click node title to edit</summary>
 
 https://github.com/user-attachments/assets/d61d5d0e-f200-4153-b293-3e3f6a212b30
