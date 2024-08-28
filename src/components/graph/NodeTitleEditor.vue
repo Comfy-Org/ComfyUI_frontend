@@ -15,6 +15,9 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { ComfyExtension } from '@/types/comfy'
 import EditableText from '@/components/common/EditableText.vue'
 import { LiteGraph } from '@comfyorg/litegraph'
+import { useSettingStore } from '@/stores/settingStore'
+
+const settingStore = useSettingStore()
 
 const showInput = ref(false)
 const editedTitle = ref('')
@@ -43,6 +46,10 @@ const extension: ComfyExtension = {
     const originalCallback = node.onNodeTitleDblClick
 
     node.onNodeTitleDblClick = function (e: MouseEvent, ...args: any[]) {
+      if (!settingStore.get('Comfy.Node.DoubleClickTitleToEdit')) {
+        return
+      }
+
       currentNode.value = this
       editedTitle.value = this.title
       showInput.value = true
