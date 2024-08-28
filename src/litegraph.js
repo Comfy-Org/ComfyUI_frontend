@@ -4959,14 +4959,14 @@ LGraphNode.prototype.executeAction = function(action)
             };
         }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
-        const groupTitleHeight = Math.round(group.font_size * 1.4);
+        const groupTitleHeight = Math.round(this.font_size * 1.4);
 
-        group.pos = [
+        this.pos = [
             bounds.left - padding,
             bounds.top - padding - groupTitleHeight
         ];
 
-        group.size = [
+        this.size = [
             bounds.right - bounds.left + padding * 2,
             bounds.bottom - bounds.top + padding * 2 + groupTitleHeight
         ];
