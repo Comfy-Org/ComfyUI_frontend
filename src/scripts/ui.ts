@@ -5,6 +5,9 @@ import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
 import { TaskItem } from '@/types/apiTypes'
 import { showSettingsDialog } from '@/services/dialogService'
+import { useToastStore } from '@/stores/toastStore'
+import { LGraphGroup } from '@comfyorg/litegraph'
+import { useSettingStore } from '@/stores/settingStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -755,6 +758,31 @@ export class ComfyUI {
         textContent: 'Reset View',
         onclick: async () => {
           app.resetView()
+        }
+      }),
+      $el('button', {
+        id: 'comfy-group-selected-nodes-button',
+        textContent: 'Group',
+        hidden: true,
+        onclick: () => {
+          if (
+            !app.canvas.selected_nodes ||
+            Object.keys(app.canvas.selected_nodes).length === 0
+          ) {
+            useToastStore().add({
+              severity: 'error',
+              summary: 'No nodes selected',
+              detail: 'Please select nodes to group',
+              life: 3000
+            })
+            return
+          }
+          const group = new LGraphGroup()
+          const padding = useSettingStore().get(
+            'Comfy.GroupSelectedNodes.Padding'
+          )
+          group.addNodes(Object.values(app.canvas.selected_nodes), padding)
+          app.canvas.graph.add(group)
         }
       })
     ]) as HTMLDivElement

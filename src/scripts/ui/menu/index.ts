@@ -10,9 +10,6 @@ import { ComfyWorkflowsMenu } from './workflows'
 import { getInterruptButton } from './interruptButton'
 import './menu.css'
 import type { ComfySettingsDialog } from '../settings'
-import { useToastStore } from '@/stores/toastStore'
-import { LGraphGroup } from '@comfyorg/litegraph'
-import { useSettingStore } from '@/stores/settingStore'
 
 type MenuPosition = 'Disabled' | 'Top' | 'Bottom'
 
@@ -91,33 +88,6 @@ export class ComfyAppMenu {
         app
       })
     )
-    const groupSelectedNodesButton = new ComfyButton({
-      icon: 'group',
-      content: 'Group',
-      tooltip: 'Group selected nodes',
-      action: () => {
-        if (
-          !app.canvas.selected_nodes ||
-          Object.keys(app.canvas.selected_nodes).length === 0
-        ) {
-          useToastStore().add({
-            severity: 'error',
-            summary: 'No nodes selected',
-            detail: 'Please select nodes to group',
-            life: 3000
-          })
-          return
-        }
-        const group = new LGraphGroup()
-        const padding = useSettingStore().get(
-          'Comfy.GroupSelectedNodes.Padding'
-        )
-        group.addNodes(Object.values(app.canvas.selected_nodes), padding)
-        app.canvas.graph.add(group)
-      }
-    })
-    groupSelectedNodesButton.element.id = 'comfy-group-selected-nodes-button'
-    groupSelectedNodesButton.hidden = true
 
     this.actionsGroup = new ComfyButtonGroup(
       new ComfyButton({
@@ -152,8 +122,7 @@ export class ComfyAppMenu {
             api.dispatchEvent(new CustomEvent('graphCleared'))
           }
         }
-      }),
-      groupSelectedNodesButton
+      })
     )
     // Keep the settings group as there are custom scripts attaching extra
     // elements to it.
