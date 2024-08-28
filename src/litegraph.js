@@ -4930,6 +4930,48 @@ LGraphNode.prototype.executeAction = function(action)
         }
     };
 
+    /**
+     * Add nodes to the group and adjust the group's position and size accordingly
+     * @param {LGraphNode[]} nodes - The nodes to add to the group
+     * @param {number} [padding=10] - The padding around the group
+     * @returns {void}
+     */
+    LGraphGroup.prototype.addNodes = function(nodes, padding = 10) {
+        if (!this._nodes && nodes.length === 0) return;
+
+        const allNodes = [...(this._nodes || []), ...nodes];
+
+        const bounds = allNodes.reduce((acc, node) => {
+            const [x, y] = node.pos;
+            const [width, height] = node.size;
+            const isReroute = node.type === "Reroute";
+            const isCollapsed = node.flags?.collapsed;
+
+            const top = y - (isReroute ? 0 : LiteGraph.NODE_TITLE_HEIGHT);
+            const bottom = isCollapsed ? top + LiteGraph.NODE_TITLE_HEIGHT : y + height;
+            const right = isCollapsed && node._collapsed_width ? x + Math.round(node._collapsed_width) : x + width;
+
+            return {
+            left: Math.min(acc.left, x),
+            top: Math.min(acc.top, top),
+            right: Math.max(acc.right, right),
+            bottom: Math.max(acc.bottom, bottom)
+            };
+        }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+
+        const groupTitleHeight = Math.round(group.font_size * 1.4);
+
+        group.pos = [
+            bounds.left - padding,
+            bounds.top - padding - groupTitleHeight
+        ];
+
+        group.size = [
+            bounds.right - bounds.left + padding * 2,
+            bounds.bottom - bounds.top + padding * 2 + groupTitleHeight
+        ];
+    }
+
     LGraphGroup.prototype.isPointInside = LGraphNode.prototype.isPointInside;
     LGraphGroup.prototype.setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;
 
