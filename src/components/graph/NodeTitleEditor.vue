@@ -54,9 +54,12 @@ const extension: ComfyExtension = {
       editedTitle.value = this.title
       showInput.value = true
 
+      const isCollapsed = node.flags?.collapsed
       const [x1, y1, x2, y2] = this.getBounding()
       const [nodeWidth, nodeHeight] = this.size
-      const canvasWidth = nodeWidth
+      // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
+      const canvasWidth =
+        isCollapsed && node._collapsed_width ? node._collapsed_width : nodeWidth
       const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
 
       const [left, top] = app.canvasPosToClientPos([x1, y1])
