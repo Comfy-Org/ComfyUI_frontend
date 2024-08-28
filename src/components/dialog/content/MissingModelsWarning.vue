@@ -64,8 +64,15 @@ import ListBox from 'primevue/listbox'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
+import { useSettingStore } from '@/stores/settingStore'
 
-const allowedSources = ['https://civitai.com/', 'https://huggingface.co/']
+const settingStore = useSettingStore()
+const allowedSources = settingStore.get(
+  'Comfy.Workflow.ModelDownload.AllowedSources'
+)
+const allowedSuffixes = settingStore.get(
+  'Comfy.Workflow.ModelDownload.AllowedSuffixes'
+)
 
 interface ModelInfo {
   name: string
@@ -151,14 +158,15 @@ const missingModels = computed(() => {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
-        error: 'Download not allowed from this source'
+        error:
+          'Download not allowed from this source: ' + allowedSources.join(', ')
       }
     }
-    if (!model.name.endsWith('.safetensors') && !model.name.endsWith('.sft')) {
+    if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
-        error: 'Only .safetensors models are allowed'
+        error: 'Only allowed suffixes are ' + allowedSuffixes.join(', ')
       }
     }
     if (model.directory_invalid) {

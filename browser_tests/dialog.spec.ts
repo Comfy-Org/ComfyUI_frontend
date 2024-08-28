@@ -25,3 +25,35 @@ test.describe('Execution error', () => {
     await expect(executionError).toBeVisible()
   })
 })
+
+test.describe('Missing models warning', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSources', [
+      'http://localhost:8188'
+    ])
+    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSuffixes', [
+      '.safetensors'
+    ])
+  })
+
+  test('Should display a warning when missing models are found', async ({
+    comfyPage
+  }) => {
+    // The fake_model.safetensors is served by
+    // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
+    await comfyPage.loadWorkflow('missing_models')
+
+    // Wait for the element with the .comfy-missing-models selector to be visible
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+
+    // Click the download button
+    const downloadButton = comfyPage.page.getByLabel('Download')
+    await expect(downloadButton).toBeVisible()
+    await downloadButton.click()
+
+    // Wait for the element with the .download-complete selector to be visible
+    const downloadComplete = comfyPage.page.locator('.download-complete')
+    await expect(downloadComplete).toBeVisible()
+  })
+})
