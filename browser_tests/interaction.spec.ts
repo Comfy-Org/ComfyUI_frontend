@@ -158,6 +158,16 @@ test.describe('Node Interaction', () => {
     })
     expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
   })
+
+  test('Can group selected nodes', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.GroupSelectedNodes.Padding', 10)
+    await comfyPage.select2Nodes()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.keyboard.press('KeyG')
+    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
+  })
 })
 
 test.describe('Canvas Interaction', () => {

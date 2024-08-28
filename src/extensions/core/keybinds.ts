@@ -40,7 +40,8 @@ app.registerExtension({
         s: '#comfy-save-button',
         o: '#comfy-file-input',
         Backspace: '#comfy-clear-button',
-        d: '#comfy-load-default-button'
+        d: '#comfy-load-default-button',
+        g: '#comfy-group-selected-nodes-button'
       }
 
       const modifierKeybindId = modifierKeyIdMap[event.key]

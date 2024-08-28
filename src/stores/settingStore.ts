@@ -241,6 +241,17 @@ export const useSettingStore = defineStore('setting', {
         type: 'hidden',
         defaultValue: ['.safetensors', '.sft']
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.GroupSelectedNodes.Padding',
+        name: 'Group selected nodes padding',
+        type: 'slider',
+        defaultValue: 10,
+        attrs: {
+          min: 0,
+          max: 100
+        }
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

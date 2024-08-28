@@ -88,6 +88,7 @@ export class ComfyAppMenu {
         app
       })
     )
+
     this.actionsGroup = new ComfyButtonGroup(
       new ComfyButton({
         icon: 'refresh',
