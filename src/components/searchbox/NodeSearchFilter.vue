@@ -10,7 +10,7 @@
     <Select v-model="selectedFilterValue" :options="filterValues" filter />
   </div>
   <div class="_footer">
-    <Button type="button" label="Add" @click="submit"></Button>
+    <Button type="button" :label="$t('add')" @click="submit"></Button>
   </div>
 </template>
 
@@ -34,7 +34,9 @@ onMounted(() => {
   updateSelectedFilterValue()
 })
 
-const emit = defineEmits(['addFilter'])
+const emit = defineEmits<{
+  (event: 'addFilter', filterAndValue: FilterAndValue): void
+}>()
 
 const updateSelectedFilterValue = () => {
   if (filterValues.value.includes(selectedFilterValue.value)) {
