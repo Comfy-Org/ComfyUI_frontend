@@ -57,8 +57,8 @@ const extension: ComfyExtension = {
       const isCollapsed = node.flags?.collapsed
       const [x1, y1, x2, y2] = this.getBounding()
       const [nodeWidth, nodeHeight] = this.size
-      // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
       const canvasWidth =
+        // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
         isCollapsed && node._collapsed_width ? node._collapsed_width : nodeWidth
       const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
 
