@@ -5,6 +5,10 @@ import _ from 'lodash'
 
 type SearchAuxScore = [number, number, number, number]
 
+interface ExtraSearchOptions {
+  matchWildcards?: boolean
+}
+
 export class FuseSearch<T> {
   private fuse: Fuse<T>
   private readonly keys: string[]
@@ -145,13 +149,19 @@ export abstract class NodeFilter<FilterOptionT = string> {
 
   public abstract getNodeOptions(node: ComfyNodeDefImpl): FilterOptionT[]
 
-  public matches(node: ComfyNodeDefImpl, value: FilterOptionT): boolean {
-    if (value === '*') {
+  public matches(
+    node: ComfyNodeDefImpl,
+    value: FilterOptionT,
+    extraOptions?: ExtraSearchOptions
+  ): boolean {
+    const matchWildcards = extraOptions?.matchWildcards !== false
+    if (matchWildcards && value === '*') {
       return true
     }
     const options = this.getNodeOptions(node)
     return (
-      options.includes(value) || _.some(options, (option) => option === '*')
+      options.includes(value) ||
+      (matchWildcards && _.some(options, (option) => option === '*'))
     )
   }
 }
@@ -242,14 +252,15 @@ export class NodeSearchService {
   public searchNode(
     query: string,
     filters: FilterAndValue<string>[] = [],
-    options?: FuseSearchOptions
+    options?: FuseSearchOptions,
+    extraOptions?: ExtraSearchOptions
   ): ComfyNodeDefImpl[] {
     const matchedNodes = this.nodeFuseSearch.search(query)
 
     const results = matchedNodes.filter((node) => {
       return _.every(filters, (filterAndValue) => {
         const [filter, value] = filterAndValue
-        return filter.matches(node, value)
+        return filter.matches(node, value, extraOptions)
       })
     })
 

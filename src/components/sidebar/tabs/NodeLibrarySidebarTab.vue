@@ -23,8 +23,17 @@
         class="node-lib-search-box"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
+        @show-filter="($event) => searchFilter.toggle($event)"
+        @remove-filter="onRemoveFilter"
         :placeholder="$t('searchNodes') + '...'"
+        filter-icon="pi pi-filter"
+        :filters
       />
+
+      <Popover ref="searchFilter" class="node-lib-filter-popup">
+        <NodeSearchFilter @addFilter="onAddFilter" />
+      </Popover>
+
       <Tree
         class="node-lib-tree"
         v-model:expandedKeys="expandedKeys"
@@ -102,8 +111,9 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
+import Popover from 'primevue/popover'
 import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
 import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
 import Tree from 'primevue/tree'
@@ -116,17 +126,20 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { findNodeByKey, sortedTree } from '@/utils/treeUtil'
-import _ from 'lodash'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
+import { FilterAndValue } from '@/services/nodeSearchService'
+import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 
 const { t } = useI18n()
 const toast = useToast()
 const nodeDefStore = useNodeDefStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
+const searchFilter = ref(null)
 const alphabeticalSort = ref(false)
 const hoveredComfyNodeName = ref<string | null>(null)
 const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
@@ -240,16 +253,26 @@ const insertNode = (nodeDef: ComfyNodeDefImpl) => {
 }
 
 const filteredRoot = ref<TreeNode | null>(null)
+const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
+  ref([])
 const handleSearch = (query: string) => {
-  if (query.length < 3) {
+  if (query.length < 3 && !filters.value.length) {
     filteredRoot.value = null
     expandedKeys.value = {}
     return
   }
 
-  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(query, [], {
-    limit: 64
-  })
+  const f = filters.value.map((f) => f.filter as FilterAndValue<string>)
+  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(
+    query,
+    f,
+    {
+      limit: 64
+    },
+    {
+      matchWildcards: false
+    }
+  )
 
   filteredRoot.value = buildNodeDefTree(matchedNodes)
   expandNode(filteredRoot.value)
@@ -353,6 +376,26 @@ const updateCustomization = (icon: string, color: string) => {
     )
   }
 }
+
+const onAddFilter = (filterAndValue: FilterAndValue) => {
+  filters.value.push({
+    filter: filterAndValue,
+    badge: filterAndValue[0].invokeSequence.toUpperCase(),
+    badgeClass: filterAndValue[0].invokeSequence + '-badge',
+    text: filterAndValue[1],
+    id: +new Date()
+  })
+
+  handleSearch(searchQuery.value)
+}
+
+const onRemoveFilter = (filterAndValue) => {
+  const index = filters.value.findIndex((f) => f === filterAndValue)
+  if (index !== -1) {
+    filters.value.splice(index, 1)
+  }
+  handleSearch(searchQuery.value)
+}
 </script>
 
 <style>
@@ -361,6 +404,10 @@ const updateCustomization = (icon: string, color: string) => {
   align-items: center;
   margin-left: var(--p-tree-node-gap);
   flex-grow: 1;
+}
+
+.node-lib-filter-popup {
+  margin-left: -13px;
 }
 </style>
 

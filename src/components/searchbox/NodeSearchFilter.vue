@@ -1,48 +1,35 @@
 <template>
-  <Button
-    icon="pi pi-filter"
-    severity="secondary"
-    class="_filter-button"
-    @click="showModal"
-  />
-  <Dialog v-model:visible="visible" class="_dialog">
-    <template #header>
-      <h3>Add node filter condition</h3>
-    </template>
-    <div class="_dialog-body">
-      <SelectButton
-        v-model="selectedFilter"
-        :options="filters"
-        :allowEmpty="false"
-        optionLabel="name"
-        @change="updateSelectedFilterValue"
-      />
-      <AutoComplete
-        v-model="selectedFilterValue"
-        :suggestions="filterValues"
-        :min-length="0"
-        @complete="(event) => updateFilterValues(event.query)"
-        completeOnFocus
-        forceSelection
-        dropdown
-      ></AutoComplete>
-    </div>
-    <template #footer>
-      <Button type="button" label="Add" @click="submit"></Button>
-    </template>
-  </Dialog>
+  <div class="_content">
+    <SelectButton
+      v-model="selectedFilter"
+      :options="filters"
+      :allowEmpty="false"
+      optionLabel="name"
+      @change="updateSelectedFilterValue"
+    />
+    <AutoComplete
+      v-model="selectedFilterValue"
+      :suggestions="filterValues"
+      :min-length="0"
+      @complete="(event) => updateFilterValues(event.query)"
+      completeOnFocus
+      forceSelection
+      dropdown
+    ></AutoComplete>
+  </div>
+  <div class="_footer">
+    <Button type="button" label="Add" @click="submit"></Button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { NodeFilter, type FilterAndValue } from '@/services/nodeSearchService'
 import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
 import AutoComplete from 'primevue/autocomplete'
 import { ref, onMounted } from 'vue'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-const visible = ref<boolean>(false)
 const filters = ref<NodeFilter[]>([])
 const selectedFilter = ref<NodeFilter>()
 const filterValues = ref<string[]>([])
@@ -69,29 +56,21 @@ const updateFilterValues = (query: string) => {
 }
 
 const submit = () => {
-  visible.value = false
   emit('addFilter', [
     selectedFilter.value,
     selectedFilterValue.value
   ] as FilterAndValue)
 }
 
-const showModal = () => {
-  updateSelectedFilterValue()
-  visible.value = true
-}
+onMounted(updateSelectedFilterValue)
 </script>
 
 <style scoped>
-._filter-button {
-  z-index: 10;
-}
-
-._dialog {
-  @apply min-w-96;
-}
-
-._dialog-body {
+._content {
   @apply flex flex-col space-y-2;
+}
+
+._footer {
+  @apply flex flex-col pt-4 items-end;
 }
 </style>
