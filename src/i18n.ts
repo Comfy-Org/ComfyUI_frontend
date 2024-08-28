@@ -2,6 +2,9 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    add: 'Add',
+    confirm: 'Confirm',
+    reset: 'Reset',
     customizeFolder: 'Customize Folder',
     icon: 'Icon',
     color: 'Color',
