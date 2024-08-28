@@ -188,7 +188,8 @@ export const useSettingStore = defineStore('setting', {
         id: 'Comfy.Workflow.ShowMissingModelsWarning',
         name: 'Show missing models warning',
         type: 'boolean',
-        defaultValue: true
+        defaultValue: false,
+        experimental: true
       })
 
       app.ui.settings.addSetting({
