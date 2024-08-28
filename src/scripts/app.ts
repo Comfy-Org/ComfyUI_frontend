@@ -53,6 +53,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { LGraphGroup } from '@comfyorg/litegraph'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
