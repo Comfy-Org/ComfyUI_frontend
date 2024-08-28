@@ -1,8 +1,8 @@
 import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
-import { LiteGraph } from '@comfyorg/litegraph'
-import type { LGraphNode, INodeInputSlot, IWidget } from '@comfyorg/litegraph'
+import { LiteGraph, LGraphNode } from '@comfyorg/litegraph'
+import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
@@ -13,11 +13,12 @@ const TARGET = Symbol() // Used for reroutes to specify the real target widget
 interface PrimitiveNode extends LGraphNode {}
 
 const replacePropertyName = 'Run widget replace on values'
-class PrimitiveNode {
+class PrimitiveNode extends LGraphNode {
   controlValues: any[]
   lastType: string
   static category: string
-  constructor() {
+  constructor(title?: string) {
+    super(title)
     this.addOutput('connect to widget input', '*')
     this.serialize_widgets = true
     this.isVirtualNode = true

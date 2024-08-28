@@ -2001,8 +2001,15 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node = Object.assign(
-      function ComfyNode() {
+    const node = class ComfyNode extends LGraphNode {
+      static comfyClass? = nodeData.name
+      // TODO: change to "title?" once litegraph.d.ts has been updated
+      static title = nodeData.display_name || nodeData.name
+      static nodeData? = nodeData
+      static category?: string
+
+      constructor(title?: string) {
+        super(title)
         var inputs = nodeData['input']['required']
         if (nodeData['input']['optional'] != undefined) {
           inputs = Object.assign(
@@ -2068,13 +2075,9 @@ export class ComfyApp {
         this.serialize_widgets = true
 
         app.#invokeExtensionsAsync('nodeCreated', this)
-      },
-      {
-        title: nodeData.display_name || nodeData.name,
-        comfyClass: nodeData.name,
-        nodeData
       }
-    )
+    }
+    // @ts-expect-error
     node.prototype.comfyClass = nodeData.name
 
     this.#addNodeContextMenuHandler(node)
@@ -2082,9 +2085,7 @@ export class ComfyApp {
     this.#addNodeKeyHandler(node)
 
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
-    // @ts-expect-error
     LiteGraph.registerNodeType(nodeId, node)
-    // @ts-expect-error
     node.category = nodeData.category
   }
 
