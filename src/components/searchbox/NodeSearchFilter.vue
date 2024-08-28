@@ -7,15 +7,7 @@
       optionLabel="name"
       @change="updateSelectedFilterValue"
     />
-    <AutoComplete
-      v-model="selectedFilterValue"
-      :suggestions="filterValues"
-      :min-length="0"
-      @complete="(event) => updateFilterValues(event.query)"
-      completeOnFocus
-      forceSelection
-      dropdown
-    ></AutoComplete>
+    <Select v-model="selectedFilterValue" :options="filterValues" filter />
   </div>
   <div class="_footer">
     <Button type="button" label="Add" @click="submit"></Button>
@@ -26,33 +18,29 @@
 import { NodeFilter, type FilterAndValue } from '@/services/nodeSearchService'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import AutoComplete from 'primevue/autocomplete'
-import { ref, onMounted } from 'vue'
+import Select from 'primevue/select'
+import { ref, onMounted, computed } from 'vue'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-const filters = ref<NodeFilter[]>([])
+const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<NodeFilter>()
-const filterValues = ref<string[]>([])
+const filterValues = computed(() => selectedFilter.value?.fuseSearch.data ?? [])
 const selectedFilterValue = ref<string>('')
 
+const nodeDefStore = useNodeDefStore()
+
 onMounted(() => {
-  const nodeSearchService = useNodeDefStore().nodeSearchService
-  filters.value = nodeSearchService.nodeFilters
-  selectedFilter.value = nodeSearchService.nodeFilters[0]
+  selectedFilter.value = nodeDefStore.nodeSearchService.nodeFilters[0]
+  updateSelectedFilterValue()
 })
 
 const emit = defineEmits(['addFilter'])
 
 const updateSelectedFilterValue = () => {
-  updateFilterValues('')
   if (filterValues.value.includes(selectedFilterValue.value)) {
     return
   }
   selectedFilterValue.value = filterValues.value[0]
-}
-
-const updateFilterValues = (query: string) => {
-  filterValues.value = selectedFilter.value.fuseSearch.search(query)
 }
 
 const submit = () => {
@@ -61,8 +49,6 @@ const submit = () => {
     selectedFilterValue.value
   ] as FilterAndValue)
 }
-
-onMounted(updateSelectedFilterValue)
 </script>
 
 <style scoped>
