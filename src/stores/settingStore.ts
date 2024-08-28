@@ -252,6 +252,13 @@ export const useSettingStore = defineStore('setting', {
           max: 100
         }
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Node.DoubleClickTitleToEdit',
+        name: 'Double click node title to edit',
+        type: 'boolean',
+        defaultValue: true
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
