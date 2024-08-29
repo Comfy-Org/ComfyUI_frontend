@@ -203,6 +203,8 @@ class PrimitiveNode extends LGraphNode {
       type = 'COMBO'
     }
 
+    // Store current size as addWidget resizes the node
+    const size = this.size
     let widget
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
@@ -261,8 +263,14 @@ class PrimitiveNode extends LGraphNode {
       return r
     }
 
+    // Use the biggest dimensions in case the widgets caused the node to grow
+    this.size = [
+      Math.max(this.size[0], size[0]),
+      Math.max(this.size[1], size[1])
+    ]
+
     if (!recreating) {
-      // Grow our node if required
+      // Grow our node more if required
       const sz = this.computeSize()
       if (this.size[0] < sz[0]) {
         this.size[0] = sz[0]
