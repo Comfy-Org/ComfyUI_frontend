@@ -39,7 +39,11 @@ function intersect(a: Rect, b: Rect): Vector4 | null {
   else return null
 }
 
-function getClipPath(node: LGraphNode, element: HTMLElement): string {
+function getClipPath(
+  node: LGraphNode,
+  element: HTMLElement,
+  canvasRect: DOMRect
+): string {
   const selectedNode: LGraphNode = Object.values(
     app.canvas.selected_nodes
   )[0] as LGraphNode
@@ -51,8 +55,8 @@ function getClipPath(node: LGraphNode, element: HTMLElement): string {
     const bounding = selectedNode.getBounding()
     const intersection = intersect(
       {
-        x: elRect.x / scale,
-        y: elRect.y / scale,
+        x: elRect.x / scale - canvasRect.left,
+        y: elRect.y / scale - canvasRect.top,
         width: elRect.width / scale,
         height: elRect.height / scale
       },
@@ -72,9 +76,8 @@ function getClipPath(node: LGraphNode, element: HTMLElement): string {
       return ''
     }
 
-    const widgetRect = element.getBoundingClientRect()
-    const clipX = elRect.left + intersection[0] - widgetRect.x / scale + 'px'
-    const clipY = elRect.top + intersection[1] - widgetRect.y / scale + 'px'
+    const clipX = canvasRect.left + intersection[0] - elRect.x / scale + 'px'
+    const clipY = canvasRect.top + intersection[1] - elRect.y / scale + 'px'
     const clipWidth = intersection[2] + 'px'
     const clipHeight = intersection[3] + 'px'
     const path = `polygon(0% 0%, 0% 100%, ${clipX} 100%, ${clipX} ${clipY}, calc(${clipX} + ${clipWidth}) ${clipY}, calc(${clipX} + ${clipWidth}) calc(${clipY} + ${clipHeight}), ${clipX} calc(${clipY} + ${clipHeight}), ${clipX} 100%, 100% 100%, 100% 0%)`
@@ -356,7 +359,7 @@ LGraphNode.prototype.addDOMWidget = function (
       })
 
       if (enableDomClipping) {
-        element.style.clipPath = getClipPath(node, element)
+        element.style.clipPath = getClipPath(node, element, elRect)
         element.style.willChange = 'clip-path'
       }
 
