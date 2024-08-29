@@ -622,5 +622,21 @@ describe('widget inputs', () => {
         })
       })
     })
+    it('primitive maintains size on reload', async () => {
+      const { ez, graph } = await start()
+      const primitive = ez.PrimitiveNode()
+      const image = ez.EmptyImage()
+
+      image.widgets.width.convertToInput()
+      primitive.outputs[0].connectTo(image.inputs.width)
+
+      primitive.node.size = [999, 999]
+
+      await checkBeforeAndAfterReload(graph, async (r) => {
+        const { node } = graph.find(primitive)
+        expect(node.size[0]).toBe(999)
+        expect(node.size[1]).toBe(999)
+      })
+    })
   })
 })
