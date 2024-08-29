@@ -1,5 +1,6 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
+import { reactive } from 'vue'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -95,11 +96,17 @@ export class ComfyModelDef {
 
 /** Model store for a folder */
 export class ModelStore {
-  models: Record<string, ComfyModelDef> = {}
+  models: Record<string, ComfyModelDef> = reactive({})
 
   constructor(directory: string, models: string[]) {
     for (const model of models) {
-      this.models[model] = new ComfyModelDef(model, directory)
+      this.models[model] = reactive(new ComfyModelDef(model, directory))
+    }
+  }
+
+  async loadModelMetadata(modelName: string) {
+    if (this.models[modelName]) {
+      await this.models[modelName].load()
     }
   }
 }
@@ -119,7 +126,7 @@ export const useModelStore = defineStore('modelStore', {
       if (!models) {
         return null
       }
-      const store = new ModelStore(folder, models)
+      const store = reactive(new ModelStore(folder, models))
       this.modelStoreMap[folder] = store
       return store
     },
