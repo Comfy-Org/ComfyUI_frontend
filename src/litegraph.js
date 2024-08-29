@@ -4797,149 +4797,152 @@ const globalExport = {};
 
     globalThis.LGraphNode = LiteGraph.LGraphNode = LGraphNode;
 
-    function LGraphGroup(title) {
-        this._ctor(title);
-    }
+    class LGraphGroup {
 
-    globalThis.LGraphGroup = LiteGraph.LGraphGroup = LGraphGroup;
-
-    LGraphGroup.prototype._ctor = function(title) {
-        this.title = title || "Group";
-        this.font_size = LiteGraph.DEFAULT_GROUP_FONT || 24;
-        this.color = LGraphCanvas.node_colors.pale_blue
-            ? LGraphCanvas.node_colors.pale_blue.groupcolor
-            : "#AAA";
-        this._bounding = new Float32Array([10, 10, 140, 80]);
-        this._pos = this._bounding.subarray(0, 2);
-        this._size = this._bounding.subarray(2, 4);
-        this._nodes = [];
-        this.graph = null;
-
-        Object.defineProperty(this, "pos", {
-            set: function(v) {
-                if (!v || v.length < 2) {
-                    return;
-                }
-                this._pos[0] = v[0];
-                this._pos[1] = v[1];
-            },
-            get: function() {
-                return this._pos;
-            },
-            enumerable: true
-        });
-
-        Object.defineProperty(this, "size", {
-            set: function(v) {
-                if (!v || v.length < 2) {
-                    return;
-                }
-                this._size[0] = Math.max(140, v[0]);
-                this._size[1] = Math.max(80, v[1]);
-            },
-            get: function() {
-                return this._size;
-            },
-            enumerable: true
-        });
-    };
-
-    LGraphGroup.prototype.configure = function(o) {
-        this.title = o.title;
-        this._bounding.set(o.bounding);
-        this.color = o.color;
-        if (o.font_size) {
-            this.font_size = o.font_size;
+        constructor(title) {
+            this._ctor(title);
         }
-    };
 
-    LGraphGroup.prototype.serialize = function() {
-        var b = this._bounding;
-        return {
-            title: this.title,
-            bounding: [
-                Math.round(b[0]),
-                Math.round(b[1]),
-                Math.round(b[2]),
-                Math.round(b[3])
-            ],
-            color: this.color,
-            font_size: this.font_size
-        };
-    };
+        _ctor(title) {
+            this.title = title || "Group";
+            this.font_size = LiteGraph.DEFAULT_GROUP_FONT || 24;
+            this.color = LGraphCanvas.node_colors.pale_blue
+                ? LGraphCanvas.node_colors.pale_blue.groupcolor
+                : "#AAA";
+            this._bounding = new Float32Array([10, 10, 140, 80]);
+            this._pos = this._bounding.subarray(0, 2);
+            this._size = this._bounding.subarray(2, 4);
+            this._nodes = [];
+            this.graph = null;
 
-    LGraphGroup.prototype.move = function(deltax, deltay, ignore_nodes) {
-        this._pos[0] += deltax;
-        this._pos[1] += deltay;
-        if (ignore_nodes) {
-            return;
+            Object.defineProperty(this, "pos", {
+                set: function (v) {
+                    if (!v || v.length < 2) {
+                        return;
+                    }
+                    this._pos[0] = v[0];
+                    this._pos[1] = v[1];
+                },
+                get: function () {
+                    return this._pos;
+                },
+                enumerable: true
+            });
+
+            Object.defineProperty(this, "size", {
+                set: function (v) {
+                    if (!v || v.length < 2) {
+                        return;
+                    }
+                    this._size[0] = Math.max(140, v[0]);
+                    this._size[1] = Math.max(80, v[1]);
+                },
+                get: function () {
+                    return this._size;
+                },
+                enumerable: true
+            });
         }
-        for (var i = 0; i < this._nodes.length; ++i) {
-            var node = this._nodes[i];
-            node.pos[0] += deltax;
-            node.pos[1] += deltay;
+
+        configure(o) {
+            this.title = o.title;
+            this._bounding.set(o.bounding);
+            this.color = o.color;
+            if (o.font_size) {
+                this.font_size = o.font_size;
+            }
         }
-    };
 
-    LGraphGroup.prototype.recomputeInsideNodes = function() {
-        this._nodes.length = 0;
-        var nodes = this.graph._nodes;
-        var node_bounding = new Float32Array(4);
-
-        for (var i = 0; i < nodes.length; ++i) {
-            var node = nodes[i];
-            node.getBounding(node_bounding);
-            if (!overlapBounding(this._bounding, node_bounding)) {
-                continue;
-            } //out of the visible area
-            this._nodes.push(node);
-        }
-    };
-
-    /**
-     * Add nodes to the group and adjust the group's position and size accordingly
-     * @param {LGraphNode[]} nodes - The nodes to add to the group
-     * @param {number} [padding=10] - The padding around the group
-     * @returns {void}
-     */
-    LGraphGroup.prototype.addNodes = function(nodes, padding = 10) {
-        if (!this._nodes && nodes.length === 0) return;
-
-        const allNodes = [...(this._nodes || []), ...nodes];
-
-        const bounds = allNodes.reduce((acc, node) => {
-            const [x, y] = node.pos;
-            const [width, height] = node.size;
-            const isReroute = node.type === "Reroute";
-            const isCollapsed = node.flags?.collapsed;
-
-            const top = y - (isReroute ? 0 : LiteGraph.NODE_TITLE_HEIGHT);
-            const bottom = isCollapsed ? top + LiteGraph.NODE_TITLE_HEIGHT : y + height;
-            const right = isCollapsed && node._collapsed_width ? x + Math.round(node._collapsed_width) : x + width;
-
+        serialize() {
+            var b = this._bounding;
             return {
-            left: Math.min(acc.left, x),
-            top: Math.min(acc.top, top),
-            right: Math.max(acc.right, right),
-            bottom: Math.max(acc.bottom, bottom)
+                title: this.title,
+                bounding: [
+                    Math.round(b[0]),
+                    Math.round(b[1]),
+                    Math.round(b[2]),
+                    Math.round(b[3])
+                ],
+                color: this.color,
+                font_size: this.font_size
             };
-        }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+        }
 
-        const groupTitleHeight = Math.round(this.font_size * 1.4);
+        move(deltax, deltay, ignore_nodes) {
+            this._pos[0] += deltax;
+            this._pos[1] += deltay;
+            if (ignore_nodes) {
+                return;
+            }
+            for (var i = 0; i < this._nodes.length; ++i) {
+                var node = this._nodes[i];
+                node.pos[0] += deltax;
+                node.pos[1] += deltay;
+            }
+        }
 
-        this.pos = [
-            bounds.left - padding,
-            bounds.top - padding - groupTitleHeight
-        ];
+        recomputeInsideNodes() {
+            this._nodes.length = 0;
+            var nodes = this.graph._nodes;
+            var node_bounding = new Float32Array(4);
 
-        this.size = [
-            bounds.right - bounds.left + padding * 2,
-            bounds.bottom - bounds.top + padding * 2 + groupTitleHeight
-        ];
+            for (var i = 0; i < nodes.length; ++i) {
+                var node = nodes[i];
+                node.getBounding(node_bounding);
+                if (!overlapBounding(this._bounding, node_bounding)) {
+                    continue;
+                } //out of the visible area
+                this._nodes.push(node);
+            }
+        }
+
+        /**
+         * Add nodes to the group and adjust the group's position and size accordingly
+         * @param {LGraphNode[]} nodes - The nodes to add to the group
+         * @param {number} [padding=10] - The padding around the group
+         * @returns {void}
+         */
+        addNodes(nodes, padding = 10) {
+            if (!this._nodes && nodes.length === 0) return;
+
+            const allNodes = [...(this._nodes || []), ...nodes];
+
+            const bounds = allNodes.reduce((acc, node) => {
+                const [x, y] = node.pos;
+                const [width, height] = node.size;
+                const isReroute = node.type === "Reroute";
+                const isCollapsed = node.flags?.collapsed;
+
+                const top = y - (isReroute ? 0 : LiteGraph.NODE_TITLE_HEIGHT);
+                const bottom = isCollapsed ? top + LiteGraph.NODE_TITLE_HEIGHT : y + height;
+                const right = isCollapsed && node._collapsed_width ? x + Math.round(node._collapsed_width) : x + width;
+
+                return {
+                left: Math.min(acc.left, x),
+                top: Math.min(acc.top, top),
+                right: Math.max(acc.right, right),
+                bottom: Math.max(acc.bottom, bottom)
+                };
+            }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+
+            const groupTitleHeight = Math.round(this.font_size * 1.4);
+
+            this.pos = [
+                bounds.left - padding,
+                bounds.top - padding - groupTitleHeight
+            ];
+
+            this.size = [
+                bounds.right - bounds.left + padding * 2,
+                bounds.bottom - bounds.top + padding * 2 + groupTitleHeight
+            ];
+        }
     }
 
     LGraphGroup.prototype.isPointInside = LGraphNode.prototype.isPointInside;
     LGraphGroup.prototype.setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas;
+
+    globalThis.LGraphGroup = LiteGraph.LGraphGroup = LGraphGroup;
 
     //****************************************
 
