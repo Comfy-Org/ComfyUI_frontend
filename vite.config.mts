@@ -91,6 +91,9 @@ export default defineConfig({
   base: '',
   server: {
     proxy: {
+      '/internal': {
+        target: DEV_SERVER_COMFYUI_URL,
+      },
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
