@@ -689,7 +689,7 @@ export class ComfyUI {
         id: 'comfy-dev-save-api-button',
         textContent: 'Save (API Format)',
         style: { width: '100%', display: 'none' },
-        onclick: () => {
+        onclick: async () => {
           let filename = 'workflow_api.json'
           if (promptFilename.value) {
             filename = prompt('Save workflow (API) as:', filename)
@@ -698,22 +698,38 @@ export class ComfyUI {
               filename += '.json'
             }
           }
-          app.graphToPrompt().then((p) => {
-            const json = JSON.stringify(p.output, null, 2) // convert the data to a JSON string
-            const blob = new Blob([json], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = $el('a', {
-              href: url,
-              download: filename,
-              style: { display: 'none' },
-              parent: document.body
-            })
-            a.click()
-            setTimeout(function () {
-              a.remove()
-              window.URL.revokeObjectURL(url)
-            }, 0)
+          const p = await app.graphToPrompt();
+          
+          if(this.isSaveModelHash(p.output)) {
+            const request_body = {"prompt": p.output, "workflow": p.workflow}
+            const resp = await api.fetchApi("/get_hash", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(request_body),
+            });
+
+            if(resp.status === 200) {
+              const res = await resp.json();
+              p.output = res.output;
+            }
+          }
+
+          const json = JSON.stringify(p.output, null, 2) // convert the data to a JSON string
+          const blob = new Blob([json], { type: 'application/json' })
+          const url = URL.createObjectURL(blob)
+          const a = $el('a', {
+            href: url,
+            download: filename,
+            style: { display: 'none' },
+            parent: document.body
           })
+          a.click()
+          setTimeout(function () {
+            a.remove()
+            window.URL.revokeObjectURL(url)
+          }, 0)
         }
       }),
       $el('button', {
@@ -820,5 +836,15 @@ export class ComfyUI {
       }
       this.lastQueueSize = status.exec_info.queue_remaining
     }
+  }
+
+
+  isSaveModelHash(obj: any): boolean | undefined {
+    for (const key in obj) {
+        if (obj[key].class_type === "SaveAllModelHashesNode") {
+            return obj[key].inputs.save_hash;
+        }
+    }
+    return false; // Return undefined if the SaveAllModelHashesNode is not found
   }
 }
