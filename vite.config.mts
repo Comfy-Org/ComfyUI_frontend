@@ -1,4 +1,5 @@
 import { defineConfig, Plugin } from 'vite';
+import type { UserConfigExport } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import dotenv from "dotenv";
@@ -128,6 +129,11 @@ export default defineConfig({
     minifySyntax: SHOULD_MINIFY,
     minifyWhitespace: SHOULD_MINIFY,
   },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./vitest.setup.ts'],
+  },
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),
   },
@@ -136,4 +142,4 @@ export default defineConfig({
       '@': '/src'
     }
   }
-});
+}) as UserConfigExport;
