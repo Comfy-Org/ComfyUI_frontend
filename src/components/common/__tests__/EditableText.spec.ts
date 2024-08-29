@@ -38,7 +38,7 @@ describe('EditableText', () => {
       isEditing: true
     })
     expect(wrapper.find('span').exists()).toBe(false)
-    expect(wrapper.findComponent(InputText).props('modelValue')).toBe(
+    expect(wrapper.findComponent(InputText).props()['modelValue']).toBe(
       'Test Text'
     )
   })
