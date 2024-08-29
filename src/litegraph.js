@@ -11525,8 +11525,8 @@ const globalExport = {};
 
             setTimeout(function () {
                 input.focus();
+                const clickTime = Date.now();
                 function handleOutsideClick(e) {
-                    const clickTime = Date.now();
                     if (e.target === canvas && Date.now() - clickTime > 256) {
                         dialog.close();
                         canvas.parentNode.removeEventListener("click", handleOutsideClick);
