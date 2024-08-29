@@ -1,0 +1,31 @@
+name: Vitest Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'dev*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - 'dev*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: lts/*
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Vitest tests
+      run: npm run test:component
