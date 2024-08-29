@@ -1,6 +1,6 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
-import { reactive } from 'vue'
+import { reactive, ref, Ref } from 'vue'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -20,66 +20,70 @@ function _findInMetadata(metadata: any, ...keys: string[]): string | null {
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Proper filename of the model */
-  name: string
+  name = ref('')
   /** Directory containing the model, eg 'checkpoints' */
-  directory: string
+  directory = ref('')
   /** Title / display name of the model, sometimes same as the name but not always */
-  title: string
+  title = ref('')
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
-  architecture_id: string = ''
+  architecture_id = ref('')
   /** Metadata: author of the model */
-  author: string = ''
+  author = ref('')
   /** Metadata: resolution of the model, eg '1024x1024' */
-  resolution: string = ''
+  resolution = ref('')
   /** Metadata: description of the model */
-  description: string = ''
+  description = ref('')
   /** Metadata: usage hint for the model */
-  usage_hint: string = ''
+  usage_hint = ref('')
   /** Metadata: trigger phrase for the model */
-  trigger_phrase: string = ''
+  trigger_phrase = ref('')
   /** Metadata: tags list for the model */
-  tags: string[] = []
+  tags: Ref<string[]> = ref([])
   /** Metadata: image for the model */
-  image: string = ''
+  image = ref('')
   /** Whether the model metadata has been loaded from the server, used for `load()` */
-  has_loaded_metadata: boolean = false
+  has_loaded_metadata = ref(false)
 
   constructor(name: string, directory: string) {
-    this.name = name
-    this.title = name
-    this.directory = directory
+    this.name.value = name
+    this.title.value = name
+    this.directory.value = directory
   }
 
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
-    if (this.has_loaded_metadata) {
+    if (this.has_loaded_metadata.value) {
       return
     }
-    const metadata = await api.viewMetadata(this.directory, this.name)
+    const metadata = await api.viewMetadata(
+      this.directory.value,
+      this.name.value
+    )
     if (!metadata) {
       return
     }
-    this.title =
+    this.title.value =
       _findInMetadata(
         metadata,
         'modelspec.title',
         'title',
         'display_name',
         'name'
-      ) || this.name
-    this.architecture_id =
+      ) || this.name.value
+    this.architecture_id.value =
       _findInMetadata(metadata, 'modelspec.architecture', 'architecture') || ''
-    this.author = _findInMetadata(metadata, 'modelspec.author', 'author') || ''
-    this.description =
+    this.author.value =
+      _findInMetadata(metadata, 'modelspec.author', 'author') || ''
+    this.description.value =
       _findInMetadata(metadata, 'modelspec.description', 'description') || ''
-    this.resolution =
+    this.resolution.value =
       _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
-    this.usage_hint =
+    this.usage_hint.value =
       _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
-    this.trigger_phrase =
+    this.trigger_phrase.value =
       _findInMetadata(metadata, 'modelspec.trigger_phrase', 'trigger_phrase') ||
       ''
-    this.image =
+    this.image.value =
       _findInMetadata(
         metadata,
         'modelspec.thumbnail',
@@ -89,8 +93,8 @@ export class ComfyModelDef {
       ) || ''
     const tagsCommaSeparated =
       _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
-    this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
-    this.has_loaded_metadata = true
+    this.tags.value = tagsCommaSeparated.split(',').map((tag) => tag.trim())
+    this.has_loaded_metadata.value = true
   }
 }
 
@@ -100,7 +104,7 @@ export class ModelStore {
 
   constructor(directory: string, models: string[]) {
     for (const model of models) {
-      this.models[model] = reactive(new ComfyModelDef(model, directory))
+      this.models[model] = new ComfyModelDef(model, directory)
     }
   }
 
