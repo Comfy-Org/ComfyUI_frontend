@@ -1,0 +1,7 @@
+# Default
+* text=auto
+
+# Force TS to LF to make the unixy scripts not break on Windows
+*.ts text eol=lf
+*.vue text eol=lf
+*.js text eol=lf

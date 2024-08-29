@@ -1,0 +1,108 @@
+<template>
+  <Galleria
+    v-model:visible="galleryVisible"
+    @update:visible="handleVisibilityChange"
+    :activeIndex="activeIndex"
+    @update:activeIndex="handleActiveIndexChange"
+    :value="allGalleryItems"
+    :showIndicators="false"
+    changeItemOnIndicatorHover
+    showItemNavigators
+    fullScreen
+    circular
+    :showThumbnails="false"
+  >
+    <template #item="{ item }">
+      <ComfyImage
+        :key="item.url"
+        :src="item.url"
+        :contain="false"
+        class="galleria-image"
+      />
+    </template>
+  </Galleria>
+</template>
+
+<script setup lang="ts">
+import { defineProps, ref, watch, onMounted, onUnmounted } from 'vue'
+import Galleria from 'primevue/galleria'
+import { ResultItemImpl } from '@/stores/queueStore'
+import ComfyImage from '@/components/common/ComfyImage.vue'
+
+const galleryVisible = ref(false)
+
+const emit = defineEmits<{
+  (e: 'update:activeIndex', value: number): void
+}>()
+
+const props = defineProps<{
+  allGalleryItems: ResultItemImpl[]
+  activeIndex: number
+}>()
+
+watch(
+  () => props.activeIndex,
+  (index) => {
+    if (index !== -1) {
+      galleryVisible.value = true
+    }
+  }
+)
+
+const handleVisibilityChange = (visible: boolean) => {
+  if (!visible) {
+    emit('update:activeIndex', -1)
+  }
+}
+
+const handleActiveIndexChange = (index: number) => {
+  emit('update:activeIndex', index)
+}
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (!galleryVisible.value) return
+
+  switch (event.key) {
+    case 'ArrowLeft':
+      navigateImage(-1)
+      break
+    case 'ArrowRight':
+      navigateImage(1)
+      break
+    case 'Escape':
+      galleryVisible.value = false
+      handleVisibilityChange(false)
+      break
+  }
+}
+
+const navigateImage = (direction: number) => {
+  const newIndex =
+    (props.activeIndex + direction + props.allGalleryItems.length) %
+    props.allGalleryItems.length
+  emit('update:activeIndex', newIndex)
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
+})
+</script>
+
+<style>
+/* PrimeVue's galleria teleports the fullscreen gallery out of subtree so we
+cannot use scoped style here. */
+img.galleria-image {
+  max-width: 100vw;
+  max-height: 100vh;
+  object-fit: contain;
+}
+
+.p-galleria-close-button {
+  /* Set z-index so the close button doesn't get hidden behind the image when image is large */
+  z-index: 1;
+}
+</style>

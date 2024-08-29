@@ -5,10 +5,18 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const IS_DEV = process.env.NODE_ENV === 'development';
+const SHOULD_MINIFY = process.env.ENABLE_MINIFY !== 'false';
 
 interface ShimResult {
   code: string;
   exports: string[];
+}
+
+function isLegacyFile(id: string): boolean {
+  return id.endsWith('.ts') && (
+    id.includes("src/extensions/core") ||
+    id.includes("src/scripts")
+  );
 }
 
 function comfyAPIPlugin(): Plugin {
@@ -18,8 +26,7 @@ function comfyAPIPlugin(): Plugin {
       if (IS_DEV)
         return null;
 
-      // TODO: Remove second condition after all js files are converted to ts
-      if (id.endsWith('.ts') || (id.endsWith('.js') && id.includes("extensions/core"))) {
+      if (isLegacyFile(id)) {
         const result = transformExports(code, id);
 
         if (result.exports.length > 0) {
@@ -78,11 +85,14 @@ function getModuleName(id: string): string {
   return fileName.replace(/\.\w+$/, '');  // Remove file extension
 }
 
+const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188';
+
 export default defineConfig({
+  base: '',
   server: {
     proxy: {
       '/api': {
-        target: process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188',
+        target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
         bypass: (req, res, options) => {
@@ -93,7 +103,7 @@ export default defineConfig({
         },
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8188',
+        target: DEV_SERVER_COMFYUI_URL,
         ws: true,
       },
     }
@@ -103,13 +113,20 @@ export default defineConfig({
     comfyAPIPlugin(),
   ],
   build: {
-    minify: false,
+    minify: SHOULD_MINIFY ? 'esbuild' : false,
+    target: 'es2022',
     sourcemap: true,
     rollupOptions: {
       // Disabling tree-shaking
       // Prevent vite remove unused exports
       treeshake: false
     }
+  },
+  esbuild: {
+    minifyIdentifiers: false,
+    keepNames: true,
+    minifySyntax: SHOULD_MINIFY,
+    minifyWhitespace: SHOULD_MINIFY,
   },
   define: {
     '__COMFYUI_FRONTEND_VERSION__': JSON.stringify(process.env.npm_package_version),

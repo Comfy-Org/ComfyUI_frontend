@@ -3,12 +3,20 @@ module.exports = async function () {
     observe() {}
     unobserve() {}
     disconnect() {}
-  };
+  }
 
-  const { nop } = require("./utils/nopProxy");
-  global.enableWebGLCanvas = nop;
+  require('reflect-metadata')
+  const { nop } = require('./utils/nopProxy')
+  global.enableWebGLCanvas = nop
 
-  HTMLCanvasElement.prototype.getContext = nop;
+  HTMLCanvasElement.prototype.getContext = nop
 
-  localStorage["Comfy.Settings.Comfy.Logging.Enabled"] = "false";
-};
+  localStorage['Comfy.Settings.Comfy.Logging.Enabled'] = 'false'
+
+  jest.mock('@/services/dialogService', () => {
+    return {
+      showLoadWorkflowWarning: jest.fn(),
+      showMissingModelsWarning: jest.fn()
+    }
+  })
+}

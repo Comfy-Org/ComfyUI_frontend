@@ -1,56 +1,75 @@
-import { ComfyLogging } from "./logging";
-import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from "./widgets";
-import { ComfyUI, $el } from "./ui";
-import { api } from "./api";
-import { defaultGraph } from "./defaultGraph";
+import { ComfyLogging } from './logging'
+import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
+import { ComfyUI, $el } from './ui'
+import { api } from './api'
+import { defaultGraph } from './defaultGraph'
 import {
   getPngMetadata,
   getWebpMetadata,
   getFlacMetadata,
   importA1111,
-  getLatentMetadata,
-} from "./pnginfo";
-import { addDomClippingSetting } from "./domWidget";
-import { createImageHost, calculateImageGrid } from "./ui/imagePreview";
-import { DraggableList } from "./ui/draggableList";
-import { applyTextReplacements, addStylesheet } from "./utils";
-import type { ComfyExtension } from "@/types/comfy";
+  getLatentMetadata
+} from './pnginfo'
+import { addDomClippingSetting } from './domWidget'
+import { createImageHost, calculateImageGrid } from './ui/imagePreview'
+import { DraggableList } from './ui/draggableList'
+import { applyTextReplacements, addStylesheet } from './utils'
+import type { ComfyExtension } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
-  parseComfyWorkflow,
-} from "../types/comfyWorkflow";
-import { ComfyNodeDef } from "@/types/apiTypes";
-import { lightenColor } from "@/utils/colorUtil";
-import { ComfyAppMenu } from "./ui/menu/index";
-import { getStorageValue } from "./utils";
-import { ComfyWorkflowManager, ComfyWorkflow } from "./workflows";
+  type NodeId,
+  validateComfyWorkflow
+} from '../types/comfyWorkflow'
+import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
+import { lightenColor } from '@/utils/colorUtil'
+import { ComfyAppMenu } from './ui/menu/index'
+import { getStorageValue } from './utils'
+import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
 import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph,
-} from "@comfyorg/litegraph";
-import { StorageLocation } from "@/types/settingTypes";
+  LiteGraph
+} from '@comfyorg/litegraph'
+import { StorageLocation } from '@/types/settingTypes'
 
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
-import "@comfyorg/litegraph/css/litegraph.css";
-import "../assets/css/style.css";
+import '@comfyorg/litegraph/style.css'
+import '../assets/css/style.css'
+import { ExtensionManager } from '@/types/extensionTypes'
+import {
+  ComfyNodeDefImpl,
+  SYSTEM_NODE_DEFS,
+  useNodeDefStore
+} from '@/stores/nodeDefStore'
+import { Vector2 } from '@comfyorg/litegraph'
+import _ from 'lodash'
+import {
+  showExecutionErrorDialog,
+  showLoadWorkflowWarning,
+  showMissingModelsWarning
+} from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { LGraphGroup } from '@comfyorg/litegraph'
 
-export const ANIM_PREVIEW_WIDGET = "$$comfy_animation_preview";
+export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
 function sanitizeNodeName(string) {
   let entityMap = {
-    "&": "",
-    "<": "",
-    ">": "",
-    '"': "",
-    "'": "",
-    "`": "",
-    "=": "",
-  };
+    '&': '',
+    '<': '',
+    '>': '',
+    '"': '',
+    "'": '',
+    '`': '',
+    '=': ''
+  }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    return entityMap[s];
-  });
+    return entityMap[s]
+  })
 }
 
 /**
@@ -62,115 +81,121 @@ export class ComfyApp {
    * List of entries to queue
    * @type {{number: number, batchCount: number}[]}
    */
-  #queueItems = [];
+  #queueItems = []
   /**
    * If the queue is currently being processed
    * @type {boolean}
    */
-  #processingQueue = false;
+  #processingQueue = false
 
   /**
    * Content Clipboard
    * @type {serialized node object}
    */
-  static clipspace = null;
-  static clipspace_invalidate_handler = null;
-  static open_maskeditor = null;
-  static clipspace_return_node = null;
+  static clipspace = null
+  static clipspace_invalidate_handler = null
+  static open_maskeditor = null
+  static clipspace_return_node = null
 
   // Force vite to import utils.ts as part of index.
   // Force import of DraggableList.
   static utils = {
     applyTextReplacements,
     addStylesheet,
-    DraggableList,
-  };
+    DraggableList
+  }
 
-  ui: ComfyUI;
-  logging: ComfyLogging;
-  extensions: ComfyExtension[];
-  _nodeOutputs: Record<string, any>;
-  nodePreviewImages: Record<string, typeof Image>;
-  shiftDown: boolean;
-  graph: LGraph;
-  enableWorkflowViewRestore: any;
-  canvas: LGraphCanvas;
-  dragOverNode: LGraphNode | null;
-  canvasEl: HTMLCanvasElement;
+  vueAppReady: boolean
+  ui: ComfyUI
+  logging: ComfyLogging
+  extensions: ComfyExtension[]
+  extensionManager: ExtensionManager
+  _nodeOutputs: Record<string, any>
+  nodePreviewImages: Record<string, typeof Image>
+  shiftDown: boolean
+  graph: LGraph
+  enableWorkflowViewRestore: any
+  canvas: LGraphCanvas
+  dragOverNode: LGraphNode | null
+  canvasEl: HTMLCanvasElement
   // x, y, scale
-  zoom_drag_start: [number, number, number] | null;
-  lastNodeErrors: any[] | null;
-  runningNodeId: number | null;
-  lastExecutionError: { node_id: number } | null;
-  progress: { value: number; max: number } | null;
-  configuringGraph: boolean;
-  isNewUserSession: boolean;
-  storageLocation: StorageLocation;
-  multiUserServer: boolean;
-  ctx: CanvasRenderingContext2D;
-  widgets: Record<string, ComfyWidgetConstructor>;
-  workflowManager: ComfyWorkflowManager;
-  bodyTop: HTMLElement;
-  bodyLeft: HTMLElement;
-  bodyRight: HTMLElement;
-  bodyBottom: HTMLElement;
-  menu: ComfyAppMenu;
-  nodeDefs: Record<string, ComfyNodeDef>;
+  zoom_drag_start: [number, number, number] | null
+  lastNodeErrors: any[] | null
+  runningNodeId: number | null
+  lastExecutionError: { node_id: number } | null
+  progress: { value: number; max: number } | null
+  configuringGraph: boolean
+  isNewUserSession: boolean
+  storageLocation: StorageLocation
+  multiUserServer: boolean
+  ctx: CanvasRenderingContext2D
+  widgets: Record<string, ComfyWidgetConstructor>
+  workflowManager: ComfyWorkflowManager
+  bodyTop: HTMLElement
+  bodyLeft: HTMLElement
+  bodyRight: HTMLElement
+  bodyBottom: HTMLElement
+  canvasContainer: HTMLElement
+  menu: ComfyAppMenu
+  modelsInFolderCache: Record<string, string[]>
 
   constructor() {
-    this.ui = new ComfyUI(this);
-    this.logging = new ComfyLogging(this);
-    this.workflowManager = new ComfyWorkflowManager(this);
-    this.bodyTop = $el("div.comfyui-body-top", { parent: document.body });
-    this.bodyLeft = $el("div.comfyui-body-left", { parent: document.body });
-    this.bodyRight = $el("div.comfyui-body-right", { parent: document.body });
-    this.bodyBottom = $el("div.comfyui-body-bottom", { parent: document.body });
-    this.menu = new ComfyAppMenu(this);
+    this.vueAppReady = false
+    this.ui = new ComfyUI(this)
+    this.logging = new ComfyLogging(this)
+    this.workflowManager = new ComfyWorkflowManager(this)
+    this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
+    this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
+    this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
+    this.bodyBottom = $el('div.comfyui-body-bottom', { parent: document.body })
+    this.canvasContainer = $el('div.graph-canvas-container', {
+      parent: document.body
+    })
+    this.menu = new ComfyAppMenu(this)
+    this.modelsInFolderCache = {}
 
     /**
      * List of extensions that are registered with the app
      * @type {ComfyExtension[]}
      */
-    this.extensions = [];
+    this.extensions = []
 
     /**
      * Stores the execution output data for each node
      * @type {Record<string, any>}
      */
-    this.nodeOutputs = {};
+    this.nodeOutputs = {}
 
     /**
      * Stores the preview image data for each node
      * @type {Record<string, Image>}
      */
-    this.nodePreviewImages = {};
+    this.nodePreviewImages = {}
 
     /**
      * If the shift key on the keyboard is pressed
      * @type {boolean}
      */
-    this.shiftDown = false;
+    this.shiftDown = false
   }
 
   get nodeOutputs() {
-    return this._nodeOutputs;
+    return this._nodeOutputs
   }
 
   set nodeOutputs(value) {
-    this._nodeOutputs = value;
-    this.#invokeExtensions("onNodeOutputsUpdated", value);
+    this._nodeOutputs = value
+    this.#invokeExtensions('onNodeOutputsUpdated', value)
   }
 
   getPreviewFormatParam() {
-    let preview_format = this.ui.settings.getSettingValue(
-      "Comfy.PreviewFormat"
-    );
-    if (preview_format) return `&preview=${preview_format}`;
-    else return "";
+    let preview_format = this.ui.settings.getSettingValue('Comfy.PreviewFormat')
+    if (preview_format) return `&preview=${preview_format}`
+    else return ''
   }
 
   getRandParam() {
-    return "&rand=" + Math.random();
+    return '&rand=' + Math.random()
   }
 
   static isImageNode(node) {
@@ -178,46 +203,46 @@ export class ComfyApp {
       node.imgs ||
       (node &&
         node.widgets &&
-        node.widgets.findIndex((obj) => obj.name === "image") >= 0)
-    );
+        node.widgets.findIndex((obj) => obj.name === 'image') >= 0)
+    )
   }
 
   static onClipspaceEditorSave() {
     if (ComfyApp.clipspace_return_node) {
-      ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node);
+      ComfyApp.pasteFromClipspace(ComfyApp.clipspace_return_node)
     }
   }
 
   static onClipspaceEditorClosed() {
-    ComfyApp.clipspace_return_node = null;
+    ComfyApp.clipspace_return_node = null
   }
 
   static copyToClipspace(node) {
-    var widgets = null;
+    var widgets = null
     if (node.widgets) {
       widgets = node.widgets.map(({ type, name, value }) => ({
         type,
         name,
-        value,
-      }));
+        value
+      }))
     }
 
-    var imgs = undefined;
-    var orig_imgs = undefined;
+    var imgs = undefined
+    var orig_imgs = undefined
     if (node.imgs != undefined) {
-      imgs = [];
-      orig_imgs = [];
+      imgs = []
+      orig_imgs = []
 
       for (let i = 0; i < node.imgs.length; i++) {
-        imgs[i] = new Image();
-        imgs[i].src = node.imgs[i].src;
-        orig_imgs[i] = imgs[i];
+        imgs[i] = new Image()
+        imgs[i].src = node.imgs[i].src
+        orig_imgs[i] = imgs[i]
       }
     }
 
-    var selectedIndex = 0;
+    var selectedIndex = 0
     if (node.imageIndex) {
-      selectedIndex = node.imageIndex;
+      selectedIndex = node.imageIndex
     }
 
     ComfyApp.clipspace = {
@@ -226,13 +251,13 @@ export class ComfyApp {
       original_imgs: orig_imgs,
       images: node.images,
       selectedIndex: selectedIndex,
-      img_paste_mode: "selected", // reset to default im_paste_mode state on copy action
-    };
+      img_paste_mode: 'selected' // reset to default im_paste_mode state on copy action
+    }
 
-    ComfyApp.clipspace_return_node = null;
+    ComfyApp.clipspace_return_node = null
 
     if (ComfyApp.clipspace_invalidate_handler) {
-      ComfyApp.clipspace_invalidate_handler();
+      ComfyApp.clipspace_invalidate_handler()
     }
   }
 
@@ -241,32 +266,32 @@ export class ComfyApp {
       // image paste
       if (ComfyApp.clipspace.imgs && node.imgs) {
         if (node.images && ComfyApp.clipspace.images) {
-          if (ComfyApp.clipspace["img_paste_mode"] == "selected") {
+          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
             node.images = [
-              ComfyApp.clipspace.images[ComfyApp.clipspace["selectedIndex"]],
-            ];
+              ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
+            ]
           } else {
-            node.images = ComfyApp.clipspace.images;
+            node.images = ComfyApp.clipspace.images
           }
 
-          if (app.nodeOutputs[node.id + ""])
-            app.nodeOutputs[node.id + ""].images = node.images;
+          if (app.nodeOutputs[node.id + ''])
+            app.nodeOutputs[node.id + ''].images = node.images
         }
 
         if (ComfyApp.clipspace.imgs) {
           // deep-copy to cut link with clipspace
-          if (ComfyApp.clipspace["img_paste_mode"] == "selected") {
-            const img = new Image();
+          if (ComfyApp.clipspace['img_paste_mode'] == 'selected') {
+            const img = new Image()
             img.src =
-              ComfyApp.clipspace.imgs[ComfyApp.clipspace["selectedIndex"]].src;
-            node.imgs = [img];
-            node.imageIndex = 0;
+              ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+            node.imgs = [img]
+            node.imageIndex = 0
           } else {
-            const imgs = [];
+            const imgs = []
             for (let i = 0; i < ComfyApp.clipspace.imgs.length; i++) {
-              imgs[i] = new Image();
-              imgs[i].src = ComfyApp.clipspace.imgs[i].src;
-              node.imgs = imgs;
+              imgs[i] = new Image()
+              imgs[i].src = ComfyApp.clipspace.imgs[i].src
+              node.imgs = imgs
             }
           }
         }
@@ -275,55 +300,55 @@ export class ComfyApp {
       if (node.widgets) {
         if (ComfyApp.clipspace.images) {
           const clip_image =
-            ComfyApp.clipspace.images[ComfyApp.clipspace["selectedIndex"]];
-          const index = node.widgets.findIndex((obj) => obj.name === "image");
+            ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
+          const index = node.widgets.findIndex((obj) => obj.name === 'image')
           if (index >= 0) {
             if (
-              node.widgets[index].type != "image" &&
-              typeof node.widgets[index].value == "string" &&
+              node.widgets[index].type != 'image' &&
+              typeof node.widgets[index].value == 'string' &&
               clip_image.filename
             ) {
               node.widgets[index].value =
-                (clip_image.subfolder ? clip_image.subfolder + "/" : "") +
+                (clip_image.subfolder ? clip_image.subfolder + '/' : '') +
                 clip_image.filename +
-                (clip_image.type ? ` [${clip_image.type}]` : "");
+                (clip_image.type ? ` [${clip_image.type}]` : '')
             } else {
-              node.widgets[index].value = clip_image;
+              node.widgets[index].value = clip_image
             }
           }
         }
         if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = Object.values(node.widgets).find(
-              // @ts-ignoreg
+              // @ts-expect-errorg
               (obj) => obj.type === type && obj.name === name
-            );
-            // @ts-ignore
-            if (prop && prop.type != "button") {
+            )
+            // @ts-expect-error
+            if (prop && prop.type != 'button') {
               if (
-                // @ts-ignore
-                prop.type != "image" &&
-                // @ts-ignore
-                typeof prop.value == "string" &&
+                // @ts-expect-error
+                prop.type != 'image' &&
+                // @ts-expect-error
+                typeof prop.value == 'string' &&
                 value.filename
               ) {
-                // @ts-ignore
+                // @ts-expect-error
                 prop.value =
-                  (value.subfolder ? value.subfolder + "/" : "") +
+                  (value.subfolder ? value.subfolder + '/' : '') +
                   value.filename +
-                  (value.type ? ` [${value.type}]` : "");
+                  (value.type ? ` [${value.type}]` : '')
               } else {
-                // @ts-ignore
-                prop.value = value;
-                // @ts-ignore
-                prop.callback(value);
+                // @ts-expect-error
+                prop.value = value
+                // @ts-expect-error
+                prop.callback(value)
               }
             }
-          });
+          })
         }
       }
 
-      app.graph.setDirtyCanvas(true);
+      app.graph.setDirtyCanvas(true)
     }
   }
 
@@ -334,22 +359,22 @@ export class ComfyApp {
    * @returns
    */
   #invokeExtensions(method, ...args) {
-    let results = [];
+    let results = []
     for (const ext of this.extensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args, this));
+          results.push(ext[method](...args, this))
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
             { error },
             { extension: ext },
             { args }
-          );
+          )
         }
       }
     }
-    return results;
+    return results
   }
 
   /**
@@ -364,50 +389,49 @@ export class ComfyApp {
       this.extensions.map(async (ext) => {
         if (method in ext) {
           try {
-            return await ext[method](...args, this);
+            return await ext[method](...args, this)
           } catch (error) {
             console.error(
               `Error calling extension '${ext.name}' method '${method}'`,
               { error },
               { extension: ext },
               { args }
-            );
+            )
           }
         }
       })
-    );
+    )
   }
 
   #addRestoreWorkflowView() {
-    // @ts-ignore
-    const serialize = LGraph.prototype.serialize;
-    const self = this;
-    // @ts-ignore
+    const serialize = LGraph.prototype.serialize
+    const self = this
     LGraph.prototype.serialize = function () {
-      const workflow = serialize.apply(this, arguments);
+      const workflow = serialize.apply(this, arguments)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
       if (self.enableWorkflowViewRestore.value) {
         if (!workflow.extra) {
-          workflow.extra = {};
+          workflow.extra = {}
         }
         workflow.extra.ds = {
           scale: self.canvas.ds.scale,
-          offset: self.canvas.ds.offset,
-        };
+          offset: self.canvas.ds.offset
+        }
       } else if (workflow.extra?.ds) {
         // Clear any old view data
-        delete workflow.extra.ds;
+        delete workflow.extra.ds
       }
 
-      return workflow;
-    };
+      return workflow
+    }
     this.enableWorkflowViewRestore = this.ui.settings.addSetting({
-      id: "Comfy.EnableWorkflowViewRestore",
-      name: "Save and restore canvas position and zoom level in workflows",
-      type: "boolean",
-      defaultValue: true,
-    });
+      id: 'Comfy.EnableWorkflowViewRestore',
+      category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
+      name: 'Save and restore canvas position and zoom level in workflows',
+      type: 'boolean',
+      defaultValue: true
+    })
   }
 
   /**
@@ -417,191 +441,191 @@ export class ComfyApp {
    */
   #addNodeContextMenuHandler(node) {
     function getCopyImageOption(img) {
-      if (typeof window.ClipboardItem === "undefined") return [];
+      if (typeof window.ClipboardItem === 'undefined') return []
       return [
         {
-          content: "Copy Image",
+          content: 'Copy Image',
           callback: async () => {
-            const url = new URL(img.src);
-            url.searchParams.delete("preview");
+            const url = new URL(img.src)
+            url.searchParams.delete('preview')
 
             const writeImage = async (blob) => {
               await navigator.clipboard.write([
                 new ClipboardItem({
-                  [blob.type]: blob,
-                }),
-              ]);
-            };
+                  [blob.type]: blob
+                })
+              ])
+            }
 
             try {
-              const data = await fetch(url);
-              const blob = await data.blob();
+              const data = await fetch(url)
+              const blob = await data.blob()
               try {
-                await writeImage(blob);
+                await writeImage(blob)
               } catch (error) {
                 // Chrome seems to only support PNG on write, convert and try again
-                if (blob.type !== "image/png") {
-                  const canvas = $el("canvas", {
+                if (blob.type !== 'image/png') {
+                  const canvas = $el('canvas', {
                     width: img.naturalWidth,
-                    height: img.naturalHeight,
-                  }) as HTMLCanvasElement;
-                  const ctx = canvas.getContext("2d");
-                  let image;
-                  if (typeof window.createImageBitmap === "undefined") {
-                    image = new Image();
+                    height: img.naturalHeight
+                  }) as HTMLCanvasElement
+                  const ctx = canvas.getContext('2d')
+                  let image
+                  if (typeof window.createImageBitmap === 'undefined') {
+                    image = new Image()
                     const p = new Promise((resolve, reject) => {
-                      image.onload = resolve;
-                      image.onerror = reject;
+                      image.onload = resolve
+                      image.onerror = reject
                     }).finally(() => {
-                      URL.revokeObjectURL(image.src);
-                    });
-                    image.src = URL.createObjectURL(blob);
-                    await p;
+                      URL.revokeObjectURL(image.src)
+                    })
+                    image.src = URL.createObjectURL(blob)
+                    await p
                   } else {
-                    image = await createImageBitmap(blob);
+                    image = await createImageBitmap(blob)
                   }
                   try {
-                    ctx.drawImage(image, 0, 0);
-                    canvas.toBlob(writeImage, "image/png");
+                    ctx.drawImage(image, 0, 0)
+                    canvas.toBlob(writeImage, 'image/png')
                   } finally {
-                    if (typeof image.close === "function") {
-                      image.close();
+                    if (typeof image.close === 'function') {
+                      image.close()
                     }
                   }
 
-                  return;
+                  return
                 }
-                throw error;
+                throw error
               }
             } catch (error) {
-              alert("Error copying image: " + (error.message ?? error));
+              alert('Error copying image: ' + (error.message ?? error))
             }
-          },
-        },
-      ];
+          }
+        }
+      ]
     }
 
     node.prototype.getExtraMenuOptions = function (_, options) {
       if (this.imgs) {
         // If this node has images then we add an open in new tab item
-        let img;
+        let img
         if (this.imageIndex != null) {
           // An image is selected so select that
-          img = this.imgs[this.imageIndex];
+          img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
           // No image is selected but one is hovered
-          img = this.imgs[this.overIndex];
+          img = this.imgs[this.overIndex]
         }
         if (img) {
           options.unshift(
             {
-              content: "Open Image",
+              content: 'Open Image',
               callback: () => {
-                let url = new URL(img.src);
-                url.searchParams.delete("preview");
-                window.open(url, "_blank");
-              },
+                let url = new URL(img.src)
+                url.searchParams.delete('preview')
+                window.open(url, '_blank')
+              }
             },
             ...getCopyImageOption(img),
             {
-              content: "Save Image",
+              content: 'Save Image',
               callback: () => {
-                const a = document.createElement("a");
-                let url = new URL(img.src);
-                url.searchParams.delete("preview");
-                a.href = url.toString();
+                const a = document.createElement('a')
+                let url = new URL(img.src)
+                url.searchParams.delete('preview')
+                a.href = url.toString()
                 a.setAttribute(
-                  "download",
-                  new URLSearchParams(url.search).get("filename")
-                );
-                document.body.append(a);
-                a.click();
-                requestAnimationFrame(() => a.remove());
-              },
+                  'download',
+                  new URLSearchParams(url.search).get('filename')
+                )
+                document.body.append(a)
+                a.click()
+                requestAnimationFrame(() => a.remove())
+              }
             }
-          );
+          )
         }
       }
 
       options.push({
-        content: "Bypass",
+        content: 'Bypass',
         callback: (obj) => {
-          if (this.mode === 4) this.mode = 0;
-          else this.mode = 4;
-          this.graph.change();
-        },
-      });
+          if (this.mode === 4) this.mode = 0
+          else this.mode = 4
+          this.graph.change()
+        }
+      })
 
       // prevent conflict of clipspace content
       if (!ComfyApp.clipspace_return_node) {
         options.push({
-          content: "Copy (Clipspace)",
+          content: 'Copy (Clipspace)',
           callback: (obj) => {
-            ComfyApp.copyToClipspace(this);
-          },
-        });
+            ComfyApp.copyToClipspace(this)
+          }
+        })
 
         if (ComfyApp.clipspace != null) {
           options.push({
-            content: "Paste (Clipspace)",
+            content: 'Paste (Clipspace)',
             callback: () => {
-              ComfyApp.pasteFromClipspace(this);
-            },
-          });
+              ComfyApp.pasteFromClipspace(this)
+            }
+          })
         }
 
         if (ComfyApp.isImageNode(this)) {
           options.push({
-            content: "Open in MaskEditor",
+            content: 'Open in MaskEditor',
             callback: (obj) => {
-              ComfyApp.copyToClipspace(this);
-              ComfyApp.clipspace_return_node = this;
-              ComfyApp.open_maskeditor();
-            },
-          });
+              ComfyApp.copyToClipspace(this)
+              ComfyApp.clipspace_return_node = this
+              ComfyApp.open_maskeditor()
+            }
+          })
         }
       }
-    };
+    }
   }
 
   #addNodeKeyHandler(node) {
-    const app = this;
-    const origNodeOnKeyDown = node.prototype.onKeyDown;
+    const app = this
+    const origNodeOnKeyDown = node.prototype.onKeyDown
 
     node.prototype.onKeyDown = function (e) {
       if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
-        return false;
+        return false
       }
 
       if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
-        return;
+        return
       }
 
-      let handled = false;
+      let handled = false
 
-      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        if (e.key === "ArrowLeft") {
-          this.imageIndex -= 1;
-        } else if (e.key === "ArrowRight") {
-          this.imageIndex += 1;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (e.key === 'ArrowLeft') {
+          this.imageIndex -= 1
+        } else if (e.key === 'ArrowRight') {
+          this.imageIndex += 1
         }
-        this.imageIndex %= this.imgs.length;
+        this.imageIndex %= this.imgs.length
 
         if (this.imageIndex < 0) {
-          this.imageIndex = this.imgs.length + this.imageIndex;
+          this.imageIndex = this.imgs.length + this.imageIndex
         }
-        handled = true;
-      } else if (e.key === "Escape") {
-        this.imageIndex = null;
-        handled = true;
+        handled = true
+      } else if (e.key === 'Escape') {
+        this.imageIndex = null
+        handled = true
       }
 
       if (handled === true) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        return false
       }
-    };
+    }
   }
 
   /**
@@ -610,239 +634,217 @@ export class ComfyApp {
    * @param {*} node The node to add the draw handler
    */
   #addDrawBackgroundHandler(node) {
-    const app = this;
+    const app = this
 
     function getImageTop(node) {
-      let shiftY;
+      let shiftY
       if (node.imageOffset != null) {
-        shiftY = node.imageOffset;
+        shiftY = node.imageOffset
       } else {
         if (node.widgets?.length) {
-          const w = node.widgets[node.widgets.length - 1];
-          shiftY = w.last_y;
+          const w = node.widgets[node.widgets.length - 1]
+          shiftY = w.last_y
           if (w.computeSize) {
-            shiftY += w.computeSize()[1] + 4;
+            shiftY += w.computeSize()[1] + 4
           } else if (w.computedHeight) {
-            shiftY += w.computedHeight;
+            shiftY += w.computedHeight
           } else {
-            shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4;
+            shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
           }
         } else {
-          shiftY = node.computeSize()[1];
+          shiftY = node.computeSize()[1]
         }
       }
-      return shiftY;
+      return shiftY
     }
 
     node.prototype.setSizeForImage = function (force) {
-      if (!force && this.animatedImages) return;
+      if (!force && this.animatedImages) return
 
       if (this.inputHeight || this.freeWidgetSpace > 210) {
-        this.setSize(this.size);
-        return;
+        this.setSize(this.size)
+        return
       }
-      const minHeight = getImageTop(this) + 220;
+      const minHeight = getImageTop(this) + 220
       if (this.size[1] < minHeight) {
-        this.setSize([this.size[0], minHeight]);
+        this.setSize([this.size[0], minHeight])
       }
-    };
+    }
 
-    node.prototype.onDrawBackground = function (ctx) {
+    function unsafeDrawBackground(ctx) {
       if (!this.flags.collapsed) {
-        let imgURLs = [];
-        let imagesChanged = false;
+        let imgURLs = []
+        let imagesChanged = false
 
-        const output = app.nodeOutputs[this.id + ""];
+        const output = app.nodeOutputs[this.id + '']
         if (output?.images) {
-          this.animatedImages = output?.animated?.find(Boolean);
+          this.animatedImages = output?.animated?.find(Boolean)
           if (this.images !== output.images) {
-            this.images = output.images;
-            imagesChanged = true;
+            this.images = output.images
+            imagesChanged = true
             imgURLs = imgURLs.concat(
               output.images.map((params) => {
                 return api.apiURL(
-                  "/view?" +
+                  '/view?' +
                     new URLSearchParams(params).toString() +
-                    (this.animatedImages ? "" : app.getPreviewFormatParam()) +
+                    (this.animatedImages ? '' : app.getPreviewFormatParam()) +
                     app.getRandParam()
-                );
+                )
               })
-            );
+            )
           }
         }
 
-        const preview = app.nodePreviewImages[this.id + ""];
+        const preview = app.nodePreviewImages[this.id + '']
         if (this.preview !== preview) {
-          this.preview = preview;
-          imagesChanged = true;
+          this.preview = preview
+          imagesChanged = true
           if (preview != null) {
-            imgURLs.push(preview);
+            imgURLs.push(preview)
           }
         }
 
         if (imagesChanged) {
-          this.imageIndex = null;
+          this.imageIndex = null
           if (imgURLs.length > 0) {
             Promise.all(
               imgURLs.map((src) => {
                 return new Promise((r) => {
-                  const img = new Image();
-                  img.onload = () => r(img);
-                  img.onerror = () => r(null);
-                  img.src = src;
-                });
+                  const img = new Image()
+                  img.onload = () => r(img)
+                  img.onerror = () => r(null)
+                  img.src = src
+                })
               })
             ).then((imgs) => {
               if (
                 (!output || this.images === output.images) &&
                 (!preview || this.preview === preview)
               ) {
-                this.imgs = imgs.filter(Boolean);
-                this.setSizeForImage?.();
-                app.graph.setDirtyCanvas(true);
+                this.imgs = imgs.filter(Boolean)
+                this.setSizeForImage?.()
+                app.graph.setDirtyCanvas(true)
               }
-            });
+            })
           } else {
-            this.imgs = null;
+            this.imgs = null
           }
         }
 
-        const calculateGrid = (w, h, n) => {
-          let columns, rows, cellsize;
-
-          if (w > h) {
-            cellsize = h;
-            columns = Math.ceil(w / cellsize);
-            rows = Math.ceil(n / columns);
-          } else {
-            cellsize = w;
-            rows = Math.ceil(h / cellsize);
-            columns = Math.ceil(n / rows);
-          }
-
-          while (columns * rows < n) {
-            cellsize++;
-            if (w >= h) {
-              columns = Math.ceil(w / cellsize);
-              rows = Math.ceil(n / columns);
-            } else {
-              rows = Math.ceil(h / cellsize);
-              columns = Math.ceil(n / rows);
-            }
-          }
-
-          const cell_size = Math.min(w / columns, h / rows);
-          return { cell_size, columns, rows };
-        };
-
         const is_all_same_aspect_ratio = (imgs) => {
           // assume: imgs.length >= 2
-          let ratio = imgs[0].naturalWidth / imgs[0].naturalHeight;
+          let ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
 
           for (let i = 1; i < imgs.length; i++) {
-            let this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight;
-            if (ratio != this_ratio) return false;
+            let this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
+            if (ratio != this_ratio) return false
           }
 
-          return true;
-        };
+          return true
+        }
 
         if (this.imgs?.length) {
           const widgetIdx = this.widgets?.findIndex(
             (w) => w.name === ANIM_PREVIEW_WIDGET
-          );
+          )
 
           if (this.animatedImages) {
             // Instead of using the canvas we'll use a IMG
             if (widgetIdx > -1) {
               // Replace content
-              const widget = this.widgets[widgetIdx];
-              widget.options.host.updateImages(this.imgs);
+              const widget = this.widgets[widgetIdx]
+              widget.options.host.updateImages(this.imgs)
             } else {
-              const host = createImageHost(this);
-              this.setSizeForImage(true);
+              const host = createImageHost(this)
+              this.setSizeForImage(true)
               const widget = this.addDOMWidget(
                 ANIM_PREVIEW_WIDGET,
-                "img",
+                'img',
                 host.el,
                 {
                   host,
                   getHeight: host.getHeight,
                   onDraw: host.onDraw,
-                  hideOnZoom: false,
+                  hideOnZoom: false
                 }
-              );
-              widget.serializeValue = () => undefined;
-              widget.options.host.updateImages(this.imgs);
+              )
+              widget.serializeValue = () => undefined
+              widget.options.host.updateImages(this.imgs)
             }
-            return;
+            return
           }
 
           if (widgetIdx > -1) {
-            this.widgets[widgetIdx].onRemove?.();
-            this.widgets.splice(widgetIdx, 1);
+            this.widgets[widgetIdx].onRemove?.()
+            this.widgets.splice(widgetIdx, 1)
           }
 
-          const canvas = app.graph.list_of_graphcanvas[0];
-          const mouse = canvas.graph_mouse;
+          const canvas = app.graph.list_of_graphcanvas[0]
+          const mouse = canvas.graph_mouse
           if (!canvas.pointer_is_down && this.pointerDown) {
             if (
               mouse[0] === this.pointerDown.pos[0] &&
               mouse[1] === this.pointerDown.pos[1]
             ) {
-              this.imageIndex = this.pointerDown.index;
+              this.imageIndex = this.pointerDown.index
             }
-            this.pointerDown = null;
+            this.pointerDown = null
           }
 
-          let imageIndex = this.imageIndex;
-          const numImages = this.imgs.length;
+          let imageIndex = this.imageIndex
+          const numImages = this.imgs.length
           if (numImages === 1 && !imageIndex) {
-            this.imageIndex = imageIndex = 0;
+            this.imageIndex = imageIndex = 0
           }
 
-          const top = getImageTop(this);
-          var shiftY = top;
+          const top = getImageTop(this)
+          var shiftY = top
 
-          let dw = this.size[0];
-          let dh = this.size[1];
-          dh -= shiftY;
+          let dw = this.size[0]
+          let dh = this.size[1]
+          dh -= shiftY
 
           if (imageIndex == null) {
-            var cellWidth, cellHeight, shiftX, cell_padding, cols;
+            var cellWidth, cellHeight, shiftX, cell_padding, cols
 
-            const compact_mode = is_all_same_aspect_ratio(this.imgs);
+            const compact_mode = is_all_same_aspect_ratio(this.imgs)
             if (!compact_mode) {
               // use rectangle cell style and border line
-              cell_padding = 2;
-              const { cell_size, columns, rows } = calculateGrid(
+              cell_padding = 2
+              // Prevent infinite canvas2d scale-up
+              const largestDimension = this.imgs.reduce(
+                (acc, current) =>
+                  Math.max(acc, current.naturalWidth, current.naturalHeight),
+                0
+              )
+              const fakeImgs = []
+              fakeImgs.length = this.imgs.length
+              fakeImgs[0] = {
+                naturalWidth: largestDimension,
+                naturalHeight: largestDimension
+              }
+              ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
+                fakeImgs,
                 dw,
-                dh,
-                numImages
-              );
-              cols = columns;
-
-              cellWidth = cell_size;
-              cellHeight = cell_size;
-              shiftX = (dw - cell_size * cols) / 2;
-              shiftY = (dh - cell_size * rows) / 2 + top;
+                dh
+              ))
             } else {
-              cell_padding = 0;
-              ({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
+              cell_padding = 0
+              ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
                 this.imgs,
                 dw,
                 dh
-              ));
+              ))
             }
 
-            let anyHovered = false;
-            this.imageRects = [];
+            let anyHovered = false
+            this.imageRects = []
             for (let i = 0; i < numImages; i++) {
-              const img = this.imgs[i];
-              const row = Math.floor(i / cols);
-              const col = i % cols;
-              const x = col * cellWidth + shiftX;
-              const y = row * cellHeight + shiftY;
+              const img = this.imgs[i]
+              const row = Math.floor(i / cols)
+              const col = i % cols
+              const x = col * cellWidth + shiftX
+              const y = row * cellHeight + shiftY
               if (!anyHovered) {
                 anyHovered = LiteGraph.isInsideRectangle(
                   mouse[0],
@@ -851,31 +853,31 @@ export class ComfyApp {
                   y + this.pos[1],
                   cellWidth,
                   cellHeight
-                );
+                )
                 if (anyHovered) {
-                  this.overIndex = i;
-                  let value = 110;
+                  this.overIndex = i
+                  let value = 110
                   if (canvas.pointer_is_down) {
                     if (!this.pointerDown || this.pointerDown.index !== i) {
-                      this.pointerDown = { index: i, pos: [...mouse] };
+                      this.pointerDown = { index: i, pos: [...mouse] }
                     }
-                    value = 125;
+                    value = 125
                   }
-                  ctx.filter = `contrast(${value}%) brightness(${value}%)`;
-                  canvas.canvas.style.cursor = "pointer";
+                  ctx.filter = `contrast(${value}%) brightness(${value}%)`
+                  canvas.canvas.style.cursor = 'pointer'
                 }
               }
-              this.imageRects.push([x, y, cellWidth, cellHeight]);
+              this.imageRects.push([x, y, cellWidth, cellHeight])
 
-              let wratio = cellWidth / img.width;
-              let hratio = cellHeight / img.height;
-              var ratio = Math.min(wratio, hratio);
+              let wratio = cellWidth / img.width
+              let hratio = cellHeight / img.height
+              var ratio = Math.min(wratio, hratio)
 
-              let imgHeight = ratio * img.height;
+              let imgHeight = ratio * img.height
               let imgY =
-                row * cellHeight + shiftY + (cellHeight - imgHeight) / 2;
-              let imgWidth = ratio * img.width;
-              let imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2;
+                row * cellHeight + shiftY + (cellHeight - imgHeight) / 2
+              let imgWidth = ratio * img.width
+              let imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
 
               ctx.drawImage(
                 img,
@@ -883,41 +885,41 @@ export class ComfyApp {
                 imgY + cell_padding,
                 imgWidth - cell_padding * 2,
                 imgHeight - cell_padding * 2
-              );
+              )
               if (!compact_mode) {
                 // rectangle cell and border line style
-                ctx.strokeStyle = "#8F8F8F";
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#8F8F8F'
+                ctx.lineWidth = 1
                 ctx.strokeRect(
                   x + cell_padding,
                   y + cell_padding,
                   cellWidth - cell_padding * 2,
                   cellHeight - cell_padding * 2
-                );
+                )
               }
 
-              ctx.filter = "none";
+              ctx.filter = 'none'
             }
 
             if (!anyHovered) {
-              this.pointerDown = null;
-              this.overIndex = null;
+              this.pointerDown = null
+              this.overIndex = null
             }
           } else {
             // Draw individual
-            let w = this.imgs[imageIndex].naturalWidth;
-            let h = this.imgs[imageIndex].naturalHeight;
+            let w = this.imgs[imageIndex].naturalWidth
+            let h = this.imgs[imageIndex].naturalHeight
 
-            const scaleX = dw / w;
-            const scaleY = dh / h;
-            const scale = Math.min(scaleX, scaleY, 1);
+            const scaleX = dw / w
+            const scaleY = dh / h
+            const scale = Math.min(scaleX, scaleY, 1)
 
-            w *= scale;
-            h *= scale;
+            w *= scale
+            h *= scale
 
-            let x = (dw - w) / 2;
-            let y = (dh - h) / 2 + shiftY;
-            ctx.drawImage(this.imgs[imageIndex], x, y, w, h);
+            let x = (dw - w) / 2
+            let y = (dh - h) / 2 + shiftY
+            ctx.drawImage(this.imgs[imageIndex], x, y, w, h)
 
             const drawButton = (x, y, sz, text) => {
               const hovered = LiteGraph.isInsideRectangle(
@@ -927,34 +929,34 @@ export class ComfyApp {
                 y + this.pos[1],
                 sz,
                 sz
-              );
-              let fill = "#333";
-              let textFill = "#fff";
-              let isClicking = false;
+              )
+              let fill = '#333'
+              let textFill = '#fff'
+              let isClicking = false
               if (hovered) {
-                canvas.canvas.style.cursor = "pointer";
+                canvas.canvas.style.cursor = 'pointer'
                 if (canvas.pointer_is_down) {
-                  fill = "#1e90ff";
-                  isClicking = true;
+                  fill = '#1e90ff'
+                  isClicking = true
                 } else {
-                  fill = "#eee";
-                  textFill = "#000";
+                  fill = '#eee'
+                  textFill = '#000'
                 }
               } else {
-                this.pointerWasDown = null;
+                this.pointerWasDown = null
               }
 
-              ctx.fillStyle = fill;
-              ctx.beginPath();
-              ctx.roundRect(x, y, sz, sz, [4]);
-              ctx.fill();
-              ctx.fillStyle = textFill;
-              ctx.font = "12px Arial";
-              ctx.textAlign = "center";
-              ctx.fillText(text, x + 15, y + 20);
+              ctx.fillStyle = fill
+              ctx.beginPath()
+              ctx.roundRect(x, y, sz, sz, [4])
+              ctx.fill()
+              ctx.fillStyle = textFill
+              ctx.font = '12px Arial'
+              ctx.textAlign = 'center'
+              ctx.fillText(text, x + 15, y + 20)
 
-              return isClicking;
-            };
+              return isClicking
+            }
 
             if (numImages > 1) {
               if (
@@ -966,22 +968,30 @@ export class ComfyApp {
                 )
               ) {
                 let i =
-                  this.imageIndex + 1 >= numImages ? 0 : this.imageIndex + 1;
+                  this.imageIndex + 1 >= numImages ? 0 : this.imageIndex + 1
                 if (!this.pointerDown || !this.pointerDown.index === i) {
-                  this.pointerDown = { index: i, pos: [...mouse] };
+                  this.pointerDown = { index: i, pos: [...mouse] }
                 }
               }
 
               if (drawButton(dw - 40, top + 10, 30, `x`)) {
                 if (!this.pointerDown || !this.pointerDown.index === null) {
-                  this.pointerDown = { index: null, pos: [...mouse] };
+                  this.pointerDown = { index: null, pos: [...mouse] }
                 }
               }
             }
           }
         }
       }
-    };
+    }
+
+    node.prototype.onDrawBackground = function (ctx) {
+      try {
+        unsafeDrawBackground.call(this, ctx)
+      } catch (error) {
+        console.error('Error drawing node background', error)
+      }
+    }
   }
 
   /**
@@ -989,91 +999,91 @@ export class ComfyApp {
    */
   #addDropHandler() {
     // Get prompt from dropped PNG or json
-    document.addEventListener("drop", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    document.addEventListener('drop', async (event) => {
+      event.preventDefault()
+      event.stopPropagation()
 
-      const n = this.dragOverNode;
-      this.dragOverNode = null;
+      const n = this.dragOverNode
+      this.dragOverNode = null
       // Node handles file drop, we dont use the built in onDropFile handler as its buggy
       // If you drag multiple files it will call it multiple times with the same file
-      // @ts-ignore This is not a standard event. TODO fix it.
+      // @ts-expect-error This is not a standard event. TODO fix it.
       if (n && n.onDragDrop && (await n.onDragDrop(event))) {
-        return;
+        return
       }
       // Dragging from Chrome->Firefox there is a file but its a bmp, so ignore that
       if (
         event.dataTransfer.files.length &&
-        event.dataTransfer.files[0].type !== "image/bmp"
+        event.dataTransfer.files[0].type !== 'image/bmp'
       ) {
-        await this.handleFile(event.dataTransfer.files[0]);
+        await this.handleFile(event.dataTransfer.files[0])
       } else {
         // Try loading the first URI in the transfer list
-        const validTypes = ["text/uri-list", "text/x-moz-url"];
+        const validTypes = ['text/uri-list', 'text/x-moz-url']
         const match = [...event.dataTransfer.types].find((t) =>
           validTypes.find((v) => t === v)
-        );
+        )
         if (match) {
-          const uri = event.dataTransfer.getData(match)?.split("\n")?.[0];
+          const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
           if (uri) {
-            await this.handleFile(await (await fetch(uri)).blob());
+            await this.handleFile(await (await fetch(uri)).blob())
           }
         }
       }
-    });
+    })
 
     // Always clear over node on drag leave
-    this.canvasEl.addEventListener("dragleave", async () => {
+    this.canvasEl.addEventListener('dragleave', async () => {
       if (this.dragOverNode) {
-        this.dragOverNode = null;
-        this.graph.setDirtyCanvas(false, true);
+        this.dragOverNode = null
+        this.graph.setDirtyCanvas(false, true)
       }
-    });
+    })
 
     // Add handler for dropping onto a specific node
     this.canvasEl.addEventListener(
-      "dragover",
+      'dragover',
       (e) => {
-        this.canvas.adjustMouseEvent(e);
-        // @ts-ignore: canvasX and canvasY are added by adjustMouseEvent in litegraph
-        const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY);
+        this.canvas.adjustMouseEvent(e)
+        // @ts-expect-error: canvasX and canvasY are added by adjustMouseEvent in litegraph
+        const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY)
         if (node) {
-          // @ts-ignore This is not a standard event. TODO fix it.
+          // @ts-expect-error This is not a standard event. TODO fix it.
           if (node.onDragOver && node.onDragOver(e)) {
-            this.dragOverNode = node;
+            this.dragOverNode = node
 
             // dragover event is fired very frequently, run this on an animation frame
             requestAnimationFrame(() => {
-              this.graph.setDirtyCanvas(false, true);
-            });
-            return;
+              this.graph.setDirtyCanvas(false, true)
+            })
+            return
           }
         }
-        this.dragOverNode = null;
+        this.dragOverNode = null
       },
       false
-    );
+    )
   }
 
   /**
    * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
    */
   #addPasteHandler() {
-    document.addEventListener("paste", async (e: ClipboardEvent) => {
+    document.addEventListener('paste', async (e: ClipboardEvent) => {
       // ctrl+shift+v is used to paste nodes with connections
       // this is handled by litegraph
-      if (this.shiftDown) return;
+      if (this.shiftDown) return
 
-      // @ts-ignore: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
+      // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
       // Did you mean 'Clipboard'?ts(2551)
       // TODO: Not sure what the code wants to do.
-      let data = e.clipboardData || window.clipboardData;
-      const items = data.items;
+      let data = e.clipboardData || window.clipboardData
+      const items = data.items
 
       // Look for image paste data
       for (const item of items) {
-        if (item.type.startsWith("image/")) {
-          var imageNode = null;
+        if (item.type.startsWith('image/')) {
+          var imageNode = null
 
           // If an image node is selected, paste into it
           if (
@@ -1081,82 +1091,84 @@ export class ComfyApp {
             this.canvas.current_node.is_selected &&
             ComfyApp.isImageNode(this.canvas.current_node)
           ) {
-            imageNode = this.canvas.current_node;
+            imageNode = this.canvas.current_node
           }
 
           // No image node selected: add a new one
           if (!imageNode) {
-            const newNode = LiteGraph.createNode("LoadImage");
-            newNode.pos = [...this.canvas.graph_mouse];
-            imageNode = this.graph.add(newNode);
-            this.graph.change();
+            const newNode = LiteGraph.createNode('LoadImage')
+            newNode.pos = [...this.canvas.graph_mouse]
+            imageNode = this.graph.add(newNode)
+            this.graph.change()
           }
-          const blob = item.getAsFile();
-          imageNode.pasteFile(blob);
-          return;
+          const blob = item.getAsFile()
+          imageNode.pasteFile(blob)
+          return
         }
       }
 
       // No image found. Look for node data
-      data = data.getData("text/plain");
-      let workflow: ComfyWorkflowJSON;
+      data = data.getData('text/plain')
+      let workflow: ComfyWorkflowJSON
       try {
-        data = data.slice(data.indexOf("{"));
-        workflow = await parseComfyWorkflow(data);
+        data = data.slice(data.indexOf('{'))
+        workflow = JSON.parse(data)
       } catch (err) {
         try {
-          data = data.slice(data.indexOf("workflow\n"));
-          data = data.slice(data.indexOf("{"));
-          workflow = await parseComfyWorkflow(data);
+          data = data.slice(data.indexOf('workflow\n'))
+          data = data.slice(data.indexOf('{'))
+          workflow = JSON.parse(data)
         } catch (error) {
-          console.error(error);
+          console.error(error)
         }
       }
 
       if (workflow && workflow.version && workflow.nodes && workflow.extra) {
-        await this.loadGraphData(workflow);
+        await this.loadGraphData(workflow)
       } else {
         if (
           (e.target instanceof HTMLTextAreaElement &&
-            e.target.type === "textarea") ||
-          (e.target instanceof HTMLInputElement && e.target.type === "text")
+            e.target.type === 'textarea') ||
+          (e.target instanceof HTMLInputElement && e.target.type === 'text')
         ) {
-          return;
+          return
         }
 
         // Litegraph default paste
-        this.canvas.pasteFromClipboard();
+        this.canvas.pasteFromClipboard()
       }
-    });
+    })
   }
 
   /**
    * Adds a handler on copy that serializes selected nodes to JSON
    */
   #addCopyHandler() {
-    document.addEventListener("copy", (e) => {
+    document.addEventListener('copy', (e) => {
+      if (!(e.target instanceof Element)) {
+        return
+      }
       if (
         (e.target instanceof HTMLTextAreaElement &&
-          e.target.type === "textarea") ||
-        (e.target instanceof HTMLInputElement && e.target.type === "text")
+          e.target.type === 'textarea') ||
+        (e.target instanceof HTMLInputElement && e.target.type === 'text')
       ) {
         // Default system copy
-        return;
+        return
       }
+      const isTargetInGraph =
+        e.target.classList.contains('litegraph') ||
+        e.target.classList.contains('graph-canvas-container')
 
       // copy nodes and clear clipboard
-      if (
-        e.target instanceof Element &&
-        e.target.classList.contains("litegraph") &&
-        this.canvas.selected_nodes
-      ) {
-        this.canvas.copyToClipboard();
-        e.clipboardData.setData("text", " "); //clearData doesn't remove images from clipboard
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
+      if (isTargetInGraph && this.canvas.selected_nodes) {
+        this.canvas.copyToClipboard()
+        e.clipboardData.setData('text', ' ') //clearData doesn't remove images from clipboard
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        return false
       }
-    });
+    })
   }
 
   /**
@@ -1165,33 +1177,31 @@ export class ComfyApp {
    * Move group by header
    */
   #addProcessMouseHandler() {
-    const self = this;
+    const self = this
 
-    // @ts-ignore
-    const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown;
-    // @ts-ignore
+    const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       // prepare for ctrl+shift drag: zoom start
       if (e.ctrlKey && e.shiftKey && e.buttons) {
-        self.zoom_drag_start = [e.x, e.y, this.ds.scale];
-        return;
+        self.zoom_drag_start = [e.x, e.y, this.ds.scale]
+        return
       }
 
-      const res = origProcessMouseDown.apply(this, arguments);
+      const res = origProcessMouseDown.apply(this, arguments)
 
-      this.selected_group_moving = false;
+      this.selected_group_moving = false
 
       if (this.selected_group && !this.selected_group_resizing) {
         var font_size =
-          this.selected_group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
-        var height = font_size * 1.4;
+          this.selected_group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+        var height = font_size * 1.4
 
         // Move group by header
         if (
           LiteGraph.isInsideRectangle(
-            // @ts-ignore
+            // @ts-expect-error
             e.canvasX,
-            // @ts-ignore
+            // @ts-expect-error
             e.canvasY,
             this.selected_group.pos[0],
             this.selected_group.pos[1],
@@ -1199,61 +1209,59 @@ export class ComfyApp {
             height
           )
         ) {
-          this.selected_group_moving = true;
+          this.selected_group_moving = true
         }
       }
 
-      return res;
-    };
-    // @ts-ignore
-    const origProcessMouseMove = LGraphCanvas.prototype.processMouseMove;
-    // @ts-ignore
+      return res
+    }
+    const origProcessMouseMove = LGraphCanvas.prototype.processMouseMove
     LGraphCanvas.prototype.processMouseMove = function (e) {
       // handle ctrl+shift drag
       if (e.ctrlKey && e.shiftKey && self.zoom_drag_start) {
         // stop canvas zoom action
         if (!e.buttons) {
-          self.zoom_drag_start = null;
-          return;
+          self.zoom_drag_start = null
+          return
         }
 
         // calculate delta
-        let deltaY = e.y - self.zoom_drag_start[1];
-        let startScale = self.zoom_drag_start[2];
+        let deltaY = e.y - self.zoom_drag_start[1]
+        let startScale = self.zoom_drag_start[2]
 
-        let scale = startScale - deltaY / 100;
+        let scale = startScale - deltaY / 100
 
         this.ds.changeScale(scale, [
-          this.ds.element.width / 2,
-          this.ds.element.height / 2,
-        ]);
-        this.graph.change();
+          self.zoom_drag_start[0],
+          self.zoom_drag_start[1]
+        ])
+        this.graph.change()
 
-        return;
+        return
       }
 
-      const orig_selected_group = this.selected_group;
+      const orig_selected_group = this.selected_group
 
       if (
         this.selected_group &&
         !this.selected_group_resizing &&
         !this.selected_group_moving
       ) {
-        this.selected_group = null;
+        this.selected_group = null
       }
 
-      const res = origProcessMouseMove.apply(this, arguments);
+      const res = origProcessMouseMove.apply(this, arguments)
 
       if (
         orig_selected_group &&
         !this.selected_group_resizing &&
         !this.selected_group_moving
       ) {
-        this.selected_group = orig_selected_group;
+        this.selected_group = orig_selected_group
       }
 
-      return res;
-    };
+      return res
+    }
   }
 
   /**
@@ -1262,164 +1270,158 @@ export class ComfyApp {
    * Ctrl + M mute/unmute selected nodes
    */
   #addProcessKeyHandler() {
-    const self = this;
-    // @ts-ignore
-    const origProcessKey = LGraphCanvas.prototype.processKey;
-    // @ts-ignore
+    const self = this
+    const origProcessKey = LGraphCanvas.prototype.processKey
     LGraphCanvas.prototype.processKey = function (e) {
       if (!this.graph) {
-        return;
+        return
       }
 
-      var block_default = false;
+      var block_default = false
 
-      if (e.target instanceof Element && e.target.localName == "input") {
-        return;
+      if (e.target instanceof Element && e.target.localName == 'input') {
+        return
       }
 
-      if (e.type == "keydown" && !e.repeat) {
+      if (e.type == 'keydown' && !e.repeat) {
         // Ctrl + M mute/unmute
-        if (e.key === "m" && e.ctrlKey) {
+        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 2) {
                 // never
-                this.selected_nodes[i].mode = 0; // always
+                this.selected_nodes[i].mode = 0 // always
               } else {
-                this.selected_nodes[i].mode = 2; // never
+                this.selected_nodes[i].mode = 2 // never
               }
             }
           }
-          block_default = true;
+          block_default = true
         }
 
         // Ctrl + B bypass
-        if (e.key === "b" && e.ctrlKey) {
+        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 4) {
                 // never
-                this.selected_nodes[i].mode = 0; // always
+                this.selected_nodes[i].mode = 0 // always
               } else {
-                this.selected_nodes[i].mode = 4; // never
+                this.selected_nodes[i].mode = 4 // never
               }
             }
           }
-          block_default = true;
+          block_default = true
         }
 
         // Alt + C collapse/uncollapse
-        if (e.key === "c" && e.altKey) {
+        if (e.key === 'c' && e.altKey) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
-              this.selected_nodes[i].collapse();
+              this.selected_nodes[i].collapse()
             }
           }
-          block_default = true;
+          block_default = true
         }
 
         // Ctrl+C Copy
-        if (e.key === "c" && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
           // Trigger onCopy
-          return true;
+          return true
         }
 
         // Ctrl+V Paste
         if (
-          (e.key === "v" || e.key == "V") &&
+          (e.key === 'v' || e.key == 'V') &&
           (e.metaKey || e.ctrlKey) &&
           !e.shiftKey
         ) {
           // Trigger onPaste
-          return true;
+          return true
         }
 
-        if (e.key === "+" && e.altKey) {
-          block_default = true;
-          let scale = this.ds.scale * 1.1;
+        if (e.key === '+' && e.altKey) {
+          block_default = true
+          let scale = this.ds.scale * 1.1
           this.ds.changeScale(scale, [
             this.ds.element.width / 2,
-            this.ds.element.height / 2,
-          ]);
-          this.graph.change();
+            this.ds.element.height / 2
+          ])
+          this.graph.change()
         }
 
-        if (e.key === "-" && e.altKey) {
-          block_default = true;
-          let scale = (this.ds.scale * 1) / 1.1;
+        if (e.key === '-' && e.altKey) {
+          block_default = true
+          let scale = (this.ds.scale * 1) / 1.1
           this.ds.changeScale(scale, [
             this.ds.element.width / 2,
-            this.ds.element.height / 2,
-          ]);
-          this.graph.change();
+            this.ds.element.height / 2
+          ])
+          this.graph.change()
         }
       }
 
-      this.graph.change();
+      this.graph.change()
 
       if (block_default) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        return false
       }
 
       // Fall through to Litegraph defaults
-      return origProcessKey.apply(this, arguments);
-    };
+      return origProcessKey.apply(this, arguments)
+    }
   }
 
   /**
    * Draws group header bar
    */
   #addDrawGroupsHandler() {
-    const self = this;
-    // @ts-ignore
-    const origDrawGroups = LGraphCanvas.prototype.drawGroups;
-    // @ts-ignore
+    const self = this
+    const origDrawGroups = LGraphCanvas.prototype.drawGroups
     LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
       if (!this.graph) {
-        return;
+        return
       }
 
-      var groups = this.graph._groups;
+      var groups = this.graph._groups
 
-      ctx.save();
-      ctx.globalAlpha = 0.7 * this.editor_alpha;
+      ctx.save()
+      ctx.globalAlpha = 0.7 * this.editor_alpha
 
       for (var i = 0; i < groups.length; ++i) {
-        var group = groups[i];
+        var group = groups[i]
 
         if (!LiteGraph.overlapBounding(this.visible_area, group._bounding)) {
-          continue;
+          continue
         } //out of the visible area
 
-        ctx.fillStyle = group.color || "#335";
-        ctx.strokeStyle = group.color || "#335";
-        var pos = group._pos;
-        var size = group._size;
-        ctx.globalAlpha = 0.25 * this.editor_alpha;
-        ctx.beginPath();
-        var font_size = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
-        ctx.rect(pos[0] + 0.5, pos[1] + 0.5, size[0], font_size * 1.4);
-        ctx.fill();
-        ctx.globalAlpha = this.editor_alpha;
+        ctx.fillStyle = group.color || '#335'
+        ctx.strokeStyle = group.color || '#335'
+        var pos = group._pos
+        var size = group._size
+        ctx.globalAlpha = 0.25 * this.editor_alpha
+        ctx.beginPath()
+        var font_size = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+        ctx.rect(pos[0] + 0.5, pos[1] + 0.5, size[0], font_size * 1.4)
+        ctx.fill()
+        ctx.globalAlpha = this.editor_alpha
       }
 
-      ctx.restore();
+      ctx.restore()
 
-      const res = origDrawGroups.apply(this, arguments);
-      return res;
-    };
+      const res = origDrawGroups.apply(this, arguments)
+      return res
+    }
   }
 
   /**
    * Draws node highlights (executing, drag drop) and progress bar
    */
   #addDrawNodeHandler() {
-    // @ts-ignore
-    const origDrawNodeShape = LGraphCanvas.prototype.drawNodeShape;
-    const self = this;
-    // @ts-ignore
+    const origDrawNodeShape = LGraphCanvas.prototype.drawNodeShape
+    const self = this
     LGraphCanvas.prototype.drawNodeShape = function (
       node,
       ctx,
@@ -1429,41 +1431,41 @@ export class ComfyApp {
       selected,
       mouse_over
     ) {
-      const res = origDrawNodeShape.apply(this, arguments);
+      const res = origDrawNodeShape.apply(this, arguments)
 
-      const nodeErrors = self.lastNodeErrors?.[node.id];
+      const nodeErrors = self.lastNodeErrors?.[node.id]
 
-      let color = null;
-      let lineWidth = 1;
+      let color = null
+      let lineWidth = 1
       if (node.id === +self.runningNodeId) {
-        color = "#0f0";
+        color = '#0f0'
       } else if (self.dragOverNode && node.id === self.dragOverNode.id) {
-        color = "dodgerblue";
+        color = 'dodgerblue'
       } else if (nodeErrors?.errors) {
-        color = "red";
-        lineWidth = 2;
+        color = 'red'
+        lineWidth = 2
       } else if (
         self.lastExecutionError &&
         +self.lastExecutionError.node_id === node.id
       ) {
-        color = "#f0f";
-        lineWidth = 2;
+        color = '#f0f'
+        lineWidth = 2
       }
 
       if (color) {
         const shape =
-          // @ts-ignore
-          node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE;
-        ctx.lineWidth = lineWidth;
-        ctx.globalAlpha = 0.8;
-        ctx.beginPath();
+          // @ts-expect-error
+          node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE
+        ctx.lineWidth = lineWidth
+        ctx.globalAlpha = 0.8
+        ctx.beginPath()
         if (shape == LiteGraph.BOX_SHAPE)
           ctx.rect(
             -6,
             -6 - LiteGraph.NODE_TITLE_HEIGHT,
             12 + size[0] + 1,
             12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT
-          );
+          )
         else if (
           shape == LiteGraph.ROUND_SHAPE ||
           (shape == LiteGraph.CARD_SHAPE && node.flags.collapsed)
@@ -1474,7 +1476,7 @@ export class ComfyApp {
             12 + size[0] + 1,
             12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT,
             this.round_radius * 2
-          );
+          )
         else if (shape == LiteGraph.CARD_SHAPE)
           ctx.roundRect(
             -6,
@@ -1482,7 +1484,7 @@ export class ComfyApp {
             12 + size[0] + 1,
             12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT,
             [this.round_radius * 2, this.round_radius * 2, 2, 2]
-          );
+          )
         else if (shape == LiteGraph.CIRCLE_SHAPE)
           ctx.arc(
             size[0] * 0.5,
@@ -1490,34 +1492,34 @@ export class ComfyApp {
             size[0] * 0.5 + 6,
             0,
             Math.PI * 2
-          );
-        ctx.strokeStyle = color;
-        ctx.stroke();
-        ctx.strokeStyle = fgcolor;
-        ctx.globalAlpha = 1;
+          )
+        ctx.strokeStyle = color
+        ctx.stroke()
+        ctx.strokeStyle = fgcolor
+        ctx.globalAlpha = 1
       }
 
       if (self.progress && node.id === +self.runningNodeId) {
-        ctx.fillStyle = "green";
+        ctx.fillStyle = 'green'
         ctx.fillRect(
           0,
           0,
           size[0] * (self.progress.value / self.progress.max),
           6
-        );
-        ctx.fillStyle = bgcolor;
+        )
+        ctx.fillStyle = bgcolor
       }
 
       // Highlight inputs that failed validation
       if (nodeErrors) {
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2
+        ctx.strokeStyle = 'red'
         for (const error of nodeErrors.errors) {
           if (error.extra_info && error.extra_info.input_name) {
-            const inputIndex = node.findInputSlot(error.extra_info.input_name);
+            const inputIndex = node.findInputSlot(error.extra_info.input_name)
             if (inputIndex !== -1) {
-              let pos = node.getConnectionPos(true, inputIndex);
-              ctx.beginPath();
+              let pos = node.getConnectionPos(true, inputIndex)
+              ctx.beginPath()
               ctx.arc(
                 pos[0] - node.pos[0],
                 pos[1] - node.pos[1],
@@ -1525,430 +1527,449 @@ export class ComfyApp {
                 0,
                 2 * Math.PI,
                 false
-              );
-              ctx.stroke();
+              )
+              ctx.stroke()
             }
           }
         }
       }
 
-      return res;
-    };
+      return res
+    }
 
-    // @ts-ignore
-    const origDrawNode = LGraphCanvas.prototype.drawNode;
-    // @ts-ignore
+    const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
-      var editor_alpha = this.editor_alpha;
-      var old_color = node.color;
-      var old_bgcolor = node.bgcolor;
+      var editor_alpha = this.editor_alpha
+      var old_color = node.color
+      var old_bgcolor = node.bgcolor
 
       if (node.mode === 2) {
         // never
-        this.editor_alpha = 0.4;
+        this.editor_alpha = 0.4
       }
 
       // ComfyUI's custom node mode enum value 4 => bypass/never.
-      // @ts-ignore
+      // @ts-expect-error
       if (node.mode === 4) {
         // never
-        node.bgcolor = "#FF00FF";
-        this.editor_alpha = 0.2;
+        node.bgcolor = '#FF00FF'
+        this.editor_alpha = 0.2
       }
 
       const adjustColor = (color?: string) => {
-        return color ? lightenColor(color, 0.5) : color;
-      };
-      if (app.ui.settings.getSettingValue("Comfy.ColorPalette") === "light") {
-        node.bgcolor = adjustColor(node.bgcolor);
-        node.color = adjustColor(node.color);
+        return color ? lightenColor(color, 0.5) : color
+      }
+      if (app.ui.settings.getSettingValue('Comfy.ColorPalette') === 'light') {
+        node.bgcolor = adjustColor(node.bgcolor)
+        node.color = adjustColor(node.color)
       }
 
-      const res = origDrawNode.apply(this, arguments);
+      const res = origDrawNode.apply(this, arguments)
 
-      this.editor_alpha = editor_alpha;
-      node.color = old_color;
-      node.bgcolor = old_bgcolor;
+      this.editor_alpha = editor_alpha
+      node.color = old_color
+      node.bgcolor = old_bgcolor
 
-      return res;
-    };
+      return res
+    }
   }
 
   /**
    * Handles updates from the API socket
    */
   #addApiUpdateHandlers() {
-    api.addEventListener("status", ({ detail }) => {
-      this.ui.setStatus(detail);
-    });
+    api.addEventListener(
+      'status',
+      ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
+        this.ui.setStatus(detail)
+      }
+    )
 
-    api.addEventListener("reconnecting", () => {
-      this.ui.dialog.show("Reconnecting...");
-    });
-
-    api.addEventListener("reconnected", () => {
-      this.ui.dialog.close();
-    });
-
-    api.addEventListener("progress", ({ detail }) => {
+    api.addEventListener('progress', ({ detail }) => {
       if (
         this.workflowManager.activePrompt?.workflow &&
         this.workflowManager.activePrompt.workflow !==
           this.workflowManager.activeWorkflow
       )
-        return;
-      this.progress = detail;
-      this.graph.setDirtyCanvas(true, false);
-    });
+        return
+      this.progress = detail
+      this.graph.setDirtyCanvas(true, false)
+    })
 
-    api.addEventListener("executing", ({ detail }) => {
+    api.addEventListener('executing', ({ detail }) => {
       if (
         this.workflowManager.activePrompt?.workflow &&
         this.workflowManager.activePrompt.workflow !==
           this.workflowManager.activeWorkflow
       )
-        return;
-      this.progress = null;
-      this.runningNodeId = detail;
-      this.graph.setDirtyCanvas(true, false);
-      delete this.nodePreviewImages[this.runningNodeId];
-    });
+        return
+      this.progress = null
+      this.runningNodeId = detail
+      this.graph.setDirtyCanvas(true, false)
+      delete this.nodePreviewImages[this.runningNodeId]
+    })
 
-    api.addEventListener("executed", ({ detail }) => {
+    api.addEventListener('executed', ({ detail }) => {
       if (
         this.workflowManager.activePrompt?.workflow &&
         this.workflowManager.activePrompt.workflow !==
           this.workflowManager.activeWorkflow
       )
-        return;
-      const output = this.nodeOutputs[detail.node];
+        return
+      const output = this.nodeOutputs[detail.display_node || detail.node]
       if (detail.merge && output) {
         for (const k in detail.output ?? {}) {
-          const v = output[k];
+          const v = output[k]
           if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k]);
+            output[k] = v.concat(detail.output[k])
           } else {
-            output[k] = detail.output[k];
+            output[k] = detail.output[k]
           }
         }
       } else {
-        this.nodeOutputs[detail.node] = detail.output;
+        this.nodeOutputs[detail.display_node || detail.node] = detail.output
       }
-      const node = this.graph.getNodeById(detail.node);
+      const node = this.graph.getNodeById(detail.display_node || detail.node)
       if (node) {
-        // @ts-ignore
+        // @ts-expect-error
         if (node.onExecuted)
-          // @ts-ignore
-          node.onExecuted(detail.output);
+          // @ts-expect-error
+          node.onExecuted(detail.output)
       }
-    });
+    })
 
-    api.addEventListener("execution_start", ({ detail }) => {
-      this.runningNodeId = null;
-      this.lastExecutionError = null;
-      // @ts-ignore
+    api.addEventListener('execution_start', ({ detail }) => {
+      this.runningNodeId = null
+      this.lastExecutionError = null
+      // @ts-expect-error
       this.graph._nodes.forEach((node) => {
-        // @ts-ignore
+        // @ts-expect-error
         if (node.onExecutionStart)
-          // @ts-ignore
-          node.onExecutionStart();
-      });
-    });
+          // @ts-expect-error
+          node.onExecutionStart()
+      })
+    })
 
-    api.addEventListener("execution_error", ({ detail }) => {
-      this.lastExecutionError = detail;
-      const formattedError = this.#formatExecutionError(detail);
-      this.ui.dialog.show(formattedError);
-      this.canvas.draw(true, true);
-    });
+    api.addEventListener('execution_error', ({ detail }) => {
+      this.lastExecutionError = detail
+      showExecutionErrorDialog(detail)
+      this.canvas.draw(true, true)
+    })
 
-    api.addEventListener("b_preview", ({ detail }) => {
-      const id = this.runningNodeId;
-      if (id == null) return;
+    api.addEventListener('b_preview', ({ detail }) => {
+      const id = this.runningNodeId
+      if (id == null) return
 
-      const blob = detail;
-      const blobUrl = URL.createObjectURL(blob);
-      // @ts-ignore
-      this.nodePreviewImages[id] = [blobUrl];
-    });
+      const blob = detail
+      const blobUrl = URL.createObjectURL(blob)
+      // @ts-expect-error
+      this.nodePreviewImages[id] = [blobUrl]
+    })
 
-    api.init();
+    api.init()
   }
 
   #addKeyboardHandler() {
-    window.addEventListener("keydown", (e) => {
-      this.shiftDown = e.shiftKey;
-    });
-    window.addEventListener("keyup", (e) => {
-      this.shiftDown = e.shiftKey;
-    });
+    window.addEventListener('keydown', (e) => {
+      this.shiftDown = e.shiftKey
+    })
+    window.addEventListener('keyup', (e) => {
+      this.shiftDown = e.shiftKey
+    })
   }
 
   #addConfigureHandler() {
-    const app = this;
-    // @ts-ignore
-    const configure = LGraph.prototype.configure;
+    const app = this
+    const configure = LGraph.prototype.configure
     // Flag that the graph is configuring to prevent nodes from running checks while its still loading
-    // @ts-ignore
     LGraph.prototype.configure = function () {
-      app.configuringGraph = true;
+      app.configuringGraph = true
       try {
-        return configure.apply(this, arguments);
+        return configure.apply(this, arguments)
       } finally {
-        app.configuringGraph = false;
+        app.configuringGraph = false
       }
-    };
+    }
   }
 
   #addAfterConfigureHandler() {
-    const app = this;
-    // @ts-ignore
-    const onConfigure = app.graph.onConfigure;
-    // @ts-ignore
+    const app = this
+    // @ts-expect-error
+    const onConfigure = app.graph.onConfigure
+    // @ts-expect-error
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      // @ts-ignore
+      // @ts-expect-error
       for (const node of app.graph._nodes) {
-        // @ts-ignore
-        node.onGraphConfigured?.();
+        // @ts-expect-error
+        node.onGraphConfigured?.()
       }
 
-      const r = onConfigure?.apply(this, arguments);
+      const r = onConfigure?.apply(this, arguments)
 
-      // Fire after onConfigure, used by primitves to generate widget using input nodes config
-      // @ts-ignore _nodes is private.
+      // Fire after onConfigure, used by primitives to generate widget using input nodes config
+      // @ts-expect-error _nodes is private.
       for (const node of app.graph._nodes) {
-        // @ts-ignore
-        node.onAfterGraphConfigured?.();
+        node.onAfterGraphConfigured?.()
       }
 
-      return r;
-    };
+      return r
+    }
   }
 
   /**
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
-    const extensions = await api.getExtensions();
-    this.logging.addEntry("Comfy.App", "debug", { Extensions: extensions });
+    const extensions = await api.getExtensions()
+    this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
-    await import("../extensions/core/index");
+    await import('../extensions/core/index')
     await Promise.all(
       extensions
-        .filter((extension) => !extension.includes("extensions/core"))
+        .filter((extension) => !extension.includes('extensions/core'))
         .map(async (ext) => {
           try {
-            await import(/* @vite-ignore */ api.fileURL(ext));
+            await import(/* @vite-ignore */ api.fileURL(ext))
           } catch (error) {
-            console.error("Error loading extension", ext, error);
+            console.error('Error loading extension', ext, error)
           }
         })
-    );
+    )
 
     try {
-      this.menu.workflows.registerExtension(this);
+      this.menu.workflows.registerExtension(this)
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
 
   async #migrateSettings() {
-    this.isNewUserSession = true;
+    this.isNewUserSession = true
     // Store all current settings
     const settings = Object.keys(this.ui.settings).reduce((p, n) => {
-      const v = localStorage[`Comfy.Settings.${n}`];
+      const v = localStorage[`Comfy.Settings.${n}`]
       if (v) {
         try {
-          p[n] = JSON.parse(v);
+          p[n] = JSON.parse(v)
         } catch (error) {}
       }
-      return p;
-    }, {});
+      return p
+    }, {})
 
-    await api.storeSettings(settings);
+    await api.storeSettings(settings)
   }
 
   async #setUser() {
-    const userConfig = await api.getUserConfig();
-    this.storageLocation = userConfig.storage;
-    if (typeof userConfig.migrated == "boolean") {
+    const userConfig = await api.getUserConfig()
+    this.storageLocation = userConfig.storage
+    if (typeof userConfig.migrated == 'boolean') {
       // Single user mode migrated true/false for if the default user is created
-      if (!userConfig.migrated && this.storageLocation === "server") {
+      if (!userConfig.migrated && this.storageLocation === 'server') {
         // Default user not created yet
-        await this.#migrateSettings();
+        await this.#migrateSettings()
       }
-      return;
+      return
     }
 
-    this.multiUserServer = true;
-    let user = localStorage["Comfy.userId"];
-    const users = userConfig.users ?? {};
+    this.multiUserServer = true
+    let user = localStorage['Comfy.userId']
+    const users = userConfig.users ?? {}
     if (!user || !users[user]) {
+      // Lift spinner / BlockUI for user selection.
+      if (this.vueAppReady) useWorkspaceStore().spinner = false
+
       // This will rarely be hit so move the loading to on demand
-      const { UserSelectionScreen } = await import("./ui/userSelection");
+      const { UserSelectionScreen } = await import('./ui/userSelection')
 
-      this.ui.menuContainer.style.display = "none";
+      this.ui.menuContainer.style.display = 'none'
       const { userId, username, created } =
-        await new UserSelectionScreen().show(users, user);
-      this.ui.menuContainer.style.display = "";
+        await new UserSelectionScreen().show(users, user)
+      this.ui.menuContainer.style.display = ''
 
-      user = userId;
-      localStorage["Comfy.userName"] = username;
-      localStorage["Comfy.userId"] = user;
+      user = userId
+      localStorage['Comfy.userName'] = username
+      localStorage['Comfy.userId'] = user
 
       if (created) {
-        api.user = user;
-        await this.#migrateSettings();
+        api.user = user
+        await this.#migrateSettings()
       }
     }
 
-    api.user = user;
+    api.user = user
 
     this.ui.settings.addSetting({
-      id: "Comfy.SwitchUser",
-      name: "Switch User",
+      id: 'Comfy.SwitchUser',
+      name: 'Switch User',
       type: (name) => {
-        let currentUser = localStorage["Comfy.userName"];
+        let currentUser = localStorage['Comfy.userName']
         if (currentUser) {
-          currentUser = ` (${currentUser})`;
+          currentUser = ` (${currentUser})`
         }
-        return $el("tr", [
-          $el("td", [
-            $el("label", {
-              textContent: name,
-            }),
+        return $el('tr', [
+          $el('td', [
+            $el('label', {
+              textContent: name
+            })
           ]),
-          $el("td", [
-            $el("button", {
-              textContent: name + (currentUser ?? ""),
+          $el('td', [
+            $el('button', {
+              textContent: name + (currentUser ?? ''),
               onclick: () => {
-                delete localStorage["Comfy.userId"];
-                delete localStorage["Comfy.userName"];
-                window.location.reload();
-              },
-            }),
-          ]),
-        ]);
+                delete localStorage['Comfy.userId']
+                delete localStorage['Comfy.userName']
+                window.location.reload()
+              }
+            })
+          ])
+        ])
       },
       // TODO: Is that the correct default value?
-      defaultValue: undefined,
-    });
+      defaultValue: undefined
+    })
   }
 
   /**
    * Set up the app on the page
    */
-  async setup() {
-    await this.#setUser();
+  async setup(canvasEl: HTMLCanvasElement) {
+    this.canvasEl = canvasEl
+    await this.#setUser()
 
-    // Create and mount the LiteGraph in the DOM
-    const mainCanvas = document.createElement("canvas");
-    mainCanvas.style.touchAction = "none";
-    const canvasEl = (this.canvasEl = Object.assign(mainCanvas, {
-      id: "graph-canvas",
-    }));
-    canvasEl.tabIndex = 1;
-    document.body.prepend(canvasEl);
-    this.resizeCanvas();
+    this.resizeCanvas()
 
     await Promise.all([
       this.workflowManager.loadWorkflows(),
-      this.ui.settings.load(),
-    ]);
-    await this.#loadExtensions();
+      this.ui.settings.load()
+    ])
+    await this.#loadExtensions()
 
-    addDomClippingSetting();
-    this.#addProcessMouseHandler();
-    this.#addProcessKeyHandler();
-    this.#addConfigureHandler();
-    this.#addApiUpdateHandlers();
-    this.#addRestoreWorkflowView();
+    addDomClippingSetting()
+    this.#addProcessMouseHandler()
+    this.#addProcessKeyHandler()
+    this.#addConfigureHandler()
+    this.#addApiUpdateHandlers()
+    this.#addRestoreWorkflowView()
 
-    this.graph = new LGraph();
+    this.graph = new LGraph()
 
-    this.#addAfterConfigureHandler();
+    this.#addAfterConfigureHandler()
 
-    this.canvas = new LGraphCanvas(canvasEl, this.graph);
-    this.ctx = canvasEl.getContext("2d");
+    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    this.ctx = canvasEl.getContext('2d')
 
-    LiteGraph.release_link_on_empty_shows_menu = true;
-    LiteGraph.alt_drag_do_clone_nodes = true;
+    LiteGraph.alt_drag_do_clone_nodes = true
 
-    this.graph.start();
+    this.graph.start()
 
     // Ensure the canvas fills the window
-    this.resizeCanvas();
-    window.addEventListener("resize", () => this.resizeCanvas());
-    const ro = new ResizeObserver(() => this.resizeCanvas());
-    ro.observe(this.bodyTop);
-    ro.observe(this.bodyLeft);
-    ro.observe(this.bodyRight);
-    ro.observe(this.bodyBottom);
+    this.resizeCanvas()
+    window.addEventListener('resize', () => this.resizeCanvas())
+    const ro = new ResizeObserver(() => this.resizeCanvas())
+    ro.observe(this.bodyTop)
+    ro.observe(this.bodyLeft)
+    ro.observe(this.bodyRight)
+    ro.observe(this.bodyBottom)
 
-    await this.#invokeExtensionsAsync("init");
-    await this.registerNodes();
-    initWidgets(this);
+    await this.#invokeExtensionsAsync('init')
+    await this.registerNodes()
+    initWidgets(this)
 
     // Load previous workflow
-    let restored = false;
+    let restored = false
     try {
       const loadWorkflow = async (json) => {
         if (json) {
-          const workflow = await parseComfyWorkflow(json);
-          const workflowName = getStorageValue("Comfy.PreviousWorkflow");
-          await this.loadGraphData(workflow, true, true, workflowName);
-          return true;
+          const workflow = JSON.parse(json)
+          const workflowName = getStorageValue('Comfy.PreviousWorkflow')
+          await this.loadGraphData(workflow, true, true, workflowName)
+          return true
         }
-      };
-      const clientId = api.initialClientId ?? api.clientId;
+      }
+      const clientId = api.initialClientId ?? api.clientId
       restored =
         (clientId &&
           (await loadWorkflow(
             sessionStorage.getItem(`workflow:${clientId}`)
           ))) ||
-        (await loadWorkflow(localStorage.getItem("workflow")));
+        (await loadWorkflow(localStorage.getItem('workflow')))
     } catch (err) {
-      console.error("Error loading previous workflow", err);
+      console.error('Error loading previous workflow', err)
     }
 
     // We failed to restore a workflow so load the default
     if (!restored) {
-      await this.loadGraphData();
+      await this.loadGraphData()
     }
 
     // Save current workflow automatically
     setInterval(() => {
-      const workflow = JSON.stringify(this.graph.serialize());
-      localStorage.setItem("workflow", workflow);
+      const sortNodes =
+        this.vueAppReady &&
+        useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
+      localStorage.setItem('workflow', workflow)
       if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflow);
+        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
       }
-    }, 1000);
+    }, 1000)
 
-    this.#addDrawNodeHandler();
-    this.#addDrawGroupsHandler();
-    this.#addDropHandler();
-    this.#addCopyHandler();
-    this.#addPasteHandler();
-    this.#addKeyboardHandler();
+    this.#addDrawNodeHandler()
+    this.#addDrawGroupsHandler()
+    this.#addDropHandler()
+    this.#addCopyHandler()
+    this.#addPasteHandler()
+    this.#addKeyboardHandler()
 
-    await this.#invokeExtensionsAsync("setup");
+    await this.#invokeExtensionsAsync('setup')
   }
 
   resizeCanvas() {
     // Limit minimal scale to 1, see https://github.com/comfyanonymous/ComfyUI/pull/845
-    const scale = Math.max(window.devicePixelRatio, 1);
+    const scale = Math.max(window.devicePixelRatio, 1)
 
     // Clear fixed width and height while calculating rect so it uses 100% instead
-    this.canvasEl.height = this.canvasEl.width = NaN;
-    const { width, height } = this.canvasEl.getBoundingClientRect();
-    this.canvasEl.width = Math.round(width * scale);
-    this.canvasEl.height = Math.round(height * scale);
-    this.canvasEl.getContext("2d").scale(scale, scale);
-    this.canvas?.draw(true, true);
+    this.canvasEl.height = this.canvasEl.width = NaN
+    const { width, height } = this.canvasEl.getBoundingClientRect()
+    this.canvasEl.width = Math.round(width * scale)
+    this.canvasEl.height = Math.round(height * scale)
+    this.canvasEl.getContext('2d').scale(scale, scale)
+    this.canvas?.draw(true, true)
+  }
+
+  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDef>) {
+    // Frontend only nodes registered by custom nodes.
+    // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
+    const rawDefs = Object.fromEntries(
+      Object.entries(LiteGraph.registered_node_types).map(([name, node]) => [
+        name,
+        {
+          name,
+          display_name: name,
+          // @ts-expect-error
+          category: node.category || '__frontend_only__',
+          input: { required: {}, optional: {} },
+          output: [],
+          output_name: [],
+          output_is_list: [],
+          python_module: 'custom_nodes.frontend_only',
+          description: `Frontend only node for ${name}`
+        }
+      ])
+    )
+
+    const allNodeDefs = {
+      ...rawDefs,
+      ...defs,
+      ...SYSTEM_NODE_DEFS
+    }
+
+    const nodeDefStore = useNodeDefStore()
+    nodeDefStore.updateNodeDefs(Object.values(allNodeDefs))
+    nodeDefStore.updateWidgets(this.widgets)
   }
 
   /**
@@ -1956,242 +1977,216 @@ export class ComfyApp {
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await api.getNodeDefs();
-    this.nodeDefs = defs;
-    await this.registerNodesFromDefs(defs);
-    await this.#invokeExtensionsAsync("registerCustomNodes");
+    const defs = await api.getNodeDefs()
+    await this.registerNodesFromDefs(defs)
+    await this.#invokeExtensionsAsync('registerCustomNodes')
+    if (this.vueAppReady) {
+      this.updateVueAppNodeDefs(defs)
+    }
   }
 
   getWidgetType(inputData, inputName) {
-    const type = inputData[0];
+    const type = inputData[0]
 
     if (Array.isArray(type)) {
-      return "COMBO";
+      return 'COMBO'
     } else if (`${type}:${inputName}` in this.widgets) {
-      return `${type}:${inputName}`;
+      return `${type}:${inputName}`
     } else if (type in this.widgets) {
-      return type;
+      return type
     } else {
-      return null;
+      return null
     }
   }
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
-    const self = this;
-    const node = Object.assign(
-      function ComfyNode() {
-        var inputs = nodeData["input"]["required"];
-        if (nodeData["input"]["optional"] != undefined) {
+    const self = this
+    const node = class ComfyNode extends LGraphNode {
+      static comfyClass? = nodeData.name
+      // TODO: change to "title?" once litegraph.d.ts has been updated
+      static title = nodeData.display_name || nodeData.name
+      static nodeData? = nodeData
+      static category?: string
+
+      constructor(title?: string) {
+        super(title)
+        var inputs = nodeData['input']['required']
+        if (nodeData['input']['optional'] != undefined) {
           inputs = Object.assign(
             {},
-            nodeData["input"]["required"],
-            nodeData["input"]["optional"]
-          );
+            nodeData['input']['required'],
+            nodeData['input']['optional']
+          )
         }
-        const config = { minWidth: 1, minHeight: 1 };
+        const config = { minWidth: 1, minHeight: 1 }
         for (const inputName in inputs) {
-          const inputData = inputs[inputName];
-          const type = inputData[0];
+          const inputData = inputs[inputName]
+          const type = inputData[0]
 
-          let widgetCreated = true;
-          const widgetType = self.getWidgetType(inputData, inputName);
+          let widgetCreated = true
+          const widgetType = self.getWidgetType(inputData, inputName)
           if (widgetType) {
-            if (widgetType === "COMBO") {
+            if (widgetType === 'COMBO') {
               Object.assign(
                 config,
                 self.widgets.COMBO(this, inputName, inputData, app) || {}
-              );
+              )
             } else {
               Object.assign(
                 config,
                 self.widgets[widgetType](this, inputName, inputData, app) || {}
-              );
+              )
             }
           } else {
             // Node connection inputs
-            this.addInput(inputName, type);
-            widgetCreated = false;
+            this.addInput(inputName, type)
+            widgetCreated = false
           }
-          // @ts-ignore
+          // @ts-expect-error
           if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
-            // @ts-ignore
-            if (!config.widget.options) config.widget.options = {};
-            // @ts-ignore
-            config.widget.options.forceInput = inputData[1].forceInput;
+            // @ts-expect-error
+            if (!config.widget.options) config.widget.options = {}
+            // @ts-expect-error
+            config.widget.options.forceInput = inputData[1].forceInput
           }
-          // @ts-ignore
+          // @ts-expect-error
           if (widgetCreated && inputData[1]?.defaultInput && config?.widget) {
-            // @ts-ignore
-            if (!config.widget.options) config.widget.options = {};
-            // @ts-ignore
-            config.widget.options.defaultInput = inputData[1].defaultInput;
+            // @ts-expect-error
+            if (!config.widget.options) config.widget.options = {}
+            // @ts-expect-error
+            config.widget.options.defaultInput = inputData[1].defaultInput
           }
         }
 
-        for (const o in nodeData["output"]) {
-          let output = nodeData["output"][o];
-          if (output instanceof Array) output = "COMBO";
-          const outputName = nodeData["output_name"][o] || output;
-          const outputShape = nodeData["output_is_list"][o]
+        for (const o in nodeData['output']) {
+          let output = nodeData['output'][o]
+          if (output instanceof Array) output = 'COMBO'
+          const outputName = nodeData['output_name'][o] || output
+          const outputShape = nodeData['output_is_list'][o]
             ? LiteGraph.GRID_SHAPE
-            : LiteGraph.CIRCLE_SHAPE;
-          this.addOutput(outputName, output, { shape: outputShape });
+            : LiteGraph.CIRCLE_SHAPE
+          this.addOutput(outputName, output, { shape: outputShape })
         }
 
-        const s = this.computeSize();
-        s[0] = Math.max(config.minWidth, s[0] * 1.5);
-        s[1] = Math.max(config.minHeight, s[1]);
-        this.size = s;
-        this.serialize_widgets = true;
+        const s = this.computeSize()
+        s[0] = Math.max(config.minWidth, s[0] * 1.5)
+        s[1] = Math.max(config.minHeight, s[1])
+        this.size = s
+        this.serialize_widgets = true
 
-        app.#invokeExtensionsAsync("nodeCreated", this);
-      },
-      {
-        title: nodeData.display_name || nodeData.name,
-        comfyClass: nodeData.name,
-        nodeData,
+        app.#invokeExtensionsAsync('nodeCreated', this)
       }
-    );
-    node.prototype.comfyClass = nodeData.name;
+    }
+    // @ts-expect-error
+    node.prototype.comfyClass = nodeData.name
 
-    this.#addNodeContextMenuHandler(node);
-    this.#addDrawBackgroundHandler(node);
-    this.#addNodeKeyHandler(node);
+    this.#addNodeContextMenuHandler(node)
+    this.#addDrawBackgroundHandler(node)
+    this.#addNodeKeyHandler(node)
 
-    await this.#invokeExtensionsAsync("beforeRegisterNodeDef", node, nodeData);
-    // @ts-ignore
-    LiteGraph.registerNodeType(nodeId, node);
-    // @ts-ignore
-    node.category = nodeData.category;
+    await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
+    LiteGraph.registerNodeType(nodeId, node)
+    node.category = nodeData.category
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
-    await this.#invokeExtensionsAsync("addCustomNodeDefs", defs);
+    await this.#invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Generate list of known widgets
     this.widgets = Object.assign(
       {},
       ComfyWidgets,
-      ...(await this.#invokeExtensionsAsync("getCustomWidgets")).filter(Boolean)
-    );
+      ...(await this.#invokeExtensionsAsync('getCustomWidgets')).filter(Boolean)
+    )
 
     // Register a node for each definition
     for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId]);
+      this.registerNodeDef(nodeId, defs[nodeId])
     }
   }
 
   loadTemplateData(templateData) {
     if (!templateData?.templates) {
-      return;
+      return
     }
 
-    const old = localStorage.getItem("litegrapheditor_clipboard");
+    const old = localStorage.getItem('litegrapheditor_clipboard')
 
-    var maxY, nodeBottom, node;
+    var maxY, nodeBottom, node
 
     for (const template of templateData.templates) {
       if (!template?.data) {
-        continue;
+        continue
       }
 
-      localStorage.setItem("litegrapheditor_clipboard", template.data);
-      app.canvas.pasteFromClipboard();
+      localStorage.setItem('litegrapheditor_clipboard', template.data)
+      app.canvas.pasteFromClipboard()
 
       // Move mouse position down to paste the next template below
 
-      maxY = false;
+      maxY = false
 
       for (const i in app.canvas.selected_nodes) {
-        node = app.canvas.selected_nodes[i];
+        node = app.canvas.selected_nodes[i]
 
-        nodeBottom = node.pos[1] + node.size[1];
+        nodeBottom = node.pos[1] + node.size[1]
 
         if (maxY === false || nodeBottom > maxY) {
-          maxY = nodeBottom;
+          maxY = nodeBottom
         }
       }
 
-      app.canvas.graph_mouse[1] = maxY + 50;
+      app.canvas.graph_mouse[1] = maxY + 50
     }
 
-    localStorage.setItem("litegrapheditor_clipboard", old);
+    localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
-    let seenTypes = new Set();
+    if (
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')
+    ) {
+      showLoadWorkflowWarning({
+        missingNodeTypes,
+        hasAddedNodes,
+        maximizable: true
+      })
+    }
 
-    this.ui.dialog.show(
-      $el("div.comfy-missing-nodes", [
-        $el("span", {
-          textContent:
-            "When loading the graph, the following node types were not found: ",
-        }),
-        $el(
-          "ul",
-          Array.from(new Set(missingNodeTypes))
-            .map((t) => {
-              let children = [];
-              if (typeof t === "object") {
-                // @ts-ignore
-                if (seenTypes.has(t.type)) return null;
-                // @ts-ignore
-                seenTypes.add(t.type);
-                // @ts-ignore
-                children.push($el("span", { textContent: t.type }));
-                // @ts-ignore
-                if (t.hint) {
-                  // @ts-ignore
-                  children.push($el("span", { textContent: t.hint }));
-                }
-                // @ts-ignore
-                if (t.action) {
-                  children.push(
-                    $el("button", {
-                      // @ts-ignore
-                      onclick: t.action.callback,
-                      // @ts-ignore
-                      textContent: t.action.text,
-                    })
-                  );
-                }
-              } else {
-                if (seenTypes.has(t)) return null;
-                seenTypes.add(t);
-                // @ts-ignore
-                children.push($el("span", { textContent: t }));
-              }
-              return $el("li", children);
-            })
-            .filter(Boolean)
-        ),
-        ...(hasAddedNodes
-          ? [
-              $el("span", {
-                textContent:
-                  "Nodes that have failed to load will show as red on the graph.",
-              }),
-            ]
-          : []),
-      ])
-    );
-    this.logging.addEntry("Comfy.App", "warn", {
-      MissingNodes: missingNodeTypes,
-    });
+    this.logging.addEntry('Comfy.App', 'warn', {
+      MissingNodes: missingNodeTypes
+    })
+  }
+
+  showMissingModelsError(missingModels) {
+    if (
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
+      showMissingModelsWarning({
+        missingModels,
+        maximizable: true
+      })
+    }
+
+    this.logging.addEntry('Comfy.App', 'warn', {
+      MissingModels: missingModels
+    })
   }
 
   async changeWorkflow(callback, workflow = null) {
     try {
-      this.workflowManager.activeWorkflow?.changeTracker?.store();
+      this.workflowManager.activeWorkflow?.changeTracker?.store()
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
-    await callback();
+    await callback()
     try {
-      this.workflowManager.setWorkflow(workflow);
-      this.workflowManager.activeWorkflow?.track();
+      this.workflowManager.setWorkflow(workflow)
+      this.workflowManager.activeWorkflow?.track()
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
 
@@ -2202,170 +2197,203 @@ export class ComfyApp {
     workflow: string | null | ComfyWorkflow = null
   ) {
     if (clean !== false) {
-      this.clean();
+      this.clean()
     }
 
-    let reset_invalid_values = false;
+    let reset_invalid_values = false
     if (!graphData) {
-      graphData = defaultGraph;
-      reset_invalid_values = true;
+      graphData = defaultGraph
+      reset_invalid_values = true
     }
 
-    if (typeof structuredClone === "undefined") {
-      graphData = JSON.parse(JSON.stringify(graphData));
+    if (typeof structuredClone === 'undefined') {
+      graphData = JSON.parse(JSON.stringify(graphData))
     } else {
-      graphData = structuredClone(graphData);
+      graphData = structuredClone(graphData)
     }
 
     try {
-      this.workflowManager.setWorkflow(workflow);
+      this.workflowManager.setWorkflow(workflow)
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
 
-    const missingNodeTypes = [];
+    if (
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Validation.Workflows')
+    ) {
+      // TODO: Show validation error in a dialog.
+      const validatedGraphData = await validateComfyWorkflow(
+        graphData,
+        /* onError=*/ alert
+      )
+      // If the validation failed, use the original graph data.
+      // Ideally we should not block users from loading the workflow.
+      graphData = validatedGraphData ?? graphData
+    }
+
+    const missingNodeTypes = []
+    const missingModels = []
     await this.#invokeExtensionsAsync(
-      "beforeConfigureGraph",
+      'beforeConfigureGraph',
       graphData,
       missingNodeTypes
-    );
+      // TODO: missingModels
+    )
     for (let n of graphData.nodes) {
       // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-      if (n.type == "T2IAdapterLoader") n.type = "ControlNetLoader";
-      if (n.type == "ConditioningAverage ") n.type = "ConditioningAverage"; //typo fix
-      if (n.type == "SDV_img2vid_Conditioning")
-        n.type = "SVD_img2vid_Conditioning"; //typo fix
+      if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+      if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
+      if (n.type == 'SDV_img2vid_Conditioning')
+        n.type = 'SVD_img2vid_Conditioning' //typo fix
 
       // Find missing node types
       if (!(n.type in LiteGraph.registered_node_types)) {
-        missingNodeTypes.push(n.type);
-        n.type = sanitizeNodeName(n.type);
+        missingNodeTypes.push(n.type)
+        n.type = sanitizeNodeName(n.type)
+      }
+    }
+    if (
+      graphData.models &&
+      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
+    ) {
+      for (let m of graphData.models) {
+        const models_available = await this.getModelsInFolderCached(m.directory)
+        if (models_available === null) {
+          // @ts-expect-error
+          m.directory_invalid = true
+          missingModels.push(m)
+        } else if (!models_available.includes(m.name)) {
+          missingModels.push(m)
+        }
       }
     }
 
     try {
-      this.graph.configure(graphData);
+      this.graph.configure(graphData)
       if (
         restore_view &&
         this.enableWorkflowViewRestore.value &&
         graphData.extra?.ds
       ) {
-        // @ts-ignore
+        // @ts-expect-error
         // Need to set strict: true for zod to match the type [number, number]
         // https://github.com/colinhacks/zod/issues/3056
-        this.canvas.ds.offset = graphData.extra.ds.offset;
-        this.canvas.ds.scale = graphData.extra.ds.scale;
+        this.canvas.ds.offset = graphData.extra.ds.offset
+        this.canvas.ds.scale = graphData.extra.ds.scale
       }
 
       try {
-        this.workflowManager.activeWorkflow?.track();
+        this.workflowManager.activeWorkflow?.track()
       } catch (error) {
         // TODO: Do we want silently fail here?
       }
     } catch (error) {
-      let errorHint = [];
+      let errorHint = []
       // Try extracting filename to see if it was caused by an extension script
       const filename =
         error.fileName ||
-        (error.stack || "").match(/(\/extensions\/.*\.js)/)?.[1];
-      const pos = (filename || "").indexOf("/extensions/");
+        (error.stack || '').match(/(\/extensions\/.*\.js)/)?.[1]
+      const pos = (filename || '').indexOf('/extensions/')
       if (pos > -1) {
         errorHint.push(
-          $el("span", {
-            textContent: "This may be due to the following script:",
+          $el('span', {
+            textContent: 'This may be due to the following script:'
           }),
-          $el("br"),
-          $el("span", {
+          $el('br'),
+          $el('span', {
             style: {
-              fontWeight: "bold",
+              fontWeight: 'bold'
             },
-            textContent: filename.substring(pos),
+            textContent: filename.substring(pos)
           })
-        );
+        )
       }
 
       // Show dialog to let the user know something went wrong loading the data
       this.ui.dialog.show(
-        $el("div", [
-          $el("p", {
-            textContent: "Loading aborted due to error reloading workflow data",
+        $el('div', [
+          $el('p', {
+            textContent: 'Loading aborted due to error reloading workflow data'
           }),
-          $el("pre", {
-            style: { padding: "5px", backgroundColor: "rgba(255,0,0,0.2)" },
-            textContent: error.toString(),
+          $el('pre', {
+            style: { padding: '5px', backgroundColor: 'rgba(255,0,0,0.2)' },
+            textContent: error.toString()
           }),
-          $el("pre", {
+          $el('pre', {
             style: {
-              padding: "5px",
-              color: "#ccc",
-              fontSize: "10px",
-              maxHeight: "50vh",
-              overflow: "auto",
-              backgroundColor: "rgba(0,0,0,0.2)",
+              padding: '5px',
+              color: '#ccc',
+              fontSize: '10px',
+              maxHeight: '50vh',
+              overflow: 'auto',
+              backgroundColor: 'rgba(0,0,0,0.2)'
             },
-            textContent: error.stack || "No stacktrace available",
+            textContent: error.stack || 'No stacktrace available'
           }),
-          ...errorHint,
+          ...errorHint
         ]).outerHTML
-      );
+      )
 
-      return;
+      return
     }
-    // @ts-ignore
+    // @ts-expect-error
     for (const node of this.graph._nodes) {
-      const size = node.computeSize();
-      size[0] = Math.max(node.size[0], size[0]);
-      size[1] = Math.max(node.size[1], size[1]);
-      node.size = size;
-      // @ts-ignore
+      const size = node.computeSize()
+      size[0] = Math.max(node.size[0], size[0])
+      size[1] = Math.max(node.size[1], size[1])
+      node.size = size
       if (node.widgets) {
         // If you break something in the backend and want to patch workflows in the frontend
         // This is the place to do this
-        // @ts-ignore
         for (let widget of node.widgets) {
-          if (node.type == "KSampler" || node.type == "KSamplerAdvanced") {
-            if (widget.name == "sampler_name") {
-              if (widget.value.startsWith("sample_")) {
-                widget.value = widget.value.slice(7);
+          if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
+            if (widget.name == 'sampler_name') {
+              if (widget.value.startsWith('sample_')) {
+                widget.value = widget.value.slice(7)
               }
             }
           }
           if (
-            node.type == "KSampler" ||
-            node.type == "KSamplerAdvanced" ||
-            node.type == "PrimitiveNode"
+            node.type == 'KSampler' ||
+            node.type == 'KSamplerAdvanced' ||
+            node.type == 'PrimitiveNode'
           ) {
-            if (widget.name == "control_after_generate") {
+            if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
-                widget.value = "randomize";
+                widget.value = 'randomize'
               } else if (widget.value === false) {
-                widget.value = "fixed";
+                widget.value = 'fixed'
               }
             }
           }
           if (reset_invalid_values) {
-            if (widget.type == "combo") {
+            if (widget.type == 'combo') {
               if (
                 !widget.options.values.includes(widget.value) &&
                 widget.options.values.length > 0
               ) {
-                widget.value = widget.options.values[0];
+                widget.value = widget.options.values[0]
               }
             }
           }
         }
       }
 
-      this.#invokeExtensions("loadedGraphNode", node);
+      this.#invokeExtensions('loadedGraphNode', node)
     }
 
+    // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length) {
-      this.showMissingNodesError(missingNodeTypes);
+      this.showMissingNodesError(missingNodeTypes)
     }
-    await this.#invokeExtensionsAsync("afterConfigureGraph", missingNodeTypes);
+    if (missingModels.length) {
+      this.showMissingModelsError(missingModels)
+    }
+    await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
     requestAnimationFrame(() => {
-      this.graph.setDirtyCanvas(true, true);
-    });
+      this.graph.setDirtyCanvas(true, true)
+    })
   }
 
   /**
@@ -2378,106 +2406,109 @@ export class ComfyApp {
         for (const widget of outerNode.widgets) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          widget.beforeQueued?.();
+          widget.beforeQueued?.()
         }
       }
 
       const innerNodes = outerNode.getInnerNodes
         ? outerNode.getInnerNodes()
-        : [outerNode];
+        : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
           // Don't serialize frontend only nodes but let them make changes
           if (node.applyToGraph) {
-            node.applyToGraph();
+            node.applyToGraph()
           }
         }
       }
     }
 
-    const workflow = graph.serialize();
-    const output = {};
+    const sortNodes =
+      this.vueAppReady &&
+      useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    const workflow = graph.serialize({ sortNodes })
+    const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
-      const skipNode = outerNode.mode === 2 || outerNode.mode === 4;
+      const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
         !skipNode && outerNode.getInnerNodes
           ? outerNode.getInnerNodes()
-          : [outerNode];
+          : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
-          continue;
+          continue
         }
 
         if (node.mode === 2 || node.mode === 4) {
           // Don't serialize muted nodes
-          continue;
+          continue
         }
 
-        const inputs = {};
-        const widgets = node.widgets;
+        const inputs = {}
+        const widgets = node.widgets
 
         // Store all widget values
         if (widgets) {
           for (const i in widgets) {
-            const widget = widgets[i];
+            const widget = widgets[i]
             if (!widget.options || widget.options.serialize !== false) {
               inputs[widget.name] = widget.serializeValue
                 ? await widget.serializeValue(node, i)
-                : widget.value;
+                : widget.value
             }
           }
         }
 
         // Store all node links
         for (let i in node.inputs) {
-          let parent = node.getInputNode(i);
+          let parent = node.getInputNode(i)
           if (parent) {
-            let link = node.getInputLink(i);
+            let link = node.getInputLink(i)
             while (parent.mode === 4 || parent.isVirtualNode) {
-              let found = false;
+              let found = false
               if (parent.isVirtualNode) {
-                link = parent.getInputLink(link.origin_slot);
+                link = parent.getInputLink(link.origin_slot)
                 if (link) {
-                  parent = parent.getInputNode(link.target_slot);
+                  parent = parent.getInputNode(link.target_slot)
                   if (parent) {
-                    found = true;
+                    found = true
                   }
                 }
               } else if (link && parent.mode === 4) {
-                let all_inputs = [link.origin_slot];
+                let all_inputs = [link.origin_slot]
                 if (parent.inputs) {
-                  all_inputs = all_inputs.concat(Object.keys(parent.inputs));
+                  all_inputs = all_inputs.concat(Object.keys(parent.inputs))
                   for (let parent_input in all_inputs) {
-                    parent_input = all_inputs[parent_input];
+                    parent_input = all_inputs[parent_input]
                     if (
                       parent.inputs[parent_input]?.type === node.inputs[i].type
                     ) {
-                      link = parent.getInputLink(parent_input);
+                      link = parent.getInputLink(parent_input)
                       if (link) {
-                        parent = parent.getInputNode(parent_input);
+                        parent = parent.getInputNode(parent_input)
                       }
-                      found = true;
-                      break;
+                      found = true
+                      break
                     }
                   }
                 }
               }
 
               if (!found) {
-                break;
+                break
               }
             }
 
             if (link) {
               if (parent?.updateLink) {
-                link = parent.updateLink(link);
+                link = parent.updateLink(link)
               }
               if (link) {
                 inputs[node.inputs[i].name] = [
                   String(link.origin_id),
-                  parseInt(link.origin_slot),
-                ];
+                  parseInt(link.origin_slot)
+                ]
               }
             }
           }
@@ -2485,17 +2516,17 @@ export class ComfyApp {
 
         let node_data = {
           inputs,
-          class_type: node.comfyClass,
-        };
-
-        if (this.ui.settings.getSettingValue("Comfy.DevMode")) {
-          // Ignored by the backend.
-          node_data["_meta"] = {
-            title: node.title,
-          };
+          class_type: node.comfyClass
         }
 
-        output[String(node.id)] = node_data;
+        if (this.ui.settings.getSettingValue('Comfy.DevMode')) {
+          // Ignored by the backend.
+          node_data['_meta'] = {
+            title: node.title
+          }
+        }
+
+        output[String(node.id)] = node_data
       }
     }
 
@@ -2508,129 +2539,117 @@ export class ComfyApp {
             output[o].inputs[i].length === 2 &&
             !output[output[o].inputs[i][0]]
           ) {
-            delete output[o].inputs[i];
+            delete output[o].inputs[i]
           }
         }
       }
     }
 
-    return { workflow, output };
+    return { workflow, output }
   }
 
   #formatPromptError(error) {
     if (error == null) {
-      return "(unknown error)";
-    } else if (typeof error === "string") {
-      return error;
+      return '(unknown error)'
+    } else if (typeof error === 'string') {
+      return error
     } else if (error.stack && error.message) {
-      return error.toString();
+      return error.toString()
     } else if (error.response) {
-      let message = error.response.error.message;
+      let message = error.response.error.message
       if (error.response.error.details)
-        message += ": " + error.response.error.details;
+        message += ': ' + error.response.error.details
       for (const [nodeID, nodeError] of Object.entries(
         error.response.node_errors
       )) {
-        // @ts-ignore
-        message += "\n" + nodeError.class_type + ":";
-        // @ts-ignore
+        // @ts-expect-error
+        message += '\n' + nodeError.class_type + ':'
+        // @ts-expect-error
         for (const errorReason of nodeError.errors) {
           message +=
-            "\n    - " + errorReason.message + ": " + errorReason.details;
+            '\n    - ' + errorReason.message + ': ' + errorReason.details
         }
       }
-      return message;
+      return message
     }
-    return "(unknown error)";
-  }
-
-  #formatExecutionError(error) {
-    if (error == null) {
-      return "(unknown error)";
-    }
-
-    const traceback = error.traceback.join("");
-    const nodeId = error.node_id;
-    const nodeType = error.node_type;
-
-    return `Error occurred when executing ${nodeType}:\n\n${error.exception_message}\n\n${traceback}`;
+    return '(unknown error)'
   }
 
   async queuePrompt(number, batchCount = 1) {
-    this.#queueItems.push({ number, batchCount });
+    this.#queueItems.push({ number, batchCount })
 
     // Only have one action process the items so each one gets a unique seed correctly
     if (this.#processingQueue) {
-      return;
+      return
     }
 
-    this.#processingQueue = true;
-    this.lastNodeErrors = null;
+    this.#processingQueue = true
+    this.lastNodeErrors = null
 
     try {
       while (this.#queueItems.length) {
-        ({ number, batchCount } = this.#queueItems.pop());
+        ;({ number, batchCount } = this.#queueItems.pop())
 
         for (let i = 0; i < batchCount; i++) {
-          const p = await this.graphToPrompt();
+          const p = await this.graphToPrompt()
 
           try {
-            const res = await api.queuePrompt(number, p);
-            this.lastNodeErrors = res.node_errors;
+            const res = await api.queuePrompt(number, p)
+            this.lastNodeErrors = res.node_errors
             if (this.lastNodeErrors.length > 0) {
-              this.canvas.draw(true, true);
+              this.canvas.draw(true, true)
             } else {
               try {
                 this.workflowManager.storePrompt({
                   id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                });
+                  nodes: Object.keys(p.output)
+                })
               } catch (error) {}
             }
           } catch (error) {
-            const formattedError = this.#formatPromptError(error);
-            this.ui.dialog.show(formattedError);
+            const formattedError = this.#formatPromptError(error)
+            this.ui.dialog.show(formattedError)
             if (error.response) {
-              this.lastNodeErrors = error.response.node_errors;
-              this.canvas.draw(true, true);
+              this.lastNodeErrors = error.response.node_errors
+              this.canvas.draw(true, true)
             }
-            break;
+            break
           }
 
           for (const n of p.workflow.nodes) {
-            const node = this.graph.getNodeById(n.id);
+            const node = this.graph.getNodeById(n.id)
             if (node.widgets) {
               for (const widget of node.widgets) {
                 // Allow widgets to run callbacks after a prompt has been queued
                 // e.g. random seed after every gen
-                // @ts-ignore
+                // @ts-expect-error
                 if (widget.afterQueued) {
-                  // @ts-ignore
-                  widget.afterQueued();
+                  // @ts-expect-error
+                  widget.afterQueued()
                 }
               }
             }
           }
 
-          this.canvas.draw(true, true);
-          await this.ui.queue.update();
+          this.canvas.draw(true, true)
+          await this.ui.queue.update()
         }
       }
     } finally {
-      this.#processingQueue = false;
+      this.#processingQueue = false
     }
     api.dispatchEvent(
-      new CustomEvent("promptQueued", { detail: { number, batchCount } })
-    );
-    return !this.lastNodeErrors;
+      new CustomEvent('promptQueued', { detail: { number, batchCount } })
+    )
+    return !this.lastNodeErrors
   }
 
   showErrorOnFileLoad(file) {
     this.ui.dialog.show(
-      $el("div", [
-        $el("p", { textContent: `Unable to find workflow in ${file.name}` }),
+      $el('div', [
+        $el('p', { textContent: `Unable to find workflow in ${file.name}` })
       ]).outerHTML
-    );
+    )
   }
 
   /**
@@ -2639,213 +2658,217 @@ export class ComfyApp {
    */
   async handleFile(file) {
     const removeExt = (f) => {
-      if (!f) return f;
-      const p = f.lastIndexOf(".");
-      if (p === -1) return f;
-      return f.substring(0, p);
-    };
-    const fileName = removeExt(file.name);
-    if (file.type === "image/png") {
-      const pngInfo = await getPngMetadata(file);
+      if (!f) return f
+      const p = f.lastIndexOf('.')
+      if (p === -1) return f
+      return f.substring(0, p)
+    }
+    const fileName = removeExt(file.name)
+    if (file.type === 'image/png') {
+      const pngInfo = await getPngMetadata(file)
       if (pngInfo?.workflow) {
         await this.loadGraphData(
-          await parseComfyWorkflow(pngInfo.workflow),
+          JSON.parse(pngInfo.workflow),
           true,
           true,
           fileName
-        );
+        )
       } else if (pngInfo?.prompt) {
-        this.loadApiJson(JSON.parse(pngInfo.prompt), fileName);
+        this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
       } else if (pngInfo?.parameters) {
         this.changeWorkflow(() => {
-          importA1111(this.graph, pngInfo.parameters);
-        }, fileName);
+          importA1111(this.graph, pngInfo.parameters)
+        }, fileName)
       } else {
-        this.showErrorOnFileLoad(file);
+        this.showErrorOnFileLoad(file)
       }
-    } else if (file.type === "image/webp") {
-      const pngInfo = await getWebpMetadata(file);
+    } else if (file.type === 'image/webp') {
+      const pngInfo = await getWebpMetadata(file)
       // Support loading workflows from that webp custom node.
-      const workflow = pngInfo?.workflow || pngInfo?.Workflow;
-      const prompt = pngInfo?.prompt || pngInfo?.Prompt;
+      const workflow = pngInfo?.workflow || pngInfo?.Workflow
+      const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(
-          await parseComfyWorkflow(workflow),
-          true,
-          true,
-          fileName
-        );
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName);
+        this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file);
+        this.showErrorOnFileLoad(file)
       }
-    } else if (file.type === "audio/flac" || file.type === "audio/x-flac") {
-      const pngInfo = await getFlacMetadata(file);
-      const workflow = pngInfo?.workflow || pngInfo?.Workflow;
-      const prompt = pngInfo?.prompt || pngInfo?.Prompt;
+    } else if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
+      const pngInfo = await getFlacMetadata(file)
+      const workflow = pngInfo?.workflow || pngInfo?.Workflow
+      const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(
-          await parseComfyWorkflow(workflow),
-          true,
-          true,
-          fileName
-        );
+        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
       } else if (prompt) {
-        this.loadApiJson(JSON.parse(prompt), fileName);
+        this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file);
+        this.showErrorOnFileLoad(file)
       }
     } else if (
-      file.type === "application/json" ||
-      file.name?.endsWith(".json")
+      file.type === 'application/json' ||
+      file.name?.endsWith('.json')
     ) {
-      const reader = new FileReader();
+      const reader = new FileReader()
       reader.onload = async () => {
-        const readerResult = reader.result as string;
-        const jsonContent = JSON.parse(readerResult);
+        const readerResult = reader.result as string
+        const jsonContent = JSON.parse(readerResult)
         if (jsonContent?.templates) {
-          this.loadTemplateData(jsonContent);
+          this.loadTemplateData(jsonContent)
         } else if (this.isApiJson(jsonContent)) {
-          this.loadApiJson(jsonContent, fileName);
+          this.loadApiJson(jsonContent, fileName)
         } else {
           await this.loadGraphData(
-            await parseComfyWorkflow(readerResult),
+            JSON.parse(readerResult),
             true,
+            false,
             fileName
-          );
+          )
         }
-      };
-      reader.readAsText(file);
+      }
+      reader.readAsText(file)
     } else if (
-      file.name?.endsWith(".latent") ||
-      file.name?.endsWith(".safetensors")
+      file.name?.endsWith('.latent') ||
+      file.name?.endsWith('.safetensors')
     ) {
-      const info = await getLatentMetadata(file);
+      const info = await getLatentMetadata(file)
       // TODO define schema to LatentMetadata
-      // @ts-ignore
+      // @ts-expect-error
       if (info.workflow) {
         await this.loadGraphData(
-          // @ts-ignore
-          await parseComfyWorkflow(info.workflow),
+          // @ts-expect-error
+          JSON.parse(info.workflow),
           true,
           true,
           fileName
-        );
-        // @ts-ignore
+        )
+        // @ts-expect-error
       } else if (info.prompt) {
-        // @ts-ignore
-        this.loadApiJson(JSON.parse(info.prompt));
+        // @ts-expect-error
+        this.loadApiJson(JSON.parse(info.prompt))
       } else {
-        this.showErrorOnFileLoad(file);
+        this.showErrorOnFileLoad(file)
       }
     } else {
-      this.showErrorOnFileLoad(file);
+      this.showErrorOnFileLoad(file)
     }
   }
 
   isApiJson(data) {
-    // @ts-ignore
-    return Object.values(data).every((v) => v.class_type);
+    // @ts-expect-error
+    return Object.values(data).every((v) => v.class_type)
   }
 
   loadApiJson(apiData, fileName: string) {
     const missingNodeTypes = Object.values(apiData).filter(
-      // @ts-ignore
+      // @ts-expect-error
       (n) => !LiteGraph.registered_node_types[n.class_type]
-    );
+    )
     if (missingNodeTypes.length) {
       this.showMissingNodesError(
-        // @ts-ignore
+        // @ts-expect-error
         missingNodeTypes.map((t) => t.class_type),
         false
-      );
-      return;
+      )
+      return
     }
 
-    const ids = Object.keys(apiData);
-    app.graph.clear();
+    const ids = Object.keys(apiData)
+    app.graph.clear()
     for (const id of ids) {
-      const data = apiData[id];
-      const node = LiteGraph.createNode(data.class_type);
-      // @ts-ignore
-      node.id = isNaN(+id) ? id : +id;
-      node.title = data._meta?.title ?? node.title;
-      app.graph.add(node);
+      const data = apiData[id]
+      const node = LiteGraph.createNode(data.class_type)
+      // @ts-expect-error
+      node.id = isNaN(+id) ? id : +id
+      node.title = data._meta?.title ?? node.title
+      app.graph.add(node)
     }
 
     this.changeWorkflow(() => {
       for (const id of ids) {
-        const data = apiData[id];
-        const node = app.graph.getNodeById(Number.parseInt(id));
+        const data = apiData[id]
+        const node = app.graph.getNodeById(Number.parseInt(id))
         for (const input in data.inputs ?? {}) {
-          const value = data.inputs[input];
+          const value = data.inputs[input]
           if (value instanceof Array) {
-            const [fromId, fromSlot] = value;
-            const fromNode = app.graph.getNodeById(fromId);
-            let toSlot = node.inputs?.findIndex((inp) => inp.name === input);
+            const [fromId, fromSlot] = value
+            const fromNode = app.graph.getNodeById(fromId)
+            let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
             if (toSlot == null || toSlot === -1) {
               try {
                 // Target has no matching input, most likely a converted widget
-                const widget = node.widgets?.find((w) => w.name === input);
-                // @ts-ignore
+                const widget = node.widgets?.find((w) => w.name === input)
+                // @ts-expect-error
                 if (widget && node.convertWidgetToInput?.(widget)) {
-                  toSlot = node.inputs?.length - 1;
+                  toSlot = node.inputs?.length - 1
                 }
               } catch (error) {}
             }
             if (toSlot != null || toSlot !== -1) {
-              fromNode.connect(fromSlot, node, toSlot);
+              fromNode.connect(fromSlot, node, toSlot)
             }
           } else {
-            const widget = node.widgets?.find((w) => w.name === input);
+            const widget = node.widgets?.find((w) => w.name === input)
             if (widget) {
-              widget.value = value;
-              // @ts-ignore
-              widget.callback?.(value);
+              widget.value = value
+              // @ts-expect-error
+              widget.callback?.(value)
             }
           }
         }
       }
-      app.graph.arrange();
-    }, fileName);
+      app.graph.arrange()
+    }, fileName)
 
     for (const id of ids) {
-      const data = apiData[id];
-      const node = app.graph.getNodeById(Number.parseInt(id));
+      const data = apiData[id]
+      const node = app.graph.getNodeById(Number.parseInt(id))
       for (const input in data.inputs ?? {}) {
-        const value = data.inputs[input];
+        const value = data.inputs[input]
         if (value instanceof Array) {
-          const [fromId, fromSlot] = value;
-          const fromNode = app.graph.getNodeById(fromId);
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input);
+          const [fromId, fromSlot] = value
+          const fromNode = app.graph.getNodeById(fromId)
+          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
           if (toSlot == null || toSlot === -1) {
             try {
               // Target has no matching input, most likely a converted widget
-              const widget = node.widgets?.find((w) => w.name === input);
-              // @ts-ignore
+              const widget = node.widgets?.find((w) => w.name === input)
+              // @ts-expect-error
               if (widget && node.convertWidgetToInput?.(widget)) {
-                toSlot = node.inputs?.length - 1;
+                toSlot = node.inputs?.length - 1
               }
             } catch (error) {}
           }
           if (toSlot != null || toSlot !== -1) {
-            fromNode.connect(fromSlot, node, toSlot);
+            fromNode.connect(fromSlot, node, toSlot)
           }
         } else {
-          const widget = node.widgets?.find((w) => w.name === input);
+          const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
-            widget.value = value;
-            // @ts-ignore
-            widget.callback?.(value);
+            widget.value = value
+            // @ts-expect-error
+            widget.callback?.(value)
           }
         }
       }
     }
 
-    app.graph.arrange();
+    app.graph.arrange()
+  }
+
+  /**
+   * Gets the list of model names in a folder, using a temporary local cache
+   */
+  async getModelsInFolderCached(folder: string): Promise<string[]> {
+    if (folder in this.modelsInFolderCache) {
+      return this.modelsInFolderCache[folder]
+    }
+    // TODO: needs a lock to avoid overlapping calls
+    const models = await api.getModels(folder)
+    this.modelsInFolderCache[folder] = models
+    return models
   }
 
   /**
@@ -2854,75 +2877,135 @@ export class ComfyApp {
    */
   registerExtension(extension) {
     if (!extension.name) {
-      throw new Error("Extensions must have a 'name' property.");
+      throw new Error("Extensions must have a 'name' property.")
     }
     if (this.extensions.find((ext) => ext.name === extension.name)) {
-      throw new Error(
-        `Extension named '${extension.name}' already registered.`
-      );
+      throw new Error(`Extension named '${extension.name}' already registered.`)
     }
-    this.extensions.push(extension);
+    this.extensions.push(extension)
   }
 
   /**
    * Refresh combo list on whole nodes
    */
   async refreshComboInNodes() {
-    const defs = await api.getNodeDefs();
+    const requestToastMessage: ToastMessageOptions = {
+      severity: 'info',
+      summary: 'Update',
+      detail: 'Update requested'
+    }
+    if (this.vueAppReady) useToastStore().add(requestToastMessage)
+
+    this.modelsInFolderCache = {}
+
+    const defs = await api.getNodeDefs()
 
     for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId]);
+      this.registerNodeDef(nodeId, defs[nodeId])
     }
-    // @ts-ignore
+    // @ts-expect-error
     for (let nodeNum in this.graph._nodes) {
-      // @ts-ignore
-      const node = this.graph._nodes[nodeNum];
-      const def = defs[node.type];
-      // @ts-ignore
+      // @ts-expect-error
+      const node = this.graph._nodes[nodeNum]
+      const def = defs[node.type]
+      // @ts-expect-error
       // Allow primitive nodes to handle refresh
-      node.refreshComboInNode?.(defs);
+      node.refreshComboInNode?.(defs)
 
-      if (!def) continue;
+      if (!def) continue
 
       for (const widgetNum in node.widgets) {
-        const widget = node.widgets[widgetNum];
+        const widget = node.widgets[widgetNum]
         if (
-          widget.type == "combo" &&
-          def["input"]["required"][widget.name] !== undefined
+          widget.type == 'combo' &&
+          def['input']['required'][widget.name] !== undefined
         ) {
-          widget.options.values = def["input"]["required"][widget.name][0];
+          widget.options.values = def['input']['required'][widget.name][0]
 
           if (
-            widget.name != "image" &&
+            widget.name != 'image' &&
             !widget.options.values.includes(widget.value)
           ) {
-            widget.value = widget.options.values[0];
-            // @ts-ignore
-            widget.callback(widget.value);
+            widget.value = widget.options.values[0]
+            // @ts-expect-error
+            widget.callback(widget.value)
           }
         }
       }
     }
 
-    await this.#invokeExtensionsAsync("refreshComboInNodes", defs);
+    await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+
+    if (this.vueAppReady) {
+      this.updateVueAppNodeDefs(defs)
+      useToastStore().remove(requestToastMessage)
+      useToastStore().add({
+        severity: 'success',
+        summary: 'Updated',
+        detail: 'Node definitions updated',
+        life: 1000
+      })
+    }
   }
 
   resetView() {
-    app.canvas.ds.scale = 1;
-    app.canvas.ds.offset = [0, 0];
-    app.graph.setDirtyCanvas(true, true);
+    app.canvas.ds.scale = 1
+    app.canvas.ds.offset = [0, 0]
+    app.graph.setDirtyCanvas(true, true)
   }
 
   /**
    * Clean current state
    */
   clean() {
-    this.nodeOutputs = {};
-    this.nodePreviewImages = {};
-    this.lastNodeErrors = null;
-    this.lastExecutionError = null;
-    this.runningNodeId = null;
+    this.nodeOutputs = {}
+    this.nodePreviewImages = {}
+    this.lastNodeErrors = null
+    this.lastExecutionError = null
+    this.runningNodeId = null
+  }
+
+  addNodeOnGraph(
+    nodeDef: ComfyNodeDef | ComfyNodeDefImpl,
+    options: Record<string, any> = {}
+  ): LGraphNode {
+    const node = LiteGraph.createNode(
+      nodeDef.name,
+      nodeDef.display_name,
+      options
+    )
+    this.graph.add(node)
+    return node
+  }
+
+  clientPosToCanvasPos(pos: Vector2): Vector2 {
+    const rect = this.canvasContainer.getBoundingClientRect()
+    const containerOffsets = [rect.left, rect.top]
+    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
+      ([p, o1, o2]) => (p - o2) / this.canvas.ds.scale - o1
+    ) as Vector2
+  }
+
+  canvasPosToClientPos(pos: Vector2): Vector2 {
+    const rect = this.canvasContainer.getBoundingClientRect()
+    const containerOffsets = [rect.left, rect.top]
+    return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
+      ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
+    ) as Vector2
+  }
+
+  getCanvasCenter(): Vector2 {
+    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
+    const [x, y, w, h] = app.canvas.ds.visible_area
+    return [x + w / dpi / 2, y + h / dpi / 2]
+  }
+
+  public goToNode(nodeId: NodeId) {
+    // @ts-expect-error TODO: Update litegraph's nodeId type to string | number
+    const graphNode = this.graph.getNodeById(nodeId)
+    if (!graphNode) return
+    this.canvas.centerOnNode(graphNode)
   }
 }
 
-export const app = new ComfyApp();
+export const app = new ComfyApp()

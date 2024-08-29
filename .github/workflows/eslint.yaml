@@ -1,0 +1,25 @@
+name: ESLint
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'dev*'
+  pull_request:
+    branches:
+      - main
+      - master
+      - 'dev*'
+
+jobs:
+  eslint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: lts/*
+    - run: npm ci
+    - run: npm run lint

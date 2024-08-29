@@ -27,6 +27,11 @@ jobs:
       with:
         repository: "Comfy-Org/ComfyUI_frontend"
         path: "ComfyUI_frontend"
+    - name: Checkout ComfyUI_devtools
+      uses: actions/checkout@v4
+      with:
+        repository: "Comfy-Org/ComfyUI_devtools"
+        path: "ComfyUI/custom_nodes/ComfyUI_devtools"
     - name: Get commit message
       id: commit-message
       run: echo "::set-output name=message::$(git log -1 --pretty=%B)"
@@ -74,7 +79,7 @@ jobs:
         npm test -- --verbose
       working-directory: ComfyUI_frontend
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
     - name: Run Playwright tests
       run: npx playwright test

@@ -1,80 +1,127 @@
 <template>
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
-  <div v-else>
-    <NodeSearchboxPopover v-if="nodeSearchEnabled" />
-  </div>
+  <BlockUI full-screen :blocked="isLoading" />
+  <GlobalDialog />
+  <GlobalToast />
+  <GraphCanvas />
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, provide, ref } from "vue";
-import NodeSearchboxPopover from "@/components/NodeSearchBoxPopover.vue";
-import ProgressSpinner from "primevue/progressspinner";
 import {
-  NodeSearchService,
-  SYSTEM_NODE_DEFS,
-} from "./services/nodeSearchService";
-import { ColorPaletteLoadedEvent } from "./types/colorPalette";
-import { LiteGraphNodeSearchSettingEvent } from "./scripts/ui";
-import { app } from "./scripts/app";
+  computed,
+  markRaw,
+  onMounted,
+  onUnmounted,
+  watch,
+  watchEffect
+} from 'vue'
+import BlockUI from 'primevue/blockui'
+import ProgressSpinner from 'primevue/progressspinner'
+import GraphCanvas from '@/components/graph/GraphCanvas.vue'
+import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
+import { app } from './scripts/app'
+import { useSettingStore } from './stores/settingStore'
+import { useI18n } from 'vue-i18n'
+import { useWorkspaceStore } from './stores/workspaceStateStore'
+import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
+import GlobalDialog from './components/dialog/GlobalDialog.vue'
+import GlobalToast from './components/toast/GlobalToast.vue'
+import { api } from './scripts/api'
+import { StatusWsMessageStatus } from './types/apiTypes'
+import { useQueuePendingTaskCountStore } from './stores/queueStore'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 
-const isLoading = ref(true);
-const nodeSearchEnabled = ref(false);
-const nodeSearchService = ref<NodeSearchService>();
+const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
+const theme = computed<string>(() =>
+  useSettingStore().get('Comfy.ColorPalette')
+)
+watch(
+  theme,
+  (newTheme) => {
+    const DARK_THEME_CLASS = 'dark-theme'
+    const isDarkTheme = newTheme !== 'light'
+    if (isDarkTheme) {
+      document.body.classList.add(DARK_THEME_CLASS)
+    } else {
+      document.body.classList.remove(DARK_THEME_CLASS)
+    }
+  },
+  { immediate: true }
+)
 
-const updateTheme = (e: ColorPaletteLoadedEvent) => {
-  const DARK_THEME_CLASS = "dark-theme";
-  const isDarkTheme = e.detail.id !== "light";
+watchEffect(() => {
+  const fontSize = useSettingStore().get('Comfy.TextareaWidget.FontSize')
+  document.documentElement.style.setProperty(
+    '--comfy-textarea-font-size',
+    `${fontSize}px`
+  )
+})
 
-  if (isDarkTheme) {
-    document.body.classList.add(DARK_THEME_CLASS);
-  } else {
-    document.body.classList.remove(DARK_THEME_CLASS);
-  }
-};
+const { t } = useI18n()
+const init = () => {
+  useSettingStore().addSettings(app.ui.settings)
+  app.extensionManager = useWorkspaceStore()
+  app.extensionManager.registerSidebarTab({
+    id: 'queue',
+    icon: 'pi pi-history',
+    iconBadge: () => {
+      const value = useQueuePendingTaskCountStore().count.toString()
+      return value === '0' ? null : value
+    },
+    title: t('sideToolbar.queue'),
+    tooltip: t('sideToolbar.queue'),
+    component: markRaw(QueueSidebarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'node-library',
+    icon: 'pi pi-book',
+    title: t('sideToolbar.nodeLibrary'),
+    tooltip: t('sideToolbar.nodeLibrary'),
+    component: markRaw(NodeLibrarySidebarTab),
+    type: 'vue'
+  })
+}
 
-const updateNodeSearchSetting = (e: LiteGraphNodeSearchSettingEvent) => {
-  nodeSearchEnabled.value = !e.detail;
-};
+const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const onStatus = (e: CustomEvent<StatusWsMessageStatus>) =>
+  queuePendingTaskCountStore.update(e)
 
-const init = async () => {
-  const nodeDefs = Object.values(app.nodeDefs);
-  nodeSearchService.value = new NodeSearchService([
-    ...nodeDefs,
-    ...SYSTEM_NODE_DEFS,
-  ]);
+const toast = useToast()
+const reconnectingMessage: ToastMessageOptions = {
+  severity: 'error',
+  summary: t('reconnecting')
+}
+const onReconnecting = () => {
+  toast.remove(reconnectingMessage)
+  toast.add(reconnectingMessage)
+}
+const onReconnected = () => {
+  toast.remove(reconnectingMessage)
+  toast.add({
+    severity: 'success',
+    summary: t('reconnected'),
+    life: 2000
+  })
+}
 
-  document.addEventListener("comfy:setting:color-palette-loaded", updateTheme);
-  document.addEventListener(
-    "comfy:setting:litegraph-node-search",
-    updateNodeSearchSetting
-  );
-
-  app.ui.settings.refreshSetting("Comfy.NodeSearchBoxImpl");
-  app.ui.settings.refreshSetting("Comfy.ColorPalette");
-};
-
-onMounted(async () => {
+onMounted(() => {
+  api.addEventListener('status', onStatus)
+  api.addEventListener('reconnecting', onReconnecting)
+  api.addEventListener('reconnected', onReconnected)
   try {
-    await init();
+    init()
   } catch (e) {
-    console.error("Failed to init Vue app", e);
-  } finally {
-    isLoading.value = false;
+    console.error('Failed to init Vue app', e)
   }
-});
+})
 
 onUnmounted(() => {
-  document.removeEventListener(
-    "comfy:setting:color-palette-loaded",
-    updateTheme
-  );
-  document.removeEventListener(
-    "comfy:setting:litegraph-node-search",
-    updateNodeSearchSetting
-  );
-});
-
-provide("nodeSearchService", nodeSearchService);
+  api.removeEventListener('status', onStatus)
+  api.removeEventListener('reconnecting', onReconnecting)
+  api.removeEventListener('reconnected', onReconnected)
+})
 </script>
 
 <style scoped>

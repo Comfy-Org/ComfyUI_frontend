@@ -1,41 +1,41 @@
-import { $el, ComfyDialog } from "../../scripts/ui";
-import { DraggableList } from "../../scripts/ui/draggableList";
-import { GroupNodeConfig, GroupNodeHandler } from "./groupNode";
-import "./groupNodeManage.css";
-import { app, type ComfyApp } from "../../scripts/app";
+import { $el, ComfyDialog } from '../../scripts/ui'
+import { DraggableList } from '../../scripts/ui/draggableList'
+import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
+import './groupNodeManage.css'
+import { app, type ComfyApp } from '../../scripts/app'
 import {
   LiteGraph,
   type LGraphNode,
-  type LGraphNodeConstructor,
-} from "@comfyorg/litegraph";
+  type LGraphNodeConstructor
+} from '@comfyorg/litegraph'
 
-const ORDER: symbol = Symbol();
+const ORDER: symbol = Symbol()
 
 function merge(target, source) {
-  if (typeof target === "object" && typeof source === "object") {
+  if (typeof target === 'object' && typeof source === 'object') {
     for (const key in source) {
-      const sv = source[key];
-      if (typeof sv === "object") {
-        let tv = target[key];
-        if (!tv) tv = target[key] = {};
-        merge(tv, source[key]);
+      const sv = source[key]
+      if (typeof sv === 'object') {
+        let tv = target[key]
+        if (!tv) tv = target[key] = {}
+        merge(tv, source[key])
       } else {
-        target[key] = sv;
+        target[key] = sv
       }
     }
   }
 
-  return target;
+  return target
 }
 
 export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   tabs: Record<
-    "Inputs" | "Outputs" | "Widgets",
+    'Inputs' | 'Outputs' | 'Widgets',
     { tab: HTMLAnchorElement; page: HTMLElement }
-  >;
-  selectedNodeIndex: number | null | undefined;
-  selectedTab: keyof ManageGroupDialog["tabs"] = "Inputs";
-  selectedGroup: string | undefined;
+  >
+  selectedNodeIndex: number | null | undefined
+  selectedTab: keyof ManageGroupDialog['tabs'] = 'Inputs'
+  selectedGroup: string | undefined
   modifications: Record<
     string,
     Record<
@@ -45,474 +45,472 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         { name?: string | undefined; visible?: boolean | undefined }
       >
     >
-  > = {};
-  nodeItems: any[];
-  app: ComfyApp;
-  groupNodeType: LGraphNodeConstructor<LGraphNode>;
-  groupNodeDef: any;
-  groupData: any;
+  > = {}
+  nodeItems: any[]
+  app: ComfyApp
+  groupNodeType: LGraphNodeConstructor<LGraphNode>
+  groupNodeDef: any
+  groupData: any
 
-  innerNodesList: HTMLUListElement;
-  widgetsPage: HTMLElement;
-  inputsPage: HTMLElement;
-  outputsPage: HTMLElement;
-  draggable: any;
+  innerNodesList: HTMLUListElement
+  widgetsPage: HTMLElement
+  inputsPage: HTMLElement
+  outputsPage: HTMLElement
+  draggable: any
 
   get selectedNodeInnerIndex() {
-    return +this.nodeItems[this.selectedNodeIndex].dataset.nodeindex;
+    return +this.nodeItems[this.selectedNodeIndex].dataset.nodeindex
   }
 
   constructor(app) {
-    super();
-    this.app = app;
-    this.element = $el("dialog.comfy-group-manage", {
-      parent: document.body,
-    }) as HTMLDialogElement;
+    super()
+    this.app = app
+    this.element = $el('dialog.comfy-group-manage', {
+      parent: document.body
+    }) as HTMLDialogElement
   }
 
   changeTab(tab) {
-    this.tabs[this.selectedTab].tab.classList.remove("active");
-    this.tabs[this.selectedTab].page.classList.remove("active");
-    this.tabs[tab].tab.classList.add("active");
-    this.tabs[tab].page.classList.add("active");
-    this.selectedTab = tab;
+    this.tabs[this.selectedTab].tab.classList.remove('active')
+    this.tabs[this.selectedTab].page.classList.remove('active')
+    this.tabs[tab].tab.classList.add('active')
+    this.tabs[tab].page.classList.add('active')
+    this.selectedTab = tab
   }
 
   changeNode(index, force?) {
-    if (!force && this.selectedNodeIndex === index) return;
+    if (!force && this.selectedNodeIndex === index) return
 
     if (this.selectedNodeIndex != null) {
-      this.nodeItems[this.selectedNodeIndex].classList.remove("selected");
+      this.nodeItems[this.selectedNodeIndex].classList.remove('selected')
     }
-    this.nodeItems[index].classList.add("selected");
-    this.selectedNodeIndex = index;
+    this.nodeItems[index].classList.add('selected')
+    this.selectedNodeIndex = index
 
-    if (!this.buildInputsPage() && this.selectedTab === "Inputs") {
-      this.changeTab("Widgets");
+    if (!this.buildInputsPage() && this.selectedTab === 'Inputs') {
+      this.changeTab('Widgets')
     }
-    if (!this.buildWidgetsPage() && this.selectedTab === "Widgets") {
-      this.changeTab("Outputs");
+    if (!this.buildWidgetsPage() && this.selectedTab === 'Widgets') {
+      this.changeTab('Outputs')
     }
-    if (!this.buildOutputsPage() && this.selectedTab === "Outputs") {
-      this.changeTab("Inputs");
+    if (!this.buildOutputsPage() && this.selectedTab === 'Outputs') {
+      this.changeTab('Inputs')
     }
 
-    this.changeTab(this.selectedTab);
+    this.changeTab(this.selectedTab)
   }
 
   getGroupData() {
     this.groupNodeType =
-      LiteGraph.registered_node_types["workflow/" + this.selectedGroup];
-    this.groupNodeDef = this.groupNodeType.nodeData;
-    this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType);
+      LiteGraph.registered_node_types['workflow/' + this.selectedGroup]
+    this.groupNodeDef = this.groupNodeType.nodeData
+    this.groupData = GroupNodeHandler.getGroupData(this.groupNodeType)
   }
 
   changeGroup(group, reset = true) {
-    this.selectedGroup = group;
-    this.getGroupData();
+    this.selectedGroup = group
+    this.getGroupData()
 
-    const nodes = this.groupData.nodeData.nodes;
+    const nodes = this.groupData.nodeData.nodes
     this.nodeItems = nodes.map((n, i) =>
       $el(
-        "li.draggable-item",
+        'li.draggable-item',
         {
           dataset: {
-            nodeindex: n.index + "",
+            nodeindex: n.index + ''
           },
           onclick: () => {
-            this.changeNode(i);
-          },
+            this.changeNode(i)
+          }
         },
         [
-          $el("span.drag-handle"),
+          $el('span.drag-handle'),
           $el(
-            "div",
+            'div',
             {
-              textContent: n.title ?? n.type,
+              textContent: n.title ?? n.type
             },
             n.title
-              ? $el("span", {
-                  textContent: n.type,
+              ? $el('span', {
+                  textContent: n.type
                 })
               : []
-          ),
+          )
         ]
       )
-    );
+    )
 
-    this.innerNodesList.replaceChildren(...this.nodeItems);
+    this.innerNodesList.replaceChildren(...this.nodeItems)
 
     if (reset) {
-      this.selectedNodeIndex = null;
-      this.changeNode(0);
+      this.selectedNodeIndex = null
+      this.changeNode(0)
     } else {
-      const items = this.draggable.getAllItems();
-      let index = items.findIndex((item) =>
-        item.classList.contains("selected")
-      );
-      if (index === -1) index = this.selectedNodeIndex;
-      this.changeNode(index, true);
+      const items = this.draggable.getAllItems()
+      let index = items.findIndex((item) => item.classList.contains('selected'))
+      if (index === -1) index = this.selectedNodeIndex
+      this.changeNode(index, true)
     }
 
-    const ordered = [...nodes];
-    this.draggable?.dispose();
-    this.draggable = new DraggableList(this.innerNodesList, "li");
+    const ordered = [...nodes]
+    this.draggable?.dispose()
+    this.draggable = new DraggableList(this.innerNodesList, 'li')
     this.draggable.addEventListener(
-      "dragend",
+      'dragend',
       ({ detail: { oldPosition, newPosition } }) => {
-        if (oldPosition === newPosition) return;
-        ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0]);
+        if (oldPosition === newPosition) return
+        ordered.splice(newPosition, 0, ordered.splice(oldPosition, 1)[0])
         for (let i = 0; i < ordered.length; i++) {
           this.storeModification({
             nodeIndex: ordered[i].index,
             section: ORDER,
-            prop: "order",
-            value: i,
-          });
+            prop: 'order',
+            value: i
+          })
         }
       }
-    );
+    )
   }
 
   storeModification(props: {
-    nodeIndex?: number;
-    section: symbol;
-    prop: string;
-    value: any;
+    nodeIndex?: number
+    section: symbol
+    prop: string
+    value: any
   }) {
-    const { nodeIndex, section, prop, value } = props;
-    const groupMod = (this.modifications[this.selectedGroup] ??= {});
-    const nodesMod = (groupMod.nodes ??= {});
-    const nodeMod = (nodesMod[nodeIndex ?? this.selectedNodeInnerIndex] ??= {});
-    const typeMod = (nodeMod[section] ??= {});
-    if (typeof value === "object") {
-      const objMod = (typeMod[prop] ??= {});
-      Object.assign(objMod, value);
+    const { nodeIndex, section, prop, value } = props
+    const groupMod = (this.modifications[this.selectedGroup] ??= {})
+    const nodesMod = (groupMod.nodes ??= {})
+    const nodeMod = (nodesMod[nodeIndex ?? this.selectedNodeInnerIndex] ??= {})
+    const typeMod = (nodeMod[section] ??= {})
+    if (typeof value === 'object') {
+      const objMod = (typeMod[prop] ??= {})
+      Object.assign(objMod, value)
     } else {
-      typeMod[prop] = value;
+      typeMod[prop] = value
     }
   }
 
   getEditElement(section, prop, value, placeholder, checked, checkable = true) {
-    if (value === placeholder) value = "";
+    if (value === placeholder) value = ''
 
     const mods =
       this.modifications[this.selectedGroup]?.nodes?.[
         this.selectedNodeInnerIndex
-      ]?.[section]?.[prop];
+      ]?.[section]?.[prop]
     if (mods) {
       if (mods.name != null) {
-        value = mods.name;
+        value = mods.name
       }
       if (mods.visible != null) {
-        checked = mods.visible;
+        checked = mods.visible
       }
     }
 
-    return $el("div", [
-      $el("input", {
+    return $el('div', [
+      $el('input', {
         value,
         placeholder,
-        type: "text",
+        type: 'text',
         onchange: (e) => {
           this.storeModification({
             section,
             prop,
-            value: { name: e.target.value },
-          });
-        },
+            value: { name: e.target.value }
+          })
+        }
       }),
-      $el("label", { textContent: "Visible" }, [
-        $el("input", {
-          type: "checkbox",
+      $el('label', { textContent: 'Visible' }, [
+        $el('input', {
+          type: 'checkbox',
           checked,
           disabled: !checkable,
           onchange: (e) => {
             this.storeModification({
               section,
               prop,
-              value: { visible: !!e.target.checked },
-            });
-          },
-        }),
-      ]),
-    ]);
+              value: { visible: !!e.target.checked }
+            })
+          }
+        })
+      ])
+    ])
   }
 
   buildWidgetsPage() {
     const widgets =
-      this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex];
-    const items = Object.keys(widgets ?? {});
-    const type = app.graph.extra.groupNodes[this.selectedGroup];
-    const config = type.config?.[this.selectedNodeInnerIndex]?.input;
+      this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex]
+    const items = Object.keys(widgets ?? {})
+    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const config = type.config?.[this.selectedNodeInnerIndex]?.input
     this.widgetsPage.replaceChildren(
       ...items.map((oldName) => {
         return this.getEditElement(
-          "input",
+          'input',
           oldName,
           widgets[oldName],
           oldName,
           config?.[oldName]?.visible !== false
-        );
+        )
       })
-    );
-    return !!items.length;
+    )
+    return !!items.length
   }
 
   buildInputsPage() {
-    const inputs = this.groupData.nodeInputs[this.selectedNodeInnerIndex];
-    const items = Object.keys(inputs ?? {});
-    const type = app.graph.extra.groupNodes[this.selectedGroup];
-    const config = type.config?.[this.selectedNodeInnerIndex]?.input;
+    const inputs = this.groupData.nodeInputs[this.selectedNodeInnerIndex]
+    const items = Object.keys(inputs ?? {})
+    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const config = type.config?.[this.selectedNodeInnerIndex]?.input
     this.inputsPage.replaceChildren(
       ...items
         .map((oldName) => {
-          let value = inputs[oldName];
+          let value = inputs[oldName]
           if (!value) {
-            return;
+            return
           }
 
           return this.getEditElement(
-            "input",
+            'input',
             oldName,
             value,
             oldName,
             config?.[oldName]?.visible !== false
-          );
+          )
         })
         .filter(Boolean)
-    );
-    return !!items.length;
+    )
+    return !!items.length
   }
 
   buildOutputsPage() {
-    const nodes = this.groupData.nodeData.nodes;
+    const nodes = this.groupData.nodeData.nodes
     const innerNodeDef = this.groupData.getNodeDef(
       nodes[this.selectedNodeInnerIndex]
-    );
-    const outputs = innerNodeDef?.output ?? [];
+    )
+    const outputs = innerNodeDef?.output ?? []
     const groupOutputs =
-      this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex];
+      this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex]
 
-    const type = app.graph.extra.groupNodes[this.selectedGroup];
-    const config = type.config?.[this.selectedNodeInnerIndex]?.output;
-    const node = this.groupData.nodeData.nodes[this.selectedNodeInnerIndex];
-    const checkable = node.type !== "PrimitiveNode";
+    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const config = type.config?.[this.selectedNodeInnerIndex]?.output
+    const node = this.groupData.nodeData.nodes[this.selectedNodeInnerIndex]
+    const checkable = node.type !== 'PrimitiveNode'
     this.outputsPage.replaceChildren(
       ...outputs
         .map((type, slot) => {
-          const groupOutputIndex = groupOutputs?.[slot];
-          const oldName = innerNodeDef.output_name?.[slot] ?? type;
-          let value = config?.[slot]?.name;
-          const visible = config?.[slot]?.visible || groupOutputIndex != null;
+          const groupOutputIndex = groupOutputs?.[slot]
+          const oldName = innerNodeDef.output_name?.[slot] ?? type
+          let value = config?.[slot]?.name
+          const visible = config?.[slot]?.visible || groupOutputIndex != null
           if (!value || value === oldName) {
-            value = "";
+            value = ''
           }
           return this.getEditElement(
-            "output",
+            'output',
             slot,
             value,
             oldName,
             visible,
             checkable
-          );
+          )
         })
         .filter(Boolean)
-    );
-    return !!outputs.length;
+    )
+    return !!outputs.length
   }
 
   show(type?) {
     const groupNodes = Object.keys(app.graph.extra?.groupNodes ?? {}).sort(
       (a, b) => a.localeCompare(b)
-    );
+    )
 
     this.innerNodesList = $el(
-      "ul.comfy-group-manage-list-items"
-    ) as HTMLUListElement;
-    this.widgetsPage = $el("section.comfy-group-manage-node-page");
-    this.inputsPage = $el("section.comfy-group-manage-node-page");
-    this.outputsPage = $el("section.comfy-group-manage-node-page");
-    const pages = $el("div", [
+      'ul.comfy-group-manage-list-items'
+    ) as HTMLUListElement
+    this.widgetsPage = $el('section.comfy-group-manage-node-page')
+    this.inputsPage = $el('section.comfy-group-manage-node-page')
+    this.outputsPage = $el('section.comfy-group-manage-node-page')
+    const pages = $el('div', [
       this.widgetsPage,
       this.inputsPage,
-      this.outputsPage,
-    ]);
+      this.outputsPage
+    ])
 
     this.tabs = [
-      ["Inputs", this.inputsPage],
-      ["Widgets", this.widgetsPage],
-      ["Outputs", this.outputsPage],
+      ['Inputs', this.inputsPage],
+      ['Widgets', this.widgetsPage],
+      ['Outputs', this.outputsPage]
     ].reduce((p, [name, page]: [string, HTMLElement]) => {
       p[name] = {
-        tab: $el("a", {
+        tab: $el('a', {
           onclick: () => {
-            this.changeTab(name);
+            this.changeTab(name)
           },
-          textContent: name,
+          textContent: name
         }),
-        page,
-      };
-      return p;
-    }, {}) as any;
+        page
+      }
+      return p
+    }, {}) as any
 
-    const outer = $el("div.comfy-group-manage-outer", [
-      $el("header", [
-        $el("h2", "Group Nodes"),
+    const outer = $el('div.comfy-group-manage-outer', [
+      $el('header', [
+        $el('h2', 'Group Nodes'),
         $el(
-          "select",
+          'select',
           {
             onchange: (e) => {
-              this.changeGroup(e.target.value);
-            },
+              this.changeGroup(e.target.value)
+            }
           },
           groupNodes.map((g) =>
-            $el("option", {
+            $el('option', {
               textContent: g,
-              selected: "workflow/" + g === type,
-              value: g,
+              selected: 'workflow/' + g === type,
+              value: g
             })
           )
-        ),
+        )
       ]),
-      $el("main", [
-        $el("section.comfy-group-manage-list", this.innerNodesList),
-        $el("section.comfy-group-manage-node", [
+      $el('main', [
+        $el('section.comfy-group-manage-list', this.innerNodesList),
+        $el('section.comfy-group-manage-node', [
           $el(
-            "header",
+            'header',
             Object.values(this.tabs).map((t) => t.tab)
           ),
-          pages,
-        ]),
+          pages
+        ])
       ]),
-      $el("footer", [
+      $el('footer', [
         $el(
-          "button.comfy-btn",
+          'button.comfy-btn',
           {
             onclick: (e) => {
-              // @ts-ignore
+              // @ts-expect-error
               const node = app.graph._nodes.find(
-                (n) => n.type === "workflow/" + this.selectedGroup
-              );
+                (n) => n.type === 'workflow/' + this.selectedGroup
+              )
               if (node) {
                 alert(
-                  "This group node is in use in the current workflow, please first remove these."
-                );
-                return;
+                  'This group node is in use in the current workflow, please first remove these.'
+                )
+                return
               }
               if (
                 confirm(
                   `Are you sure you want to remove the node: "${this.selectedGroup}"`
                 )
               ) {
-                delete app.graph.extra.groupNodes[this.selectedGroup];
-                LiteGraph.unregisterNodeType("workflow/" + this.selectedGroup);
+                delete app.graph.extra.groupNodes[this.selectedGroup]
+                LiteGraph.unregisterNodeType('workflow/' + this.selectedGroup)
               }
-              this.show();
-            },
+              this.show()
+            }
           },
-          "Delete Group Node"
+          'Delete Group Node'
         ),
         $el(
-          "button.comfy-btn",
+          'button.comfy-btn',
           {
             onclick: async () => {
-              let nodesByType;
-              let recreateNodes = [];
-              const types = {};
+              let nodesByType
+              let recreateNodes = []
+              const types = {}
               for (const g in this.modifications) {
-                const type = app.graph.extra.groupNodes[g];
-                let config = (type.config ??= {});
+                const type = app.graph.extra.groupNodes[g]
+                let config = (type.config ??= {})
 
-                let nodeMods = this.modifications[g]?.nodes;
+                let nodeMods = this.modifications[g]?.nodes
                 if (nodeMods) {
-                  const keys = Object.keys(nodeMods);
+                  const keys = Object.keys(nodeMods)
                   if (nodeMods[keys[0]][ORDER]) {
                     // If any node is reordered, they will all need sequencing
-                    const orderedNodes = [];
-                    const orderedMods = {};
-                    const orderedConfig = {};
+                    const orderedNodes = []
+                    const orderedMods = {}
+                    const orderedConfig = {}
 
                     for (const n of keys) {
-                      const order = nodeMods[n][ORDER].order;
-                      orderedNodes[order] = type.nodes[+n];
-                      orderedMods[order] = nodeMods[n];
-                      orderedNodes[order].index = order;
+                      const order = nodeMods[n][ORDER].order
+                      orderedNodes[order] = type.nodes[+n]
+                      orderedMods[order] = nodeMods[n]
+                      orderedNodes[order].index = order
                     }
 
                     // Rewrite links
                     for (const l of type.links) {
-                      if (l[0] != null) l[0] = type.nodes[l[0]].index;
-                      if (l[2] != null) l[2] = type.nodes[l[2]].index;
+                      if (l[0] != null) l[0] = type.nodes[l[0]].index
+                      if (l[2] != null) l[2] = type.nodes[l[2]].index
                     }
 
                     // Rewrite externals
                     if (type.external) {
                       for (const ext of type.external) {
-                        ext[0] = type.nodes[ext[0]];
+                        ext[0] = type.nodes[ext[0]]
                       }
                     }
 
                     // Rewrite modifications
                     for (const id of keys) {
                       if (config[id]) {
-                        orderedConfig[type.nodes[id].index] = config[id];
+                        orderedConfig[type.nodes[id].index] = config[id]
                       }
-                      delete config[id];
+                      delete config[id]
                     }
 
-                    type.nodes = orderedNodes;
-                    nodeMods = orderedMods;
-                    type.config = config = orderedConfig;
+                    type.nodes = orderedNodes
+                    nodeMods = orderedMods
+                    type.config = config = orderedConfig
                   }
 
-                  merge(config, nodeMods);
+                  merge(config, nodeMods)
                 }
 
-                types[g] = type;
+                types[g] = type
 
                 if (!nodesByType) {
-                  // @ts-ignore
+                  // @ts-expect-error
                   nodesByType = app.graph._nodes.reduce((p, n) => {
-                    p[n.type] ??= [];
-                    p[n.type].push(n);
-                    return p;
-                  }, {});
+                    p[n.type] ??= []
+                    p[n.type].push(n)
+                    return p
+                  }, {})
                 }
 
-                const nodes = nodesByType["workflow/" + g];
-                if (nodes) recreateNodes.push(...nodes);
+                const nodes = nodesByType['workflow/' + g]
+                if (nodes) recreateNodes.push(...nodes)
               }
 
-              await GroupNodeConfig.registerFromWorkflow(types, {});
+              await GroupNodeConfig.registerFromWorkflow(types, {})
 
               for (const node of recreateNodes) {
-                node.recreate();
+                node.recreate()
               }
 
-              this.modifications = {};
-              this.app.graph.setDirtyCanvas(true, true);
-              this.changeGroup(this.selectedGroup, false);
-            },
+              this.modifications = {}
+              this.app.graph.setDirtyCanvas(true, true)
+              this.changeGroup(this.selectedGroup, false)
+            }
           },
-          "Save"
+          'Save'
         ),
         $el(
-          "button.comfy-btn",
+          'button.comfy-btn',
           { onclick: () => this.element.close() },
-          "Close"
-        ),
-      ]),
-    ]);
+          'Close'
+        )
+      ])
+    ])
 
-    this.element.replaceChildren(outer);
+    this.element.replaceChildren(outer)
     this.changeGroup(
-      type ? groupNodes.find((g) => "workflow/" + g === type) : groupNodes[0]
-    );
-    this.element.showModal();
+      type ? groupNodes.find((g) => 'workflow/' + g === type) : groupNodes[0]
+    )
+    this.element.showModal()
 
-    this.element.addEventListener("close", () => {
-      this.draggable?.dispose();
-    });
+    this.element.addEventListener('close', () => {
+      this.draggable?.dispose()
+    })
   }
 }

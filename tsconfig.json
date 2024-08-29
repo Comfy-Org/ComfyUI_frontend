@@ -5,9 +5,12 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "incremental": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
     /* Linting */
     "strict": false,
@@ -20,16 +23,16 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["src/*"]
     },
     "typeRoots": ["src/types", "node_modules/@types"],
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./"
   },
   "include": [
     "src/**/*",
     "src/**/*.vue",
     "src/types/**/*.d.ts",
     "tests-ui/**/*"
-  ],
+  ]
 }

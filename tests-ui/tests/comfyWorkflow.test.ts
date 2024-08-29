@@ -1,91 +1,107 @@
-import { parseComfyWorkflow } from "../../src/types/comfyWorkflow";
-import { defaultGraph } from "../../src/scripts/defaultGraph";
-import fs from "fs";
+import { validateComfyWorkflow } from '../../src/types/comfyWorkflow'
+import { defaultGraph } from '../../src/scripts/defaultGraph'
+import fs from 'fs'
 
-const WORKFLOW_DIR = "tests-ui/workflows";
+const WORKFLOW_DIR = 'tests-ui/workflows'
 
-describe("parseComfyWorkflow", () => {
-    it("parses valid workflow", async () => {
-        fs.readdirSync(WORKFLOW_DIR).forEach(async (file) => {
-            if (file.endsWith(".json")) {
-                const data = fs.readFileSync(`${WORKFLOW_DIR}/${file}`, "utf-8");
-                await expect(parseComfyWorkflow(data)).resolves.not.toThrow();
-            }
-        });
-    });
+describe('parseComfyWorkflow', () => {
+  it('parses valid workflow', async () => {
+    fs.readdirSync(WORKFLOW_DIR).forEach(async (file) => {
+      if (file.endsWith('.json')) {
+        const data = fs.readFileSync(`${WORKFLOW_DIR}/${file}`, 'utf-8')
+        expect(await validateComfyWorkflow(JSON.parse(data))).not.toBeNull()
+      }
+    })
+  })
 
-    it("workflow.nodes", async () => {
-        const workflow = JSON.parse(JSON.stringify(defaultGraph));
-        workflow.nodes = undefined;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+  it('workflow.nodes', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.nodes = undefined
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.nodes = null;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+    workflow.nodes = null
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.nodes = [];
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
-    });
+    workflow.nodes = []
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+  })
 
-    it("workflow.version", async () => {
-        const workflow = JSON.parse(JSON.stringify(defaultGraph));
-        workflow.version = undefined;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+  it('workflow.version', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.version = undefined
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.version = "1.0.1"; // Invalid format.
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+    workflow.version = '1.0.1' // Invalid format.
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.version = 1;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
-    });
+    workflow.version = 1
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+  })
 
-    it("workflow.extra", async () => {
-        const workflow = JSON.parse(JSON.stringify(defaultGraph));
-        workflow.extra = undefined;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+  it('workflow.extra', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.extra = undefined
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        workflow.extra = null;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+    workflow.extra = null
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        workflow.extra = {};
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+    workflow.extra = {}
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        workflow.extra = { foo: "bar" }; // Should accept extra fields.
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
-    });
+    workflow.extra = { foo: 'bar' } // Should accept extra fields.
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+  })
 
-    it("workflow.nodes.pos", async () => {
-        const workflow = JSON.parse(JSON.stringify(defaultGraph));
-        workflow.nodes[0].pos = [1, 2, 3];
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+  it('workflow.nodes.pos', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.nodes[0].pos = [1, 2, 3]
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.nodes[0].pos = [1, 2];
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+    workflow.nodes[0].pos = [1, 2]
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        // Should automatically transform the legacy format object to array.
-        workflow.nodes[0].pos = {"0": 3, "1": 4};
-        let parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
-        expect(parsedWorkflow.nodes[0].pos).toEqual([3, 4]);
+    // Should automatically transform the legacy format object to array.
+    workflow.nodes[0].pos = { '0': 3, '1': 4 }
+    let validatedWorkflow = await validateComfyWorkflow(workflow)
+    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
 
-        workflow.nodes[0].pos = {0: 3, 1: 4};
-        parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
-        expect(parsedWorkflow.nodes[0].pos).toEqual([3, 4]);
-    });
+    workflow.nodes[0].pos = { 0: 3, 1: 4 }
+    validatedWorkflow = await validateComfyWorkflow(workflow)
+    expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+  })
 
-    it("workflow.nodes.widget_values", async () => {
-        const workflow = JSON.parse(JSON.stringify(defaultGraph));
-        workflow.nodes[0].widgets_values = ["foo", "bar"];
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+  it('workflow.nodes.widget_values', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.nodes[0].widgets_values = ['foo', 'bar']
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        workflow.nodes[0].widgets_values = "foo";
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).rejects.toThrow();
+    workflow.nodes[0].widgets_values = 'foo'
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-        workflow.nodes[0].widgets_values = undefined;
-        await expect(parseComfyWorkflow(JSON.stringify(workflow))).resolves.not.toThrow();
+    workflow.nodes[0].widgets_values = undefined
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
 
-        // The object format of widgets_values is used by VHS nodes to perform
-        // dynamic widgets display.
-        workflow.nodes[0].widgets_values = {"foo": "bar"};
-        const parsedWorkflow = await parseComfyWorkflow(JSON.stringify(workflow));
-        expect(parsedWorkflow.nodes[0].widgets_values).toEqual({"foo": "bar"});
-    });
-});
+    // The object format of widgets_values is used by VHS nodes to perform
+    // dynamic widgets display.
+    workflow.nodes[0].widgets_values = { foo: 'bar' }
+    const validatedWorkflow = await validateComfyWorkflow(workflow)
+    expect(validatedWorkflow.nodes[0].widgets_values).toEqual({ foo: 'bar' })
+  })
+
+  it('workflow.links', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+
+    workflow.links = [
+      [
+        1, // Link id
+        '100:1', // Node id of source node
+        '12', // Output slot# of source node
+        '100:2', // Node id of destination node
+        15, // Input slot# of destination node
+        'INT' // Data type
+      ]
+    ]
+    expect(await validateComfyWorkflow(workflow)).not.toBeNull()
+  })
+})

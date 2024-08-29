@@ -1,64 +1,80 @@
-import { ComfyWorkflowJSON } from "@/types/comfyWorkflow";
+import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
+  DownloadModelStatus,
   HistoryTaskItem,
   PendingTaskItem,
   RunningTaskItem,
   ComfyNodeDef,
   validateComfyNodeDef,
-} from "@/types/apiTypes";
+  EmbeddingsResponse,
+  ExtensionsResponse,
+  PromptResponse,
+  SystemStats,
+  User,
+  Settings
+} from '@/types/apiTypes'
 
 interface QueuePromptRequestBody {
-  client_id: string;
+  client_id: string
   // Mapping from node id to node info + input values
   // TODO: Type this.
-  prompt: Record<number, any>;
+  prompt: Record<number, any>
   extra_data: {
     extra_pnginfo: {
-      workflow: ComfyWorkflowJSON;
-    };
-  };
-  front?: boolean;
-  number?: number;
+      workflow: ComfyWorkflowJSON
+    }
+  }
+  front?: boolean
+  number?: number
 }
 
 class ComfyApi extends EventTarget {
-  #registered = new Set();
-  api_host: string;
-  api_base: string;
-  initialClientId: string;
-  user: string;
-  socket?: WebSocket;
-  clientId?: string;
+  #registered = new Set()
+  api_host: string
+  api_base: string
+  initialClientId: string
+  user: string
+  socket?: WebSocket
+  clientId?: string
+
+  reportedUnknownMessageTypes = new Set<string>()
 
   constructor() {
-    super();
-    this.api_host = location.host;
-    this.api_base = location.pathname.split("/").slice(0, -1).join("/");
-    this.initialClientId = sessionStorage.getItem("clientId");
+    super()
+    this.api_host = location.host
+    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
+    this.initialClientId = sessionStorage.getItem('clientId')
   }
 
   apiURL(route: string): string {
-    return this.api_base + "/api" + route;
+    return this.api_base + '/api' + route
   }
 
   fileURL(route: string): string {
-    return this.api_base + route;
+    return this.api_base + route
   }
 
-  fetchApi(route, options?) {
+  fetchApi(route: string, options?: RequestInit) {
     if (!options) {
-      options = {};
+      options = {}
     }
     if (!options.headers) {
-      options.headers = {};
+      options.headers = {}
     }
-    options.headers["Comfy-User"] = this.user;
-    return fetch(this.apiURL(route), options);
+    if (!options.cache) {
+      options.cache = 'no-cache'
+    }
+    options.headers['Comfy-User'] = this.user
+    return fetch(this.apiURL(route), options)
   }
 
-  addEventListener(type, callback, options?) {
-    super.addEventListener(type, callback, options);
-    this.#registered.add(type);
+  addEventListener(
+    type: string,
+    callback: any,
+    options?: AddEventListenerOptions
+  ) {
+    super.addEventListener(type, callback, options)
+    this.#registered.add(type)
   }
 
   /**
@@ -67,172 +83,183 @@ class ComfyApi extends EventTarget {
   #pollQueue() {
     setInterval(async () => {
       try {
-        const resp = await this.fetchApi("/prompt");
-        const status = await resp.json();
-        this.dispatchEvent(new CustomEvent("status", { detail: status }));
+        const resp = await this.fetchApi('/prompt')
+        const status = await resp.json()
+        this.dispatchEvent(new CustomEvent('status', { detail: status }))
       } catch (error) {
-        this.dispatchEvent(new CustomEvent("status", { detail: null }));
+        this.dispatchEvent(new CustomEvent('status', { detail: null }))
       }
-    }, 1000);
+    }, 1000)
   }
 
   /**
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?) {
+  #createSocket(isReconnect?: boolean) {
     if (this.socket) {
-      return;
+      return
     }
 
-    let opened = false;
-    let existingSession = window.name;
+    let opened = false
+    let existingSession = window.name
     if (existingSession) {
-      existingSession = "?clientId=" + existingSession;
+      existingSession = '?clientId=' + existingSession
     }
     this.socket = new WebSocket(
-      `ws${window.location.protocol === "https:" ? "s" : ""}://${this.api_host}${this.api_base}/ws${existingSession}`
-    );
-    this.socket.binaryType = "arraybuffer";
+      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
+    )
+    this.socket.binaryType = 'arraybuffer'
 
-    this.socket.addEventListener("open", () => {
-      opened = true;
+    this.socket.addEventListener('open', () => {
+      opened = true
       if (isReconnect) {
-        this.dispatchEvent(new CustomEvent("reconnected"));
+        this.dispatchEvent(new CustomEvent('reconnected'))
       }
-    });
+    })
 
-    this.socket.addEventListener("error", () => {
-      if (this.socket) this.socket.close();
+    this.socket.addEventListener('error', () => {
+      if (this.socket) this.socket.close()
       if (!isReconnect && !opened) {
-        this.#pollQueue();
+        this.#pollQueue()
       }
-    });
+    })
 
-    this.socket.addEventListener("close", () => {
+    this.socket.addEventListener('close', () => {
       setTimeout(() => {
-        this.socket = null;
-        this.#createSocket(true);
-      }, 300);
+        this.socket = null
+        this.#createSocket(true)
+      }, 300)
       if (opened) {
-        this.dispatchEvent(new CustomEvent("status", { detail: null }));
-        this.dispatchEvent(new CustomEvent("reconnecting"));
+        this.dispatchEvent(new CustomEvent('status', { detail: null }))
+        this.dispatchEvent(new CustomEvent('reconnecting'))
       }
-    });
+    })
 
-    this.socket.addEventListener("message", (event) => {
+    this.socket.addEventListener('message', (event) => {
       try {
         if (event.data instanceof ArrayBuffer) {
-          const view = new DataView(event.data);
-          const eventType = view.getUint32(0);
-          const buffer = event.data.slice(4);
+          const view = new DataView(event.data)
+          const eventType = view.getUint32(0)
+          const buffer = event.data.slice(4)
           switch (eventType) {
             case 1:
-              const view2 = new DataView(event.data);
-              const imageType = view2.getUint32(0);
-              let imageMime;
+              const view2 = new DataView(event.data)
+              const imageType = view2.getUint32(0)
+              let imageMime
               switch (imageType) {
                 case 1:
                 default:
-                  imageMime = "image/jpeg";
-                  break;
+                  imageMime = 'image/jpeg'
+                  break
                 case 2:
-                  imageMime = "image/png";
+                  imageMime = 'image/png'
               }
               const imageBlob = new Blob([buffer.slice(4)], {
-                type: imageMime,
-              });
+                type: imageMime
+              })
               this.dispatchEvent(
-                new CustomEvent("b_preview", { detail: imageBlob })
-              );
-              break;
+                new CustomEvent('b_preview', { detail: imageBlob })
+              )
+              break
             default:
               throw new Error(
                 `Unknown binary websocket message of type ${eventType}`
-              );
+              )
           }
         } else {
-          const msg = JSON.parse(event.data);
+          const msg = JSON.parse(event.data)
           switch (msg.type) {
-            case "status":
+            case 'status':
               if (msg.data.sid) {
-                this.clientId = msg.data.sid;
-                window.name = this.clientId; // use window name so it isnt reused when duplicating tabs
-                sessionStorage.setItem("clientId", this.clientId); // store in session storage so duplicate tab can load correct workflow
+                this.clientId = msg.data.sid
+                window.name = this.clientId // use window name so it isnt reused when duplicating tabs
+                sessionStorage.setItem('clientId', this.clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchEvent(
-                new CustomEvent("status", { detail: msg.data.status })
-              );
-              break;
-            case "progress":
+                new CustomEvent('status', { detail: msg.data.status })
+              )
+              break
+            case 'progress':
               this.dispatchEvent(
-                new CustomEvent("progress", { detail: msg.data })
-              );
-              break;
-            case "executing":
+                new CustomEvent('progress', { detail: msg.data })
+              )
+              break
+            case 'executing':
               this.dispatchEvent(
-                new CustomEvent("executing", { detail: msg.data.node })
-              );
-              break;
-            case "executed":
+                new CustomEvent('executing', {
+                  detail: msg.data.display_node || msg.data.node
+                })
+              )
+              break
+            case 'executed':
               this.dispatchEvent(
-                new CustomEvent("executed", { detail: msg.data })
-              );
-              break;
-            case "execution_start":
+                new CustomEvent('executed', { detail: msg.data })
+              )
+              break
+            case 'execution_start':
               this.dispatchEvent(
-                new CustomEvent("execution_start", { detail: msg.data })
-              );
-              break;
-            case "execution_error":
+                new CustomEvent('execution_start', { detail: msg.data })
+              )
+              break
+            case 'execution_success':
               this.dispatchEvent(
-                new CustomEvent("execution_error", { detail: msg.data })
-              );
-              break;
-            case "execution_cached":
+                new CustomEvent('execution_success', { detail: msg.data })
+              )
+              break
+            case 'execution_error':
               this.dispatchEvent(
-                new CustomEvent("execution_cached", { detail: msg.data })
-              );
-              break;
+                new CustomEvent('execution_error', { detail: msg.data })
+              )
+              break
+            case 'execution_cached':
+              this.dispatchEvent(
+                new CustomEvent('execution_cached', { detail: msg.data })
+              )
+              break
+            case 'download_progress':
+              this.dispatchEvent(
+                new CustomEvent('download_progress', { detail: msg.data })
+              )
+              break
             default:
               if (this.#registered.has(msg.type)) {
                 this.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
-                );
-              } else {
-                throw new Error(`Unknown message type ${msg.type}`);
+                )
+              } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
+                this.reportedUnknownMessageTypes.add(msg.type)
+                throw new Error(`Unknown message type ${msg.type}`)
               }
           }
         }
       } catch (error) {
-        console.warn("Unhandled message:", event.data, error);
+        console.warn('Unhandled message:', event.data, error)
       }
-    });
+    })
   }
 
   /**
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket();
+    this.#createSocket()
   }
 
   /**
    * Gets a list of extension urls
-   * @returns An array of script urls to import
    */
-  async getExtensions() {
-    const resp = await this.fetchApi("/extensions", { cache: "no-store" });
-    return await resp.json();
+  async getExtensions(): Promise<ExtensionsResponse> {
+    const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
+    return await resp.json()
   }
 
   /**
    * Gets a list of embedding names
-   * @returns An array of script urls to import
    */
-  async getEmbeddings() {
-    const resp = await this.fetchApi("/embeddings", { cache: "no-store" });
-    return await resp.json();
+  async getEmbeddings(): Promise<EmbeddingsResponse> {
+    const resp = await this.fetchApi('/embeddings', { cache: 'no-store' })
+    return await resp.json()
   }
 
   /**
@@ -240,18 +267,24 @@ class ComfyApi extends EventTarget {
    * @returns The node definitions
    */
   async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
-    const resp = await this.fetchApi("/object_info", { cache: "no-store" });
-    const objectInfoUnsafe = await resp.json();
-    const objectInfo: Record<string, ComfyNodeDef> = {};
+    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
+    const objectInfoUnsafe = await resp.json()
+    const objectInfo: Record<string, ComfyNodeDef> = {}
     for (const key in objectInfoUnsafe) {
-      try {
-        objectInfo[key] = validateComfyNodeDef(objectInfoUnsafe[key]);
-      } catch (e) {
-        console.warn("Ignore node definition: ", key);
-        console.error(e);
+      const validatedDef = validateComfyNodeDef(
+        objectInfoUnsafe[key],
+        /* onError=*/ (errorMessage: string) => {
+          console.warn(
+            `Skipping invalid node definition: ${key}. See debug log for more information.`
+          )
+          console.debug(errorMessage)
+        }
+      )
+      if (validatedDef !== null) {
+        objectInfo[key] = validatedDef
       }
     }
-    return objectInfo;
+    return objectInfo
   }
 
   /**
@@ -259,34 +292,78 @@ class ComfyApi extends EventTarget {
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
    */
-  async queuePrompt(number: number, { output, workflow }) {
+  async queuePrompt(
+    number: number,
+    { output, workflow }
+  ): Promise<PromptResponse> {
     const body: QueuePromptRequestBody = {
       client_id: this.clientId,
       prompt: output,
-      extra_data: { extra_pnginfo: { workflow } },
-    };
-
-    if (number === -1) {
-      body.front = true;
-    } else if (number != 0) {
-      body.number = number;
+      extra_data: { extra_pnginfo: { workflow } }
     }
 
-    const res = await this.fetchApi("/prompt", {
-      method: "POST",
+    if (number === -1) {
+      body.front = true
+    } else if (number != 0) {
+      body.number = number
+    }
+
+    const res = await this.fetchApi('/prompt', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body),
-    });
+      body: JSON.stringify(body)
+    })
 
     if (res.status !== 200) {
       throw {
-        response: await res.json(),
-      };
+        response: await res.json()
+      }
     }
 
-    return await res.json();
+    return await res.json()
+  }
+
+  /**
+   * Gets a list of models in the specified folder
+   * @param {string} folder The folder to list models from, such as 'checkpoints'
+   * @returns The list of model filenames within the specified folder
+   */
+  async getModels(folder: string) {
+    const res = await this.fetchApi(`/models/${folder}`)
+    if (res.status === 404) {
+      return null
+    }
+    return await res.json()
+  }
+
+  /**
+   * Tells the server to download a model from the specified URL to the specified directory and filename
+   * @param {string} url The URL to download the model from
+   * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
+   * @param {string} model_filename The filename to save the model as
+   * @param {number} progress_interval The interval in seconds at which to report download progress (via 'download_progress' event)
+   */
+  async internalDownloadModel(
+    url: string,
+    model_directory: string,
+    model_filename: string,
+    progress_interval: number
+  ): Promise<DownloadModelStatus> {
+    const res = await this.fetchApi('/internal/models/download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url,
+        model_directory,
+        model_filename,
+        progress_interval
+      })
+    })
+    return await res.json()
   }
 
   /**
@@ -294,11 +371,11 @@ class ComfyApi extends EventTarget {
    * @param {string} type The type of items to load, queue or history
    * @returns The items of the specified type grouped by their status
    */
-  async getItems(type) {
-    if (type === "queue") {
-      return this.getQueue();
+  async getItems(type: 'queue' | 'history') {
+    if (type === 'queue') {
+      return this.getQueue()
     }
-    return this.getHistory();
+    return this.getHistory()
   }
 
   /**
@@ -306,23 +383,27 @@ class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[];
-    Pending: PendingTaskItem[];
+    Running: RunningTaskItem[]
+    Pending: PendingTaskItem[]
   }> {
     try {
-      const res = await this.fetchApi("/queue");
-      const data = await res.json();
+      const res = await this.fetchApi('/queue')
+      const data = await res.json()
       return {
         // Running action uses a different endpoint for cancelling
         Running: data.queue_running.map((prompt) => ({
+          taskType: 'Running',
           prompt,
-          remove: { name: "Cancel", cb: () => api.interrupt() },
+          remove: { name: 'Cancel', cb: () => api.interrupt() }
         })),
-        Pending: data.queue_pending.map((prompt) => ({ prompt })),
-      };
+        Pending: data.queue_pending.map((prompt) => ({
+          taskType: 'Pending',
+          prompt
+        }))
+      }
     } catch (error) {
-      console.error(error);
-      return { Running: [], Pending: [] };
+      console.error(error)
+      return { Running: [], Pending: [] }
     }
   }
 
@@ -334,11 +415,17 @@ class ComfyApi extends EventTarget {
     max_items: number = 200
   ): Promise<{ History: HistoryTaskItem[] }> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`);
-      return { History: Object.values(await res.json()) };
+      const res = await this.fetchApi(`/history?max_items=${max_items}`)
+      const json: Promise<HistoryTaskItem[]> = await res.json()
+      return {
+        History: Object.values(json).map((item) => ({
+          ...item,
+          taskType: 'History'
+        }))
+      }
     } catch (error) {
-      console.error(error);
-      return { History: [] };
+      console.error(error)
+      return { History: [] }
     }
   }
 
@@ -346,9 +433,9 @@ class ComfyApi extends EventTarget {
    * Gets system & device stats
    * @returns System stats such as python version, OS, per device info
    */
-  async getSystemStats() {
-    const res = await this.fetchApi("/system_stats");
-    return await res.json();
+  async getSystemStats(): Promise<SystemStats> {
+    const res = await this.fetchApi('/system_stats')
+    return await res.json()
   }
 
   /**
@@ -356,17 +443,17 @@ class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type, body) {
+  async #postItem(type: string, body: any) {
     try {
-      await this.fetchApi("/" + type, {
-        method: "POST",
+      await this.fetchApi('/' + type, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json'
         },
-        body: body ? JSON.stringify(body) : undefined,
-      });
+        body: body ? JSON.stringify(body) : undefined
+      })
     } catch (error) {
-      console.error(error);
+      console.error(error)
     }
   }
 
@@ -375,31 +462,30 @@ class ComfyApi extends EventTarget {
    * @param {string} type The type of item to delete, queue or history
    * @param {number} id The id of the item to delete
    */
-  async deleteItem(type, id) {
-    await this.#postItem(type, { delete: [id] });
+  async deleteItem(type: string, id: string) {
+    await this.#postItem(type, { delete: [id] })
   }
 
   /**
    * Clears the specified list
    * @param {string} type The type of list to clear, queue or history
    */
-  async clearItems(type) {
-    await this.#postItem(type, { clear: true });
+  async clearItems(type: string) {
+    await this.#postItem(type, { clear: true })
   }
 
   /**
    * Interrupts the execution of the running prompt
    */
   async interrupt() {
-    await this.#postItem("interrupt", null);
+    await this.#postItem('interrupt', null)
   }
 
   /**
    * Gets user configuration data and where data should be stored
-   * @returns { Promise<{ storage: "server" | "browser", users?: Promise<string, unknown>, migrated?: boolean }> }
    */
-  async getUserConfig() {
-    return (await this.fetchApi("/users")).json();
+  async getUserConfig(): Promise<User> {
+    return (await this.fetchApi('/users')).json()
   }
 
   /**
@@ -407,22 +493,22 @@ class ComfyApi extends EventTarget {
    * @param { string } username
    * @returns The fetch response
    */
-  createUser(username) {
-    return this.fetchApi("/users", {
-      method: "POST",
+  createUser(username: string) {
+    return this.fetchApi('/users', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username }),
-    });
+      body: JSON.stringify({ username })
+    })
   }
 
   /**
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings() {
-    return (await this.fetchApi("/settings")).json();
+  async getSettings(): Promise<Settings> {
+    return (await this.fetchApi('/settings')).json()
   }
 
   /**
@@ -430,43 +516,35 @@ class ComfyApi extends EventTarget {
    * @param { string } id The id of the setting to fetch
    * @returns { Promise<unknown> } The setting value
    */
-  async getSetting(id) {
-    return (await this.fetchApi(`/settings/${encodeURIComponent(id)}`)).json();
+  async getSetting(id: keyof Settings): Promise<Settings[keyof Settings]> {
+    return (await this.fetchApi(`/settings/${encodeURIComponent(id)}`)).json()
   }
 
   /**
    * Stores a dictionary of settings for the current user
-   * @param { Record<string, unknown> } settings Dictionary of setting id -> value to save
-   * @returns { Promise<void> }
    */
-  async storeSettings(settings) {
+  async storeSettings(settings: Settings) {
     return this.fetchApi(`/settings`, {
-      method: "POST",
-      body: JSON.stringify(settings),
-    });
+      method: 'POST',
+      body: JSON.stringify(settings)
+    })
   }
 
   /**
    * Stores a setting for the current user
-   * @param { string } id The id of the setting to update
-   * @param { unknown } value The value of the setting
-   * @returns { Promise<void> }
    */
-  async storeSetting(id, value) {
+  async storeSetting(id: keyof Settings, value: Settings[keyof Settings]) {
     return this.fetchApi(`/settings/${encodeURIComponent(id)}`, {
-      method: "POST",
-      body: JSON.stringify(value),
-    });
+      method: 'POST',
+      body: JSON.stringify(value)
+    })
   }
 
   /**
    * Gets a user data file for the current user
-   * @param { string } file The name of the userdata file to load
-   * @param { RequestInit } [options]
-   * @returns { Promise<unknown> } The fetch response object
    */
-  async getUserData(file, options?) {
-    return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options);
+  async getUserData(file: string, options?: RequestInit) {
+    return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options)
   }
 
   /**
@@ -478,43 +556,39 @@ class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: unknown,
+    data: any,
     options: RequestInit & {
-      overwrite?: boolean;
-      stringify?: boolean;
-      throwOnError?: boolean;
+      overwrite?: boolean
+      stringify?: boolean
+      throwOnError?: boolean
     } = { overwrite: true, stringify: true, throwOnError: true }
   ): Promise<Response> {
     const resp = await this.fetchApi(
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}`,
       {
-        method: "POST",
+        method: 'POST',
         body: options?.stringify ? JSON.stringify(data) : data,
-        ...options,
+        ...options
       }
-    );
+    )
     if (resp.status !== 200 && options.throwOnError !== false) {
       throw new Error(
         `Error storing user data file '${file}': ${resp.status} ${(await resp).statusText}`
-      );
+      )
     }
 
-    return resp;
+    return resp
   }
 
   /**
    * Deletes a user data file for the current user
    * @param { string } file The name of the userdata file to delete
    */
-  async deleteUserData(file) {
+  async deleteUserData(file: string) {
     const resp = await this.fetchApi(`/userdata/${encodeURIComponent(file)}`, {
-      method: "DELETE",
-    });
-    if (resp.status !== 204) {
-      throw new Error(
-        `Error removing user data file '${file}': ${resp.status} ${resp.statusText}`
-      );
-    }
+      method: 'DELETE'
+    })
+    return resp
   }
 
   /**
@@ -522,14 +596,18 @@ class ComfyApi extends EventTarget {
    * @param { string } source The userdata file to move
    * @param { string } dest The destination for the file
    */
-  async moveUserData(source, dest, options = { overwrite: false }) {
+  async moveUserData(
+    source: string,
+    dest: string,
+    options = { overwrite: false }
+  ) {
     const resp = await this.fetchApi(
       `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
       {
-        method: "POST",
+        method: 'POST'
       }
-    );
-    return resp;
+    )
+    return resp
   }
 
   /**
@@ -538,7 +616,7 @@ class ComfyApi extends EventTarget {
    * @param { string } dir The directory in which to list files
    * @param { boolean } [recurse] If the listing should be recursive
    * @param { true } [split] If the paths should be split based on the os path separator
-   * @returns { Promise<string[][]>> } The list of split file paths in the format [fullPath, ...splitPath]
+   * @returns { Promise<string[][]> } The list of split file paths in the format [fullPath, ...splitPath]
    */
   /**
    * @overload
@@ -548,22 +626,32 @@ class ComfyApi extends EventTarget {
    * @param { false | undefined } [split] If the paths should be split based on the os path separator
    * @returns { Promise<string[]> } The list of files
    */
+  async listUserData(
+    dir: string,
+    recurse: boolean,
+    split?: true
+  ): Promise<string[][]>
+  async listUserData(
+    dir: string,
+    recurse: boolean,
+    split?: false
+  ): Promise<string[]>
   async listUserData(dir, recurse, split) {
     const resp = await this.fetchApi(
       `/userdata?${new URLSearchParams({
         recurse,
         dir,
-        split,
+        split
       })}`
-    );
-    if (resp.status === 404) return [];
+    )
+    if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(
         `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
-      );
+      )
     }
-    return resp.json();
+    return resp.json()
   }
 }
 
-export const api = new ComfyApi();
+export const api = new ComfyApi()
