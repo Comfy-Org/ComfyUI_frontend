@@ -1,11 +1,6 @@
 name: ESLint
 
 on:
-  push:
-    branches:
-      - main
-      - master
-      - 'dev*'
   pull_request:
     branches:
       - main
