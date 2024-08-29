@@ -1,4 +1,5 @@
 import { api } from '@/scripts/api'
+import { defineStore } from 'pinia'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -103,31 +104,27 @@ export class ModelStore {
   }
 }
 
-/** Impl of service for managing model stores */
-export class ModelStoreServiceImpl {
-  /** Internal map of model stores, keyed by folder name */
-  modelStoreMap: Record<string, ModelStore> = {}
-
-  /** Gets the list of model names in a folder, using a temporary local cache */
-  async getModelsInFolderCached(folder: string): Promise<ModelStore> {
-    if (folder in this.modelStoreMap) {
-      return this.modelStoreMap[folder]
+/** Model store handler, wraps individual per-folder model stores */
+export const useModelStore = defineStore('modelStore', {
+  state: () => ({
+    modelStoreMap: {} as Record<string, ModelStore>
+  }),
+  actions: {
+    async getModelsInFolderCached(folder: string): Promise<ModelStore> {
+      if (folder in this.modelStoreMap) {
+        return this.modelStoreMap[folder]
+      }
+      // TODO: needs a lock to avoid overlapping calls
+      const models = await api.getModels(folder)
+      if (!models) {
+        return null
+      }
+      const store = new ModelStore(folder, models)
+      this.modelStoreMap[folder] = store
+      return store
+    },
+    clearCache() {
+      this.modelStoreMap = {}
     }
-    // TODO: needs a lock to avoid overlapping calls
-    const models = await api.getModels(folder)
-    if (!models) {
-      return null
-    }
-    const store = new ModelStore(folder, models)
-    this.modelStoreMap[folder] = store
-    return store
   }
-
-  /** Clears the model store cache */
-  clearCache() {
-    this.modelStoreMap = {}
-  }
-}
-
-/** Service for managing model stores */
-export const modelStoreService = new ModelStoreServiceImpl()
+})

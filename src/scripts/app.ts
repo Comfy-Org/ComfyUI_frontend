@@ -51,7 +51,7 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ModelStore, modelStoreService } from '@/stores/modelStore'
+import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
@@ -2257,8 +2257,9 @@ export class ComfyApp {
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
       for (let m of graphData.models) {
-        const models_available =
-          await modelStoreService.getModelsInFolderCached(m.directory)
+        const models_available = await useModelStore().getModelsInFolderCached(
+          m.directory
+        )
         if (models_available === null) {
           // @ts-expect-error
           m.directory_invalid = true
@@ -2881,9 +2882,10 @@ export class ComfyApp {
       summary: 'Update',
       detail: 'Update requested'
     }
-    if (this.vueAppReady) useToastStore().add(requestToastMessage)
-
-    modelStoreService.clearCache()
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+      useModelStore().clearCache()
+    }
 
     const defs = await api.getNodeDefs()
 
