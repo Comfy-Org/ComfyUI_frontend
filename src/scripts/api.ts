@@ -13,6 +13,7 @@ import {
   User,
   Settings
 } from '@/types/apiTypes'
+import axios from 'axios'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -44,6 +45,10 @@ class ComfyApi extends EventTarget {
     this.api_host = location.host
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     this.initialClientId = sessionStorage.getItem('clientId')
+  }
+
+  internalURL(route: string): string {
+    return this.api_base + '/internal' + route
   }
 
   apiURL(route: string): string {
@@ -651,6 +656,10 @@ class ComfyApi extends EventTarget {
       )
     }
     return resp.json()
+  }
+
+  async getLogs(): Promise<string> {
+    return (await axios.get(this.internalURL('/logs'))).data
   }
 }
 

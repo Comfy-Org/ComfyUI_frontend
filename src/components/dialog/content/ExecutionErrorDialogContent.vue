@@ -70,10 +70,24 @@ const toast = useToast()
 const { copy, isSupported } = useClipboard()
 
 onMounted(async () => {
-  generateReport(await api.getSystemStats())
+  try {
+    const [systemStats, logs] = await Promise.all([
+      api.getSystemStats(),
+      api.getLogs()
+    ])
+    generateReport(systemStats, logs)
+  } catch (error) {
+    console.error('Error fetching system stats or logs:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to fetch system information',
+      life: 5000
+    })
+  }
 })
 
-const generateReport = (systemStats: SystemStats) => {
+const generateReport = (systemStats: SystemStats, logs: string) => {
   // The default JSON workflow has about 3000 characters.
   const MAX_JSON_LENGTH = 20000
   const workflowJSONString = JSON.stringify(app.graph.serialize())
@@ -93,9 +107,12 @@ const generateReport = (systemStats: SystemStats) => {
 ${props.error.traceback.join('\n')}
 \`\`\`
 ## System Information
+- **ComfyUI Version:** ${systemStats.system.comfyui_version}
+- **Arguments:** ${systemStats.system.argv.join(' ')}
 - **OS:** ${systemStats.system.os}
 - **Python Version:** ${systemStats.system.python_version}
 - **Embedded Python:** ${systemStats.system.embedded_python}
+- **PyTorch Version:** ${systemStats.system.pytorch_version}
 ## Devices
 ${systemStats.devices
   .map(
@@ -109,7 +126,10 @@ ${systemStats.devices
 `
   )
   .join('\n')}
-
+## Logs
+\`\`\`
+${logs}
+\`\`\`
 ## Attached Workflow
 Please make sure that workflow does not contain any sensitive information such as API keys or passwords.
 \`\`\`
