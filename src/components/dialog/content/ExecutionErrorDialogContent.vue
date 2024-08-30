@@ -70,11 +70,21 @@ const toast = useToast()
 const { copy, isSupported } = useClipboard()
 
 onMounted(async () => {
-  const [systemStats, logs] = await Promise.all([
-    api.getSystemStats(),
-    api.getLogs()
-  ])
-  generateReport(systemStats, logs)
+  try {
+    const [systemStats, logs] = await Promise.all([
+      api.getSystemStats(),
+      api.getLogs()
+    ])
+    generateReport(systemStats, logs)
+  } catch (error) {
+    console.error('Error fetching system stats or logs:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to fetch system information',
+      life: 5000
+    })
+  }
 })
 
 const generateReport = (systemStats: SystemStats, logs: string) => {
