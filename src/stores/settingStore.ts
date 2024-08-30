@@ -260,6 +260,13 @@ export const useSettingStore = defineStore('setting', {
         type: 'boolean',
         defaultValue: true
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Window.UnloadConfirmation',
+        name: 'Show confirmation when closing window',
+        type: 'boolean',
+        defaultValue: false
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {

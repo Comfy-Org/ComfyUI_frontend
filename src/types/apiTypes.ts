@@ -469,7 +469,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
       'Comfy.Workflow.ModelDownload.AllowedSources': z.array(z.string()),
       'Comfy.Workflow.ModelDownload.AllowedSuffixes': z.array(z.string()),
-      'Comfy.Node.DoubleClickTitleToEdit': z.boolean()
+      'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
+      'Comfy.Window.UnloadConfirmation': z.boolean()
     })
     .optional()
 )
