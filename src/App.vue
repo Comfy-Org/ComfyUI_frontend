@@ -3,6 +3,7 @@
   <BlockUI full-screen :blocked="isLoading" />
   <GlobalDialog />
   <GlobalToast />
+  <UnloadWindowConfirmDialog />
   <GraphCanvas />
 </template>
 
@@ -26,6 +27,7 @@ import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import GlobalToast from './components/toast/GlobalToast.vue'
+import UnloadWindowConfirmDialog from './components/dialog/UnloadWindowConfirmDialog.vue'
 import { api } from './scripts/api'
 import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'
