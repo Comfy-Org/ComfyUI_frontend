@@ -18,32 +18,12 @@
     }"
   >
     <template #folder="{ node }">
-      <slot
-        name="folder"
-        v-bind="{
-          ...nodeSlotProps,
-          node
-        }"
-      >
-        <TreeFolder :node="node" @itemDropped="handleItemDropped">
-          <template #folder-label="{ node }">
-            <EditableText
-              :modelValue="node.label"
-              :isEditing="renameEditingNode?.key === node.key"
-              @edit="(newName: string) => handleRename(node, newName)"
-            />
-          </template>
-        </TreeFolder>
+      <slot name="folder" :node="node">
+        <TreeFolder :node="node" />
       </slot>
     </template>
     <template #node="{ node }">
-      <slot
-        name="node"
-        v-bind="{
-          ...nodeSlotProps,
-          node: node.data
-        }"
-      >
+      <slot name="node" :node="node">
         <TreeNode :node="node.data" />
       </slot>
     </template>
@@ -51,19 +31,18 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, provide } from 'vue'
 import Tree from 'primevue/tree'
 import ContextMenu from 'primevue/contextmenu'
-import EditableText from '@/components/common/EditableText.vue'
 import TreeFolder from '@/components/common/treeExplorer/TreeFolder.vue'
 import TreeNode from '@/components/common/treeExplorer/TreeNode.vue'
 import type {
   RenderedTreeExplorerNode,
-  TreeExplorerNode,
-  TreeExplorerNodeSlotProps
+  TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { MenuItem } from 'primevue/menuitem'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
@@ -79,9 +58,9 @@ const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
   return props.roots.map(fillNodeInfo)
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
-  if (typeof node.icon === 'function') {
-    return node.icon(node)
-  } else if (typeof node.icon === 'string') {
+  if (node.getIcon) {
+    return node.getIcon(node)
+  } else if (node.icon) {
     return node.icon
   }
   // node.icon is undefined
@@ -103,9 +82,6 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
       : children.reduce((acc, child) => acc + child.totalLeaves, 0)
   }
 }
-const handleItemDropped = (node: TreeExplorerNode) => {
-  expandedKeys.value[node.key] = true
-}
 const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   if (!node.key) return
   if (node.type === 'folder') {
@@ -115,7 +91,9 @@ const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
 }
 const menu = ref(null)
 const menuTargetNode = ref<TreeExplorerNode | null>(null)
+provide('menuTargetNode', menuTargetNode)
 const renameEditingNode = ref<TreeExplorerNode | null>(null)
+provide('renameEditingNode', renameEditingNode)
 const menuItems = computed<MenuItem[]>(() => [
   {
     label: 'Rename',
@@ -131,17 +109,8 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   emit('contextMenu', node, e)
   menu.value?.show(e)
 }
-const handleRename = (node: RenderedTreeExplorerNode, newName: string) => {
-  emit('nodeRename', node, newName)
-  renameEditingNode.value = null
-}
-const nodeSlotProps: TreeExplorerNodeSlotProps = {
-  node: {} as TreeExplorerNode, // This will be overwritten by v-bind in the template
-  handleItemDropped,
-  renameEditingNode,
-  handleRename
-}
 </script>
+
 <style scoped>
 .tree-explorer-node-label {
   display: flex;
