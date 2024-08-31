@@ -20,17 +20,6 @@
     </template>
 
     <div class="action-container">
-      <FindIssueButton
-        :errorMessage="props.error.exception_message"
-        :repoOwner="repoOwner"
-        :repoName="repoName"
-      />
-      <Button
-        :label="$t('openNewIssue')"
-        icon="pi pi-github"
-        @click="openNewGithubIssue"
-        class="p-button-secondary"
-      />
       <Button
         v-if="reportOpen"
         :label="$t('copyToClipboard')"
@@ -48,7 +37,6 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
-import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
 import { api } from '@/scripts/api'
