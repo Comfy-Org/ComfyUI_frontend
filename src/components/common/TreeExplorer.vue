@@ -19,12 +19,12 @@
   >
     <template #folder="{ node }">
       <slot name="folder" :node="node">
-        <TreeFolder :node="node" />
+        <TreeExplorerTreeNode :node="node" />
       </slot>
     </template>
     <template #node="{ node }">
       <slot name="node" :node="node">
-        <TreeNode :node="node.data" />
+        <TreeExplorerTreeNode :node="node" />
       </slot>
     </template>
   </Tree>
@@ -34,8 +34,7 @@
 import { ref, computed, provide } from 'vue'
 import Tree from 'primevue/tree'
 import ContextMenu from 'primevue/contextmenu'
-import TreeFolder from '@/components/common/treeExplorer/TreeFolder.vue'
-import TreeNode from '@/components/common/treeExplorer/TreeNode.vue'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode

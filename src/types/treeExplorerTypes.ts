@@ -1,5 +1,3 @@
-import { Ref } from 'vue'
-
 export interface TreeExplorerNode<T = any> {
   key: string
   label: string
@@ -8,6 +6,8 @@ export interface TreeExplorerNode<T = any> {
   children?: TreeExplorerNode<T>[]
   icon?: string
   getIcon?: (node: TreeExplorerNode<T>) => string
+  // Function to handle renaming the node
+  handleRename?: (node: TreeExplorerNode<T>, newName: string) => void
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
@@ -21,11 +21,4 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
 export type TreeExplorerDragAndDropData<T = any> = {
   type: 'tree-explorer-node'
   data: RenderedTreeExplorerNode<T>
-}
-
-export interface TreeExplorerNodeSlotProps {
-  node: RenderedTreeExplorerNode
-  handleItemDropped: (node: RenderedTreeExplorerNode) => void
-  renameEditingNode: Ref<RenderedTreeExplorerNode | null>
-  handleRename: (node: RenderedTreeExplorerNode, newName: string) => void
 }
