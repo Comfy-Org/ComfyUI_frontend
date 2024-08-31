@@ -6,7 +6,8 @@ export interface TreeExplorerNode<T = any> {
   data: T
   leaf: boolean
   children?: TreeExplorerNode<T>[]
-  icon?: string | ((node: TreeExplorerNode<T>) => string)
+  icon?: string
+  getIcon?: (node: TreeExplorerNode<T>) => string
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
