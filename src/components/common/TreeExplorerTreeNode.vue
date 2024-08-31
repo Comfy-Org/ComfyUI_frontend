@@ -1,33 +1,56 @@
 <template>
-  <div :class="['tree-folder', { 'can-drop': canDrop }]" ref="container">
-    <span class="folder-label">
-      <slot name="folder-label" :node="props.node">
-        {{ props.node.label }}
+  <div
+    :class="[
+      'tree-node',
+      {
+        'can-drop': canDrop,
+        'tree-folder': !props.node.leaf,
+        'tree-leaf': props.node.leaf
+      }
+    ]"
+    ref="container"
+  >
+    <div class="node-content">
+      <span class="node-label">
+        <slot name="before-label" :node="props.node"></slot>
+        <EditableText
+          :modelValue="node.label"
+          :isEditing="isEditing"
+          @edit="(newName: string) => props.node.handleRename(node, newName)"
+        />
+        <slot name="after-label" :node="props.node"></slot>
+      </span>
+      <Badge
+        v-if="!props.node.leaf"
+        :value="props.node.totalLeaves"
+        severity="secondary"
+        class="leaf-count-badge"
+      />
+      <slot name="actions" :node="node">
+        <!-- Default slot content for actions -->
       </slot>
-    </span>
-    <Badge
-      v-if="props.node.totalLeaves"
-      :value="props.node.totalLeaves"
-      severity="secondary"
-      class="leaf-count-badge"
-    />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, inject, Ref, computed } from 'vue'
 import Badge from 'primevue/badge'
-import type {
-  TreeExplorerDragAndDropData,
-  RenderedTreeExplorerNode
-} from '@/types/treeExplorerTypes'
 import {
   dropTargetForElements,
   draggable
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import type {
+  TreeExplorerDragAndDropData,
+  RenderedTreeExplorerNode,
+  TreeExplorerNode
+} from '@/types/treeExplorerTypes'
+import EditableText from '@/components/common/EditableText.vue'
+
 const props = defineProps<{
   node: RenderedTreeExplorerNode
 }>()
+
 const emit = defineEmits<{
   (
     e: 'itemDropped',
@@ -37,6 +60,15 @@ const emit = defineEmits<{
   (e: 'dragStart', node: RenderedTreeExplorerNode): void
   (e: 'dragEnd', node: RenderedTreeExplorerNode): void
 }>()
+
+const labelEditable = computed<boolean>(() => !!props.node.handleRename)
+const renameEditingNode = inject(
+  'renameEditingNode'
+) as Ref<TreeExplorerNode | null>
+const isEditing = computed(
+  () => labelEditable.value && renameEditingNode.value?.key === props.node.key
+)
+
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 const treeNodeElement = ref<HTMLElement | null>(null)
@@ -84,11 +116,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.tree-folder {
+.tree-node {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 .leaf-count-badge {
+  margin-left: 0.5rem;
+}
+.node-content {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+}
+.leaf-label {
   margin-left: 0.5rem;
 }
 </style>
