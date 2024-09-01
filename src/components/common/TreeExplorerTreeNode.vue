@@ -78,36 +78,41 @@ onMounted(() => {
   treeNodeElement.value = container.value?.closest(
     '.p-tree-node-content'
   ) as HTMLElement
-  dropTargetCleanup = dropTargetForElements({
-    element: treeNodeElement.value,
-    onDrop: (event) => {
-      const dndData = event.source.data as TreeExplorerDragAndDropData
-      if (dndData.type === 'tree-explorer-node') {
+  if (props.node.droppable) {
+    dropTargetCleanup = dropTargetForElements({
+      element: treeNodeElement.value,
+      onDrop: (event) => {
+        const dndData = event.source.data as TreeExplorerDragAndDropData
+        if (dndData.type === 'tree-explorer-node') {
+          canDrop.value = false
+          emit('itemDropped', props.node, dndData.data)
+        }
+      },
+      onDragEnter: (event) => {
+        const dndData = event.source.data as TreeExplorerDragAndDropData
+        if (dndData.type === 'tree-explorer-node') {
+          canDrop.value = true
+        }
+      },
+      onDragLeave: () => {
         canDrop.value = false
-        emit('itemDropped', props.node, dndData.data)
       }
-    },
-    onDragEnter: (event) => {
-      const dndData = event.source.data as TreeExplorerDragAndDropData
-      if (dndData.type === 'tree-explorer-node') {
-        canDrop.value = true
-      }
-    },
-    onDragLeave: () => {
-      canDrop.value = false
-    }
-  })
-  draggableCleanup = draggable({
-    element: treeNodeElement.value,
-    getInitialData() {
-      return {
-        type: 'tree-explorer-node',
-        data: props.node
-      }
-    },
-    onDragStart: () => emit('dragStart', props.node),
-    onDrop: () => emit('dragEnd', props.node)
-  })
+    })
+  }
+
+  if (props.node.draggable) {
+    draggableCleanup = draggable({
+      element: treeNodeElement.value,
+      getInitialData() {
+        return {
+          type: 'tree-explorer-node',
+          data: props.node
+        }
+      },
+      onDragStart: () => emit('dragStart', props.node),
+      onDrop: () => emit('dragEnd', props.node)
+    })
+  }
 })
 onUnmounted(() => {
   dropTargetCleanup()
