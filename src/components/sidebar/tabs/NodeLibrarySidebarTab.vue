@@ -63,7 +63,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, ref, Ref } from 'vue'
+import { computed, nextTick, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import Divider from 'primevue/divider'
@@ -98,6 +98,44 @@ const searchQuery = ref<string>('')
 const nodeBookmarkStore = useNodeBookmarkStore()
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
+    const fillNodeInfo = (
+      node: TreeNode
+    ): TreeExplorerNode<ComfyNodeDefImpl> => {
+      const children = node.children?.map(fillNodeInfo)
+
+      return {
+        key: node.key,
+        label: node.label,
+        leaf: node.leaf,
+        data: node.data,
+        getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
+          if (node.leaf) {
+            return 'pi pi-circle-fill'
+          }
+          const customization =
+            nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
+          return customization?.icon
+            ? 'pi ' + customization.icon
+            : 'pi pi-bookmark-fill'
+        },
+        children,
+        draggable: node.leaf,
+        droppable: !node.leaf,
+        ...(node.leaf
+          ? {}
+          : {
+              handleRename: (
+                node: TreeExplorerNode<ComfyNodeDefImpl>,
+                newName: string
+              ) => {
+                nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+              },
+              handleDelete: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
+                nodeBookmarkStore.deleteBookmarkFolder(node.data)
+              }
+            })
+      }
+    }
     return fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
   }
 )
@@ -108,41 +146,25 @@ const root = computed(() => {
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
+  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
+    const children = node.children?.map(fillNodeInfo)
+
+    return {
+      key: node.key,
+      label: node.label,
+      leaf: node.leaf,
+      data: node.data,
+      getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
+        if (node.leaf) {
+          return 'pi pi-circle-fill'
+        }
+      },
+      children,
+      draggable: node.leaf
+    }
+  }
   return fillNodeInfo(root.value)
 })
-
-const getTreeNodeIcon = (node: TreeNode) => {
-  if (node.leaf) {
-    return 'pi pi-circle-fill'
-  }
-
-  // If the node is a bookmark folder, show a bookmark icon
-  if (node.data && node.data.isDummyFolder) {
-    const customization =
-      nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
-    if (customization?.icon) {
-      return 'pi ' + customization.icon
-    }
-    return 'pi pi-bookmark-fill'
-  }
-
-  const isExpanded = expandedKeys.value[node.key]
-  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
-}
-
-const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
-  const children = node.children?.map(fillNodeInfo)
-
-  return {
-    key: node.key,
-    label: node.label,
-    leaf: node.leaf,
-    data: node.data,
-    icon: getTreeNodeIcon(node),
-    children,
-    draggable: node.leaf
-  }
-}
 
 const filteredRoot = ref<TreeNode | null>(null)
 const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
@@ -180,9 +202,6 @@ const handleNodeClick = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
   }
 }
 
-// const menu = ref(null)
-// const menuTargetNode = ref<TreeNode | null>(null)
-// const renameEditingNode = ref<TreeNode | null>(null)
 // const menuItems = computed<MenuItem[]>(() => [
 //   {
 //     label: t('newFolder'),
@@ -250,13 +269,13 @@ const handleNodeClick = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
 //   renameEditingNode.value = null
 // }
 
-// const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
-//   const newFolderKey =
-//     'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
-//   nextTick(() => {
-//     renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
-//   })
-// }
+const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+  const newFolderKey =
+    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
+  nextTick(() => {
+    renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+  })
+}
 
 // const showCustomizationDialog = ref(false)
 // const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)

@@ -59,7 +59,10 @@ const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
-    return node.getIcon(node)
+    const icon = node.getIcon(node)
+    if (icon) {
+      return icon
+    }
   } else if (node.icon) {
     return node.icon
   }
