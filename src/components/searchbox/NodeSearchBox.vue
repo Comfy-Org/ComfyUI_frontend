@@ -49,11 +49,7 @@
                 v-html="highlightQuery(option.display_name, currentQuery)"
               ></span>
               <span>&nbsp;</span>
-              <Tag
-                v-if="showUniqueName"
-                class="option-unique-name"
-                severity="secondary"
-              >
+              <Tag v-if="showIdName" severity="secondary">
                 <span v-html="highlightQuery(option.name, currentQuery)"></span>
               </Tag>
             </div>
@@ -116,8 +112,8 @@ const enableNodePreview = computed(() =>
 const showCategory = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
 )
-const showUniqueName = computed(() =>
-  settingStore.get('Comfy.NodeSearchBoxImpl.ShowUniqueName')
+const showIdName = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
 )
 
 const props = defineProps({
