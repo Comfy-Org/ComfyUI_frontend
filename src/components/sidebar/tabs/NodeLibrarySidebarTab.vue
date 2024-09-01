@@ -34,7 +34,11 @@
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
 
-      <Tree
+      <NodeTreeExplorer
+        :roots="renderedRoot.children as TreeExplorerNode<ComfyNodeDefImpl>[]"
+      />
+
+      <!-- <Tree
         class="node-lib-tree"
         v-model:expandedKeys="expandedKeys"
         selectionMode="single"
@@ -80,7 +84,7 @@
             @toggleBookmark="nodeBookmarkStore.toggleBookmark(node.data)"
           />
         </template>
-      </Tree>
+      </Tree> -->
       <div
         v-if="hoveredComfyNode"
         class="node-lib-node-preview"
@@ -94,13 +98,12 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ContextMenu ref="menu" :model="menuItems" />
-  <FolderCustomizationDialog
+  <!-- <FolderCustomizationDialog
     v-model="showCustomizationDialog"
     @confirm="updateCustomization"
     :initialIcon="initialIcon"
     :initialColor="initialColor"
-  />
+  /> -->
 </template>
 
 <script setup lang="ts">
@@ -114,11 +117,6 @@ import {
 import { computed, ref, nextTick, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
-import NodeTreeLeaf from './nodeLibrary/NodeTreeLeaf.vue'
-import NodeTreeFolder from './nodeLibrary/NodeTreeFolder.vue'
-import Tree from 'primevue/tree'
-import ContextMenu from 'primevue/contextmenu'
-import EditableText from '@/components/common/EditableText.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
@@ -133,6 +131,8 @@ import { useToast } from 'primevue/usetoast'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
+import NodeTreeExplorer from './nodeLibrary/NodeTreeExplorer.vue'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -287,95 +287,95 @@ const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
   }
 }
 
-const menu = ref(null)
-const menuTargetNode = ref<TreeNode | null>(null)
-const renameEditingNode = ref<TreeNode | null>(null)
-const menuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('newFolder'),
-    icon: 'pi pi-folder-plus',
-    command: () => {
-      if (menuTargetNode.value?.data) {
-        addNewBookmarkFolder(menuTargetNode.value?.data)
-      }
-    }
-  },
-  {
-    label: t('delete'),
-    icon: 'pi pi-trash',
-    command: () => {
-      if (menuTargetNode.value?.data) {
-        nodeBookmarkStore.deleteBookmarkFolder(menuTargetNode.value.data)
-      }
-    }
-  },
-  {
-    label: t('rename'),
-    icon: 'pi pi-file-edit',
-    command: () => {
-      renameEditingNode.value = menuTargetNode.value
-    }
-  },
-  {
-    label: t('customize'),
-    icon: 'pi pi-palette',
-    command: () => {
-      initialIcon.value =
-        nodeBookmarkStore.bookmarksCustomization[
-          menuTargetNode.value.data.nodePath
-        ]?.icon || nodeBookmarkStore.defaultBookmarkIcon
-      initialColor.value =
-        nodeBookmarkStore.bookmarksCustomization[
-          menuTargetNode.value.data.nodePath
-        ]?.color || nodeBookmarkStore.defaultBookmarkColor
-      showCustomizationDialog.value = true
-    }
-  }
-])
+// const menu = ref(null)
+// const menuTargetNode = ref<TreeNode | null>(null)
+// const renameEditingNode = ref<TreeNode | null>(null)
+// const menuItems = computed<MenuItem[]>(() => [
+//   {
+//     label: t('newFolder'),
+//     icon: 'pi pi-folder-plus',
+//     command: () => {
+//       if (menuTargetNode.value?.data) {
+//         addNewBookmarkFolder(menuTargetNode.value?.data)
+//       }
+//     }
+//   },
+//   {
+//     label: t('delete'),
+//     icon: 'pi pi-trash',
+//     command: () => {
+//       if (menuTargetNode.value?.data) {
+//         nodeBookmarkStore.deleteBookmarkFolder(menuTargetNode.value.data)
+//       }
+//     }
+//   },
+//   {
+//     label: t('rename'),
+//     icon: 'pi pi-file-edit',
+//     command: () => {
+//       renameEditingNode.value = menuTargetNode.value
+//     }
+//   },
+//   {
+//     label: t('customize'),
+//     icon: 'pi pi-palette',
+//     command: () => {
+//       initialIcon.value =
+//         nodeBookmarkStore.bookmarksCustomization[
+//           menuTargetNode.value.data.nodePath
+//         ]?.icon || nodeBookmarkStore.defaultBookmarkIcon
+//       initialColor.value =
+//         nodeBookmarkStore.bookmarksCustomization[
+//           menuTargetNode.value.data.nodePath
+//         ]?.color || nodeBookmarkStore.defaultBookmarkColor
+//       showCustomizationDialog.value = true
+//     }
+//   }
+// ])
 
-const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
-  const nodeDef = node.data as ComfyNodeDefImpl
-  if (nodeDef?.isDummyFolder) {
-    menuTargetNode.value = node
-    menu.value?.show(e)
-  }
-}
+// const handleContextMenu = (node: TreeNode, e: MouseEvent) => {
+//   const nodeDef = node.data as ComfyNodeDefImpl
+//   if (nodeDef?.isDummyFolder) {
+//     menuTargetNode.value = node
+//     menu.value?.show(e)
+//   }
+// }
 
-const handleRename = (node: TreeNode, newName: string) => {
-  if (node.data && node.data.isDummyFolder) {
-    try {
-      nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
-    } catch (e) {
-      toast.add({
-        severity: 'error',
-        summary: t('error'),
-        detail: e.message,
-        life: 3000
-      })
-    }
-  }
-  renameEditingNode.value = null
-}
+// const handleRename = (node: TreeNode, newName: string) => {
+//   if (node.data && node.data.isDummyFolder) {
+//     try {
+//       nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
+//     } catch (e) {
+//       toast.add({
+//         severity: 'error',
+//         summary: t('error'),
+//         detail: e.message,
+//         life: 3000
+//       })
+//     }
+//   }
+//   renameEditingNode.value = null
+// }
 
-const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
-  const newFolderKey =
-    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
-  nextTick(() => {
-    renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
-  })
-}
+// const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+//   const newFolderKey =
+//     'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
+//   nextTick(() => {
+//     renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+//   })
+// }
 
-const showCustomizationDialog = ref(false)
-const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
-const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
-const updateCustomization = (icon: string, color: string) => {
-  if (menuTargetNode.value?.data) {
-    nodeBookmarkStore.updateBookmarkCustomization(
-      menuTargetNode.value.data.nodePath,
-      { icon, color }
-    )
-  }
-}
+// const showCustomizationDialog = ref(false)
+// const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
+// const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
+// const updateCustomization = (icon: string, color: string) => {
+//   if (menuTargetNode.value?.data) {
+//     nodeBookmarkStore.updateBookmarkCustomization(
+//       menuTargetNode.value.data.nodePath,
+//       { icon, color }
+//     )
+//   }
+// }
 
 const onAddFilter = (filterAndValue: FilterAndValue) => {
   filters.value.push({
