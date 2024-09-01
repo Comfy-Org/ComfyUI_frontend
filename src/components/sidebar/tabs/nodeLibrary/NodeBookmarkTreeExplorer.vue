@@ -2,6 +2,7 @@
   <TreeExplorer
     :roots="renderedBookmarkedRoot.children"
     :expandedKeys="expandedKeys"
+    :extraMenuItems="extraMenuItems"
     @nodeClick="handleNodeClick"
   >
     <template #node="{ node }">
@@ -76,12 +77,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         ...(node.leaf
           ? {}
           : {
-              handleRename: (
-                node: TreeExplorerNode<ComfyNodeDefImpl>,
-                newName: string
-              ) => {
-                nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
-              },
+              handleRename,
               handleDelete: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
                 nodeBookmarkStore.deleteBookmarkFolder(node.data)
               }
@@ -115,45 +111,47 @@ const handleRename = (node: TreeNode, newName: string) => {
       })
     }
   }
-  // renameEditingNode.value = null
 }
 
 const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
 const initialColor = ref(nodeBookmarkStore.defaultBookmarkColor)
+const customizationTargetNodePath = ref('')
 const updateCustomization = (icon: string, color: string) => {
-  // if (menuTargetNode.value?.data) {
-  //   nodeBookmarkStore.updateBookmarkCustomization(
-  //     menuTargetNode.value.data.nodePath,
-  //     { icon, color }
-  //   )
-  // }
+  if (customizationTargetNodePath.value) {
+    nodeBookmarkStore.updateBookmarkCustomization(
+      customizationTargetNodePath.value,
+      { icon, color }
+    )
+  }
 }
 
-// const menuItems = computed<MenuItem[]>(() => [
-//   {
-//     label: t('newFolder'),
-//     icon: 'pi pi-folder-plus',
-//     command: () => {
-//       if (menuTargetNode.value?.data) {
-//         addNewBookmarkFolder(menuTargetNode.value?.data)
-//       }
-//     }
-//   },
-//   {
-//     label: t('customize'),
-//     icon: 'pi pi-palette',
-//     command: () => {
-//       initialIcon.value =
-//         nodeBookmarkStore.bookmarksCustomization[
-//           menuTargetNode.value.data.nodePath
-//         ]?.icon || nodeBookmarkStore.defaultBookmarkIcon
-//       initialColor.value =
-//         nodeBookmarkStore.bookmarksCustomization[
-//           menuTargetNode.value.data.nodePath
-//         ]?.color || nodeBookmarkStore.defaultBookmarkColor
-//       showCustomizationDialog.value = true
-//     }
-//   }
-// ])
+const extraMenuItems = computed(
+  () => (menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => [
+    {
+      label: t('newFolder'),
+      icon: 'pi pi-folder-plus',
+      command: () => {
+        if (menuTargetNode.data) {
+          addNewBookmarkFolder(menuTargetNode.data)
+        }
+      }
+    },
+    {
+      label: t('customize'),
+      icon: 'pi pi-palette',
+      command: () => {
+        const customization =
+          nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
+        initialIcon.value =
+          customization?.icon || nodeBookmarkStore.defaultBookmarkIcon
+        initialColor.value =
+          customization?.color || nodeBookmarkStore.defaultBookmarkColor
+
+        showCustomizationDialog.value = true
+        customizationTargetNodePath.value = menuTargetNode.data.nodePath
+      }
+    }
+  ]
+)
 </script>

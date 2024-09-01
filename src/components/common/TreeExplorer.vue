@@ -46,7 +46,9 @@ const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
-  extraMenuItems?: MenuItem[]
+  extraMenuItems?:
+    | MenuItem[]
+    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
 }>()
 const emit = defineEmits<{
   (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
@@ -110,7 +112,11 @@ const menuItems = computed<MenuItem[]>(() => [
     },
     visible: menuTargetNode.value?.handleDelete !== undefined
   },
-  ...(props.extraMenuItems || [])
+  ...(props.extraMenuItems
+    ? typeof props.extraMenuItems === 'function'
+      ? props.extraMenuItems(menuTargetNode.value)
+      : props.extraMenuItems
+    : [])
 ])
 const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   menuTargetNode.value = node
