@@ -35,6 +35,11 @@
       </Popover>
 
       <NodeTreeExplorer
+        :roots="renderedBookmarkedRoot.children"
+        @nodeClick="handleNodeClick"
+      />
+      <Divider />
+      <NodeTreeExplorer
         :roots="renderedRoot.children"
         @nodeClick="handleNodeClick"
       />
@@ -61,6 +66,7 @@ import {
 import { computed, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
+import Divider from 'primevue/divider'
 import SearchBox from '@/components/common/SearchBox.vue'
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -90,20 +96,14 @@ const alphabeticalSort = ref(false)
 const searchQuery = ref<string>('')
 
 const nodeBookmarkStore = useNodeBookmarkStore()
-
-const allNodesRoot = computed<TreeNode>(() => {
-  return {
-    key: 'all-nodes',
-    label: 'All Nodes',
-    children: [
-      ...(nodeBookmarkStore.bookmarkedRoot.children ?? []),
-      ...nodeDefStore.nodeTree.children
-    ]
+const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
+  () => {
+    return fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
   }
-})
+)
 
 const root = computed(() => {
-  const root = filteredRoot.value || allNodesRoot.value
+  const root = filteredRoot.value || nodeDefStore.nodeTree
   return alphabeticalSort.value ? sortedTree(root) : root
 })
 
