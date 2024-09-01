@@ -126,7 +126,9 @@ const menuItems = computed<MenuItem[]>(() => [
 const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  menu.value?.show(e)
+  if (menuItems.value.filter((item) => item.visible).length > 0) {
+    menu.value?.show(e)
+  }
 }
 defineExpose({
   renameCommand,
