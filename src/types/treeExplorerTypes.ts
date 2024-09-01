@@ -15,6 +15,10 @@ export interface TreeExplorerNode<T = any> {
     node: TreeExplorerNode<T>,
     child: TreeExplorerNode<T>
   ) => void
+  // Whether the node is draggable
+  draggable?: boolean
+  // Whether the node is droppable
+  droppable?: boolean
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
