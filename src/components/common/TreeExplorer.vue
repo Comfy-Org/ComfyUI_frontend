@@ -41,6 +41,7 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { MenuItem } from 'primevue/menuitem'
+import { useI18n } from 'vue-i18n'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 const props = defineProps<{
@@ -94,22 +95,26 @@ const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('menuTargetNode', menuTargetNode)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('renameEditingNode', renameEditingNode)
+
+const { t } = useI18n()
+const renameCommand = (node: RenderedTreeExplorerNode) => {
+  renameEditingNode.value = node
+}
+const deleteCommand = (node: RenderedTreeExplorerNode) => {
+  node.handleDelete?.(node)
+  emit('nodeDelete', node)
+}
 const menuItems = computed<MenuItem[]>(() => [
   {
-    label: 'Rename',
+    label: t('rename'),
     icon: 'pi pi-file-edit',
-    command: () => {
-      renameEditingNode.value = menuTargetNode.value
-    },
+    command: () => renameCommand(menuTargetNode.value),
     visible: menuTargetNode.value?.handleRename !== undefined
   },
   {
-    label: 'Delete',
+    label: t('delete'),
     icon: 'pi pi-trash',
-    command: () => {
-      menuTargetNode.value?.handleDelete?.(menuTargetNode.value)
-      emit('nodeDelete', menuTargetNode.value)
-    },
+    command: () => deleteCommand(menuTargetNode.value),
     visible: menuTargetNode.value?.handleDelete !== undefined
   },
   ...(props.extraMenuItems
@@ -123,6 +128,10 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   emit('contextMenu', node, e)
   menu.value?.show(e)
 }
+defineExpose({
+  renameCommand,
+  deleteCommand
+})
 </script>
 
 <style scoped>

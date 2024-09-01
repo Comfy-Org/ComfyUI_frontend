@@ -6,7 +6,7 @@
         icon="pi pi-folder-plus"
         text
         severity="secondary"
-        @click="addNewBookmarkFolder()"
+        @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
         v-tooltip="$t('newFolder')"
       />
       <Button
@@ -34,7 +34,7 @@
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
 
-      <NodeBookmarkTreeExplorer />
+      <NodeBookmarkTreeExplorer ref="nodeBookmarkTreeExplorerRef" />
       <Divider />
       <TreeExplorer
         :roots="renderedRoot.children"
@@ -67,7 +67,7 @@ import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { app } from '@/scripts/app'
-import { findNodeByKey, sortedTree } from '@/utils/treeUtil'
+import { sortedTree } from '@/utils/treeUtil'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import { FilterAndValue } from '@/services/nodeSearchService'
@@ -80,6 +80,9 @@ import type {
 const nodeDefStore = useNodeDefStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
+const nodeBookmarkTreeExplorerRef = ref<InstanceType<
+  typeof NodeBookmarkTreeExplorer
+> | null>(null)
 const searchFilter = ref(null)
 const alphabeticalSort = ref(false)
 

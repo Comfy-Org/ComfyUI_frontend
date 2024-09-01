@@ -1,5 +1,6 @@
 <template>
   <TreeExplorer
+    ref="treeExplorerRef"
     :roots="renderedBookmarkedRoot.children"
     :expandedKeys="expandedKeys"
     :extraMenuItems="extraMenuItems"
@@ -34,6 +35,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
+import { findNodeByKey } from '@/utils/treeUtil'
 
 const { expandedKeys, toggleNodeOnEvent } = useTreeExpansion()
 
@@ -88,13 +90,22 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   }
 )
 
+const treeExplorerRef = ref<InstanceType<typeof TreeExplorer> | null>(null)
 const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
   const newFolderKey =
     'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
   nextTick(() => {
-    // renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+    treeExplorerRef.value?.renameCommand(
+      findNodeByKey(
+        renderedBookmarkedRoot.value,
+        newFolderKey
+      ) as RenderedTreeExplorerNode
+    )
   })
 }
+defineExpose({
+  addNewBookmarkFolder
+})
 
 const toast = useToast()
 const { t } = useI18n()
