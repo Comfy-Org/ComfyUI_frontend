@@ -59,6 +59,7 @@ const litegraphBaseSchema = z
 const comfyBaseSchema = z.object({
   ['fg-color']: z.string(),
   ['bg-color']: z.string(),
+  ['bg-img']: z.string().optional(),
   ['comfy-menu-bg']: z.string(),
   ['comfy-input-bg']: z.string(),
   ['input-text']: z.string(),
