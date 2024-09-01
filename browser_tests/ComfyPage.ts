@@ -83,7 +83,7 @@ class NodeLibrarySidebarTab {
   }
 
   folderSelector(folderName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.folder-label:has-text("${folderName}")))`
+    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-folder .node-label:has-text("${folderName}")))`
   }
 
   getFolder(folderName: string) {
@@ -91,7 +91,7 @@ class NodeLibrarySidebarTab {
   }
 
   nodeSelector(nodeName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.node-label:has-text("${nodeName}")))`
+    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-leaf .node-label:has-text("${nodeName}")))`
   }
 
   getNode(nodeName: string) {

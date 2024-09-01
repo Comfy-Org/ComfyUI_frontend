@@ -119,9 +119,11 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
 )
 
 const treeExplorerRef = ref<InstanceType<typeof TreeExplorer> | null>(null)
-const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
+const addNewBookmarkFolder = (
+  parent?: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+) => {
   const newFolderKey =
-    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
+    'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent?.data).slice(0, -1)
   nextTick(() => {
     treeExplorerRef.value?.renameCommand(
       findNodeByKey(
@@ -129,6 +131,9 @@ const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
         newFolderKey
       ) as RenderedTreeExplorerNode
     )
+    if (parent) {
+      expandedKeys.value[parent.key] = true
+    }
   })
 }
 defineExpose({
@@ -171,7 +176,7 @@ const extraMenuItems = computed(
       label: t('newFolder'),
       icon: 'pi pi-folder-plus',
       command: () => {
-        addNewBookmarkFolder(menuTargetNode.data)
+        addNewBookmarkFolder(menuTargetNode)
       },
       visible: !menuTargetNode?.leaf
     },
