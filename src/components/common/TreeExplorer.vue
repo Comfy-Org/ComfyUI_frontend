@@ -41,19 +41,18 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { MenuItem } from 'primevue/menuitem'
-import { useTreeExpansion } from '@/hooks/treeHooks'
 
+const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
   extraMenuItems?: MenuItem[]
 }>()
 const emit = defineEmits<{
-  (e: 'nodeClick', node: RenderedTreeExplorerNode): void
+  (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
   (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
-const { expandedKeys, toggleNodeOnEvent } = useTreeExpansion()
 const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
   return props.roots.map(fillNodeInfo)
 })
@@ -86,11 +85,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   }
 }
 const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
-  if (!node.key) return
-  if (node.type === 'folder') {
-    toggleNodeOnEvent(e, node)
-  }
-  emit('nodeClick', node)
+  emit('nodeClick', node, e)
 }
 const menu = ref(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)

@@ -36,11 +36,13 @@
 
       <NodeTreeExplorer
         :roots="renderedBookmarkedRoot.children"
+        v-model:expandedKeys="expandedKeys"
         @nodeClick="handleNodeClick"
       />
       <Divider />
       <NodeTreeExplorer
         :roots="renderedRoot.children"
+        v-model:expandedKeys="expandedKeys"
         @nodeClick="handleNodeClick"
       />
     </template>
@@ -196,9 +198,14 @@ const insertNode = (nodeDef: ComfyNodeDefImpl) => {
   app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
 }
 
-const handleNodeClick = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
+const handleNodeClick = (
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+  e: MouseEvent
+) => {
   if (node.leaf) {
     insertNode(node.data)
+  } else {
+    toggleNodeOnEvent(e, node)
   }
 }
 
@@ -273,7 +280,7 @@ const addNewBookmarkFolder = (parent?: ComfyNodeDefImpl) => {
   const newFolderKey =
     'root/' + nodeBookmarkStore.addNewBookmarkFolder(parent).slice(0, -1)
   nextTick(() => {
-    renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
+    // renameEditingNode.value = findNodeByKey(renderedRoot.value, newFolderKey)
   })
 }
 
