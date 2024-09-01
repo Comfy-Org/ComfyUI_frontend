@@ -1,6 +1,9 @@
 <template>
   <div ref="container" class="node-lib-node-container">
-    <TreeExplorerTreeNode :node="node"></TreeExplorerTreeNode>
+    <TreeExplorerTreeNode
+      :node="node"
+      @item-dropped="handleItemDrop"
+    ></TreeExplorerTreeNode>
   </div>
 </template>
 
@@ -8,7 +11,7 @@
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import type { BookmarkCustomization } from '@/types/apiTypes'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
@@ -51,4 +54,9 @@ onUnmounted(() => {
     stopWatchCustomization()
   }
 })
+
+const expandedKeys = inject<Ref<Record<string, boolean>>>('expandedKeys')
+const handleItemDrop = (node: RenderedTreeExplorerNode) => {
+  expandedKeys.value[node.key] = true
+}
 </script>

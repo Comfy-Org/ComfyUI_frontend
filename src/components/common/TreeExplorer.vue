@@ -44,6 +44,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
+provide('expandedKeys', expandedKeys)
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
