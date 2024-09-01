@@ -85,17 +85,6 @@
           />
         </template>
       </Tree> -->
-      <div
-        v-if="hoveredComfyNode"
-        class="node-lib-node-preview"
-        :style="nodePreviewStyle"
-      >
-        <NodePreview
-          ref="previewRef"
-          :key="hoveredComfyNode.name"
-          :nodeDef="hoveredComfyNode"
-        ></NodePreview>
-      </div>
     </template>
   </SidebarTabTemplate>
   <!-- <FolderCustomizationDialog
@@ -117,11 +106,9 @@ import {
 import { computed, ref, nextTick, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
-import NodePreview from '@/components/node/NodePreview.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { findNodeByKey, sortedTree } from '@/utils/treeUtil'
 import { useTreeExpansion } from '@/hooks/treeHooks'
@@ -141,26 +128,8 @@ const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
 const searchFilter = ref(null)
 const alphabeticalSort = ref(false)
-const hoveredComfyNodeName = ref<string | null>(null)
-const hoveredComfyNode = computed<ComfyNodeDefImpl | null>(() => {
-  if (!hoveredComfyNodeName.value) {
-    return null
-  }
-  return nodeDefStore.nodeDefsByName[hoveredComfyNodeName.value] || null
-})
-const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
+
 const searchQuery = ref<string>('')
-
-const settingStore = useSettingStore()
-const sidebarLocation = computed<'left' | 'right'>(() =>
-  settingStore.get('Comfy.Sidebar.Location')
-)
-
-const nodePreviewStyle = ref<Record<string, string>>({
-  position: 'absolute',
-  top: '0px',
-  left: '0px'
-})
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 
@@ -214,33 +183,6 @@ const fillNodeInfo = (node: TreeNode): TreeNode => {
     totalNodes: node.leaf
       ? 1
       : children.reduce((acc, child) => acc + child.totalNodes, 0)
-  }
-}
-
-const handleNodeHover = async (
-  event: MouseEvent,
-  nodeName: string | undefined
-) => {
-  hoveredComfyNodeName.value = nodeName || null
-
-  if (!nodeName) return
-
-  const hoverTarget = event.target as HTMLElement
-  const targetRect = hoverTarget.getBoundingClientRect()
-
-  await nextTick()
-
-  const previewHeight = previewRef.value?.$el.offsetHeight || 0
-  const availableSpaceBelow = window.innerHeight - targetRect.bottom
-
-  nodePreviewStyle.value.top =
-    previewHeight > availableSpaceBelow
-      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
-      : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    nodePreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 }
 
