@@ -28,7 +28,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         const nodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
 
         if (!nodeDef) return
-        addBookmark(`${category}/${nodeDef.name}`)
+        addBookmark(`${category === '' ? '' : category + '/'}${nodeDef.name}`)
       })
     settingStore.set('Comfy.NodeLibrary.Bookmarks', [])
   }
