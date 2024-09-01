@@ -345,7 +345,9 @@ test.describe('Menu', () => {
     test('Can migrate legacy bookmarks', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
         'foo/',
-        'foo/KSampler (Advanced)'
+        'foo/KSampler (Advanced)',
+        'UNKNOWN',
+        'KSampler'
       ])
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
       await comfyPage.page.reload()
@@ -355,7 +357,7 @@ test.describe('Menu', () => {
       )
       expect(
         await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-      ).toEqual(['foo/', 'foo/KSamplerAdvanced'])
+      ).toEqual(['foo/', 'foo/KSamplerAdvanced', 'KSampler'])
     })
   })
 
