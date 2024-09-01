@@ -267,6 +267,18 @@ export const useSettingStore = defineStore('setting', {
         type: 'boolean',
         defaultValue: false
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.TreeExplorer.ItemPadding',
+        name: 'Tree explorer item padding',
+        type: 'slider',
+        defaultValue: 2,
+        attrs: {
+          min: 0,
+          max: 8,
+          step: 1
+        }
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
