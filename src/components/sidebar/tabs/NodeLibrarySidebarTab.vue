@@ -37,6 +37,7 @@
       <NodeBookmarkTreeExplorer ref="nodeBookmarkTreeExplorerRef" />
       <Divider />
       <TreeExplorer
+        class="node-lib-tree-explorer"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
         @nodeClick="handleNodeClick"
@@ -185,5 +186,13 @@ const onRemoveFilter = (filterAndValue) => {
 
 :deep(.comfy-vue-side-bar-body) {
   background: var(--p-tree-background);
+}
+
+:deep(.node-lib-bookmark-tree-explorer) {
+  padding-bottom: 0px;
+}
+
+:deep(.node-lib-tree-explorer) {
+  padding-top: 0px;
 }
 </style>
