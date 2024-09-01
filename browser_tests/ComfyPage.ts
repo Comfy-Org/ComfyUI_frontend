@@ -57,6 +57,10 @@ class NodeLibrarySidebarTab {
     )
   }
 
+  get nodeLibrarySearchBoxInput() {
+    return this.page.locator('.node-lib-search-box input[type="text"]')
+  }
+
   get nodeLibraryTree() {
     return this.page.locator('.node-lib-tree-explorer')
   }

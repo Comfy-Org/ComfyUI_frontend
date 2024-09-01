@@ -327,6 +327,20 @@ test.describe('Menu', () => {
         await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
       ).toEqual({})
     })
+
+    test('Can filter nodes in both trees', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
+        'foo/',
+        'foo/KSampler (Advanced)',
+        'KSampler'
+      ])
+
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.nodeLibrarySearchBoxInput.fill('KSampler')
+      // Node search box is debounced and may take some time to update.
+      await comfyPage.page.waitForTimeout(1000)
+      expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
+    })
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
