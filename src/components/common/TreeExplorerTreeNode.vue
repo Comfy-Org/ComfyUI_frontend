@@ -26,9 +26,9 @@
         severity="secondary"
         class="leaf-count-badge"
       />
-      <slot name="actions" :node="node">
-        <!-- Default slot content for actions -->
-      </slot>
+    </div>
+    <div class="node-actions">
+      <slot name="actions" :node="props.node"></slot>
     </div>
   </div>
 </template>

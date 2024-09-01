@@ -4,6 +4,7 @@
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
     :value="renderedRoots"
+    selectionMode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ props }) => ({
@@ -121,7 +122,8 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
 </script>
 
 <style scoped>
-.tree-explorer-node-label {
+:deep(.tree-explorer-node-label) {
+  width: 100%;
   display: flex;
   align-items: center;
   margin-left: var(--p-tree-node-gap);

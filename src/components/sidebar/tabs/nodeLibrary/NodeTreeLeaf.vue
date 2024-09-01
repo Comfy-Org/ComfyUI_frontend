@@ -1,85 +1,59 @@
 <template>
-  <div :class="['node-tree-leaf', { bookmark: isBookmarked }]" ref="container">
-    <div class="node-content">
+  <TreeExplorerTreeNode :node="node">
+    <template #before-label>
       <Tag
-        v-if="node.experimental"
+        v-if="nodeDef.experimental"
         :value="$t('experimental')"
         severity="primary"
       />
-      <Tag v-if="node.deprecated" :value="$t('deprecated')" severity="danger" />
-      <span class="node-label">{{ node.display_name }}</span>
-    </div>
-    <Button
-      class="bookmark-button"
-      size="small"
-      :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-      text
-      severity="secondary"
-      @click.stop="toggleBookmark"
-    />
-  </div>
+      <Tag
+        v-if="nodeDef.deprecated"
+        :value="$t('deprecated')"
+        severity="danger"
+      />
+    </template>
+    <template #actions>
+      <Button
+        class="bookmark-button"
+        size="small"
+        :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+        text
+        severity="secondary"
+        @click.stop="toggleBookmark"
+      />
+    </template>
+  </TreeExplorerTreeNode>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { onMounted, onUnmounted, ref } from 'vue'
-import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { CanvasDragAndDropData } from '@/types/litegraphTypes'
+import { computed } from 'vue'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const props = defineProps<{
-  node: ComfyNodeDefImpl
-  isBookmarked: boolean
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
+
+const nodeDef = computed(() => props.node.data)
+const nodeBookmarkStore = useNodeBookmarkStore()
+const isBookmarked = computed(() =>
+  nodeBookmarkStore.isBookmarked(nodeDef.value)
+)
 
 const emit = defineEmits<{
   (e: 'toggle-bookmark', value: ComfyNodeDefImpl): void
 }>()
 
 const toggleBookmark = () => {
-  emit('toggle-bookmark', props.node)
+  nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
-
-const container = ref<HTMLElement | null>(null)
-let draggableCleanup: () => void
-onMounted(() => {
-  const treeNodeElement = container.value?.closest(
-    '.p-tree-node'
-  ) as HTMLElement
-  draggableCleanup = draggable({
-    element: treeNodeElement,
-    getInitialData() {
-      return {
-        type: 'add-node',
-        data: props.node
-      } as CanvasDragAndDropData<ComfyNodeDefImpl>
-    }
-  })
-})
-onUnmounted(() => {
-  draggableCleanup()
-})
 </script>
 
 <style scoped>
-.node-tree-leaf {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.node-content {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-}
-
-.node-label {
-  margin-left: 0.5rem;
-}
-
 .bookmark-button {
   width: unset;
   padding: 0.25rem;
