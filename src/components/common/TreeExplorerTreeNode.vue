@@ -84,6 +84,7 @@ onMounted(() => {
       onDrop: (event) => {
         const dndData = event.source.data as TreeExplorerDragAndDropData
         if (dndData.type === 'tree-explorer-node') {
+          props.node.handleDrop?.(props.node, dndData)
           canDrop.value = false
           emit('itemDropped', props.node, dndData.data)
         }
