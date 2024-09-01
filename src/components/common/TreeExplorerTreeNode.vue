@@ -62,9 +62,8 @@ const emit = defineEmits<{
 }>()
 
 const labelEditable = computed<boolean>(() => !!props.node.handleRename)
-const renameEditingNode = inject(
-  'renameEditingNode'
-) as Ref<TreeExplorerNode | null>
+const renameEditingNode =
+  inject<Ref<TreeExplorerNode | null>>('renameEditingNode')
 const isEditing = computed(
   () => labelEditable.value && renameEditingNode.value?.key === props.node.key
 )
