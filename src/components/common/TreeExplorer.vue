@@ -49,7 +49,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   (e: 'nodeClick', node: RenderedTreeExplorerNode): void
-  (e: 'nodeRename', node: RenderedTreeExplorerNode, newName: string): void
+  (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
 const { expandedKeys, toggleNodeOnEvent } = useTreeExpansion()
@@ -89,9 +89,9 @@ const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   emit('nodeClick', node)
 }
 const menu = ref(null)
-const menuTargetNode = ref<TreeExplorerNode | null>(null)
+const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('menuTargetNode', menuTargetNode)
-const renameEditingNode = ref<TreeExplorerNode | null>(null)
+const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('renameEditingNode', renameEditingNode)
 const menuItems = computed<MenuItem[]>(() => [
   {
@@ -99,7 +99,17 @@ const menuItems = computed<MenuItem[]>(() => [
     icon: 'pi pi-file-edit',
     command: () => {
       renameEditingNode.value = menuTargetNode.value
-    }
+    },
+    visible: menuTargetNode.value?.handleRename !== undefined
+  },
+  {
+    label: 'Delete',
+    icon: 'pi pi-trash',
+    command: () => {
+      menuTargetNode.value?.handleDelete?.(menuTargetNode.value)
+      emit('nodeDelete', menuTargetNode.value)
+    },
+    visible: menuTargetNode.value?.handleDelete !== undefined
   },
   ...(props.extraMenuItems || [])
 ])
