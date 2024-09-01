@@ -33,9 +33,8 @@
       <Popover ref="searchFilter" class="node-lib-filter-popup">
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
-
       <NodeBookmarkTreeExplorer ref="nodeBookmarkTreeExplorerRef" />
-      <Divider />
+      <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" />
       <TreeExplorer
         class="node-lib-tree-explorer"
         :roots="renderedRoot.children"
@@ -77,8 +76,10 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const nodeDefStore = useNodeDefStore()
+const nodeBookmarkStore = useNodeBookmarkStore()
 const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
 const nodeBookmarkTreeExplorerRef = ref<InstanceType<
