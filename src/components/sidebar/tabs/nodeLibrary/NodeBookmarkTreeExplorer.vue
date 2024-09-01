@@ -64,6 +64,14 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
     ): TreeExplorerNode<ComfyNodeDefImpl> => {
       const children = node.children?.map(fillNodeInfo)
 
+      // Sort children: non-leaf nodes first, then leaf nodes, both alphabetically
+      const sortedChildren = children?.sort((a, b) => {
+        if (a.leaf === b.leaf) {
+          return a.label.localeCompare(b.label)
+        }
+        return a.leaf ? 1 : -1
+      })
+
       return {
         key: node.key,
         label: node.label,
@@ -79,7 +87,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
             ? 'pi ' + customization.icon
             : 'pi pi-bookmark-fill'
         },
-        children,
+        children: sortedChildren,
         draggable: node.leaf,
         droppable: !node.leaf,
         handleDrop: (
