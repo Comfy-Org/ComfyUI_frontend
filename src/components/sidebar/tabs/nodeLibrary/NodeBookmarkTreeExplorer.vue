@@ -37,13 +37,17 @@ import type {
 } from '@/types/treeExplorerTypes'
 import type { TreeNode } from 'primevue/treenode'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
 
-const { expandedKeys, toggleNodeOnEvent } = useTreeExpansion()
+const props = defineProps<{
+  filteredNodeDefs: ComfyNodeDefImpl[]
+}>()
+
+const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
 
 const handleNodeClick = (
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
@@ -57,6 +61,47 @@ const handleNodeClick = (
 }
 
 const nodeBookmarkStore = useNodeBookmarkStore()
+const bookmarkedRoot = computed<TreeNode>(() => {
+  const filterTree = (node: TreeNode): TreeNode | null => {
+    if (node.leaf) {
+      // Check if the node's display_name is in the filteredNodeDefs list
+      return props.filteredNodeDefs.some(
+        (def) => def.display_name === node.data.display_name
+      )
+        ? node
+        : null
+    }
+
+    const filteredChildren = node.children
+      ?.map(filterTree)
+      .filter((child): child is TreeNode => child !== null)
+
+    if (filteredChildren && filteredChildren.length > 0) {
+      return {
+        ...node,
+        children: filteredChildren
+      }
+    }
+
+    return null // Remove empty folders
+  }
+
+  return props.filteredNodeDefs.length
+    ? filterTree(nodeBookmarkStore.bookmarkedRoot) || {
+        key: 'root',
+        label: 'Root',
+        children: []
+      }
+    : nodeBookmarkStore.bookmarkedRoot
+})
+watch(
+  () => props.filteredNodeDefs,
+  (newValue) => {
+    if (newValue.length) {
+      nextTick(() => expandNode(bookmarkedRoot.value))
+    }
+  }
+)
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
     const fillNodeInfo = (
@@ -114,7 +159,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
             })
       }
     }
-    return fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
+    return fillNodeInfo(bookmarkedRoot.value)
   }
 )
 

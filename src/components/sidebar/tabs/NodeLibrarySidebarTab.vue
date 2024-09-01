@@ -33,7 +33,10 @@
       <Popover ref="searchFilter" class="node-lib-filter-popup">
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
-      <NodeBookmarkTreeExplorer ref="nodeBookmarkTreeExplorerRef" />
+      <NodeBookmarkTreeExplorer
+        ref="nodeBookmarkTreeExplorerRef"
+        :filtered-node-defs="filteredNodeDefs"
+      />
       <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" />
       <TreeExplorer
         class="node-lib-tree-explorer"
@@ -57,7 +60,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, ref, Ref } from 'vue'
+import { computed, nextTick, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import Divider from 'primevue/divider'
@@ -116,18 +119,24 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
   return fillNodeInfo(root.value)
 })
 
-const filteredRoot = ref<TreeNode | null>(null)
+const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
+const filteredRoot = computed<TreeNode | null>(() => {
+  if (!filteredNodeDefs.value.length) {
+    return null
+  }
+  return buildNodeDefTree(filteredNodeDefs.value)
+})
 const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
   ref([])
 const handleSearch = (query: string) => {
   if (query.length < 3 && !filters.value.length) {
-    filteredRoot.value = null
+    filteredNodeDefs.value = []
     expandedKeys.value = {}
     return
   }
 
   const f = filters.value.map((f) => f.filter as FilterAndValue<string>)
-  const matchedNodes = nodeDefStore.nodeSearchService.searchNode(
+  filteredNodeDefs.value = nodeDefStore.nodeSearchService.searchNode(
     query,
     f,
     {
@@ -138,8 +147,9 @@ const handleSearch = (query: string) => {
     }
   )
 
-  filteredRoot.value = buildNodeDefTree(matchedNodes)
-  expandNode(filteredRoot.value)
+  nextTick(() => {
+    expandNode(filteredRoot.value)
+  })
 }
 
 const handleNodeClick = (
