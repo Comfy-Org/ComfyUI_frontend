@@ -34,7 +34,10 @@
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
 
-      <NodeTreeExplorer :roots="renderedRoot.children" />
+      <NodeTreeExplorer
+        :roots="renderedRoot.children"
+        @nodeClick="handleNodeClick"
+      />
     </template>
   </SidebarTabTemplate>
   <div id="node-library-node-preview-container" />
@@ -71,7 +74,10 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import NodeTreeExplorer from './nodeLibrary/NodeTreeExplorer.vue'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeExplorerNode
+} from '@/types/treeExplorerTypes'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -138,14 +144,6 @@ const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
   }
 }
 
-const handleItemDropped = (node: TreeNode) => {
-  expandedKeys.value[node.key] = true
-}
-
-const insertNode = (nodeDef: ComfyNodeDefImpl) => {
-  app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
-}
-
 const filteredRoot = ref<TreeNode | null>(null)
 const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
   ref([])
@@ -172,11 +170,12 @@ const handleSearch = (query: string) => {
   expandNode(filteredRoot.value)
 }
 
-const onNodeContentClick = (e: MouseEvent, node: TreeNode) => {
-  if (!node.key) return
-  if (node.type === 'folder') {
-    toggleNodeOnEvent(e, node)
-  } else {
+const insertNode = (nodeDef: ComfyNodeDefImpl) => {
+  app.addNodeOnGraph(nodeDef, { pos: app.getCanvasCenter() })
+}
+
+const handleNodeClick = (node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => {
+  if (node.leaf) {
     insertNode(node.data)
   }
 }
