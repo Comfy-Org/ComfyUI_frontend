@@ -27,6 +27,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
   RenderedTreeExplorerNode,
+  TreeExplorerDragAndDropData,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { TreeNode } from 'primevue/treenode'
@@ -76,6 +77,20 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         children,
         draggable: node.leaf,
         droppable: !node.leaf,
+        handleDrop: (
+          node: TreeExplorerNode<ComfyNodeDefImpl>,
+          data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>
+        ) => {
+          const nodeDefToAdd = data.data.data
+          // Remove bookmark if the source is the top level bookmarked node.
+          if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
+            nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
+          }
+          const folderNodeDef = node.data as ComfyNodeDefImpl
+          const nodePath =
+            folderNodeDef.category + '/' + nodeDefToAdd.display_name
+          nodeBookmarkStore.addBookmark(nodePath)
+        },
         ...(node.leaf
           ? {}
           : {
