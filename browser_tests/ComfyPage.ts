@@ -58,7 +58,7 @@ class NodeLibrarySidebarTab {
   }
 
   get nodeLibraryTree() {
-    return this.page.locator('.node-lib-tree')
+    return this.page.locator('.node-lib-tree-explorer')
   }
 
   get nodePreview() {
@@ -83,7 +83,7 @@ class NodeLibrarySidebarTab {
   }
 
   folderSelector(folderName: string) {
-    return `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.folder-label:has-text("${folderName}")))`
+    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.folder-label:has-text("${folderName}")))`
   }
 
   getFolder(folderName: string) {
@@ -91,7 +91,7 @@ class NodeLibrarySidebarTab {
   }
 
   nodeSelector(nodeName: string) {
-    return `.p-tree-node-content:has(> .node-lib-tree-node-label:has(.node-label:has-text("${nodeName}")))`
+    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.node-label:has-text("${nodeName}")))`
   }
 
   getNode(nodeName: string) {
