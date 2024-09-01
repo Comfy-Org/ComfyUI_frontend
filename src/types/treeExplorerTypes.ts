@@ -8,6 +8,13 @@ export interface TreeExplorerNode<T = any> {
   getIcon?: (node: TreeExplorerNode<T>) => string
   // Function to handle renaming the node
   handleRename?: (node: TreeExplorerNode<T>, newName: string) => void
+  // Function to handle deleting the node
+  handleDelete?: (node: TreeExplorerNode<T>) => void
+  // Function to handle adding a child node
+  handleAddChild?: (
+    node: TreeExplorerNode<T>,
+    child: TreeExplorerNode<T>
+  ) => void
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
