@@ -19,6 +19,11 @@ export interface TreeExplorerNode<T = any> {
   draggable?: boolean
   // Whether the node is droppable
   droppable?: boolean
+  // Function to handle dropping a node
+  handleDrop?: (
+    node: TreeExplorerNode<T>,
+    data: TreeExplorerDragAndDropData
+  ) => void
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
