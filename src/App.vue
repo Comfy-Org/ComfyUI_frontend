@@ -60,6 +60,14 @@ watchEffect(() => {
   )
 })
 
+watchEffect(() => {
+  const padding = useSettingStore().get('Comfy.TreeExplorer.ItemPadding')
+  document.documentElement.style.setProperty(
+    '--comfy-tree-explorer-item-padding',
+    `${padding}px`
+  )
+})
+
 const { t } = useI18n()
 const init = () => {
   useSettingStore().addSettings(app.ui.settings)
@@ -125,6 +133,12 @@ onUnmounted(() => {
   api.removeEventListener('reconnected', onReconnected)
 })
 </script>
+
+<style>
+.p-tree-node-content {
+  padding: var(--comfy-tree-explorer-item-padding) !important;
+}
+</style>
 
 <style scoped>
 .spinner {
