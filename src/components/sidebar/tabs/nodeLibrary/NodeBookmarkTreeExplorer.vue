@@ -6,6 +6,9 @@
     :extraMenuItems="extraMenuItems"
     @nodeClick="handleNodeClick"
   >
+    <template #folder="{ node }">
+      <NodeTreeFolder :node="node" />
+    </template>
     <template #node="{ node }">
       <NodeTreeLeaf :node="node" />
     </template>
@@ -22,6 +25,7 @@
 <script setup lang="ts">
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
