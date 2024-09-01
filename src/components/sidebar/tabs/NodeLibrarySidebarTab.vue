@@ -104,7 +104,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.label,
+      label: node.leaf ? node.data.display_name : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
