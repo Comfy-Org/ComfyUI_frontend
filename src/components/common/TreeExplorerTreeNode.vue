@@ -16,7 +16,7 @@
         <EditableText
           :modelValue="node.label"
           :isEditing="isEditing"
-          @edit="(newName: string) => props.node.handleRename(node, newName)"
+          @edit="handleRename"
         />
         <slot name="after-label" :node="props.node"></slot>
       </span>
@@ -68,7 +68,10 @@ const renameEditingNode = inject(
 const isEditing = computed(
   () => labelEditable.value && renameEditingNode.value?.key === props.node.key
 )
-
+const handleRename = (newName: string) => {
+  props.node.handleRename(props.node, newName)
+  renameEditingNode.value = null
+}
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 const treeNodeElement = ref<HTMLElement | null>(null)
