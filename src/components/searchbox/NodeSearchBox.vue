@@ -44,9 +44,19 @@
       <template v-slot:option="{ option }">
         <div class="option-container">
           <div class="option-display-name">
-            <span
-              v-html="highlightQuery(option.display_name, currentQuery)"
-            ></span>
+            <div>
+              <span
+                v-html="highlightQuery(option.display_name, currentQuery)"
+              ></span>
+              <span>&nbsp;</span>
+              <Tag
+                v-if="showUniqueName"
+                class="option-unique-name"
+                severity="secondary"
+              >
+                <span v-html="highlightQuery(option.name, currentQuery)"></span>
+              </Tag>
+            </div>
             <div v-if="showCategory" class="option-category">
               {{ option.category.replaceAll('/', ' > ') }}
             </div>
@@ -105,6 +115,9 @@ const enableNodePreview = computed(() =>
 )
 const showCategory = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowCategory')
+)
+const showUniqueName = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowUniqueName')
 )
 
 const props = defineProps({

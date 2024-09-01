@@ -108,6 +108,15 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.NodeSearchBoxImpl.ShowUniqueName',
+        category: ['Comfy', 'Node Search Box', 'ShowUniqueName'],
+        name: 'Show node unique name in search results',
+        tooltip: 'Only applies to the default implementation',
+        type: 'boolean',
+        defaultValue: false
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.Sidebar.Location',
         category: ['Comfy', 'Sidebar', 'Location'],
         name: 'Sidebar location',
