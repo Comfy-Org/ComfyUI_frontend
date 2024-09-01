@@ -60,7 +60,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, nextTick, ref, Ref } from 'vue'
+import { computed, nextTick, onMounted, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import Divider from 'primevue/divider'

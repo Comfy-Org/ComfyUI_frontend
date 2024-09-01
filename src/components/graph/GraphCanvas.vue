@@ -35,6 +35,7 @@ import {
   ContextMenu
 } from '@comfyorg/litegraph'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -145,6 +146,9 @@ onMounted(async () => {
       }
     }
   })
+
+  // Migrate legacy bookmarks
+  useNodeBookmarkStore().migrateLegacyBookmarks()
   emit('ready')
 })
 
