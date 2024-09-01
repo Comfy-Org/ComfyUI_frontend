@@ -439,6 +439,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.InvertMenuScrolling': z.boolean(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
+      'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
       'Comfy.NodeLibrary.BookmarksCustomization': z.record(
         z.string(),
         zBookmarkCustomization

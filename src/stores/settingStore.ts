@@ -208,7 +208,14 @@ export const useSettingStore = defineStore('setting', {
       // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
       app.ui.settings.addSetting({
         id: 'Comfy.NodeLibrary.Bookmarks',
-        name: 'Node library bookmarks',
+        name: 'Node library bookmarks with display name (deprecated)',
+        type: 'hidden',
+        defaultValue: []
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeLibrary.Bookmarks.V2',
+        name: 'Node library bookmarks v2 with unique name',
         type: 'hidden',
         defaultValue: []
       })
