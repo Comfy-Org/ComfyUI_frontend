@@ -1,83 +1,129 @@
 <template>
-  <div :class="['node-tree-leaf', { bookmark: isBookmarked }]" ref="container">
-    <div class="node-content">
-      <Tag
-        v-if="node.experimental"
-        :value="$t('experimental')"
-        severity="primary"
-      />
-      <Tag v-if="node.deprecated" :value="$t('deprecated')" severity="danger" />
-      <span class="node-label">{{ node.display_name }}</span>
-    </div>
-    <Button
-      class="bookmark-button"
-      size="small"
-      :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-      text
-      severity="secondary"
-      @click.stop="toggleBookmark"
-    />
+  <div ref="container" class="node-lib-node-container">
+    <TreeExplorerTreeNode :node="node">
+      <template #before-label>
+        <Tag
+          v-if="nodeDef.experimental"
+          :value="$t('experimental')"
+          severity="primary"
+        />
+        <Tag
+          v-if="nodeDef.deprecated"
+          :value="$t('deprecated')"
+          severity="danger"
+        />
+      </template>
+      <template #actions>
+        <Button
+          class="bookmark-button"
+          size="small"
+          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+          text
+          severity="secondary"
+          @click.stop="toggleBookmark"
+        />
+      </template>
+    </TreeExplorerTreeNode>
+
+    <teleport v-if="isHovered" to="#node-library-node-preview-container">
+      <div class="node-lib-node-preview" :style="nodePreviewStyle">
+        <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { onMounted, onUnmounted, ref } from 'vue'
-import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { CanvasDragAndDropData } from '@/types/litegraphTypes'
+import {
+  computed,
+  CSSProperties,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref
+} from 'vue'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const props = defineProps<{
-  node: ComfyNodeDefImpl
-  isBookmarked: boolean
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
+
+const nodeDef = computed(() => props.node.data)
+const nodeBookmarkStore = useNodeBookmarkStore()
+const isBookmarked = computed(() =>
+  nodeBookmarkStore.isBookmarked(nodeDef.value)
+)
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
 
 const emit = defineEmits<{
   (e: 'toggle-bookmark', value: ComfyNodeDefImpl): void
 }>()
 
 const toggleBookmark = () => {
-  emit('toggle-bookmark', props.node)
+  nodeBookmarkStore.toggleBookmark(nodeDef.value)
+}
+
+const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
+const nodePreviewStyle = ref<CSSProperties>({
+  position: 'absolute',
+  top: '0px',
+  left: '0px'
+})
+
+const handleNodeHover = async () => {
+  const hoverTarget = nodeContentElement.value
+  const targetRect = hoverTarget.getBoundingClientRect()
+
+  const previewHeight = previewRef.value?.$el.offsetHeight || 0
+  const availableSpaceBelow = window.innerHeight - targetRect.bottom
+
+  nodePreviewStyle.value.top =
+    previewHeight > availableSpaceBelow
+      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
+      : `${targetRect.top - 40}px`
+  if (sidebarLocation.value === 'left') {
+    nodePreviewStyle.value.left = `${targetRect.right}px`
+  } else {
+    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
+  }
 }
 
 const container = ref<HTMLElement | null>(null)
-let draggableCleanup: () => void
+const nodeContentElement = ref<HTMLElement | null>(null)
+const isHovered = ref(false)
+const handleMouseEnter = async () => {
+  isHovered.value = true
+  await nextTick()
+  handleNodeHover()
+}
+const handleMouseLeave = () => {
+  isHovered.value = false
+}
 onMounted(() => {
-  const treeNodeElement = container.value?.closest(
-    '.p-tree-node'
-  ) as HTMLElement
-  draggableCleanup = draggable({
-    element: treeNodeElement,
-    getInitialData() {
-      return {
-        type: 'add-node',
-        data: props.node
-      } as CanvasDragAndDropData<ComfyNodeDefImpl>
-    }
-  })
+  nodeContentElement.value = container.value?.closest('.p-tree-node-content')
+  nodeContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
+  nodeContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
 })
+
 onUnmounted(() => {
-  draggableCleanup()
+  nodeContentElement.value?.removeEventListener('mouseenter', handleMouseEnter)
+  nodeContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
 })
 </script>
 
 <style scoped>
-.node-tree-leaf {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.node-content {
-  display: flex;
-  align-items: center;
-  flex-grow: 1;
-}
-
-.node-label {
-  margin-left: 0.5rem;
+.node-lib-node-container {
+  @apply h-full w-full;
 }
 
 .bookmark-button {

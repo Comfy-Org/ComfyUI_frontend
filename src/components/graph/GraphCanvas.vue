@@ -34,6 +34,7 @@ import {
   LGraphCanvas,
   ContextMenu
 } from '@comfyorg/litegraph'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -129,15 +130,18 @@ onMounted(async () => {
       const loc = event.location.current.input
       const dndData = event.source.data
 
-      if (dndData.type === 'add-node') {
-        const nodeDef = dndData.data as ComfyNodeDefImpl
-        // Add an offset on x to make sure after adding the node, the cursor
-        // is on the node (top left corner)
-        const pos = comfyApp.clientPosToCanvasPos([
-          loc.clientX - 20,
-          loc.clientY
-        ])
-        comfyApp.addNodeOnGraph(nodeDef, { pos })
+      if (dndData.type === 'tree-explorer-node') {
+        const node = dndData.data as RenderedTreeExplorerNode
+        if (node.data instanceof ComfyNodeDefImpl) {
+          const nodeDef = node.data
+          // Add an offset on x to make sure after adding the node, the cursor
+          // is on the node (top left corner)
+          const pos = comfyApp.clientPosToCanvasPos([
+            loc.clientX - 20,
+            loc.clientY
+          ])
+          comfyApp.addNodeOnGraph(nodeDef, { pos })
+        }
       }
     }
   })

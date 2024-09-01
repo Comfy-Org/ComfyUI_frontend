@@ -109,7 +109,7 @@ test.describe('Menu', () => {
       expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
 
       // Hover on the bookmark node to display the preview
-      await comfyPage.page.hover('.node-tree-leaf.bookmark')
+      await comfyPage.page.hover('.node-lib-bookmark-tree-explorer .tree-leaf')
       expect(await comfyPage.page.isVisible('.node-lib-node-preview')).toBe(
         true
       )
@@ -145,10 +145,12 @@ test.describe('Menu', () => {
 
       await tab.getFolder('foo').click({ button: 'right' })
       await comfyPage.page.getByLabel('New Folder').click()
+      await comfyPage.page.keyboard.type('bar')
       await comfyPage.page.keyboard.press('Enter')
 
+      expect(await tab.getFolder('bar').count()).toBe(1)
       expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
-        ['foo/', 'foo/New Folder/']
+        ['foo/', 'foo/bar/']
       )
     })
 
@@ -324,6 +326,20 @@ test.describe('Menu', () => {
       expect(
         await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
       ).toEqual({})
+    })
+
+    test('Can filter nodes in both trees', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
+        'foo/',
+        'foo/KSampler (Advanced)',
+        'KSampler'
+      ])
+
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.nodeLibrarySearchBoxInput.fill('KSampler')
+      // Node search box is debounced and may take some time to update.
+      await comfyPage.page.waitForTimeout(1000)
+      expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
     })
   })
 

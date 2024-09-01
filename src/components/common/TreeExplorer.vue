@@ -4,6 +4,7 @@
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
     :value="renderedRoots"
+    selectionMode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ props }) => ({
@@ -40,25 +41,31 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { MenuItem } from 'primevue/menuitem'
-import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useI18n } from 'vue-i18n'
 
+const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
+provide('expandedKeys', expandedKeys)
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
-  extraMenuItems?: MenuItem[]
+  extraMenuItems?:
+    | MenuItem[]
+    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
 }>()
 const emit = defineEmits<{
-  (e: 'nodeClick', node: RenderedTreeExplorerNode): void
+  (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
   (e: 'nodeDelete', node: RenderedTreeExplorerNode): void
   (e: 'contextMenu', node: RenderedTreeExplorerNode, event: MouseEvent): void
 }>()
-const { expandedKeys, toggleNodeOnEvent } = useTreeExpansion()
 const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
   return props.roots.map(fillNodeInfo)
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
-    return node.getIcon(node)
+    const icon = node.getIcon(node)
+    if (icon) {
+      return icon
+    }
   } else if (node.icon) {
     return node.icon
   }
@@ -82,46 +89,57 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   }
 }
 const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
-  if (!node.key) return
-  if (node.type === 'folder') {
-    toggleNodeOnEvent(e, node)
-  }
-  emit('nodeClick', node)
+  emit('nodeClick', node, e)
 }
 const menu = ref(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('menuTargetNode', menuTargetNode)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('renameEditingNode', renameEditingNode)
+
+const { t } = useI18n()
+const renameCommand = (node: RenderedTreeExplorerNode) => {
+  renameEditingNode.value = node
+}
+const deleteCommand = (node: RenderedTreeExplorerNode) => {
+  node.handleDelete?.(node)
+  emit('nodeDelete', node)
+}
 const menuItems = computed<MenuItem[]>(() => [
   {
-    label: 'Rename',
+    label: t('rename'),
     icon: 'pi pi-file-edit',
-    command: () => {
-      renameEditingNode.value = menuTargetNode.value
-    },
+    command: () => renameCommand(menuTargetNode.value),
     visible: menuTargetNode.value?.handleRename !== undefined
   },
   {
-    label: 'Delete',
+    label: t('delete'),
     icon: 'pi pi-trash',
-    command: () => {
-      menuTargetNode.value?.handleDelete?.(menuTargetNode.value)
-      emit('nodeDelete', menuTargetNode.value)
-    },
+    command: () => deleteCommand(menuTargetNode.value),
     visible: menuTargetNode.value?.handleDelete !== undefined
   },
-  ...(props.extraMenuItems || [])
+  ...(props.extraMenuItems
+    ? typeof props.extraMenuItems === 'function'
+      ? props.extraMenuItems(menuTargetNode.value)
+      : props.extraMenuItems
+    : [])
 ])
 const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  menu.value?.show(e)
+  if (menuItems.value.filter((item) => item.visible).length > 0) {
+    menu.value?.show(e)
+  }
 }
+defineExpose({
+  renameCommand,
+  deleteCommand
+})
 </script>
 
 <style scoped>
-.tree-explorer-node-label {
+:deep(.tree-explorer-node-label) {
+  width: 100%;
   display: flex;
   align-items: center;
   margin-left: var(--p-tree-node-gap);

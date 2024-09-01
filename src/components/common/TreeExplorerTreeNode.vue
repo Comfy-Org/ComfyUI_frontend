@@ -16,7 +16,7 @@
         <EditableText
           :modelValue="node.label"
           :isEditing="isEditing"
-          @edit="(newName: string) => props.node.handleRename(node, newName)"
+          @edit="handleRename"
         />
         <slot name="after-label" :node="props.node"></slot>
       </span>
@@ -26,9 +26,9 @@
         severity="secondary"
         class="leaf-count-badge"
       />
-      <slot name="actions" :node="node">
-        <!-- Default slot content for actions -->
-      </slot>
+    </div>
+    <div class="node-actions">
+      <slot name="actions" :node="props.node"></slot>
     </div>
   </div>
 </template>
@@ -62,13 +62,15 @@ const emit = defineEmits<{
 }>()
 
 const labelEditable = computed<boolean>(() => !!props.node.handleRename)
-const renameEditingNode = inject(
-  'renameEditingNode'
-) as Ref<TreeExplorerNode | null>
+const renameEditingNode =
+  inject<Ref<TreeExplorerNode | null>>('renameEditingNode')
 const isEditing = computed(
   () => labelEditable.value && renameEditingNode.value?.key === props.node.key
 )
-
+const handleRename = (newName: string) => {
+  props.node.handleRename(props.node, newName)
+  renameEditingNode.value = null
+}
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 const treeNodeElement = ref<HTMLElement | null>(null)
