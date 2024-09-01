@@ -34,59 +34,11 @@
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
 
-      <NodeTreeExplorer
-        :roots="renderedRoot.children as TreeExplorerNode<ComfyNodeDefImpl>[]"
-      />
-
-      <!-- <Tree
-        class="node-lib-tree"
-        v-model:expandedKeys="expandedKeys"
-        selectionMode="single"
-        :value="renderedRoot.children"
-        :pt="{
-          nodeLabel: 'node-lib-tree-node-label',
-          nodeContent: ({ props }) => ({
-            onClick: (e: MouseEvent) => onNodeContentClick(e, props.node),
-            onMouseenter: (event: MouseEvent) =>
-              handleNodeHover(event, props.node?.data?.name),
-            onMouseleave: () => {
-              hoveredComfyNodeName = null
-            },
-            onContextmenu: (e: MouseEvent) => handleContextMenu(props.node, e)
-          }),
-          nodeToggleButton: () => ({
-            onClick: (e: MouseEvent) => {
-              // Prevent toggle action as the node controls it
-              e.stopImmediatePropagation()
-            }
-          })
-        }"
-      >
-        <template #folder="{ node }">
-          <NodeTreeFolder
-            :node="node"
-            :isBookmarkFolder="!!node.data && node.data.isDummyFolder"
-            @itemDropped="handleItemDropped"
-          >
-            <template #folder-label="{ node }">
-              <EditableText
-                :modelValue="node.label"
-                :isEditing="renameEditingNode?.key === node.key"
-                @edit="(newName: string) => handleRename(node, newName)"
-              />
-            </template>
-          </NodeTreeFolder>
-        </template>
-        <template #node="{ node }">
-          <NodeTreeLeaf
-            :node="node.data"
-            :isBookmarked="nodeBookmarkStore.isBookmarked(node.data)"
-            @toggleBookmark="nodeBookmarkStore.toggleBookmark(node.data)"
-          />
-        </template>
-      </Tree> -->
+      <NodeTreeExplorer :roots="renderedRoot.children" />
     </template>
   </SidebarTabTemplate>
+  <div id="node-library-node-preview-container" />
+
   <!-- <FolderCustomizationDialog
     v-model="showCustomizationDialog"
     @confirm="updateCustomization"
@@ -103,7 +55,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, ref, nextTick, Ref } from 'vue'
+import { computed, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -149,7 +101,7 @@ const root = computed(() => {
   return alphabeticalSort.value ? sortedTree(root) : root
 })
 
-const renderedRoot = computed(() => {
+const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
   return fillNodeInfo(root.value)
 })
 
@@ -172,17 +124,17 @@ const getTreeNodeIcon = (node: TreeNode) => {
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 
-const fillNodeInfo = (node: TreeNode): TreeNode => {
+const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyNodeDefImpl> => {
   const children = node.children?.map(fillNodeInfo)
 
   return {
-    ...node,
+    key: node.key,
+    label: node.label,
+    leaf: node.leaf,
+    data: node.data,
     icon: getTreeNodeIcon(node),
     children,
-    type: node.leaf ? 'node' : 'folder',
-    totalNodes: node.leaf
-      ? 1
-      : children.reduce((acc, child) => acc + child.totalNodes, 0)
+    draggable: node.leaf
   }
 }
 
@@ -341,13 +293,6 @@ const onRemoveFilter = (filterAndValue) => {
 </script>
 
 <style>
-.node-lib-tree-node-label {
-  display: flex;
-  align-items: center;
-  margin-left: var(--p-tree-node-gap);
-  flex-grow: 1;
-}
-
 .node-lib-filter-popup {
   margin-left: -13px;
 }
@@ -360,25 +305,5 @@ const onRemoveFilter = (filterAndValue) => {
 
 :deep(.comfy-vue-side-bar-body) {
   background: var(--p-tree-background);
-}
-
-/*
- * The following styles are necessary to avoid layout shift when dragging nodes over folders.
- * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
- * we can create a visual indicator for the drop target without affecting the layout of other elements.
- */
-:deep(.p-tree-node-content:has(.node-tree-folder)) {
-  position: relative;
-}
-
-:deep(.p-tree-node-content:has(.node-tree-folder.can-drop))::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 1px solid var(--p-content-color);
-  pointer-events: none;
 }
 </style>

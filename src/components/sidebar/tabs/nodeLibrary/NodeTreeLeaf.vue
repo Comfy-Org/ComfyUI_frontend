@@ -24,13 +24,12 @@
         />
       </template>
     </TreeExplorerTreeNode>
-    <div
-      v-if="isHovered"
-      class="node-lib-node-preview"
-      :style="nodePreviewStyle"
-    >
-      <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
-    </div>
+
+    <teleport v-if="isHovered" to="#node-library-node-preview-container">
+      <div class="node-lib-node-preview" :style="nodePreviewStyle">
+        <NodePreview ref="previewRef" :nodeDef="nodeDef"></NodePreview>
+      </div>
+    </teleport>
   </div>
 </template>
 
