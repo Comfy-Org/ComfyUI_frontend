@@ -11,5 +11,10 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html']
     }
+  },
+  resolve: {
+    alias: {
+      '@': '/src'
+    }
   }
 })

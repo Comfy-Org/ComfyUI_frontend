@@ -1,8 +1,8 @@
 export interface TreeExplorerNode<T = any> {
   key: string
   label: string
-  data: T
   leaf: boolean
+  data?: T
   children?: TreeExplorerNode<T>[]
   icon?: string
   getIcon?: (node: TreeExplorerNode<T>) => string
