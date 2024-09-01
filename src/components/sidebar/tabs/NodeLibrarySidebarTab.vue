@@ -37,7 +37,7 @@
         ref="nodeBookmarkTreeExplorerRef"
         :filtered-node-defs="filteredNodeDefs"
       />
-      <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" />
+      <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" type="dashed" />
       <TreeExplorer
         class="node-lib-tree-explorer"
         :roots="renderedRoot.children"
@@ -200,10 +200,14 @@ const onRemoveFilter = (filterAndValue) => {
 }
 
 :deep(.node-lib-bookmark-tree-explorer) {
-  padding-bottom: 0px;
+  padding-bottom: 2px;
 }
 
 :deep(.node-lib-tree-explorer) {
-  padding-top: 0px;
+  padding-top: 2px;
+}
+
+:deep(.p-divider) {
+  margin: var(--comfy-tree-explorer-item-padding) 0px;
 }
 </style>
