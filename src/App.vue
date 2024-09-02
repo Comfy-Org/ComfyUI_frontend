@@ -33,6 +33,7 @@ import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import { i18n } from './i18n'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -66,6 +67,13 @@ watchEffect(() => {
     '--comfy-tree-explorer-item-padding',
     `${padding}px`
   )
+})
+
+watchEffect(() => {
+  const locale = useSettingStore().get('Comfy.Locale')
+  if (locale) {
+    i18n.global.locale.value = locale
+  }
 })
 
 const { t } = useI18n()
