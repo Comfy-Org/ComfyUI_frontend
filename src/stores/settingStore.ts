@@ -295,6 +295,14 @@ export const useSettingStore = defineStore('setting', {
           step: 1
         }
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Locale',
+        type: 'combo',
+        options: ['en', 'zh'],
+        defaultValue: navigator.language.split('-')[0] || 'en'
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
