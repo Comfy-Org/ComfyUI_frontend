@@ -69,6 +69,23 @@ describe('parseComfyWorkflow', () => {
     workflow.nodes[0].pos = { 0: 3, 1: 4 }
     validatedWorkflow = await validateComfyWorkflow(workflow)
     expect(validatedWorkflow.nodes[0].pos).toEqual([3, 4])
+
+    // Should accept the legacy bugged format object.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/710
+    workflow.nodes[0].pos = {
+      '0': 600,
+      '1': 340,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+      '6': 0,
+      '7': 0,
+      '8': 0,
+      '9': 0
+    }
+    validatedWorkflow = await validateComfyWorkflow(workflow)
+    expect(validatedWorkflow.nodes[0].pos).toEqual([600, 340])
   })
 
   it('workflow.nodes.widget_values', async () => {
