@@ -169,6 +169,21 @@ test.describe('Node Interaction', () => {
   })
 })
 
+test.describe('Group Interaction', () => {
+  test('Can double click group title to edit', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_group')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 10
+      }
+    })
+    await comfyPage.page.keyboard.type('Hello World')
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(comfyPage.canvas).toHaveScreenshot('group-title-edited.png')
+  })
+})
+
 test.describe('Canvas Interaction', () => {
   test('Can zoom in/out', async ({ comfyPage }) => {
     await comfyPage.zoom(-100)

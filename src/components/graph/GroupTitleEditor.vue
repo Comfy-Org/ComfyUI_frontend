@@ -14,6 +14,7 @@ import { app } from '@/scripts/app'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import EditableText from '@/components/common/EditableText.vue'
 import { useSettingStore } from '@/stores/settingStore'
+import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 
 const settingStore = useSettingStore()
 
