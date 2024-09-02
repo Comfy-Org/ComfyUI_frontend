@@ -278,6 +278,13 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.Group.DoubleClickTitleToEdit',
+        name: 'Double click group title to edit',
+        type: 'boolean',
+        defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.Window.UnloadConfirmation',
         name: 'Show confirmation when closing window',
         type: 'boolean',

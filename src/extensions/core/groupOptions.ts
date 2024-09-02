@@ -1,3 +1,4 @@
+import { LGraphGroup } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
@@ -77,8 +78,7 @@ app.registerExtension({
           content: 'Add Group For Selected Nodes',
           disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
           callback: () => {
-            // @ts-expect-error
-            var group = new LiteGraph.LGraphGroup()
+            const group = new LGraphGroup()
             addNodesToGroup(group, this.selected_nodes)
             app.canvas.graph.add(group)
             this.graph.change()

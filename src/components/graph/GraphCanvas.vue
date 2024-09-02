@@ -6,6 +6,7 @@
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <NodeTitleEditor />
+    <GroupTitleEditor />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover v-if="nodeSearchEnabled" />
@@ -14,6 +15,7 @@
 
 <script setup lang="ts">
 import NodeTitleEditor from '@/components/graph/NodeTitleEditor.vue'
+import GroupTitleEditor from '@/components/graph/GroupTitleEditor.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
