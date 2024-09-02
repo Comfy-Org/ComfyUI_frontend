@@ -1,5 +1,6 @@
 import { LGraphNode, IWidget } from './litegraph'
 import { ComfyApp } from '../scripts/app'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 
 export interface ComfyExtension {
   /**
@@ -44,7 +45,7 @@ export interface ComfyExtension {
     >
   >
   /**
-   * Allows the extension to add additional handling to the node before it is registered with LGraph
+   * Allows the extension to add additional handling to the node before it is registered with **LGraph**
    * @param nodeType The node class (not an instance)
    * @param nodeData The original node object info config object
    * @param app The ComfyUI app instance
@@ -54,6 +55,16 @@ export interface ComfyExtension {
     nodeData: ComfyObjectInfo,
     app: ComfyApp
   ): Promise<void>
+
+  /**
+   * Allows the extension to modify the node definitions before they are used in the Vue app
+   * Modifications is expected to be made in place.
+   *
+   * @param defs The node definitions
+   * @param app The ComfyUI app instance
+   */
+  beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: ComfyApp): void
+
   /**
    * Allows the extension to register additional nodes with LGraph after standard nodes are added
    * @param app The ComfyUI app instance
