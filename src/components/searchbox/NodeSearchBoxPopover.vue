@@ -100,6 +100,10 @@ const linkReleaseTriggerMode = computed(() => {
 })
 
 const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
+  if (!['empty-release', 'empty-double-click'].includes(e.detail.subType)) {
+    return
+  }
+
   const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
 
   if (e.detail.subType === 'empty-release') {
