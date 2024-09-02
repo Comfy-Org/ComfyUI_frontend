@@ -4844,6 +4844,10 @@ const globalExport = {};
             });
         }
 
+        get titleHeight() {
+            return this.font_size * 1.4;
+        }
+
         configure(o) {
             this.title = o.title;
             this._bounding.set(o.bounding);
@@ -4925,16 +4929,14 @@ const globalExport = {};
                 };
             }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
-            const groupTitleHeight = Math.round(this.font_size * 1.4);
-
             this.pos = [
                 bounds.left - padding,
-                bounds.top - padding - groupTitleHeight
+                bounds.top - padding - this.titleHeight
             ];
 
             this.size = [
                 bounds.right - bounds.left + padding * 2,
-                bounds.bottom - bounds.top + padding * 2 + groupTitleHeight
+                bounds.bottom - bounds.top + padding * 2 + this.titleHeight
             ];
         }
     }
@@ -7048,9 +7050,22 @@ const globalExport = {};
                             } else {
                                 this.selected_group.recomputeInsideNodes();
                             }
-                        }
 
-                        if (is_double_click && !this.read_only) {
+                            if (is_double_click) {
+                                this.canvas.dispatchEvent(new CustomEvent(
+                                    "litegraph:canvas",
+                                    {
+                                        bubbles: true,
+                                        detail: {
+                                            subType: "group-double-click",
+                                            originalEvent: e,
+                                            group: this.selected_group,
+                                        }
+                                    }
+                                ));
+                            }
+                        } else if (is_double_click && !this.read_only) {
+                            // Double click within group should not trigger the searchbox.
                             if (this.allow_searchbox) {
                                 this.showSearchBox(e);
                                 e.preventDefault();
