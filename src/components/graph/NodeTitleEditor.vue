@@ -9,13 +9,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, CSSProperties } from 'vue'
+import { ref, onMounted, CSSProperties, watch } from 'vue'
 import { app } from '@/scripts/app'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ComfyExtension } from '@/types/comfy'
 import EditableText from '@/components/common/EditableText.vue'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
+import { useTitleEditorStore } from '@/stores/graphStore'
 
 const settingStore = useSettingStore()
 
@@ -29,15 +30,42 @@ const inputStyle = ref<CSSProperties>({
   height: '20px'
 })
 
-const currentNode = ref<LGraphNode | null>(null)
+const titleEditorStore = useTitleEditorStore()
 
 const onEdit = (newValue: string) => {
-  if (currentNode.value && newValue.trim() !== '') {
-    currentNode.value.title = newValue.trim()
+  if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
+    titleEditorStore.titleEditorTarget.title = newValue.trim()
     app.graph.setDirtyCanvas(true, true)
   }
   showInput.value = false
+  titleEditorStore.titleEditorTarget = null
 }
+
+watch(titleEditorStore.titleEditorTarget, (target) => {
+  if (!(target instanceof LGraphNode)) {
+    return
+  }
+
+  editedTitle.value = target.title
+  showInput.value = true
+
+  const node = target
+  const isCollapsed = node.flags?.collapsed
+  const [x1, y1, nodeWidth, nodeHeight] = node.getBounding()
+  const canvasWidth =
+    // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
+    isCollapsed && node._collapsed_width ? node._collapsed_width : nodeWidth
+  const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
+
+  const [left, top] = app.canvasPosToClientPos([x1, y1])
+  inputStyle.value.left = `${left}px`
+  inputStyle.value.top = `${top}px`
+
+  const width = canvasWidth * app.canvas.ds.scale
+  const height = canvasHeight * app.canvas.ds.scale
+  inputStyle.value.width = `${width}px`
+  inputStyle.value.height = `${height}px`
+})
 
 const extension: ComfyExtension = {
   name: 'Comfy.NodeTitleEditor',
@@ -50,25 +78,7 @@ const extension: ComfyExtension = {
         return
       }
 
-      currentNode.value = this
-      editedTitle.value = this.title
-      showInput.value = true
-
-      const isCollapsed = node.flags?.collapsed
-      const [x1, y1, nodeWidth, nodeHeight] = this.getBounding()
-      const canvasWidth =
-        // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
-        isCollapsed && node._collapsed_width ? node._collapsed_width : nodeWidth
-      const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
-
-      const [left, top] = app.canvasPosToClientPos([x1, y1])
-      inputStyle.value.left = `${left}px`
-      inputStyle.value.top = `${top}px`
-
-      const width = canvasWidth * app.canvas.ds.scale
-      const height = canvasHeight * app.canvas.ds.scale
-      inputStyle.value.width = `${width}px`
-      inputStyle.value.height = `${height}px`
+      titleEditorStore.titleEditorTarget = this
 
       // Call the original callback if it exists
       if (typeof originalCallback === 'function') {
