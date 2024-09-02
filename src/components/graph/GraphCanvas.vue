@@ -149,6 +149,11 @@ onMounted(async () => {
 
   // Migrate legacy bookmarks
   useNodeBookmarkStore().migrateLegacyBookmarks()
+
+  // Explicitly initialize nodeSearchService to avoid indexing delay when
+  // node search is triggered
+  useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
+
   emit('ready')
 })
 
