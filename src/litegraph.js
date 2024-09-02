@@ -2348,8 +2348,8 @@ const globalExport = {};
             this.title = title || "Unnamed";
             this.size = [LiteGraph.NODE_WIDTH, 60];
             this.graph = null;
-
-            this._pos = new Float32Array(10, 10);
+            // Initialize _pos with a Float32Array of length 2, default value [10, 10]
+            this._pos = new Float32Array([10, 10]);
 
             Object.defineProperty(this, "pos", {
                 set: function (v) {
