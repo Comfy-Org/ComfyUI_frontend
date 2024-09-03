@@ -1,6 +1,5 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
-import { ref, Ref } from 'vue'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -20,70 +19,66 @@ function _findInMetadata(metadata: any, ...keys: string[]): string | null {
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Proper filename of the model */
-  name = ref('')
+  name: string = ''
   /** Directory containing the model, eg 'checkpoints' */
-  directory = ref('')
+  directory: string = ''
   /** Title / display name of the model, sometimes same as the name but not always */
-  title = ref('')
+  title: string = ''
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
-  architecture_id = ref('')
+  architecture_id: string = ''
   /** Metadata: author of the model */
-  author = ref('')
+  author: string = ''
   /** Metadata: resolution of the model, eg '1024x1024' */
-  resolution = ref('')
+  resolution: string = ''
   /** Metadata: description of the model */
-  description = ref('')
+  description: string = ''
   /** Metadata: usage hint for the model */
-  usage_hint = ref('')
+  usage_hint: string = ''
   /** Metadata: trigger phrase for the model */
-  trigger_phrase = ref('')
+  trigger_phrase: string = ''
   /** Metadata: tags list for the model */
-  tags: Ref<string[]> = ref([])
+  tags: string[] = []
   /** Metadata: image for the model */
-  image = ref('')
+  image: string = ''
   /** Whether the model metadata has been loaded from the server, used for `load()` */
-  has_loaded_metadata = ref(false)
+  has_loaded_metadata: boolean = false
 
   constructor(name: string, directory: string) {
-    this.name.value = name
-    this.title.value = name
-    this.directory.value = directory
+    this.name = name
+    this.title = name
+    this.directory = directory
   }
 
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
-    if (this.has_loaded_metadata.value) {
+    if (this.has_loaded_metadata) {
       return
     }
-    const metadata = await api.viewMetadata(
-      this.directory.value,
-      this.name.value
-    )
+    const metadata = await api.viewMetadata(this.directory, this.name)
     if (!metadata) {
       return
     }
-    this.title.value =
+    this.title =
       _findInMetadata(
         metadata,
         'modelspec.title',
         'title',
         'display_name',
         'name'
-      ) || this.name.value
-    this.architecture_id.value =
+      ) || this.name
+    this.architecture_id =
       _findInMetadata(metadata, 'modelspec.architecture', 'architecture') || ''
-    this.author.value =
-      _findInMetadata(metadata, 'modelspec.author', 'author') || ''
-    this.description.value =
+    this.author = _findInMetadata(metadata, 'modelspec.author', 'author') || ''
+    this.description =
       _findInMetadata(metadata, 'modelspec.description', 'description') || ''
-    this.resolution.value =
+    this.resolution =
       _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
-    this.usage_hint.value =
+    this.usage_hint =
       _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
-    this.trigger_phrase.value =
+    this.trigger_phrase =
       _findInMetadata(metadata, 'modelspec.trigger_phrase', 'trigger_phrase') ||
       ''
-    this.image.value =
+    this.image =
       _findInMetadata(
         metadata,
         'modelspec.thumbnail',
@@ -93,8 +88,8 @@ export class ComfyModelDef {
       ) || ''
     const tagsCommaSeparated =
       _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
-    this.tags.value = tagsCommaSeparated.split(',').map((tag) => tag.trim())
-    this.has_loaded_metadata.value = true
+    this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
+    this.has_loaded_metadata = true
   }
 }
 
