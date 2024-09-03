@@ -148,6 +148,9 @@ const globalExport = {};
         // use this if you must have node IDs that are unique across all graphs and subgraphs.
         use_uuids: false,
 
+        // Whether to highlight the bounding box of selected groups
+        highlight_selected_group: false,
+
         /**
          * Register a node class so it can be listed when the user wants to create a new one
          * @method registerNodeType
@@ -4848,6 +4851,10 @@ const globalExport = {};
             return this.font_size * 1.4;
         }
 
+        get selected() {
+            return !!this.graph?.list_of_graphcanvas?.some(c => c.selected_group === this);
+        }
+
         configure(o) {
             this.title = o.title;
             this._bounding.set(o.bounding);
@@ -4899,6 +4906,16 @@ const globalExport = {};
             ctx.font = font_size + "px Arial";
             ctx.textAlign = "left";
             ctx.fillText(this.title, x + 4, y + font_size);
+
+            if (LiteGraph.highlight_selected_group && this.selected) {
+                graphCanvas.drawSelectionBounding(ctx, this._bounding, {
+                    shape: LiteGraph.BOX_SHAPE,
+                    title_height: this.titleHeight,
+                    title_mode: LiteGraph.NORMAL_TITLE,
+                    fgcolor: this.color,
+                    padding: 4
+                });
+            }
         }
 
         move(deltax, deltay, ignore_nodes) {
@@ -10011,56 +10028,90 @@ const globalExport = {};
                     node.onBounding(area);
                 }
 
-                if (title_mode == LiteGraph.TRANSPARENT_TITLE) {
-                    area[1] -= title_height;
-                    area[3] += title_height;
-                }
-                ctx.lineWidth = 1;
-                ctx.globalAlpha = 0.8;
-                ctx.beginPath();
-                if (shape == LiteGraph.BOX_SHAPE) {
-                    ctx.rect(
-                        -6 + area[0],
-                        -6 + area[1],
-                        12 + area[2],
-                        12 + area[3]
-                    );
-                } else if (shape == LiteGraph.ROUND_SHAPE ||
-                    (shape == LiteGraph.CARD_SHAPE && node.flags.collapsed)) {
-                    ctx.roundRect(
-                        -6 + area[0],
-                        -6 + area[1],
-                        12 + area[2],
-                        12 + area[3],
-                        [this.round_radius * 2]
-                    );
-                } else if (shape == LiteGraph.CARD_SHAPE) {
-                    ctx.roundRect(
-                        -6 + area[0],
-                        -6 + area[1],
-                        12 + area[2],
-                        12 + area[3],
-                        [this.round_radius * 2, 2, this.round_radius * 2, 2]
-                    );
-                } else if (shape == LiteGraph.CIRCLE_SHAPE) {
-                    ctx.arc(
-                        size[0] * 0.5,
-                        size[1] * 0.5,
-                        size[0] * 0.5 + 6,
-                        0,
-                        Math.PI * 2
-                    );
-                }
-                ctx.strokeStyle = LiteGraph.NODE_BOX_OUTLINE_COLOR;
-                ctx.stroke();
-                ctx.strokeStyle = fgcolor;
-                ctx.globalAlpha = 1;
+                this.drawSelectionBounding(
+                    ctx,
+                    area,
+                    {
+                        shape,
+                        title_height,
+                        title_mode,
+                        fgcolor,
+                    }
+                );
             }
 
             // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
             if (node.execute_triggered > 0) node.execute_triggered--;
             if (node.action_triggered > 0) node.action_triggered--;
         }
+
+        /**
+         * Draws the selection bounding of an area.
+         * @param {CanvasRenderingContext2D} ctx
+         * @param {Vector4} area
+         * @param {{
+         *   shape: LiteGraph.Shape,
+         *   title_height: number,
+         *   title_mode: LiteGraph.TitleMode,
+         *   fgcolor: string,
+         *   padding: number,
+         * }} options
+         */
+        drawSelectionBounding(
+            ctx,
+            area,
+            {
+                shape = LiteGraph.BOX_SHAPE,
+                title_height = LiteGraph.NODE_TITLE_HEIGHT,
+                title_mode = LiteGraph.NORMAL_TITLE,
+                fgcolor = LiteGraph.NODE_BOX_OUTLINE_COLOR,
+                padding = 6
+            } = {}
+        ) {
+            // Adjust area if title is transparent
+            if (title_mode === LiteGraph.TRANSPARENT_TITLE) {
+                area[1] -= title_height;
+                area[3] += title_height;
+            }
+
+            // Set up context
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+
+            // Draw shape based on type
+            const [x, y, width, height] = area;
+            switch (shape) {
+                case LiteGraph.BOX_SHAPE: {
+                    ctx.rect(x - padding, y - padding, width + 2 * padding, height + 2 * padding);
+                    break;
+                }
+                case LiteGraph.ROUND_SHAPE:
+                case LiteGraph.CARD_SHAPE: {
+                    const radius = this.round_radius * 2;
+                    const isCollapsed = shape === LiteGraph.CARD_SHAPE && node.flags.collapsed;
+                    const cornerRadii = isCollapsed || shape === LiteGraph.ROUND_SHAPE ? [radius] : [radius, 2, radius, 2];
+                    ctx.roundRect(x - padding, y - padding, width + 2 * padding, height + 2 * padding, cornerRadii);
+                    break;
+                }
+                case LiteGraph.CIRCLE_SHAPE: {
+                    const centerX = x + width / 2;
+                    const centerY = y + height / 2;
+                    const radius = Math.max(width, height) / 2 + padding;
+                    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                    break;
+                }
+            }
+
+            // Stroke the shape
+            ctx.strokeStyle = LiteGraph.NODE_BOX_OUTLINE_COLOR;
+            ctx.stroke();
+
+            // Reset context
+            ctx.strokeStyle = fgcolor;
+            ctx.globalAlpha = 1;
+        }
+
         drawConnections(ctx) {
             var now = LiteGraph.getTime();
             var visible_area = this.visible_area;

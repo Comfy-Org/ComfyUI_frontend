@@ -181,6 +181,12 @@ export type LiteGraphCanvasGroupEvent = CustomEvent<{
     group: LGraphGroup;
 }>;
 
+export type SlotTitleMode =
+    typeof LiteGraph.NORMAL_TITLE |
+    typeof LiteGraph.NO_TITLE |
+    typeof LiteGraph.TRANSPARENT_TITLE |
+    typeof LiteGraph.AUTOHIDE_TITLE;
+
 export const LiteGraph: {
     DEFAULT_GROUP_FONT_SIZE: any;
     overlapBounding(visible_area: any, _bounding: any): unknown;
@@ -276,6 +282,7 @@ export const LiteGraph: {
             type: string;
         }
     >;
+    highlight_selected_group: boolean;
 
     createNode<T extends LGraphNode = LGraphNode>(type: string): T;
     /** Register a node class so it can be listed when the user wants to create a new one */
@@ -1133,6 +1140,7 @@ export declare class LGraphGroup {
     font_size: number;
 
     get titleHeight(): number;
+    get selected(): boolean;
 
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;
@@ -1468,6 +1476,13 @@ export declare class LGraphCanvas {
         selected: boolean,
         mouseOver: boolean
     ): void;
+    drawSelectionBounding(ctx: CanvasRenderingContext2D, area: Vector4, options?: {
+        shape?: SlotShape,
+        title_height?: number,
+        title_mode?: SlotTitleMode,
+        fgcolor?: string,
+        padding?: number,
+    }): void;
     /** draws every connection visible in the canvas */
     drawConnections(ctx: CanvasRenderingContext2D): void;
     /**
