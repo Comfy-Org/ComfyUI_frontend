@@ -4,6 +4,9 @@
   <GlobalDialog />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
+  <Teleport to="body">
+    <AppMenu />
+  </Teleport>
   <GraphCanvas />
 </template>
 
@@ -20,6 +23,7 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
+import AppMenu from '@/components/appMenu/AppMenu.vue'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
@@ -33,6 +37,7 @@ import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import { setupAutoQueueHandler } from './services/autoQueueService'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -51,6 +56,8 @@ watch(
   },
   { immediate: true }
 )
+
+setupAutoQueueHandler()
 
 watchEffect(() => {
   const fontSize = useSettingStore().get('Comfy.TextareaWidget.FontSize')
