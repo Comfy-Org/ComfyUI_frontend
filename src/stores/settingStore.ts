@@ -98,7 +98,7 @@ export const useSettingStore = defineStore('setting', {
         name: 'Action on link release (No modifier)',
         type: 'combo',
         options: Object.values(LinkReleaseTriggerAction),
-        defaultValue: LinkReleaseTriggerAction.SHOW_CONTEXT_MENU
+        defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
       })
 
       app.ui.settings.addSetting({
@@ -107,7 +107,7 @@ export const useSettingStore = defineStore('setting', {
         name: 'Action on link release (Shift)',
         type: 'combo',
         options: Object.values(LinkReleaseTriggerAction),
-        defaultValue: LinkReleaseTriggerAction.SHOW_SEARCH_BOX
+        defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
       })
 
       app.ui.settings.addSetting({

@@ -25,10 +25,11 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can disconnect/connect edge', async ({ comfyPage }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeSearchBoxImpl.LinkReleaseAction',
+      'no action'
+    )
     await comfyPage.disconnectEdge()
-    // Close search menu popped up.
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'disconnected-edge-with-menu.png'
     )

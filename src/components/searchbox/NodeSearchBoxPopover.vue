@@ -183,10 +183,10 @@ const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
     ? linkReleaseActionShift.value
     : linkReleaseAction.value
   switch (action) {
-    case LinkReleaseTriggerAction.SHOW_SEARCH_BOX:
+    case LinkReleaseTriggerAction.SEARCH_BOX:
       showSearchBox(e)
       break
-    case LinkReleaseTriggerAction.SHOW_CONTEXT_MENU:
+    case LinkReleaseTriggerAction.CONTEXT_MENU:
       showContextMenu(e)
       break
     case LinkReleaseTriggerAction.NO_ACTION:

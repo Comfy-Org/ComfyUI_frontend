@@ -5,7 +5,7 @@ export enum LinkReleaseTriggerMode {
 }
 
 export enum LinkReleaseTriggerAction {
-  SHOW_CONTEXT_MENU = 'context menu',
-  SHOW_SEARCH_BOX = 'search box',
+  CONTEXT_MENU = 'context menu',
+  SEARCH_BOX = 'search box',
   NO_ACTION = 'no action'
 }
