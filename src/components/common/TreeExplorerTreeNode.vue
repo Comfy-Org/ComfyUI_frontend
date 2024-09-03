@@ -141,4 +141,7 @@ onUnmounted(() => {
 .leaf-label {
   margin-left: 0.5rem;
 }
+:deep(.editable-text span) {
+  word-break: break-all;
+}
 </style>

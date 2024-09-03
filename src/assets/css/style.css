@@ -38,7 +38,7 @@ body {
   overflow: hidden;
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto 1fr auto;
-  background-color: var(--bg-color);
+  background: var(--bg-color) var(--bg-img);
   color: var(--fg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;

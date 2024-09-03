@@ -25,10 +25,8 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can disconnect/connect edge', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'no action')
     await comfyPage.disconnectEdge()
-    // Close search menu popped up.
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'disconnected-edge-with-menu.png'
     )
@@ -165,7 +163,25 @@ test.describe('Node Interaction', () => {
     await comfyPage.page.keyboard.press('KeyG')
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.nextFrame()
+    // Confirm group title
+    await comfyPage.page.keyboard.press('Enter')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
+  })
+})
+
+test.describe('Group Interaction', () => {
+  test('Can double click group title to edit', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_group')
+    await comfyPage.canvas.dblclick({
+      position: {
+        x: 50,
+        y: 10
+      }
+    })
+    await comfyPage.page.keyboard.type('Hello World')
+    await comfyPage.page.keyboard.press('Enter')
+    await expect(comfyPage.canvas).toHaveScreenshot('group-title-edited.png')
   })
 })
 

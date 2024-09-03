@@ -10,7 +10,10 @@
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { Settings } from '@/types/apiTypes'
-import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
+import {
+  LinkReleaseTriggerAction,
+  LinkReleaseTriggerMode
+} from '@/types/searchBoxTypes'
 import { SettingParams } from '@/types/settingTypes'
 import { buildTree } from '@/utils/treeUtil'
 import { defineStore } from 'pinia'
@@ -83,10 +86,26 @@ export const useSettingStore = defineStore('setting', {
         id: 'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
         category: ['Comfy', 'Node Search Box', 'LinkReleaseTrigger'],
         name: 'Trigger on link release',
-        tooltip: 'Only applies to the default implementation',
-        type: 'combo',
+        type: 'hidden',
         options: Object.values(LinkReleaseTriggerMode),
-        defaultValue: LinkReleaseTriggerMode.ALWAYS
+        defaultValue: LinkReleaseTriggerMode.ALWAYS,
+        deprecated: true
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.LinkRelease.Action',
+        name: 'Action on link release (No modifier)',
+        type: 'combo',
+        options: Object.values(LinkReleaseTriggerAction),
+        defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.LinkRelease.ActionShift',
+        name: 'Action on link release (Shift)',
+        type: 'combo',
+        options: Object.values(LinkReleaseTriggerAction),
+        defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
       })
 
       app.ui.settings.addSetting({
@@ -105,6 +124,15 @@ export const useSettingStore = defineStore('setting', {
         tooltip: 'Only applies to the default implementation',
         type: 'boolean',
         defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeSearchBoxImpl.ShowIdName',
+        category: ['Comfy', 'Node Search Box', 'ShowIdName'],
+        name: 'Show node id name in search results',
+        tooltip: 'Only applies to the default implementation',
+        type: 'boolean',
+        defaultValue: false
       })
 
       app.ui.settings.addSetting({
@@ -208,7 +236,15 @@ export const useSettingStore = defineStore('setting', {
       // Bookmarks are in format of category/display_name. e.g. "conditioning/CLIPTextEncode"
       app.ui.settings.addSetting({
         id: 'Comfy.NodeLibrary.Bookmarks',
-        name: 'Node library bookmarks',
+        name: 'Node library bookmarks with display name (deprecated)',
+        type: 'hidden',
+        defaultValue: [],
+        deprecated: true
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeLibrary.Bookmarks.V2',
+        name: 'Node library bookmarks v2 with unique name',
         type: 'hidden',
         defaultValue: []
       })
@@ -262,6 +298,13 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
+        id: 'Comfy.Group.DoubleClickTitleToEdit',
+        name: 'Double click group title to edit',
+        type: 'boolean',
+        defaultValue: true
+      })
+
+      app.ui.settings.addSetting({
         id: 'Comfy.Window.UnloadConfirmation',
         name: 'Show confirmation when closing window',
         type: 'boolean',
@@ -278,6 +321,14 @@ export const useSettingStore = defineStore('setting', {
           max: 8,
           step: 1
         }
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.Locale',
+        name: 'Locale',
+        type: 'combo',
+        options: ['en', 'zh'],
+        defaultValue: navigator.language.split('-')[0] || 'en'
       })
     },
 

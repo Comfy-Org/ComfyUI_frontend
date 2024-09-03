@@ -3,22 +3,14 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting(
-      'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
-      'always'
-    )
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'search box')
+    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
+    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
-  ;['always', 'hold shift', 'NOT hold shift'].forEach((triggerMode) => {
-    test(`Can trigger on empty canvas double click (${triggerMode})`, async ({
-      comfyPage
-    }) => {
-      await comfyPage.setSetting(
-        'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
-        triggerMode
-      )
-      await comfyPage.doubleClickCanvas()
-      await expect(comfyPage.searchBox.input).toHaveCount(1)
-    })
+
+  test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
+    await comfyPage.doubleClickCanvas()
+    await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
   test('Can trigger on link release', async ({ comfyPage }) => {
@@ -75,6 +67,21 @@ test.describe('Node search box', () => {
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'added-node-no-connection.png'
+    )
+  })
+})
+
+test.describe('Release context menu', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
+    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
+    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+  })
+
+  test('Can trigger on link release', async ({ comfyPage }) => {
+    await comfyPage.disconnectEdge()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'link-release-context-menu.png'
     )
   })
 })

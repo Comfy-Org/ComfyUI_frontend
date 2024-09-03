@@ -65,9 +65,7 @@ const bookmarkedRoot = computed<TreeNode>(() => {
   const filterTree = (node: TreeNode): TreeNode | null => {
     if (node.leaf) {
       // Check if the node's display_name is in the filteredNodeDefs list
-      return props.filteredNodeDefs.some(
-        (def) => def.display_name === node.data.display_name
-      )
+      return props.filteredNodeDefs.some((def) => def.name === node.data.name)
         ? node
         : null
     }
@@ -119,7 +117,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
 
       return {
         key: node.key,
-        label: node.label,
+        label: node.leaf ? node.data.display_name : node.label,
         leaf: node.leaf,
         data: node.data,
         getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
@@ -145,8 +143,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
             nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
           }
           const folderNodeDef = node.data as ComfyNodeDefImpl
-          const nodePath =
-            folderNodeDef.category + '/' + nodeDefToAdd.display_name
+          const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           nodeBookmarkStore.addBookmark(nodePath)
         },
         ...(node.leaf

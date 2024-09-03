@@ -1,0 +1,19 @@
+import { LGraphNode, LGraphGroup, LGraphCanvas } from '@comfyorg/litegraph'
+import { defineStore } from 'pinia'
+import { shallowRef } from 'vue'
+
+export const useTitleEditorStore = defineStore('titleEditor', () => {
+  const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
+
+  return {
+    titleEditorTarget
+  }
+})
+
+export const useCanvasStore = defineStore('canvas', () => {
+  const canvas = shallowRef<LGraphCanvas | null>(null)
+
+  return {
+    canvas
+  }
+})

@@ -156,13 +156,11 @@ app.registerExtension({
         if (this.selected_group_resizing) {
           roundVectorToGrid(this.selected_group.size)
         } else if (selectedAndMovingGroup) {
-          // @ts-expect-error
           const [x, y] = roundVectorToGrid([...selectedAndMovingGroup.pos])
           const f = ctx.fillStyle
           const s = ctx.strokeStyle
           ctx.fillStyle = 'rgba(100, 100, 100, 0.33)'
           ctx.strokeStyle = 'rgba(100, 100, 100, 0.66)'
-          // @ts-expect-error
           ctx.rect(x, y, ...selectedAndMovingGroup.size)
           ctx.fill()
           ctx.stroke()
@@ -183,9 +181,7 @@ app.registerExtension({
         // @ts-expect-error
         const lastGroup = app.graph._groups[app.graph._groups.length - 1]
         if (lastGroup) {
-          // @ts-expect-error
           roundVectorToGrid(lastGroup.pos)
-          // @ts-expect-error
           roundVectorToGrid(lastGroup.size)
         }
       }

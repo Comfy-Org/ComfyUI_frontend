@@ -8,6 +8,7 @@ import { showSettingsDialog } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
+import { useTitleEditorStore } from '@/stores/graphStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -783,6 +784,7 @@ export class ComfyUI {
           )
           group.addNodes(Object.values(app.canvas.selected_nodes), padding)
           app.canvas.graph.add(group)
+          useTitleEditorStore().titleEditorTarget = group
         }
       })
     ]) as HTMLDivElement

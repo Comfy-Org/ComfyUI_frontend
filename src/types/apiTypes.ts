@@ -2,6 +2,7 @@ import { ZodType, z } from 'zod'
 import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
 import { colorPalettesSchema } from './colorPalette'
+import { LinkReleaseTriggerAction } from './searchBoxTypes'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()
@@ -419,6 +420,10 @@ const zBookmarkCustomization = z.object({
 })
 export type BookmarkCustomization = z.infer<typeof zBookmarkCustomization>
 
+const zLinkReleaseTriggerAction = z.enum(
+  Object.values(LinkReleaseTriggerAction) as [string, ...string[]]
+)
+
 const zSettings = z.record(z.any()).and(
   z
     .object({
@@ -435,10 +440,15 @@ const zSettings = z.record(z.any()).and(
       'Comfy.EnableTooltips': z.boolean(),
       'Comfy.EnableWorkflowViewRestore': z.boolean(),
       'Comfy.FloatRoundingPrecision': z.number(),
+      'Comfy.Graph.CanvasInfo': z.boolean(),
       'Comfy.Graph.ZoomSpeed': z.number(),
+      'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
+      'Comfy.GroupSelectedNodes.Padding': z.number(),
       'Comfy.InvertMenuScrolling': z.boolean(),
+      'Comfy.Locale': z.string(),
       'Comfy.Logging.Enabled': z.boolean(),
       'Comfy.NodeLibrary.Bookmarks': z.array(z.string()),
+      'Comfy.NodeLibrary.Bookmarks.V2': z.array(z.string()),
       'Comfy.NodeLibrary.BookmarksCustomization': z.record(
         z.string(),
         zBookmarkCustomization
@@ -449,9 +459,12 @@ const zSettings = z.record(z.any()).and(
         'hold shift',
         'NOT hold shift'
       ]),
+      'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
+      'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
+      'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
       'Comfy.NodeSuggestions.number': z.number(),
       'Comfy.Node.ShowDeprecated': z.boolean(),
       'Comfy.Node.ShowExperimental': z.boolean(),
@@ -464,6 +477,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
       'Comfy.UseNewMenu': z.enum(['Disabled', 'Floating', 'Top', 'Bottom']),
+      'Comfy.TreeExplorer.ItemPadding': z.number(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),

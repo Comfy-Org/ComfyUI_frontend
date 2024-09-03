@@ -8,12 +8,33 @@ import type { TreeNode } from 'primevue/treenode'
 import _ from 'lodash'
 import type { BookmarkCustomization } from '@/types/apiTypes'
 
+export const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
+
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
 
+  const migrateLegacyBookmarks = () => {
+    settingStore
+      .get('Comfy.NodeLibrary.Bookmarks')
+      .forEach((bookmark: string) => {
+        // If the bookmark is a folder, add it as a bookmark
+        if (bookmark.endsWith('/')) {
+          addBookmark(bookmark)
+          return
+        }
+        const category = bookmark.split('/').slice(0, -1).join('/')
+        const displayName = bookmark.split('/').pop()
+        const nodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
+
+        if (!nodeDef) return
+        addBookmark(`${category === '' ? '' : category + '/'}${nodeDef.name}`)
+      })
+    settingStore.set('Comfy.NodeLibrary.Bookmarks', [])
+  }
+
   const bookmarks = computed<string[]>(() =>
-    settingStore.get('Comfy.NodeLibrary.Bookmarks')
+    settingStore.get(BOOKMARK_SETTING_ID)
   )
 
   const bookmarksSet = computed<Set<string>>(() => new Set(bookmarks.value))
@@ -25,8 +46,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   // For a node in custom bookmark folders, check if its nodePath is in bookmarksSet
   // For a node in the nodeDefStore, check if its name is bookmarked at top level
   const isBookmarked = (node: ComfyNodeDefImpl) =>
-    bookmarksSet.value.has(node.nodePath) ||
-    bookmarksSet.value.has(node.display_name)
+    bookmarksSet.value.has(node.nodePath) || bookmarksSet.value.has(node.name)
 
   const toggleBookmark = (node: ComfyNodeDefImpl) => {
     if (isBookmarked(node)) {
@@ -34,9 +54,9 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       // Delete the bookmark at the top level if it exists
       // This is used for clicking the bookmark button in the node library, i.e.
       // the node is inside original/standard node library tree node
-      deleteBookmark(node.display_name)
+      deleteBookmark(node.name)
     } else {
-      addBookmark(node.display_name)
+      addBookmark(node.name)
     }
   }
 
@@ -46,9 +66,9 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
 
         const parts = bookmark.split('/')
-        const displayName = parts.pop()
+        const name = parts.pop()
         const category = parts.join('/')
-        const srcNodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
+        const srcNodeDef = nodeDefStore.nodeDefsByName[name]
         if (!srcNodeDef) {
           return null
         }
@@ -61,15 +81,12 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   }
 
   const addBookmark = (nodePath: string) => {
-    settingStore.set('Comfy.NodeLibrary.Bookmarks', [
-      ...bookmarks.value,
-      nodePath
-    ])
+    settingStore.set(BOOKMARK_SETTING_ID, [...bookmarks.value, nodePath])
   }
 
   const deleteBookmark = (nodePath: string) => {
     settingStore.set(
-      'Comfy.NodeLibrary.Bookmarks',
+      BOOKMARK_SETTING_ID,
       bookmarks.value.filter((b: string) => b !== nodePath)
     )
   }
@@ -107,7 +124,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
 
     settingStore.set(
-      'Comfy.NodeLibrary.Bookmarks',
+      BOOKMARK_SETTING_ID,
       bookmarks.value.map((b: string) =>
         b.startsWith(folderNode.nodePath)
           ? b.replace(folderNode.nodePath, newNodePath)
@@ -122,7 +139,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       throw new Error('Cannot delete non-folder node')
     }
     settingStore.set(
-      'Comfy.NodeLibrary.Bookmarks',
+      BOOKMARK_SETTING_ID,
       bookmarks.value.filter(
         (b: string) =>
           b !== folderNode.nodePath && !b.startsWith(folderNode.nodePath)
@@ -201,6 +218,8 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     deleteBookmarkCustomization,
     renameBookmarkCustomization,
     defaultBookmarkIcon,
-    defaultBookmarkColor
+    defaultBookmarkColor,
+
+    migrateLegacyBookmarks
   }
 })

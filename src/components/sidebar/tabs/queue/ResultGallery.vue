@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import Galleria from 'primevue/galleria'
 import { ResultItemImpl } from '@/stores/queueStore'
 import ComfyImage from '@/components/common/ComfyImage.vue'

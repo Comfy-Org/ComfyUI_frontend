@@ -60,7 +60,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, nextTick, ref, Ref } from 'vue'
+import { computed, nextTick, onMounted, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import Divider from 'primevue/divider'
@@ -104,7 +104,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 
     return {
       key: node.key,
-      label: node.label,
+      label: node.leaf ? node.data.display_name : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
@@ -129,7 +129,9 @@ const filteredRoot = computed<TreeNode | null>(() => {
 const filters: Ref<Array<SearchFilter & { filter: FilterAndValue<string> }>> =
   ref([])
 const handleSearch = (query: string) => {
-  if (query.length < 3 && !filters.value.length) {
+  // Don't apply a min length filter because it does not make sense in
+  // multi-byte languages like Chinese, Japanese, Korean, etc.
+  if (query.length === 0 && !filters.value.length) {
     filteredNodeDefs.value = []
     expandedKeys.value = {}
     return

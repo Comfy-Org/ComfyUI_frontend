@@ -10,6 +10,10 @@
       <div class="setting-label">
         <span>
           <Tag v-if="setting.experimental" :value="$t('experimental')" />
+          <Tag
+            v-if="setting.deprecated"
+            :value="$t('deprecated')"
+            severity="danger" />
           {{ setting.name }}
           <i
             v-if="setting.tooltip"
