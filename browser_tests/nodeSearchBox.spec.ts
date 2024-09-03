@@ -3,14 +3,8 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting(
-      'Comfy.NodeSearchBoxImpl.LinkReleaseAction',
-      'search box'
-    )
-    await comfyPage.setSetting(
-      'Comfy.NodeSearchBoxImpl.LinkReleaseActionShift',
-      'search box'
-    )
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'search box')
+    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
     await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
@@ -79,14 +73,8 @@ test.describe('Node search box', () => {
 
 test.describe('Release context menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting(
-      'Comfy.NodeSearchBoxImpl.LinkReleaseAction',
-      'context menu'
-    )
-    await comfyPage.setSetting(
-      'Comfy.NodeSearchBoxImpl.LinkReleaseActionShift',
-      'search box'
-    )
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
+    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
     await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 

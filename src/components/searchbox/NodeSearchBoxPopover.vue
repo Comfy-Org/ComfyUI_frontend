@@ -168,11 +168,11 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
 }
 
 const linkReleaseAction = computed(() => {
-  return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseAction')
+  return settingStore.get('Comfy.LinkRelease.Action')
 })
 
 const linkReleaseActionShift = computed(() => {
-  return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseActionShift')
+  return settingStore.get('Comfy.LinkRelease.ActionShift')
 })
 
 const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {

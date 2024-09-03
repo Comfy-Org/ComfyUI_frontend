@@ -459,9 +459,8 @@ const zSettings = z.record(z.any()).and(
         'hold shift',
         'NOT hold shift'
       ]),
-      'Comfy.NodeSearchBoxImpl.LinkReleaseAction': zLinkReleaseTriggerAction,
-      'Comfy.NodeSearchBoxImpl.LinkReleaseActionShift':
-        zLinkReleaseTriggerAction,
+      'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
+      'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),

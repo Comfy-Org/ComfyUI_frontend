@@ -93,8 +93,7 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.NodeSearchBoxImpl.LinkReleaseAction',
-        category: ['Comfy', 'Node Search Box', 'LinkReleaseAction'],
+        id: 'Comfy.LinkRelease.Action',
         name: 'Action on link release (No modifier)',
         type: 'combo',
         options: Object.values(LinkReleaseTriggerAction),
@@ -102,8 +101,7 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.NodeSearchBoxImpl.LinkReleaseActionShift',
-        category: ['Comfy', 'Node Search Box', 'LinkReleaseActionShift'],
+        id: 'Comfy.LinkRelease.ActionShift',
         name: 'Action on link release (Shift)',
         type: 'combo',
         options: Object.values(LinkReleaseTriggerAction),
