@@ -136,7 +136,11 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
 
   const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
   const mouseEvent = e.detail.originalEvent as MouseEvent
-  const commonOptions = { e: mouseEvent, allow_searchbox: true }
+  const commonOptions = {
+    e: mouseEvent,
+    allow_searchbox: true,
+    showSearchBox: () => showSearchBox(e)
+  }
   const connectionOptions = firstLink.output
     ? { nodeFrom: firstLink.node, slotFrom: firstLink.output }
     : { nodeTo: firstLink.node, slotTo: firstLink.input }
@@ -163,11 +167,11 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   }
 }
 
-const linkReleaseAction = computed<LinkReleaseTriggerAction>(() => {
+const linkReleaseAction = computed(() => {
   return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseAction')
 })
 
-const linkReleaseActionShift = computed<LinkReleaseTriggerAction>(() => {
+const linkReleaseActionShift = computed(() => {
   return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseActionShift')
 })
 
