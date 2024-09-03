@@ -4872,6 +4872,35 @@ const globalExport = {};
             };
         }
 
+        /**
+         * Draws the group on the canvas
+         * @param {LGraphCanvas} graphCanvas
+         * @param {CanvasRenderingContext2D} ctx
+         */
+        draw(graphCanvas, ctx) {
+            ctx.fillStyle = this.color;
+            ctx.strokeStyle = this.color;
+            const [x, y] = this._pos;
+            const [width, height] = this._size;
+            ctx.globalAlpha = 0.25 * graphCanvas.editor_alpha;
+            ctx.beginPath();
+            ctx.rect(x + 0.5, y + 0.5, width, height);
+            ctx.fill();
+            ctx.globalAlpha = graphCanvas.editor_alpha;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + width, y + height);
+            ctx.lineTo(x + width - 10, y + height);
+            ctx.lineTo(x + width, y + height - 10);
+            ctx.fill();
+
+            const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
+            ctx.font = font_size + "px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(this.title, x + 4, y + font_size);
+        }
+
         move(deltax, deltay, ignore_nodes) {
             this._pos[0] += deltax;
             this._pos[1] += deltay;
@@ -10977,9 +11006,9 @@ const globalExport = {};
             return null;
         }
         /**
-             * draws every group area in the background
-             * @method drawGroups
-             **/
+         * draws every group area in the background
+         * @method drawGroups
+         **/
         drawGroups(canvas, ctx) {
             if (!this.graph) {
                 return;
@@ -10997,27 +11026,7 @@ const globalExport = {};
                     continue;
                 } //out of the visible area
 
-                ctx.fillStyle = group.color || "#335";
-                ctx.strokeStyle = group.color || "#335";
-                var pos = group._pos;
-                var size = group._size;
-                ctx.globalAlpha = 0.25 * this.editor_alpha;
-                ctx.beginPath();
-                ctx.rect(pos[0] + 0.5, pos[1] + 0.5, size[0], size[1]);
-                ctx.fill();
-                ctx.globalAlpha = this.editor_alpha;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(pos[0] + size[0], pos[1] + size[1]);
-                ctx.lineTo(pos[0] + size[0] - 10, pos[1] + size[1]);
-                ctx.lineTo(pos[0] + size[0], pos[1] + size[1] - 10);
-                ctx.fill();
-
-                var font_size = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
-                ctx.font = font_size + "px Arial";
-                ctx.textAlign = "left";
-                ctx.fillText(group.title, pos[0] + 4, pos[1] + font_size);
+                group.draw(this, ctx);
             }
 
             ctx.restore();
