@@ -164,9 +164,11 @@ We will support custom icons later.
   app.extensionManager.toast.add({
     severity: 'info',
     summary: 'Loaded!',
-    detail: 'Extension loaded!'
+    detail: 'Extension loaded!',
+    life: 3000
   })
 ```
+Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 </details>
