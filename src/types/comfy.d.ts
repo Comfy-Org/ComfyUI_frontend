@@ -100,3 +100,8 @@ export type ComfyObjectInfo = {
 }
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any]
+
+export interface loadGraphDataOptions {
+  showMissingNodesDialog: boolean
+  showMissingModelsDialog: boolean
+}
