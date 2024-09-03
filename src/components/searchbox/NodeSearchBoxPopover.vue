@@ -101,6 +101,7 @@ const showSearchBox = (e: LiteGraphCanvasEvent) => {
   }
 }
 
+const nodeDefStore = useNodeDefStore()
 const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
   if (e.detail.linkReleaseContext) {
     const links = e.detail.linkReleaseContext.links
@@ -170,7 +171,6 @@ const linkReleaseActionShift = computed<LinkReleaseTriggerAction>(() => {
   return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseActionShift')
 })
 
-const nodeDefStore = useNodeDefStore()
 const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
   const originalEvent = e.detail.originalEvent as MouseEvent
   const shiftPressed = originalEvent.shiftKey
