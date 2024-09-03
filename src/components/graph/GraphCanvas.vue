@@ -54,8 +54,9 @@ const nodeSearchEnabled = computed<boolean>(
 
 watchEffect(() => {
   LiteGraph.release_link_on_empty_shows_menu = !nodeSearchEnabled.value
-  if (comfyApp.canvas)
-    comfyApp.canvas.allow_searchbox = !nodeSearchEnabled.value
+  if (canvasStore.canvas) {
+    canvasStore.canvas.allow_searchbox = !nodeSearchEnabled.value
+  }
 })
 
 watchEffect(() => {
