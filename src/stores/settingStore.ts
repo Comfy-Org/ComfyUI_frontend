@@ -10,7 +10,10 @@
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { Settings } from '@/types/apiTypes'
-import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
+import {
+  LinkReleaseTriggerAction,
+  LinkReleaseTriggerMode
+} from '@/types/searchBoxTypes'
 import { SettingParams } from '@/types/settingTypes'
 import { buildTree } from '@/utils/treeUtil'
 import { defineStore } from 'pinia'
@@ -83,10 +86,26 @@ export const useSettingStore = defineStore('setting', {
         id: 'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
         category: ['Comfy', 'Node Search Box', 'LinkReleaseTrigger'],
         name: 'Trigger on link release',
-        tooltip: 'Only applies to the default implementation',
-        type: 'combo',
+        type: 'hidden',
         options: Object.values(LinkReleaseTriggerMode),
-        defaultValue: LinkReleaseTriggerMode.ALWAYS
+        defaultValue: LinkReleaseTriggerMode.ALWAYS,
+        deprecated: true
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.LinkRelease.Action',
+        name: 'Action on link release (No modifier)',
+        type: 'combo',
+        options: Object.values(LinkReleaseTriggerAction),
+        defaultValue: LinkReleaseTriggerAction.CONTEXT_MENU
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.LinkRelease.ActionShift',
+        name: 'Action on link release (Shift)',
+        type: 'combo',
+        options: Object.values(LinkReleaseTriggerAction),
+        defaultValue: LinkReleaseTriggerAction.SEARCH_BOX
       })
 
       app.ui.settings.addSetting({
@@ -219,7 +238,8 @@ export const useSettingStore = defineStore('setting', {
         id: 'Comfy.NodeLibrary.Bookmarks',
         name: 'Node library bookmarks with display name (deprecated)',
         type: 'hidden',
-        defaultValue: []
+        defaultValue: [],
+        deprecated: true
       })
 
       app.ui.settings.addSetting({

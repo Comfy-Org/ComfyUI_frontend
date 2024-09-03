@@ -31,22 +31,20 @@
 
 <script setup lang="ts">
 import { app } from '@/scripts/app'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
-import { LiteGraphCanvasEvent, ConnectingLink } from '@comfyorg/litegraph'
+import { ConnectingLink } from '@comfyorg/litegraph'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { ConnectingLinkImpl } from '@/types/litegraphTypes'
 import { useSettingStore } from '@/stores/settingStore'
-import { LinkReleaseTriggerMode } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { useCanvasStore } from '@/stores/graphStore'
+import { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 const settingStore = useSettingStore()
-
-interface LiteGraphPointerEvent extends Event {
-  canvasX: number
-  canvasY: number
-}
 
 const visible = ref(false)
 const dismissable = ref(true)
@@ -56,22 +54,19 @@ const getNewNodeLocation = (): [number, number] => {
     return [100, 100]
   }
 
-  const originalEvent = triggerEvent.value.detail
-    .originalEvent as LiteGraphPointerEvent
+  const originalEvent = triggerEvent.value.detail.originalEvent
+  // @ts-expect-error LiteGraph types are not typed
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
-const nodeFilters = reactive([])
+const nodeFilters = ref<FilterAndValue[]>([])
 const addFilter = (filter: FilterAndValue) => {
-  nodeFilters.push(filter)
+  nodeFilters.value.push(filter)
 }
 const removeFilter = (filter: FilterAndValue) => {
-  const index = nodeFilters.findIndex((f) => f === filter)
-  if (index !== -1) {
-    nodeFilters.splice(index, 1)
-  }
+  nodeFilters.value = nodeFilters.value.filter((f) => f !== filter)
 }
 const clearFilters = () => {
-  nodeFilters.splice(0, nodeFilters.length)
+  nodeFilters.value = []
 }
 const closeDialog = () => {
   visible.value = false
@@ -95,41 +90,36 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   }, 100)
 }
 
-const linkReleaseTriggerMode = computed(() => {
-  return settingStore.get('Comfy.NodeSearchBoxImpl.LinkReleaseTrigger')
-})
-
-const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
-  if (!['empty-release', 'empty-double-click'].includes(e.detail.subType)) {
-    return
+const newSearchBoxEnabled = computed(
+  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
+)
+const showSearchBox = (e: LiteGraphCanvasEvent) => {
+  if (newSearchBoxEnabled.value) {
+    showNewSearchBox(e)
+  } else {
+    canvasStore.canvas.showSearchBox(e.detail.originalEvent as MouseEvent)
   }
+}
 
-  const shiftPressed = (e.detail.originalEvent as KeyboardEvent).shiftKey
-
-  if (e.detail.subType === 'empty-release') {
-    if (
-      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.HOLD_SHIFT &&
-        !shiftPressed) ||
-      (linkReleaseTriggerMode.value === LinkReleaseTriggerMode.NOT_HOLD_SHIFT &&
-        shiftPressed)
-    ) {
-      return
-    }
-
-    const context = e.detail.linkReleaseContext
-    if (context.links.length === 0) {
+const nodeDefStore = useNodeDefStore()
+const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
+  if (e.detail.linkReleaseContext) {
+    const links = e.detail.linkReleaseContext.links
+    if (links.length === 0) {
       console.warn('Empty release with no links! This should never happen')
       return
     }
-    const firstLink = ConnectingLinkImpl.createFromPlainObject(context.links[0])
-    const filter = useNodeDefStore().nodeSearchService.getFilterById(
+    const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
+    const filter = nodeDefStore.nodeSearchService.getFilterById(
       firstLink.releaseSlotType
     )
     const dataType = firstLink.type
     addFilter([filter, dataType])
   }
-  triggerEvent.value = e
+
   visible.value = true
+  triggerEvent.value = e
+
   // Prevent the dialog from being dismissed immediately
   dismissable.value = false
   setTimeout(() => {
@@ -137,20 +127,80 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   }, 300)
 }
 
-const handleEscapeKeyPress = (event) => {
-  if (event.key === 'Escape') {
-    closeDialog()
+const showContextMenu = (e: LiteGraphCanvasEvent) => {
+  const links = e.detail.linkReleaseContext.links
+  if (links.length === 0) {
+    console.warn('Empty release with no links! This should never happen')
+    return
+  }
+
+  const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
+  const mouseEvent = e.detail.originalEvent as MouseEvent
+  const commonOptions = {
+    e: mouseEvent,
+    allow_searchbox: true,
+    showSearchBox: () => showSearchBox(e)
+  }
+  const connectionOptions = firstLink.output
+    ? { nodeFrom: firstLink.node, slotFrom: firstLink.output }
+    : { nodeTo: firstLink.node, slotTo: firstLink.input }
+  canvasStore.canvas.showConnectionMenu({
+    ...connectionOptions,
+    ...commonOptions
+  })
+}
+
+// Disable litegraph's default behavior of release link and search box.
+const canvasStore = useCanvasStore()
+watchEffect(() => {
+  if (canvasStore.canvas) {
+    LiteGraph.release_link_on_empty_shows_menu = false
+    canvasStore.canvas.allow_searchbox = false
+  }
+})
+
+const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
+  if (e.detail.subType === 'empty-double-click') {
+    showSearchBox(e)
+  } else if (e.detail.subType === 'empty-release') {
+    handleCanvasEmptyRelease(e)
+  }
+}
+
+const linkReleaseAction = computed(() => {
+  return settingStore.get('Comfy.LinkRelease.Action')
+})
+
+const linkReleaseActionShift = computed(() => {
+  return settingStore.get('Comfy.LinkRelease.ActionShift')
+})
+
+const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
+  const originalEvent = e.detail.originalEvent as MouseEvent
+  const shiftPressed = originalEvent.shiftKey
+
+  const action = shiftPressed
+    ? linkReleaseActionShift.value
+    : linkReleaseAction.value
+  switch (action) {
+    case LinkReleaseTriggerAction.SEARCH_BOX:
+      showSearchBox(e)
+      break
+    case LinkReleaseTriggerAction.CONTEXT_MENU:
+      showContextMenu(e)
+      break
+    case LinkReleaseTriggerAction.NO_ACTION:
+    default:
+      break
   }
 }
 
 onMounted(() => {
   document.addEventListener('litegraph:canvas', canvasEventHandler)
-  document.addEventListener('keydown', handleEscapeKeyPress)
 })
 
 onUnmounted(() => {
   document.removeEventListener('litegraph:canvas', canvasEventHandler)
-  document.removeEventListener('keydown', handleEscapeKeyPress)
 })
 </script>
 

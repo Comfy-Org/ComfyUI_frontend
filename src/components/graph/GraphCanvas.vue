@@ -8,7 +8,7 @@
     <TitleEditor />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
-  <NodeSearchboxPopover v-if="nodeSearchEnabled" />
+  <NodeSearchboxPopover />
   <NodeTooltip />
 </template>
 
@@ -18,7 +18,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import { ref, computed, onUnmounted, watch, onMounted, watchEffect } from 'vue'
+import { ref, computed, onUnmounted, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
@@ -48,16 +48,6 @@ const canvasStore = useCanvasStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
-const nodeSearchEnabled = computed<boolean>(
-  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
-)
-
-watchEffect(() => {
-  LiteGraph.release_link_on_empty_shows_menu = !nodeSearchEnabled.value
-  if (canvasStore.canvas) {
-    canvasStore.canvas.allow_searchbox = !nodeSearchEnabled.value
-  }
-})
 
 watchEffect(() => {
   const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')

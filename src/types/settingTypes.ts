@@ -44,4 +44,5 @@ export interface SettingParams {
   // Note: Like id, category value need to be unique.
   category?: string[]
   experimental?: boolean
+  deprecated?: boolean
 }
