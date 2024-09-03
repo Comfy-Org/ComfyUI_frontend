@@ -165,6 +165,9 @@ test.describe('Node Interaction', () => {
     await comfyPage.page.keyboard.press('KeyG')
     await comfyPage.page.keyboard.up('Control')
     await comfyPage.nextFrame()
+    // Confirm group title
+    await comfyPage.page.keyboard.press('Enter')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
   })
 })
