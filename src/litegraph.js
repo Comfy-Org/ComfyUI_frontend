@@ -7651,13 +7651,13 @@ const globalExport = {};
                         };
                         this.canvas.dispatchEvent(new CustomEvent(
                             "litegraph:canvas", {
-                            bubbles: true,
-                            detail: {
-                                subType: "empty-release",
-                                originalEvent: e,
-                                linkReleaseContext: linkReleaseContextExtended,
-                            },
-                        }
+                                bubbles: true,
+                                detail: {
+                                    subType: "empty-release",
+                                    originalEvent: e,
+                                    linkReleaseContext: linkReleaseContextExtended,
+                                },
+                            }
                         ));
                         // add menu when releasing link in empty space
                         if (LiteGraph.release_link_on_empty_shows_menu) {
@@ -11319,7 +11319,9 @@ const globalExport = {};
                 ,
                 slotTo: null // output
                 ,
-                e: null
+                e: null,
+                allow_searchbox: this.allow_searchbox,
+                showSearchBox: this.showSearchBox,
             },
                 optPass
             );
@@ -11330,7 +11332,7 @@ const globalExport = {};
 
             if (!isFrom && !isTo) {
                 console.warn("No data passed to showConnectionMenu");
-                return false;
+                return;
             }
 
             var nodeX = isFrom ? opts.nodeFrom : opts.nodeTo;
@@ -11354,12 +11356,12 @@ const globalExport = {};
                     // bad ?
                     //iSlotConn = 0;
                     console.warn("Cant get slot information " + slotX);
-                    return false;
+                    return;
             }
 
             var options = ["Add Node", null];
 
-            if (that.allow_searchbox) {
+            if (opts.allow_searchbox) {
                 options.push("Search");
                 options.push(null);
             }
@@ -11399,9 +11401,9 @@ const globalExport = {};
                         break;
                     case "Search":
                         if (isFrom) {
-                            that.showSearchBox(e, { node_from: opts.nodeFrom, slot_from: slotX, type_filter_in: fromSlotType });
+                            opts.showSearchBox(e, { node_from: opts.nodeFrom, slot_from: slotX, type_filter_in: fromSlotType });
                         } else {
-                            that.showSearchBox(e, { node_to: opts.nodeTo, slot_from: slotX, type_filter_out: fromSlotType });
+                            opts.showSearchBox(e, { node_to: opts.nodeTo, slot_from: slotX, type_filter_out: fromSlotType });
                         }
                         break;
                     default:
@@ -11419,8 +11421,6 @@ const globalExport = {};
                         break;
                 }
             }
-
-            return false;
         }
         // refactor: there are different dialogs, some uses createDialog some dont
         prompt(title, value, callback, event, multiline) {

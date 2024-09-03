@@ -1537,7 +1537,16 @@ export declare class LGraphCanvas {
         callback: Function,
         event: any
     ): HTMLDivElement;
-    showSearchBox(event?: MouseEvent): void;
+    showSearchBox(event?: MouseEvent, options?: LinkReleaseContext): void;
+    showConnectionMenu(optPass?: {
+        nodeFrom?: LGraphNode;
+        slotFrom?: INodeSlot | string | number;
+        nodeTo?: LGraphNode;
+        slotTo?: INodeSlot | string | number;
+        e?: MouseEvent;
+        allow_searchbox?: boolean;
+        showSearchBox?: (event?: MouseEvent, options?: LinkReleaseContext) => void;
+    }): void;
     showEditPropertyValue(node: LGraphNode, property: any, options: any): void;
     createDialog(
         html: string,
