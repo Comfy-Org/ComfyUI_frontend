@@ -51,6 +51,7 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
@@ -137,7 +138,6 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
-  modelsInFolderCache: Record<string, string[]>
 
   constructor() {
     this.vueAppReady = false
@@ -152,7 +152,6 @@ export class ComfyApp {
       parent: document.body
     })
     this.menu = new ComfyAppMenu(this)
-    this.modelsInFolderCache = {}
 
     /**
      * List of extensions that are registered with the app
@@ -2260,12 +2259,14 @@ export class ComfyApp {
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
       for (let m of graphData.models) {
-        const models_available = await this.getModelsInFolderCached(m.directory)
+        const models_available = await useModelStore().getModelsInFolderCached(
+          m.directory
+        )
         if (models_available === null) {
           // @ts-expect-error
           m.directory_invalid = true
           missingModels.push(m)
-        } else if (!models_available.includes(m.name)) {
+        } else if (!(m.name in models_available.models)) {
           missingModels.push(m)
         }
       }
@@ -2861,19 +2862,6 @@ export class ComfyApp {
   }
 
   /**
-   * Gets the list of model names in a folder, using a temporary local cache
-   */
-  async getModelsInFolderCached(folder: string): Promise<string[]> {
-    if (folder in this.modelsInFolderCache) {
-      return this.modelsInFolderCache[folder]
-    }
-    // TODO: needs a lock to avoid overlapping calls
-    const models = await api.getModels(folder)
-    this.modelsInFolderCache[folder] = models
-    return models
-  }
-
-  /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
    */
@@ -2901,9 +2889,10 @@ export class ComfyApp {
       summary: 'Update',
       detail: 'Update requested'
     }
-    if (this.vueAppReady) useToastStore().add(requestToastMessage)
-
-    this.modelsInFolderCache = {}
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+      useModelStore().clearCache()
+    }
 
     const defs = await api.getNodeDefs()
 
