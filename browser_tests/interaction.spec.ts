@@ -112,11 +112,12 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can close prompt dialog with canvas click', async ({ comfyPage }) => {
+    const numberWidgetPos = {
+      x: 724,
+      y: 645
+    }
     await comfyPage.canvas.click({
-      position: {
-        x: 724,
-        y: 645
-      }
+      position: numberWidgetPos
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
     // Wait for 1s so that it does not trigger the search box by double click.
@@ -128,6 +129,28 @@ test.describe('Node Interaction', () => {
       }
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+
+    const textWidgetPos = {
+      x: 167,
+      y: 143
+    }
+    await comfyPage.loadWorkflow('single_save_image_node')
+    await comfyPage.canvas.click({
+      position: textWidgetPos
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'prompt-dialog-opened-text.png'
+    )
+    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.canvas.click({
+      position: {
+        x: 10,
+        y: 10
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'prompt-dialog-closed-text.png'
+    )
   })
 
   test('Can double click node title to edit', async ({ comfyPage }) => {
