@@ -10,6 +10,30 @@ jest.mock('@/scripts/api', () => ({
   }
 }))
 
+function enableMocks() {
+  ;(api.getModels as jest.Mock).mockResolvedValue([
+    'sdxl.safetensors',
+    'sdv15.safetensors',
+    'noinfo.safetensors'
+  ])
+  ;(api.viewMetadata as jest.Mock).mockImplementation((_, model) => {
+    if (model === 'noinfo.safetensors') {
+      return Promise.resolve({})
+    }
+    return Promise.resolve({
+      'modelspec.title': `Title of ${model}`,
+      display_name: 'Should not show',
+      'modelspec.architecture': 'stable-diffusion-xl-base-v1',
+      'modelspec.author': `Author of ${model}`,
+      'modelspec.description': `Description of ${model}`,
+      'modelspec.resolution': '1024x1024',
+      trigger_phrase: `Trigger phrase of ${model}`,
+      usage_hint: `Usage hint of ${model}`,
+      tags: `tags,for,${model}`
+    })
+  })
+}
+
 describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
@@ -19,34 +43,14 @@ describe('useModelStore', () => {
   })
 
   it('should load models', async () => {
-    ;(api.getModels as jest.Mock).mockResolvedValue([
-      'sdxl.safetensors',
-      'sdv15.safetensors',
-      'noinfo.safetensors'
-    ])
-    ;(api.viewMetadata as jest.Mock).mockImplementation((_, model) => {
-      if (model === 'noinfo.safetensors') {
-        return Promise.resolve({})
-      }
-      return Promise.resolve({
-        'modelspec.title': `Title of ${model}`,
-        display_name: 'Should not show',
-        'modelspec.architecture': 'stable-diffusion-xl-base-v1',
-        'modelspec.author': `Author of ${model}`,
-        'modelspec.description': `Description of ${model}`,
-        'modelspec.resolution': '1024x1024',
-        trigger_phrase: `Trigger phrase of ${model}`,
-        usage_hint: `Usage hint of ${model}`,
-        tags: `tags,for,${model}`
-      })
-    })
-
+    enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
     expect(folderStore).not.toBeNull()
     expect(Object.keys(folderStore.models)).toHaveLength(3)
   })
 
   it('should load model metadata', async () => {
+    enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
     const model = folderStore.models['sdxl.safetensors']
     await model.load()
@@ -61,6 +65,7 @@ describe('useModelStore', () => {
   })
 
   it('should handle no metadata', async () => {
+    enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
     const model = folderStore.models['noinfo.safetensors']
     await model.load()
@@ -72,6 +77,7 @@ describe('useModelStore', () => {
   })
 
   it('should cache model information', async () => {
+    enableMocks()
     const folderStore1 = await store.getModelsInFolderCached('checkpoints')
     const folderStore2 = await store.getModelsInFolderCached('checkpoints')
     expect(api.getModels).toHaveBeenCalledTimes(1)
