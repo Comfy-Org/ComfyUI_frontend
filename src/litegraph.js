@@ -1639,7 +1639,7 @@ const globalExport = {};
              * @return {LGraphGroup | null} the group or null
              */
         getGroupOnPos(x, y, {margin = 2} = {}) {
-            return this._groups.reverse().find(g => g.isPointInside(x, y, margin));
+            return this._groups.reverse().find(g => g.isPointInside(x, y, margin, /* skip_title */true));
         }
 
         /**
