@@ -965,6 +965,7 @@ export declare class LGraphNode {
     /** Allows to get onMouseMove and onMouseUp events even if the mouse is out of focus */
     captureInput(v: any): void;
 
+    get collapsed(): boolean;
     get collapsible(): boolean;
     /** Collapse the node to make it smaller on the canvas */
     collapse(force: boolean): void;

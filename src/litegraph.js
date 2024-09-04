@@ -2469,6 +2469,11 @@ const globalExport = {};
                 }
             }
 
+            // Sync the state of this.resizable.
+            if (this.pinned) {
+                this.pin(true);
+            }
+
             if (this.onConfigure) {
                 this.onConfigure(info);
             }
@@ -4755,8 +4760,12 @@ const globalExport = {};
             }
         }
 
+        get collapsed() {
+            return !!this.flags.collapsed;
+        }
+
         get collapsible() {
-            return !this.pinned && this.constructor.collapsable;
+            return !this.pinned && (this.constructor.collapsable !== false);
         }
 
         /**
@@ -4765,7 +4774,7 @@ const globalExport = {};
              **/
         collapse(force) {
             this.graph._version++;
-            if (this.collapsible && !force) {
+            if (!this.collapsible && !force) {
                 return;
             }
             if (!this.flags.collapsed) {
