@@ -111,7 +111,9 @@ test.describe('Node Interaction', () => {
     )
   })
 
-  test('Can close prompt dialog with canvas click', async ({ comfyPage }) => {
+  test('Can close prompt dialog with canvas click (number widget)', async ({
+    comfyPage
+  }) => {
     const numberWidgetPos = {
       x: 724,
       y: 645
@@ -129,7 +131,11 @@ test.describe('Node Interaction', () => {
       }
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+  })
 
+  test('Can close prompt dialog with canvas click (text widget)', async ({
+    comfyPage
+  }) => {
     const textWidgetPos = {
       x: 167,
       y: 143
