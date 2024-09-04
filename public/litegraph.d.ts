@@ -966,6 +966,8 @@ export declare class LGraphNode {
     captureInput(v: any): void;
     /** Collapse the node to make it smaller on the canvas */
     collapse(force: boolean): void;
+
+    get pinned(): boolean;
     /** Forces the node to do not move or realign on Z */
     pin(v?: boolean): void;
     localToScreen(x: number, y: number, graphCanvas: LGraphCanvas): Vector2;
@@ -1138,17 +1140,25 @@ export declare class LGraphGroup {
     size: Vector2;
     pos: Vector2;
     font_size: number;
+    flags: Record<string, boolean>;
 
     get titleHeight(): number;
     get selected(): boolean;
 
+    // Pinned group cannot be selected.
+    get pinned(): boolean;
+    pin(): void;
+    unpin(): void;
+
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;
+    resize(width: number, height: number): void;
     move(deltaX: number, deltaY: number, ignoreNodes?: boolean): void;
     recomputeInsideNodes(): void;
     isPointInside: LGraphNode["isPointInside"];
     setDirtyCanvas: LGraphNode["setDirtyCanvas"];
     addNodes(nodes: LGraphNode[], padding?: number): void;
+    getMenuOptions(): ContextMenuItem[];
 }
 
 export declare class DragAndScale {
