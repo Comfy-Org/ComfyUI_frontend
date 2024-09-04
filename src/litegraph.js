@@ -4755,13 +4755,17 @@ const globalExport = {};
             }
         }
 
+        get collapsible() {
+            return !this.pinned && this.constructor.collapsable;
+        }
+
         /**
              * Collapse the node to make it smaller on the canvas
              * @method collapse
              **/
         collapse(force) {
             this.graph._version++;
-            if (this.constructor.collapsable === false && !force) {
+            if (this.collapsible && !force) {
                 return;
             }
             if (!this.flags.collapsed) {
@@ -4777,7 +4781,7 @@ const globalExport = {};
         }
 
         /**
-             * Forces the node to do not move or realign on Z
+             * Forces the node to do not move or realign on Z or resize
              * @method pin
              **/
         pin(v) {
@@ -4927,7 +4931,7 @@ const globalExport = {};
             const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE;
             ctx.font = font_size + "px Arial";
             ctx.textAlign = "left";
-            ctx.fillText(this.title, x + padding, y + font_size);
+            ctx.fillText(this.title + (this.pinned ? "📌" : ""), x + padding, y + font_size);
 
             if (LiteGraph.highlight_selected_group && this.selected) {
                 graphCanvas.drawSelectionBounding(ctx, this._bounding, {
@@ -4937,12 +4941,6 @@ const globalExport = {};
                     fgcolor: this.color,
                     padding,
                 });
-            }
-
-            if (this.pinned) {
-                const iconFontSize = font_size * 0.5;
-                ctx.font = iconFontSize + "px Arial";
-                ctx.fillText("📌", x + width - iconFontSize - padding, y + iconFontSize);
             }
         }
 
@@ -10031,7 +10029,7 @@ const globalExport = {};
                 }
                 if (!low_quality) {
                     ctx.font = this.title_text_font;
-                    var title = String(node.getTitle());
+                    var title = String(node.getTitle()) + (node.pinned ? "📌" : "");
                     if (title) {
                         if (selected) {
                             ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR;
@@ -10104,10 +10102,6 @@ const globalExport = {};
                         fgcolor,
                     }
                 );
-            }
-
-            if (node.pinned) {
-                ctx.fillText("📌", node.getBounding()[2] - 20, -10);
             }
 
             // these counter helps in conditioning drawing based on if the node has been executed or an action occurred
@@ -13128,11 +13122,13 @@ const globalExport = {};
                         content: "Resize", callback: LGraphCanvas.onMenuResizeNode
                     });
                 }
-                options.push(
-                    {
-                        content: "Collapse",
+                if (node.collapsible) {
+                    options.push({
+                        content: node.collapsed ? "Expand" : "Collapse",
                         callback: LGraphCanvas.onMenuNodeCollapse
-                    },
+                    });
+                }
+                options.push(
                     {
                         content: node.pinned ? "Unpin" : "Pin",
                         callback: LGraphCanvas.onMenuNodePin
