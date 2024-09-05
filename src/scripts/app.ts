@@ -2207,7 +2207,7 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    { showMissingNodesDialog = false, showMissingModelsDialog = false } = {}
+    { showMissingNodesDialog = true, showMissingModelsDialog = true } = {}
   ) {
     if (clean !== false) {
       this.clean()
