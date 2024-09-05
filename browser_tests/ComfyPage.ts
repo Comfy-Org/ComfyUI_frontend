@@ -424,6 +424,13 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async ctrlY() {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.press('KeyY')
+    await this.page.keyboard.up('Control')
+    await this.nextFrame()
+  }
+
   async ctrlArrowUp() {
     await this.page.keyboard.down('Control')
     await this.page.keyboard.press('ArrowUp')
