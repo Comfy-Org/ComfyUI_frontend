@@ -25,10 +25,8 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can disconnect/connect edge', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'no action')
     await comfyPage.disconnectEdge()
-    // Close search menu popped up.
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'disconnected-edge-with-menu.png'
     )
@@ -113,12 +111,15 @@ test.describe('Node Interaction', () => {
     )
   })
 
-  test('Can close prompt dialog with canvas click', async ({ comfyPage }) => {
+  test('Can close prompt dialog with canvas click (number widget)', async ({
+    comfyPage
+  }) => {
+    const numberWidgetPos = {
+      x: 724,
+      y: 645
+    }
     await comfyPage.canvas.click({
-      position: {
-        x: 724,
-        y: 645
-      }
+      position: numberWidgetPos
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-opened.png')
     // Wait for 1s so that it does not trigger the search box by double click.
@@ -130,6 +131,32 @@ test.describe('Node Interaction', () => {
       }
     })
     await expect(comfyPage.canvas).toHaveScreenshot('prompt-dialog-closed.png')
+  })
+
+  test('Can close prompt dialog with canvas click (text widget)', async ({
+    comfyPage
+  }) => {
+    const textWidgetPos = {
+      x: 167,
+      y: 143
+    }
+    await comfyPage.loadWorkflow('single_save_image_node')
+    await comfyPage.canvas.click({
+      position: textWidgetPos
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'prompt-dialog-opened-text.png'
+    )
+    await comfyPage.page.waitForTimeout(1000)
+    await comfyPage.canvas.click({
+      position: {
+        x: 10,
+        y: 10
+      }
+    })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'prompt-dialog-closed-text.png'
+    )
   })
 
   test('Can double click node title to edit', async ({ comfyPage }) => {
@@ -169,6 +196,20 @@ test.describe('Node Interaction', () => {
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
+  })
+
+  // Somehow this test fails on GitHub Actions. It works locally.
+  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/736
+  test.skip('Can pin/unpin nodes with keyboard shortcut', async ({
+    comfyPage
+  }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
 })
 

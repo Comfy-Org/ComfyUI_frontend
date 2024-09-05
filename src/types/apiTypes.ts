@@ -2,6 +2,7 @@ import { ZodType, z } from 'zod'
 import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
 import { colorPalettesSchema } from './colorPalette'
+import { LinkReleaseTriggerAction } from './searchBoxTypes'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()
@@ -419,6 +420,10 @@ const zBookmarkCustomization = z.object({
 })
 export type BookmarkCustomization = z.infer<typeof zBookmarkCustomization>
 
+const zLinkReleaseTriggerAction = z.enum(
+  Object.values(LinkReleaseTriggerAction) as [string, ...string[]]
+)
+
 const zSettings = z.record(z.any()).and(
   z
     .object({
@@ -454,6 +459,8 @@ const zSettings = z.record(z.any()).and(
         'hold shift',
         'NOT hold shift'
       ]),
+      'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
+      'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),

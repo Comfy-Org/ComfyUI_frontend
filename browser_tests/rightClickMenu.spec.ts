@@ -92,6 +92,7 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
     await comfyPage.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
+    await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-pinned-node.png'

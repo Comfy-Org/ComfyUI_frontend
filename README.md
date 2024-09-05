@@ -91,6 +91,13 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.2.44: **Litegraph** Double click group title to edit</summary>
+
+https://github.com/user-attachments/assets/5bf0e2b6-8b3a-40a7-b44f-f0879e9ad26f
+
+</details>
+
+<details>
   <summary>v1.2.39: **Litegraph** Group selected nodes with Ctrl + G</summary>
 
 https://github.com/user-attachments/assets/7805dc54-0854-4a28-8bcd-4b007fa01151
@@ -164,9 +171,11 @@ We will support custom icons later.
   app.extensionManager.toast.add({
     severity: 'info',
     summary: 'Loaded!',
-    detail: 'Extension loaded!'
+    detail: 'Extension loaded!',
+    life: 3000
   })
 ```
+Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 </details>
@@ -184,18 +193,17 @@ We will support custom icons later.
 - Introduce Vue to start managing part of the UI.
 - Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
 - Better node management. Sherlock <https://github.com/Nuked88/ComfyUI-N-Sidebar>.
+- Replace the existing ComfyUI front-end implementation. <https://github.com/comfyanonymous/ComfyUI/pull/4379>
 
 
 ### What to be done
 
-- Replace the existing ComfyUI front-end impl
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
 - Add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
 - Keybinding settings management. Register keybindings API for custom nodes.
-- New extensions API for adding UI-related features.
 
 ## Development
 

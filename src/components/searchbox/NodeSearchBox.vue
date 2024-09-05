@@ -116,15 +116,15 @@ const showIdName = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
 )
 
-const props = defineProps({
-  filters: {
-    type: Array<FilterAndValue>
-  },
-  searchLimit: {
-    type: Number,
-    default: 64
+const props = withDefaults(
+  defineProps<{
+    filters: FilterAndValue[]
+    searchLimit: number
+  }>(),
+  {
+    searchLimit: 64
   }
-})
+)
 
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
