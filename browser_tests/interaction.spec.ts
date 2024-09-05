@@ -201,8 +201,10 @@ test.describe('Node Interaction', () => {
   test('Can pin/unpin nodes with keyboard shortcut', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await comfyPage.page.keyboard.press('KeyP')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
     await comfyPage.page.keyboard.press('KeyP')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
 })
