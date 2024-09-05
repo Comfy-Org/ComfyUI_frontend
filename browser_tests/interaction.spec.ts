@@ -337,3 +337,10 @@ test.describe('Widget Interaction', () => {
     await expect(textBox).toHaveValue('1girl')
   })
 })
+
+test.describe('Load workflow', () => {
+  test('Can load workflow with string node id', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('string_node_id')
+    await expect(comfyPage.canvas).toHaveScreenshot('string_node_id.png')
+  })
+})
