@@ -508,7 +508,7 @@ export declare class LGraph {
     /** Removes a node from the graph */
     remove(node: LGraphNode): void;
     /** Returns a node by its id. */
-    getNodeById(id: number): LGraphNode | undefined;
+    getNodeById(id: number | string): LGraphNode | undefined;
     /**
      * Returns a list of nodes that matches a class
      * @param classObject the class itself (not an string)
