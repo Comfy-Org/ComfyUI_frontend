@@ -1314,6 +1314,17 @@ export class ComfyApp {
           block_default = true
         }
 
+        // p pin/unpin
+        if (e.key === 'p') {
+          if (this.selected_nodes) {
+            for (const i in this.selected_nodes) {
+              const node = this.selected_nodes[i]
+              node.pin()
+            }
+          }
+          block_default = true
+        }
+
         // Alt + C collapse/uncollapse
         if (e.key === 'c' && e.altKey) {
           if (this.selected_nodes) {
