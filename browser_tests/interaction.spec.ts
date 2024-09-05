@@ -197,6 +197,14 @@ test.describe('Node Interaction', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
   })
+
+  test('Can pin/unpin nodes with keyboard shortcut', async ({ comfyPage }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.page.keyboard.press('KeyP')
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
+    await comfyPage.page.keyboard.press('KeyP')
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
+  })
 })
 
 test.describe('Group Interaction', () => {
