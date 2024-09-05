@@ -276,11 +276,11 @@ export class ComfyLogging {
   }
 
   addSetting() {
-    const settingId: string = 'Comfy.Logging.Enabled'
+    const settingId = 'Comfy.Logging.Enabled'
     const htmlSettingId = settingId.replaceAll('.', '-')
     const setting = this.app.ui.settings.addSetting({
       id: settingId,
-      name: settingId,
+      name: 'Enable logging',
       defaultValue: true,
       onChange: (value) => {
         this.enabled = value
