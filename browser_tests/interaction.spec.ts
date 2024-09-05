@@ -197,6 +197,20 @@ test.describe('Node Interaction', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
   })
+
+  // Somehow this test fails on GitHub Actions. It works locally.
+  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/736
+  test.skip('Can pin/unpin nodes with keyboard shortcut', async ({
+    comfyPage
+  }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
+  })
 })
 
 test.describe('Group Interaction', () => {
