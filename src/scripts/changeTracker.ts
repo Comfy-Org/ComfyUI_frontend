@@ -72,10 +72,7 @@ export class ChangeTracker {
     if (prevState) {
       target.push(this.activeState)
       this.isOurLoad = true
-      await this.app.loadGraphData(prevState, false, false, this.workflow, {
-        showMissingModelsDialog: false,
-        showMissingNodesDialog: false
-      })
+      await this.app.loadGraphData(prevState, false, false, this.workflow)
       this.activeState = prevState
     }
   }

@@ -305,11 +305,7 @@ export class ComfyWorkflow {
         this.changeTracker.activeState,
         true,
         true,
-        this,
-        {
-          showMissingNodesDialog: false,
-          showMissingModelsDialog: false
-        }
+        this
       )
     } else {
       const data = await this.getWorkflowData()
