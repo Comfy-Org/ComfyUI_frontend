@@ -2803,7 +2803,7 @@ export class ComfyApp {
     this.changeWorkflow(() => {
       for (const id of ids) {
         const data = apiData[id]
-        const node = app.graph.getNodeById(Number.parseInt(id))
+        const node = app.graph.getNodeById(id)
         for (const input in data.inputs ?? {}) {
           const value = data.inputs[input]
           if (value instanceof Array) {
@@ -2838,7 +2838,7 @@ export class ComfyApp {
 
     for (const id of ids) {
       const data = apiData[id]
-      const node = app.graph.getNodeById(Number.parseInt(id))
+      const node = app.graph.getNodeById(id)
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
@@ -3008,7 +3008,6 @@ export class ComfyApp {
   }
 
   public goToNode(nodeId: NodeId) {
-    // @ts-expect-error TODO: Update litegraph's nodeId type to string | number
     const graphNode = this.graph.getNodeById(nodeId)
     if (!graphNode) return
     this.canvas.centerOnNode(graphNode)
