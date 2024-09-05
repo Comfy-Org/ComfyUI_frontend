@@ -124,7 +124,7 @@ app.registerExtension({
   },
   onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
     for (const [nodeId, output] of Object.entries(nodeOutputs)) {
-      const node = app.graph.getNodeById(Number.parseInt(nodeId))
+      const node = app.graph.getNodeById(nodeId)
       if ('audio' in output) {
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'

@@ -377,7 +377,7 @@ app.registerExtension({
             data = JSON.parse(data)
             const nodeIds = Object.keys(app.canvas.selected_nodes)
             for (let i = 0; i < nodeIds.length; i++) {
-              const node = app.graph.getNodeById(Number.parseInt(nodeIds[i]))
+              const node = app.graph.getNodeById(nodeIds[i])
               // @ts-expect-error
               const nodeData = node?.constructor.nodeData
 
