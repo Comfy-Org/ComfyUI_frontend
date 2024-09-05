@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const IS_DEV = process.env.NODE_ENV === 'development';
-const SHOULD_MINIFY = process.env.ENABLE_MINIFY !== 'false';
+const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true';
 
 interface ShimResult {
   code: string;
