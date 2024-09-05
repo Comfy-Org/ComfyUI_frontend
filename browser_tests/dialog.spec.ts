@@ -39,6 +39,7 @@ test('Does not report warning when switching between opened workflows', async ({
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.loadWorkflow('missing_nodes')
   await comfyPage.page.locator('.p-dialog-close-button').click()
+  await comfyPage.nextFrame()
 
   // Make a change to the graph
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')

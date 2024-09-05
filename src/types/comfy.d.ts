@@ -101,7 +101,18 @@ export type ComfyObjectInfo = {
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any]
 
-export interface loadGraphDataOptions {
+/**
+ * Defines the options for loading a graph state
+ */
+export interface LoadGraphDataOptions {
+  /**
+   * Whether to display a dialog if missing nodes are detected
+   * @default true
+   */
   showMissingNodesDialog: boolean
+  /**
+   * Whether to display a dialog if missing models are detected
+   * @default true
+   */
   showMissingModelsDialog: boolean
 }

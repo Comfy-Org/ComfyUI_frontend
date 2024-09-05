@@ -32,7 +32,7 @@ import {
   LiteGraph
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
-import { loadGraphDataOptions } from '@/types/comfy'
+import { LoadGraphDataOptions } from '@/types/comfy'
 
 // CSS imports. style.css must be imported later as it overwrites some litegraph styles.
 import '@comfyorg/litegraph/style.css'
@@ -2208,9 +2208,9 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    options: Partial<loadGraphDataOptions> = {}
+    options: Partial<LoadGraphDataOptions> = {}
   ) {
-    const finalConfig = _.defaults(options, {
+    const finalOptions: LoadGraphDataOptions = _.defaults(options, {
       showMissingNodesDialog: true,
       showMissingModelsDialog: true
     })
@@ -2405,10 +2405,10 @@ export class ComfyApp {
     }
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
-    if (missingNodeTypes.length && finalConfig.showMissingNodesDialog) {
+    if (missingNodeTypes.length && finalOptions.showMissingNodesDialog) {
       this.showMissingNodesError(missingNodeTypes)
     }
-    if (missingModels.length && finalConfig.showMissingModelsDialog) {
+    if (missingModels.length && finalOptions.showMissingModelsDialog) {
       this.showMissingModelsError(missingModels)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
