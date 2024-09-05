@@ -42,6 +42,7 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.nextFrame()
 
   // Make a change to the graph
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   await comfyPage.page.waitForTimeout(256)
   await comfyPage.doubleClickCanvas()
