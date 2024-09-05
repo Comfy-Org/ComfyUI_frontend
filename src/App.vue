@@ -4,9 +4,7 @@
   <GlobalDialog />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
-  <Teleport to="body">
-    <AppMenu />
-  </Teleport>
+  <AppMenu />
   <GraphCanvas />
 </template>
 

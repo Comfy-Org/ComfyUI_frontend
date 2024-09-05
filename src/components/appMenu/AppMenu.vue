@@ -172,6 +172,7 @@ const actions = {
 
 <style scoped>
 .app-menu {
+  pointer-events: all;
   position: fixed;
   bottom: 50px;
   left: 50%;
