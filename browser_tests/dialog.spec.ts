@@ -34,6 +34,7 @@ test('Does not report warning when switching between opened workflows', async ({
   await comfyPage.nextFrame()
 
   await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
@@ -42,7 +43,6 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.nextFrame()
 
   // Make a change to the graph
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   await comfyPage.page.waitForTimeout(256)
   await comfyPage.doubleClickCanvas()
@@ -50,8 +50,8 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 
   // Undo and redo the change
   await comfyPage.ctrlZ()
+  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
   await comfyPage.ctrlY()
-
   await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
 })
 
