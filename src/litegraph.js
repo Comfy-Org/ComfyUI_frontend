@@ -10111,6 +10111,7 @@ const globalExport = {};
                         title_height,
                         title_mode,
                         fgcolor,
+                        collapsed: node.flags?.collapsed
                     }
                 );
             }
@@ -10140,7 +10141,8 @@ const globalExport = {};
                 title_height = LiteGraph.NODE_TITLE_HEIGHT,
                 title_mode = LiteGraph.NORMAL_TITLE,
                 fgcolor = LiteGraph.NODE_BOX_OUTLINE_COLOR,
-                padding = 6
+                padding = 6,
+                collapsed = false
             } = {}
         ) {
             // Adjust area if title is transparent
@@ -10164,7 +10166,7 @@ const globalExport = {};
                 case LiteGraph.ROUND_SHAPE:
                 case LiteGraph.CARD_SHAPE: {
                     const radius = this.round_radius * 2;
-                    const isCollapsed = shape === LiteGraph.CARD_SHAPE && node.flags.collapsed;
+                    const isCollapsed = shape === LiteGraph.CARD_SHAPE && collapsed;
                     const cornerRadii = isCollapsed || shape === LiteGraph.ROUND_SHAPE ? [radius] : [radius, 2, radius, 2];
                     ctx.roundRect(x - padding, y - padding, width + 2 * padding, height + 2 * padding, cornerRadii);
                     break;
