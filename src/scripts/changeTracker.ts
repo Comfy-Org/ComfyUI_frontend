@@ -82,10 +82,10 @@ export class ChangeTracker {
 
   async undoRedo(e) {
     if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'y') {
+      if (e.code === 'KeyY') {
         this.updateState(this.redo, this.undo)
         return true
-      } else if (e.key === 'z') {
+      } else if (e.code === 'KeyZ') {
         this.updateState(this.undo, this.redo)
         return true
       }
