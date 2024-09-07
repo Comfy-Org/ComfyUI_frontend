@@ -11928,7 +11928,9 @@ const globalExport = {};
             }
             canvas.parentNode.appendChild(dialog);
             */
-            input.focus();
+            requestAnimationFrame(function () {
+              input.focus();
+            });
             if (options.show_all_on_open) refreshHelper();
 
             function select(name) {
