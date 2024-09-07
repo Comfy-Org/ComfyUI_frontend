@@ -119,7 +119,7 @@ const showIdName = computed(() =>
 const props = withDefaults(
   defineProps<{
     filters: FilterAndValue[]
-    searchLimit: number
+    searchLimit?: number
   }>(),
   {
     searchLimit: 64
