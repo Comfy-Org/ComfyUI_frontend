@@ -102,6 +102,9 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
         this.element.removeAttribute('title')
       }
     })
+    if (tooltip !== undefined) {
+      this.element.setAttribute('aria-label', tooltip)
+    }
     this.classList = prop(this, 'classList', classList, this.updateClasses)
     this.hidden = prop(this, 'hidden', false, this.updateClasses)
     this.enabled = prop(this, 'enabled', enabled, () => {
