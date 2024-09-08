@@ -23,6 +23,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+components.d.ts
 
 # Ignore test data.
 tests-ui/data/*
