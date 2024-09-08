@@ -3,11 +3,14 @@
     :class="props.class"
     text
     :pt="{
-      root: `side-bar-button ${
-        props.selected
-          ? 'p-button-primary side-bar-button-selected'
-          : 'p-button-secondary'
-      }`
+      root: {
+        class: `side-bar-button ${
+          props.selected
+            ? 'p-button-primary side-bar-button-selected'
+            : 'p-button-secondary'
+        }`,
+        'aria-label': props.tooltip
+      }
     }"
     @click="emit('click', $event)"
     v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
