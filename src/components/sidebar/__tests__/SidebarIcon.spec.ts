@@ -32,20 +32,39 @@ describe('SidebarIcon', () => {
     })
   }
 
+  it('renders label', () => {
+    const wrapper = mountSidebarIcon({})
+    expect(wrapper.find('.p-button.p-component').exists()).toBe(true)
+    expect(wrapper.find('.p-button-label').exists()).toBe(true)
+  })
+
+  it('renders icon', () => {
+    const wrapper = mountSidebarIcon({})
+    expect(wrapper.find('.p-button-icon-only').exists()).toBe(true)
+  })
+
+  it('creates badge when iconBadge prop is set', () => {
+    const badge = '2'
+    const wrapper = mountSidebarIcon({ iconBadge: badge })
+    const badgeEl = wrapper.findComponent(OverlayBadge)
+    expect(badgeEl.exists()).toBe(true)
+    expect(badgeEl.find('.p-badge').text()).toEqual(badge)
+  })
+
   it('shows tooltip on hover', async () => {
     const tooltipShowDelay = 300
     const tooltipText = 'Settings'
     const wrapper = mountSidebarIcon({ tooltip: tooltipText })
 
-    const tooltip = document.querySelector('[role="tooltip"]')
-    expect(tooltip).toBeNull()
+    const tooltipElBeforeHover = document.querySelector('[role="tooltip"]')
+    expect(tooltipElBeforeHover).toBeNull()
 
     // Hover over the icon
     await wrapper.trigger('mouseenter')
     await new Promise((resolve) => setTimeout(resolve, tooltipShowDelay + 16))
 
-    const tooltipAfterHover = document.querySelector('[role="tooltip"]')
-    expect(tooltipAfterHover).not.toBeNull()
+    const tooltipElAfterHover = document.querySelector('[role="tooltip"]')
+    expect(tooltipElAfterHover).not.toBeNull()
   })
 
   it('sets aria-label attribute when tooltip is provided', () => {
