@@ -76,6 +76,16 @@ test.describe('Node search box', () => {
       'added-node-no-connection.png'
     )
   })
+
+  test('Has correct aria-labels on search results', async ({ comfyPage }) => {
+    const node = 'Load Checkpoint'
+    await comfyPage.doubleClickCanvas()
+    await comfyPage.searchBox.fillAndSelectFirstNode(node)
+    const firstResult = comfyPage.page
+      .locator('li.p-autocomplete-option')
+      .first()
+    await expect(firstResult).toHaveAttribute('aria-label', node)
+  })
 })
 
 test.describe('Release context menu', () => {
