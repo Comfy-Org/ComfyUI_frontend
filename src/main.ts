@@ -1,15 +1,18 @@
+import App from './App.vue'
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import { i18n } from './i18n'
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import { definePreset } from '@primevue/themes'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
-import 'primeicons/primeicons.css'
 
-import App from './App.vue'
-import { createPinia } from 'pinia'
-import { i18n } from './i18n'
+import '@comfyorg/litegraph/style.css'
+import '@/assets/css/style.css'
+import '@/assets/css/user.css'
+import 'primeicons/primeicons.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {

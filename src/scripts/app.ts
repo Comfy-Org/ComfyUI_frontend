@@ -29,13 +29,10 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  LGraphGroup
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
-
-// CSS imports. style.css must be imported later as it overwrites some litegraph styles.
-import '@comfyorg/litegraph/style.css'
-import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
 import {
   ComfyNodeDefImpl,
@@ -54,7 +51,6 @@ import { useToastStore } from '@/stores/toastStore'
 import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
-import { LGraphGroup } from '@comfyorg/litegraph'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
