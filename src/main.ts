@@ -1,4 +1,5 @@
 import App from './App.vue'
+import router from '@/router'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { i18n } from './i18n'
@@ -24,6 +25,7 @@ const app = createApp(App)
 const pinia = createPinia()
 app.directive('tooltip', Tooltip)
 app
+  .use(router)
   .use(PrimeVue, {
     theme: {
       preset: ComfyUIPreset,
