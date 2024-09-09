@@ -2,6 +2,10 @@
 export default {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
 
+  corePlugins: {
+    preflight: false // This disables Tailwind's base styles
+  },
+
   theme: {
     fontSize: {
       xs: '0.75rem',
