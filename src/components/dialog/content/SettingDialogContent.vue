@@ -144,11 +144,6 @@ const tabValue = computed(() =>
 </script>
 
 <style>
-/* Remove after we have tailwind setup */
-.border-none {
-  border: none !important;
-}
-
 .settings-tab-panels {
   padding-top: 0px !important;
 }
