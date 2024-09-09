@@ -36,8 +36,9 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      timeout: 15000
-    }
+      timeout: 15000,
+      grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
+    },
 
     // {
     //   name: 'firefox',
@@ -50,10 +51,11 @@ export default defineConfig({
     // },
 
     /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'], hasTouch: true },
+      grep: /@mobile/ // Run only tests tagged with @mobile
+    }
     // {
     //   name: 'Mobile Safari',
     //   use: { ...devices['iPhone 12'] },

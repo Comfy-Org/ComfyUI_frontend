@@ -86,6 +86,23 @@ test.describe('Node search box', () => {
       .first()
     await expect(firstResult).toHaveAttribute('aria-label', node)
   })
+
+  test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
+    await comfyPage.closeMenu()
+    await comfyPage.loadWorkflow('single_ksampler')
+    const screenCenter = {
+      x: 200,
+      y: 400
+    }
+    await comfyPage.canvas.tap({
+      position: screenCenter
+    })
+    await comfyPage.canvas.tap({
+      position: screenCenter
+    })
+    await comfyPage.page.waitForTimeout(256)
+    await expect(comfyPage.searchBox.input).not.toHaveCount(0)
+  })
 })
 
 test.describe('Release context menu', () => {
