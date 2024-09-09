@@ -6,7 +6,10 @@
       :dismissable-mask="dismissable"
       @hide="clearFilters"
       :pt="{
-        root: { class: 'invisible-dialog-root' },
+        root: {
+          class: 'invisible-dialog-root',
+          role: 'search'
+        },
         mask: { class: 'node-search-box-dialog-mask' },
         transition: {
           enterFromClass: 'opacity-0 scale-75',
