@@ -66,7 +66,9 @@ export interface ComfyExtension {
   beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: ComfyApp): void
 
   /**
-   * Allows the extension to register additional nodes with LGraph after standard nodes are added
+   * Allows the extension to register additional nodes with LGraph after standard nodes are added.
+   * Custom node classes should extend **LGraphNode**.
+   *
    * @param app The ComfyUI app instance
    */
   registerCustomNodes?(app: ComfyApp): Promise<void>
