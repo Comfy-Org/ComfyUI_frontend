@@ -231,7 +231,15 @@ core extensions will be loaded.
 
 ### LiteGraph
 
-This repo is using litegraph package hosted on https://github.com/Comfy-Org/litegraph.js. Any changes to litegraph should be submitted in that repo instead.
+This repo is using litegraph package hosted on <https://github.com/Comfy-Org/litegraph.js>. Any changes to litegraph should be submitted in that repo instead.
+
+### Test litegraph changes
+
+- Run `npm link` in the local litegraph repo.
+- Run `npm uninstall @comfyorg/litegraph` in this repo.
+- Run `npm link @comfyorg/litegraph` in this repo.
+
+This will replace the litegraph package in this repo with the local litegraph repo.
 
 ## Deploy
 
