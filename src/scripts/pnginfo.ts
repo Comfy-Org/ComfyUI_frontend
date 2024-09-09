@@ -113,9 +113,11 @@ export function getWebpMetadata(file) {
             webp.slice(offset + 8, offset + 8 + chunk_length)
           )
           for (var key in data) {
-            var value = data[key] as string
-            let index = value.indexOf(':')
-            txt_chunks[value.slice(0, index)] = value.slice(index + 1)
+            const value = data[key] as string
+            if (typeof value === 'string') {
+              const index = value.indexOf(':')
+              txt_chunks[value.slice(0, index)] = value.slice(index + 1)
+            }
           }
           break
         }
