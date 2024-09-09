@@ -1,7 +1,6 @@
 import { defineConfig, Plugin } from 'vite';
 import type { UserConfigExport } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
-import primeui from 'tailwindcss-primeui';
 import path from 'path';
 import dotenv from "dotenv";
 dotenv.config();
@@ -116,7 +115,6 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(),
-    primeui(),
   ],
   build: {
     minify: SHOULD_MINIFY ? 'esbuild' : false,
