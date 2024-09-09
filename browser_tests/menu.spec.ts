@@ -171,7 +171,9 @@ test.describe('Menu', () => {
       const tab = comfyPage.menu.nodeLibraryTab
 
       await tab.getFolder('foo').click({ button: 'right' })
-      await comfyPage.page.getByLabel('Rename').click()
+      await comfyPage.page
+        .locator('.p-contextmenu-item-label:has-text("Rename")')
+        .click()
       await comfyPage.page.keyboard.insertText('bar')
       await comfyPage.page.keyboard.press('Enter')
 
@@ -291,7 +293,9 @@ test.describe('Menu', () => {
       })
       const tab = comfyPage.menu.nodeLibraryTab
       await tab.getFolder('foo').click({ button: 'right' })
-      await comfyPage.page.getByLabel('Rename').click()
+      await comfyPage.page
+        .locator('.p-contextmenu-item-label:has-text("Rename")')
+        .click()
       await comfyPage.page.keyboard.insertText('bar')
       await comfyPage.page.keyboard.press('Enter')
       await comfyPage.nextFrame()
