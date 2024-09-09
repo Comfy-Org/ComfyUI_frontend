@@ -1343,11 +1343,7 @@ export class ComfyApp {
         }
 
         // Ctrl+V Paste
-        if (
-          (key === 'KeyV') &&
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey
-        ) {
+        if (key === 'KeyV' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
           // Trigger onPaste
           return true
         }
