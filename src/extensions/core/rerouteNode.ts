@@ -128,8 +128,8 @@ app.registerExtension({
                       : null
                   if (
                     inputType &&
-                    inputType !== '*' &&
-                    nodeOutType !== inputType
+                    // @ts-expect-error Will self-resolve when LiteGraph types are generated
+                    !LiteGraph.isValidConnection(inputType, nodeOutType)
                   ) {
                     // The output doesnt match our input so disconnect it
                     node.disconnectInput(link.target_slot)
