@@ -98,7 +98,13 @@ const newSearchBoxEnabled = computed(
 )
 const showSearchBox = (e: LiteGraphCanvasEvent) => {
   if (newSearchBoxEnabled.value) {
-    showNewSearchBox(e)
+    if (e.detail.originalEvent?.pointerType === 'touch') {
+      setTimeout(() => {
+        showNewSearchBox(e)
+      }, 128)
+    } else {
+      showNewSearchBox(e)
+    }
   } else {
     canvasStore.canvas.showSearchBox(e.detail.originalEvent as MouseEvent)
   }
