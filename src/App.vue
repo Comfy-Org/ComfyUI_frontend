@@ -1,10 +1,10 @@
 <template>
+  <router-view />
   <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
   <BlockUI full-screen :blocked="isLoading" />
   <GlobalDialog />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
-  <GraphCanvas />
 </template>
 
 <script setup lang="ts">
@@ -18,7 +18,6 @@ import {
 } from 'vue'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
-import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
