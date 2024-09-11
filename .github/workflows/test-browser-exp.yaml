@@ -24,6 +24,11 @@ jobs:
         repository: "Comfy-Org/ComfyUI_frontend"
         path: "ComfyUI_frontend"
         ref: ${{ github.head_ref }}
+    - name: Checkout ComfyUI_devtools
+      uses: actions/checkout@v4
+      with:
+        repository: "Comfy-Org/ComfyUI_devtools"
+        path: "ComfyUI/custom_nodes/ComfyUI_devtools"
     - uses: actions/setup-node@v3
       with:
         node-version: lts/*
