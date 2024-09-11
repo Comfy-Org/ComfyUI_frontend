@@ -2,7 +2,7 @@
   <div class="no-results-placeholder">
     <Card>
       <template #content>
-        <div class="flex flex-column align-items-center">
+        <div class="flex flex-col items-center">
           <i :class="icon" style="font-size: 3rem; margin-bottom: 1rem"></i>
           <h3>{{ title }}</h3>
           <p>{{ message }}</p>
@@ -34,9 +34,6 @@ defineEmits(['action'])
 
 <style scoped>
 .no-results-placeholder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   height: 100%;
   padding: 2rem;
 }
