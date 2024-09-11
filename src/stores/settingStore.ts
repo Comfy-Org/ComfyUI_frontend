@@ -344,8 +344,8 @@ export const useSettingStore = defineStore('setting', {
         id: 'Comfy.Node.NodeIdBadgeMode',
         name: 'Node ID badge mode',
         type: 'combo',
-        options: Object.values(NodeBadgeMode),
-        defaultValue: NodeBadgeMode.HideBuiltIn
+        options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
+        defaultValue: NodeBadgeMode.None
       })
     },
 
