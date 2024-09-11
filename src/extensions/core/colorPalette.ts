@@ -5,7 +5,7 @@ import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
 // Manage color palettes
 
-const colorPalettes: ColorPalettes = {
+export const colorPalettes: ColorPalettes = {
   dark: {
     id: 'dark',
     name: 'Dark (Default)',
@@ -52,7 +52,10 @@ const colorPalettes: ColorPalettes = {
 
         LINK_COLOR: '#9A9',
         EVENT_LINK_COLOR: '#A86',
-        CONNECTING_LINK_COLOR: '#AFA'
+        CONNECTING_LINK_COLOR: '#AFA',
+
+        BADGE_FG_COLOR: '#FFF',
+        BADGE_BG_COLOR: '#0F1F0F'
       },
       comfy_base: {
         'fg-color': '#fff',
@@ -114,7 +117,10 @@ const colorPalettes: ColorPalettes = {
 
         LINK_COLOR: '#4CAF50',
         EVENT_LINK_COLOR: '#FF9800',
-        CONNECTING_LINK_COLOR: '#2196F3'
+        CONNECTING_LINK_COLOR: '#2196F3',
+
+        BADGE_FG_COLOR: '#000',
+        BADGE_BG_COLOR: '#FFF'
       },
       comfy_base: {
         'fg-color': '#222',

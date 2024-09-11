@@ -51,6 +51,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { ComfyNode } from '@/types/comfyLGraphNode'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2007,7 +2008,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node = class ComfyNode extends LGraphNode {
+    const node: new () => ComfyNode = class extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name

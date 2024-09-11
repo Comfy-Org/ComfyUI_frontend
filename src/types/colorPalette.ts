@@ -52,7 +52,9 @@ const litegraphBaseSchema = z
     WIDGET_SECONDARY_TEXT_COLOR: z.string(),
     LINK_COLOR: z.string(),
     EVENT_LINK_COLOR: z.string(),
-    CONNECTING_LINK_COLOR: z.string()
+    CONNECTING_LINK_COLOR: z.string(),
+    BADGE_FG_COLOR: z.string().optional(),
+    BADGE_BG_COLOR: z.string().optional()
   })
   .passthrough()
 

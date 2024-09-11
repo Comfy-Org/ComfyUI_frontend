@@ -3,6 +3,7 @@ import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
 import { colorPalettesSchema } from './colorPalette'
 import { LinkReleaseTriggerAction } from './searchBoxTypes'
+import { NodeSourceBadgeMode } from './nodeSource'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()
@@ -424,6 +425,10 @@ const zLinkReleaseTriggerAction = z.enum(
   Object.values(LinkReleaseTriggerAction) as [string, ...string[]]
 )
 
+const zNodeSourceBadgeMode = z.enum(
+  Object.values(NodeSourceBadgeMode) as [string, ...string[]]
+)
+
 const zSettings = z.record(z.any()).and(
   z
     .object({
@@ -484,7 +489,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Workflow.ModelDownload.AllowedSources': z.array(z.string()),
       'Comfy.Workflow.ModelDownload.AllowedSuffixes': z.array(z.string()),
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
-      'Comfy.Window.UnloadConfirmation': z.boolean()
+      'Comfy.Window.UnloadConfirmation': z.boolean(),
+      'Comfy.Node.NodeSourceBadgeMode': zNodeSourceBadgeMode
     })
     .optional()
 )
