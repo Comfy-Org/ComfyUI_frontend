@@ -2871,7 +2871,7 @@ export class ComfyApp {
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
    */
-  registerExtension(extension) {
+  registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
     }
