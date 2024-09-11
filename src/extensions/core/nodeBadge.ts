@@ -1,9 +1,9 @@
-import { app } from '@/scripts/app'
+import { app, type ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import type { ComfyLGraphNode } from '@/types/comfyLGraphNode'
 import { LGraphBadge } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
-import { computed, watch } from 'vue'
+import { computed, ComputedRef, watch } from 'vue'
 import {
   getNodeSource as getNodeSourceFromPythonModule,
   NodeBadgeMode
@@ -11,26 +11,7 @@ import {
 import _ from 'lodash'
 import { colorPalettes } from './colorPalette'
 import { BadgePosition } from '@comfyorg/litegraph'
-
-const settingStore = useSettingStore()
-const nodeSourceBadgeMode = computed(
-  () => settingStore.get('Comfy.Node.NodeSourceBadgeMode') as NodeBadgeMode
-)
-const nodeIdBadgeMode = computed(
-  () => settingStore.get('Comfy.Node.NodeIdBadgeMode') as NodeBadgeMode
-)
-const colorPalette = computed(
-  () => colorPalettes[settingStore.get('Comfy.ColorPalette')]
-)
-const defaultColorPalette = colorPalettes['dark']
-
-watch(nodeSourceBadgeMode, () => {
-  app.graph.setDirtyCanvas(true, true)
-})
-
-watch(nodeIdBadgeMode, () => {
-  app.graph.setDirtyCanvas(true, true)
-})
+import type { Palette } from '@/types/colorPalette'
 
 function getNodeSource(node: ComfyLGraphNode) {
   const pythonModule = (node.constructor as typeof ComfyLGraphNode).nodeData
@@ -62,46 +43,73 @@ function getNodeSourceBadge(
 
 class NodeSourceBadgeExtension implements ComfyExtension {
   name = 'Comfy.NodeSourceBadge'
-  nodeCreated(node: ComfyLGraphNode) {
+
+  constructor(
+    public nodeIdBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
+    public nodeSourceBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
+    public colorPalette: ComputedRef<Palette> | null = null,
+    public defaultColorPalette: Palette | null = null
+  ) {}
+
+  init(app: ComfyApp) {
+    if (!app.vueAppReady) {
+      return
+    }
+
+    const settingStore = useSettingStore()
+    this.nodeSourceBadgeMode = computed(
+      () => settingStore.get('Comfy.Node.NodeSourceBadgeMode') as NodeBadgeMode
+    )
+    this.nodeIdBadgeMode = computed(
+      () => settingStore.get('Comfy.Node.NodeIdBadgeMode') as NodeBadgeMode
+    )
+    this.colorPalette = computed(
+      () => colorPalettes[settingStore.get('Comfy.ColorPalette')]
+    )
+    this.defaultColorPalette = colorPalettes['dark']
+
+    watch(this.nodeSourceBadgeMode, () => {
+      app.graph.setDirtyCanvas(true, true)
+    })
+
+    watch(this.nodeIdBadgeMode, () => {
+      app.graph.setDirtyCanvas(true, true)
+    })
+  }
+
+  nodeCreated(node: ComfyLGraphNode, app: ComfyApp) {
+    if (!app.vueAppReady) {
+      return
+    }
+
     node.badgePosition = BadgePosition.TopRight
     // @ts-expect-error Disable ComfyUI-Manager's badge drawing by setting badge_enabled to true. Remove this when ComfyUI-Manager's badge drawing is removed.
     node.badge_enabled = true
 
-    const idBadge = computed(
-      () =>
-        new LGraphBadge({
-          text: _.truncate(getNodeIdBadge(node, nodeIdBadgeMode.value), {
-            length: 25
-          }),
-          fgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_FG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
-          bgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_BG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
-        })
-    )
-
-    const sourceBadge = computed(
+    const badge = computed(
       () =>
         new LGraphBadge({
           text: _.truncate(
-            getNodeSourceBadge(node, nodeSourceBadgeMode.value),
+            [
+              getNodeIdBadge(node, this.nodeIdBadgeMode.value),
+              getNodeSourceBadge(node, this.nodeSourceBadgeMode.value)
+            ]
+              .filter((s) => s.length > 0)
+              .join(' '),
             {
               length: 25
             }
           ),
           fgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_FG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
+            this.colorPalette.value.colors.litegraph_base?.BADGE_FG_COLOR ||
+            this.defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
           bgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_BG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
+            this.colorPalette.value.colors.litegraph_base?.BADGE_BG_COLOR ||
+            this.defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
         })
     )
 
-    node.badges.push(() => idBadge.value)
-    node.badges.push(() => sourceBadge.value)
+    node.badges.push(() => badge.value)
   }
 }
 
