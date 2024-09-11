@@ -490,8 +490,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Workflow.ModelDownload.AllowedSuffixes': z.array(z.string()),
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
       'Comfy.Window.UnloadConfirmation': z.boolean(),
-      'Comfy.Node.NodeSourceBadgeMode': zNodeBadgeMode,
-      'Comfy.Node.NodeIdBadgeMode': zNodeBadgeMode
+      'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
+      'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode
     })
     .optional()
 )

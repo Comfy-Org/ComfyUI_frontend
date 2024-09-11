@@ -333,7 +333,7 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.Node.NodeSourceBadgeMode',
+        id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
         name: 'Node source badge mode',
         type: 'combo',
         options: Object.values(NodeBadgeMode),
@@ -341,11 +341,11 @@ export const useSettingStore = defineStore('setting', {
       })
 
       app.ui.settings.addSetting({
-        id: 'Comfy.Node.NodeIdBadgeMode',
+        id: 'Comfy.NodeBadge.NodeIdBadgeMode',
         name: 'Node ID badge mode',
         type: 'combo',
         options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
-        defaultValue: NodeBadgeMode.None
+        defaultValue: NodeBadgeMode.ShowAll
       })
     },
 

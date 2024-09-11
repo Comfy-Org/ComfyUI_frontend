@@ -58,10 +58,11 @@ class NodeSourceBadgeExtension implements ComfyExtension {
 
     const settingStore = useSettingStore()
     this.nodeSourceBadgeMode = computed(
-      () => settingStore.get('Comfy.Node.NodeSourceBadgeMode') as NodeBadgeMode
+      () =>
+        settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') as NodeBadgeMode
     )
     this.nodeIdBadgeMode = computed(
-      () => settingStore.get('Comfy.Node.NodeIdBadgeMode') as NodeBadgeMode
+      () => settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode
     )
     this.colorPalette = computed(
       () => colorPalettes[settingStore.get('Comfy.ColorPalette')]

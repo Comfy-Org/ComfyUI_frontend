@@ -69,8 +69,8 @@ test.describe('Node source badge', () => {
     test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
       await comfyPage.loadWorkflow('execution_error')
-      await comfyPage.setSetting('Comfy.Node.NodeSourceBadgeMode', mode)
-      await comfyPage.setSetting('Comfy.Node.NodeIdBadgeMode', mode)
+      await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
+      await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', mode)
       await comfyPage.nextFrame()
       await comfyPage.resetView()
       await expect(comfyPage.canvas).toHaveScreenshot(`node-badge-${mode}.png`)
