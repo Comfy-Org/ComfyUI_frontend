@@ -40,7 +40,13 @@ export class LGraphBadge {
     this.cornerRadius = cornerRadius;
   }
 
+  get visible() {
+    return this.text.length > 0;
+  }
+
   getWidth(ctx: CanvasRenderingContext2D) {
+    if (!this.visible) return 0;
+
     ctx.save();
     ctx.font = `${this.fontSize}px sans-serif`;
     const textWidth = ctx.measureText(this.text).width;
@@ -53,7 +59,7 @@ export class LGraphBadge {
     x: number,
     y: number,
   ): void {
-    if (!this.text) return;
+    if (!this.visible) return;
 
     ctx.save();
     ctx.font = `${this.fontSize}px sans-serif`;
