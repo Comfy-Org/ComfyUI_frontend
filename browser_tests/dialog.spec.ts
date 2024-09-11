@@ -70,6 +70,9 @@ test.describe('Execution error', () => {
 
 test.describe('Missing models warning', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.page.evaluate((url: string) => {
+      return fetch(`${url}/api/devtools/cleanup_fake_model`)
+    }, comfyPage.url)
     await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSources', [
       'http://localhost:8188'
     ])
