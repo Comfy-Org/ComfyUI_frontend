@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
 import type { ComfyApp } from '../src/scripts/app'
-import { NodeSourceBadgeMode } from '../src/types/nodeSource'
+import { NodeBadgeMode } from '../src/types/nodeSource'
 
 test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {
@@ -65,16 +65,15 @@ test.describe('Node Badge', () => {
 })
 
 test.describe('Node source badge', () => {
-  Object.values(NodeSourceBadgeMode).forEach(async (mode) => {
-    test(`Shows node source name (${mode})`, async ({ comfyPage }) => {
+  Object.values(NodeBadgeMode).forEach(async (mode) => {
+    test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
       await comfyPage.loadWorkflow('execution_error')
       await comfyPage.setSetting('Comfy.Node.NodeSourceBadgeMode', mode)
+      await comfyPage.setSetting('Comfy.Node.NodeIdBadgeMode', mode)
       await comfyPage.nextFrame()
       await comfyPage.resetView()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        `node-source-badge-${mode}.png`
-      )
+      await expect(comfyPage.canvas).toHaveScreenshot(`node-badge-${mode}.png`)
     })
   })
 })

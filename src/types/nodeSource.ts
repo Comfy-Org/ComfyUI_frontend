@@ -27,10 +27,8 @@ export const getNodeSource = (python_module: string): NodeSource => {
   }
 }
 
-export enum NodeSourceBadgeMode {
+export enum NodeBadgeMode {
   None = 'None',
-  Nickname = 'Nickname',
-  NicknameHideBuiltIn = 'Nickname (hide built-in)',
-  IdNickname = '#ID Nickname',
-  IdNicknameHideBuiltIn = '#ID Nickname (hide built-in)'
+  ShowAll = 'Show all',
+  HideBuiltIn = 'Hide built-in'
 }
