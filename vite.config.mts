@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig({
   build: {
@@ -12,4 +13,12 @@ export default defineConfig({
     minify: false,
     sourcemap: true,
   },
+  plugins: [
+    dts({
+      entryRoot: 'src',
+      insertTypesEntry: true,
+      include: ['src/**/*.ts'],
+      outDir: 'dist',
+    }),
+  ],
 })

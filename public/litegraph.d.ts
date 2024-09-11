@@ -2,6 +2,8 @@
 // Project: litegraph.js
 // Definitions by: NateScarlet <https://github.com/NateScarlet>
 
+import { LGraphBadge, BadgePosition } from './LGraphBadge';
+
 export type Vector2 = [number, number];
 export type Vector4 = [number, number, number, number];
 export type widgetTypes =
@@ -658,6 +660,8 @@ export declare class LGraphNode {
     title: string;
     type: null | string;
     size: Vector2;
+    badges: (LGraphBadge | (() => LGraphBadge))[];
+    badgePosition: BadgePosition;
     graph: null | LGraph;
     graph_version: number;
     pos: Vector2;
@@ -1624,3 +1628,5 @@ declare class ContextMenu {
 }
 
 declare function clamp(v: number, min: number, max: number): number;
+
+export { LGraphBadge, BadgePosition } from "./LGraphBadge";
