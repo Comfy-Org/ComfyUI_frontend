@@ -50,8 +50,8 @@ function parseExifData(exifData) {
       let value
       if (type === 2) {
         // ASCII string
-        value = String.fromCharCode(
-          ...exifData.slice(valueOffset, valueOffset + numValues - 1)
+        value = new TextDecoder('utf-8').decode(
+          exifData.subarray(valueOffset, valueOffset + numValues - 1)
         )
       }
 
