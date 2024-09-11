@@ -73,6 +73,8 @@ class NodeSourceBadgeExtension implements ComfyExtension {
   name = 'Comfy.NodeSourceBadge'
   nodeCreated(node: ComfyLGraphNode) {
     node.badgePosition = BadgePosition.TopRight
+    // @ts-expect-error Disable ComfyUI-Manager's badge drawing by setting badge_enabled to true. Remove this when ComfyUI-Manager's badge drawing is removed.
+    node.badge_enabled = true
     const badge = computed(
       () =>
         new LGraphBadge({
