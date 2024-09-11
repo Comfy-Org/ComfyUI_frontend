@@ -30,8 +30,7 @@ app.registerExtension({
   slot_types_default_in: {},
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     var nodeId = nodeData.name
-    var inputs = []
-    inputs = nodeData['input']['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
+    const inputs = nodeData['input']['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {
       var input = inputs[inputKey]
       if (typeof input[0] !== 'string') continue
