@@ -40,6 +40,13 @@ export default defineConfig({
       grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
     },
 
+    {
+      name: 'chromium-2x',
+      use: { ...devices['Desktop Chrome'], deviceScaleFactor: 2 },
+      timeout: 15000,
+      grepInvert: /@mobile/ // Run all tests except those tagged with @mobile
+    },
+
     // {
     //   name: 'firefox',
     //   use: { ...devices['Desktop Firefox'] },
