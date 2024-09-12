@@ -12,7 +12,7 @@ on:
       - 'dev*'
 
 jobs:
-  test:
+  setup:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout ComfyUI
@@ -71,12 +71,22 @@ jobs:
         python main.py --cpu &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
-    - name: Run UI tests
+
+  jest-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+    - name: Run Jest tests
       run: |
         npm run test:generate
         npm run test:generate:examples
         npm test -- --verbose
       working-directory: ComfyUI_frontend
+
+  playwright-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
