@@ -5,7 +5,7 @@ export declare class ComfyLGraphNode extends LGraphNode {
   static comfyClass: string
   static title: string
   static nodeData?: ComfyNodeDef
-  static category: string
+  static category?: string
 
   constructor(title?: string)
 }
