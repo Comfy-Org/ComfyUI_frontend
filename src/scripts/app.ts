@@ -2013,7 +2013,7 @@ export class ComfyApp {
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
       static nodeData? = nodeData
-      static category: string = nodeData.category
+      static category?: string
 
       constructor(title?: string) {
         super(title)
@@ -2092,6 +2092,9 @@ export class ComfyApp {
 
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
     LiteGraph.registerNodeType(nodeId, node)
+    // Note: Do not move this to the class definition, it will be overwritten
+    // @ts-expect-error
+    node.category = nodeData.category
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
