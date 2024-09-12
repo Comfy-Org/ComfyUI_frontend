@@ -7,8 +7,8 @@ const ext = {
   name: 'Comfy.ContextMenuFilter',
   init() {
     const ctxMenu = LiteGraph.ContextMenu
-    // @ts-expect-error
-    // TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
+
+    // @ts-expect-error TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
     LiteGraph.ContextMenu = function (values, options) {
       const ctx = new ctxMenu(values, options)
 
@@ -17,11 +17,10 @@ const ext = {
         const filter = document.createElement('input')
         filter.classList.add('comfy-context-menu-filter')
         filter.placeholder = 'Filter list'
-        // @ts-expect-error
+
         ctx.root.prepend(filter)
 
         const items = Array.from(
-          // @ts-expect-error
           ctx.root.querySelectorAll('.litemenu-entry')
         ) as HTMLElement[]
         let displayedItems = [...items]
@@ -63,18 +62,16 @@ const ext = {
           }
 
           const positionList = () => {
-            // @ts-expect-error
             const rect = ctx.root.getBoundingClientRect()
 
             // If the top is off-screen then shift the element with scaling applied
             if (rect.top < 0) {
               const scale =
                 1 -
-                // @ts-expect-error
                 ctx.root.getBoundingClientRect().height / ctx.root.clientHeight
-              // @ts-expect-error
+
               const shift = (ctx.root.clientHeight * scale) / 2
-              // @ts-expect-error
+
               ctx.root.style.top = -shift + 'px'
             }
           }
@@ -145,7 +142,7 @@ const ext = {
               let top = options.event.clientY - 10
 
               const bodyRect = document.body.getBoundingClientRect()
-              // @ts-expect-error
+
               const rootRect = ctx.root.getBoundingClientRect()
               if (
                 bodyRect.height &&
@@ -154,7 +151,6 @@ const ext = {
                 top = Math.max(0, bodyRect.height - rootRect.height - 10)
               }
 
-              // @ts-expect-error
               ctx.root.style.top = top + 'px'
               positionList()
             }
