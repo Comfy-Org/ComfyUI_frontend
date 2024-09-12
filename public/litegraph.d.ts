@@ -1603,7 +1603,7 @@ export declare class LGraphCanvas {
     processContextMenu(node: LGraphNode, event: Event): void;
 }
 
-declare class ContextMenu {
+export declare class ContextMenu {
     static trigger(
         element: HTMLElement,
         event_name: string,
@@ -1627,6 +1627,6 @@ declare class ContextMenu {
     getFirstEvent(): void;
 }
 
-declare function clamp(v: number, min: number, max: number): number;
+export declare function clamp(v: number, min: number, max: number): number;
 
 export { LGraphBadge, BadgePosition } from "./LGraphBadge";
