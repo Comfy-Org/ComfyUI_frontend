@@ -6164,7 +6164,6 @@ const globalExport = {};
             node.graph.afterChange( /*?*/);
         }
         static onMenuNodePin(value, options, e, menu, node) {
-            node.pin();
         }
         static onMenuNodeMode(value, options, e, menu, node) {
             new LiteGraph.ContextMenu(
@@ -13173,7 +13172,13 @@ const globalExport = {};
                 options.push(
                     {
                         content: node.pinned ? "Unpin" : "Pin",
-                        callback: LGraphCanvas.onMenuNodePin
+                        callback: (...args) => {
+                            LGraphCanvas.onMenuNodePin(...args);
+                            for (const i in this.selected_nodes) {
+                                const node = this.selected_nodes[i]
+                                node.pin()
+                            }
+                        }
                     },
                     {
                         content: "Colors",
