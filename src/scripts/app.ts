@@ -2008,7 +2008,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node: new () => ComfyLGraphNode = class extends LGraphNode {
+    const node: new () => ComfyLGraphNode = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
