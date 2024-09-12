@@ -73,11 +73,8 @@ watch(
       inputStyle.value.fontSize = `${fontSize}px`
     } else if (target instanceof LGraphNode) {
       const node = target
-      const isCollapsed = node.flags?.collapsed
-      const [x, y, nodeWidth, nodeHeight] = node.getBounding()
-      const canvasWidth =
-        // @ts-expect-error Remove after collapsed_width is exposed in LiteGraph
-        isCollapsed && node._collapsed_width ? node._collapsed_width : nodeWidth
+      const [x, y] = node.getBounding()
+      const canvasWidth = node.width
       const canvasHeight = LiteGraph.NODE_TITLE_HEIGHT
 
       const [left, top] = app.canvasPosToClientPos([x, y])

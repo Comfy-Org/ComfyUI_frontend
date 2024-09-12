@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
+import { NodeBadgeMode } from '../src/types/nodeSource'
 
 test.describe('Canvas Right Click Menu', () => {
   // See https://github.com/comfyanonymous/ComfyUI/issues/3883
@@ -61,6 +62,24 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-collapsed.png'
+    )
+  })
+
+  test('Can collapse (Node Badge)', async ({ comfyPage }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeBadge.NodeIdBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+    await comfyPage.setSetting(
+      'Comfy.NodeBadge.NodeSourceBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.getByText('Collapse').click()
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'right-click-node-collapsed-badge.png'
     )
   })
 
