@@ -13178,6 +13178,7 @@ const globalExport = {};
                                 const node = this.selected_nodes[i]
                                 node.pin()
                             }
+                            this.setDirty(true, true);
                         }
                     },
                     {
