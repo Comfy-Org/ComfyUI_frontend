@@ -19,6 +19,8 @@
       </a>
     </div>
 
+    <Divider />
+
     <SystemStatsPanel
       v-if="systemStatsStore.systemStats"
       :stats="systemStatsStore.systemStats"
@@ -29,6 +31,7 @@
 <script setup lang="ts">
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import Tag from 'primevue/tag'
+import Divider from 'primevue/divider'
 import { computed, onMounted } from 'vue'
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 

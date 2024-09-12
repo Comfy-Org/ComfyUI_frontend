@@ -387,6 +387,17 @@ const zPromptResponse = z.object({
     })
     .optional()
 })
+
+const zDeviceStats = z.object({
+  name: z.string(),
+  type: z.string(),
+  index: z.number(),
+  vram_total: z.number(),
+  vram_free: z.number(),
+  torch_vram_total: z.number(),
+  torch_vram_free: z.number()
+})
+
 export const zSystemStats = z.object({
   system: z.object({
     os: z.string(),
@@ -396,17 +407,7 @@ export const zSystemStats = z.object({
     pytorch_version: z.string(),
     argv: z.array(z.string())
   }),
-  devices: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string(),
-      index: z.number().optional(),
-      vram_total: z.number(),
-      vram_free: z.number(),
-      torch_vram_total: z.number(),
-      torch_vram_free: z.number()
-    })
-  )
+  devices: z.array(zDeviceStats)
 })
 const zUser = z.object({
   storage: z.enum(['server', 'browser']),
@@ -500,6 +501,7 @@ export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
 export type Settings = z.infer<typeof zSettings>
+export type DeviceStats = z.infer<typeof zDeviceStats>
 export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>
