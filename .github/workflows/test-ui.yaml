@@ -15,7 +15,7 @@ jobs:
   jest-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
     - name: Run Jest tests
       run: |
         npm run test:generate
@@ -26,7 +26,7 @@ jobs:
   playwright-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
