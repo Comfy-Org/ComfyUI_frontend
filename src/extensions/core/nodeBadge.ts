@@ -9,7 +9,7 @@ import {
   NodeBadgeMode
 } from '@/types/nodeSource'
 import _ from 'lodash'
-import { colorPalettes } from './colorPalette'
+import { getColorPalette, defaultColorPalette } from './colorPalette'
 import { BadgePosition } from '@comfyorg/litegraph'
 import type { Palette } from '@/types/colorPalette'
 
@@ -47,8 +47,7 @@ class NodeBadgeExtension implements ComfyExtension {
   constructor(
     public nodeIdBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
     public nodeSourceBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
-    public colorPalette: ComputedRef<Palette> | null = null,
-    public defaultColorPalette: Palette | null = null
+    public colorPalette: ComputedRef<Palette> | null = null
   ) {}
 
   init(app: ComfyApp) {
@@ -64,10 +63,9 @@ class NodeBadgeExtension implements ComfyExtension {
     this.nodeIdBadgeMode = computed(
       () => settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode
     )
-    this.colorPalette = computed(
-      () => colorPalettes[settingStore.get('Comfy.ColorPalette')]
+    this.colorPalette = computed(() =>
+      getColorPalette(settingStore.get('Comfy.ColorPalette'))
     )
-    this.defaultColorPalette = colorPalettes['dark']
 
     watch(this.nodeSourceBadgeMode, () => {
       app.graph.setDirtyCanvas(true, true)
@@ -103,10 +101,10 @@ class NodeBadgeExtension implements ComfyExtension {
           ),
           fgColor:
             this.colorPalette.value.colors.litegraph_base?.BADGE_FG_COLOR ||
-            this.defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
+            defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
           bgColor:
             this.colorPalette.value.colors.litegraph_base?.BADGE_BG_COLOR ||
-            this.defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
+            defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
         })
     )
 
