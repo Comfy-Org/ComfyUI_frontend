@@ -51,6 +51,9 @@
               }"
             />
           </TabPanel>
+          <TabPanel key="about" value="About">
+            <AboutPanel />
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </div>
@@ -70,17 +73,25 @@ import SettingGroup from './setting/SettingGroup.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
+import AboutPanel from './setting/AboutPanel.vue'
 
 interface ISettingGroup {
   label: string
   settings: SettingParams[]
 }
 
+const aboutPanelNode: SettingTreeNode = {
+  key: 'about',
+  label: 'About',
+  children: []
+}
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
-const categories = computed<SettingTreeNode[]>(
-  () => settingRoot.value.children || []
-)
+const categories = computed<SettingTreeNode[]>(() => [
+  ...(settingRoot.value.children || []),
+  aboutPanelNode
+])
 const activeCategory = ref<SettingTreeNode | null>(null)
 const searchResults = ref<ISettingGroup[]>([])
 
