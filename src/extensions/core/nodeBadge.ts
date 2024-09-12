@@ -16,11 +16,11 @@ import type { Palette } from '@/types/colorPalette'
 function getNodeSource(node: ComfyLGraphNode) {
   const pythonModule = (node.constructor as typeof ComfyLGraphNode).nodeData
     ?.python_module
-  return getNodeSourceFromPythonModule(pythonModule)
+  return pythonModule ? getNodeSourceFromPythonModule(pythonModule) : null
 }
 
 function isCoreNode(node: ComfyLGraphNode) {
-  return getNodeSource(node).type === 'core'
+  return getNodeSource(node)?.type === 'core'
 }
 
 function getNodeIdBadge(node: ComfyLGraphNode, nodeIdBadgeMode: NodeBadgeMode) {
@@ -38,11 +38,11 @@ function getNodeSourceBadge(
   return nodeSourceBadgeMode === NodeBadgeMode.None ||
     (isCoreNode(node) && nodeSourceBadgeMode === NodeBadgeMode.HideBuiltIn)
     ? ''
-    : nodeSource.badgeText
+    : nodeSource?.badgeText ?? ''
 }
 
-class NodeSourceBadgeExtension implements ComfyExtension {
-  name = 'Comfy.NodeSourceBadge'
+class NodeBadgeExtension implements ComfyExtension {
+  name = 'Comfy.NodeBadge'
 
   constructor(
     public nodeIdBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
@@ -114,4 +114,4 @@ class NodeSourceBadgeExtension implements ComfyExtension {
   }
 }
 
-app.registerExtension(new NodeSourceBadgeExtension())
+app.registerExtension(new NodeBadgeExtension())
