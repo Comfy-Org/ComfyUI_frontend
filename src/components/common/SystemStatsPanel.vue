@@ -1,10 +1,10 @@
 <template>
   <div class="system-stats">
     <div class="mb-6">
-      <h2 class="text-2xl font-semibold mb-2">{{ $t('systemInfo') }}</h2>
+      <h2 class="text-2xl font-semibold mb-4">{{ $t('systemInfo') }}</h2>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
-          <div class="font-medium">{{ $t(col.header) }}:</div>
+          <div class="font-medium">{{ $t(col.header) }}</div>
           <div>{{ systemInfo[col.field] }}</div>
         </template>
       </div>
@@ -13,7 +13,7 @@
     <Divider />
 
     <div>
-      <h2 class="text-2xl font-semibold mb-2">{{ $t('devices') }}</h2>
+      <h2 class="text-2xl font-semibold mb-4">{{ $t('devices') }}</h2>
       <TabView v-if="props.stats.devices.length > 1">
         <TabPanel
           v-for="device in props.stats.devices"
@@ -46,11 +46,10 @@ const systemInfo = computed(() => ({
 }))
 
 const systemColumns = [
-  { field: 'os', header: 'os' },
-  { field: 'python_version', header: 'pythonVersion' },
-  { field: 'embedded_python', header: 'embeddedPython' },
-  { field: 'comfyui_version', header: 'comfyuiVersion' },
-  { field: 'pytorch_version', header: 'pytorchVersion' },
-  { field: 'argv', header: 'arguments' }
+  { field: 'os', header: 'OS' },
+  { field: 'python_version', header: 'Python Version' },
+  { field: 'embedded_python', header: 'Embedded Python' },
+  { field: 'pytorch_version', header: 'Pytorch Version' },
+  { field: 'argv', header: 'Arguments' }
 ]
 </script>

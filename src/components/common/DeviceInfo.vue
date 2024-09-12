@@ -1,7 +1,7 @@
 <template>
   <div class="grid grid-cols-2 gap-2">
     <template v-for="col in deviceColumns" :key="col.field">
-      <div class="font-medium">{{ $t(col.header) }}:</div>
+      <div class="font-medium">{{ $t(col.header) }}</div>
       <div>{{ props.device[col.field] }}</div>
     </template>
   </div>
@@ -15,12 +15,11 @@ const props = defineProps<{
 }>()
 
 const deviceColumns = [
-  { field: 'name', header: 'name' },
-  { field: 'type', header: 'type' },
-  { field: 'index', header: 'index' },
-  { field: 'vram_total', header: 'vramTotal' },
-  { field: 'vram_free', header: 'vramFree' },
-  { field: 'torch_vram_total', header: 'torchVramTotal' },
-  { field: 'torch_vram_free', header: 'torchVramFree' }
+  { field: 'name', header: 'Name' },
+  { field: 'type', header: 'Type' },
+  { field: 'vram_total', header: 'VRAM Total' },
+  { field: 'vram_free', header: 'VRAM Free' },
+  { field: 'torch_vram_total', header: 'Torch VRAM Total' },
+  { field: 'torch_vram_free', header: 'Torch VRAM Free' }
 ]
 </script>
