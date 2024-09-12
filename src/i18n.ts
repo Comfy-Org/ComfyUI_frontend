@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    about: 'About',
     add: 'Add',
     confirm: 'Confirm',
     reset: 'Reset',
