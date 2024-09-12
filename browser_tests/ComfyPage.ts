@@ -3,7 +3,7 @@ import { test as base } from '@playwright/test'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
-import * as path from 'path'
+import { NodeBadgeMode } from '../src/types/nodeSource'
 
 interface Position {
   x: number
@@ -202,6 +202,13 @@ export class ComfyPage {
     // Reset view to force re-rendering of canvas. So that info fields like fps
     // become hidden.
     await this.resetView()
+
+    // Hide all badges by default.
+    await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
+    await this.setSetting(
+      'Comfy.NodeBadge.NodeSourceBadgeMode',
+      NodeBadgeMode.None
+    )
   }
 
   public assetPath(fileName: string) {

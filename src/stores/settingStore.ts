@@ -10,6 +10,7 @@
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import { Settings } from '@/types/apiTypes'
+import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   LinkReleaseTriggerAction,
   LinkReleaseTriggerMode
@@ -329,6 +330,22 @@ export const useSettingStore = defineStore('setting', {
         type: 'combo',
         options: ['en', 'zh'],
         defaultValue: navigator.language.split('-')[0] || 'en'
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
+        name: 'Node source badge mode',
+        type: 'combo',
+        options: Object.values(NodeBadgeMode),
+        defaultValue: NodeBadgeMode.HideBuiltIn
+      })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeBadge.NodeIdBadgeMode',
+        name: 'Node ID badge mode',
+        type: 'combo',
+        options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
+        defaultValue: NodeBadgeMode.ShowAll
       })
     },
 

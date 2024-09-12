@@ -32,7 +32,8 @@ import {
   LGraphGroup,
   DragAndScale,
   LGraphCanvas,
-  ContextMenu
+  ContextMenu,
+  LGraphBadge
 } from '@comfyorg/litegraph'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
@@ -98,6 +99,7 @@ onMounted(async () => {
   window['DragAndScale'] = DragAndScale
   window['LGraphCanvas'] = LGraphCanvas
   window['ContextMenu'] = ContextMenu
+  window['LGraphBadge'] = LGraphBadge
 
   comfyApp.vueAppReady = true
 
