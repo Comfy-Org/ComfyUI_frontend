@@ -1126,6 +1126,10 @@ export declare class LGraphNode {
     /** Called by `LGraphCanvas.processContextMenu` */
     getMenuOptions?(graphCanvas: LGraphCanvas): ContextMenuItem[];
     getSlotMenuOptions?(slot: INodeSlot): ContextMenuItem[];
+
+    get width(): number;
+    get height(): number;
+    drawBadges?(ctx: CanvasRenderingContext2D, options: { gap?: number }): void;
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {

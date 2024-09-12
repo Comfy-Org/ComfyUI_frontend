@@ -4820,11 +4820,11 @@ const globalExport = {};
         }
 
         get width() {
-            return this.size[0];
+            return this.collapsed ? this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH : this.size[0];
         }
 
         get height() {
-            return this.size[1];
+            return this.collapsed ? LiteGraph.NODE_COLLAPSED_HEIGHT : this.size[1];
         }
 
         drawBadges(ctx, {gap = 2} = {}) {
