@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="text-2xl font-bold mb-2">{{ $t('about') }}</h2>
-    <div class="space-y-4">
+    <div class="space-y-2">
       <a
         v-for="link in links"
         :key="link.url"
@@ -10,7 +10,7 @@
         rel="noopener noreferrer"
         class="inline-flex items-center no-underline"
       >
-        <Tag class="mr-3">
+        <Tag class="mr-2">
           <template #icon>
             <i :class="[link.icon, 'mr-2 text-xl']"></i>
           </template>
@@ -18,26 +18,34 @@
         </Tag>
       </a>
     </div>
-    <div class="mt-6 text-base text-secondary">
-      <p>{{ $t('frontendVersion') }}: {{ frontendVersion }}</p>
-    </div>
+
+    <SystemStatsPanel
+      v-if="systemStatsStore.systemStats"
+      :stats="systemStatsStore.systemStats"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import Tag from 'primevue/tag'
+import { computed, onMounted } from 'vue'
+import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 
-const frontendVersion = ref(window['__COMFYUI_FRONTEND_VERSION__'])
+const systemStatsStore = useSystemStatsStore()
+const frontendVersion = window['__COMFYUI_FRONTEND_VERSION__']
+const coreVersion = computed(
+  () => systemStatsStore.systemStats?.system?.comfyui_version ?? ''
+)
 
-const links = [
+const links = computed(() => [
   {
-    label: 'ComfyUI',
+    label: `ComfyUI ${coreVersion.value}`,
     url: 'https://github.com/comfyanonymous/ComfyUI',
     icon: 'pi pi-github'
   },
   {
-    label: 'ComfyUI_frontend',
+    label: `ComfyUI_frontend v${frontendVersion}`,
     url: 'https://github.com/Comfy-Org/ComfyUI_frontend',
     icon: 'pi pi-github'
   },
@@ -47,5 +55,11 @@ const links = [
     icon: 'pi pi-discord'
   },
   { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' }
-]
+])
+
+onMounted(async () => {
+  if (!systemStatsStore.systemStats) {
+    await systemStatsStore.fetchSystemStats()
+  }
+})
 </script>
