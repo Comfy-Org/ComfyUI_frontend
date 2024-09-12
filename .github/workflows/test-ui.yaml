@@ -23,19 +23,53 @@ jobs:
         npm test -- --verbose
       working-directory: ComfyUI_frontend
 
-  playwright-tests:
+  playwright-tests-chromium:
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
       working-directory: ComfyUI_frontend
-    - name: Run Playwright tests
-      run: npx playwright test
+    - name: Run Playwright tests (Chromium)
+      run: npx playwright test --project=chromium
       working-directory: ComfyUI_frontend
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: playwright-report
+        name: playwright-report-chromium
+        path: ComfyUI_frontend/playwright-report/
+        retention-days: 30
+
+  playwright-tests-chromium-2x:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium --with-deps
+      working-directory: ComfyUI_frontend
+    - name: Run Playwright tests (Chromium 2x)
+      run: npx playwright test --project=chromium-2x
+      working-directory: ComfyUI_frontend
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-chromium-2x
+        path: ComfyUI_frontend/playwright-report/
+        retention-days: 30
+
+  playwright-tests-mobile-chrome:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium --with-deps
+      working-directory: ComfyUI_frontend
+    - name: Run Playwright tests (Mobile Chrome)
+      run: npx playwright test --project=mobile-chrome
+      working-directory: ComfyUI_frontend
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-mobile-chrome
         path: ComfyUI_frontend/playwright-report/
         retention-days: 30
