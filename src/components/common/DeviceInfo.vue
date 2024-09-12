@@ -2,7 +2,7 @@
   <div class="grid grid-cols-2 gap-2">
     <template v-for="col in deviceColumns" :key="col.field">
       <div class="font-medium">{{ $t(col.header) }}</div>
-      <div>{{ props.device[col.field] }}</div>
+      <div>{{ formatValue(props.device[col.field], col.field) }}</div>
     </template>
   </div>
 </template>
@@ -22,4 +22,19 @@ const deviceColumns = [
   { field: 'torch_vram_total', header: 'Torch VRAM Total' },
   { field: 'torch_vram_free', header: 'Torch VRAM Free' }
 ]
+
+const formatValue = (value: any, field: string) => {
+  if (
+    ['vram_total', 'vram_free', 'torch_vram_total', 'torch_vram_free'].includes(
+      field
+    )
+  ) {
+    const mb = Math.round(value / (1024 * 1024))
+    if (mb >= 1024) {
+      return `${(mb / 1024).toFixed(2)} GB`
+    }
+    return `${mb} MB`
+  }
+  return value
+}
 </script>
