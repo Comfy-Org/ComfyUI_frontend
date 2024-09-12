@@ -118,4 +118,20 @@ test.describe('Node Right Click Menu', () => {
       'right-click-unpinned-node-moved.png'
     )
   })
+
+  test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('selected-nodes-pinned.png')
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'selected-nodes-unpinned.png'
+    )
+  })
 })
