@@ -415,7 +415,11 @@ const zUser = z.object({
   users: z.record(z.string(), z.unknown())
 })
 const zUserData = z.array(z.array(z.string(), z.string()))
-
+const zUserDataFullInfo = z.object({
+  path: z.string(),
+  size: z.number(),
+  modified: z.number()
+})
 const zBookmarkCustomization = z.object({
   icon: z.string().optional(),
   color: z.string().optional()
@@ -506,3 +510,4 @@ export type DeviceStats = z.infer<typeof zDeviceStats>
 export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>
+export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>

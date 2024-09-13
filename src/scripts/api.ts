@@ -11,7 +11,8 @@ import {
   PromptResponse,
   SystemStats,
   User,
-  Settings
+  Settings,
+  UserDataFullInfo
 } from '@/types/apiTypes'
 import axios from 'axios'
 
@@ -661,6 +662,19 @@ class ComfyApi extends EventTarget {
         dir,
         split
       })}`
+    )
+    if (resp.status === 404) return []
+    if (resp.status !== 200) {
+      throw new Error(
+        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    return resp.json()
+  }
+
+  async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
+    const resp = await this.fetchApi(
+      `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {

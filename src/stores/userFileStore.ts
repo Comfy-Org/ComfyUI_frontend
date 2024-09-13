@@ -1,18 +1,27 @@
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
-import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
+import { computed, ref } from 'vue'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
-interface OpenFile {
-  path: string
-  content: string
-  isModified: boolean
-  originalContent: string
-}
+class UserFile {
+  isLoading: boolean = false
+  content: string | null = null
+  originalContent: string | null = null
 
-interface StoreState {
-  files: string[]
-  openFiles: OpenFile[]
+  constructor(
+    public path: string,
+    public lastModified: number,
+    public size: number
+  ) {}
+
+  get isOpen() {
+    return !!this.content
+  }
+
+  get isModified() {
+    return this.content !== this.originalContent
+  }
 }
 
 interface ApiResponse<T = any> {
@@ -21,153 +30,115 @@ interface ApiResponse<T = any> {
   message?: string
 }
 
-export const useUserFileStore = defineStore('userFile', {
-  state: (): StoreState => ({
-    files: [],
-    openFiles: []
-  }),
+export const useUserFileStore = defineStore('userFile', () => {
+  const userFilesByPath = ref(new Map<string, UserFile>())
 
-  getters: {
-    getOpenFile: (state) => (path: string) =>
-      state.openFiles.find((file) => file.path === path),
-    modifiedFiles: (state) => state.openFiles.filter((file) => file.isModified),
-    workflowsTree: (state): TreeNode =>
-      buildTree(state.files, (path: string) => path.split('/'))
-  },
+  const userFiles = computed(() => Array.from(userFilesByPath.value.values()))
+  const modifiedFiles = computed(() =>
+    userFiles.value.filter((file: UserFile) => file.isModified)
+  )
+  const openedFiles = computed(() =>
+    userFiles.value.filter((file: UserFile) => file.isOpen)
+  )
 
-  actions: {
-    async openFile(path: string): Promise<void> {
-      if (this.getOpenFile(path)) return
+  const workflowsTree = computed<TreeExplorerNode<UserFile>>(
+    () =>
+      buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
+        userFile.path.split('/')
+      ) as TreeExplorerNode<UserFile>
+  )
 
-      const { success, data } = await this.getFileData(path)
-      if (success && data) {
-        this.openFiles.push({
-          path,
-          content: data,
-          isModified: false,
-          originalContent: data
-        })
-      }
-    },
+  /**
+   * Syncs the files in the given directory with the API.
+   * @param dir The directory to sync.
+   */
+  const syncFiles = async () => {
+    const files = await api.listUserDataFullInfo('')
 
-    closeFile(path: string): void {
-      const index = this.openFiles.findIndex((file) => file.path === path)
-      if (index !== -1) {
-        this.openFiles.splice(index, 1)
-      }
-    },
+    for (const file of files) {
+      const existingFile = userFilesByPath.value.get(file.path)
 
-    updateFileContent(path: string, newContent: string): void {
-      const file = this.getOpenFile(path)
-      if (file) {
-        file.content = newContent
-        file.isModified = file.content !== file.originalContent
-      }
-    },
-
-    async saveOpenFile(path: string): Promise<ApiResponse> {
-      const file = this.getOpenFile(path)
-      if (file?.isModified) {
-        const result = await this.saveFile(path, file.content)
-        if (result.success) {
-          file.isModified = false
-          file.originalContent = file.content
-        }
-        return result
-      }
-      return { success: true }
-    },
-
-    discardChanges(path: string): void {
-      const file = this.getOpenFile(path)
-      if (file) {
-        file.content = file.originalContent
-        file.isModified = false
-      }
-    },
-
-    async loadFiles(dir: string = './'): Promise<void> {
-      this.files = (await api.listUserData(dir, true, false)).map(
-        (filePath: string) => filePath.replaceAll('\\', '/')
-      )
-
-      this.openFiles = (
-        await Promise.all(
-          this.openFiles.map(async (openFile) => {
-            if (!this.files.includes(openFile.path)) return null
-
-            const { success, data } = await this.getFileData(openFile.path)
-            if (success && data !== openFile.originalContent) {
-              return {
-                ...openFile,
-                content: data,
-                originalContent: data,
-                isModified: openFile.content !== data
-              }
-            }
-
-            return openFile
-          })
+      if (!existingFile) {
+        // New file, add it to the map
+        userFilesByPath.value.set(
+          file.path,
+          new UserFile(file.path, file.modified, file.size)
         )
-      ).filter((file): file is OpenFile => file !== null)
-    },
-
-    async renameFile(oldPath: string, newPath: string): Promise<ApiResponse> {
-      const resp = await api.moveUserData(oldPath, newPath)
-      if (resp.status !== 200) {
-        return { success: false, message: resp.statusText }
+      } else if (existingFile.lastModified !== file.modified) {
+        // File has been modified, update its properties
+        existingFile.lastModified = file.modified
+        existingFile.size = file.size
+        existingFile.originalContent = null
+        existingFile.content = null
+        existingFile.isLoading = false
       }
-
-      const openFile = this.openFiles.find((file) => file.path === oldPath)
-      if (openFile) {
-        openFile.path = newPath
-      }
-
-      await this.loadFiles()
-      return { success: true }
-    },
-
-    async deleteFile(path: string): Promise<ApiResponse> {
-      const resp = await api.deleteUserData(path)
-      if (resp.status !== 204) {
-        return {
-          success: false,
-          message: `Error removing user data file '${path}': ${resp.status} ${resp.statusText}`
-        }
-      }
-
-      const index = this.openFiles.findIndex((file) => file.path === path)
-      if (index !== -1) {
-        this.openFiles.splice(index, 1)
-      }
-
-      await this.loadFiles()
-      return { success: true }
-    },
-
-    async saveFile(path: string, data: string): Promise<ApiResponse> {
-      const resp = await api.storeUserData(path, data, {
-        stringify: false,
-        throwOnError: false,
-        overwrite: true
-      })
-      if (resp.status !== 200) {
-        return {
-          success: false,
-          message: `Error saving user data file '${path}': ${resp.status} ${resp.statusText}`
-        }
-      }
-
-      await this.loadFiles()
-      return { success: true }
-    },
-
-    async getFileData(path: string): Promise<ApiResponse<string>> {
-      const resp = await api.getUserData(path)
-      if (resp.status !== 200) {
-        return { success: false, message: resp.statusText }
-      }
-      return { success: true, data: await resp.json() }
     }
+
+    // Remove files that no longer exist
+    for (const [path, _] of userFilesByPath.value) {
+      if (!files.some((file) => file.path === path)) {
+        userFilesByPath.value.delete(path)
+      }
+    }
+  }
+
+  const loadFile = async (file: UserFile) => {
+    file.isLoading = true
+    const resp = await api.getUserData(file.path)
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to load file '${file.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    file.content = await resp.text()
+    file.originalContent = file.content
+    file.isLoading = false
+  }
+
+  const saveFile = async (file: UserFile) => {
+    if (file.isModified) {
+      const resp = await api.storeUserData(file.path, file.content)
+      if (resp.status !== 200) {
+        throw new Error(
+          `Failed to save file '${file.path}': ${resp.status} ${resp.statusText}`
+        )
+      }
+    }
+    await syncFiles()
+  }
+
+  const deleteFile = async (file: UserFile) => {
+    const resp = await api.deleteUserData(file.path)
+    if (resp.status !== 204) {
+      throw new Error(
+        `Failed to delete file '${file.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    await syncFiles()
+  }
+
+  const renameFile = async (file: UserFile, newPath: string) => {
+    const resp = await api.moveUserData(file.path, newPath)
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to rename file '${file.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    file.path = newPath
+    userFilesByPath.value.set(newPath, file)
+    userFilesByPath.value.delete(file.path)
+    await syncFiles()
+  }
+
+  return {
+    userFiles,
+    modifiedFiles,
+    openedFiles,
+    workflowsTree,
+    syncFiles,
+    loadFile,
+    saveFile,
+    deleteFile,
+    renameFile
   }
 })
