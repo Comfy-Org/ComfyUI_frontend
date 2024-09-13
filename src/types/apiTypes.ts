@@ -247,7 +247,11 @@ function inputSpec(
 const zBaseInputSpecValue = z
   .object({
     default: z.any().optional(),
-    forceInput: z.boolean().optional()
+    defaultInput: z.boolean().optional(),
+    forceInput: z.boolean().optional(),
+    lazy: z.boolean().optional(),
+    rawLink: z.boolean().optional(),
+    tooltip: z.string().optional()
   })
   .passthrough()
 
