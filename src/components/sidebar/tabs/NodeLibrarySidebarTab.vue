@@ -20,7 +20,7 @@
     </template>
     <template #body>
       <SearchBox
-        class="node-lib-search-box"
+        class="node-lib-search-box mx-4 mt-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"
@@ -193,10 +193,6 @@ const onRemoveFilter = (filterAndValue) => {
 </style>
 
 <style scoped>
-:deep(.node-lib-search-box) {
-  @apply mx-4 mt-4;
-}
-
 :deep(.comfy-vue-side-bar-body) {
   background: var(--p-tree-background);
 }
