@@ -4,7 +4,7 @@ import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
-class UserFile {
+export class UserFile {
   isLoading: boolean = false
   content: string | null = null
   originalContent: string | null = null
