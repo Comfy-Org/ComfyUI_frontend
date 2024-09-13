@@ -347,6 +347,14 @@ export const useSettingStore = defineStore('setting', {
         options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
         defaultValue: NodeBadgeMode.ShowAll
       })
+
+      app.ui.settings.addSetting({
+        id: 'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+        name: 'Node life cycle badge mode',
+        type: 'combo',
+        options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
+        defaultValue: NodeBadgeMode.ShowAll
+      })
     },
 
     set<K extends keyof Settings>(key: K, value: Settings[K]) {
