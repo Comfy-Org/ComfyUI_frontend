@@ -1,15 +1,15 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { useUserFileStore } from '@/stores/userFileStore'
+import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 import { api } from '@/scripts/api'
 
 // Mock the api
 jest.mock('@/scripts/api', () => ({
   api: {
-    listUserData: jest.fn(),
-    moveUserData: jest.fn(),
-    deleteUserData: jest.fn(),
+    listUserDataFullInfo: jest.fn(),
+    getUserData: jest.fn(),
     storeUserData: jest.fn(),
-    getUserData: jest.fn()
+    deleteUserData: jest.fn(),
+    moveUserData: jest.fn()
   }
 }))
 
@@ -21,149 +21,136 @@ describe('useUserFileStore', () => {
     store = useUserFileStore()
   })
 
-  it('should open a file', async () => {
-    const mockFileData = { success: true, data: 'file content' }
-    ;(api.getUserData as jest.Mock).mockResolvedValue({
-      status: 200,
-      json: () => mockFileData.data
+  it('should initialize with empty files', () => {
+    expect(store.userFiles).toHaveLength(0)
+    expect(store.modifiedFiles).toHaveLength(0)
+    expect(store.openedFiles).toHaveLength(0)
+  })
+
+  describe('syncFiles', () => {
+    it('should add new files', async () => {
+      const mockFiles = [
+        { path: 'file1.txt', modified: 123, size: 100 },
+        { path: 'file2.txt', modified: 456, size: 200 }
+      ]
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(mockFiles)
+
+      await store.syncFiles()
+
+      expect(store.userFiles).toHaveLength(2)
+      expect(store.userFiles[0].path).toBe('file1.txt')
+      expect(store.userFiles[1].path).toBe('file2.txt')
     })
 
-    await store.openFile('test.txt')
+    it('should update existing files', async () => {
+      const initialFile = { path: 'file1.txt', modified: 123, size: 100 }
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([initialFile])
+      await store.syncFiles()
 
-    expect(store.openFiles).toHaveLength(1)
-    expect(store.openFiles[0]).toEqual({
-      path: 'test.txt',
-      content: 'file content',
-      isModified: false,
-      originalContent: 'file content'
+      const updatedFile = { path: 'file1.txt', modified: 456, size: 200 }
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([updatedFile])
+      await store.syncFiles()
+
+      expect(store.userFiles).toHaveLength(1)
+      expect(store.userFiles[0].lastModified).toBe(456)
+      expect(store.userFiles[0].size).toBe(200)
+    })
+
+    it('should remove non-existent files', async () => {
+      const initialFiles = [
+        { path: 'file1.txt', modified: 123, size: 100 },
+        { path: 'file2.txt', modified: 456, size: 200 }
+      ]
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(initialFiles)
+      await store.syncFiles()
+
+      const updatedFiles = [{ path: 'file1.txt', modified: 123, size: 100 }]
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(updatedFiles)
+      await store.syncFiles()
+
+      expect(store.userFiles).toHaveLength(1)
+      expect(store.userFiles[0].path).toBe('file1.txt')
     })
   })
 
-  it('should close a file', () => {
-    store.openFiles = [
-      {
-        path: 'test.txt',
-        content: 'content',
-        isModified: false,
-        originalContent: 'content'
-      }
-    ]
+  describe('loadFile', () => {
+    it('should load file content', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve('file content')
+      })
 
-    store.closeFile('test.txt')
+      await store.loadFile(file)
 
-    expect(store.openFiles).toHaveLength(0)
-  })
-
-  it('should update file content', () => {
-    store.openFiles = [
-      {
-        path: 'test.txt',
-        content: 'old content',
-        isModified: false,
-        originalContent: 'old content'
-      }
-    ]
-
-    store.updateFileContent('test.txt', 'new content')
-
-    expect(store.openFiles[0].content).toBe('new content')
-    expect(store.openFiles[0].isModified).toBe(true)
-  })
-
-  it('should save an open file', async () => {
-    store.openFiles = [
-      {
-        path: 'test.txt',
-        content: 'modified content',
-        isModified: true,
-        originalContent: 'original content'
-      }
-    ]
-    ;(api.storeUserData as jest.Mock).mockResolvedValue({ status: 200 })
-    ;(api.listUserData as jest.Mock).mockResolvedValue(['test.txt'])
-    ;(api.getUserData as jest.Mock).mockResolvedValue({
-      status: 200,
-      json: () => 'modified content'
+      expect(file.content).toBe('file content')
+      expect(file.originalContent).toBe('file content')
+      expect(file.isLoading).toBe(false)
     })
 
-    await store.saveOpenFile('test.txt')
+    it('should throw error on failed load', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 404,
+        statusText: 'Not Found'
+      })
 
-    expect(store.openFiles[0].isModified).toBe(false)
-    expect(store.openFiles[0].originalContent).toBe('modified content')
+      await expect(store.loadFile(file)).rejects.toThrow(
+        "Failed to load file 'file1.txt': 404 Not Found"
+      )
+    })
   })
 
-  it('should discard changes', () => {
-    store.openFiles = [
-      {
-        path: 'test.txt',
-        content: 'modified content',
-        isModified: true,
-        originalContent: 'original content'
-      }
-    ]
+  describe('saveFile', () => {
+    it('should save modified file', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      file.content = 'modified content'
+      file.originalContent = 'original content'
+      ;(api.storeUserData as jest.Mock).mockResolvedValue({ status: 200 })
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([])
 
-    store.discardChanges('test.txt')
+      await store.saveFile(file)
 
-    expect(store.openFiles[0].content).toBe('original content')
-    expect(store.openFiles[0].isModified).toBe(false)
-  })
-
-  it('should load files', async () => {
-    ;(api.listUserData as jest.Mock).mockResolvedValue([
-      'file1.txt',
-      'file2.txt'
-    ])
-
-    await store.loadFiles()
-
-    expect(store.files).toEqual(['file1.txt', 'file2.txt'])
-  })
-
-  it('should rename a file', async () => {
-    store.openFiles = [
-      {
-        path: 'oldfile.txt',
-        content: 'content',
-        isModified: false,
-        originalContent: 'content'
-      }
-    ]
-    ;(api.moveUserData as jest.Mock).mockResolvedValue({ status: 200 })
-    ;(api.listUserData as jest.Mock).mockResolvedValue(['newfile.txt'])
-
-    await store.renameFile('oldfile.txt', 'newfile.txt')
-
-    expect(store.openFiles[0].path).toBe('newfile.txt')
-    expect(store.files).toEqual(['newfile.txt'])
-  })
-
-  it('should delete a file', async () => {
-    store.openFiles = [
-      {
-        path: 'file.txt',
-        content: 'content',
-        isModified: false,
-        originalContent: 'content'
-      }
-    ]
-    ;(api.deleteUserData as jest.Mock).mockResolvedValue({ status: 204 })
-    ;(api.listUserData as jest.Mock).mockResolvedValue([])
-
-    await store.deleteFile('file.txt')
-
-    expect(store.openFiles).toHaveLength(0)
-    expect(store.files).toEqual([])
-  })
-
-  it('should get file data', async () => {
-    const mockFileData = { content: 'file content' }
-    ;(api.getUserData as jest.Mock).mockResolvedValue({
-      status: 200,
-      json: () => mockFileData
+      expect(api.storeUserData).toHaveBeenCalledWith(
+        'file1.txt',
+        'modified content'
+      )
     })
 
-    const result = await store.getFileData('test.txt')
+    it('should not save unmodified file', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      file.content = 'content'
+      file.originalContent = 'content'
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([])
 
-    expect(result).toEqual({ success: true, data: mockFileData })
+      await store.saveFile(file)
+
+      expect(api.storeUserData).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('deleteFile', () => {
+    it('should delete file', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      ;(api.deleteUserData as jest.Mock).mockResolvedValue({ status: 204 })
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([])
+
+      await store.deleteFile(file)
+
+      expect(api.deleteUserData).toHaveBeenCalledWith('file1.txt')
+    })
+  })
+
+  describe('renameFile', () => {
+    it('should rename file', async () => {
+      const file = new UserFile('file1.txt', 123, 100)
+      ;(api.moveUserData as jest.Mock).mockResolvedValue({ status: 200 })
+      ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue([])
+
+      await store.renameFile(file, 'newfile.txt')
+
+      expect(api.moveUserData).toHaveBeenCalledWith('file1.txt', 'newfile.txt')
+      expect(file.path).toBe('newfile.txt')
+    })
   })
 })
