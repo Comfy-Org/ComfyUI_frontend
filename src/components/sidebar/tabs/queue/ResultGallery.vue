@@ -11,6 +11,13 @@
     fullScreen
     circular
     :showThumbnails="false"
+    :pt="{
+      mask: {
+        onMousedown: onMaskMouseDown,
+        onMouseup: onMaskMouseUp,
+        'data-mask': true
+      }
+    }"
   >
     <template #item="{ item }">
       <ComfyImage
@@ -39,6 +46,24 @@ const props = defineProps<{
   allGalleryItems: ResultItemImpl[]
   activeIndex: number
 }>()
+
+let maskMouseDownTarget: EventTarget | null = null
+
+const onMaskMouseDown = (event: MouseEvent) => {
+  maskMouseDownTarget = event.target
+}
+
+const onMaskMouseUp = (event: MouseEvent) => {
+  const maskEl = document.querySelector('[data-mask]')
+  if (
+    galleryVisible.value &&
+    maskMouseDownTarget === event.target &&
+    maskMouseDownTarget === maskEl
+  ) {
+    galleryVisible.value = false
+    handleVisibilityChange(false)
+  }
+}
 
 watch(
   () => props.activeIndex,

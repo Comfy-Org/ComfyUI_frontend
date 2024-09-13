@@ -18,7 +18,10 @@
         @click="$emit('showFilter', $event)"
       />
     </IconField>
-    <div class="search-filters" v-if="filters">
+    <div
+      class="search-filters pt-2 flex flex-wrap gap-2"
+      v-if="filters?.length"
+    >
       <SearchFilterChip
         v-for="filter in filters"
         :key="filter.id"
@@ -91,9 +94,5 @@ const handleInput = (event: Event) => {
   padding: 0;
   width: auto;
   border: none !important;
-}
-
-.search-filters {
-  @apply pt-2 flex flex-wrap gap-2;
 }
 </style>

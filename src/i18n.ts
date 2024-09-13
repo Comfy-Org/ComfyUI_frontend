@@ -2,6 +2,9 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    systemInfo: 'System Info',
+    devices: 'Devices',
+    about: 'About',
     add: 'Add',
     confirm: 'Confirm',
     reset: 'Reset',
@@ -51,7 +54,8 @@ const messages = {
         showFlatList: 'Show Flat List',
         backToAllTasks: 'Back to All Tasks',
         containImagePreview: 'Fill Image Preview',
-        coverImagePreview: 'Fit Image Preview'
+        coverImagePreview: 'Fit Image Preview',
+        clearPendingTasks: 'Clear Pending Tasks'
       }
     },
     menu: {
@@ -114,7 +118,8 @@ const messages = {
       },
       queueTab: {
         showFlatList: '平铺结果',
-        backToAllTasks: '返回'
+        backToAllTasks: '返回',
+        clearPendingTasks: '清除待处理任务'
       }
     }
   }

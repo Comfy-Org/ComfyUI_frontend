@@ -13,6 +13,48 @@ test.describe('Load workflow warning', () => {
   })
 })
 
+test('Does not report warning when switching between opened workflows', async ({
+  comfyPage
+}) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  await comfyPage.loadWorkflow('missing_nodes')
+  await comfyPage.page.locator('.p-dialog-close-button').click()
+
+  // Load default workflow
+  const workflowSelector = comfyPage.page.locator(
+    'button.comfyui-workflows-button'
+  )
+  await workflowSelector.hover()
+  await workflowSelector.click()
+  await comfyPage.page.locator('button[title="Load default workflow"]').click()
+
+  // Switch back to the missing_nodes workflow
+  await workflowSelector.click()
+  await comfyPage.page.locator('span:has-text("missing_nodes")').first().click()
+  await comfyPage.nextFrame()
+
+  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
+test('Does not report warning on undo/redo', async ({ comfyPage }) => {
+  await comfyPage.loadWorkflow('missing_nodes')
+  await comfyPage.page.locator('.p-dialog-close-button').click()
+  await comfyPage.nextFrame()
+
+  // Make a change to the graph
+  await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+  await comfyPage.page.waitForTimeout(256)
+  await comfyPage.doubleClickCanvas()
+  await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+
+  // Undo and redo the change
+  await comfyPage.ctrlZ()
+  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  await comfyPage.ctrlY()
+  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+})
+
 test.describe('Execution error', () => {
   test('Should display an error message when an execution error occurs', async ({
     comfyPage
@@ -28,6 +70,9 @@ test.describe('Execution error', () => {
 
 test.describe('Missing models warning', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.page.evaluate((url: string) => {
+      return fetch(`${url}/api/devtools/cleanup_fake_model`)
+    }, comfyPage.url)
     await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSources', [
       'http://localhost:8188'
     ])

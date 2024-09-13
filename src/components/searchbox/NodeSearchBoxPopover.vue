@@ -6,7 +6,10 @@
       :dismissable-mask="dismissable"
       @hide="clearFilters"
       :pt="{
-        root: { class: 'invisible-dialog-root' },
+        root: {
+          class: 'invisible-dialog-root',
+          role: 'search'
+        },
         mask: { class: 'node-search-box-dialog-mask' },
         transition: {
           enterFromClass: 'opacity-0 scale-75',
@@ -95,7 +98,13 @@ const newSearchBoxEnabled = computed(
 )
 const showSearchBox = (e: LiteGraphCanvasEvent) => {
   if (newSearchBoxEnabled.value) {
-    showNewSearchBox(e)
+    if (e.detail.originalEvent?.pointerType === 'touch') {
+      setTimeout(() => {
+        showNewSearchBox(e)
+      }, 128)
+    } else {
+      showNewSearchBox(e)
+    }
   } else {
     canvasStore.canvas.showSearchBox(e.detail.originalEvent as MouseEvent)
   }
@@ -164,6 +173,15 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
     showSearchBox(e)
   } else if (e.detail.subType === 'empty-release') {
     handleCanvasEmptyRelease(e)
+  } else if (e.detail.subType === 'group-double-click') {
+    const group = e.detail.group
+    const [x, y] = group.pos
+    // @ts-expect-error LiteGraphCanvasEvent is not typed
+    const relativeY = e.detail.originalEvent.canvasY - y
+    // Show search box if the click is NOT on the title bar
+    if (relativeY > group.titleHeight) {
+      showSearchBox(e)
+    }
   }
 }
 

@@ -74,6 +74,7 @@ app.registerExtension({
               const link = app.graph.links[linkId]
               if (!link) return
               const node = app.graph.getNodeById(link.origin_id)
+              // @ts-expect-error Nodes that extend LGraphNode will not have a static type property
               const type = node.constructor.type
               if (type === 'Reroute') {
                 if (node === this) {
@@ -112,6 +113,7 @@ app.registerExtension({
                 if (!link) continue
 
                 const node = app.graph.getNodeById(link.target_id)
+                // @ts-expect-error Nodes that extend LGraphNode will not have a static type property
                 const type = node.constructor.type
 
                 if (type === 'Reroute') {
@@ -128,8 +130,8 @@ app.registerExtension({
                       : null
                   if (
                     inputType &&
-                    inputType !== '*' &&
-                    nodeOutType !== inputType
+                    // @ts-expect-error Will self-resolve when LiteGraph types are generated
+                    !LiteGraph.isValidConnection(inputType, nodeOutType)
                   ) {
                     // The output doesnt match our input so disconnect it
                     node.disconnectInput(link.target_slot)
@@ -164,6 +166,7 @@ app.registerExtension({
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
               if (link) {
+                // @ts-expect-error Fix litegraph types
                 link.color = color
 
                 if (app.configuringGraph) continue
@@ -177,6 +180,7 @@ app.registerExtension({
                   }
                   if (!targetWidget) {
                     targetWidget = targetNode.widgets?.find(
+                      // @ts-expect-error fix widget types
                       (w) => w.name === targetInput.widget.name
                     )
                   }
@@ -209,6 +213,7 @@ app.registerExtension({
           if (inputNode) {
             const link = app.graph.links[inputNode.inputs[0].link]
             if (link) {
+              // @ts-expect-error Fix litegraph types
               link.color = color
             }
           }

@@ -29,13 +29,10 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  LGraphGroup
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
-
-// CSS imports. style.css must be imported later as it overwrites some litegraph styles.
-import '@comfyorg/litegraph/style.css'
-import '../assets/css/style.css'
 import { ExtensionManager } from '@/types/extensionTypes'
 import {
   ComfyNodeDefImpl,
@@ -51,9 +48,10 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
-import { LGraphGroup } from '@comfyorg/litegraph'
+import { ComfyLGraphNode } from '@/types/comfyLGraphNode'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -137,7 +135,6 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
-  modelsInFolderCache: Record<string, string[]>
 
   constructor() {
     this.vueAppReady = false
@@ -152,7 +149,6 @@ export class ComfyApp {
       parent: document.body
     })
     this.menu = new ComfyAppMenu(this)
-    this.modelsInFolderCache = {}
 
     /**
      * List of extensions that are registered with the app
@@ -1284,8 +1280,10 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
+        const key = e.code
+
         // Ctrl + M mute/unmute
-        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
+        if (key === 'KeyM' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 2) {
@@ -1300,7 +1298,7 @@ export class ComfyApp {
         }
 
         // Ctrl + B bypass
-        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
+        if (key === 'KeyB' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 4) {
@@ -1314,8 +1312,19 @@ export class ComfyApp {
           block_default = true
         }
 
+        // p pin/unpin
+        if (key === 'KeyP') {
+          if (this.selected_nodes) {
+            for (const i in this.selected_nodes) {
+              const node = this.selected_nodes[i]
+              node.pin()
+            }
+          }
+          block_default = true
+        }
+
         // Alt + C collapse/uncollapse
-        if (e.key === 'c' && e.altKey) {
+        if (key === 'KeyC' && e.altKey) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               this.selected_nodes[i].collapse()
@@ -1325,22 +1334,18 @@ export class ComfyApp {
         }
 
         // Ctrl+C Copy
-        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
+        if (key === 'KeyC' && (e.metaKey || e.ctrlKey)) {
           // Trigger onCopy
           return true
         }
 
         // Ctrl+V Paste
-        if (
-          (e.key === 'v' || e.key == 'V') &&
-          (e.metaKey || e.ctrlKey) &&
-          !e.shiftKey
-        ) {
+        if (key === 'KeyV' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
           // Trigger onPaste
           return true
         }
 
-        if (e.key === '+' && e.altKey) {
+        if ((key === 'NumpadAdd' || key === 'Equal') && e.altKey) {
           block_default = true
           let scale = this.ds.scale * 1.1
           this.ds.changeScale(scale, [
@@ -1350,9 +1355,9 @@ export class ComfyApp {
           this.graph.change()
         }
 
-        if (e.key === '-' && e.altKey) {
+        if ((key === 'NumpadSubtract' || key === 'Minus') && e.altKey) {
           block_default = true
-          let scale = (this.ds.scale * 1) / 1.1
+          let scale = this.ds.scale / 1.1
           this.ds.changeScale(scale, [
             this.ds.element.width / 2,
             this.ds.element.height / 2
@@ -2003,7 +2008,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node = class ComfyNode extends LGraphNode {
+    const node: new () => ComfyLGraphNode = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
@@ -2079,7 +2084,6 @@ export class ComfyApp {
         app.#invokeExtensionsAsync('nodeCreated', this)
       }
     }
-    // @ts-expect-error
     node.prototype.comfyClass = nodeData.name
 
     this.#addNodeContextMenuHandler(node)
@@ -2088,6 +2092,8 @@ export class ComfyApp {
 
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
     LiteGraph.registerNodeType(nodeId, node)
+    // Note: Do not move this to the class definition, it will be overwritten
+    // @ts-expect-error
     node.category = nodeData.category
   }
 
@@ -2196,7 +2202,8 @@ export class ComfyApp {
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
     restore_view: boolean = true,
-    workflow: string | null | ComfyWorkflow = null
+    workflow: string | null | ComfyWorkflow = null,
+    { showMissingNodesDialog = true, showMissingModelsDialog = true } = {}
   ) {
     if (clean !== false) {
       this.clean()
@@ -2260,12 +2267,14 @@ export class ComfyApp {
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
       for (let m of graphData.models) {
-        const models_available = await this.getModelsInFolderCached(m.directory)
+        const models_available = await useModelStore().getModelsInFolderCached(
+          m.directory
+        )
         if (models_available === null) {
           // @ts-expect-error
           m.directory_invalid = true
           missingModels.push(m)
-        } else if (!models_available.includes(m.name)) {
+        } else if (!(m.name in models_available.models)) {
           missingModels.push(m)
         }
       }
@@ -2386,10 +2395,10 @@ export class ComfyApp {
     }
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
-    if (missingNodeTypes.length) {
+    if (missingNodeTypes.length && showMissingNodesDialog) {
       this.showMissingNodesError(missingNodeTypes)
     }
-    if (missingModels.length) {
+    if (missingModels.length && showMissingModelsDialog) {
       this.showMissingModelsError(missingModels)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
@@ -2791,7 +2800,7 @@ export class ComfyApp {
     this.changeWorkflow(() => {
       for (const id of ids) {
         const data = apiData[id]
-        const node = app.graph.getNodeById(Number.parseInt(id))
+        const node = app.graph.getNodeById(id)
         for (const input in data.inputs ?? {}) {
           const value = data.inputs[input]
           if (value instanceof Array) {
@@ -2826,7 +2835,7 @@ export class ComfyApp {
 
     for (const id of ids) {
       const data = apiData[id]
-      const node = app.graph.getNodeById(Number.parseInt(id))
+      const node = app.graph.getNodeById(id)
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
@@ -2861,25 +2870,17 @@ export class ComfyApp {
   }
 
   /**
-   * Gets the list of model names in a folder, using a temporary local cache
-   */
-  async getModelsInFolderCached(folder: string): Promise<string[]> {
-    if (folder in this.modelsInFolderCache) {
-      return this.modelsInFolderCache[folder]
-    }
-    // TODO: needs a lock to avoid overlapping calls
-    const models = await api.getModels(folder)
-    this.modelsInFolderCache[folder] = models
-    return models
-  }
-
-  /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
    */
-  registerExtension(extension) {
+  registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
+    }
+    // https://github.com/Comfy-Org/litegraph.js/pull/117
+    if (extension.name === 'pysssss.Locking') {
+      console.log('pysssss.Locking is replaced by pin/unpin in ComfyUI core.')
+      return
     }
     if (this.extensions.find((ext) => ext.name === extension.name)) {
       throw new Error(`Extension named '${extension.name}' already registered.`)
@@ -2896,9 +2897,10 @@ export class ComfyApp {
       summary: 'Update',
       detail: 'Update requested'
     }
-    if (this.vueAppReady) useToastStore().add(requestToastMessage)
-
-    this.modelsInFolderCache = {}
+    if (this.vueAppReady) {
+      useToastStore().add(requestToastMessage)
+      useModelStore().clearCache()
+    }
 
     const defs = await api.getNodeDefs()
 
@@ -3003,7 +3005,6 @@ export class ComfyApp {
   }
 
   public goToNode(nodeId: NodeId) {
-    // @ts-expect-error TODO: Update litegraph's nodeId type to string | number
     const graphNode = this.graph.getNodeById(nodeId)
     if (!graphNode) return
     this.canvas.centerOnNode(graphNode)

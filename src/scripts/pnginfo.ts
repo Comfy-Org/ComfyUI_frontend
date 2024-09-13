@@ -50,8 +50,8 @@ function parseExifData(exifData) {
       let value
       if (type === 2) {
         // ASCII string
-        value = String.fromCharCode(
-          ...exifData.slice(valueOffset, valueOffset + numValues - 1)
+        value = new TextDecoder('utf-8').decode(
+          exifData.subarray(valueOffset, valueOffset + numValues - 1)
         )
       }
 
@@ -113,9 +113,11 @@ export function getWebpMetadata(file) {
             webp.slice(offset + 8, offset + 8 + chunk_length)
           )
           for (var key in data) {
-            var value = data[key] as string
-            let index = value.indexOf(':')
-            txt_chunks[value.slice(0, index)] = value.slice(index + 1)
+            const value = data[key] as string
+            if (typeof value === 'string') {
+              const index = value.indexOf(':')
+              txt_chunks[value.slice(0, index)] = value.slice(index + 1)
+            }
           }
           break
         }

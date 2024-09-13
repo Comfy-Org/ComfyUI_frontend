@@ -13,6 +13,13 @@ test.describe('Node search box', () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
+  test(`Can trigger on group body double click`, async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_group_only')
+    await comfyPage.page.mouse.dblclick(50, 50)
+    await comfyPage.nextFrame()
+    await expect(comfyPage.searchBox.input).toHaveCount(1)
+  })
+
   test('Can trigger on link release', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
@@ -68,6 +75,33 @@ test.describe('Node search box', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'added-node-no-connection.png'
     )
+  })
+
+  test('Has correct aria-labels on search results', async ({ comfyPage }) => {
+    const node = 'Load Checkpoint'
+    await comfyPage.doubleClickCanvas()
+    await comfyPage.searchBox.fillAndSelectFirstNode(node)
+    const firstResult = comfyPage.page
+      .locator('li.p-autocomplete-option')
+      .first()
+    await expect(firstResult).toHaveAttribute('aria-label', node)
+  })
+
+  test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
+    await comfyPage.closeMenu()
+    await comfyPage.loadWorkflow('single_ksampler')
+    const screenCenter = {
+      x: 200,
+      y: 400
+    }
+    await comfyPage.canvas.tap({
+      position: screenCenter
+    })
+    await comfyPage.canvas.tap({
+      position: screenCenter
+    })
+    await comfyPage.page.waitForTimeout(256)
+    await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
 })
 

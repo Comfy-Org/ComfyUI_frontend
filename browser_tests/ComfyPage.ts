@@ -2,6 +2,8 @@ import type { Page, Locator } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import dotenv from 'dotenv'
 dotenv.config()
+import * as fs from 'fs'
+import { NodeBadgeMode } from '../src/types/nodeSource'
 
 interface Position {
   x: number
@@ -200,6 +202,17 @@ export class ComfyPage {
     // Reset view to force re-rendering of canvas. So that info fields like fps
     // become hidden.
     await this.resetView()
+
+    // Hide all badges by default.
+    await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
+    await this.setSetting(
+      'Comfy.NodeBadge.NodeSourceBadgeMode',
+      NodeBadgeMode.None
+    )
+  }
+
+  public assetPath(fileName: string) {
+    return `./browser_tests/assets/${fileName}`
   }
 
   async setSetting(settingId: string, settingValue: any) {
@@ -238,7 +251,7 @@ export class ComfyPage {
 
   async loadWorkflow(workflowName: string) {
     await this.workflowUploadInput.setInputFiles(
-      `./browser_tests/assets/${workflowName}.json`
+      this.assetPath(`${workflowName}.json`)
     )
     await this.nextFrame()
   }
@@ -297,6 +310,54 @@ export class ComfyPage {
     await this.page.mouse.down()
     await this.page.mouse.move(target.x, target.y)
     await this.page.mouse.up()
+    await this.nextFrame()
+  }
+
+  async dragAndDropFile(fileName: string) {
+    const filePath = this.assetPath(fileName)
+
+    // Read the file content
+    const buffer = fs.readFileSync(filePath)
+
+    // Get file type
+    const getFileType = (fileName: string) => {
+      if (fileName.endsWith('.png')) return 'image/png'
+      if (fileName.endsWith('.webp')) return 'image/webp'
+      if (fileName.endsWith('.json')) return 'application/json'
+      return 'application/octet-stream'
+    }
+
+    const fileType = getFileType(fileName)
+
+    await this.page.evaluate(
+      async ({ buffer, fileName, fileType }) => {
+        const file = new File([new Uint8Array(buffer)], fileName, {
+          type: fileType
+        })
+        const dataTransfer = new DataTransfer()
+        dataTransfer.items.add(file)
+
+        const dropEvent = new DragEvent('drop', {
+          bubbles: true,
+          cancelable: true,
+          dataTransfer
+        })
+
+        Object.defineProperty(dropEvent, 'preventDefault', {
+          value: () => {},
+          writable: false
+        })
+
+        Object.defineProperty(dropEvent, 'stopPropagation', {
+          value: () => {},
+          writable: false
+        })
+
+        document.dispatchEvent(dropEvent)
+      },
+      { buffer: [...new Uint8Array(buffer)], fileName, fileType }
+    )
+
     await this.nextFrame()
   }
 
@@ -420,6 +481,13 @@ export class ComfyPage {
   async ctrlZ() {
     await this.page.keyboard.down('Control')
     await this.page.keyboard.press('KeyZ')
+    await this.page.keyboard.up('Control')
+    await this.nextFrame()
+  }
+
+  async ctrlY() {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.press('KeyY')
     await this.page.keyboard.up('Control')
     await this.nextFrame()
   }

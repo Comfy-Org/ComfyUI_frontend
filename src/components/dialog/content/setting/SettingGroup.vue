@@ -45,7 +45,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
 import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
-import InputSlider from '@/components/dialog/content/setting/InputSlider.vue'
+import InputSlider from '@/components/common/InputSlider.vue'
 import { formatCamelCase } from '@/utils/formatUtil'
 
 defineProps<{

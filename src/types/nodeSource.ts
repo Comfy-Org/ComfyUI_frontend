@@ -3,6 +3,7 @@ export type NodeSource = {
   type: NodeSourceType
   className: string
   displayText: string
+  badgeText: string
 }
 
 export const getNodeSource = (python_module: string): NodeSource => {
@@ -11,15 +12,23 @@ export const getNodeSource = (python_module: string): NodeSource => {
     return {
       type: 'core',
       className: 'comfy-core',
-      displayText: 'Comfy Core'
+      displayText: 'Comfy Core',
+      badgeText: '🦊'
     }
   } else if (modules[0] === 'custom_nodes') {
     return {
       type: 'custom_nodes',
       className: 'comfy-custom-nodes',
-      displayText: modules[1]
+      displayText: modules[1],
+      badgeText: modules[1]
     }
   } else {
     throw new Error(`Unknown node source: ${python_module}`)
   }
+}
+
+export enum NodeBadgeMode {
+  None = 'None',
+  ShowAll = 'Show all',
+  HideBuiltIn = 'Hide built-in'
 }

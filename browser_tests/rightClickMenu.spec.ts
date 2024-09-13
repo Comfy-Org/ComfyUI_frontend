@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
+import { NodeBadgeMode } from '../src/types/nodeSource'
 
 test.describe('Canvas Right Click Menu', () => {
   // See https://github.com/comfyanonymous/ComfyUI/issues/3883
@@ -64,6 +65,24 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
+  test('Can collapse (Node Badge)', async ({ comfyPage }) => {
+    await comfyPage.setSetting(
+      'Comfy.NodeBadge.NodeIdBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+    await comfyPage.setSetting(
+      'Comfy.NodeBadge.NodeSourceBadgeMode',
+      NodeBadgeMode.ShowAll
+    )
+
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.getByText('Collapse').click()
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'right-click-node-collapsed-badge.png'
+    )
+  })
+
   test('Can bypass', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
@@ -92,6 +111,7 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
     await comfyPage.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
+    await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-pinned-node.png'
@@ -115,6 +135,22 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.dragAndDrop({ x: 496, y: 618 }, { x: 200, y: 590 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-unpinned-node-moved.png'
+    )
+  })
+
+  test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
+    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('selected-nodes-pinned.png')
+    await comfyPage.rightClickEmptyLatentNode()
+    await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'selected-nodes-unpinned.png'
     )
   })
 })

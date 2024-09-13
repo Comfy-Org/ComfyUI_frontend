@@ -40,6 +40,7 @@
       auto-option-focus
       force-selection
       multiple
+      :optionLabel="'display_name'"
     >
       <template v-slot:option="{ option }">
         <div class="option-container">
@@ -119,7 +120,7 @@ const showIdName = computed(() =>
 const props = withDefaults(
   defineProps<{
     filters: FilterAndValue[]
-    searchLimit: number
+    searchLimit?: number
   }>(),
   {
     searchLimit: 64

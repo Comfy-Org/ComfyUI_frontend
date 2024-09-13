@@ -29,8 +29,21 @@ export class ComfySplitButton {
     this.element = $el(
       'div.comfyui-split-button' + (mode === 'hover' ? '.hover' : ''),
       [
-        $el('div.comfyui-split-primary', primary.element),
-        $el('div.comfyui-split-arrow', this.arrow.element)
+        $el(
+          'div.comfyui-split-primary',
+          {
+            ariaLabel: 'Queue current workflow'
+          },
+          primary.element
+        ),
+        $el(
+          'div.comfyui-split-arrow',
+          {
+            ariaLabel: 'Open extra opens',
+            ariaHasPopup: 'true'
+          },
+          this.arrow.element
+        )
       ]
     )
     this.popup = new ComfyPopup({

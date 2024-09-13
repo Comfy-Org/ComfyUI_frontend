@@ -91,6 +91,13 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.2.44: **Litegraph** Double click group title to edit</summary>
+
+https://github.com/user-attachments/assets/5bf0e2b6-8b3a-40a7-b44f-f0879e9ad26f
+
+</details>
+
+<details>
   <summary>v1.2.39: **Litegraph** Group selected nodes with Ctrl + G</summary>
 
 https://github.com/user-attachments/assets/7805dc54-0854-4a28-8bcd-4b007fa01151
@@ -186,18 +193,17 @@ Documentation of all supported options can be found here: <https://primevue.org/
 - Introduce Vue to start managing part of the UI.
 - Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
 - Better node management. Sherlock <https://github.com/Nuked88/ComfyUI-N-Sidebar>.
+- Replace the existing ComfyUI front-end implementation. <https://github.com/comfyanonymous/ComfyUI/pull/4379>
 
 
 ### What to be done
 
-- Replace the existing ComfyUI front-end impl
 - Remove `@ts-ignore`s.
 - Turn on `strict` on `tsconfig.json`.
 - Add more widget types for node developers.
 - LLM streaming node.
 - Linear mode (Similar to InvokeAI's linear mode).
 - Keybinding settings management. Register keybindings API for custom nodes.
-- New extensions API for adding UI-related features.
 
 ## Development
 
@@ -225,9 +231,24 @@ core extensions will be loaded.
 
 ### LiteGraph
 
-This repo is using litegraph package hosted on https://github.com/Comfy-Org/litegraph.js. Any changes to litegraph should be submitted in that repo instead.
+This repo is using litegraph package hosted on <https://github.com/Comfy-Org/litegraph.js>. Any changes to litegraph should be submitted in that repo instead.
+
+### Test litegraph changes
+
+- Run `npm link` in the local litegraph repo.
+- Run `npm uninstall @comfyorg/litegraph` in this repo.
+- Run `npm link @comfyorg/litegraph` in this repo.
+
+This will replace the litegraph package in this repo with the local litegraph repo.
 
 ## Deploy
 
 - Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
 - Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
+
+## Publish release to ComfyUI main repo
+
+Run following command to publish a release to ComfyUI main repo. The script will create a new branch and do a commit to `web/` folder by checkout `dist.zip`
+from GitHub release.
+
+- `python scripts/main_repo_release.py <path_to_comfyui_main_repo> <version>`

@@ -52,7 +52,10 @@ const colorPalettes: ColorPalettes = {
 
         LINK_COLOR: '#9A9',
         EVENT_LINK_COLOR: '#A86',
-        CONNECTING_LINK_COLOR: '#AFA'
+        CONNECTING_LINK_COLOR: '#AFA',
+
+        BADGE_FG_COLOR: '#FFF',
+        BADGE_BG_COLOR: '#0F1F0F'
       },
       comfy_base: {
         'fg-color': '#fff',
@@ -114,7 +117,10 @@ const colorPalettes: ColorPalettes = {
 
         LINK_COLOR: '#4CAF50',
         EVENT_LINK_COLOR: '#FF9800',
-        CONNECTING_LINK_COLOR: '#2196F3'
+        CONNECTING_LINK_COLOR: '#2196F3',
+
+        BADGE_FG_COLOR: '#000',
+        BADGE_BG_COLOR: '#FFF'
       },
       comfy_base: {
         'fg-color': '#222',
@@ -425,6 +431,39 @@ const defaultColorPaletteId = 'dark'
 const els: { select: HTMLSelectElement | null } = {
   select: null
 }
+
+const getCustomColorPalettes = (): ColorPalettes => {
+  return app.ui.settings.getSettingValue(idCustomColorPalettes, {})
+}
+
+const setCustomColorPalettes = (customColorPalettes: ColorPalettes) => {
+  return app.ui.settings.setSettingValue(
+    idCustomColorPalettes,
+    customColorPalettes
+  )
+}
+
+export const defaultColorPalette = colorPalettes[defaultColorPaletteId]
+export const getColorPalette = (colorPaletteId?) => {
+  if (!colorPaletteId) {
+    colorPaletteId = app.ui.settings.getSettingValue(id, defaultColorPaletteId)
+  }
+
+  if (colorPaletteId.startsWith('custom_')) {
+    colorPaletteId = colorPaletteId.substr(7)
+    let customColorPalettes = getCustomColorPalettes()
+    if (customColorPalettes[colorPaletteId]) {
+      return customColorPalettes[colorPaletteId]
+    }
+  }
+
+  return colorPalettes[colorPaletteId]
+}
+
+const setColorPalette = (colorPaletteId) => {
+  app.ui.settings.setSettingValue(id, colorPaletteId)
+}
+
 // const ctxMenu = LiteGraph.ContextMenu;
 app.registerExtension({
   name: id,
@@ -539,17 +578,6 @@ app.registerExtension({
       }
 
       return completeColorPalette(colorPalette)
-    }
-
-    const getCustomColorPalettes = (): ColorPalettes => {
-      return app.ui.settings.getSettingValue(idCustomColorPalettes, {})
-    }
-
-    const setCustomColorPalettes = (customColorPalettes: ColorPalettes) => {
-      return app.ui.settings.setSettingValue(
-        idCustomColorPalettes,
-        customColorPalettes
-      )
     }
 
     const addCustomColorPalette = async (colorPalette) => {
@@ -670,29 +698,6 @@ app.registerExtension({
         }
         app.canvas.draw(true, true)
       }
-    }
-
-    const getColorPalette = (colorPaletteId?) => {
-      if (!colorPaletteId) {
-        colorPaletteId = app.ui.settings.getSettingValue(
-          id,
-          defaultColorPaletteId
-        )
-      }
-
-      if (colorPaletteId.startsWith('custom_')) {
-        colorPaletteId = colorPaletteId.substr(7)
-        let customColorPalettes = getCustomColorPalettes()
-        if (customColorPalettes[colorPaletteId]) {
-          return customColorPalettes[colorPaletteId]
-        }
-      }
-
-      return colorPalettes[colorPaletteId]
-    }
-
-    const setColorPalette = (colorPaletteId) => {
-      app.ui.settings.setSettingValue(id, colorPaletteId)
     }
 
     const fileInput = $el('input', {

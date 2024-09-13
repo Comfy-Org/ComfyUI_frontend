@@ -47,7 +47,8 @@ export class ComfyWorkflowsMenu {
         this.buttonProgress
       ]),
       icon: 'chevron-down',
-      classList
+      classList,
+      tooltip: 'Click to open workflows menu'
     })
 
     this.element.append(this.button.element)
@@ -85,6 +86,7 @@ export class ComfyWorkflowsMenu {
     const active = this.app.workflowManager.activeWorkflow
     this.button.tooltip = active.path
     this.workflowLabel.textContent = active.name
+    this.workflowLabel.ariaLabel = `Active workflow: ${active.name}`
     this.unsaved = active.unsaved
 
     if (this.#first) {
@@ -523,6 +525,7 @@ export class ComfyWorkflowsContent {
           $el('i.mdi.mdi-18px.mdi-magnify'),
           $el('input', {
             placeholder: 'Search',
+            role: 'search',
             value: this.filterText ?? '',
             oninput: (e: InputEvent) => {
               this.filterText = e.target['value']?.trim()

@@ -7,8 +7,8 @@ const ext = {
   name: 'Comfy.ContextMenuFilter',
   init() {
     const ctxMenu = LiteGraph.ContextMenu
-    // @ts-expect-error
-    // TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
+
+    // @ts-expect-error TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
     LiteGraph.ContextMenu = function (values, options) {
       const ctx = new ctxMenu(values, options)
 
@@ -17,6 +17,7 @@ const ext = {
         const filter = document.createElement('input')
         filter.classList.add('comfy-context-menu-filter')
         filter.placeholder = 'Filter list'
+
         ctx.root.prepend(filter)
 
         const items = Array.from(
@@ -68,7 +69,9 @@ const ext = {
               const scale =
                 1 -
                 ctx.root.getBoundingClientRect().height / ctx.root.clientHeight
+
               const shift = (ctx.root.clientHeight * scale) / 2
+
               ctx.root.style.top = -shift + 'px'
             }
           }
@@ -139,6 +142,7 @@ const ext = {
               let top = options.event.clientY - 10
 
               const bodyRect = document.body.getBoundingClientRect()
+
               const rootRect = ctx.root.getBoundingClientRect()
               if (
                 bodyRect.height &&
