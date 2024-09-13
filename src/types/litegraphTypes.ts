@@ -1,4 +1,4 @@
-import {
+import type {
   ConnectingLink,
   LGraphNode,
   Vector2,
@@ -6,6 +6,7 @@ import {
   INodeOutputSlot,
   INodeSlot
 } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 export class ConnectingLinkImpl implements ConnectingLink {
   node: LGraphNode
@@ -56,9 +57,8 @@ export class ConnectingLinkImpl implements ConnectingLink {
       this.releaseSlotType === 'output' ? newNode.outputs : newNode.inputs
     if (!newNodeSlots) return
 
-    const newNodeSlot = newNodeSlots.findIndex(
-      (slot: INodeSlot) =>
-        slot.type === this.type || slot.type === '*' || this.type === '*'
+    const newNodeSlot = newNodeSlots.findIndex((slot: INodeSlot) =>
+      LiteGraph.isValidConnection(slot.type, this.type)
     )
 
     if (newNodeSlot === -1) {

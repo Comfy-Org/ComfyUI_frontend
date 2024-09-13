@@ -11,6 +11,8 @@ declare module '@comfyorg/litegraph' {
     slot_types_out: string[]
     slot_types_default_out: Record<string, string[]>
     slot_types_default_in: Record<string, string[]>
+
+    isValidConnection(type_a: ISlotType, type_b: ISlotType): boolean
   }
 
   import type { LiteGraph as LG } from '@comfyorg/litegraph/dist/litegraph'
