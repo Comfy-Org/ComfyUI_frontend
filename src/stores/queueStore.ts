@@ -277,6 +277,9 @@ export const useQueueStore = defineStore('queue', {
     },
     lastHistoryQueueIndex(state) {
       return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
+    },
+    hasPendingTasks(state) {
+      return state.pendingTasks.length > 0
     }
   },
   actions: {
@@ -325,10 +328,11 @@ export const useQueueStore = defineStore('queue', {
         this.isLoading = false
       }
     },
-    async clear() {
-      await Promise.all(
-        ['queue', 'history'].map((type) => api.clearItems(type))
-      )
+    async clear(targets: ('queue' | 'history')[] = ['queue', 'history']) {
+      if (targets.length === 0) {
+        return
+      }
+      await Promise.all(targets.map((type) => api.clearItems(type)))
       await this.update()
     },
     async delete(task: TaskItemImpl) {

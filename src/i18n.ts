@@ -54,7 +54,8 @@ const messages = {
         showFlatList: 'Show Flat List',
         backToAllTasks: 'Back to All Tasks',
         containImagePreview: 'Fill Image Preview',
-        coverImagePreview: 'Fit Image Preview'
+        coverImagePreview: 'Fit Image Preview',
+        clearPendingTasks: 'Clear Pending Tasks'
       }
     }
   },
@@ -97,7 +98,8 @@ const messages = {
       },
       queueTab: {
         showFlatList: '平铺结果',
-        backToAllTasks: '返回'
+        backToAllTasks: '返回',
+        clearPendingTasks: '清除待处理任务'
       }
     }
   }

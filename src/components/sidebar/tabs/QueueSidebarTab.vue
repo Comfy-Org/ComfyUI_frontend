@@ -32,6 +32,15 @@
           v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
         />
         <Button
+          v-if="queueStore.hasPendingTasks"
+          icon="pi pi-stop"
+          text
+          severity="danger"
+          @click="clearPendingTasks"
+          class="clear-pending-button"
+          v-tooltip="$t('sideToolbar.queueTab.clearPendingTasks')"
+        />
+        <Button
           icon="pi pi-trash"
           text
           severity="primary"
@@ -218,6 +227,16 @@ const confirmRemoveAll = (event: Event) => {
         life: 3000
       })
     }
+  })
+}
+
+const clearPendingTasks = async () => {
+  await queueStore.clear(['queue'])
+  toast.add({
+    severity: 'info',
+    summary: 'Confirmed',
+    detail: 'Pending tasks deleted',
+    life: 3000
   })
 }
 
