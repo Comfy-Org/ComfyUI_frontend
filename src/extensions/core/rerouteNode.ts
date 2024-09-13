@@ -74,7 +74,6 @@ app.registerExtension({
               const link = app.graph.links[linkId]
               if (!link) return
               const node = app.graph.getNodeById(link.origin_id)
-              // @ts-expect-error Nodes that extend LGraphNode will not have a static type property
               const type = node.constructor.type
               if (type === 'Reroute') {
                 if (node === this) {
@@ -113,7 +112,6 @@ app.registerExtension({
                 if (!link) continue
 
                 const node = app.graph.getNodeById(link.target_id)
-                // @ts-expect-error Nodes that extend LGraphNode will not have a static type property
                 const type = node.constructor.type
 
                 if (type === 'Reroute') {

@@ -4,7 +4,15 @@ import '@comfyorg/litegraph'
  *  ComfyUI extensions of litegraph
  */
 declare module '@comfyorg/litegraph' {
+  interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
+    type?: string
+    nodeData: any // Used by group node.
+    new (): T
+  }
+
   interface LGraphNode {
+    constructor?: LGraphNodeConstructor
+
     /**
      * Callback fired on each node after the graph is configured
      */
