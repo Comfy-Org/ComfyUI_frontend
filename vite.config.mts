@@ -6,6 +6,7 @@ import dotenv from "dotenv"
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
+import dts from 'vite-plugin-dts'
 
 dotenv.config()
 
@@ -132,6 +133,11 @@ export default defineConfig({
       dirs: ['src/components', 'src/layout', 'src/views'],
       deep: true,
       extensions: ['vue']
+    }),
+
+    dts({
+      outDir: "dist/types",
+      entryRoot: "src"
     })
   ],
 
