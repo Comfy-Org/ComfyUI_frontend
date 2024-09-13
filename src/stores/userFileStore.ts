@@ -24,12 +24,6 @@ class UserFile {
   }
 }
 
-interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  message?: string
-}
-
 export const useUserFileStore = defineStore('userFile', () => {
   const userFilesByPath = ref(new Map<string, UserFile>())
 
