@@ -751,6 +751,7 @@ app.registerExtension({
 
     nodeType.prototype.onGraphConfigured = function () {
       if (!this.inputs) return
+      this.widgets ??= []
 
       for (const input of this.inputs) {
         if (input.widget) {
