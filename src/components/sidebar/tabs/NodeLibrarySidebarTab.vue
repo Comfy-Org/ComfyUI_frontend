@@ -19,35 +19,44 @@
       />
     </template>
     <template #body>
-      <SearchBox
-        class="node-lib-search-box mx-4 mt-4"
-        v-model:modelValue="searchQuery"
-        @search="handleSearch"
-        @show-filter="($event) => searchFilter.toggle($event)"
-        @remove-filter="onRemoveFilter"
-        :placeholder="$t('searchNodes') + '...'"
-        filter-icon="pi pi-filter"
-        :filters
-      />
+      <div class="flex flex-col h-full">
+        <div class="flex-shrink-0">
+          <SearchBox
+            class="node-lib-search-box mx-4 mt-4"
+            v-model:modelValue="searchQuery"
+            @search="handleSearch"
+            @show-filter="($event) => searchFilter.toggle($event)"
+            @remove-filter="onRemoveFilter"
+            :placeholder="$t('searchNodes') + '...'"
+            filter-icon="pi pi-filter"
+            :filters
+          />
 
-      <Popover ref="searchFilter" class="node-lib-filter-popup">
-        <NodeSearchFilter @addFilter="onAddFilter" />
-      </Popover>
-      <NodeBookmarkTreeExplorer
-        ref="nodeBookmarkTreeExplorerRef"
-        :filtered-node-defs="filteredNodeDefs"
-      />
-      <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" type="dashed" />
-      <TreeExplorer
-        class="node-lib-tree-explorer mt-1"
-        :roots="renderedRoot.children"
-        v-model:expandedKeys="expandedKeys"
-        @nodeClick="handleNodeClick"
-      >
-        <template #node="{ node }">
-          <NodeTreeLeaf :node="node" />
-        </template>
-      </TreeExplorer>
+          <Popover ref="searchFilter" class="node-lib-filter-popup">
+            <NodeSearchFilter @addFilter="onAddFilter" />
+          </Popover>
+        </div>
+        <div class="flex-grow overflow-y-auto">
+          <NodeBookmarkTreeExplorer
+            ref="nodeBookmarkTreeExplorerRef"
+            :filtered-node-defs="filteredNodeDefs"
+          />
+          <Divider
+            v-if="nodeBookmarkStore.bookmarks.length > 0"
+            type="dashed"
+          />
+          <TreeExplorer
+            class="node-lib-tree-explorer mt-1"
+            :roots="renderedRoot.children"
+            v-model:expandedKeys="expandedKeys"
+            @nodeClick="handleNodeClick"
+          >
+            <template #node="{ node }">
+              <NodeTreeLeaf :node="node" />
+            </template>
+          </TreeExplorer>
+        </div>
+      </div>
     </template>
   </SidebarTabTemplate>
   <div id="node-library-node-preview-container" />
