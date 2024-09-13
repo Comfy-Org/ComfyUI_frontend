@@ -23,22 +23,49 @@ function isCoreNode(node: ComfyLGraphNode) {
   return getNodeSource(node)?.type === 'core'
 }
 
-function getNodeIdBadge(node: ComfyLGraphNode, nodeIdBadgeMode: NodeBadgeMode) {
-  return nodeIdBadgeMode === NodeBadgeMode.None ||
-    (isCoreNode(node) && nodeIdBadgeMode === NodeBadgeMode.HideBuiltIn)
-    ? ''
-    : `#${node.id}`
+function badgeTextVisible(
+  node: ComfyLGraphNode,
+  badgeMode: NodeBadgeMode
+): boolean {
+  return (
+    badgeMode === NodeBadgeMode.None ||
+    (isCoreNode(node) && badgeMode === NodeBadgeMode.HideBuiltIn)
+  )
 }
 
-function getNodeSourceBadge(
+function getNodeIdBadgeText(
+  node: ComfyLGraphNode,
+  nodeIdBadgeMode: NodeBadgeMode
+) {
+  return badgeTextVisible(node, nodeIdBadgeMode) ? '' : `#${node.id}`
+}
+
+function getNodeSourceBadgeText(
   node: ComfyLGraphNode,
   nodeSourceBadgeMode: NodeBadgeMode
 ) {
   const nodeSource = getNodeSource(node)
-  return nodeSourceBadgeMode === NodeBadgeMode.None ||
-    (isCoreNode(node) && nodeSourceBadgeMode === NodeBadgeMode.HideBuiltIn)
+  return badgeTextVisible(node, nodeSourceBadgeMode)
     ? ''
     : nodeSource?.badgeText ?? ''
+}
+
+function getNodeLifeCycleBadgeText(
+  node: ComfyLGraphNode,
+  nodeLifeCycleBadgeMode: NodeBadgeMode
+) {
+  let text = ''
+  const nodeDef = (node.constructor as typeof ComfyLGraphNode).nodeData
+
+  if (nodeDef.deprecated) {
+    text = '[DEPR]'
+  }
+
+  if (nodeDef.experimental) {
+    text = '[BETA]'
+  }
+
+  return badgeTextVisible(node, nodeLifeCycleBadgeMode) ? '' : text
 }
 
 class NodeBadgeExtension implements ComfyExtension {
@@ -47,6 +74,7 @@ class NodeBadgeExtension implements ComfyExtension {
   constructor(
     public nodeIdBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
     public nodeSourceBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
+    public nodeLifeCycleBadgeMode: ComputedRef<NodeBadgeMode> | null = null,
     public colorPalette: ComputedRef<Palette> | null = null
   ) {}
 
@@ -63,6 +91,12 @@ class NodeBadgeExtension implements ComfyExtension {
     this.nodeIdBadgeMode = computed(
       () => settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode
     )
+    this.nodeLifeCycleBadgeMode = computed(
+      () =>
+        settingStore.get(
+          'Comfy.NodeBadge.NodeLifeCycleBadgeMode'
+        ) as NodeBadgeMode
+    )
     this.colorPalette = computed(() =>
       getColorPalette(settingStore.get('Comfy.ColorPalette'))
     )
@@ -72,6 +106,9 @@ class NodeBadgeExtension implements ComfyExtension {
     })
 
     watch(this.nodeIdBadgeMode, () => {
+      app.graph.setDirtyCanvas(true, true)
+    })
+    watch(this.nodeLifeCycleBadgeMode, () => {
       app.graph.setDirtyCanvas(true, true)
     })
   }
@@ -90,13 +127,17 @@ class NodeBadgeExtension implements ComfyExtension {
         new LGraphBadge({
           text: _.truncate(
             [
-              getNodeIdBadge(node, this.nodeIdBadgeMode.value),
-              getNodeSourceBadge(node, this.nodeSourceBadgeMode.value)
+              getNodeIdBadgeText(node, this.nodeIdBadgeMode.value),
+              getNodeLifeCycleBadgeText(
+                node,
+                this.nodeLifeCycleBadgeMode.value
+              ),
+              getNodeSourceBadgeText(node, this.nodeSourceBadgeMode.value)
             ]
               .filter((s) => s.length > 0)
               .join(' '),
             {
-              length: 25
+              length: 31
             }
           ),
           fgColor:

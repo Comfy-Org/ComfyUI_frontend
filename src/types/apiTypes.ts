@@ -492,7 +492,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
       'Comfy.Window.UnloadConfirmation': z.boolean(),
       'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
-      'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode
+      'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
+      'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode
     })
     .optional()
 )
