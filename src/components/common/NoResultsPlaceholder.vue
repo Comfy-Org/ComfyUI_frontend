@@ -5,7 +5,7 @@
         <div class="flex flex-col items-center">
           <i :class="icon" style="font-size: 3rem; margin-bottom: 1rem"></i>
           <h3>{{ title }}</h3>
-          <p>{{ message }}</p>
+          <p class="whitespace-pre-line text-center">{{ message }}</p>
           <Button
             v-if="buttonLabel"
             :label="buttonLabel"
