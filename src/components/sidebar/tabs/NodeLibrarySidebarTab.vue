@@ -39,7 +39,7 @@
       />
       <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" type="dashed" />
       <TreeExplorer
-        class="node-lib-tree-explorer"
+        class="node-lib-tree-explorer mt-1"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
         @nodeClick="handleNodeClick"
@@ -60,7 +60,7 @@ import {
   ComfyNodeDefImpl,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, nextTick, onMounted, ref, Ref } from 'vue'
+import { computed, nextTick, ref, Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import Popover from 'primevue/popover'
 import Divider from 'primevue/divider'
@@ -199,10 +199,6 @@ const onRemoveFilter = (filterAndValue) => {
 
 :deep(.node-lib-bookmark-tree-explorer) {
   padding-bottom: 2px;
-}
-
-:deep(.node-lib-tree-explorer) {
-  padding-top: 2px;
 }
 
 :deep(.p-divider) {
