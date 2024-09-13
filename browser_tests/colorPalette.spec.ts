@@ -136,14 +136,13 @@ test.describe('Color Palette', () => {
   })
 
   test('Can show custom color palette', async ({ comfyPage }) => {
-    const originalColorPalette =
-      await comfyPage.getSetting('Comfy.ColorPalette')
     await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
-    await comfyPage.setSetting('Comfy.ColorPalette', originalColorPalette)
+    // Reset to default color palette for other tests
+    await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
