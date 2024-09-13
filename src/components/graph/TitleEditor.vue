@@ -20,7 +20,7 @@ import EditableText from '@/components/common/EditableText.vue'
 import { ComfyExtension } from '@/types/comfy'
 import { useSettingStore } from '@/stores/settingStore'
 import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
-import { useTitleEditorStore } from '@/stores/graphStore'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 
 const settingStore = useSettingStore()
 
@@ -36,6 +36,8 @@ const inputStyle = ref<CSSProperties>({
 })
 
 const titleEditorStore = useTitleEditorStore()
+const canvasStore = useCanvasStore()
+const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
@@ -44,6 +46,7 @@ const onEdit = (newValue: string) => {
   }
   showInput.value = false
   titleEditorStore.titleEditorTarget = null
+  canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value
 }
 
 watch(
@@ -54,6 +57,8 @@ watch(
     }
     editedTitle.value = target.title
     showInput.value = true
+    previousCanvasDraggable.value = canvasStore.canvas!.allow_dragcanvas
+    canvasStore.canvas!.allow_dragcanvas = false
 
     if (target instanceof LGraphGroup) {
       const group = target
