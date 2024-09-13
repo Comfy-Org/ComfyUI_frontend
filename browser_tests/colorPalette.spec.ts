@@ -131,7 +131,7 @@ const customColorPalettes = {
 }
 
 test.describe('Color Palette', () => {
-  test.beforeAll(async ({ comfyPage }) => {
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
   })
 
