@@ -57,6 +57,11 @@ function getNodeLifeCycleBadgeText(
   let text = ''
   const nodeDef = (node.constructor as typeof ComfyLGraphNode).nodeData
 
+  // Frontend-only nodes don't have nodeDef
+  if (!nodeDef) {
+    return ''
+  }
+
   if (nodeDef.deprecated) {
     text = '[DEPR]'
   }
