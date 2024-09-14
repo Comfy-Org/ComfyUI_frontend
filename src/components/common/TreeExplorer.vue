@@ -40,8 +40,10 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'primevue/usetoast'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 provide('expandedKeys', expandedKeys)
@@ -105,25 +107,31 @@ const deleteCommand = (node: RenderedTreeExplorerNode) => {
   node.handleDelete?.(node)
   emit('nodeDelete', node)
 }
-const menuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('rename'),
-    icon: 'pi pi-file-edit',
-    command: () => renameCommand(menuTargetNode.value),
-    visible: menuTargetNode.value?.handleRename !== undefined
-  },
-  {
-    label: t('delete'),
-    icon: 'pi pi-trash',
-    command: () => deleteCommand(menuTargetNode.value),
-    visible: menuTargetNode.value?.handleDelete !== undefined
-  },
-  ...(props.extraMenuItems
-    ? typeof props.extraMenuItems === 'function'
-      ? props.extraMenuItems(menuTargetNode.value)
-      : props.extraMenuItems
-    : [])
-])
+const menuItems = computed<MenuItem[]>(() =>
+  [
+    {
+      label: t('rename'),
+      icon: 'pi pi-file-edit',
+      command: () => renameCommand(menuTargetNode.value),
+      visible: menuTargetNode.value?.handleRename !== undefined
+    },
+    {
+      label: t('delete'),
+      icon: 'pi pi-trash',
+      command: () => deleteCommand(menuTargetNode.value),
+      visible: menuTargetNode.value?.handleDelete !== undefined
+    },
+    ...(props.extraMenuItems
+      ? typeof props.extraMenuItems === 'function'
+        ? props.extraMenuItems(menuTargetNode.value)
+        : props.extraMenuItems
+      : [])
+  ].map((menuItem) => ({
+    ...menuItem,
+    command: wrapCommandWithErrorHandler(menuItem.command)
+  }))
+)
+
 const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
@@ -131,6 +139,17 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
     menu.value?.show(e)
   }
 }
+
+const errorHandling = useErrorHandling()
+const wrapCommandWithErrorHandler = (
+  command: (event: MenuItemCommandEvent) => void
+) => {
+  return errorHandling.wrapWithErrorHandling(
+    command,
+    menuTargetNode.value?.handleError
+  )
+}
+
 defineExpose({
   renameCommand,
   deleteCommand
@@ -145,6 +164,7 @@ defineExpose({
   margin-left: var(--p-tree-node-gap);
   flex-grow: 1;
 }
+
 /*
  * The following styles are necessary to avoid layout shift when dragging nodes over folders.
  * By setting the position to relative on the parent and using an absolutely positioned pseudo-element,
@@ -153,6 +173,7 @@ defineExpose({
 :deep(.p-tree-node-content:has(.tree-folder)) {
   position: relative;
 }
+
 :deep(.p-tree-node-content:has(.tree-folder.can-drop))::after {
   content: '';
   position: absolute;

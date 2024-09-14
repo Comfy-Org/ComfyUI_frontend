@@ -36,12 +36,12 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { TreeNode } from 'primevue/treenode'
-import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
+import { useErrorHandling } from '@/hooks/errorHooks'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
@@ -182,22 +182,13 @@ defineExpose({
   addNewBookmarkFolder
 })
 
-const toast = useToast()
-const { t } = useI18n()
-const handleRename = (node: TreeNode, newName: string) => {
-  if (node.data && node.data.isDummyFolder) {
-    try {
+const handleRename = useErrorHandling().wrapWithErrorHandling(
+  (node: TreeNode, newName: string) => {
+    if (node.data && node.data.isDummyFolder) {
       nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
-    } catch (e) {
-      toast.add({
-        severity: 'error',
-        summary: t('error'),
-        detail: e.message,
-        life: 3000
-      })
     }
   }
-}
+)
 
 const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
@@ -212,6 +203,7 @@ const updateCustomization = (icon: string, color: string) => {
   }
 }
 
+const { t } = useI18n()
 const extraMenuItems = computed(
   () => (menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => [
     {

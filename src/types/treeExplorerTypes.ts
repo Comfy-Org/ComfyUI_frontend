@@ -24,6 +24,8 @@ export interface TreeExplorerNode<T = any> {
     node: TreeExplorerNode<T>,
     data: TreeExplorerDragAndDropData
   ) => void
+  // Function to handle errors
+  handleError?: (error: Error) => void
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
