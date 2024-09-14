@@ -1591,23 +1591,11 @@ export class ComfyApp {
     )
 
     api.addEventListener('progress', ({ detail }) => {
-      if (
-        this.workflowManager.activePrompt?.workflow &&
-        this.workflowManager.activePrompt.workflow !==
-          this.workflowManager.activeWorkflow
-      )
-        return
       this.progress = detail
       this.graph.setDirtyCanvas(true, false)
     })
 
     api.addEventListener('executing', ({ detail }) => {
-      if (
-        this.workflowManager.activePrompt?.workflow &&
-        this.workflowManager.activePrompt.workflow !==
-          this.workflowManager.activeWorkflow
-      )
-        return
       this.progress = null
       this.runningNodeId = detail
       this.graph.setDirtyCanvas(true, false)
@@ -1615,12 +1603,6 @@ export class ComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
-      if (
-        this.workflowManager.activePrompt?.workflow &&
-        this.workflowManager.activePrompt.workflow !==
-          this.workflowManager.activeWorkflow
-      )
-        return
       const output = this.nodeOutputs[detail.display_node || detail.node]
       if (detail.merge && output) {
         for (const k in detail.output ?? {}) {
