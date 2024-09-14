@@ -435,6 +435,13 @@ export declare class LGraph {
     private _nodes_in_order: LGraphNode[];
     private _version: number;
 
+    get nodes(): LGraphNode[];
+    get groups(): LGraphGroup[];
+    get nodes_by_id(): Record<number, LGraphNode>;
+    get nodes_executable(): (LGraphNode & { onExecute: NonNullable<LGraphNode["onExecute"]> }[] | null);
+    get nodes_in_order(): LGraphNode[];
+    get version(): number;
+
     getSupportedTypes(): string[];
     /** Removes all nodes from this graph */
     clear(): void;

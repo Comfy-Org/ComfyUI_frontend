@@ -868,6 +868,31 @@ const globalExport = {};
 
             this.sendActionToCanvas("clear");
         }
+
+        get nodes() {
+            return this._nodes;
+        }
+
+        get groups() {
+            return this._groups;
+        }
+
+        get nodes_by_id() {
+            return this._nodes_by_id;
+        }
+
+        get nodes_executable() {
+            return this._nodes_executable;
+        }
+
+        get nodes_in_order() {
+            return this._nodes_in_order;
+        }
+
+        get version() {
+            return this._version;
+        }
+
         /**
              * Attach Canvas to this graph
              * @method attachCanvas
