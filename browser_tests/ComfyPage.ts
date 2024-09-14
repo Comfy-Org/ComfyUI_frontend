@@ -172,7 +172,7 @@ export class ComfyPage {
 
   async getGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
-      return window['app']?.graph?._nodes?.length || 0
+      return window['app']?.graph?.nodes?.length || 0
     })
   }
 

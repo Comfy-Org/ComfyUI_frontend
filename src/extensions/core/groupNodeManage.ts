@@ -388,8 +388,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           'button.comfy-btn',
           {
             onclick: (e) => {
-              // @ts-expect-error
-              const node = app.graph._nodes.find(
+              const node = app.graph.nodes.find(
                 (n) => n.type === 'workflow/' + this.selectedGroup
               )
               if (node) {
@@ -470,8 +469,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 types[g] = type
 
                 if (!nodesByType) {
-                  // @ts-expect-error
-                  nodesByType = app.graph._nodes.reduce((p, n) => {
+                  nodesByType = app.graph.nodes.reduce((p, n) => {
                     p[n.type] ??= []
                     p[n.type].push(n)
                     return p

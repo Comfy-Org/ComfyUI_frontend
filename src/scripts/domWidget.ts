@@ -224,8 +224,8 @@ const computeVisibleNodes = LGraphCanvas.prototype.computeVisibleNodes
 //@ts-ignore
 LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   const visibleNodes = computeVisibleNodes.apply(this, arguments)
-  // @ts-expect-error
-  for (const node of app.graph._nodes) {
+
+  for (const node of app.graph.nodes) {
     if (elementWidgets.has(node)) {
       const hidden = visibleNodes.indexOf(node) === -1
       for (const w of node.widgets) {
@@ -354,8 +354,7 @@ LGraphNode.prototype.addDOMWidget = function (
         width: `${widgetWidth - margin * 2}px`,
         height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
         position: 'absolute',
-        // @ts-expect-error
-        zIndex: app.graph._nodes.indexOf(node)
+        zIndex: app.graph.nodes.indexOf(node)
       })
 
       if (enableDomClipping) {

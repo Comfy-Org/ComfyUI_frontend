@@ -518,8 +518,8 @@ describe('group node', () => {
       vaeReroute
     ])
     group1.menu.Clone.call()
-    expect(app.graph._nodes).toHaveLength(4)
-    const group2 = graph.find(app.graph._nodes[3])
+    expect(app.graph.nodes).toHaveLength(4)
+    const group2 = graph.find(app.graph.nodes[3])
     expect(group2.node.type).toEqual('workflow/test')
     expect(group2.id).not.toEqual(group1.id)
 
@@ -679,8 +679,8 @@ describe('group node', () => {
 
     // Clone the node
     group1.menu.Clone.call()
-    expect(app.graph._nodes).toHaveLength(3)
-    const group2 = graph.find(app.graph._nodes[2])
+    expect(app.graph.nodes).toHaveLength(3)
+    const group2 = graph.find(app.graph.nodes[2])
     expect(group2.node.type).toEqual('workflow/test')
     expect(group2.id).not.toEqual(group1.id)
 

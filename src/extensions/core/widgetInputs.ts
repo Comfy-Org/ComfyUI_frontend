@@ -827,8 +827,7 @@ app.registerExtension({
     }
 
     function isNodeAtPos(pos) {
-      // @ts-expect-error Fix litegraph types
-      for (const n of app.graph._nodes) {
+      for (const n of app.graph.nodes) {
         if (n.pos[0] === pos[0] && n.pos[1] === pos[1]) {
           return true
         }

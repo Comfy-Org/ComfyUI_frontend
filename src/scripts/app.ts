@@ -1396,7 +1396,7 @@ export class ComfyApp {
         return
       }
 
-      var groups = this.graph._groups
+      var groups = this.graph.groups
 
       ctx.save()
       ctx.globalAlpha = 0.7 * this.editor_alpha
@@ -1632,8 +1632,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_start', ({ detail }) => {
       this.lastExecutionError = null
-      // @ts-expect-error
-      this.graph._nodes.forEach((node) => {
+      this.graph.nodes.forEach((node) => {
         // @ts-expect-error
         if (node.onExecutionStart)
           // @ts-expect-error
@@ -1690,8 +1689,7 @@ export class ComfyApp {
     // @ts-expect-error
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      // @ts-expect-error
-      for (const node of app.graph._nodes) {
+      for (const node of app.graph.nodes) {
         // @ts-expect-error
         node.onGraphConfigured?.()
       }
@@ -1699,8 +1697,7 @@ export class ComfyApp {
       const r = onConfigure?.apply(this, arguments)
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      // @ts-expect-error _nodes is private.
-      for (const node of app.graph._nodes) {
+      for (const node of app.graph.nodes) {
         node.onAfterGraphConfigured?.()
       }
 
@@ -2334,8 +2331,7 @@ export class ComfyApp {
 
       return
     }
-    // @ts-expect-error
-    for (const node of this.graph._nodes) {
+    for (const node of this.graph.nodes) {
       const size = node.computeSize()
       size[0] = Math.max(node.size[0], size[0])
       size[1] = Math.max(node.size[1], size[1])
@@ -2893,10 +2889,8 @@ export class ComfyApp {
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
-    // @ts-expect-error
-    for (let nodeNum in this.graph._nodes) {
-      // @ts-expect-error
-      const node = this.graph._nodes[nodeNum]
+    for (let nodeNum in this.graph.nodes) {
+      const node = this.graph.nodes[nodeNum]
       const def = defs[node.type]
       // @ts-expect-error
       // Allow primitive nodes to handle refresh
