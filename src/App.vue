@@ -126,13 +126,9 @@ const onReconnected = () => {
 
 const executionStore = useExecutionStore()
 app.workflowManager.executionStore = executionStore
-watch(
-  () => executionStore.executionProgress,
-  (newProgress) => {
-    console.debug('executionProgress', newProgress)
-    app.menu.workflows.buttonProgress.style.width = `${newProgress}%`
-  }
-)
+watchEffect(() => {
+  app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
+})
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
