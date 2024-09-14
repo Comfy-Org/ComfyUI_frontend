@@ -38,7 +38,6 @@ import {
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { useExecutionStore } from '@/stores/executionStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
