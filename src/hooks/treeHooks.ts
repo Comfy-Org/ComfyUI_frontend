@@ -1,9 +1,7 @@
-import { ref } from 'vue'
+import { Ref } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 
-export function useTreeExpansion() {
-  const expandedKeys = ref<Record<string, boolean>>({})
-
+export function useTreeExpansion(expandedKeys: Ref<Record<string, boolean>>) {
   const toggleNode = (node: TreeNode) => {
     if (node.key && typeof node.key === 'string') {
       if (node.key in expandedKeys.value) {
@@ -63,7 +61,6 @@ export function useTreeExpansion() {
   }
 
   return {
-    expandedKeys,
     toggleNode,
     toggleNodeRecursive,
     expandNode,
