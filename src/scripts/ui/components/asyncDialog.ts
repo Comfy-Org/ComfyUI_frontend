@@ -21,9 +21,11 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   show(html: string | HTMLElement | HTMLElement[]) {
-    this.element.addEventListener('close', () => {
-      this.close()
-    })
+    const onClose = () => {
+      this.#resolve(null)
+    }
+
+    this.element.addEventListener('close', onClose, { once: true }) // Resovle promise without calling onClose() to prevent infinite loop, added once:true for safety but probably not needed
 
     super.show(html)
 
@@ -33,9 +35,11 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   showModal(html: string | HTMLElement | HTMLElement[]) {
-    this.element.addEventListener('close', () => {
-      this.close()
-    })
+    const onClose = () => {
+      this.#resolve(null)
+    }
+
+    this.element.addEventListener('close', onClose, { once: true }) // same as show
 
     super.show(html)
     this.element.showModal()
