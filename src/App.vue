@@ -33,6 +33,7 @@ import { useQueuePendingTaskCountStore } from './stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from './i18n'
+import { useExecutionStore } from './stores/executionStore'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -123,10 +124,17 @@ const onReconnected = () => {
   })
 }
 
+const executionStore = useExecutionStore()
+app.workflowManager.executionStore = executionStore
+watchEffect(() => {
+  app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
+})
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   api.addEventListener('reconnecting', onReconnecting)
   api.addEventListener('reconnected', onReconnected)
+  executionStore.bindExecutionEvents()
   try {
     init()
   } catch (e) {
@@ -138,6 +146,7 @@ onUnmounted(() => {
   api.removeEventListener('status', onStatus)
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
+  executionStore.unbindExecutionEvents()
 })
 </script>
 
