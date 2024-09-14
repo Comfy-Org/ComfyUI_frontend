@@ -17,17 +17,14 @@ export function trimJsonExt(path: string) {
 }
 
 export class ComfyWorkflowManager extends EventTarget {
-  #activePromptId: string | null = null
+  executionStore: any = null
+
   #unsavedCount = 0
   #activeWorkflow: ComfyWorkflow
 
   workflowLookup: Record<string, ComfyWorkflow> = {}
   workflows: Array<ComfyWorkflow> = []
   openWorkflows: Array<ComfyWorkflow> = []
-  queuedPrompts: Record<
-    string,
-    { workflow?: ComfyWorkflow; nodes?: Record<string, boolean> }
-  > = {}
   app: ComfyApp
 
   get activeWorkflow() {
@@ -35,62 +32,17 @@ export class ComfyWorkflowManager extends EventTarget {
   }
 
   get activePromptId() {
-    return this.#activePromptId
+    return this.executionStore.activePromptId
   }
 
   get activePrompt() {
-    return this.queuedPrompts[this.#activePromptId]
+    return this.executionStore.activePrompt
   }
 
   constructor(app: ComfyApp) {
     super()
     this.app = app
     ChangeTracker.init(app)
-
-    this.#bindExecutionEvents()
-  }
-
-  #bindExecutionEvents() {
-    // TODO: on reload, set active prompt based on the latest ws message
-
-    const emit = () =>
-      this.dispatchEvent(
-        new CustomEvent('execute', { detail: this.activePrompt })
-      )
-    let executing = null
-    api.addEventListener('execution_start', (e) => {
-      this.#activePromptId = e.detail.prompt_id
-
-      // This event can fire before the event is stored, so put a placeholder
-      this.queuedPrompts[this.#activePromptId] ??= { nodes: {} }
-      emit()
-    })
-    api.addEventListener('execution_cached', (e) => {
-      if (!this.activePrompt) return
-      for (const n of e.detail.nodes) {
-        this.activePrompt.nodes[n] = true
-      }
-      emit()
-    })
-    api.addEventListener('executed', (e) => {
-      if (!this.activePrompt) return
-      this.activePrompt.nodes[e.detail.node] = true
-      emit()
-    })
-    api.addEventListener('executing', (e) => {
-      if (!this.activePrompt) return
-
-      if (executing) {
-        // Seems sometimes nodes that are cached fire executing but not executed
-        this.activePrompt.nodes[executing] = true
-      }
-      executing = e.detail
-      if (!executing) {
-        delete this.queuedPrompts[this.#activePromptId]
-        this.#activePromptId = null
-      }
-      emit()
-    })
   }
 
   async loadWorkflows() {
@@ -174,15 +126,11 @@ export class ComfyWorkflowManager extends EventTarget {
   }
 
   storePrompt({ nodes, id }) {
-    this.queuedPrompts[id] ??= {}
-    this.queuedPrompts[id].nodes = {
-      ...nodes.reduce((p, n) => {
-        p[n] = false
-        return p
-      }, {}),
-      ...this.queuedPrompts[id].nodes
-    }
-    this.queuedPrompts[id].workflow = this.activeWorkflow
+    this.executionStore.storePrompt({
+      nodes,
+      id,
+      workflow: this.activeWorkflow
+    })
   }
 
   /**

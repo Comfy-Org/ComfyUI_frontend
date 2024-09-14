@@ -204,7 +204,8 @@ export class ChangeTracker {
 
     // Store node outputs
     api.addEventListener('executed', ({ detail }) => {
-      const prompt = app.workflowManager.queuedPrompts[detail.prompt_id]
+      const prompt =
+        app.workflowManager.executionStore.queuedPrompts[detail.prompt_id]
       if (!prompt?.workflow) return
       const nodeOutputs = (prompt.workflow.changeTracker.nodeOutputs ??= {})
       const output = nodeOutputs[detail.node]

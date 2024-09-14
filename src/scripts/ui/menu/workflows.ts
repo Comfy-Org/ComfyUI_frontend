@@ -71,17 +71,6 @@ export class ComfyWorkflowsMenu {
     })
   }
 
-  #updateProgress = () => {
-    const prompt = this.app.workflowManager.activePrompt
-    let percent = 0
-    if (this.app.workflowManager.activeWorkflow === prompt?.workflow) {
-      const total = Object.values(prompt.nodes)
-      const done = total.filter(Boolean)
-      percent = (done.length / total.length) * 100
-    }
-    this.buttonProgress.style.width = percent + '%'
-  }
-
   #updateActive = () => {
     const active = this.app.workflowManager.activeWorkflow
     this.button.tooltip = active.path
@@ -93,8 +82,6 @@ export class ComfyWorkflowsMenu {
       this.#first = false
       this.content.load()
     }
-
-    this.#updateProgress()
   }
 
   #bindEvents() {
@@ -107,10 +94,6 @@ export class ComfyWorkflowsMenu {
 
     this.app.workflowManager.addEventListener('save', () => {
       this.unsaved = this.app.workflowManager.activeWorkflow.unsaved
-    })
-
-    this.app.workflowManager.addEventListener('execute', (e) => {
-      this.#updateProgress()
     })
 
     api.addEventListener('graphChanged', () => {
@@ -371,9 +354,6 @@ export class ComfyWorkflowsContent {
       app.workflowManager.addEventListener(e, () => this.updateOpen())
     }
     this.app.workflowManager.addEventListener('rename', () => this.load())
-    this.app.workflowManager.addEventListener('execute', (e) =>
-      this.#updateActive()
-    )
   }
 
   async load() {
