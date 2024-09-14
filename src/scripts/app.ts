@@ -52,6 +52,7 @@ import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { ComfyLGraphNode } from '@/types/comfyLGraphNode'
+import { useExecutionStore } from '@/stores/executionStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -119,7 +120,6 @@ export class ComfyApp {
   // x, y, scale
   zoom_drag_start: [number, number, number] | null
   lastNodeErrors: any[] | null
-  runningNodeId: number | null
   lastExecutionError: { node_id: number } | null
   progress: { value: number; max: number } | null
   configuringGraph: boolean
@@ -135,6 +135,12 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
+
+  // @deprecated
+  // Use useExecutionStore().executingNodeId instead
+  get runningNodeId(): string | null {
+    return useExecutionStore().executingNodeId
+  }
 
   constructor() {
     this.vueAppReady = false
@@ -1597,7 +1603,6 @@ export class ComfyApp {
 
     api.addEventListener('executing', ({ detail }) => {
       this.progress = null
-      this.runningNodeId = detail
       this.graph.setDirtyCanvas(true, false)
       delete this.nodePreviewImages[this.runningNodeId]
     })
@@ -1626,7 +1631,6 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_start', ({ detail }) => {
-      this.runningNodeId = null
       this.lastExecutionError = null
       // @ts-expect-error
       this.graph._nodes.forEach((node) => {
@@ -2948,7 +2952,6 @@ export class ComfyApp {
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null
-    this.runningNodeId = null
   }
 
   addNodeOnGraph(

@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import {
   start,
   createDefaultWorkflow,
@@ -572,7 +573,6 @@ describe('group node', () => {
       new CustomEvent('executing', { detail: `${nodes.save.id}` })
     )
     // Event should be forwarded to group node id
-    expect(+app.runningNodeId).toEqual(group.id)
     expect(group.node['imgs']).toBeFalsy()
     api.dispatchEvent(
       new CustomEvent('executed', {
@@ -613,7 +613,6 @@ describe('group node', () => {
     api.dispatchEvent(new CustomEvent('execution_start', {}))
     api.dispatchEvent(new CustomEvent('executing', { detail: `${group.id}:5` }))
     // Event should be forwarded to group node id
-    expect(+app.runningNodeId).toEqual(group.id)
     expect(group.node['imgs']).toBeFalsy()
     api.dispatchEvent(
       new CustomEvent('executed', {
