@@ -361,7 +361,7 @@ export function initWidgets(app) {
     options: ['before', 'after'],
     onChange(value) {
       controlValueRunBefore = value === 'before'
-      for (const n of app.graph._nodes) {
+      for (const n of app.graph.nodes) {
         if (!n.widgets) continue
         for (const w of n.widgets) {
           if (w[IS_CONTROL_WIDGET]) {

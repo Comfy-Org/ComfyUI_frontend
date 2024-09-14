@@ -137,7 +137,7 @@ app.registerExtension({
         // After moving a group (while app.shiftDown), snap all the child nodes and, finally,
         //  align the group itself.
         this.recomputeInsideNodes()
-        for (const node of this._nodes) {
+        for (const node of this.nodes) {
           node.alignToGrid()
         }
         LGraphNode.prototype.alignToGrid.apply(this)
@@ -178,8 +178,7 @@ app.registerExtension({
     LGraphCanvas.onGroupAdd = function () {
       const v = onGroupAdd.apply(app.canvas, arguments)
       if (app.shiftDown) {
-        // @ts-expect-error
-        const lastGroup = app.graph._groups[app.graph._groups.length - 1]
+        const lastGroup = app.graph.groups[app.graph.groups.length - 1]
         if (lastGroup) {
           roundVectorToGrid(lastGroup.pos)
           roundVectorToGrid(lastGroup.size)

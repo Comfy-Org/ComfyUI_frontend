@@ -15,7 +15,7 @@ function addNodesToGroup(group, nodes = []) {
   x1 = y1 = x2 = y2 = -1
   nx1 = ny1 = nx2 = ny2 = -1
 
-  for (var n of [group._nodes, nodes]) {
+  for (var n of [group.nodes, nodes]) {
     for (var i in n) {
       node = n[i]
 
@@ -90,7 +90,7 @@ app.registerExtension({
 
       // Group nodes aren't recomputed until the group is moved, this ensures the nodes are up-to-date
       group.recomputeInsideNodes()
-      const nodesInGroup = group._nodes
+      const nodesInGroup = group.nodes
 
       options.push({
         content: 'Add Selected Nodes To Group',

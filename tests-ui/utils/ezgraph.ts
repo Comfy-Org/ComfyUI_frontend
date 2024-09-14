@@ -353,7 +353,7 @@ export class EzGraph {
   }
 
   get nodes() {
-    return this.app.graph._nodes.map((n) => new EzNode(this.app, n))
+    return this.app.graph.nodes.map((n) => new EzNode(this.app, n))
   }
 
   clear() {

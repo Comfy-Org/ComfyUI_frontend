@@ -17,8 +17,7 @@ const Workflow = {
     const id = `workflow/${name}`
     // Check if lready registered/in use in this workflow
     if (app.graph.extra?.groupNodes?.[name]) {
-      // @ts-expect-error
-      if (app.graph._nodes.find((n) => n.type === id)) {
+      if (app.graph.nodes.find((n) => n.type === id)) {
         return Workflow.InUse.InWorkflow
       } else {
         return Workflow.InUse.Registered
