@@ -32,11 +32,11 @@ export class ComfyWorkflowManager extends EventTarget {
   }
 
   get activePromptId() {
-    return this.executionStore.activePromptId
+    return this.executionStore?.activePromptId
   }
 
   get activePrompt() {
-    return this.executionStore.activePrompt
+    return this.executionStore?.activePrompt
   }
 
   constructor(app: ComfyApp) {
@@ -126,7 +126,7 @@ export class ComfyWorkflowManager extends EventTarget {
   }
 
   storePrompt({ nodes, id }) {
-    this.executionStore.storePrompt({
+    this.executionStore?.storePrompt({
       nodes,
       id,
       workflow: this.activeWorkflow
