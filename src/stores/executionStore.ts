@@ -10,7 +10,7 @@ export interface QueuedPrompt {
 export const useExecutionStore = defineStore('execution', () => {
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<string, QueuedPrompt>>({})
-  const executing = ref<string | null>(null)
+  const executingNodeId = ref<string | null>(null)
 
   const activePrompt = computed(() => queuedPrompts.value[activePromptId.value])
 
@@ -65,12 +65,12 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuting(e: CustomEvent) {
     if (!activePrompt.value) return
 
-    if (executing.value) {
+    if (executingNodeId.value) {
       // Seems sometimes nodes that are cached fire executing but not executed
-      activePrompt.value.nodes[executing.value] = true
+      activePrompt.value.nodes[executingNodeId.value] = true
     }
-    executing.value = e.detail
-    if (!executing.value) {
+    executingNodeId.value = e.detail
+    if (!executingNodeId.value) {
       delete queuedPrompts.value[activePromptId.value]
       activePromptId.value = null
     }
@@ -104,7 +104,7 @@ export const useExecutionStore = defineStore('execution', () => {
   return {
     activePromptId,
     queuedPrompts,
-    executing,
+    executingNodeId,
     activePrompt,
     totalNodesToExecute,
     nodesExecuted,
