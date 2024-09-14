@@ -47,7 +47,8 @@ const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
 }>()
 
-const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
+const expandedKeys = ref<Record<string, boolean>>({})
+const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const handleNodeClick = (
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,

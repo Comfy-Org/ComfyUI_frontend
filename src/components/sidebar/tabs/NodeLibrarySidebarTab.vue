@@ -92,7 +92,8 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
-const { expandedKeys, expandNode, toggleNodeOnEvent } = useTreeExpansion()
+const expandedKeys = ref<Record<string, boolean>>({})
+const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const nodeBookmarkTreeExplorerRef = ref<InstanceType<
   typeof NodeBookmarkTreeExplorer
