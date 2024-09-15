@@ -40,7 +40,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, nextTick, ref, Ref, type ComputedRef } from 'vue'
+import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -48,7 +48,7 @@ const { t } = useI18n()
 const modelStore = useModelStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
-const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const rootFolders = ['checkpoints', 'loras', 'vae', 'controlnet']
 
@@ -120,14 +120,25 @@ const handleNodeClick = (
   if (node.leaf) {
     // TODO
   } else {
-    const folderPath = node.key.split('/').slice(1).join('/')
-    if (folderPath && !folderPath.includes('/')) {
-      // trigger (async) load of model data for this folder
-      modelStore.getModelsInFolderCached(folderPath)
-    }
     toggleNodeOnEvent(e, node)
   }
 }
+
+watch(
+  toRef(expandedKeys, 'value'),
+  (newExpandedKeys) => {
+    Object.entries(newExpandedKeys).forEach(([key, isExpanded]) => {
+      if (isExpanded) {
+        const folderPath = key.split('/').slice(1).join('/')
+        if (folderPath && !folderPath.includes('/')) {
+          // Trigger (async) load of model data for this folder
+          modelStore.getModelsInFolderCached(folderPath)
+        }
+      }
+    })
+  },
+  { deep: true }
+)
 </script>
 
 <style>
