@@ -59,7 +59,9 @@ const root: ComputedRef<TreeNode> = computed(() => {
     if (models) {
       modelList.push(...Object.values(models.models))
     } else {
-      modelList.push(new ComfyModelDef('\0Loading', folder))
+      const fakeModel = new ComfyModelDef('Loading', folder)
+      fakeModel.is_fake_object = true
+      modelList.push(fakeModel)
     }
   }
   if (searchQuery.value) {
@@ -79,7 +81,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
-    if (model && model.name.startsWith('\0')) {
+    if (model?.is_fake_object) {
       return {
         key: node.key,
         label: t('loading') + '...',

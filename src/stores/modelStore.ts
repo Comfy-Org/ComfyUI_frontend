@@ -42,6 +42,8 @@ export class ComfyModelDef {
   image: string = ''
   /** Whether the model metadata has been loaded from the server, used for `load()` */
   has_loaded_metadata: boolean = false
+  /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
+  is_fake_object: boolean = false
 
   constructor(name: string, directory: string) {
     this.name = name
