@@ -49,18 +49,37 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
+const rootFolders = ['checkpoints', 'loras', 'vae', 'controlnet']
+
 const root: ComputedRef<TreeNode> = computed(() => {
-  const models = modelStore.modelStoreMap['checkpoints']
-  let modelList = models ? Object.values(models.models) : []
+  let modelList: ComfyModelDef[] = []
+  for (let folder of rootFolders) {
+    const models = modelStore.modelStoreMap[folder]
+    if (models) {
+      modelList.push(...Object.values(models.models))
+    }
+  }
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
-    modelList = modelList.filter(m => {
-      return m.name.toLocaleLowerCase().includes(search);
+    modelList = modelList.filter((model: ComfyModelDef) => {
+      return model.name.toLocaleLowerCase().includes(search)
     });
   }
-  return buildTree(modelList, (model: ComfyModelDef) =>
-    model.name.replaceAll('\\', '/').split('/')
-  )
+  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
+    return [model.directory, ...model.name.replaceAll('\\', '/').split('/')]
+  })
+  for (let folder of rootFolders) {
+    if (!tree.children.some(c => c.label == folder)) {
+      const node: TreeNode = {
+        key: `root/${folder}`,
+        label: folder,
+        leaf: false,
+        children: []
+      }
+    tree.children.push(node)
+    }
+  }
+  return tree
 })
 
 // Trigger the async operation to fetch models
@@ -69,11 +88,20 @@ modelStore.getModelsInFolderCached('checkpoints')
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef = node.leaf ? node.data : null
+    const model: ComfyModelDef | null = node.leaf ? node.data : null
+    if (model && model.name.endsWith('\0')) {
+      return {
+        key: node.key,
+        label: '',
+        leaf: false,
+        data: null,
+        children: []
+      }
+    }
 
     return {
       key: node.key,
-      label: node.leaf ? model.title : node.label,
+      label: model ? model.title : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
