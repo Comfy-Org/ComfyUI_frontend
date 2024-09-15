@@ -1,7 +1,6 @@
 <template>
   <div ref="container" class="model-lib-node-container">
-    <TreeExplorerTreeNode :node="node">
-    </TreeExplorerTreeNode>
+    <TreeExplorerTreeNode :node="node"> </TreeExplorerTreeNode>
   </div>
 </template>
 

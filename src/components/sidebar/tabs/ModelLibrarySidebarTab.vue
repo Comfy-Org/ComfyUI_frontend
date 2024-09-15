@@ -1,7 +1,6 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
-    <template #tool-buttons>
-    </template>
+    <template #tool-buttons> </template>
     <template #body>
       <div class="flex flex-col h-full">
         <div class="flex-shrink-0">
@@ -59,8 +58,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
     const models = modelStore.modelStoreMap[folder]
     if (models) {
       modelList.push(...Object.values(models.models))
-    }
-    else {
+    } else {
       modelList.push(new ComfyModelDef('\0Loading', folder))
     }
   }
@@ -68,7 +66,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
       return model.name.toLocaleLowerCase().includes(search)
-    });
+    })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
     return [model.directory, ...model.name.replaceAll('\\', '/').split('/')]
@@ -79,16 +77,17 @@ const root: ComputedRef<TreeNode> = computed(() => {
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef | null = node.leaf && node.data ? node.data : null
+    const model: ComfyModelDef | null =
+      node.leaf && node.data ? node.data : null
     if (model && model.name.startsWith('\0')) {
       return {
         key: node.key,
         label: t('loading') + '...',
         leaf: true,
         data: null,
-      getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
-        return 'pi pi-spin pi-spinner'
-      },
+        getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
+          return 'pi pi-spin pi-spinner'
+        },
         children: []
       }
     }
