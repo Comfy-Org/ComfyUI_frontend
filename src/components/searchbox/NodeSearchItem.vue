@@ -4,6 +4,9 @@
   >
     <div class="option-display-name font-semibold flex flex-col">
       <div>
+        <span v-if="isBookmarked">
+          <i class="pi pi-bookmark-fill text-sm mr-1"></i>
+        </span>
         <span
           v-html="highlightQuery(nodeDef.display_name, currentQuery)"
         ></span>
@@ -45,6 +48,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { highlightQuery } from '@/utils/formatUtil'
 import { computed } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -54,7 +58,12 @@ const showIdName = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
 )
 
-defineProps<{
+const nodeBookmarkStore = useNodeBookmarkStore()
+const isBookmarked = computed(() =>
+  nodeBookmarkStore.isBookmarked(props.nodeDef)
+)
+
+const props = defineProps<{
   nodeDef: ComfyNodeDefImpl
   currentQuery: string
 }>()
