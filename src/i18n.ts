@@ -20,6 +20,7 @@ const messages = {
     box: 'Box',
     briefcase: 'Briefcase',
     error: 'Error',
+    loading: 'Loading',
     findIssues: 'Find Issues',
     copyToClipboard: 'Copy to Clipboard',
     openNewIssue: 'Open New Issue',

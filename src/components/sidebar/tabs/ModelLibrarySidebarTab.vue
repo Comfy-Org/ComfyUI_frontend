@@ -31,6 +31,7 @@
 
 <script setup lang="ts">
 import SearchBox from '@/components/common/SearchBox.vue'
+import { useI18n } from 'vue-i18n'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
@@ -44,6 +45,7 @@ import { computed, nextTick, ref, Ref, type ComputedRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 
+const { t } = useI18n()
 const modelStore = useModelStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -58,6 +60,9 @@ const root: ComputedRef<TreeNode> = computed(() => {
     if (models) {
       modelList.push(...Object.values(models.models))
     }
+    else {
+      modelList.push(new ComfyModelDef('\0Loading', folder))
+    }
   }
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
@@ -68,30 +73,22 @@ const root: ComputedRef<TreeNode> = computed(() => {
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
     return [model.directory, ...model.name.replaceAll('\\', '/').split('/')]
   })
-  for (let folder of rootFolders) {
-    if (!tree.children.some(c => c.label == folder)) {
-      const node: TreeNode = {
-        key: `root/${folder}`,
-        label: folder,
-        leaf: false,
-        children: []
-      }
-    tree.children.push(node)
-    }
-  }
   return tree
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
-    const model: ComfyModelDef | null = node.leaf ? node.data : null
-    if (model && model.name.endsWith('\0')) {
+    const model: ComfyModelDef | null = node.leaf && node.data ? node.data : null
+    if (model && model.name.startsWith('\0')) {
       return {
         key: node.key,
-        label: '',
-        leaf: false,
+        label: t('loading') + '...',
+        leaf: true,
         data: null,
+      getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
+        return 'pi pi-spin pi-spinner'
+      },
         children: []
       }
     }
@@ -127,7 +124,6 @@ const handleNodeClick = (
     const folderPath = node.key.split('/').slice(1).join('/')
     if (folderPath && !folderPath.includes('/')) {
       // trigger (async) load of model data for this folder
-      // TODO: Append a temporary loading icon if needed?
       modelStore.getModelsInFolderCached(folderPath)
     }
     toggleNodeOnEvent(e, node)
