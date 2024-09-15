@@ -82,9 +82,6 @@ const root: ComputedRef<TreeNode> = computed(() => {
   return tree
 })
 
-// Trigger the async operation to fetch models
-modelStore.getModelsInFolderCached('checkpoints')
-
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
@@ -127,6 +124,12 @@ const handleNodeClick = (
   if (node.leaf) {
     // TODO
   } else {
+    const folderPath = node.key.split('/').slice(1).join('/')
+    if (folderPath && !folderPath.includes('/')) {
+      // trigger (async) load of model data for this folder
+      // TODO: Append a temporary loading icon if needed?
+      modelStore.getModelsInFolderCached(folderPath)
+    }
     toggleNodeOnEvent(e, node)
   }
 }
