@@ -4901,6 +4901,10 @@ const globalExport = {};
             });
         }
 
+        get nodes() {
+            return this._nodes;
+        }
+
         get titleHeight() {
             return this.font_size * 1.4;
         }

@@ -1156,6 +1156,7 @@ export declare class LGraphGroup {
     font_size: number;
     flags: Record<string, boolean>;
 
+    get nodes(): LGraphNode[];
     get titleHeight(): number;
     get selected(): boolean;
 
