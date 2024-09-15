@@ -4,17 +4,7 @@ import { ChangeTracker } from './changeTracker'
 import { ComfyAsyncDialog } from './ui/components/asyncDialog'
 import { getStorageValue, setStorageValue } from './utils'
 import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
-
-function appendJsonExt(path: string) {
-  if (!path.toLowerCase().endsWith('.json')) {
-    path += '.json'
-  }
-  return path
-}
-
-export function trimJsonExt(path: string) {
-  return path?.replace(/\.json$/, '')
-}
+import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: any = null

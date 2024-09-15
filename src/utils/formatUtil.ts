@@ -22,3 +22,14 @@ export function formatCamelCase(str: string): string {
   // Join the words with spaces
   return processedWords.join(' ')
 }
+
+export function appendJsonExt(path: string) {
+  if (!path.toLowerCase().endsWith('.json')) {
+    path += '.json'
+  }
+  return path
+}
+
+export function trimJsonExt(path: string) {
+  return path.replace(/\.json$/, '')
+}
