@@ -51,7 +51,13 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const root: ComputedRef<TreeNode> = computed(() => {
   const models = modelStore.modelStoreMap['checkpoints']
-  const modelList = models ? Object.values(models.models) : []
+  let modelList = models ? Object.values(models.models) : []
+  if (searchQuery.value) {
+    const search = searchQuery.value.toLocaleLowerCase()
+    modelList = modelList.filter(m => {
+      return m.name.toLocaleLowerCase().includes(search);
+    });
+  }
   return buildTree(modelList, (model: ComfyModelDef) =>
     model.name.replaceAll('\\', '/').split('/')
   )
@@ -84,9 +90,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
 
 const handleSearch = (query: string) => {
   // TODO
-  nextTick(() => {
-    expandNode(renderedRoot.value)
-  })
 }
 
 const handleNodeClick = (
