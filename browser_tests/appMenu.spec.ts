@@ -6,7 +6,7 @@ import { webSocketFixture } from './fixtures/ws.ts'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-test.describe.only('AppMenu', () => {
+test.describe('AppMenu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
   })
@@ -22,7 +22,7 @@ test.describe.only('AppMenu', () => {
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */
-  test.only('Does not auto-queue multiple changes at a time', async ({
+  test('Does not auto-queue multiple changes at a time', async ({
     comfyPage,
     ws
   }) => {
