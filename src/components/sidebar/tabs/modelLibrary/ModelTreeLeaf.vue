@@ -1,5 +1,5 @@
 <template>
-  <div ref="container" class="model-lib-node-container">
+  <div ref="container" class="model-lib-node-container h-full w-full">
     <TreeExplorerTreeNode :node="node"> </TreeExplorerTreeNode>
   </div>
 </template>
@@ -13,9 +13,3 @@ const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 </script>
-
-<style scoped>
-.model-lib-node-container {
-  @apply h-full w-full;
-}
-</style>
