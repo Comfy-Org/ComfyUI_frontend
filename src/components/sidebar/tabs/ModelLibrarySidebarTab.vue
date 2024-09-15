@@ -20,7 +20,7 @@
             @nodeClick="handleNodeClick"
           >
             <template #node="{ node }">
-              <NodeTreeLeaf :node="node" /> <!-- TODO -->
+              <ModelTreeLeaf :node="node" />
             </template>
           </TreeExplorer>
         </div>
@@ -33,6 +33,7 @@
 import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type {
@@ -50,11 +51,9 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const root: ComputedRef<TreeNode> = computed(() => {
   const models = modelStore.modelStoreMap['checkpoints']
-  if (!models) {
-    return null
-  }
-  return buildTree(Object.values(models.models), (model: ComfyModelDef) =>
-    model.name.split('/')
+  const modelList = models ? Object.values(models.models) : []
+  return buildTree(modelList, (model: ComfyModelDef) =>
+    model.name.replaceAll('\\', '/').split('/')
   )
 })
 
@@ -73,7 +72,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
         if (node.leaf) {
-          return 'pi pi-circle-fill'
+          return 'pi pi-file'
         }
       },
       children,

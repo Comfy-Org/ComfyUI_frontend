@@ -45,7 +45,7 @@ export class ComfyModelDef {
 
   constructor(name: string, directory: string) {
     this.name = name
-    this.title = name
+    this.title = name.replaceAll('\\', '/').split('/').pop()
     this.directory = directory
   }
 
