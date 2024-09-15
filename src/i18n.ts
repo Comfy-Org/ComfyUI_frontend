@@ -37,6 +37,7 @@ const messages = {
     settings: 'Settings',
     searchSettings: 'Search Settings',
     searchNodes: 'Search Nodes',
+    searchModels: 'Search Models',
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
@@ -50,6 +51,7 @@ const messages = {
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
+      modelLibrary: 'Model Library',
       queueTab: {
         showFlatList: 'Show Flat List',
         backToAllTasks: 'Back to All Tasks',

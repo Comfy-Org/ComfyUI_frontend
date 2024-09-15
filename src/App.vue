@@ -24,6 +24,7 @@ import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
+import ModelLibrarySidebarTab from './components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import GlobalToast from './components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from './components/dialog/UnloadWindowConfirmDialog.vue'
@@ -98,6 +99,14 @@ const init = () => {
     title: t('sideToolbar.nodeLibrary'),
     tooltip: t('sideToolbar.nodeLibrary'),
     component: markRaw(NodeLibrarySidebarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'model-library',
+    icon: 'pi pi-folder-open',
+    title: t('sideToolbar.modelLibrary'),
+    tooltip: t('sideToolbar.modelLibrary'),
+    component: markRaw(ModelLibrarySidebarTab),
     type: 'vue'
   })
 }
