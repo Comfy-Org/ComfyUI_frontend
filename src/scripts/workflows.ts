@@ -8,12 +8,11 @@ import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: any = null
+  workflowStore: any = null
 
   #unsavedCount = 0
   #activeWorkflow: ComfyWorkflow
 
-  workflowLookup: Record<string, ComfyWorkflow> = {}
-  workflows: Array<ComfyWorkflow> = []
   openWorkflows: Array<ComfyWorkflow> = []
   app: ComfyApp
 
@@ -27,6 +26,14 @@ export class ComfyWorkflowManager extends EventTarget {
 
   get activePrompt() {
     return this.executionStore?.activePrompt
+  }
+
+  get workflows(): ComfyWorkflow[] {
+    return this.workflowStore?.workflows || []
+  }
+
+  get workflowLookup(): Record<string, ComfyWorkflow> {
+    return this.workflowStore?.workflowLookup || {}
   }
 
   constructor(app: ComfyApp) {
@@ -47,8 +54,8 @@ export class ComfyWorkflowManager extends EventTarget {
         favorites = new Set()
       }
 
-      const workflows = (await api.listUserData('workflows', true, true)).map(
-        (w) => {
+      ;(await api.listUserData('workflows', true, true)).forEach(
+        (w: string[]) => {
           let workflow = this.workflowLookup[w[0]]
           if (!workflow) {
             workflow = new ComfyWorkflow(
@@ -59,14 +66,10 @@ export class ComfyWorkflowManager extends EventTarget {
             )
             this.workflowLookup[workflow.path] = workflow
           }
-          return workflow
         }
       )
-
-      this.workflows = workflows
     } catch (error) {
       alert('Error loading workflows: ' + (error.message ?? error))
-      this.workflows = []
     }
   }
 
@@ -167,29 +170,13 @@ export class ComfyWorkflowManager extends EventTarget {
 }
 
 export class ComfyWorkflow {
-  #name
-  #path
-  #pathParts
-  #isFavorite = false
+  name: string | null = null
+  path: string | null = null
+  pathParts: string[] | null = null
+  isFavorite: boolean = false
   changeTracker: ChangeTracker | null = null
-  unsaved = false
+  unsaved: boolean = false
   manager: ComfyWorkflowManager
-
-  get name() {
-    return this.#name
-  }
-
-  get path() {
-    return this.#path
-  }
-
-  get pathParts() {
-    return this.#pathParts
-  }
-
-  get isFavorite() {
-    return this.#isFavorite
-  }
 
   get isOpen() {
     return !!this.changeTracker
@@ -204,15 +191,15 @@ export class ComfyWorkflow {
     this.manager = manager
     if (pathParts) {
       this.#updatePath(path, pathParts)
-      this.#isFavorite = isFavorite
+      this.isFavorite = isFavorite
     } else {
-      this.#name = path
+      this.name = path
       this.unsaved = true
     }
   }
 
   #updatePath(path: string, pathParts: string[]) {
-    this.#path = path
+    this.path = path
 
     if (!pathParts) {
       if (!path.includes('\\')) {
@@ -222,8 +209,8 @@ export class ComfyWorkflow {
       }
     }
 
-    this.#pathParts = pathParts
-    this.#name = trimJsonExt(pathParts[pathParts.length - 1])
+    this.pathParts = pathParts
+    this.name = trimJsonExt(pathParts[pathParts.length - 1])
   }
 
   async getWorkflowData() {
@@ -266,8 +253,8 @@ export class ComfyWorkflow {
 
   async favorite(value: boolean) {
     try {
-      if (this.#isFavorite === value) return
-      this.#isFavorite = value
+      if (this.isFavorite === value) return
+      this.isFavorite = value
       await this.manager.saveWorkflowMetadata()
       this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
@@ -352,8 +339,8 @@ export class ComfyWorkflow {
     }
 
     this.unsaved = true
-    this.#path = null
-    this.#pathParts = null
+    this.path = null
+    this.pathParts = null
     this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
     this.manager.dispatchEvent(new CustomEvent('delete', { detail: this }))
   }

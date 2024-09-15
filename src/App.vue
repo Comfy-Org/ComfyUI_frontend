@@ -34,6 +34,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from './i18n'
 import { useExecutionStore } from './stores/executionStore'
+import { useWorkflowStore } from './stores/workflowStore'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -129,6 +130,9 @@ app.workflowManager.executionStore = executionStore
 watchEffect(() => {
   app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
 })
+
+const workflowStore = useWorkflowStore()
+app.workflowManager.workflowStore = workflowStore
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
