@@ -1,7 +1,7 @@
 <template>
   <Panel v-if="visible" class="app-menu">
     <div class="app-menu-content">
-      <Popover ref="queuePopover">
+      <Popover ref="queuePopover" data-testid="queue-options">
         <div class="queue-options">
           <p class="batch-count">
             <FloatLabel v-tooltip="$t('menu.batchCountTooltip')">
@@ -28,11 +28,14 @@
               >
                 <RadioButton
                   v-model="queueMode"
-                  :inputId="mode"
+                  :inputId="`autoqueue-${mode}`"
                   name="dynamic"
                   :value="mode"
+                  :data-testid="`autoqueue-${mode}`"
                 />
-                <label :for="mode">{{ $t(`menu.${mode}`) }}</label>
+                <label :for="`autoqueue-${mode}`">{{
+                  $t(`menu.${mode}`)
+                }}</label>
               </div>
             </template>
           </p>
@@ -53,6 +56,7 @@
             }
           }
         }"
+        data-testid="queue-button"
       >
       </SplitButton>
       <div class="separator"></div>
