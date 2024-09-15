@@ -103,7 +103,7 @@ const init = () => {
   })
   app.extensionManager.registerSidebarTab({
     id: 'model-library',
-    icon: 'pi pi-folder-open',
+    icon: 'pi pi-box',
     title: t('sideToolbar.modelLibrary'),
     tooltip: t('sideToolbar.modelLibrary'),
     component: markRaw(ModelLibrarySidebarTab),
