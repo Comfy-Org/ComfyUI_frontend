@@ -371,6 +371,18 @@ export class ComfyPage {
     return { x: 427, y: 198 }
   }
 
+  get clipTextEncodeNode2InputSlot(): Position {
+    return { x: 422, y: 402 }
+  }
+
+  // A point on input edge.
+  get clipTextEncodeNode2InputLinkPath(): Position {
+    return {
+      x: 395,
+      y: 422
+    }
+  }
+
   get loadCheckpointNodeClipOutputSlot(): Position {
     return { x: 332, y: 509 }
   }

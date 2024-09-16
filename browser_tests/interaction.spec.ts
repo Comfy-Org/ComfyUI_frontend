@@ -24,16 +24,56 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })
 
-  test('Can disconnect/connect edge', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'no action')
-    await comfyPage.disconnectEdge()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'disconnected-edge-with-menu.png'
-    )
-    await comfyPage.connectEdge()
-    // Litegraph renders edge with a slight offset.
-    await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
-      maxDiffPixels: 50
+  test.describe('Edge Interaction', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.LinkRelease.Action', 'no action')
+      await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'no action')
+    })
+
+    test('Can disconnect/connect edge', async ({ comfyPage }) => {
+      await comfyPage.disconnectEdge()
+      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+      await comfyPage.connectEdge()
+      // Litegraph renders edge with a slight offset.
+      await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
+        maxDiffPixels: 50
+      })
+    })
+
+    // Chromium 2x cannot move link.
+    // See https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/10876381315/job/30176211513
+    test.skip('Can move link', async ({ comfyPage }) => {
+      await comfyPage.dragAndDrop(
+        comfyPage.clipTextEncodeNode1InputSlot,
+        comfyPage.emptySpace
+      )
+      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+      await comfyPage.dragAndDrop(
+        comfyPage.clipTextEncodeNode2InputSlot,
+        comfyPage.clipTextEncodeNode1InputSlot
+      )
+      await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
+    })
+
+    // Copy link is not working on CI at all
+    // Chromium 2x recognize it as dragging canvas.
+    // Chromium triggers search box after link release. The link is indeed copied.
+    // See https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/10876381315/job/30176211513
+    test.skip('Can copy link by shift-drag existing link', async ({
+      comfyPage
+    }) => {
+      await comfyPage.dragAndDrop(
+        comfyPage.clipTextEncodeNode1InputSlot,
+        comfyPage.emptySpace
+      )
+      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+      await comfyPage.page.keyboard.down('Shift')
+      await comfyPage.dragAndDrop(
+        comfyPage.clipTextEncodeNode2InputLinkPath,
+        comfyPage.clipTextEncodeNode1InputSlot
+      )
+      await comfyPage.page.keyboard.up('Shift')
+      await expect(comfyPage.canvas).toHaveScreenshot('copied-link.png')
     })
   })
 
