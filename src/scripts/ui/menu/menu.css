@@ -1,3 +1,6 @@
+:root {
+  --comfy-floating-menu-height: 45px;
+}
 .relative {
   position: relative;
 }
@@ -118,6 +121,9 @@
   overflow: hidden;
 }
 
+.comfyui-button-group:empty {
+  display: none;
+}
 .comfyui-button-group > .comfyui-button,
 .comfyui-button-group > .comfyui-button-wrapper > .comfyui-button {
   padding: 4px 10px;
@@ -141,6 +147,22 @@
   grid-column: 1/-1;
   overflow: auto;
   max-height: 90vh;
+}
+.comfyui-menu.floating {
+  width: max-content;
+  padding: 8px 0 8px 12px;
+  overflow: hidden;
+  border-bottom-right-radius: 12px;
+  height: var(--comfy-floating-menu-height);
+  position: absolute;
+}
+
+.comfyui-menu.floating .comfyui-logo {
+  padding-right: 8px;
+}
+
+.comfyui-floating-menu .comfyui-body-left {
+  margin-top: var(--comfy-floating-menu-height);
 }
 
 .comfyui-menu>* {
@@ -709,3 +731,4 @@
 .comfyui-body-bottom .lt-sm.comfyui-menu > .comfyui-menu-button{
   bottom: 41px;
 }
+
