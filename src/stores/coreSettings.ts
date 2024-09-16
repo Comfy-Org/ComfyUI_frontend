@@ -339,9 +339,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     onChange: function (value) {
-      document.getElementById('comfy-dev-save-api-button').style.display = value
-        ? 'flex'
-        : 'none'
+      const element = document.getElementById('comfy-dev-save-api-button')
+      if (element) {
+        element.style.display = value ? 'flex' : 'none'
+      }
     }
   }
 ]
