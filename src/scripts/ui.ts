@@ -373,7 +373,7 @@ export class ComfyUI {
     })
 
     // For testing. Legacy ui tests don't have vue app initialized.
-    if (!app.vueAppReady) {
+    if (window['IS_TEST']) {
       this.setup(document.body)
     }
   }
