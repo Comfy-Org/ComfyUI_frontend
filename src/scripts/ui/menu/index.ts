@@ -181,7 +181,9 @@ export class ComfyAppMenu {
             resizeHandler = null
           }
           document.body.style.removeProperty('display')
-          app.ui.menuContainer.style.removeProperty('display')
+          if (app.ui.menuContainer) {
+            app.ui.menuContainer.style.removeProperty('display')
+          }
           this.element.style.display = 'none'
           app.ui.restoreMenuPosition()
         }
@@ -192,7 +194,9 @@ export class ComfyAppMenu {
 
   updatePosition(v: MenuPosition) {
     document.body.style.display = 'grid'
-    this.app.ui.menuContainer.style.display = 'none'
+    if (this.app.ui.menuContainer) {
+      this.app.ui.menuContainer.style.display = 'none'
+    }
     this.element.style.removeProperty('display')
     this.position = v
     if (v === 'Bottom') {
