@@ -7176,22 +7176,49 @@ const globalExport = {};
                 else {
                     if (!skip_action) {
                         //search for link connector
-                        if (!this.read_only) {
+                        if (!this.read_only)
+                        {
+                            // Set the width of the line for isPointInStroke checks
+                            const lineWidth = this.ctx.lineWidth;
+                            this.ctx.lineWidth = this.connections_width + 7;
                             for (var i = 0; i < this.visible_links.length; ++i) {
                                 var link = this.visible_links[i];
                                 var center = link._pos;
+                                let overLink = null;
                                 if (!center ||
                                     e.canvasX < center[0] - 4 ||
                                     e.canvasX > center[0] + 4 ||
                                     e.canvasY < center[1] - 4 ||
                                     e.canvasY > center[1] + 4) {
-                                    continue;
+                                    // If we shift click on a link then start a link from that input
+                                    if (e.shiftKey && link.path && this.ctx.isPointInStroke(link.path, e.canvasX, e.canvasY)) {
+                                        overLink = link;
+                                    } else {
+                                        continue;
+                                    }
                                 }
-                                //link clicked
-                                this.showLinkMenu(link, e);
-                                this.over_link_center = null; //clear tooltip
+                                if (overLink) {
+                                    const slot = overLink.origin_slot;
+                                    const originNode = this.graph._nodes_by_id[overLink.origin_id];
+    
+                                    this.connecting_links ??= []
+                                    this.connecting_links.push({
+                                        node: originNode,
+                                        slot,
+                                        output: originNode.outputs[slot],
+                                        pos: originNode.getConnectionPos(false, slot),
+                                    });
+                                    skip_action = true;
+                                } else {
+                                    //link clicked
+                                    this.showLinkMenu(link, e);
+                                    this.over_link_center = null; //clear tooltip
+                                }
                                 break;
                             }
+
+                            // Restore line width
+                            this.ctx.lineWidth = lineWidth;
                         }
 
                         this.selected_group = this.graph.getGroupOnPos(e.canvasX, e.canvasY);
@@ -10400,12 +10427,16 @@ const globalExport = {};
             }
 
             //begin line shape
-            ctx.beginPath();
+            const path = new Path2D();
+            if (link) {
+                // Store the path on the link for hittests
+                link.path = path;
+            }
             for (var i = 0; i < num_sublines; i += 1) {
                 var offsety = (i - (num_sublines - 1) * 0.5) * 5;
 
                 if (this.links_render_mode == LiteGraph.SPLINE_LINK) {
-                    ctx.moveTo(a[0], a[1] + offsety);
+                    path.moveTo(a[0], a[1] + offsety);
                     var start_offset_x = 0;
                     var start_offset_y = 0;
                     var end_offset_x = 0;
@@ -10438,7 +10469,7 @@ const globalExport = {};
                             end_offset_y = dist * 0.25;
                             break;
                     }
-                    ctx.bezierCurveTo(
+                    path.bezierCurveTo(
                         a[0] + start_offset_x,
                         a[1] + start_offset_y + offsety,
                         b[0] + end_offset_x,
@@ -10447,7 +10478,7 @@ const globalExport = {};
                         b[1] + offsety
                     );
                 } else if (this.links_render_mode == LiteGraph.LINEAR_LINK) {
-                    ctx.moveTo(a[0], a[1] + offsety);
+                    path.moveTo(a[0], a[1] + offsety);
                     var start_offset_x = 0;
                     var start_offset_y = 0;
                     var end_offset_x = 0;
@@ -10481,17 +10512,17 @@ const globalExport = {};
                             break;
                     }
                     var l = 15;
-                    ctx.lineTo(
+                    path.lineTo(
                         a[0] + start_offset_x * l,
                         a[1] + start_offset_y * l + offsety
                     );
-                    ctx.lineTo(
+                    path.lineTo(
                         b[0] + end_offset_x * l,
                         b[1] + end_offset_y * l + offsety
                     );
-                    ctx.lineTo(b[0], b[1] + offsety);
+                    path.lineTo(b[0], b[1] + offsety);
                 } else if (this.links_render_mode == LiteGraph.STRAIGHT_LINK) {
-                    ctx.moveTo(a[0], a[1]);
+                    path.moveTo(a[0], a[1]);
                     var start_x = a[0];
                     var start_y = a[1];
                     var end_x = b[0];
@@ -10506,11 +10537,11 @@ const globalExport = {};
                     } else {
                         end_y -= 10;
                     }
-                    ctx.lineTo(start_x, start_y);
-                    ctx.lineTo((start_x + end_x) * 0.5, start_y);
-                    ctx.lineTo((start_x + end_x) * 0.5, end_y);
-                    ctx.lineTo(end_x, end_y);
-                    ctx.lineTo(b[0], b[1]);
+                    path.lineTo(start_x, start_y);
+                    path.lineTo((start_x + end_x) * 0.5, start_y);
+                    path.lineTo((start_x + end_x) * 0.5, end_y);
+                    path.lineTo(end_x, end_y);
+                    path.lineTo(b[0], b[1]);
                 } else {
                     return;
                 } //unknown
@@ -10521,12 +10552,12 @@ const globalExport = {};
                 this.ds.scale > 0.6 &&
                 !skip_border) {
                 ctx.strokeStyle = "rgba(0,0,0,0.5)";
-                ctx.stroke();
+                ctx.stroke(path);
             }
 
             ctx.lineWidth = this.connections_width;
             ctx.fillStyle = ctx.strokeStyle = color;
-            ctx.stroke();
+            ctx.stroke(path);
             //end line shape
             var pos = this.computeConnectionPoint(a, b, 0.5, start_dir, end_dir);
             if (link && link._pos) {
