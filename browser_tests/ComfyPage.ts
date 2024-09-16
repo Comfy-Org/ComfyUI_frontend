@@ -376,7 +376,7 @@ export class ComfyPage {
   }
 
   get emptySpace(): Position {
-    return { x: 10, y: 10 }
+    return { x: 427, y: 98 }
   }
 
   async disconnectEdge() {
