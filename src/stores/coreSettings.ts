@@ -262,5 +262,86 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
     defaultValue: NodeBadgeMode.ShowAll
+  },
+  {
+    id: 'Comfy.ConfirmClear',
+    category: ['Comfy', 'Workflow', 'ConfirmClear'],
+    name: 'Require confirmation when clearing workflow',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.PromptFilename',
+    category: ['Comfy', 'Workflow', 'PromptFilename'],
+    name: 'Prompt for filename when saving workflow',
+    type: 'boolean',
+    defaultValue: true
+  },
+  /**
+   * file format for preview
+   *
+   * format;quality
+   *
+   * ex)
+   * webp;50 -> webp, quality 50
+   * jpeg;80 -> rgb, jpeg, quality 80
+   *
+   * @type {string}
+   */
+  {
+    id: 'Comfy.PreviewFormat',
+    category: ['Comfy', 'Node Widget', 'PreviewFormat'],
+    name: 'Preview image format',
+    tooltip:
+      'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
+    type: 'text',
+    defaultValue: ''
+  },
+  {
+    id: 'Comfy.DisableSliders',
+    category: ['Comfy', 'Node Widget', 'DisableSliders'],
+    name: 'Disable node widget sliders',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'Comfy.DisableFloatRounding',
+    category: ['Comfy', 'Node Widget', 'DisableFloatRounding'],
+    name: 'Disable default float widget rounding.',
+    tooltip:
+      '(requires page reload) Cannot disable round when round is set by the node in the backend.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'Comfy.FloatRoundingPrecision',
+    category: ['Comfy', 'Node Widget', 'FloatRoundingPrecision'],
+    name: 'Float widget rounding decimal places [0 = auto].',
+    tooltip: '(requires page reload)',
+    type: 'slider',
+    attrs: {
+      min: 0,
+      max: 6,
+      step: 1
+    },
+    defaultValue: 0
+  },
+  {
+    id: 'Comfy.EnableTooltips',
+    category: ['Comfy', 'Node', 'EnableTooltips'],
+    name: 'Enable Tooltips',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.DevMode',
+    name: 'Enable dev mode options (API save, etc.)',
+    type: 'boolean',
+    defaultValue: false,
+    onChange: function (value) {
+      document.getElementById('comfy-dev-save-api-button').style.display = value
+        ? 'flex'
+        : 'none'
+    }
   }
 ]
