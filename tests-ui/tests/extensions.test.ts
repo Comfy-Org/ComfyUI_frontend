@@ -171,6 +171,7 @@ describe('extensions', () => {
         nodeDefs['TestNode'] = {
           output: [],
           output_name: [],
+          output_label: [],
           output_is_list: [],
           name: 'TestNode',
           display_name: 'TestNode',

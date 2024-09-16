@@ -144,6 +144,7 @@ export class ComfyOutputSpec {
     public index: number,
     // Name is not unique for output params
     public name: string,
+    public label: string,
     public type: string,
     public is_list: boolean,
     public comboOptions?: any[],
@@ -190,13 +191,20 @@ export class ComfyNodeDefImpl {
   output: ComfyOutputsSpec
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
-    const { output, output_is_list, output_name, output_tooltips } = obj
+    const {
+      output,
+      output_is_list,
+      output_name,
+      output_label,
+      output_tooltips
+    } = obj
     const result = output.map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
 
       return new ComfyOutputSpec(
         index,
         output_name[index],
+        output_label[index],
         typeString,
         output_is_list[index],
         Array.isArray(type) ? type : undefined,
@@ -223,6 +231,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     input: { required: {}, optional: {} },
     output: ['*'],
     output_name: ['connect to widget input'],
+    output_label: ['connect to widget input'],
     output_is_list: [false],
     python_module: 'nodes',
     description: 'Primitive values like numbers, strings, and booleans.'
@@ -234,6 +243,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     input: { required: { '': ['*'] }, optional: {} },
     output: ['*'],
     output_name: [''],
+    output_label: [''],
     output_is_list: [false],
     python_module: 'nodes',
     description: 'Reroute the connection to another node.'
@@ -245,6 +255,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     input: { required: {}, optional: {} },
     output: [],
     output_name: [],
+    output_label: [],
     output_is_list: [],
     python_module: 'nodes',
     description: 'Node that add notes to your project'

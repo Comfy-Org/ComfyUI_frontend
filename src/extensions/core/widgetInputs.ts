@@ -6,6 +6,7 @@ import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
+const UNVALID_NAMES = ['control_after_generate']
 const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
 const TARGET = Symbol() // Used for reroutes to specify the real target widget
@@ -396,7 +397,8 @@ function getConfig(widgetName) {
 function isConvertibleWidget(widget, config) {
   return (
     (VALID_TYPES.includes(widget.type) || VALID_TYPES.includes(config[0])) &&
-    !widget.options?.forceInput
+    !widget.options?.forceInput &&
+    !UNVALID_NAMES.includes(widget.name)
   )
 }
 
@@ -455,7 +457,8 @@ function convertToInput(node, widget, config) {
   // Add input and store widget config for creating on primitive node
   const sz = node.size
   node.addInput(widget.name, type, {
-    widget: { name: widget.name, [GET_CONFIG]: () => config }
+    widget: { name: widget.name, [GET_CONFIG]: () => config },
+    label: widget.element?.placeholder || widget?.label || widget.name
   })
 
   for (const widget of node.widgets) {
@@ -702,7 +705,7 @@ app.registerExtension({
           }
           if (w.type === CONVERTED_TYPE) {
             toWidget.push({
-              content: `Convert ${w.name} to widget`,
+              content: `Convert '${w?.label || w.name}' to widget`,
               callback: () => convertToWidget(this, w)
             })
           } else {
@@ -712,7 +715,7 @@ app.registerExtension({
             ]
             if (isConvertibleWidget(w, config)) {
               toInput.push({
-                content: `Convert ${w.name} to input`,
+                content: `Convert '${w?.label || w.name}' to input`,
                 callback: () => convertToInput(this, w, config)
               })
             }
