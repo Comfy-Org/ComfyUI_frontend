@@ -355,3 +355,12 @@ export const useQueuePendingTaskCountStore = defineStore(
     }
   }
 )
+
+export type AutoQueueMode = 'disabled' | 'instant' | 'change'
+
+export const useQueueSettingsStore = defineStore('queueSettingsStore', {
+  state: () => ({
+    mode: 'disabled' as AutoQueueMode,
+    batchCount: 1
+  })
+})

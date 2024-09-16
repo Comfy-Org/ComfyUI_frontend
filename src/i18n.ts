@@ -57,6 +57,26 @@ const messages = {
         coverImagePreview: 'Fit Image Preview',
         clearPendingTasks: 'Clear Pending Tasks'
       }
+    },
+    menu: {
+      batchCount: 'Batch Count',
+      batchCountTooltip:
+        'The number of times the workflow generation should be queued',
+      autoQueue: 'Auto Queue',
+      disabled: 'Disabled',
+      disabledTooltip: 'The workflow will not be automatically queued',
+      instant: 'Instant',
+      instantTooltip:
+        'The workflow will be queued instantly after a generation finishes',
+      change: 'On Change',
+      changeTooltip: 'The workflow will be queued once a change is made',
+      queueWorkflow: 'Queue workflow',
+      generate: 'Generate',
+      interrupt: 'Cancel current run',
+      refresh: 'Refresh node definitions',
+      clipspace: 'Open Clipspace',
+      resetView: 'Reset canvas view',
+      clear: 'Clear workflow'
     }
   },
   zh: {
