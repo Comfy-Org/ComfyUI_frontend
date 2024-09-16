@@ -174,7 +174,8 @@ describe('ComfyNodeDefImpl', () => {
       },
       output: ['INT'],
       output_is_list: [false],
-      output_name: ['intOutput']
+      output_name: ['intOutput'],
+      output_label: ['intOutput']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -212,6 +213,7 @@ describe('ComfyNodeDefImpl', () => {
       output: ['INT'],
       output_is_list: [false],
       output_name: ['intOutput'],
+      output_label: ['intOutput'],
       deprecated: true
     }
 
@@ -235,7 +237,8 @@ describe('ComfyNodeDefImpl', () => {
       },
       output: ['INT'],
       output_is_list: [false],
-      output_name: ['intOutput']
+      output_name: ['intOutput'],
+      output_label: ['intOutput']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -252,7 +255,8 @@ describe('ComfyNodeDefImpl', () => {
       input: {},
       output: ['STRING', ['COMBO', 'option1', 'option2'], 'FLOAT'],
       output_is_list: [true, false, false],
-      output_name: ['stringOutput', 'comboOutput', 'floatOutput']
+      output_name: ['stringOutput', 'comboOutput', 'floatOutput'],
+      output_label: ['stringOutput', 'comboOutput', 'floatOutput']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -290,7 +294,8 @@ describe('ComfyNodeDefImpl', () => {
       input: {},
       output: ['INT', 'FLOAT', 'FLOAT'],
       output_is_list: [false, true, true],
-      output_name: ['INT', 'FLOAT', 'FLOAT']
+      output_name: ['INT', 'FLOAT', 'FLOAT'],
+      output_label: ['INT', 'FLOAT', 'FLOAT']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -327,7 +332,8 @@ describe('ComfyNodeDefImpl', () => {
       input: {},
       output: ['INT', 'FLOAT', 'STRING'],
       output_is_list: [false, false, false],
-      output_name: ['output', 'output', 'uniqueOutput']
+      output_name: ['output', 'output', 'uniqueOutput'],
+      output_label: ['output', 'output', 'uniqueOutput']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -363,7 +369,8 @@ describe('ComfyNodeDefImpl', () => {
       input: {},
       output: [],
       output_is_list: [],
-      output_name: []
+      output_name: [],
+      output_label: []
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
@@ -390,7 +397,8 @@ describe('ComfyNodeDefImpl', () => {
       },
       output: ['INT'],
       output_is_list: [false],
-      output_name: ['result']
+      output_name: ['result'],
+      output_label: ['result']
     }
 
     const result = plainToClass(ComfyNodeDefImpl, plainObject)
