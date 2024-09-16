@@ -9,7 +9,6 @@ import { useToastStore } from '@/stores/toastStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
-import { watch } from 'vue'
 
 export const ComfyDialog = _ComfyDialog
 
