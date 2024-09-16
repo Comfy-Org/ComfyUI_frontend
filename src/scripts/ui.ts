@@ -371,7 +371,9 @@ export class ComfyUI {
       this.queue.update()
       this.history.update()
     })
+  }
 
+  setup(containerElement: HTMLElement) {
     const confirmClear = this.settings.addSetting({
       id: 'Comfy.ConfirmClear',
       category: ['Comfy', 'Workflow', 'ConfirmClear'],
@@ -497,7 +499,7 @@ export class ComfyUI {
     this.menuHamburger = $el(
       'div.comfy-menu-hamburger',
       {
-        parent: document.body,
+        parent: containerElement,
         onclick: () => {
           this.menuContainer.style.display = 'block'
           this.menuHamburger.style.display = 'none'
@@ -506,7 +508,7 @@ export class ComfyUI {
       [$el('div'), $el('div'), $el('div')]
     ) as HTMLDivElement
 
-    this.menuContainer = $el('div.comfy-menu', { parent: document.body }, [
+    this.menuContainer = $el('div.comfy-menu', { parent: containerElement }, [
       $el(
         'div.drag-handle.comfy-menu-header',
         {
