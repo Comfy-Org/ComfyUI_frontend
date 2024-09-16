@@ -1,4 +1,4 @@
-import { APIConfig, mockApi } from './setup'
+import { APIConfig, mockApi, mockSettingStore } from './setup'
 import { Ez, EzGraph, EzNameSpace } from './ezgraph'
 import lg from './litegraph'
 import fs from 'fs'
@@ -40,7 +40,11 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
   document.body.innerHTML = html.toString()
 
   mockApi(config)
+  mockSettingStore()
   const { app } = await import('../../src/scripts/app')
+  const { useSettingStore } = await import('../../src/stores/settingStore')
+  useSettingStore().addSettings(app.ui.settings)
+
   const { LiteGraph, LGraphCanvas } = await import('@comfyorg/litegraph')
   config.preSetup?.(app)
   const canvasEl = document.createElement('canvas')

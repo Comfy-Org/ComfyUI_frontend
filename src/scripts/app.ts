@@ -1895,9 +1895,7 @@ export class ComfyApp {
 
     // Save current workflow automatically
     setInterval(() => {
-      const sortNodes =
-        this.vueAppReady &&
-        useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
       const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
       localStorage.setItem('workflow', workflow)
       if (api.clientId) {
@@ -2134,10 +2132,7 @@ export class ComfyApp {
   }
 
   showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
-    if (
-      this.vueAppReady &&
-      useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')
-    ) {
+    if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({
         missingNodeTypes,
         hasAddedNodes,
@@ -2151,10 +2146,7 @@ export class ComfyApp {
   }
 
   showMissingModelsError(missingModels) {
-    if (
-      this.vueAppReady &&
-      useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
-    ) {
+    if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
         maximizable: true
@@ -2210,10 +2202,7 @@ export class ComfyApp {
       console.error(error)
     }
 
-    if (
-      this.vueAppReady &&
-      useSettingStore().get('Comfy.Validation.Workflows')
-    ) {
+    if (useSettingStore().get('Comfy.Validation.Workflows')) {
       // TODO: Show validation error in a dialog.
       const validatedGraphData = await validateComfyWorkflow(
         graphData,
@@ -2416,9 +2405,8 @@ export class ComfyApp {
       }
     }
 
-    const sortNodes =
-      this.vueAppReady &&
-      useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+
     const workflow = graph.serialize({ sortNodes })
     const output = {}
     // Process nodes in order of execution
