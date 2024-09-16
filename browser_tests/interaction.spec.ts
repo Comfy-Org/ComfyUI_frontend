@@ -27,6 +27,7 @@ test.describe('Node Interaction', () => {
   test.describe('Edge Interaction', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.LinkRelease.Action', 'no action')
+      await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'no action')
     })
 
     test('Can disconnect/connect edge', async ({ comfyPage }) => {
