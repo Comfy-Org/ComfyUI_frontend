@@ -379,82 +379,7 @@ export class ComfyUI {
   }
 
   setup(containerElement: HTMLElement) {
-    const confirmClear = this.settings.addSetting({
-      id: 'Comfy.ConfirmClear',
-      category: ['Comfy', 'Workflow', 'ConfirmClear'],
-      name: 'Require confirmation when clearing workflow',
-      type: 'boolean',
-      defaultValue: true
-    })
-
-    const promptFilename = this.settings.addSetting({
-      id: 'Comfy.PromptFilename',
-      category: ['Comfy', 'Workflow', 'PromptFilename'],
-      name: 'Prompt for filename when saving workflow',
-      type: 'boolean',
-      defaultValue: true
-    })
-
-    /**
-     * file format for preview
-     *
-     * format;quality
-     *
-     * ex)
-     * webp;50 -> webp, quality 50
-     * jpeg;80 -> rgb, jpeg, quality 80
-     *
-     * @type {string}
-     */
-    const previewImage = this.settings.addSetting({
-      id: 'Comfy.PreviewFormat',
-      category: ['Comfy', 'Node Widget', 'PreviewFormat'],
-      name: 'Preview image format',
-      tooltip:
-        'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
-      type: 'text',
-      defaultValue: ''
-    })
-
-    this.settings.addSetting({
-      id: 'Comfy.DisableSliders',
-      category: ['Comfy', 'Node Widget', 'DisableSliders'],
-      name: 'Disable node widget sliders',
-      type: 'boolean',
-      defaultValue: false
-    })
-
-    this.settings.addSetting({
-      id: 'Comfy.DisableFloatRounding',
-      category: ['Comfy', 'Node Widget', 'DisableFloatRounding'],
-      name: 'Disable default float widget rounding.',
-      tooltip:
-        '(requires page reload) Cannot disable round when round is set by the node in the backend.',
-      type: 'boolean',
-      defaultValue: false
-    })
-
-    this.settings.addSetting({
-      id: 'Comfy.FloatRoundingPrecision',
-      category: ['Comfy', 'Node Widget', 'FloatRoundingPrecision'],
-      name: 'Float widget rounding decimal places [0 = auto].',
-      tooltip: '(requires page reload)',
-      type: 'slider',
-      attrs: {
-        min: 0,
-        max: 6,
-        step: 1
-      },
-      defaultValue: 0
-    })
-
-    this.settings.addSetting({
-      id: 'Comfy.EnableTooltips',
-      category: ['Comfy', 'Node', 'EnableTooltips'],
-      name: 'Enable Tooltips',
-      type: 'boolean',
-      defaultValue: true
-    })
+    const settingStore = useSettingStore()
 
     const fileInput = $el('input', {
       id: 'comfy-file-input',
@@ -668,7 +593,7 @@ export class ComfyUI {
         textContent: 'Save',
         onclick: () => {
           let filename = 'workflow.json'
-          if (promptFilename.value) {
+          if (settingStore.get('Comfy.PromptFilename')) {
             filename = prompt('Save workflow as:', filename)
             if (!filename) return
             if (!filename.toLowerCase().endsWith('.json')) {
@@ -699,7 +624,7 @@ export class ComfyUI {
         style: { width: '100%', display: 'none' },
         onclick: () => {
           let filename = 'workflow_api.json'
-          if (promptFilename.value) {
+          if (settingStore.get('Comfy.PromptFilename')) {
             filename = prompt('Save workflow (API) as:', filename)
             if (!filename) return
             if (!filename.toLowerCase().endsWith('.json')) {
@@ -744,7 +669,10 @@ export class ComfyUI {
         id: 'comfy-clear-button',
         textContent: 'Clear',
         onclick: () => {
-          if (!confirmClear.value || confirm('Clear workflow?')) {
+          if (
+            !settingStore.get('Comfy.ConfirmClear') ||
+            confirm('Clear workflow?')
+          ) {
             app.clean()
             app.graph.clear()
             app.resetView()
@@ -756,7 +684,10 @@ export class ComfyUI {
         id: 'comfy-load-default-button',
         textContent: 'Load Default',
         onclick: async () => {
-          if (!confirmClear.value || confirm('Load default workflow?')) {
+          if (
+            !settingStore.get('Comfy.ConfirmClear') ||
+            confirm('Load default workflow?')
+          ) {
             app.resetView()
             await app.loadGraphData()
           }
@@ -796,17 +727,6 @@ export class ComfyUI {
         }
       })
     ]) as HTMLDivElement
-
-    this.settings.addSetting({
-      id: 'Comfy.DevMode',
-      name: 'Enable dev mode options (API save, etc.)',
-      type: 'boolean',
-      defaultValue: false,
-      onChange: function (value) {
-        document.getElementById('comfy-dev-save-api-button').style.display =
-          value ? 'flex' : 'none'
-      }
-    })
 
     this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
 
