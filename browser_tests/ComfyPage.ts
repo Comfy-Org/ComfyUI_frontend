@@ -366,25 +366,28 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  // Default graph positions
+  get clipTextEncodeNode1InputSlot(): Position {
+    return { x: 427, y: 198 }
+  }
+
+  get loadCheckpointNodeClipOutputSlot(): Position {
+    return { x: 332, y: 509 }
+  }
+
+  get emptySpace(): Position {
+    return { x: 10, y: 10 }
+  }
+
   async disconnectEdge() {
-    // CLIP input anchor
-    await this.page.mouse.move(427, 198)
-    await this.page.mouse.down()
-    await this.page.mouse.move(427, 98)
-    await this.page.mouse.up()
-    // Move out the way to avoid highlight of menu item.
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
+    await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
 
   async connectEdge() {
-    // CLIP output anchor on Load Checkpoint Node.
-    await this.page.mouse.move(332, 509)
-    await this.page.mouse.down()
-    // CLIP input anchor on CLIP Text Encode Node.
-    await this.page.mouse.move(427, 198)
-    await this.page.mouse.up()
-    await this.nextFrame()
+    await this.dragAndDrop(
+      this.loadCheckpointNodeClipOutputSlot,
+      this.clipTextEncodeNode1InputSlot
+    )
   }
 
   async adjustWidgetValue() {
