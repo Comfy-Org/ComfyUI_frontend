@@ -372,7 +372,7 @@ export class ComfyPage {
   }
 
   get clipTextEncodeNode2InputSlot(): Position {
-    return { x: 427, y: 402 }
+    return { x: 422, y: 402 }
   }
 
   // A point on input edge.
