@@ -371,6 +371,11 @@ export class ComfyUI {
       this.queue.update()
       this.history.update()
     })
+
+    // For testing. Legacy ui tests don't have vue app initialized.
+    if (!app.vueAppReady) {
+      this.setup(document.body)
+    }
   }
 
   setup(containerElement: HTMLElement) {
