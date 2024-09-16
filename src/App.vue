@@ -9,6 +9,7 @@
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
+  <AppMenu />
 </template>
 
 <script setup lang="ts">
@@ -41,6 +42,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
+import AppMenu from '@/components/appMenu/AppMenu.vue'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 
@@ -66,6 +68,8 @@ watch(
   },
   { immediate: true }
 )
+
+setupAutoQueueHandler()
 
 watchEffect(() => {
   const fontSize = settingStore.get('Comfy.TextareaWidget.FontSize')
