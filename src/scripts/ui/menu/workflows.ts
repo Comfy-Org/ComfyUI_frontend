@@ -232,7 +232,7 @@ export class ComfyWorkflowsMenu {
           const r = getExtraMenuOptions?.apply?.(this, arguments)
           const setting = app.ui.settings.getSettingValue(
             'Comfy.UseNewMenu',
-            false
+            'Disabled'
           )
           if (setting && setting != 'Disabled') {
             const t = this

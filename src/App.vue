@@ -6,6 +6,7 @@
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
+  <AppMenu />
 </template>
 
 <script setup lang="ts">
@@ -20,6 +21,7 @@ import {
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
+import AppMenu from '@/components/appMenu/AppMenu.vue'
 import { app } from './scripts/app'
 import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
@@ -34,6 +36,7 @@ import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
+import { setupAutoQueueHandler } from './services/autoQueueService'
 import { i18n } from './i18n'
 import { useExecutionStore } from './stores/executionStore'
 import { useWorkflowStore } from './stores/workflowStore'
@@ -55,6 +58,8 @@ watch(
   },
   { immediate: true }
 )
+
+setupAutoQueueHandler()
 
 watchEffect(() => {
   const fontSize = useSettingStore().get('Comfy.TextareaWidget.FontSize')

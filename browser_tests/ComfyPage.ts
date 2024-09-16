@@ -1,5 +1,6 @@
 import type { Page, Locator } from '@playwright/test'
 import { test as base } from '@playwright/test'
+import { ComfyAppMenu } from './helpers/appMenu'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
@@ -225,6 +226,7 @@ export class ComfyPage {
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
+  public readonly appMenu: ComfyAppMenu
 
   constructor(public readonly page: Page) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -235,6 +237,7 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
+    this.appMenu = new ComfyAppMenu(page)
   }
 
   async getGraphNodesCount(): Promise<number> {
