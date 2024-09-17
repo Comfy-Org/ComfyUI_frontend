@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { getStorageValue } from '@/scripts/utils'
 
@@ -9,8 +9,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     Boolean(getStorageValue('Comfy.PreviousWorkflowUnsaved'))
   )
 
+  const workflowLookup = ref<Record<string, ComfyWorkflow>>({})
+  const workflows = computed(() => Object.values(workflowLookup.value))
+  const openWorkflows = ref<ComfyWorkflow[]>([])
+
   return {
     activeWorkflow,
-    previousWorkflowUnsaved
+    previousWorkflowUnsaved,
+    workflows,
+    openWorkflows,
+    workflowLookup
   }
 })
