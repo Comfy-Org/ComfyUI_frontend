@@ -460,6 +460,24 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async panWithTouch(offset: Position, safeSpot?: Position) {
+    safeSpot = safeSpot || { x: 10, y: 10 }
+    const client = await this.page.context().newCDPSession(this.page)
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [safeSpot]
+    })
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
+    })
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: []
+    })
+    await this.nextFrame()
+  }
+
   async rightClickCanvas() {
     await this.page.mouse.click(10, 10, { button: 'right' })
     await this.nextFrame()
