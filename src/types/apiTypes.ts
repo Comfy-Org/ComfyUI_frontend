@@ -227,13 +227,13 @@ export function validateTaskItem(taskItem: unknown) {
   return result
 }
 
-function inputSpec(
-  spec: [ZodType, ZodType],
+function inputSpec<TType extends ZodType, TSpec extends ZodType>(
+  spec: [TType, TSpec],
   allowUpcast: boolean = true
-): ZodType {
+) {
   const [inputType, inputSpec] = spec
   // e.g. "INT" => ["INT", {}]
-  const upcastTypes: ZodType[] = allowUpcast
+  const upcastTypes = allowUpcast
     ? [inputType.transform((type) => [type, {}])]
     : []
 
@@ -361,6 +361,7 @@ const zComfyNodeDef = z.object({
 })
 
 // `/object_info`
+export type InputSpec = z.infer<typeof zInputSpec>
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
