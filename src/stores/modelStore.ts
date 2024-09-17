@@ -42,6 +42,8 @@ export class ComfyModelDef {
   image: string = ''
   /** Whether the model metadata has been loaded from the server, used for `load()` */
   has_loaded_metadata: boolean = false
+  /** If true, a metadata load request has been triggered, but may or may not yet have finished loading */
+  is_load_requested: boolean = false
   /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
   is_fake_object: boolean = false
 
@@ -56,9 +58,10 @@ export class ComfyModelDef {
 
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
-    if (this.has_loaded_metadata) {
+    if (this.has_loaded_metadata || this.is_load_requested) {
       return
     }
+    this.is_load_requested = true
     const metadata = await api.viewMetadata(this.directory, this.name)
     if (!metadata) {
       return
