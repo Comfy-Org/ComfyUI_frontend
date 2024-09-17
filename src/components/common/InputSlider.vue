@@ -54,8 +54,8 @@ const updateValue = (newValue: number | null) => {
     newValue = Number(props.min) || 0
   }
 
-  const min = Number(props.min) || Number.NEGATIVE_INFINITY
-  const max = Number(props.max) || Number.POSITIVE_INFINITY
+  const min = Number(props.min ?? Number.NEGATIVE_INFINITY)
+  const max = Number(props.max ?? Number.POSITIVE_INFINITY)
   const step = Number(props.step) || 1
 
   // Ensure the value is within the allowed range
