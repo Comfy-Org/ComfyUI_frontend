@@ -314,6 +314,11 @@ export const useNodeDefStore = defineStore('nodeDef', {
       this.nodeDefsByName = newNodeDefsByName
       this.nodeDefsByDisplayName = nodeDefsByDisplayName
     },
+    addNodeDef(nodeDef: ComfyNodeDef) {
+      const nodeDefImpl = plainToClass(ComfyNodeDefImpl, nodeDef)
+      this.nodeDefsByName[nodeDef.name] = nodeDefImpl
+      this.nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
+    },
     updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
       this.widgets = widgets
     },
