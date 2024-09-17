@@ -6,19 +6,29 @@ import { getStorageValue, setStorageValue } from './utils'
 import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
 import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
 
 export class ComfyWorkflowManager extends EventTarget {
-  executionStore: any = null
+  executionStore: ReturnType<typeof useExecutionStore> | null
+  workflowStore: ReturnType<typeof useWorkflowStore> | null
 
+  app: ComfyApp
   #unsavedCount = 0
 
-  workflowLookup: Record<string, ComfyWorkflow> = {}
-  workflows: Array<ComfyWorkflow> = []
-  openWorkflows: Array<ComfyWorkflow> = []
-  app: ComfyApp
+  get workflowLookup(): Record<string, ComfyWorkflow> {
+    return this.workflowStore?.workflowLookup ?? {}
+  }
 
-  get _activeWorkflow() {
+  get workflows(): ComfyWorkflow[] {
+    return this.workflowStore?.workflows ?? []
+  }
+
+  get openWorkflows(): ComfyWorkflow[] {
+    return (this.workflowStore?.openWorkflows ?? []) as ComfyWorkflow[]
+  }
+
+  get _activeWorkflow(): ComfyWorkflow | null {
     if (!this.app.vueAppReady) return null
     return toRaw(useWorkflowStore().activeWorkflow) as ComfyWorkflow | null
   }
@@ -28,7 +38,7 @@ export class ComfyWorkflowManager extends EventTarget {
     useWorkflowStore().activeWorkflow = workflow ? markRaw(workflow) : null
   }
 
-  get activeWorkflow() {
+  get activeWorkflow(): ComfyWorkflow | null {
     return this._activeWorkflow ?? this.openWorkflows[0]
   }
 
@@ -68,16 +78,13 @@ export class ComfyWorkflowManager extends EventTarget {
               w.slice(1),
               favorites.has(w[0])
             )
-            this.workflowLookup[workflow.path] = workflow
+            this.workflowLookup[workflow.path] = markRaw(workflow)
           }
           return workflow
         }
       )
-
-      this.workflows = workflows
     } catch (error) {
       alert('Error loading workflows: ' + (error.message ?? error))
-      this.workflows = []
     }
   }
 
@@ -117,7 +124,7 @@ export class ComfyWorkflowManager extends EventTarget {
     const index = this.openWorkflows.indexOf(workflow)
     if (index === -1) {
       // Opening a new workflow
-      this.openWorkflows.push(workflow)
+      this.openWorkflows.push(markRaw(workflow))
     }
 
     this._activeWorkflow = workflow
