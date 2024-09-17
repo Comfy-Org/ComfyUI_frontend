@@ -5,20 +5,31 @@ import { ComfyAsyncDialog } from './ui/components/asyncDialog'
 import { getStorageValue, setStorageValue } from './utils'
 import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
 import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { markRaw, toRaw } from 'vue'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: any = null
 
   #unsavedCount = 0
-  #activeWorkflow: ComfyWorkflow
 
   workflowLookup: Record<string, ComfyWorkflow> = {}
   workflows: Array<ComfyWorkflow> = []
   openWorkflows: Array<ComfyWorkflow> = []
   app: ComfyApp
 
+  get _activeWorkflow() {
+    if (!this.app.vueAppReady) return null
+    return toRaw(useWorkflowStore().activeWorkflow) as ComfyWorkflow | null
+  }
+
+  set _activeWorkflow(workflow: ComfyWorkflow | null) {
+    if (!this.app.vueAppReady) return
+    useWorkflowStore().activeWorkflow = workflow ? markRaw(workflow) : null
+  }
+
   get activeWorkflow() {
-    return this.#activeWorkflow ?? this.openWorkflows[0]
+    return this._activeWorkflow ?? this.openWorkflows[0]
   }
 
   get activePromptId() {
@@ -109,7 +120,7 @@ export class ComfyWorkflowManager extends EventTarget {
       this.openWorkflows.push(workflow)
     }
 
-    this.#activeWorkflow = workflow
+    this._activeWorkflow = workflow
 
     setStorageValue('Comfy.PreviousWorkflow', this.activeWorkflow.path ?? '')
     this.dispatchEvent(new CustomEvent('changeWorkflow'))
@@ -157,8 +168,8 @@ export class ComfyWorkflowManager extends EventTarget {
     workflow.changeTracker = null
     this.openWorkflows.splice(this.openWorkflows.indexOf(workflow), 1)
     if (this.openWorkflows.length) {
-      this.#activeWorkflow = this.openWorkflows[0]
-      await this.#activeWorkflow.load()
+      this._activeWorkflow = this.openWorkflows[0]
+      await this._activeWorkflow.load()
     } else {
       // Load default
       await this.app.loadGraphData()
