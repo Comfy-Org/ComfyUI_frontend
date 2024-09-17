@@ -8,7 +8,7 @@
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import { useTitle, useLocalStorage } from '@vueuse/core'
+import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
 const DEFAULT_TITLE = 'ComfyUI'
@@ -23,14 +23,9 @@ const betaMenuEnabled = computed(
 )
 
 const workflowStore = useWorkflowStore()
-const previousWorkflowUnsaved = useLocalStorage(
-  'Comfy.PreviousWorkflowUnsaved',
-  'false'
-)
 const isUnsavedText = computed(() =>
-  previousWorkflowUnsaved.value === 'true' ? ' *' : ''
+  workflowStore.previousWorkflowUnsaved ? ' *' : ''
 )
-
 const workflowNameText = computed(() => {
   const workflowName = workflowStore.activeWorkflow?.name
   return workflowName ? isUnsavedText.value + workflowName : DEFAULT_TITLE
