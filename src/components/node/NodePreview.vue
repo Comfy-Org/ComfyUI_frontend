@@ -5,7 +5,13 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 <template>
   <div class="_sb_node_preview">
     <div class="_sb_table">
-      <div class="node_header">
+      <div
+        class="node_header"
+        :style="{
+          backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
+          color: litegraphColors.NODE_TITLE_COLOR
+        }"
+      >
         <div class="_sb_dot headdot"></div>
         {{ nodeDef.display_name }}
       </div>
@@ -22,7 +28,12 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         </div>
         <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit">
+        <div
+          class="_sb_col _sb_inherit"
+          :style="{
+            color: litegraphColors.NODE_TEXT_COLOR
+          }"
+        >
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
@@ -37,22 +48,41 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         :key="widgetInput.name"
       >
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
-        <div class="_sb_col">{{ widgetInput.name }}</div>
+        <div
+          class="_sb_col"
+          :style="{
+            color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
+          }"
+        >
+          {{ widgetInput.name }}
+        </div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit">
+        <div
+          class="_sb_col _sb_inherit"
+          :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
+        >
           {{ truncateDefaultValue(widgetInput.default) }}
         </div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
     </div>
-    <div class="_sb_description" v-if="nodeDef.description">
+    <div
+      class="_sb_description"
+      v-if="nodeDef.description"
+      :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
+    >
       {{ nodeDef.description }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  getColorPalette,
+  defaultColorPalette
+} from '@/extensions/core/colorPalette'
 import _ from 'lodash'
 
 const props = defineProps({
@@ -60,6 +90,13 @@ const props = defineProps({
     type: ComfyNodeDefImpl,
     required: true
   }
+})
+
+const litegraphColors = computed(() => {
+  const palette =
+    getColorPalette()?.colors?.litegraph_base ??
+    defaultColorPalette.colors.litegraph_base
+  return palette
 })
 
 const nodeDefStore = useNodeDefStore()
@@ -159,7 +196,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   font-family: 'Open Sans', sans-serif;
   font-size: small;
   color: var(--descrip-text);
-  border: 1px solid var(--descrip-text);
+  border: 0;
   min-width: 300px;
   width: min-content;
   height: fit-content;
