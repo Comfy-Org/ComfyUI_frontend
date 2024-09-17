@@ -84,10 +84,6 @@ class NodeBadgeExtension implements ComfyExtension {
   ) {}
 
   init(app: ComfyApp) {
-    if (!app.vueAppReady) {
-      return
-    }
-
     const settingStore = useSettingStore()
     this.nodeSourceBadgeMode = computed(
       () =>
@@ -119,10 +115,6 @@ class NodeBadgeExtension implements ComfyExtension {
   }
 
   nodeCreated(node: ComfyLGraphNode, app: ComfyApp) {
-    if (!app.vueAppReady) {
-      return
-    }
-
     node.badgePosition = BadgePosition.TopRight
     // @ts-expect-error Disable ComfyUI-Manager's badge drawing by setting badge_enabled to true. Remove this when ComfyUI-Manager's badge drawing is removed.
     node.badge_enabled = true

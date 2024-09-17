@@ -33,3 +33,9 @@ export function appendJsonExt(path: string) {
 export function trimJsonExt(path: string) {
   return path.replace(/\.json$/, '')
 }
+
+export function highlightQuery(text: string, query: string) {
+  if (!query) return text
+  const regex = new RegExp(`(${query})`, 'gi')
+  return text.replace(regex, '<span class="highlight">$1</span>')
+}
