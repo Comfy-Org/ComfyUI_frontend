@@ -94,6 +94,17 @@ function prepare_mask(image, maskCanvas, maskCtx, maskColor) {
   maskCtx.putImageData(maskData, 0, 0)
 }
 
+// Define the PointerType enum
+enum PointerType {
+  Arc = 'arc',
+  Rect = 'rect'
+}
+
+enum CompositionOperation {
+  SourceOver = 'source-over',
+  DestinationOut = 'destination-out'
+}
+
 class MaskEditorDialog extends ComfyDialog {
   static instance = null
   static mousedown_x: number | null = null
@@ -120,7 +131,7 @@ class MaskEditorDialog extends ComfyDialog {
   mousedown_pan_x: number
   mousedown_pan_y: number
   last_pressure: number
-  pointer_type: string
+  pointer_type: PointerType
   brush_pointer_type_select: HTMLDivElement
 
   static getInstance() {
@@ -288,7 +299,7 @@ class MaskEditorDialog extends ComfyDialog {
   }
 
   setBrushBorderRadius(self: any): void {
-    if (self.pointer_type === 'rect') {
+    if (self.pointer_type === PointerType.Rect) {
       this.brush.style.borderRadius = '0%'
       // @ts-expect-error
       this.brush.style.MozBorderRadius = '0%'
@@ -305,7 +316,7 @@ class MaskEditorDialog extends ComfyDialog {
 
   setlayout(imgCanvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement) {
     const self = this
-    self.pointer_type = 'arc'
+    self.pointer_type = PointerType.Arc
 
     // If it is specified as relative, using it only as a hidden placeholder for padding is recommended
     // to prevent anomalies where it exceeds a certain size and goes outside of the window.
@@ -884,28 +895,14 @@ class MaskEditorDialog extends ComfyDialog {
 
       if (diff > 20 && !this.drawing_mode)
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.fillStyle = this.getMaskFillStyle()
-          self.maskCtx.globalCompositeOperation = 'source-over'
-          if (self.pointer_type === 'rect') {
-            self.maskCtx.rect(
-              x - brush_size,
-              y - brush_size,
-              brush_size * 2,
-              brush_size * 2
-            )
-          } else {
-            self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-          }
-          self.maskCtx.fill()
+          self.init_shape(self, CompositionOperation.SourceOver)
+          self.draw_shape(self, x, y, brush_size)
           self.lastx = x
           self.lasty = y
         })
       else
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.fillStyle = this.getMaskFillStyle()
-          self.maskCtx.globalCompositeOperation = 'source-over'
+          self.init_shape(self, CompositionOperation.SourceOver)
 
           var dx = x - self.lastx
           var dy = y - self.lasty
@@ -917,17 +914,7 @@ class MaskEditorDialog extends ComfyDialog {
           for (var i = 0; i < distance; i += 5) {
             var px = self.lastx + directionX * i
             var py = self.lasty + directionY * i
-            if (self.pointer_type === 'rect') {
-              self.maskCtx.rect(
-                px - brush_size,
-                py - brush_size,
-                brush_size * 2,
-                brush_size * 2
-              )
-            } else {
-              self.maskCtx.arc(px, py, brush_size, 0, Math.PI * 2, false)
-            }
-            self.maskCtx.fill()
+            self.draw_shape(self, px, py, brush_size)
           }
           self.lastx = x
           self.lasty = y
@@ -960,26 +947,14 @@ class MaskEditorDialog extends ComfyDialog {
       if (diff > 20 && !this.drawing_mode)
         // cannot tracking drawing_mode for touch event
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.globalCompositeOperation = 'destination-out'
-          if (self.pointer_type === 'rect') {
-            self.maskCtx.rect(
-              x - brush_size,
-              y - brush_size,
-              brush_size * 2,
-              brush_size * 2
-            )
-          } else {
-            self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-          }
-          self.maskCtx.fill()
+          self.init_shape(self, CompositionOperation.DestinationOut)
+          self.draw_shape(self, x, y, brush_size)
           self.lastx = x
           self.lasty = y
         })
       else
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.globalCompositeOperation = 'destination-out'
+          self.init_shape(self, CompositionOperation.DestinationOut)
 
           var dx = x - self.lastx
           var dy = y - self.lasty
@@ -991,17 +966,7 @@ class MaskEditorDialog extends ComfyDialog {
           for (var i = 0; i < distance; i += 5) {
             var px = self.lastx + directionX * i
             var py = self.lasty + directionY * i
-            if (self.pointer_type === 'rect') {
-              self.maskCtx.rect(
-                px - brush_size,
-                py - brush_size,
-                brush_size * 2,
-                brush_size * 2
-              )
-            } else {
-              self.maskCtx.arc(px, py, brush_size, 0, Math.PI * 2, false)
-            }
-            self.maskCtx.fill()
+            self.draw_shape(self, px, py, brush_size)
           }
           self.lastx = x
           self.lasty = y
@@ -1048,28 +1013,41 @@ class MaskEditorDialog extends ComfyDialog {
         (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
         self.zoom_ratio
 
-      self.maskCtx.beginPath()
       if (!event.altKey && event.button == 0) {
-        self.maskCtx.fillStyle = this.getMaskFillStyle()
-        self.maskCtx.globalCompositeOperation = 'source-over'
+        self.init_shape(self, CompositionOperation.SourceOver)
       } else {
-        self.maskCtx.globalCompositeOperation = 'destination-out'
+        self.init_shape(self, CompositionOperation.DestinationOut)
       }
-      if (self.pointer_type === 'rect') {
-        self.maskCtx.rect(
-          x - brush_size,
-          y - brush_size,
-          brush_size * 2,
-          brush_size * 2
-        )
-      } else {
-        self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-      }
-      self.maskCtx.fill()
+      self.draw_shape(self, x, y, brush_size)
       self.lastx = x
       self.lasty = y
       self.lasttime = performance.now()
     }
+  }
+
+  init_shape(self, compositionOperation) {
+    self.maskCtx.beginPath()
+    if (compositionOperation == CompositionOperation.SourceOver) {
+      self.maskCtx.fillStyle = this.getMaskFillStyle()
+      self.maskCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    } else if (compositionOperation == CompositionOperation.DestinationOut) {
+      self.maskCtx.globalCompositeOperation =
+        CompositionOperation.DestinationOut
+    }
+  }
+
+  draw_shape(self, x, y, brush_size) {
+    if (self.pointer_type === PointerType.Rect) {
+      self.maskCtx.rect(
+        x - brush_size,
+        y - brush_size,
+        brush_size * 2,
+        brush_size * 2
+      )
+    } else {
+      self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
+    }
+    self.maskCtx.fill()
   }
 
   async save() {
@@ -1111,7 +1089,7 @@ class MaskEditorDialog extends ComfyDialog {
       backupData.data[i + 2] = 0
     }
 
-    backupCtx.globalCompositeOperation = 'source-over'
+    backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
     backupCtx.putImageData(backupData, 0, 0)
 
     const formData = new FormData()
