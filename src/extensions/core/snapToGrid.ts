@@ -34,7 +34,7 @@ app.registerExtension({
         'When dragging and resizing nodes while holding shift they will be aligned to the grid, this controls the size of that grid.',
       defaultValue: LiteGraph.CANVAS_GRID_SIZE,
       onChange(value) {
-        LiteGraph.CANVAS_GRID_SIZE = +value
+        LiteGraph.CANVAS_GRID_SIZE = +value || 10
       }
     })
 
