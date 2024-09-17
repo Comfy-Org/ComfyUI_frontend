@@ -5,6 +5,7 @@
   <GlobalDialog />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
+  <BrowserTabTitle />
 </template>
 
 <script setup lang="ts">
@@ -27,6 +28,7 @@ import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarT
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import GlobalToast from './components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from './components/dialog/UnloadWindowConfirmDialog.vue'
+import BrowserTabTitle from './components/BrowserTabTitle.vue'
 import { api } from './scripts/api'
 import { StatusWsMessageStatus } from './types/apiTypes'
 import { useQueuePendingTaskCountStore } from './stores/queueStore'

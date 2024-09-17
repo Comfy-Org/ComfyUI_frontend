@@ -1,3 +1,11 @@
+<template>
+  <div>
+    <!-- This component does not render anything visible. It is used to confirm
+    the user wants to close the window, and if they do, it will call the
+    beforeunload event. -->
+  </div>
+</template>
+
 <script setup lang="ts">
 import { useSettingStore } from '@/stores/settingStore'
 import { onMounted, onUnmounted } from 'vue'
