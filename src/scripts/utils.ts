@@ -153,7 +153,7 @@ export function prop<T>(
   return defaultValue
 }
 
-export function getStorageValue(id) {
+export function getStorageValue(id: string) {
   const clientId = api.clientId ?? api.initialClientId
   return (
     (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??
@@ -161,7 +161,7 @@ export function getStorageValue(id) {
   )
 }
 
-export function setStorageValue(id, value) {
+export function setStorageValue(id: string, value: string) {
   const clientId = api.clientId ?? api.initialClientId
   if (clientId) {
     sessionStorage.setItem(`${id}:${clientId}`, value)
