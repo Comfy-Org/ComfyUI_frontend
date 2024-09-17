@@ -15,7 +15,8 @@ test.describe('Browser tab title', () => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].workflowManager.activeWorkflow.name
       })
-      expect(await comfyPage.page.title()).toBe(workflowName)
+      // Note: unsaved workflow name is always prepended with "*".
+      expect(await comfyPage.page.title()).toBe(`*${workflowName}`)
     })
 
     test('Can display workflow name with unsaved changes', async ({
@@ -24,12 +25,21 @@ test.describe('Browser tab title', () => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].workflowManager.activeWorkflow.name
       })
-      expect(await comfyPage.page.title()).toBe(workflowName)
+      // Note: unsaved workflow name is always prepended with "*".
+      expect(await comfyPage.page.title()).toBe(`*${workflowName}`)
+
+      await comfyPage.menu.saveWorkflow('test')
+      expect(await comfyPage.page.title()).toBe('test')
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
+      await comfyPage.clickEmptySpace()
+      expect(await comfyPage.page.title()).toBe(`*test`)
 
-      expect(await comfyPage.page.title()).toBe(`*${workflowName}`)
+      // Delete the saved workflow for cleanup.
+      await comfyPage.page.evaluate(async () => {
+        window['app'].workflowManager.activeWorkflow.delete()
+      })
     })
   })
 

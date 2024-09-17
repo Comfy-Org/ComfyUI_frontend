@@ -108,10 +108,29 @@ class NodeLibrarySidebarTab {
 class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
+  public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.saveButton = page
+      .locator('button[title="Save the current workflow"]')
+      .nth(0)
+  }
+
+  async saveWorkflow(name: string) {
+    const acceptDialog = async (dialog) => {
+      await dialog.accept(name)
+    }
+    this.page.on('dialog', acceptDialog)
+
+    await this.saveButton.click()
+
+    // Wait a moment to ensure the dialog has been handled
+    await this.page.waitForTimeout(300)
+
+    // Remove the dialog listener
+    this.page.off('dialog', acceptDialog)
   }
 
   get nodeLibraryTab() {
@@ -178,6 +197,10 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
+    await this.page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
     // Unify font for consistent screenshots.
     await this.page.addStyleTag({
       url: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'

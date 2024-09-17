@@ -30,8 +30,8 @@ export function appendJsonExt(path: string) {
   return path
 }
 
-export function trimJsonExt(path: string) {
-  return path.replace(/\.json$/, '')
+export function trimJsonExt(path?: string) {
+  return path?.replace(/\.json$/, '')
 }
 
 export function highlightQuery(text: string, query: string) {
