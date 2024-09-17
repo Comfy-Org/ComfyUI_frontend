@@ -1,6 +1,7 @@
 import type { ComfySettingsDialog } from '@/scripts/ui/settings'
 import type { ComfyApp } from '@/scripts/app'
 import '../../src/scripts/api'
+import { ComfyNodeDef } from '@/types/apiTypes'
 
 const fs = require('fs')
 const path = require('path')
@@ -122,5 +123,15 @@ export const mockSettingStore = () => {
 
   jest.mock('@/stores/settingStore', () => ({
     useSettingStore: jest.fn(() => mockedSettingStore)
+  }))
+}
+
+export const mockNodeDefStore = () => {
+  const mockedNodeDefStore = {
+    addNodeDef: jest.fn((nodeDef: ComfyNodeDef) => {})
+  }
+
+  jest.mock('@/stores/nodeDefStore', () => ({
+    useNodeDefStore: jest.fn(() => mockedNodeDefStore)
   }))
 }
