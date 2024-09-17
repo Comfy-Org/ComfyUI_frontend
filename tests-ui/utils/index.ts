@@ -38,7 +38,6 @@ export async function start(config: StartConfig = {}): Promise<StartResult> {
 
   Object.assign(localStorage, config.localStorage ?? {})
   document.body.innerHTML = html.toString()
-  window['IS_TEST'] = true
 
   mockApi(config)
   mockSettingStore()

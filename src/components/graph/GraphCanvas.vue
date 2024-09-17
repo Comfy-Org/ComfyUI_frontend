@@ -6,7 +6,6 @@
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <TitleEditor />
-    <FloatingMenu />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover />
@@ -19,7 +18,6 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import FloatingMenu from '@/components/appMenu/floating/FloatingMenu.vue'
 import { ref, computed, onUnmounted, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
