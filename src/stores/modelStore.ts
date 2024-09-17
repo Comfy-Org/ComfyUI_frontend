@@ -48,6 +48,9 @@ export class ComfyModelDef {
   constructor(name: string, directory: string) {
     this.name = name
     this.title = name.replaceAll('\\', '/').split('/').pop()
+    if (this.title.endsWith('.safetensors')) {
+      this.title = this.title.slice(0, -'.safetensors'.length);
+    }
     this.directory = directory
   }
 
