@@ -4,6 +4,7 @@ import { mergeIfValid } from './widgetInputs'
 import { ManageGroupDialog } from './groupNodeManage'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const GROUP = Symbol()
 
@@ -194,6 +195,10 @@ export class GroupNodeConfig {
       display_name: this.name,
       category: 'group nodes' + ('/' + source),
       input: { required: {} },
+      description: `Group node combining ${this.nodeData.nodes
+        .map((n) => n.type)
+        .join(', ')}`,
+      python_module: 'custom_nodes.' + this.name,
 
       [GROUP]: this
     }
@@ -212,6 +217,7 @@ export class GroupNodeConfig {
     }
     this.#convertedToProcess = null
     await app.registerNodeDef('workflow/' + this.name, this.nodeDef)
+    useNodeDefStore().addNodeDef(this.nodeDef)
   }
 
   getLinks() {

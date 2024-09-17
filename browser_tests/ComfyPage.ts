@@ -608,6 +608,16 @@ export class ComfyPage {
       revertAfter
     )
   }
+
+  async convertAllNodesToGroupNode(groupNodeName: string) {
+    this.page.on('dialog', async (dialog) => {
+      await dialog.accept(groupNodeName)
+    })
+    await this.canvas.press('Control+a')
+    await this.rightClickEmptyLatentNode()
+    await this.page.getByText('Convert to Group Node').click()
+    await this.nextFrame()
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
