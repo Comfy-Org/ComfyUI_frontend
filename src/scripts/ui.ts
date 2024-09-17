@@ -372,15 +372,10 @@ export class ComfyUI {
       this.history.update()
     })
 
-    // For testing. Legacy ui tests don't have vue app initialized.
-    if (window['IS_TEST']) {
-      this.setup(document.body)
-    }
+    this.setup(document.body)
   }
 
   setup(containerElement: HTMLElement) {
-    const settingStore = useSettingStore()
-
     const fileInput = $el('input', {
       id: 'comfy-file-input',
       type: 'file',
@@ -593,7 +588,7 @@ export class ComfyUI {
         textContent: 'Save',
         onclick: () => {
           let filename = 'workflow.json'
-          if (settingStore.get('Comfy.PromptFilename')) {
+          if (useSettingStore().get('Comfy.PromptFilename')) {
             filename = prompt('Save workflow as:', filename)
             if (!filename) return
             if (!filename.toLowerCase().endsWith('.json')) {
@@ -624,7 +619,7 @@ export class ComfyUI {
         style: { width: '100%', display: 'none' },
         onclick: () => {
           let filename = 'workflow_api.json'
-          if (settingStore.get('Comfy.PromptFilename')) {
+          if (useSettingStore().get('Comfy.PromptFilename')) {
             filename = prompt('Save workflow (API) as:', filename)
             if (!filename) return
             if (!filename.toLowerCase().endsWith('.json')) {
@@ -670,7 +665,7 @@ export class ComfyUI {
         textContent: 'Clear',
         onclick: () => {
           if (
-            !settingStore.get('Comfy.ConfirmClear') ||
+            !useSettingStore().get('Comfy.ConfirmClear') ||
             confirm('Clear workflow?')
           ) {
             app.clean()
@@ -685,7 +680,7 @@ export class ComfyUI {
         textContent: 'Load Default',
         onclick: async () => {
           if (
-            !settingStore.get('Comfy.ConfirmClear') ||
+            !useSettingStore().get('Comfy.ConfirmClear') ||
             confirm('Load default workflow?')
           ) {
             app.resetView()

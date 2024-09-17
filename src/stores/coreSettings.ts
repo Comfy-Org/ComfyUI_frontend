@@ -337,6 +337,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.DevMode',
     name: 'Enable dev mode options (API save, etc.)',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: false,
+    onChange: (value) => {
+      const element = document.getElementById('comfy-dev-save-api-button')
+      if (element) {
+        element.style.display = value ? 'flex' : 'none'
+      }
+    }
   }
 ]
