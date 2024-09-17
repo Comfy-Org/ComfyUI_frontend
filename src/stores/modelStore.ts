@@ -70,7 +70,7 @@ export class ComfyModelDef {
         'title',
         'display_name',
         'name'
-      ) || this.name
+      ) || this.title
     this.architecture_id =
       _findInMetadata(metadata, 'modelspec.architecture', 'architecture') || ''
     this.author = _findInMetadata(metadata, 'modelspec.author', 'author') || ''
