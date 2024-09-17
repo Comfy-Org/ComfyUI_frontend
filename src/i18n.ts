@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    insert: 'Insert',
     systemInfo: 'System Info',
     devices: 'Devices',
     about: 'About',
@@ -47,6 +48,7 @@ const messages = {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
+      workflows: 'Workflows',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
@@ -113,6 +115,7 @@ const messages = {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
+      workflows: '工作流',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       },

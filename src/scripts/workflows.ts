@@ -185,8 +185,8 @@ export class ComfyWorkflowManager extends EventTarget {
 
 export class ComfyWorkflow {
   name: string
-  path: string
-  pathParts: string[]
+  path: string | null
+  pathParts: string[] | null
   isFavorite = false
   changeTracker: ChangeTracker | null = null
   unsaved = false
@@ -194,6 +194,14 @@ export class ComfyWorkflow {
 
   get isOpen() {
     return !!this.changeTracker
+  }
+
+  get isTemporary() {
+    return !this.path
+  }
+
+  get key() {
+    return this.pathParts?.join('/') ?? this.name
   }
 
   constructor(

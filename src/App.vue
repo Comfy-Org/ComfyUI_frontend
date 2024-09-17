@@ -27,6 +27,7 @@ import { useSettingStore } from './stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from './stores/workspaceStateStore'
 import NodeLibrarySidebarTab from './components/sidebar/tabs/NodeLibrarySidebarTab.vue'
+import WorkflowsSidebarTab from './components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import GlobalDialog from './components/dialog/GlobalDialog.vue'
 import GlobalToast from './components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from './components/dialog/UnloadWindowConfirmDialog.vue'
@@ -108,6 +109,14 @@ const init = () => {
     component: markRaw(NodeLibrarySidebarTab),
     type: 'vue'
   })
+  app.extensionManager.registerSidebarTab({
+    id: 'workflows',
+    icon: 'pi pi-folder-open',
+    title: t('sideToolbar.workflows'),
+    tooltip: t('sideToolbar.workflows'),
+    component: markRaw(WorkflowsSidebarTab),
+    type: 'vue'
+  })
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
@@ -134,9 +143,6 @@ const onReconnected = () => {
 
 const executionStore = useExecutionStore()
 app.workflowManager.executionStore = executionStore
-watchEffect(() => {
-  app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
-})
 const workflowStore = useWorkflowStore()
 app.workflowManager.workflowStore = workflowStore
 
