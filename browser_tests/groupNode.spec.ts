@@ -6,7 +6,7 @@ test.describe('Group Node', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
-  test('is added to node library sidebar', async ({ comfyPage }) => {
+  test('Is added to node library sidebar', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     const groupNodeName = 'DefautWorkflowGroupNode'
     await comfyPage.convertAllNodesToGroupNode(groupNodeName)
@@ -15,7 +15,9 @@ test.describe('Group Node', () => {
     expect(await tab.getFolder('group nodes').count()).toBe(1)
   })
 
-  test('Can be added with node library sidebar', async ({ comfyPage }) => {
+  test('Can be added to canvas using node library sidebar', async ({
+    comfyPage
+  }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     const groupNodeName = 'DefautWorkflowGroupNode'
     await comfyPage.convertAllNodesToGroupNode(groupNodeName)
@@ -33,7 +35,7 @@ test.describe('Group Node', () => {
     expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
   })
 
-  test('Can be added with search', async ({ comfyPage }) => {
+  test('Can be added to canvas using search', async ({ comfyPage }) => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     await comfyPage.convertAllNodesToGroupNode(groupNodeName)
     await comfyPage.doubleClickCanvas()
