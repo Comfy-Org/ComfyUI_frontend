@@ -102,6 +102,9 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
         if (node.leaf) {
+          if (node.data && node.data.image) {
+            return ''
+          }
           return 'pi pi-file'
         }
       },
