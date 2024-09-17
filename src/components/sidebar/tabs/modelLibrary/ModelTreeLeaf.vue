@@ -2,9 +2,11 @@
   <div ref="container" class="model-lib-node-container h-full w-full">
     <TreeExplorerTreeNode :node="node">
       <template #before-label>
-        <span class="model-lib-model-icon-container">
+        <span
+          v-if="modelDef && modelDef.image"
+          class="model-lib-model-icon-container"
+        >
           <span
-            v-if="modelDef && modelDef.image"
             class="model-lib-model-icon"
             :style="{ backgroundImage: `url(${modelDef.image})` }"
           >
@@ -104,7 +106,7 @@ onUnmounted(() => {
   left: 0;
   height: 1.5rem;
   vertical-align: top;
-  width: 0;
+  width: 0px;
 }
 .model-lib-model-icon {
   background-size: cover;
@@ -115,8 +117,5 @@ onUnmounted(() => {
   height: 1.5rem;
   width: 1.5rem;
   vertical-align: top;
-}
-.editable-text {
-  display: inline-block;
 }
 </style>

@@ -103,7 +103,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
         if (node.leaf) {
           if (node.data && node.data.image) {
-            return ' ' // hacky - empty value, but a space to be truthy
+            return 'pi pi-fake-spacer'
           }
           return 'pi pi-file'
         }
@@ -148,7 +148,10 @@ watch(
 </script>
 
 <style>
-/* TODO */
+.pi-fake-spacer {
+  height: 1px;
+  width: 16px;
+}
 </style>
 
 <style scoped>
