@@ -94,6 +94,17 @@ function prepare_mask(image, maskCanvas, maskCtx, maskColor) {
   maskCtx.putImageData(maskData, 0, 0)
 }
 
+// Define the PointerType enum
+enum PointerType {
+  Arc = 'arc',
+  Rect = 'rect'
+}
+
+enum CompositionOperation {
+  SourceOver = 'source-over',
+  DestinationOut = 'destination-out'
+}
+
 class MaskEditorDialog extends ComfyDialog {
   static instance = null
   static mousedown_x: number | null = null
@@ -120,6 +131,8 @@ class MaskEditorDialog extends ComfyDialog {
   mousedown_pan_x: number
   mousedown_pan_y: number
   last_pressure: number
+  pointer_type: PointerType
+  brush_pointer_type_select: HTMLDivElement
 
   static getInstance() {
     if (!MaskEditorDialog.instance) {
@@ -176,7 +189,7 @@ class MaskEditorDialog extends ComfyDialog {
     divElement.style.borderColor = 'var(--border-color)'
     divElement.style.borderStyle = 'solid'
     divElement.style.fontSize = '15px'
-    divElement.style.height = '21px'
+    divElement.style.height = '25px'
     divElement.style.padding = '1px 6px'
     divElement.style.display = 'flex'
     divElement.style.position = 'relative'
@@ -210,7 +223,7 @@ class MaskEditorDialog extends ComfyDialog {
     divElement.style.borderColor = 'var(--border-color)'
     divElement.style.borderStyle = 'solid'
     divElement.style.fontSize = '15px'
-    divElement.style.height = '21px'
+    divElement.style.height = '25px'
     divElement.style.padding = '1px 6px'
     divElement.style.display = 'flex'
     divElement.style.position = 'relative'
@@ -233,8 +246,77 @@ class MaskEditorDialog extends ComfyDialog {
     return divElement
   }
 
+  createPointerTypeSelect(self: any): HTMLDivElement {
+    const divElement = document.createElement('div')
+    divElement.id = 'maskeditor-pointer-type'
+    divElement.style.cssFloat = 'left'
+    divElement.style.fontFamily = 'sans-serif'
+    divElement.style.marginRight = '4px'
+    divElement.style.color = 'var(--input-text)'
+    divElement.style.backgroundColor = 'var(--comfy-input-bg)'
+    divElement.style.borderRadius = '8px'
+    divElement.style.borderColor = 'var(--border-color)'
+    divElement.style.borderStyle = 'solid'
+    divElement.style.fontSize = '15px'
+    divElement.style.height = '25px'
+    divElement.style.padding = '1px 6px'
+    divElement.style.display = 'flex'
+    divElement.style.position = 'relative'
+    divElement.style.top = '2px'
+    divElement.style.pointerEvents = 'auto'
+
+    const labelElement = document.createElement('label')
+    labelElement.textContent = 'Pointer Type:'
+
+    const selectElement = document.createElement('select')
+    selectElement.style.borderRadius = '0'
+    selectElement.style.borderColor = 'transparent'
+    selectElement.style.borderStyle = 'unset'
+    selectElement.style.fontSize = '0.9em'
+
+    const optionArc = document.createElement('option')
+    optionArc.value = 'arc'
+    optionArc.text = 'Circle'
+    optionArc.selected = true // Fix for TypeScript, "selected" should be boolean
+
+    const optionRect = document.createElement('option')
+    optionRect.value = 'rect'
+    optionRect.text = 'Square'
+
+    selectElement.appendChild(optionArc)
+    selectElement.appendChild(optionRect)
+
+    selectElement.addEventListener('change', (event: Event) => {
+      const target = event.target as HTMLSelectElement
+      self.pointer_type = target.value
+      this.setBrushBorderRadius(self)
+    })
+
+    divElement.appendChild(labelElement)
+    divElement.appendChild(selectElement)
+
+    return divElement
+  }
+
+  setBrushBorderRadius(self: any): void {
+    if (self.pointer_type === PointerType.Rect) {
+      this.brush.style.borderRadius = '0%'
+      // @ts-expect-error
+      this.brush.style.MozBorderRadius = '0%'
+      // @ts-expect-error
+      this.brush.style.WebkitBorderRadius = '0%'
+    } else {
+      this.brush.style.borderRadius = '50%'
+      // @ts-expect-error
+      this.brush.style.MozBorderRadius = '50%'
+      // @ts-expect-error
+      this.brush.style.WebkitBorderRadius = '50%'
+    }
+  }
+
   setlayout(imgCanvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement) {
     const self = this
+    self.pointer_type = PointerType.Arc
 
     // If it is specified as relative, using it only as a hidden placeholder for padding is recommended
     // to prevent anomalies where it exceeds a certain size and goes outside of the window.
@@ -251,15 +333,11 @@ class MaskEditorDialog extends ComfyDialog {
     brush.style.backgroundColor = 'transparent'
     brush.style.outline = '1px dashed black'
     brush.style.boxShadow = '0 0 0 1px white'
-    brush.style.borderRadius = '50%'
-    // @ts-expect-error
-    brush.style.MozBorderRadius = '50%'
-    // @ts-expect-error
-    brush.style.WebkitBorderRadius = '50%'
     brush.style.position = 'absolute'
     brush.style.zIndex = '8889'
     brush.style.pointerEvents = 'none'
     this.brush = brush
+    this.setBrushBorderRadius(self)
     this.element.appendChild(imgCanvas)
     this.element.appendChild(maskCanvas)
     this.element.appendChild(bottom_panel)
@@ -294,6 +372,7 @@ class MaskEditorDialog extends ComfyDialog {
       }
     )
 
+    this.brush_pointer_type_select = this.createPointerTypeSelect(self)
     this.colorButton = this.createLeftButton(this.getColorButtonText(), () => {
       if (self.brush_color_mode === 'black') {
         self.brush_color_mode = 'white'
@@ -325,6 +404,7 @@ class MaskEditorDialog extends ComfyDialog {
     bottom_panel.appendChild(cancelButton)
     bottom_panel.appendChild(this.brush_size_slider)
     bottom_panel.appendChild(this.brush_opacity_slider)
+    bottom_panel.appendChild(this.brush_pointer_type_select)
     bottom_panel.appendChild(this.colorButton)
 
     imgCanvas.style.position = 'absolute'
@@ -815,19 +895,14 @@ class MaskEditorDialog extends ComfyDialog {
 
       if (diff > 20 && !this.drawing_mode)
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.fillStyle = this.getMaskFillStyle()
-          self.maskCtx.globalCompositeOperation = 'source-over'
-          self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-          self.maskCtx.fill()
+          self.init_shape(self, CompositionOperation.SourceOver)
+          self.draw_shape(self, x, y, brush_size)
           self.lastx = x
           self.lasty = y
         })
       else
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.fillStyle = this.getMaskFillStyle()
-          self.maskCtx.globalCompositeOperation = 'source-over'
+          self.init_shape(self, CompositionOperation.SourceOver)
 
           var dx = x - self.lastx
           var dy = y - self.lasty
@@ -839,8 +914,7 @@ class MaskEditorDialog extends ComfyDialog {
           for (var i = 0; i < distance; i += 5) {
             var px = self.lastx + directionX * i
             var py = self.lasty + directionY * i
-            self.maskCtx.arc(px, py, brush_size, 0, Math.PI * 2, false)
-            self.maskCtx.fill()
+            self.draw_shape(self, px, py, brush_size)
           }
           self.lastx = x
           self.lasty = y
@@ -873,17 +947,14 @@ class MaskEditorDialog extends ComfyDialog {
       if (diff > 20 && !this.drawing_mode)
         // cannot tracking drawing_mode for touch event
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.globalCompositeOperation = 'destination-out'
-          self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-          self.maskCtx.fill()
+          self.init_shape(self, CompositionOperation.DestinationOut)
+          self.draw_shape(self, x, y, brush_size)
           self.lastx = x
           self.lasty = y
         })
       else
         requestAnimationFrame(() => {
-          self.maskCtx.beginPath()
-          self.maskCtx.globalCompositeOperation = 'destination-out'
+          self.init_shape(self, CompositionOperation.DestinationOut)
 
           var dx = x - self.lastx
           var dy = y - self.lasty
@@ -895,8 +966,7 @@ class MaskEditorDialog extends ComfyDialog {
           for (var i = 0; i < distance; i += 5) {
             var px = self.lastx + directionX * i
             var py = self.lasty + directionY * i
-            self.maskCtx.arc(px, py, brush_size, 0, Math.PI * 2, false)
-            self.maskCtx.fill()
+            self.draw_shape(self, px, py, brush_size)
           }
           self.lastx = x
           self.lasty = y
@@ -943,19 +1013,41 @@ class MaskEditorDialog extends ComfyDialog {
         (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
         self.zoom_ratio
 
-      self.maskCtx.beginPath()
       if (!event.altKey && event.button == 0) {
-        self.maskCtx.fillStyle = this.getMaskFillStyle()
-        self.maskCtx.globalCompositeOperation = 'source-over'
+        self.init_shape(self, CompositionOperation.SourceOver)
       } else {
-        self.maskCtx.globalCompositeOperation = 'destination-out'
+        self.init_shape(self, CompositionOperation.DestinationOut)
       }
-      self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
-      self.maskCtx.fill()
+      self.draw_shape(self, x, y, brush_size)
       self.lastx = x
       self.lasty = y
       self.lasttime = performance.now()
     }
+  }
+
+  init_shape(self, compositionOperation) {
+    self.maskCtx.beginPath()
+    if (compositionOperation == CompositionOperation.SourceOver) {
+      self.maskCtx.fillStyle = this.getMaskFillStyle()
+      self.maskCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    } else if (compositionOperation == CompositionOperation.DestinationOut) {
+      self.maskCtx.globalCompositeOperation =
+        CompositionOperation.DestinationOut
+    }
+  }
+
+  draw_shape(self, x, y, brush_size) {
+    if (self.pointer_type === PointerType.Rect) {
+      self.maskCtx.rect(
+        x - brush_size,
+        y - brush_size,
+        brush_size * 2,
+        brush_size * 2
+      )
+    } else {
+      self.maskCtx.arc(x, y, brush_size, 0, Math.PI * 2, false)
+    }
+    self.maskCtx.fill()
   }
 
   async save() {
@@ -997,7 +1089,7 @@ class MaskEditorDialog extends ComfyDialog {
       backupData.data[i + 2] = 0
     }
 
-    backupCtx.globalCompositeOperation = 'source-over'
+    backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
     backupCtx.putImageData(backupData, 0, 0)
 
     const formData = new FormData()
