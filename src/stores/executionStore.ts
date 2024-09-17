@@ -19,6 +19,8 @@ export const useExecutionStore = defineStore('execution', () => {
     return Object.values(activePrompt.value.nodes).length
   })
 
+  const isIdle = computed(() => !activePromptId.value)
+
   const nodesExecuted = computed(() => {
     if (!activePrompt.value) return 0
     return Object.values(activePrompt.value.nodes).filter(Boolean).length
@@ -102,6 +104,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   return {
+    isIdle,
     activePromptId,
     queuedPrompts,
     executingNodeId,
