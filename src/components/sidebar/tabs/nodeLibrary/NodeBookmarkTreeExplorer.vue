@@ -35,12 +35,12 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import type { TreeNode } from 'primevue/treenode'
-import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
