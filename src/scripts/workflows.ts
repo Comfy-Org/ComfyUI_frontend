@@ -68,19 +68,20 @@ export class ComfyWorkflowManager extends EventTarget {
         favorites = new Set()
       }
 
-      ;(await api.listUserData('workflows', true, true)).forEach((w) => {
-        let workflow = this.workflowLookup[w[0]]
-        if (!workflow) {
-          workflow = new ComfyWorkflow(
-            this,
-            w[0],
-            w.slice(1),
-            favorites.has(w[0])
-          )
-          this.workflowLookup[workflow.path] = workflow
+      ;(await api.listUserData('workflows', true, true)).forEach(
+        (w: string[]) => {
+          let workflow = this.workflowLookup[w[0]]
+          if (!workflow) {
+            workflow = new ComfyWorkflow(
+              this,
+              w[0],
+              w.slice(1),
+              favorites.has(w[0])
+            )
+            this.workflowLookup[workflow.path] = workflow
+          }
         }
-        return workflow
-      })
+      )
     } catch (error) {
       alert('Error loading workflows: ' + (error.message ?? error))
     }
