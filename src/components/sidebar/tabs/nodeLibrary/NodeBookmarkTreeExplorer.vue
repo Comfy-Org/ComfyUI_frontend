@@ -5,7 +5,6 @@
     :roots="renderedBookmarkedRoot.children"
     :expandedKeys="expandedKeys"
     :extraMenuItems="extraMenuItems"
-    @nodeClick="handleNodeClick"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
@@ -37,11 +36,11 @@ import type {
 } from '@/types/treeExplorerTypes'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
@@ -49,17 +48,6 @@ const props = defineProps<{
 
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
-
-const handleNodeClick = (
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
-  e: MouseEvent
-) => {
-  if (node.leaf) {
-    app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
-  } else {
-    toggleNodeOnEvent(e, node)
-  }
-}
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 const bookmarkedRoot = computed<TreeNode>(() => {
@@ -146,6 +134,16 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           const folderNodeDef = node.data as ComfyNodeDefImpl
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           nodeBookmarkStore.addBookmark(nodePath)
+        },
+        handleClick: (
+          node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+          e: MouseEvent
+        ) => {
+          if (node.leaf) {
+            app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+          } else {
+            toggleNodeOnEvent(e, node)
+          }
         },
         ...(node.leaf
           ? {}
