@@ -35,7 +35,7 @@ export class ComfyWorkflowManager extends EventTarget {
 
   set _activeWorkflow(workflow: ComfyWorkflow | null) {
     if (!this.app.vueAppReady) return
-    useWorkflowStore().activeWorkflow = workflow ? markRaw(workflow) : null
+    useWorkflowStore().activeWorkflow = workflow ? workflow : null
   }
 
   get activeWorkflow(): ComfyWorkflow | null {
@@ -68,8 +68,8 @@ export class ComfyWorkflowManager extends EventTarget {
         favorites = new Set()
       }
 
-      const workflows = (await api.listUserData('workflows', true, true)).map(
-        (w) => {
+      ;(await api.listUserData('workflows', true, true)).forEach(
+        (w: string[]) => {
           let workflow = this.workflowLookup[w[0]]
           if (!workflow) {
             workflow = new ComfyWorkflow(
@@ -78,9 +78,8 @@ export class ComfyWorkflowManager extends EventTarget {
               w.slice(1),
               favorites.has(w[0])
             )
-            this.workflowLookup[workflow.path] = markRaw(workflow)
+            this.workflowLookup[workflow.path] = workflow
           }
-          return workflow
         }
       )
     } catch (error) {
@@ -111,7 +110,7 @@ export class ComfyWorkflowManager extends EventTarget {
       }
     }
 
-    if (!(workflow instanceof ComfyWorkflow)) {
+    if (!(toRaw(workflow) instanceof ComfyWorkflow)) {
       // Still not found, either reloading a deleted workflow or blank
       workflow = new ComfyWorkflow(
         this,
@@ -124,7 +123,7 @@ export class ComfyWorkflowManager extends EventTarget {
     const index = this.openWorkflows.indexOf(workflow)
     if (index === -1) {
       // Opening a new workflow
-      this.openWorkflows.push(markRaw(workflow))
+      this.openWorkflows.push(workflow)
     }
 
     this._activeWorkflow = workflow
@@ -185,29 +184,13 @@ export class ComfyWorkflowManager extends EventTarget {
 }
 
 export class ComfyWorkflow {
-  #name
-  #path
-  #pathParts
-  #isFavorite = false
+  name: string
+  path: string
+  pathParts: string[]
+  isFavorite = false
   changeTracker: ChangeTracker | null = null
   unsaved = false
   manager: ComfyWorkflowManager
-
-  get name() {
-    return this.#name
-  }
-
-  get path() {
-    return this.#path
-  }
-
-  get pathParts() {
-    return this.#pathParts
-  }
-
-  get isFavorite() {
-    return this.#isFavorite
-  }
 
   get isOpen() {
     return !!this.changeTracker
@@ -219,18 +202,18 @@ export class ComfyWorkflow {
     pathParts?: string[],
     isFavorite?: boolean
   ) {
-    this.manager = manager
+    this.manager = markRaw(manager)
     if (pathParts) {
-      this.#updatePath(path, pathParts)
-      this.#isFavorite = isFavorite
+      this.updatePath(path, pathParts)
+      this.isFavorite = isFavorite
     } else {
-      this.#name = path
+      this.name = path
       this.unsaved = true
     }
   }
 
-  #updatePath(path: string, pathParts: string[]) {
-    this.#path = path
+  private updatePath(path: string, pathParts: string[]) {
+    this.path = path
 
     if (!pathParts) {
       if (!path.includes('\\')) {
@@ -240,8 +223,8 @@ export class ComfyWorkflow {
       }
     }
 
-    this.#pathParts = pathParts
-    this.#name = trimJsonExt(pathParts[pathParts.length - 1])
+    this.pathParts = pathParts
+    this.name = trimJsonExt(pathParts[pathParts.length - 1])
   }
 
   async getWorkflowData() {
@@ -284,8 +267,8 @@ export class ComfyWorkflow {
 
   async favorite(value: boolean) {
     try {
-      if (this.#isFavorite === value) return
-      this.#isFavorite = value
+      if (this.isFavorite === value) return
+      this.isFavorite = value
       await this.manager.saveWorkflowMetadata()
       this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
@@ -331,7 +314,7 @@ export class ComfyWorkflow {
       await this.favorite(false)
     }
     path = (await resp.json()).substring('workflows/'.length)
-    this.#updatePath(path, null)
+    this.updatePath(path, null)
     if (isFav) {
       await this.favorite(true)
     }
@@ -370,8 +353,8 @@ export class ComfyWorkflow {
     }
 
     this.unsaved = true
-    this.#path = null
-    this.#pathParts = null
+    this.path = null
+    this.pathParts = null
     this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
     this.manager.dispatchEvent(new CustomEvent('delete', { detail: this }))
   }
@@ -380,7 +363,7 @@ export class ComfyWorkflow {
     if (this.changeTracker) {
       this.changeTracker.restore()
     } else {
-      this.changeTracker = new ChangeTracker(this)
+      this.changeTracker = markRaw(new ChangeTracker(this))
     }
   }
 
@@ -425,7 +408,7 @@ export class ComfyWorkflow {
 
     if (!this.path) {
       // Saved new workflow, patch this instance
-      this.#updatePath(path, null)
+      this.updatePath(path, null)
       await this.manager.loadWorkflows()
       this.unsaved = false
       this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
