@@ -3,6 +3,7 @@
     class="tree-explorer"
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
+    v-model:selectionKeys="selectionKeys"
     :value="renderedRoots"
     selectionMode="single"
     :pt="{
@@ -42,11 +43,12 @@ import type {
 } from '@/types/treeExplorerTypes'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
 import { useErrorHandling } from '@/hooks/errorHooks'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 provide('expandedKeys', expandedKeys)
+const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
+provide('selectionKeys', selectionKeys)
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
@@ -91,6 +93,9 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   }
 }
 const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+  if (node.handleClick) {
+    node.handleClick(node, e)
+  }
   emit('nodeClick', node, e)
 }
 const menu = ref(null)

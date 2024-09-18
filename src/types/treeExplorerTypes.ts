@@ -24,6 +24,8 @@ export interface TreeExplorerNode<T = any> {
     node: TreeExplorerNode<T>,
     data: TreeExplorerDragAndDropData
   ) => void
+  // Function to handle clicking a node
+  handleClick?: (node: TreeExplorerNode<T>, event: MouseEvent) => void
   // Function to handle errors
   handleError?: (error: Error) => void
 }
