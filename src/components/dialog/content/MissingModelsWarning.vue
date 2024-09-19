@@ -29,6 +29,25 @@
             </div>
           </div>
           <div class="model-action">
+            <select
+              class="model-path-select"
+              v-if="
+                slotProps.option.action &&
+                !slotProps.option.downloading &&
+                !slotProps.option.completed &&
+                !slotProps.option.error &&
+                slotProps.option.paths.length > 1
+              "
+              v-model="slotProps.option.folder_path"
+            >
+              <option
+                v-for="path in slotProps.option.paths"
+                :value="path"
+                :key="path"
+              >
+                {{ path }}
+              </option>
+            </select>
             <Button
               v-if="
                 slotProps.option.action &&
@@ -83,10 +102,12 @@ interface ModelInfo {
   completed?: boolean
   progress?: number
   error?: string
+  folder_path?: string
 }
 
 const props = defineProps<{
   missingModels: ModelInfo[]
+  paths: Record<string, string[]>
   maximized: boolean
 }>()
 
@@ -95,7 +116,7 @@ let lastModel: string | null = null
 
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
   if (detail.download_path) {
-    lastModel = detail.download_path.split('/', 2)[1]
+    lastModel = detail.download_path
   }
   if (!lastModel) return
   if (detail.status === 'in_progress') {
@@ -134,7 +155,8 @@ const handleDownloadProgress = (detail: DownloadModelStatus) => {
 const triggerDownload = async (
   url: string,
   directory: string,
-  filename: string
+  filename: string,
+  folder_path: string
 ) => {
   modelDownloads.value[filename] = {
     name: filename,
@@ -143,7 +165,8 @@ const triggerDownload = async (
     downloading: true,
     progress: 0
   }
-  const download = await api.internalDownloadModel(url, directory, filename, 1)
+  const download = await api.internalDownloadModel(url, directory, filename, 1, folder_path)
+  lastModel = filename
   handleDownloadProgress(download)
 }
 
@@ -153,7 +176,21 @@ api.addEventListener('download_progress', (event) => {
 
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
-    const downloadInfo = modelDownloads.value[model.name]
+    const paths = props.paths[model.directory]
+    if (model.directory_invalid || !paths) {
+      return {
+        label: `${model.directory} / ${model.name}`,
+        hint: model.url,
+        error: 'Invalid directory specified (does this require custom nodes?)'
+      }
+    }
+    const downloadInfo = modelDownloads.value[model.name] ?? {
+      downloading: false,
+      completed: false,
+      progress: 0,
+      error: null,
+      folder_path: paths[0]
+    }
     if (!allowedSources.some((source) => model.url.startsWith(source))) {
       return {
         label: `${model.directory} / ${model.name}`,
@@ -169,23 +206,18 @@ const missingModels = computed(() => {
         error: 'Only allowed suffixes are ' + allowedSuffixes.join(', ')
       }
     }
-    if (model.directory_invalid) {
-      return {
-        label: `${model.directory} / ${model.name}`,
-        hint: model.url,
-        error: 'Invalid directory specified (does this require custom nodes?)'
-      }
-    }
     return {
       label: `${model.directory} / ${model.name}`,
       hint: model.url,
-      downloading: downloadInfo?.downloading ?? false,
-      completed: downloadInfo?.completed ?? false,
-      progress: downloadInfo?.progress ?? 0,
-      error: downloadInfo?.error,
+      downloading: downloadInfo.downloading,
+      completed: downloadInfo.completed,
+      progress: downloadInfo.progress,
+      error: downloadInfo.error,
+      paths: paths,
+      folder_path: downloadInfo.folder_path,
       action: {
         text: 'Download',
-        callback: () => triggerDownload(model.url, model.directory, model.name)
+        callback: () => triggerDownload(model.url, model.directory, model.name, downloadInfo.folder_path)
       }
     }
   })

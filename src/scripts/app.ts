@@ -2145,10 +2145,11 @@ export class ComfyApp {
     })
   }
 
-  showMissingModelsError(missingModels) {
+  showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
+        paths,
         maximizable: true
       })
     }
@@ -2370,7 +2371,8 @@ export class ComfyApp {
       this.showMissingNodesError(missingNodeTypes)
     }
     if (missingModels.length && showMissingModelsDialog) {
-      this.showMissingModelsError(missingModels)
+      const paths = await api.getFolderPaths()
+      this.showMissingModelsError(missingModels, paths)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
     requestAnimationFrame(() => {
