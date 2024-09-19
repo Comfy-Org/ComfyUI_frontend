@@ -5,6 +5,8 @@ import { Type, Transform, plainToClass, Expose } from 'class-transformer'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
+import { computed, ref } from 'vue'
+import axios from 'axios'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -336,5 +338,46 @@ export const useNodeDefStore = defineStore('nodeDef', {
     inputIsWidget(spec: BaseInputSpec) {
       return this.getWidgetType(spec.type, spec.name) !== null
     }
+  }
+})
+
+export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
+  const topNodeDefLimit = ref(64)
+  const nodeFrequencyLookup = ref<Record<string, number>>({})
+  const nodeNamesByFrequency = computed(() =>
+    Object.keys(nodeFrequencyLookup.value)
+  )
+  const isLoaded = ref(false)
+
+  const loadNodeFrequencies = async () => {
+    if (!isLoaded.value) {
+      try {
+        const response = await axios.get('/assets/sorted-custom-node-map.json')
+        nodeFrequencyLookup.value = response.data
+        isLoaded.value = true
+      } catch (error) {
+        console.error('Error loading node frequencies:', error)
+      }
+    }
+  }
+
+  const getNodeFrequency = (nodeDef: ComfyNodeDefImpl) => {
+    return nodeFrequencyLookup.value[nodeDef.name] ?? 0
+  }
+
+  const nodeDefStore = useNodeDefStore()
+  const topNodeDefs = computed<ComfyNodeDefImpl[]>(() => {
+    return nodeNamesByFrequency.value
+      .map((nodeName: string) => nodeDefStore.nodeDefsByName[nodeName])
+      .filter((nodeDef: ComfyNodeDefImpl) => nodeDef !== undefined)
+      .slice(0, topNodeDefLimit.value)
+  })
+
+  return {
+    nodeNamesByFrequency,
+    topNodeDefs,
+    isLoaded,
+    loadNodeFrequencies,
+    getNodeFrequency
   }
 })

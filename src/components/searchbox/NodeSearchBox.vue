@@ -33,6 +33,7 @@
       :suggestions="suggestions"
       :min-length="0"
       :delay="100"
+      :loading="!nodeFrequencyStore.isLoaded"
       @complete="search($event.query)"
       @option-select="emit('addNode', $event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
@@ -67,7 +68,11 @@ import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
 import NodePreview from '@/components/node/NodePreview.vue'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  useNodeDefStore,
+  useNodeFrequencyStore
+} from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useI18n } from 'vue-i18n'
 import SearchFilterChip from '../common/SearchFilterChip.vue'
@@ -98,13 +103,18 @@ const placeholder = computed(() => {
   return props.filters.length === 0 ? t('searchNodes') + '...' : ''
 })
 
+const nodeDefStore = useNodeDefStore()
+const nodeFrequencyStore = useNodeFrequencyStore()
 const search = (query: string) => {
   currentQuery.value = query
-  suggestions.value = [
-    ...useNodeDefStore().nodeSearchService.searchNode(query, props.filters, {
-      limit: props.searchLimit
-    })
-  ]
+  suggestions.value =
+    query === ''
+      ? nodeFrequencyStore.topNodeDefs
+      : [
+          ...nodeDefStore.nodeSearchService.searchNode(query, props.filters, {
+            limit: props.searchLimit
+          })
+        ]
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])

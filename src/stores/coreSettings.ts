@@ -70,6 +70,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.NodeSearchBoxImpl.ShowNodeFrequency',
+    category: ['Comfy', 'Node Search Box', 'ShowNodeFrequency'],
+    name: 'Show node frequency in search results',
+    tooltip: 'Only applies to the default implementation',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Sidebar.Location',
     category: ['Comfy', 'Sidebar', 'Location'],
     name: 'Sidebar location',
