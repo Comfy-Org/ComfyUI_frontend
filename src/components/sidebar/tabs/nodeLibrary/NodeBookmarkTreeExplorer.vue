@@ -4,7 +4,6 @@
     ref="treeExplorerRef"
     :roots="renderedBookmarkedRoot.children"
     :expandedKeys="expandedKeys"
-    :extraMenuItems="extraMenuItems"
   >
     <template #folder="{ node }">
       <NodeTreeFolder :node="node" />
@@ -89,6 +88,37 @@ watch(
     }
   }
 )
+
+const { t } = useI18n()
+const extraMenuItems = (
+  menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+) => [
+  {
+    label: t('newFolder'),
+    icon: 'pi pi-folder-plus',
+    command: () => {
+      addNewBookmarkFolder(menuTargetNode)
+    },
+    visible: !menuTargetNode?.leaf
+  },
+  {
+    label: t('customize'),
+    icon: 'pi pi-palette',
+    command: () => {
+      const customization =
+        nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
+      initialIcon.value =
+        customization?.icon || nodeBookmarkStore.defaultBookmarkIcon
+      initialColor.value =
+        customization?.color || nodeBookmarkStore.defaultBookmarkColor
+
+      showCustomizationDialog.value = true
+      customizationTargetNodePath.value = menuTargetNode.data.nodePath
+    },
+    visible: !menuTargetNode?.leaf
+  }
+]
+
 const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
   () => {
     const fillNodeInfo = (
@@ -145,6 +175,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
             toggleNodeOnEvent(e, node)
           }
         },
+        contextMenuItems: extraMenuItems,
         ...(node.leaf
           ? {}
           : {
@@ -201,34 +232,4 @@ const updateCustomization = (icon: string, color: string) => {
     )
   }
 }
-
-const { t } = useI18n()
-const extraMenuItems = computed(
-  () => (menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>) => [
-    {
-      label: t('newFolder'),
-      icon: 'pi pi-folder-plus',
-      command: () => {
-        addNewBookmarkFolder(menuTargetNode)
-      },
-      visible: !menuTargetNode?.leaf
-    },
-    {
-      label: t('customize'),
-      icon: 'pi pi-palette',
-      command: () => {
-        const customization =
-          nodeBookmarkStore.bookmarksCustomization[menuTargetNode.data.nodePath]
-        initialIcon.value =
-          customization?.icon || nodeBookmarkStore.defaultBookmarkIcon
-        initialColor.value =
-          customization?.color || nodeBookmarkStore.defaultBookmarkColor
-
-        showCustomizationDialog.value = true
-        customizationTargetNodePath.value = menuTargetNode.data.nodePath
-      },
-      visible: !menuTargetNode?.leaf
-    }
-  ]
-)
 </script>

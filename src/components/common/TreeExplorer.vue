@@ -52,9 +52,6 @@ provide('selectionKeys', selectionKeys)
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
-  extraMenuItems?:
-    | MenuItem[]
-    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
 }>()
 const emit = defineEmits<{
   (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
@@ -101,6 +98,13 @@ const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
 const menu = ref(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('menuTargetNode', menuTargetNode)
+const extraMenuItems = computed(() => {
+  return menuTargetNode.value?.contextMenuItems
+    ? typeof menuTargetNode.value.contextMenuItems === 'function'
+      ? menuTargetNode.value.contextMenuItems(menuTargetNode.value)
+      : menuTargetNode.value.contextMenuItems
+    : []
+})
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('renameEditingNode', renameEditingNode)
 
@@ -126,11 +130,7 @@ const menuItems = computed<MenuItem[]>(() =>
       command: () => deleteCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleDelete !== undefined
     },
-    ...(props.extraMenuItems
-      ? typeof props.extraMenuItems === 'function'
-        ? props.extraMenuItems(menuTargetNode.value)
-        : props.extraMenuItems
-      : [])
+    ...extraMenuItems.value
   ].map((menuItem) => ({
     ...menuItem,
     command: wrapCommandWithErrorHandler(menuItem.command)

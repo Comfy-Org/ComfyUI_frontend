@@ -49,7 +49,6 @@
             class="node-lib-tree-explorer mt-1"
             :roots="renderedRoot.children"
             v-model:expandedKeys="expandedKeys"
-            @nodeClick="handleNodeClick"
           >
             <template #node="{ node }">
               <NodeTreeLeaf :node="node" />

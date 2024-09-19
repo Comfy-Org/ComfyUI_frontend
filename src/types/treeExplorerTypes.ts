@@ -1,3 +1,5 @@
+import type { MenuItem } from 'primevue/menuitem'
+
 export interface TreeExplorerNode<T = any> {
   key: string
   label: string
@@ -28,6 +30,10 @@ export interface TreeExplorerNode<T = any> {
   handleClick?: (node: TreeExplorerNode<T>, event: MouseEvent) => void
   // Function to handle errors
   handleError?: (error: Error) => void
+  // Extra context menu items
+  contextMenuItems?:
+    | MenuItem[]
+    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
