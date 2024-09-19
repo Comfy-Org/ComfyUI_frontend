@@ -32,11 +32,10 @@ export class FuseSearch<T> {
   }
 
   public search(query: string, options?: FuseSearchOptions): T[] {
-    if (!query || query === '') {
-      return [...this.data]
-    }
+    const fuseResult = !query
+      ? this.data.map((x) => ({ item: x, score: 0 }))
+      : this.fuse.search(query, options)
 
-    const fuseResult = this.fuse.search(query, options)
     if (!this.advancedScoring) {
       return fuseResult.map((x) => x.item)
     }
