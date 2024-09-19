@@ -132,6 +132,9 @@ export const mockNodeDefStore = () => {
   }
 
   jest.mock('@/stores/nodeDefStore', () => ({
-    useNodeDefStore: jest.fn(() => mockedNodeDefStore)
+    useNodeDefStore: jest.fn(() => mockedNodeDefStore),
+    useNodeFrequencyStore: jest.fn(() => ({
+      getNodeFrequencyByName: jest.fn(() => 0)
+    }))
   }))
 }

@@ -3,7 +3,7 @@ import { getNodeSource } from '@/types/nodeSource'
 import Fuse, { IFuseOptions, FuseSearchOptions } from 'fuse.js'
 import _ from 'lodash'
 
-type SearchAuxScore = [number, number, number, number]
+export type SearchAuxScore = number[]
 
 interface ExtraSearchOptions {
   matchWildcards?: boolean
@@ -51,17 +51,20 @@ export class FuseSearch<T> {
     return aux.map((x) => x.item)
   }
 
-  public calcAuxScores(query: string, entry: T, score: number) {
+  public calcAuxScores(query: string, entry: T, score: number): SearchAuxScore {
     let values: string[] = []
     if (!this.keys.length) values = [entry as string]
     else values = this.keys.map((x) => entry[x])
     const scores = values.map((x) => this.calcAuxSingle(query, x, score))
-    const result = scores.sort(this.compareAux)[0]
+    let result = scores.sort(this.compareAux)[0]
 
     const deprecated = values.some((x) =>
       x.toLocaleLowerCase().includes('deprecated')
     )
     result[0] += deprecated && result[0] != 0 ? 5 : 0
+    if (entry['postProcessSearchScores']) {
+      result = entry['postProcessSearchScores'](result) as SearchAuxScore
+    }
     return result
   }
 
@@ -117,7 +120,12 @@ export class FuseSearch<T> {
   }
 
   public compareAux(a: SearchAuxScore, b: SearchAuxScore) {
-    return a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3]
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      if (a[i] !== b[i]) {
+        return a[i] - b[i]
+      }
+    }
+    return a.length - b.length
   }
 }
 
