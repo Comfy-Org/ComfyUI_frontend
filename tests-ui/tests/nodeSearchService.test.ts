@@ -1,6 +1,7 @@
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { plainToClass } from 'class-transformer'
+import { mockNodeDefStore } from '../utils/setup'
 
 const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
   {
@@ -55,6 +56,7 @@ const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
 
 describe('nodeSearchService', () => {
   it('searches with input filter', () => {
+    mockNodeDefStore()
     const service = new NodeSearchService(EXAMPLE_NODE_DEFS)
     const inputFilter = service.getFilterById('input')
     expect(service.searchNode('L', [[inputFilter, 'LATENT']])).toHaveLength(1)
