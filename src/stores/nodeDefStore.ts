@@ -1,4 +1,7 @@
-import { NodeSearchService } from '@/services/nodeSearchService'
+import {
+  NodeSearchService,
+  type SearchAuxScore
+} from '@/services/nodeSearchService'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { Type, Transform, plainToClass, Expose } from 'class-transformer'
@@ -215,6 +218,12 @@ export class ComfyNodeDefImpl {
   get isDummyFolder(): boolean {
     return this.name === ''
   }
+
+  postProcessSearchScores(scores: SearchAuxScore): SearchAuxScore {
+    const nodeFrequencyStore = useNodeFrequencyStore()
+    const nodeFrequency = nodeFrequencyStore.getNodeFrequencyByName(this.name)
+    return [scores[0], -nodeFrequency, ...scores.slice(1)]
+  }
 }
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
@@ -362,7 +371,11 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   }
 
   const getNodeFrequency = (nodeDef: ComfyNodeDefImpl) => {
-    return nodeFrequencyLookup.value[nodeDef.name] ?? 0
+    return getNodeFrequencyByName(nodeDef.name)
+  }
+
+  const getNodeFrequencyByName = (nodeName: string) => {
+    return nodeFrequencyLookup.value[nodeName] ?? 0
   }
 
   const nodeDefStore = useNodeDefStore()
@@ -378,6 +391,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
     topNodeDefs,
     isLoaded,
     loadNodeFrequencies,
-    getNodeFrequency
+    getNodeFrequency,
+    getNodeFrequencyByName
   }
 })
