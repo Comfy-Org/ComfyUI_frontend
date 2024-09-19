@@ -66,4 +66,25 @@ describe('TreeExplorerTreeNode', () => {
     const editableText = wrapper.findComponent(EditableText)
     expect(editableText.props('isEditing')).toBe(true)
   })
+
+  it('triggers handleRename callback when editing is finished', async () => {
+    const handleRenameMock = vi.fn()
+    const nodeWithMockRename = {
+      ...mockNode,
+      handleRename: handleRenameMock
+    }
+
+    const wrapper = mount(TreeExplorerTreeNode, {
+      props: { node: nodeWithMockRename },
+      global: {
+        components: { EditableText, Badge, InputText },
+        provide: { renameEditingNode: { value: { key: '1' } } },
+        plugins: [createTestingPinia(), i18n, PrimeVue]
+      }
+    })
+
+    const editableText = wrapper.findComponent(EditableText)
+    await editableText.vm.$emit('edit', 'New Node Name')
+    expect(handleRenameMock).toHaveBeenCalledOnce()
+  })
 })
