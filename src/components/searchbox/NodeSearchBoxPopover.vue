@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { app } from '@/scripts/app'
-import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toRaw, watchEffect } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
 import { ConnectingLink } from '@comfyorg/litegraph'
@@ -66,7 +66,9 @@ const addFilter = (filter: FilterAndValue) => {
   nodeFilters.value.push(filter)
 }
 const removeFilter = (filter: FilterAndValue) => {
-  nodeFilters.value = nodeFilters.value.filter((f) => f !== filter)
+  nodeFilters.value = nodeFilters.value.filter(
+    (f) => toRaw(f) !== toRaw(filter)
+  )
 }
 const clearFilters = () => {
   nodeFilters.value = []
