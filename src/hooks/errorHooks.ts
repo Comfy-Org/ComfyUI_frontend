@@ -1,8 +1,8 @@
-import { useToast } from 'primevue/usetoast'
+import { useToastStore } from '@/stores/toastStore'
 import { useI18n } from 'vue-i18n'
 
 export function useErrorHandling() {
-  const toast = useToast()
+  const toast = useToastStore()
   const { t } = useI18n()
 
   const toastErrorHandler = (error: any) => {
