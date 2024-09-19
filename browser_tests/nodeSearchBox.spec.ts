@@ -103,6 +103,30 @@ test.describe('Node search box', () => {
     await comfyPage.page.waitForTimeout(256)
     await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
+
+  test.describe('Filtering', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.doubleClickCanvas()
+    })
+
+    test('Can add filter', async ({ comfyPage }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+    })
+
+    test('Can add multiple filters', async ({ comfyPage }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
+      await expect(comfyPage.searchBox.filterChips).toHaveCount(2)
+    })
+
+    test('Can remove filter', async ({ comfyPage }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
+      await comfyPage.searchBox.removeFilter(0)
+      await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+    })
+  })
 })
 
 test.describe('Release context menu', () => {
