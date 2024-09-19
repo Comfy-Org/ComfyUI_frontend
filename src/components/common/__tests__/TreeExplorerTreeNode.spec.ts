@@ -3,9 +3,12 @@ import { mount } from '@vue/test-utils'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import Badge from 'primevue/badge'
+import PrimeVue from 'primevue/config'
+import InputText from 'primevue/inputtext'
 import { createTestingPinia } from '@pinia/testing'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { createI18n } from 'vue-i18n'
+import { createApp } from 'vue'
 
 // Create a mock i18n instance
 const i18n = createI18n({
@@ -21,8 +24,15 @@ describe('TreeExplorerTreeNode', () => {
     leaf: false,
     totalLeaves: 3,
     icon: 'pi pi-folder',
-    type: 'folder'
+    type: 'folder',
+    handleRename: () => {}
   } as RenderedTreeExplorerNode
+
+  beforeAll(() => {
+    // Create a Vue app instance for PrimeVuePrimeVue
+    const app = createApp({})
+    app.use(PrimeVue)
+  })
 
   it('renders correctly', () => {
     const wrapper = mount(TreeExplorerTreeNode, {
@@ -41,5 +51,19 @@ describe('TreeExplorerTreeNode', () => {
       'Test Node'
     )
     expect(wrapper.findComponent(Badge).props()['value']).toBe(3)
+  })
+
+  it('makes node label editable when renamingEditingNode matches', async () => {
+    const wrapper = mount(TreeExplorerTreeNode, {
+      props: { node: mockNode },
+      global: {
+        components: { EditableText, Badge, InputText },
+        provide: { renameEditingNode: { value: { key: '1' } } },
+        plugins: [createTestingPinia(), i18n, PrimeVue]
+      }
+    })
+
+    const editableText = wrapper.findComponent(EditableText)
+    expect(editableText.props('isEditing')).toBe(true)
   })
 })
