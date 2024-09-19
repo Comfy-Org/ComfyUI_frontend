@@ -29,7 +29,7 @@
             </div>
           </div>
           <div class="model-action">
-            <select
+            <Select
               class="model-path-select"
               v-if="
                 slotProps.option.action &&
@@ -39,15 +39,10 @@
                 slotProps.option.paths.length > 1
               "
               v-model="slotProps.option.folder_path"
-            >
-              <option
-                v-for="path in slotProps.option.paths"
-                :value="path"
-                :key="path"
-              >
-                {{ path }}
-              </option>
-            </select>
+              :options="slotProps.option.paths"
+              optionLabel=""
+              optionValue=""
+            />
             <Button
               v-if="
                 slotProps.option.action &&
@@ -80,6 +75,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import ListBox from 'primevue/listbox'
+import Select from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
