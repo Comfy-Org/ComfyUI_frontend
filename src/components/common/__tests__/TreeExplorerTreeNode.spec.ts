@@ -9,6 +9,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { createI18n } from 'vue-i18n'
 import { createApp } from 'vue'
+import { useToastStore } from '@/stores/toastStore'
 
 // Create a mock i18n instance
 const i18n = createI18n({
@@ -32,6 +33,11 @@ describe('TreeExplorerTreeNode', () => {
     // Create a Vue app instance for PrimeVuePrimeVue
     const app = createApp({})
     app.use(PrimeVue)
+    vi.useFakeTimers()
+  })
+
+  afterAll(() => {
+    vi.useRealTimers()
   })
 
   it('renders correctly', () => {
@@ -84,7 +90,46 @@ describe('TreeExplorerTreeNode', () => {
     })
 
     const editableText = wrapper.findComponent(EditableText)
-    await editableText.vm.$emit('edit', 'New Node Name')
+    editableText.vm.$emit('edit', 'New Node Name')
     expect(handleRenameMock).toHaveBeenCalledOnce()
+  })
+
+  it('shows error toast when handleRename promise rejects', async () => {
+    const handleRenameMock = vi
+      .fn()
+      .mockRejectedValue(new Error('Rename failed'))
+    const nodeWithMockRename = {
+      ...mockNode,
+      handleRename: handleRenameMock
+    }
+
+    const wrapper = mount(TreeExplorerTreeNode, {
+      props: { node: nodeWithMockRename },
+      global: {
+        components: { EditableText, Badge, InputText },
+        provide: { renameEditingNode: { value: { key: '1' } } },
+        plugins: [createTestingPinia(), i18n, PrimeVue]
+      }
+    })
+
+    const toastStore = useToastStore()
+    const addToastSpy = vi.spyOn(toastStore, 'add')
+
+    const editableText = wrapper.findComponent(EditableText)
+    editableText.vm.$emit('edit', 'New Node Name')
+
+    // Wait for the promise to reject and the toast to be added
+    vi.runAllTimers()
+
+    // Wait for any pending promises to resolve
+    await new Promise(process.nextTick)
+
+    expect(handleRenameMock).toHaveBeenCalledOnce()
+    expect(addToastSpy).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'error',
+      detail: 'Rename failed',
+      life: 3000
+    })
   })
 })
