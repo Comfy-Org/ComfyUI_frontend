@@ -3,7 +3,16 @@ import { mount } from '@vue/test-utils'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import Badge from 'primevue/badge'
+import { createTestingPinia } from '@pinia/testing'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { createI18n } from 'vue-i18n'
+
+// Create a mock i18n instance
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {}
+})
 
 describe('TreeExplorerTreeNode', () => {
   const mockNode = {
@@ -20,7 +29,8 @@ describe('TreeExplorerTreeNode', () => {
       props: { node: mockNode },
       global: {
         components: { EditableText, Badge },
-        provide: { renameEditingNode: { value: null } }
+        provide: { renameEditingNode: { value: null } },
+        plugins: [createTestingPinia(), i18n]
       }
     })
 
