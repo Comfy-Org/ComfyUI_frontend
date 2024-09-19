@@ -31,10 +31,18 @@ const workflowNameText = computed(() => {
   return workflowName ? isUnsavedText.value + workflowName : DEFAULT_TITLE
 })
 
-const title = computed(
+const nodeExecutionTitle = computed(() =>
+  executionStore.executingNode && executionStore.executingNodeProgress
+    ? `[${executionStore.executingNodeProgress}%] ${executionStore.executingNode.type}`
+    : ''
+)
+
+const workflowTitle = computed(
   () =>
     executionText.value +
     (betaMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
 )
+
+const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
 useTitle(title)
 </script>
