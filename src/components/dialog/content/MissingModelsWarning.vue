@@ -47,7 +47,7 @@
                 slotProps.option.paths.length > 1 &&
                 showFolderSelect
               "
-              v-model="slotProps.option.folder_path"
+              v-model="slotProps.option.downloadInfo.folder_path"
               :options="slotProps.option.paths"
               optionLabel=""
               optionValue=""
@@ -228,7 +228,7 @@ const missingModels = computed(() => {
       progress: downloadInfo.progress,
       error: downloadInfo.error,
       paths: paths,
-      folder_path: downloadInfo.folder_path,
+      downloadInfo: downloadInfo,
       action: {
         text: 'Download',
         callback: () =>
