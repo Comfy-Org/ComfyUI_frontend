@@ -106,15 +106,15 @@ const placeholder = computed(() => {
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 const search = (query: string) => {
+  const queryIsEmpty = query === '' && props.filters.length === 0
   currentQuery.value = query
-  suggestions.value =
-    query === ''
-      ? nodeFrequencyStore.topNodeDefs
-      : [
-          ...nodeDefStore.nodeSearchService.searchNode(query, props.filters, {
-            limit: props.searchLimit
-          })
-        ]
+  suggestions.value = queryIsEmpty
+    ? nodeFrequencyStore.topNodeDefs
+    : [
+        ...nodeDefStore.nodeSearchService.searchNode(query, props.filters, {
+          limit: props.searchLimit
+        })
+      ]
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
