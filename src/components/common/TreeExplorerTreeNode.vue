@@ -46,6 +46,7 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import EditableText from '@/components/common/EditableText.vue'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode
@@ -67,10 +68,14 @@ const renameEditingNode =
 const isEditing = computed(
   () => labelEditable.value && renameEditingNode.value?.key === props.node.key
 )
-const handleRename = (newName: string) => {
-  props.node.handleRename(props.node, newName)
-  renameEditingNode.value = null
-}
+const errorHandling = useErrorHandling()
+const handleRename = errorHandling.wrapWithErrorHandlingAsync(
+  async (newName: string) => {
+    await props.node.handleRename(props.node, newName)
+    renameEditingNode.value = null
+  },
+  props.node.handleError
+)
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
 const treeNodeElement = ref<HTMLElement | null>(null)
@@ -83,10 +88,10 @@ onMounted(() => {
   if (props.node.droppable) {
     dropTargetCleanup = dropTargetForElements({
       element: treeNodeElement.value,
-      onDrop: (event) => {
+      onDrop: async (event) => {
         const dndData = event.source.data as TreeExplorerDragAndDropData
         if (dndData.type === 'tree-explorer-node') {
-          props.node.handleDrop?.(props.node, dndData)
+          await props.node.handleDrop?.(props.node, dndData)
           canDrop.value = false
           emit('itemDropped', props.node, dndData.data)
         }
