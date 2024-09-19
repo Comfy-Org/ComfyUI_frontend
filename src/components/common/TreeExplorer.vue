@@ -92,14 +92,13 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
       : children.reduce((acc, child) => acc + child.totalLeaves, 0)
   }
 }
-<<<<<<< Updated upstream
-const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+const onNodeContentClick = async (
+  e: MouseEvent,
+  node: RenderedTreeExplorerNode
+) => {
   if (!storeSelectionKeys) {
     selectionKeys.value = {}
   }
-=======
-const onNodeContentClick = async (e: MouseEvent, node: RenderedTreeExplorerNode) => {
->>>>>>> Stashed changes
   if (node.handleClick) {
     await node.handleClick(node, e)
   }
@@ -139,12 +138,14 @@ const menuItems = computed<MenuItem[]>(() =>
       icon: 'pi pi-trash',
       command: () => deleteCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleDelete !== undefined,
-      isAsync: true, // The delete command can be async
+      isAsync: true // The delete command can be async
     },
     ...extraMenuItems.value
   ].map((menuItem) => ({
     ...menuItem,
-    command: wrapCommandWithErrorHandler(menuItem.command, {isAsync: menuItem.isAsync ?? false})
+    command: wrapCommandWithErrorHandler(menuItem.command, {
+      isAsync: menuItem.isAsync ?? false
+    })
   }))
 )
 
