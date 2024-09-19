@@ -4,23 +4,23 @@ import type { ComfyLGraphNode } from '@/types/comfyLGraphNode'
 import { LGraphBadge } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 import { computed, ComputedRef, watch } from 'vue'
-import {
-  getNodeSource as getNodeSourceFromPythonModule,
-  NodeBadgeMode
-} from '@/types/nodeSource'
+import { NodeBadgeMode, NodeSource, NodeSourceType } from '@/types/nodeSource'
 import _ from 'lodash'
 import { getColorPalette, defaultColorPalette } from './colorPalette'
 import { BadgePosition } from '@comfyorg/litegraph'
 import type { Palette } from '@/types/colorPalette'
+import type { ComfyNodeDef } from '@/types/apiTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-function getNodeSource(node: ComfyLGraphNode) {
-  const pythonModule = (node.constructor as typeof ComfyLGraphNode).nodeData
-    ?.python_module
-  return pythonModule ? getNodeSourceFromPythonModule(pythonModule) : null
+function getNodeSource(node: ComfyLGraphNode): NodeSource | null {
+  const nodeDef = (node.constructor as typeof ComfyLGraphNode)
+    .nodeData as ComfyNodeDef
+  const nodeDefStore = useNodeDefStore()
+  return nodeDefStore.nodeDefsByName[nodeDef.name]?.nodeSource ?? null
 }
 
 function isCoreNode(node: ComfyLGraphNode) {
-  return getNodeSource(node)?.type === 'core'
+  return getNodeSource(node)?.type === NodeSourceType.Core
 }
 
 function badgeTextVisible(
