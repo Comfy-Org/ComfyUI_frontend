@@ -4,6 +4,14 @@
     <p class="warning-description">
       When loading the graph, the following models were not found:
     </p>
+    <p class="warning-options">
+      <Checkbox
+        v-model="showFolderSelect"
+        label="Show folder selector"
+        :binary="true"
+      />
+      Show folder selector
+    </p>
     <ListBox
       :options="missingModels"
       optionLabel="label"
@@ -36,7 +44,8 @@
                 !slotProps.option.downloading &&
                 !slotProps.option.completed &&
                 !slotProps.option.error &&
-                slotProps.option.paths.length > 1
+                slotProps.option.paths.length > 1 &&
+                showFolderSelect
               "
               v-model="slotProps.option.folder_path"
               :options="slotProps.option.paths"
@@ -74,12 +83,15 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
+
+const showFolderSelect = ref(false)
 
 const settingStore = useSettingStore()
 const allowedSources = settingStore.get(
@@ -161,7 +173,13 @@ const triggerDownload = async (
     downloading: true,
     progress: 0
   }
-  const download = await api.internalDownloadModel(url, directory, filename, 1, folder_path)
+  const download = await api.internalDownloadModel(
+    url,
+    directory,
+    filename,
+    1,
+    folder_path
+  )
   lastModel = filename
   handleDownloadProgress(download)
 }
@@ -213,7 +231,13 @@ const missingModels = computed(() => {
       folder_path: downloadInfo.folder_path,
       action: {
         text: 'Download',
-        callback: () => triggerDownload(model.url, model.directory, model.name, downloadInfo.folder_path)
+        callback: () =>
+          triggerDownload(
+            model.url,
+            model.directory,
+            model.name,
+            downloadInfo.folder_path
+          )
       }
     }
   })
@@ -244,6 +268,10 @@ const missingModels = computed(() => {
 
 .warning-description {
   margin-bottom: 1rem;
+}
+
+.warning-options {
+  color: var(--fg-color);
 }
 
 .missing-models-list {
