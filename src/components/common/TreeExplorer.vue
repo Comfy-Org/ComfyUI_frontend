@@ -49,6 +49,9 @@ const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 provide('expandedKeys', expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 provide('selectionKeys', selectionKeys)
+// Tracks whether the caller has set the selectionKeys model.
+const storeSelectionKeys = selectionKeys.value !== undefined
+
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
@@ -90,6 +93,9 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   }
 }
 const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+  if (!storeSelectionKeys) {
+    selectionKeys.value = {}
+  }
   if (node.handleClick) {
     node.handleClick(node, e)
   }
