@@ -10,6 +10,7 @@ import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import axios from 'axios'
+import { type NodeSource, getNodeSource } from '@/types/nodeSource'
 
 export class BaseInputSpec<T = any> {
   name: string
@@ -193,6 +194,12 @@ export class ComfyNodeDefImpl {
 
   @Transform(({ obj }) => ComfyNodeDefImpl.transformOutputSpec(obj))
   output: ComfyOutputsSpec
+
+  @Transform(({ obj }) => getNodeSource(obj.python_module), {
+    toClassOnly: true
+  })
+  @Expose()
+  nodeSource: NodeSource
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name, output_tooltips } = obj

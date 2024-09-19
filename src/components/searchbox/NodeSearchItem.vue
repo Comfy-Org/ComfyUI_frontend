@@ -38,17 +38,20 @@
         :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
         severity="secondary"
       />
-      <NodeSourceChip
-        v-if="nodeDef.python_module !== undefined"
-        :python_module="nodeDef.python_module"
-      />
+      <Chip
+        v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        class="text-sm font-light"
+      >
+        {{ nodeDef.nodeSource.displayText }}
+      </Chip>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Tag from 'primevue/tag'
-import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
+import Chip from 'primevue/chip'
+import { NodeSourceType } from '@/types/nodeSource'
 import { ComfyNodeDefImpl, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { highlightQuery } from '@/utils/formatUtil'
 import { computed } from 'vue'

@@ -1,5 +1,4 @@
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { getNodeSource } from '@/types/nodeSource'
 import Fuse, { IFuseOptions, FuseSearchOptions } from 'fuse.js'
 import _ from 'lodash'
 
@@ -202,7 +201,7 @@ export class NodeSourceFilter extends NodeFilter<string> {
   public readonly longInvokeSequence = 'source'
 
   public override getNodeOptions(node: ComfyNodeDefImpl): string[] {
-    return [getNodeSource(node.python_module).displayText]
+    return [node.nodeSource.displayText]
   }
 }
 
