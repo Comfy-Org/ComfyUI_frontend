@@ -1,7 +1,7 @@
 {
   "name": "comfyui-frontend",
   "private": true,
-  "version": "1.2.57",
+  "version": "1.2.58",
   "type": "module",
   "scripts": {
     "dev": "vite",
