@@ -40,7 +40,10 @@ import { useToast } from 'primevue/usetoast'
 import { setupAutoQueueHandler } from './services/autoQueueService'
 import { i18n } from './i18n'
 import { useExecutionStore } from './stores/executionStore'
-import { useWorkflowStore } from './stores/workflowStore'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from './stores/workflowStore'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 const theme = computed<string>(() =>
@@ -112,6 +115,10 @@ const init = () => {
   app.extensionManager.registerSidebarTab({
     id: 'workflows',
     icon: 'pi pi-folder-open',
+    iconBadge: () => {
+      const value = useWorkflowStore().modifiedWorkflows.length.toString()
+      return value === '0' ? null : value
+    },
     title: t('sideToolbar.workflows'),
     tooltip: t('sideToolbar.workflows'),
     component: markRaw(WorkflowsSidebarTab),
@@ -145,6 +152,8 @@ const executionStore = useExecutionStore()
 app.workflowManager.executionStore = executionStore
 const workflowStore = useWorkflowStore()
 app.workflowManager.workflowStore = workflowStore
+const workflowBookmarkStore = useWorkflowBookmarkStore()
+app.workflowManager.workflowBookmarkStore = workflowBookmarkStore
 
 onMounted(() => {
   api.addEventListener('status', onStatus)

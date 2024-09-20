@@ -23,13 +23,16 @@
     <template #body>
       <div class="comfyui-workflows-panel">
         <div class="comfyui-workflows-open">
-          <h3>Open</h3>
+          <TextDivider text="Open" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="renderTreeNode(workflowStore.openWorkflowsTree).children"
             v-model:selectionKeys="selectionKeys"
           >
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
+                <template #before-label="{ node }">
+                  <span v-if="node.data.unsaved">*</span>
+                </template>
                 <template #actions="{ node }">
                   <Button
                     icon="pi pi-times"
@@ -42,11 +45,49 @@
             </template>
           </TreeExplorer>
         </div>
+        <div class="comfyui-workflows-bookmarks">
+          <TextDivider text="Bookmarks" type="dashed" class="ml-2" />
+          <TreeExplorer
+            :roots="
+              renderTreeNode(workflowStore.bookmarkedWorkflowsTree).children
+            "
+          >
+            <template #node="{ node }">
+              <TreeExplorerTreeNode :node="node">
+                <template #actions="{ node }">
+                  <Button
+                    icon="pi pi-bookmark"
+                    text
+                    severity="secondary"
+                    @click.stop="
+                      workflowBookmarkStore.toggleBookmarked(node.data.path)
+                    "
+                  />
+                </template>
+              </TreeExplorerTreeNode>
+            </template>
+          </TreeExplorer>
+        </div>
         <div class="comfyui-workflows-browse">
-          <h3>Browse</h3>
+          <TextDivider text="Browse" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="renderTreeNode(workflowStore.workflowsTree).children"
-          ></TreeExplorer>
+          >
+            <template #node="{ node }">
+              <TreeExplorerTreeNode :node="node">
+                <template #actions="{ node }">
+                  <Button
+                    icon="pi pi-bookmark"
+                    text
+                    severity="secondary"
+                    @click.stop="
+                      workflowBookmarkStore.toggleBookmarked(node.data.path)
+                    "
+                  />
+                </template>
+              </TreeExplorerTreeNode>
+            </template>
+          </TreeExplorer>
         </div>
       </div>
     </template>
@@ -58,9 +99,13 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
+import TextDivider from '@/components/common/TextDivider.vue'
 import { app } from '@/scripts/app'
-import { computed, ref } from 'vue'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { computed } from 'vue'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/stores/workflowStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
@@ -83,6 +128,7 @@ const createBlank = () => {
 }
 
 const workflowStore = useWorkflowStore()
+const workflowBookmarkStore = useWorkflowBookmarkStore()
 const { t } = useI18n()
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)
@@ -101,7 +147,7 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
           const workflow = node.data
           workflow.rename(newName)
         },
-        handleDelete: workflow.isOpen
+        handleDelete: workflow.isTemporary
           ? undefined
           : (node: TreeExplorerNode<ComfyWorkflow>) => {
               const workflow = node.data
@@ -136,3 +182,9 @@ const selectionKeys = computed(() => ({
   [`root/${workflowStore.activeWorkflow?.name}.json`]: true
 }))
 </script>
+
+<style scoped>
+:deep(.comfy-vue-side-bar-body) {
+  background: var(--p-tree-background);
+}
+</style>
