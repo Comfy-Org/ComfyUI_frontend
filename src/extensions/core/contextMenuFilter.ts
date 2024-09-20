@@ -1,5 +1,6 @@
 import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
+import Fuse from 'fuse.js'
 
 // Adds filtering to combo context menus
 
@@ -25,6 +26,38 @@ const ext = {
         ) as HTMLElement[]
         let displayedItems = [...items]
         let itemCount = displayedItems.length
+
+        let fuzzySearchEnabled = app.ui.settings.getSettingValue(
+          'Comfy.FuzzySearch.ContextMenuFilterEnabled'
+        )
+
+        type SearchEntry = {
+          element: HTMLElement
+          text: string
+        }
+
+        let fuzzySearch: Fuse<SearchEntry> | undefined
+
+        if (fuzzySearchEnabled) {
+          const searchItems: SearchEntry[] = items.map((item) => ({
+            element: item,
+            text: item.textContent
+          }))
+
+          let threshInclude = app.ui.settings.getSettingValue(
+            'Comfy.FuzzySearch.IncludeThreshold'
+          )
+
+          let matchDistance = app.ui.settings.getSettingValue(
+            'Comfy.FuzzySearch.MatchDistance'
+          )
+
+          fuzzySearch = new Fuse(searchItems, {
+            keys: ['text'],
+            threshold: threshInclude,
+            distance: matchDistance
+          })
+        }
 
         // We must request an animation frame for the current node of the active canvas to update.
         requestAnimationFrame(() => {
@@ -118,14 +151,29 @@ const ext = {
 
           filter.addEventListener('input', () => {
             // Hide all items that don't match our filter
-            const term = filter.value.toLocaleLowerCase()
-            // When filtering, recompute which items are visible for arrow up/down and maintain selection.
-            displayedItems = items.filter((item) => {
-              const isVisible =
-                !term || item.textContent.toLocaleLowerCase().includes(term)
-              item.style.display = isVisible ? 'block' : 'none'
-              return isVisible
-            })
+
+            // Custom behavior when fuzzy search is enabled
+            if (fuzzySearchEnabled && fuzzySearch) {
+              const term = filter.value
+              const results = fuzzySearch.search(term)
+              const foundElementSet = new Set(
+                results.map((r) => r.item.element)
+              )
+              displayedItems = items.filter((item) => {
+                const isVisible = foundElementSet.has(item)
+                item.style.display = isVisible ? 'block' : 'none'
+                return isVisible
+              })
+            } else {
+              const term = filter.value.toLocaleLowerCase()
+              // When filtering, recompute which items are visible for arrow up/down and maintain selection.
+              displayedItems = items.filter((item) => {
+                const isVisible =
+                  !term || item.textContent.toLocaleLowerCase().includes(term)
+                item.style.display = isVisible ? 'block' : 'none'
+                return isVisible
+              })
+            }
 
             selectedIndex = 0
             if (displayedItems.includes(selectedItem)) {

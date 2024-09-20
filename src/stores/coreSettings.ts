@@ -352,5 +352,40 @@ export const CORE_SETTINGS: SettingParams[] = [
         element.style.display = value ? 'flex' : 'none'
       }
     }
+  },
+  {
+    id: 'Comfy.FuzzySearch.ContextMenuFilterEnabled',
+    category: ['Comfy', 'Fuzzy Search', 'FuzzySearchContextMenuFilterEnabled'],
+    name: 'Enable fuzzy search in context menu',
+    tooltip: 'Fuzzy search allows for spelling mistakes and partial matches',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.FuzzySearch.IncludeThreshold',
+    category: ['Comfy', 'Fuzzy Search', 'FuzzySearchIncludeThreshold'],
+    name: 'Fuzzy search include threshold',
+    tooltip: 'Lower values include less results (1.0 = match anything)',
+    type: 'slider',
+    defaultValue: 0.5,
+    attrs: {
+      min: 0.0,
+      max: 1.0,
+      step: 0.01
+    }
+  },
+  {
+    id: 'Comfy.FuzzySearch.MatchDistance',
+    category: ['Comfy', 'Fuzzy Search', 'FuzzySearchMatchDistance'],
+    name: 'Fuzzy search match distance',
+    tooltip:
+      'Determines how close the match must be to the fuzzy location (0 = exact match, larger values = more lenient)',
+    type: 'slider',
+    defaultValue: 200,
+    attrs: {
+      min: 0,
+      max: 1200,
+      step: 1
+    }
   }
 ]
