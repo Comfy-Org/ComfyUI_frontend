@@ -116,7 +116,7 @@ const init = () => {
     id: 'workflows',
     icon: 'pi pi-folder-open',
     iconBadge: () => {
-      const value = useWorkflowStore().modifiedWorkflows.length.toString()
+      const value = useWorkflowStore().openWorkflows.length.toString()
       return value === '0' ? null : value
     },
     title: t('sideToolbar.workflows'),
