@@ -99,6 +99,7 @@ export type ComfyObjectInfo = {
   }
   output?: string[]
   output_name: string[]
+  output_label: string[]
 }
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any]

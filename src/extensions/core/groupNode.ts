@@ -189,6 +189,7 @@ export class GroupNodeConfig {
     this.nodeDef = {
       output: [],
       output_name: [],
+      output_label: [],
       output_is_list: [],
       output_is_hidden: [],
       name: source + '/' + this.name,
@@ -295,6 +296,7 @@ export class GroupNodeConfig {
         },
         output: [type],
         output_name: [],
+        output_label: [],
         output_is_list: []
       })
       return def
@@ -363,6 +365,7 @@ export class GroupNodeConfig {
         },
         output: [rerouteType],
         output_name: [],
+        output_label: [],
         output_is_list: []
       }
     }
@@ -621,7 +624,10 @@ export class GroupNodeConfig {
 
       let label = customConfig?.name
       if (!label) {
-        label = def.output_name?.[outputId] ?? def.output[outputId]
+        label =
+          def.output_label?.[outputId] ??
+          def.output_name?.[outputId] ??
+          def.output[outputId]
         const output = node.outputs.find((o) => o.name === label)
         if (output?.label) {
           label = output.label

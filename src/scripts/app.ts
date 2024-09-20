@@ -1940,6 +1940,7 @@ export class ComfyApp {
           input: { required: {}, optional: {} },
           output: [],
           output_name: [],
+          output_label: [],
           output_is_list: [],
           python_module: 'custom_nodes.frontend_only',
           description: `Frontend only node for ${name}`
@@ -2010,6 +2011,8 @@ export class ComfyApp {
         for (const inputName in inputs) {
           const inputData = inputs[inputName]
           const type = inputData[0]
+          const extra_infos = inputData[1]
+          const inputLabel = extra_infos?.label ? extra_infos.label : inputName
 
           let widgetCreated = true
           const widgetType = self.getWidgetType(inputData, inputName)
@@ -2027,7 +2030,7 @@ export class ComfyApp {
             }
           } else {
             // Node connection inputs
-            this.addInput(inputName, type)
+            this.addInput(inputName, type, { label: inputLabel })
             widgetCreated = false
           }
           // @ts-expect-error
@@ -2050,10 +2053,14 @@ export class ComfyApp {
           let output = nodeData['output'][o]
           if (output instanceof Array) output = 'COMBO'
           const outputName = nodeData['output_name'][o] || output
+          const outputLabel = nodeData?.['output_label']?.[o] || outputName
           const outputShape = nodeData['output_is_list'][o]
             ? LiteGraph.GRID_SHAPE
             : LiteGraph.CIRCLE_SHAPE
-          this.addOutput(outputName, output, { shape: outputShape })
+          this.addOutput(outputName, output, {
+            shape: outputShape,
+            label: outputLabel
+          })
         }
 
         const s = this.computeSize()

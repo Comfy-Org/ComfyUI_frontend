@@ -80,6 +80,7 @@ export function makeNodeDef(name, input, output = {}) {
     category: 'test',
     output: [],
     output_name: [],
+    output_label: [],
     output_is_list: [],
     input: {
       required: {}
@@ -98,6 +99,7 @@ export function makeNodeDef(name, input, output = {}) {
   for (const k in output) {
     nodeDef.output.push(output[k])
     nodeDef.output_name.push(k)
+    nodeDef.output_label.push(k)
     nodeDef.output_is_list.push(false)
   }
 

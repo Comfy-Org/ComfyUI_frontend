@@ -20,7 +20,9 @@ export function updateControlWidgetLabel(widget) {
   if (controlValueRunBefore) {
     ;[find, replacement] = [replacement, find]
   }
-  widget.label = (widget.label ?? widget.name).replace(find, replacement)
+  widget.label = (widget.label ?? widget.name)
+    .replace(find, replacement)
+    .replace(/_/g, ' ')
 }
 
 const IS_CONTROL_WIDGET = Symbol()
@@ -295,6 +297,8 @@ function createIntWidget(
   let widgetType = isSlider(inputData[1]['display'], app)
   const { val, config } = getNumberDefaults(inputData, 1, 0, true)
   Object.assign(config, { precision: 0 })
+  const inputLabel = inputData[1]?.label || inputName
+  Object.assign(config, { label: inputLabel })
   return {
     widget: node.addWidget(
       widgetType,
@@ -397,6 +401,8 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       precision,
       !disable_rounding
     )
+    const inputLabel = inputData[1]?.label || inputName
+    Object.assign(config, { label: inputLabel })
     return {
       widget: node.addWidget(
         widgetType,
@@ -427,6 +433,8 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       if (inputData[1].label_on) options['on'] = inputData[1].label_on
       if (inputData[1].label_off) options['off'] = inputData[1].label_off
     }
+    const inputLabel = inputData[1]?.label || inputName
+    Object.assign(options, { label: inputLabel })
     return {
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
@@ -434,6 +442,8 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   STRING(node, inputName, inputData: ComfyNodeDef, app) {
     const defaultVal = inputData[1].default || ''
     const multiline = !!inputData[1].multiline
+    const inputLabel = inputData[1]?.label || inputName
+    inputData[1].placeholder = inputData[1]?.placeholder || inputLabel
 
     let res
     if (multiline) {
@@ -445,7 +455,9 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       )
     } else {
       res = {
-        widget: node.addWidget('text', inputName, defaultVal, () => {}, {})
+        widget: node.addWidget('text', inputName, defaultVal, () => {}, {
+          label: inputLabel
+        })
       }
     }
 
@@ -460,9 +472,13 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     if (inputData[1] && inputData[1].default) {
       defaultValue = inputData[1].default
     }
+    const inputLabel = inputData[1]?.label || inputName
+    if (typeof inputData[1] === 'undefined') inputData[1] = {}
+    Object.assign(inputData[1], { label: inputLabel })
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        values: type
+        values: type,
+        label: inputLabel
       })
     }
     if (inputData[1]?.control_after_generate) {

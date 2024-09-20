@@ -11,6 +11,7 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   output: ['MODEL', 'CLIP', 'VAE'],
   output_is_list: [false, false, false],
   output_name: ['MODEL', 'CLIP', 'VAE'],
+  output_label: ['Model', 'Clip', 'Vae'],
   name: 'CheckpointLoaderSimple',
   display_name: 'Load Checkpoint',
   description: '',
