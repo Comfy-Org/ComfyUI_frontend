@@ -122,10 +122,7 @@ export class ComfyWorkflowManager extends EventTarget {
     })
   }
 
-  /**
-   * @param {ComfyWorkflow} workflow
-   */
-  async closeWorkflow(workflow, warnIfUnsaved = true) {
+  async closeWorkflow(workflow: ComfyWorkflow, warnIfUnsaved: boolean = true) {
     if (!workflow.isOpen) {
       return true
     }
@@ -155,8 +152,7 @@ export class ComfyWorkflowManager extends EventTarget {
     }
     workflow.changeTracker = null
     workflow.isOpen = false
-    this.openWorkflows.splice(this.openWorkflows.indexOf(workflow), 1)
-    if (this.openWorkflows.length) {
+    if (this.openWorkflows.length > 0) {
       this._activeWorkflow = this.openWorkflows[0]
       await this._activeWorkflow.load()
     } else {
