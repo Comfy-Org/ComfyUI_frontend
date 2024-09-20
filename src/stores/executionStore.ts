@@ -1,16 +1,50 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../scripts/api'
+import { ComfyWorkflow } from '@/scripts/workflows'
+import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 export interface QueuedPrompt {
   nodes: Record<string, boolean>
-  workflow?: any // TODO: Replace 'any' with the actual type of workflow
+  workflow?: ComfyWorkflow
+}
+
+interface NodeProgress {
+  value: number
+  max: number
 }
 
 export const useExecutionStore = defineStore('execution', () => {
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<string, QueuedPrompt>>({})
   const executingNodeId = ref<string | null>(null)
+  const executingNode = computed<ComfyNode | null>(() => {
+    if (!executingNodeId.value) return null
+
+    const workflow: ComfyWorkflow | null = activePrompt.value?.workflow
+    if (!workflow) return null
+
+    const canvasState: ComfyWorkflowJSON | null =
+      workflow.changeTracker?.activeState
+    if (!canvasState) return null
+
+    return (
+      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
+      null
+    )
+  })
+
+  // This is the progress of the currently executing node, if any
+  const _executingNodeProgress = ref<NodeProgress | null>(null)
+  const executingNodeProgress = computed(() =>
+    _executingNodeProgress.value
+      ? Math.round(
+          (_executingNodeProgress.value.value /
+            _executingNodeProgress.value.max) *
+            100
+        )
+      : null
+  )
 
   const activePrompt = computed(() => queuedPrompts.value[activePromptId.value])
 
@@ -38,6 +72,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('execution_cached', handleExecutionCached)
     api.addEventListener('executed', handleExecuted)
     api.addEventListener('executing', handleExecuting)
+    api.addEventListener('progress', handleProgress)
   }
 
   function unbindExecutionEvents() {
@@ -45,6 +80,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('execution_cached', handleExecutionCached)
     api.removeEventListener('executed', handleExecuted)
     api.removeEventListener('executing', handleExecuting)
+    api.removeEventListener('progress', handleProgress)
   }
 
   function handleExecutionStart(e: CustomEvent) {
@@ -65,17 +101,24 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent) {
+    // Clear the current node progress when a new node starts executing
+    _executingNodeProgress.value = null
+
     if (!activePrompt.value) return
 
     if (executingNodeId.value) {
       // Seems sometimes nodes that are cached fire executing but not executed
       activePrompt.value.nodes[executingNodeId.value] = true
     }
-    executingNodeId.value = e.detail
+    executingNodeId.value = e.detail ? String(e.detail) : null
     if (!executingNodeId.value) {
       delete queuedPrompts.value[activePromptId.value]
       activePromptId.value = null
     }
+  }
+
+  function handleProgress(e: CustomEvent) {
+    _executingNodeProgress.value = e.detail
   }
 
   function storePrompt({
@@ -112,6 +155,8 @@ export const useExecutionStore = defineStore('execution', () => {
     totalNodesToExecute,
     nodesExecuted,
     executionProgress,
+    executingNode,
+    executingNodeProgress,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt
