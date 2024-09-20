@@ -33,7 +33,7 @@ const workflowNameText = computed(() => {
 
 const nodeExecutionTitle = computed(() =>
   executionStore.executingNode && executionStore.executingNodeProgress
-    ? `[${executionStore.executingNodeProgress}%] ${executionStore.executingNode.type}`
+    ? `${executionText.value}[${executionStore.executingNodeProgress}%] ${executionStore.executingNode.type}`
     : ''
 )
 
