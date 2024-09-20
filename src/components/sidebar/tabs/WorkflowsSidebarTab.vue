@@ -21,6 +21,12 @@
       />
     </template>
     <template #body>
+      <SearchBox
+        class="node-lib-search-box mx-4 my-4"
+        v-model:modelValue="searchQuery"
+        @search="handleSearch"
+        :placeholder="$t('searchWorkflows') + '...'"
+      />
       <div class="comfyui-workflows-panel">
         <div class="comfyui-workflows-open">
           <TextDivider text="Open" type="dashed" class="ml-2" />
@@ -78,6 +84,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchBox from '@/components/common/SearchBox.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
@@ -92,6 +99,11 @@ import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+
+const searchQuery = ref('')
+const handleSearch = (query: string) => {
+  console.log('search', query)
+}
 
 const loadDefault = () => {
   app.loadGraphData()
