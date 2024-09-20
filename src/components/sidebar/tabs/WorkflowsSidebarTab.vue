@@ -27,7 +27,7 @@
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"
       />
-      <div class="comfyui-workflows-panel">
+      <div class="comfyui-workflows-panel" v-if="!isSearching">
         <div class="comfyui-workflows-open">
           <TextDivider text="Open" type="dashed" class="ml-2" />
           <TreeExplorer
@@ -79,6 +79,16 @@
           </TreeExplorer>
         </div>
       </div>
+      <div class="comfyui-workflows-search-panel" v-else>
+        <TreeExplorer
+          :roots="renderTreeNode(filteredRoot).children"
+          v-model:expandedKeys="expandedKeys"
+        >
+          <template #node="{ node }">
+            <WorkflowTreeLeaf :node="node" />
+          </template>
+        </TreeExplorer>
+      </div>
     </template>
   </SidebarTabTemplate>
 </template>
@@ -92,7 +102,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
 import TextDivider from '@/components/common/TextDivider.vue'
 import { app } from '@/scripts/app'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -101,8 +111,25 @@ import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 
 const searchQuery = ref('')
+const isSearching = computed(() => searchQuery.value.length > 0)
+const filteredWorkflows = ref<ComfyWorkflow[]>([])
+const filteredRoot = computed<TreeNode>(() => {
+  return workflowStore.buildWorkflowTree(
+    filteredWorkflows.value as ComfyWorkflow[]
+  )
+})
 const handleSearch = (query: string) => {
-  console.log('search', query)
+  if (query.length === 0) {
+    filteredWorkflows.value = []
+    expandedKeys.value = {}
+    return
+  }
+  filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
+    return workflow.name.includes(query)
+  })
+  nextTick(() => {
+    expandNode(filteredRoot.value)
+  })
 }
 
 const loadDefault = () => {
@@ -124,7 +151,7 @@ const createBlank = () => {
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
-const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)
