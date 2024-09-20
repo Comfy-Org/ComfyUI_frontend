@@ -189,9 +189,7 @@ export class ComfyWorkflow {
   }
 
   get isBookmarked() {
-    return (
-      this.manager.workflowBookmarkStore?.bookmarks?.has(this.path) ?? false
-    )
+    return this.manager.workflowBookmarkStore?.isBookmarked(this.path) ?? false
   }
 
   /**

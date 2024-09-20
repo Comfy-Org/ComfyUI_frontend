@@ -53,18 +53,7 @@
             "
           >
             <template #node="{ node }">
-              <TreeExplorerTreeNode :node="node">
-                <template #actions="{ node }">
-                  <Button
-                    icon="pi pi-bookmark"
-                    text
-                    severity="secondary"
-                    @click.stop="
-                      workflowBookmarkStore.toggleBookmarked(node.data.path)
-                    "
-                  />
-                </template>
-              </TreeExplorerTreeNode>
+              <WorkflowTreeLeaf :node="node" />
             </template>
           </TreeExplorer>
         </div>
@@ -74,18 +63,7 @@
             :roots="renderTreeNode(workflowStore.workflowsTree).children"
           >
             <template #node="{ node }">
-              <TreeExplorerTreeNode :node="node">
-                <template #actions="{ node }">
-                  <Button
-                    icon="pi pi-bookmark"
-                    text
-                    severity="secondary"
-                    @click.stop="
-                      workflowBookmarkStore.toggleBookmarked(node.data.path)
-                    "
-                  />
-                </template>
-              </TreeExplorerTreeNode>
+              <WorkflowTreeLeaf :node="node" />
             </template>
           </TreeExplorer>
         </div>
@@ -95,6 +73,7 @@
 </template>
 
 <script setup lang="ts">
+import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -102,10 +81,7 @@ import Button from 'primevue/button'
 import TextDivider from '@/components/common/TextDivider.vue'
 import { app } from '@/scripts/app'
 import { computed } from 'vue'
-import {
-  useWorkflowBookmarkStore,
-  useWorkflowStore
-} from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
@@ -128,7 +104,6 @@ const createBlank = () => {
 }
 
 const workflowStore = useWorkflowStore()
-const workflowBookmarkStore = useWorkflowBookmarkStore()
 const { t } = useI18n()
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)

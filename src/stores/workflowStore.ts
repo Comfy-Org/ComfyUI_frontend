@@ -52,6 +52,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
+
+  const isBookmarked = (path: string) => bookmarks.value.has(path)
+
   const loadBookmarks = async () => {
     const resp = await api.getUserData('workflows/.index.json')
     if (resp.status === 200) {
@@ -66,16 +69,13 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     })
   }
 
-  watch(bookmarks, () => {
-    saveBookmarks()
-  })
-
   const setBookmarked = (path: string, value: boolean) => {
     if (value) {
       bookmarks.value.add(path)
     } else {
       bookmarks.value.delete(path)
     }
+    saveBookmarks()
   }
 
   const toggleBookmarked = (path: string) => {
@@ -83,7 +83,7 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   }
 
   return {
-    bookmarks,
+    isBookmarked,
     loadBookmarks,
     saveBookmarks,
     setBookmarked,
