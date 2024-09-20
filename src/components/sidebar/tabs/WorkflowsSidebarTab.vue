@@ -45,7 +45,10 @@
             </template>
           </TreeExplorer>
         </div>
-        <div class="comfyui-workflows-bookmarks">
+        <div
+          class="comfyui-workflows-bookmarks"
+          v-show="workflowStore.bookmarkedWorkflows.length > 0"
+        >
           <TextDivider text="Bookmarks" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="
