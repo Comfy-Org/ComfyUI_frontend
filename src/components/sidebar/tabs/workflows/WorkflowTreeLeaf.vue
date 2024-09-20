@@ -5,6 +5,7 @@
         :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
         text
         severity="secondary"
+        size="small"
         @click.stop="workflowBookmarkStore.toggleBookmarked(node.data.path)"
       />
     </template>

@@ -255,11 +255,11 @@ export class ComfyWorkflow {
   }
 
   async save(saveAs = false) {
-    if (!this.path || saveAs) {
-      return !!(await this.#save(null, false))
-    } else {
-      return !!(await this.#save(this.path, true))
-    }
+    const createNewFile = !this.path || saveAs
+    return !!(await this._save(
+      createNewFile ? null : this.path,
+      /* overwrite */ !createNewFile
+    ))
   }
 
   async favorite(value: boolean) {
@@ -364,7 +364,7 @@ export class ComfyWorkflow {
     this.isOpen = true
   }
 
-  async #save(path: string | null, overwrite: boolean) {
+  private async _save(path: string | null, overwrite: boolean) {
     if (!path) {
       path = prompt(
         'Save workflow as:',

@@ -38,6 +38,7 @@
                     icon="pi pi-times"
                     text
                     severity="secondary"
+                    size="small"
                     @click.stop="app.workflowManager.closeWorkflow(node.data)"
                   />
                 </template>
@@ -64,6 +65,7 @@
           <TextDivider text="Browse" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="renderTreeNode(workflowStore.workflowsTree).children"
+            v-model:expandedKeys="expandedKeys"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
@@ -83,12 +85,13 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
 import TextDivider from '@/components/common/TextDivider.vue'
 import { app } from '@/scripts/app'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { useI18n } from 'vue-i18n'
+import { useTreeExpansion } from '@/hooks/treeHooks'
 
 const loadDefault = () => {
   app.loadGraphData()
@@ -108,16 +111,28 @@ const createBlank = () => {
 
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
+const expandedKeys = ref<Record<string, boolean>>({})
+const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)
 
   const workflow: ComfyWorkflow = node.data
+
+  const handleClick = (
+    node: TreeExplorerNode<ComfyWorkflow>,
+    e: MouseEvent
+  ) => {
+    if (node.leaf) {
+      const workflow = node.data
+      workflow.load()
+    } else {
+      toggleNodeOnEvent(e, node)
+    }
+  }
   const actions = node.leaf
     ? {
-        handleClick: (node: TreeExplorerNode<ComfyWorkflow>) => {
-          const workflow = node.data
-          workflow.load()
-        },
+        handleClick,
         handleRename: (
           node: TreeExplorerNode<ComfyWorkflow>,
           newName: string
@@ -144,7 +159,7 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
           ]
         }
       }
-    : {}
+    : { handleClick }
 
   return {
     key: node.key,
