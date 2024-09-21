@@ -69,7 +69,10 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
     <div
       class="_sb_description"
       v-if="nodeDef.description"
-      :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
+      :style="{
+        color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
+        backgroundColor: litegraphColors.WIDGET_BGCOLOR
+      }"
     >
       {{ nodeDef.description }}
     </div>
@@ -93,10 +96,8 @@ const props = defineProps({
 })
 
 const litegraphColors = computed(() => {
-  const palette =
-    getColorPalette()?.colors?.litegraph_base ??
-    defaultColorPalette.colors.litegraph_base
-  return palette
+  const colors = getColorPalette()?.colors?.litegraph_base
+  return colors ?? defaultColorPalette.colors.litegraph_base
 })
 
 const nodeDefStore = useNodeDefStore()
@@ -196,7 +197,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   font-family: 'Open Sans', sans-serif;
   font-size: small;
   color: var(--descrip-text);
-  border: 0;
+  border: 1px solid var(--descrip-text);
   min-width: 300px;
   width: min-content;
   height: fit-content;
