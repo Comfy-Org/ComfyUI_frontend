@@ -8,12 +8,15 @@ import type { LLink } from '@comfyorg/litegraph'
 declare module '@comfyorg/litegraph' {
   interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     type?: string
-    nodeData: ComfyNodeDef
+    comfyClass: string
+    title: string
+    nodeData?: ComfyNodeDef
+    category?: string
     new (): T
   }
 
   interface LGraphNode {
-    constructor?: LGraphNodeConstructor
+    constructor: LGraphNodeConstructor
 
     /**
      * Callback fired on each node after the graph is configured
