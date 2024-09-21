@@ -122,9 +122,9 @@ onUnmounted(() => {
   background-position: center;
   display: inline-block;
   position: relative;
-  left: -2rem;
-  height: 1.5rem;
-  width: 1.5rem;
+  left: -2.5rem;
+  height: 2rem;
+  width: 2rem;
   vertical-align: top;
 }
 </style>
