@@ -36,6 +36,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type {
   RenderedTreeExplorerNode,
@@ -43,9 +44,11 @@ import type {
 } from '@/types/treeExplorerTypes'
 import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
+import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
 const { t } = useI18n()
 const modelStore = useModelStore()
+const modelToNodeStore = useModelToNodeStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -128,7 +131,26 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         }
       },
       children,
-      draggable: node.leaf
+      draggable: node.leaf,
+      handleClick: (
+        node: RenderedTreeExplorerNode<ComfyModelDef>,
+        e: MouseEvent
+      ) => {
+        if (node.leaf) {
+          const provider = modelToNodeStore.getNodeProvider(model.directory)
+          if (provider) {
+            const node = app.addNodeOnGraph(provider.nodeDef, {
+              pos: app.getCanvasCenter()
+            })
+            const widget = node.widgets.find(
+              (widget) => widget.name === provider.key
+            )
+            if (widget) {
+              widget.value = model.name
+            }
+          }
+        }
+      }
     }
   }
   return fillNodeInfo(root.value)
