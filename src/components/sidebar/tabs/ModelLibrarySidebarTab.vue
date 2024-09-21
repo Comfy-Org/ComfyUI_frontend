@@ -39,6 +39,7 @@ import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type {
+  TreeExplorerDragAndDropData,
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
