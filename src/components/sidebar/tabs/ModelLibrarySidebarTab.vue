@@ -37,9 +37,9 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import type {
-  TreeExplorerDragAndDropData,
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
@@ -50,6 +50,7 @@ import { buildTree } from '@/utils/treeUtil'
 const { t } = useI18n()
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
+const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -58,6 +59,11 @@ const root: ComputedRef<TreeNode> = computed(() => {
   let modelList: ComfyModelDef[] = []
   if (!modelStore.modelFolders.length) {
     modelStore.getModelFolders()
+  }
+  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+    for (let folder of modelStore.modelFolders) {
+      modelStore.getModelsInFolderCached(folder)
+    }
   }
   for (let folder of modelStore.modelFolders) {
     const models = modelStore.modelStoreMap[folder]

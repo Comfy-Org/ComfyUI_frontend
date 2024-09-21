@@ -244,6 +244,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
+    id: 'Comfy.ModelLibrary.AutoLoadAll',
+    name: 'Automatically load all model folders',
+    tooltip: 'If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',

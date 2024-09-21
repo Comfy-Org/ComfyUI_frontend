@@ -133,6 +133,7 @@ const folderBlacklist = ['configs', 'custom_nodes']
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
     modelStoreMap: {} as Record<string, ModelStore>,
+    isLoading: {} as Record<string, Promise<ModelStore>>,
     modelFolders: [] as string[]
   }),
   actions: {
@@ -140,14 +141,21 @@ export const useModelStore = defineStore('modelStore', {
       if (folder in this.modelStoreMap) {
         return this.modelStoreMap[folder]
       }
-      // TODO: needs a lock to avoid overlapping calls
-      const models = await api.getModels(folder)
-      if (!models) {
-        return null
+      if (this.isLoading[folder]) {
       }
-      const store = new ModelStore(folder, models)
-      this.modelStoreMap[folder] = store
-      return store
+      const promise = new Promise<ModelStore>(async (resolve, reject) => {
+        const models = await api.getModels(folder)
+        if (!models) {
+          resolve(null)
+          return
+        }
+        const store = new ModelStore(folder, models)
+        this.modelStoreMap[folder] = store
+        this.isLoading[folder] = false
+        resolve(store)
+      });
+      this.isLoading[folder] = promise
+      return promise
     },
     clearCache() {
       this.modelStoreMap = {}
