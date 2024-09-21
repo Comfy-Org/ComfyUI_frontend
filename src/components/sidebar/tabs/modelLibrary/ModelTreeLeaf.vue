@@ -97,6 +97,9 @@ onMounted(() => {
   modelContentElement.value = container.value?.closest('.p-tree-node-content')
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
+  if (!modelDef.value.is_fake_object) {
+    modelDef.value.load()
+  }
 })
 
 onUnmounted(() => {
