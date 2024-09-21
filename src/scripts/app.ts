@@ -2028,10 +2028,11 @@ export class ComfyApp {
           } else {
             // Node connection inputs
             const inputIsRequired = inputName in requiredInputs
-            // @ts-expect-error LiteGraph.SlotShape is not typed.
             const inputShape = inputIsRequired
-              ? LiteGraph.SlotShape.Circle
-              : LiteGraph.SlotShape.HollowCircle
+              ? // @ts-expect-error LiteGraph.SlotShape is not typed.
+                LiteGraph.SlotShape.Circle
+              : // @ts-expect-error LiteGraph.SlotShape is not typed.
+                LiteGraph.SlotShape.HollowCircle
             this.addInput(inputName, type, { shape: inputShape })
             widgetCreated = false
           }
