@@ -118,10 +118,13 @@ export class ModelStore {
   }
 }
 
+const folderBlacklist = ['configs', 'custom_nodes']
+
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelStoreMap: {} as Record<string, ModelStore>
+    modelStoreMap: {} as Record<string, ModelStore>,
+    modelFolders: [] as string[]
   }),
   actions: {
     async getModelsInFolderCached(folder: string): Promise<ModelStore> {
@@ -139,6 +142,11 @@ export const useModelStore = defineStore('modelStore', {
     },
     clearCache() {
       this.modelStoreMap = {}
+    },
+    async getModelFolders() {
+      this.modelFolders = (await api.getModelFolders()).filter(
+        (folder) => !folderBlacklist.includes(folder)
+      )
     }
   }
 })

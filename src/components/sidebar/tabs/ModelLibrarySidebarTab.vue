@@ -51,11 +51,12 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const rootFolders = ['checkpoints', 'loras', 'vae', 'controlnet']
-
 const root: ComputedRef<TreeNode> = computed(() => {
   let modelList: ComfyModelDef[] = []
-  for (let folder of rootFolders) {
+  if (!modelStore.modelFolders.length) {
+    modelStore.getModelFolders()
+  }
+  for (let folder of modelStore.modelFolders) {
     const models = modelStore.modelStoreMap[folder]
     if (models) {
       modelList.push(...Object.values(models.models))
