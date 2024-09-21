@@ -2,18 +2,21 @@
   <SidebarTabTemplate :title="$t('sideToolbar.workflows')">
     <template #tool-buttons>
       <Button
+        class="browse-workflows-button"
         icon="pi pi-folder-open"
         v-tooltip="'Browse for an image or exported workflow'"
         text
         @click="browse"
       />
       <Button
+        class="new-default-workflow-button"
         icon="pi pi-code"
         v-tooltip="'Load default workflow'"
         text
         @click="loadDefault"
       />
       <Button
+        class="new-blank-workflow-button"
         icon="pi pi-plus"
         v-tooltip="'Create a new blank workflow'"
         @click="createBlank"
@@ -22,7 +25,7 @@
     </template>
     <template #body>
       <SearchBox
-        class="node-lib-search-box mx-4 my-4"
+        class="workflows-search-box mx-4 my-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"

@@ -1,4 +1,4 @@
-import type { Page, Locator } from '@playwright/test'
+import type { Page, Locator, APIRequestContext } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { ComfyAppMenu } from './helpers/appMenu'
 import dotenv from 'dotenv'
@@ -94,9 +94,11 @@ class ComfyNodeSearchBox {
   }
 }
 
-class NodeLibrarySidebarTab {
-  public readonly tabId: string = 'node-library'
-  constructor(public readonly page: Page) {}
+class SidebarTab {
+  constructor(
+    public readonly page: Page,
+    public readonly tabId: string
+  ) {}
 
   get tabButton() {
     return this.page.locator(`.${this.tabId}-tab-button`)
@@ -106,6 +108,19 @@ class NodeLibrarySidebarTab {
     return this.page.locator(
       `.${this.tabId}-tab-button.side-bar-button-selected`
     )
+  }
+
+  async open() {
+    if (await this.selectedTabButton.isVisible()) {
+      return
+    }
+    await this.tabButton.click()
+  }
+}
+
+class NodeLibrarySidebarTab extends SidebarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'node-library')
   }
 
   get nodeLibrarySearchBoxInput() {
@@ -129,11 +144,7 @@ class NodeLibrarySidebarTab {
   }
 
   async open() {
-    if (await this.selectedTabButton.isVisible()) {
-      return
-    }
-
-    await this.tabButton.click()
+    await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
@@ -151,6 +162,30 @@ class NodeLibrarySidebarTab {
 
   getNode(nodeName: string) {
     return this.page.locator(this.nodeSelector(nodeName))
+  }
+}
+
+class WorkflowsSidebarTab extends SidebarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'workflows')
+  }
+
+  get newBlankWorkflowButton() {
+    return this.page.locator('.new-blank-workflow-button')
+  }
+
+  get browseWorkflowsButton() {
+    return this.page.locator('.browse-workflows-button')
+  }
+
+  get newDefaultWorkflowButton() {
+    return this.page.locator('.new-default-workflow-button')
+  }
+
+  async getOpenedWorkflowNames() {
+    return await this.page
+      .locator('.comfyui-workflows-open .node-label')
+      .allInnerTexts()
   }
 }
 
@@ -186,6 +221,10 @@ class ComfyMenu {
     return new NodeLibrarySidebarTab(this.page)
   }
 
+  get workflowsTab() {
+    return new WorkflowsSidebarTab(this.page)
+  }
+
   async toggleTheme() {
     await this.themeToggleButton.click()
     await this.page.evaluate(() => {
@@ -210,6 +249,25 @@ class ComfyMenu {
   }
 }
 
+type FolderStructure = {
+  [key: string]: FolderStructure | string
+}
+
+function convertLeafToContent(structure: FolderStructure): FolderStructure {
+  const result: FolderStructure = {}
+
+  for (const [key, value] of Object.entries(structure)) {
+    if (typeof value === 'string') {
+      const filePath = this.assetPath(value)
+      result[key] = fs.readFileSync(filePath, 'utf-8')
+    } else {
+      result[key] = convertLeafToContent(value)
+    }
+  }
+
+  return result
+}
+
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -228,7 +286,10 @@ export class ComfyPage {
   public readonly menu: ComfyMenu
   public readonly appMenu: ComfyAppMenu
 
-  constructor(public readonly page: Page) {
+  constructor(
+    public readonly page: Page,
+    public readonly request: APIRequestContext
+  ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -243,6 +304,15 @@ export class ComfyPage {
   async getGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return window['app']?.graph?.nodes?.length || 0
+    })
+  }
+
+  async setupWorkflowsDirectory(structure: FolderStructure) {
+    await this.request.post(`${this.url}/api/devtools/setup_folder_structure`, {
+      data: {
+        tree_structure: convertLeafToContent(structure),
+        base_path: 'users/default/workflows'
+      }
     })
   }
 
@@ -713,8 +783,8 @@ export class ComfyPage {
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
-  comfyPage: async ({ page }, use) => {
-    const comfyPage = new ComfyPage(page)
+  comfyPage: async ({ page, request }, use) => {
+    const comfyPage = new ComfyPage(page, request)
     await comfyPage.setup()
     await use(comfyPage)
   }
