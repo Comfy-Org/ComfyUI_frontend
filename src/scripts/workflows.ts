@@ -185,9 +185,9 @@ export class ComfyWorkflowManager extends EventTarget {
 }
 
 export class ComfyWorkflow {
-  #name
-  #path
-  #pathParts
+  #name: string
+  #path: string
+  #pathParts: string[]
   #isFavorite = false
   changeTracker: ChangeTracker | null = null
   unsaved = false

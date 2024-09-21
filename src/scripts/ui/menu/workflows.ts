@@ -451,7 +451,9 @@ export class ComfyWorkflowsContent {
       for (const part of parts) {
         let currentIndex = 0
         do {
-          currentIndex = part.indexOf(searchTerms[termIndex], currentIndex)
+          currentIndex = part
+            .toLocaleLowerCase()
+            .indexOf(searchTerms[termIndex], currentIndex)
           if (currentIndex > -1) currentIndex += searchTerms[termIndex].length
         } while (currentIndex !== -1 && ++termIndex < searchTerms.length)
 
