@@ -51,7 +51,6 @@ import { useToastStore } from '@/stores/toastStore'
 import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
-import { ComfyLGraphNode } from '@/types/comfyLGraphNode'
 import { useExecutionStore } from '@/stores/executionStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -1935,7 +1934,6 @@ export class ComfyApp {
         {
           name,
           display_name: name,
-          // @ts-expect-error
           category: node.category || '__frontend_only__',
           input: { required: {}, optional: {} },
           output: [],
@@ -1989,7 +1987,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node: new () => ComfyLGraphNode = class ComfyNode extends LGraphNode {
+    const node = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
@@ -2074,7 +2072,6 @@ export class ComfyApp {
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not move this to the class definition, it will be overwritten
-    // @ts-expect-error
     node.category = nodeData.category
   }
 
