@@ -2,16 +2,21 @@ import type { ComfyApp } from './app'
 import { api } from './api'
 import { ChangeTracker } from './changeTracker'
 import { ComfyAsyncDialog } from './ui/components/asyncDialog'
-import { getStorageValue, setStorageValue } from './utils'
+import { setStorageValue } from './utils'
 import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
 import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import {
+  useWorkflowStore,
+  useWorkflowBookmarkStore
+} from '@/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
+import { UserDataFullInfo } from '@/types/apiTypes'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: ReturnType<typeof useExecutionStore> | null
   workflowStore: ReturnType<typeof useWorkflowStore> | null
+  workflowBookmarkStore: ReturnType<typeof useWorkflowBookmarkStore> | null
 
   app: ComfyApp
   #unsavedCount = 0
@@ -30,12 +35,12 @@ export class ComfyWorkflowManager extends EventTarget {
 
   get _activeWorkflow(): ComfyWorkflow | null {
     if (!this.app.vueAppReady) return null
-    return toRaw(useWorkflowStore().activeWorkflow) as ComfyWorkflow | null
+    return this.workflowStore!.activeWorkflow as ComfyWorkflow | null
   }
 
   set _activeWorkflow(workflow: ComfyWorkflow | null) {
     if (!this.app.vueAppReady) return
-    useWorkflowStore().activeWorkflow = workflow ? workflow : null
+    this.workflowStore!.activeWorkflow = workflow ? workflow : null
   }
 
   get activeWorkflow(): ComfyWorkflow | null {
@@ -58,41 +63,21 @@ export class ComfyWorkflowManager extends EventTarget {
 
   async loadWorkflows() {
     try {
-      let favorites
-      const resp = await api.getUserData('workflows/.index.json')
-      let info
-      if (resp.status === 200) {
-        info = await resp.json()
-        favorites = new Set(info?.favorites ?? [])
-      } else {
-        favorites = new Set()
-      }
+      const [files, _] = await Promise.all([
+        api.listUserDataFullInfo('workflows'),
+        this.workflowBookmarkStore?.loadBookmarks()
+      ])
 
-      ;(await api.listUserData('workflows', true, true)).forEach(
-        (w: string[]) => {
-          let workflow = this.workflowLookup[w[0]]
-          if (!workflow) {
-            workflow = new ComfyWorkflow(
-              this,
-              w[0],
-              w.slice(1),
-              favorites.has(w[0])
-            )
-            this.workflowLookup[workflow.path] = workflow
-          }
+      files.forEach((file: UserDataFullInfo) => {
+        let workflow = this.workflowLookup[file.path]
+        if (!workflow) {
+          workflow = new ComfyWorkflow(this, file.path, file.path.split('/'))
+          this.workflowLookup[workflow.path] = workflow
         }
-      )
+      })
     } catch (error) {
       alert('Error loading workflows: ' + (error.message ?? error))
     }
-  }
-
-  async saveWorkflowMetadata() {
-    await api.storeUserData('workflows/.index.json', {
-      favorites: [
-        ...this.workflows.filter((w) => w.isFavorite).map((w) => w.path)
-      ]
-    })
   }
 
   /**
@@ -100,13 +85,10 @@ export class ComfyWorkflowManager extends EventTarget {
    */
   setWorkflow(workflow) {
     if (workflow && typeof workflow === 'string') {
-      // Selected by path, i.e. on reload of last workflow
       const found = this.workflows.find((w) => w.path === workflow)
       if (found) {
         workflow = found
-        workflow.unsaved =
-          !workflow ||
-          getStorageValue('Comfy.PreviousWorkflowUnsaved') === 'true'
+        workflow.unsaved = !workflow
       }
     }
 
@@ -118,12 +100,12 @@ export class ComfyWorkflowManager extends EventTarget {
           'Unsaved Workflow' +
             (this.#unsavedCount++ ? ` (${this.#unsavedCount})` : '')
       )
+      this.workflowLookup[workflow.key] = workflow
     }
 
-    const index = this.openWorkflows.indexOf(workflow)
-    if (index === -1) {
+    if (!workflow.isOpen) {
       // Opening a new workflow
-      this.openWorkflows.push(workflow)
+      workflow.track()
     }
 
     this._activeWorkflow = workflow
@@ -140,10 +122,7 @@ export class ComfyWorkflowManager extends EventTarget {
     })
   }
 
-  /**
-   * @param {ComfyWorkflow} workflow
-   */
-  async closeWorkflow(workflow, warnIfUnsaved = true) {
+  async closeWorkflow(workflow: ComfyWorkflow, warnIfUnsaved: boolean = true) {
     if (!workflow.isOpen) {
       return true
     }
@@ -172,8 +151,8 @@ export class ComfyWorkflowManager extends EventTarget {
       }
     }
     workflow.changeTracker = null
-    this.openWorkflows.splice(this.openWorkflows.indexOf(workflow), 1)
-    if (this.openWorkflows.length) {
+    workflow.isOpen = false
+    if (this.openWorkflows.length > 0) {
       this._activeWorkflow = this.openWorkflows[0]
       await this._activeWorkflow.load()
     } else {
@@ -185,27 +164,45 @@ export class ComfyWorkflowManager extends EventTarget {
 
 export class ComfyWorkflow {
   name: string
-  path: string
-  pathParts: string[]
-  isFavorite = false
-  changeTracker: ChangeTracker | null = null
+  path: string | null
+  pathParts: string[] | null
   unsaved = false
+  // Raw
   manager: ComfyWorkflowManager
+  changeTracker: ChangeTracker | null = null
+  isOpen: boolean = false
 
-  get isOpen() {
-    return !!this.changeTracker
+  get isTemporary() {
+    return !this.path
+  }
+
+  get isPersisted() {
+    return !this.isTemporary
+  }
+
+  get key() {
+    return this.pathParts?.join('/') ?? this.name + '.json'
+  }
+
+  get isBookmarked() {
+    return this.manager.workflowBookmarkStore?.isBookmarked(this.path) ?? false
+  }
+
+  /**
+   * @deprecated Use isBookmarked instead
+   */
+  get isFavorite() {
+    return this.isBookmarked
   }
 
   constructor(
     manager: ComfyWorkflowManager,
     path: string,
-    pathParts?: string[],
-    isFavorite?: boolean
+    pathParts?: string[]
   ) {
     this.manager = markRaw(manager)
     if (pathParts) {
       this.updatePath(path, pathParts)
-      this.isFavorite = isFavorite
     } else {
       this.name = path
       this.unsaved = true
@@ -238,7 +235,7 @@ export class ComfyWorkflow {
     return await resp.json()
   }
 
-  load = async () => {
+  async load() {
     if (this.isOpen) {
       await this.manager.app.loadGraphData(
         this.changeTracker.activeState,
@@ -258,18 +255,17 @@ export class ComfyWorkflow {
   }
 
   async save(saveAs = false) {
-    if (!this.path || saveAs) {
-      return !!(await this.#save(null, false))
-    } else {
-      return !!(await this.#save(this.path, true))
-    }
+    const createNewFile = !this.path || saveAs
+    return !!(await this._save(
+      createNewFile ? null : this.path,
+      /* overwrite */ !createNewFile
+    ))
   }
 
   async favorite(value: boolean) {
     try {
-      if (this.isFavorite === value) return
-      this.isFavorite = value
-      await this.manager.saveWorkflowMetadata()
+      if (this.isBookmarked === value) return
+      this.manager.workflowBookmarkStore?.setBookmarked(this.path, value)
       this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
       alert(
@@ -365,9 +361,10 @@ export class ComfyWorkflow {
     } else {
       this.changeTracker = markRaw(new ChangeTracker(this))
     }
+    this.isOpen = true
   }
 
-  async #save(path: string | null, overwrite: boolean) {
+  private async _save(path: string | null, overwrite: boolean) {
     if (!path) {
       path = prompt(
         'Save workflow as:',

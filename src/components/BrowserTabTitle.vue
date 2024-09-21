@@ -24,7 +24,7 @@ const betaMenuEnabled = computed(
 
 const workflowStore = useWorkflowStore()
 const isUnsavedText = computed(() =>
-  workflowStore.previousWorkflowUnsaved ? ' *' : ''
+  workflowStore.activeWorkflow?.unsaved ? ' *' : ''
 )
 const workflowNameText = computed(() => {
   const workflowName = workflowStore.activeWorkflow?.name
