@@ -366,7 +366,22 @@ class ComfyApi extends EventTarget {
     const res = await this.fetchApi(
       `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
     )
-    return await res.json()
+    const rawResponse = await res.text()
+    if (!rawResponse) {
+      return null
+    }
+    try {
+      return JSON.parse(rawResponse)
+    } catch (error) {
+      console.error(
+        'Error viewing metadata',
+        res.status,
+        res.statusText,
+        rawResponse,
+        error
+      )
+      return null
+    }
   }
 
   /**

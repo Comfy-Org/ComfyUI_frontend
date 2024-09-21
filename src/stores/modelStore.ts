@@ -62,42 +62,51 @@ export class ComfyModelDef {
       return
     }
     this.is_load_requested = true
-    const metadata = await api.viewMetadata(this.directory, this.name)
-    if (!metadata) {
-      return
+    try {
+      const metadata = await api.viewMetadata(this.directory, this.name)
+      if (!metadata) {
+        return
+      }
+      this.title =
+        _findInMetadata(
+          metadata,
+          'modelspec.title',
+          'title',
+          'display_name',
+          'name'
+        ) || this.title
+      this.architecture_id =
+        _findInMetadata(metadata, 'modelspec.architecture', 'architecture') ||
+        ''
+      this.author =
+        _findInMetadata(metadata, 'modelspec.author', 'author') || ''
+      this.description =
+        _findInMetadata(metadata, 'modelspec.description', 'description') || ''
+      this.resolution =
+        _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
+      this.usage_hint =
+        _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
+      this.trigger_phrase =
+        _findInMetadata(
+          metadata,
+          'modelspec.trigger_phrase',
+          'trigger_phrase'
+        ) || ''
+      this.image =
+        _findInMetadata(
+          metadata,
+          'modelspec.thumbnail',
+          'thumbnail',
+          'image',
+          'icon'
+        ) || ''
+      const tagsCommaSeparated =
+        _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
+      this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
+      this.has_loaded_metadata = true
+    } catch (error) {
+      console.error('Error loading model metadata', this.name, this, error)
     }
-    this.title =
-      _findInMetadata(
-        metadata,
-        'modelspec.title',
-        'title',
-        'display_name',
-        'name'
-      ) || this.title
-    this.architecture_id =
-      _findInMetadata(metadata, 'modelspec.architecture', 'architecture') || ''
-    this.author = _findInMetadata(metadata, 'modelspec.author', 'author') || ''
-    this.description =
-      _findInMetadata(metadata, 'modelspec.description', 'description') || ''
-    this.resolution =
-      _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
-    this.usage_hint =
-      _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
-    this.trigger_phrase =
-      _findInMetadata(metadata, 'modelspec.trigger_phrase', 'trigger_phrase') ||
-      ''
-    this.image =
-      _findInMetadata(
-        metadata,
-        'modelspec.thumbnail',
-        'thumbnail',
-        'image',
-        'icon'
-      ) || ''
-    const tagsCommaSeparated =
-      _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
-    this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
-    this.has_loaded_metadata = true
   }
 }
 
