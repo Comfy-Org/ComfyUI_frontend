@@ -177,7 +177,6 @@ app.registerExtension({
                   }
                   if (!targetWidget) {
                     targetWidget = targetNode.widgets?.find(
-                      // @ts-expect-error fix widget types
                       (w) => w.name === targetInput.widget.name
                     )
                   }

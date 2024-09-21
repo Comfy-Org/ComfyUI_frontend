@@ -45,12 +45,8 @@ declare module '@comfyorg/litegraph' {
     tooltip?: string
   }
 
-  interface INodeOutputSlot {
-    widget?: unknown
-  }
-
-  interface INodeInputSlot {
-    widget?: unknown
+  interface INodeSlot {
+    widget?: unknown & { name?: string }
   }
 }
 
