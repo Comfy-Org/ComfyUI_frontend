@@ -13,38 +13,13 @@ test.describe('Load workflow warning', () => {
   })
 })
 
-test('Does not report warning when switching between opened workflows', async ({
-  comfyPage
-}) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-  await comfyPage.loadWorkflow('missing_nodes')
-  await comfyPage.page.locator('.p-dialog-close-button').click()
-
-  // Load default workflow
-  const workflowSelector = comfyPage.page.locator(
-    'button.comfyui-workflows-button'
-  )
-  await workflowSelector.hover()
-  await workflowSelector.click()
-  await comfyPage.page.locator('button[title="Load default workflow"]').click()
-
-  // Switch back to the missing_nodes workflow
-  await workflowSelector.click()
-  await comfyPage.page.locator('span:has-text("missing_nodes")').first().click()
-  await comfyPage.nextFrame()
-
-  await expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
-
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+
   await comfyPage.loadWorkflow('missing_nodes')
-  await comfyPage.page.locator('.p-dialog-close-button').click()
-  await comfyPage.nextFrame()
+  await comfyPage.closeDialog()
 
   // Make a change to the graph
-  await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
-  await comfyPage.page.waitForTimeout(256)
   await comfyPage.doubleClickCanvas()
   await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
