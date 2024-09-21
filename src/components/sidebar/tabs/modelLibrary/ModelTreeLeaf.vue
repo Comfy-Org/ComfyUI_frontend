@@ -57,6 +57,9 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 )
 
 const handleModelHover = async () => {
+  if (modelDef.value.is_fake_object) {
+    return
+  }
   const hoverTarget = modelContentElement.value
   const targetRect = hoverTarget.getBoundingClientRect()
 
@@ -80,6 +83,9 @@ const container = ref<HTMLElement | null>(null)
 const modelContentElement = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
 const handleMouseEnter = async () => {
+  if (modelDef.value.is_fake_object) {
+    return
+  }
   isHovered.value = true
   await nextTick()
   handleModelHover()

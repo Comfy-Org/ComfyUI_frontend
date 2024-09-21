@@ -44,7 +44,7 @@ import type {
 import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
-
+import { api } from '@/scripts/api'
 const { t } = useI18n()
 const modelStore = useModelStore()
 const searchQuery = ref<string>('')
@@ -59,7 +59,14 @@ const root: ComputedRef<TreeNode> = computed(() => {
   for (let folder of modelStore.modelFolders) {
     const models = modelStore.modelStoreMap[folder]
     if (models) {
-      modelList.push(...Object.values(models.models))
+      if (Object.values(models.models).length) {
+        modelList.push(...Object.values(models.models))
+      }
+      else {
+        const fakeModel = new ComfyModelDef('(No Content)', folder)
+        fakeModel.is_fake_object = true
+        modelList.push(fakeModel)
+      }
     } else {
       const fakeModel = new ComfyModelDef('Loading', folder)
       fakeModel.is_fake_object = true
@@ -84,17 +91,31 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
     if (model?.is_fake_object) {
-      return {
-        key: node.key,
+      if (model.name === '(No Content)') {
+        return {
+          key: node.key,
+          label: t('noContent'),
+          leaf: true,
+          data: node.data,
+          getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
+            return 'pi pi-file'
+          },
+          children: []
+        }
+      }
+      else {
+        return {
+          key: node.key,
         label: t('loading') + '...',
         leaf: true,
-        data: null,
+        data: node.data,
         getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
           return 'pi pi-spin pi-spinner'
         },
         children: []
       }
     }
+  }
 
     return {
       key: node.key,
