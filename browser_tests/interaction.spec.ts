@@ -350,6 +350,12 @@ test.describe('Canvas Interaction', () => {
     await comfyPage.pan({ x: 800, y: 300 }, { x: 1000, y: 10 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-back-to-one.png')
   })
+
+  test('@mobile Can pan with touch', async ({ comfyPage }) => {
+    await comfyPage.closeMenu()
+    await comfyPage.panWithTouch({ x: 200, y: 200 })
+    await expect(comfyPage.canvas).toHaveScreenshot('panned-touch.png')
+  })
 })
 
 test.describe('Widget Interaction', () => {

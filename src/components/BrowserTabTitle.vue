@@ -11,6 +11,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
+const DEFAULT_TITLE = 'ComfyUI'
 const executionStore = useExecutionStore()
 const executionText = computed(() =>
   executionStore.isIdle ? '' : `[${executionStore.executionProgress}%]`
@@ -22,12 +23,26 @@ const betaMenuEnabled = computed(
 )
 
 const workflowStore = useWorkflowStore()
-const workflowNameText = computed(
-  () =>
-    (betaMenuEnabled.value ? workflowStore.activeWorkflow?.name : undefined) ??
-    'ComfyUI'
+const isUnsavedText = computed(() =>
+  workflowStore.previousWorkflowUnsaved ? ' *' : ''
+)
+const workflowNameText = computed(() => {
+  const workflowName = workflowStore.activeWorkflow?.name
+  return workflowName ? isUnsavedText.value + workflowName : DEFAULT_TITLE
+})
+
+const nodeExecutionTitle = computed(() =>
+  executionStore.executingNode && executionStore.executingNodeProgress
+    ? `${executionText.value}[${executionStore.executingNodeProgress}%] ${executionStore.executingNode.type}`
+    : ''
 )
 
-const title = computed(() => executionText.value + workflowNameText.value)
+const workflowTitle = computed(
+  () =>
+    executionText.value +
+    (betaMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+)
+
+const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
 useTitle(title)
 </script>

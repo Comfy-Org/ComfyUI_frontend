@@ -49,7 +49,6 @@
             class="node-lib-tree-explorer mt-1"
             :roots="renderedRoot.children"
             v-model:expandedKeys="expandedKeys"
-            @nodeClick="handleNodeClick"
           >
             <template #node="{ node }">
               <NodeTreeLeaf :node="node" />
@@ -123,7 +122,17 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         }
       },
       children,
-      draggable: node.leaf
+      draggable: node.leaf,
+      handleClick: (
+        node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
+        e: MouseEvent
+      ) => {
+        if (node.leaf) {
+          app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+        } else {
+          toggleNodeOnEvent(e, node)
+        }
+      }
     }
   }
   return fillNodeInfo(root.value)
@@ -162,17 +171,6 @@ const handleSearch = (query: string) => {
   nextTick(() => {
     expandNode(filteredRoot.value)
   })
-}
-
-const handleNodeClick = (
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
-  e: MouseEvent
-) => {
-  if (node.leaf) {
-    app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
-  } else {
-    toggleNodeOnEvent(e, node)
-  }
 }
 
 const onAddFilter = (filterAndValue: FilterAndValue) => {

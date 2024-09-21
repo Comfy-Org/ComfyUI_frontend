@@ -3,6 +3,7 @@
     class="tree-explorer"
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
+    v-model:selectionKeys="selectionKeys"
     :value="renderedRoots"
     selectionMode="single"
     :pt="{
@@ -42,17 +43,18 @@ import type {
 } from '@/types/treeExplorerTypes'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
 import { useErrorHandling } from '@/hooks/errorHooks'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 provide('expandedKeys', expandedKeys)
+const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
+provide('selectionKeys', selectionKeys)
+// Tracks whether the caller has set the selectionKeys model.
+const storeSelectionKeys = selectionKeys.value !== undefined
+
 const props = defineProps<{
   roots: TreeExplorerNode[]
   class?: string
-  extraMenuItems?:
-    | MenuItem[]
-    | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
 }>()
 const emit = defineEmits<{
   (e: 'nodeClick', node: RenderedTreeExplorerNode, event: MouseEvent): void
@@ -90,12 +92,28 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
       : children.reduce((acc, child) => acc + child.totalLeaves, 0)
   }
 }
-const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+const onNodeContentClick = async (
+  e: MouseEvent,
+  node: RenderedTreeExplorerNode
+) => {
+  if (!storeSelectionKeys) {
+    selectionKeys.value = {}
+  }
+  if (node.handleClick) {
+    await node.handleClick(node, e)
+  }
   emit('nodeClick', node, e)
 }
 const menu = ref(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('menuTargetNode', menuTargetNode)
+const extraMenuItems = computed(() => {
+  return menuTargetNode.value?.contextMenuItems
+    ? typeof menuTargetNode.value.contextMenuItems === 'function'
+      ? menuTargetNode.value.contextMenuItems(menuTargetNode.value)
+      : menuTargetNode.value.contextMenuItems
+    : []
+})
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 provide('renameEditingNode', renameEditingNode)
 
@@ -103,8 +121,8 @@ const { t } = useI18n()
 const renameCommand = (node: RenderedTreeExplorerNode) => {
   renameEditingNode.value = node
 }
-const deleteCommand = (node: RenderedTreeExplorerNode) => {
-  node.handleDelete?.(node)
+const deleteCommand = async (node: RenderedTreeExplorerNode) => {
+  await node.handleDelete?.(node)
   emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() =>
@@ -119,16 +137,15 @@ const menuItems = computed<MenuItem[]>(() =>
       label: t('delete'),
       icon: 'pi pi-trash',
       command: () => deleteCommand(menuTargetNode.value),
-      visible: menuTargetNode.value?.handleDelete !== undefined
+      visible: menuTargetNode.value?.handleDelete !== undefined,
+      isAsync: true // The delete command can be async
     },
-    ...(props.extraMenuItems
-      ? typeof props.extraMenuItems === 'function'
-        ? props.extraMenuItems(menuTargetNode.value)
-        : props.extraMenuItems
-      : [])
+    ...extraMenuItems.value
   ].map((menuItem) => ({
     ...menuItem,
-    command: wrapCommandWithErrorHandler(menuItem.command)
+    command: wrapCommandWithErrorHandler(menuItem.command, {
+      isAsync: menuItem.isAsync ?? false
+    })
   }))
 )
 
@@ -142,12 +159,18 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
 
 const errorHandling = useErrorHandling()
 const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void
+  command: (event: MenuItemCommandEvent) => void,
+  { isAsync = false }: { isAsync: boolean }
 ) => {
-  return errorHandling.wrapWithErrorHandling(
-    command,
-    menuTargetNode.value?.handleError
-  )
+  return isAsync
+    ? errorHandling.wrapWithErrorHandlingAsync(
+        command as (...args: any[]) => Promise<any>,
+        menuTargetNode.value?.handleError
+      )
+    : errorHandling.wrapWithErrorHandling(
+        command,
+        menuTargetNode.value?.handleError
+      )
 }
 
 defineExpose({

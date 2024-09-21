@@ -15,9 +15,37 @@ interface Size {
   height: number
 }
 
+class ComfyNodeSearchFilterSelectionPanel {
+  constructor(public readonly page: Page) {}
+
+  async selectFilterType(filterType: string) {
+    await this.page
+      .locator(
+        `.filter-type-select .p-togglebutton-label:has-text("${filterType}")`
+      )
+      .click()
+  }
+
+  async selectFilterValue(filterValue: string) {
+    await this.page.locator('.filter-value-select .p-select-dropdown').click()
+    await this.page
+      .locator(
+        `.p-select-overlay .p-select-list .p-select-option-label:text-is("${filterValue}")`
+      )
+      .click()
+  }
+
+  async addFilter(filterValue: string, filterType: string) {
+    await this.selectFilterType(filterType)
+    await this.selectFilterValue(filterValue)
+    await this.page.locator('.p-button-label:has-text("Add")').click()
+  }
+}
+
 class ComfyNodeSearchBox {
   public readonly input: Locator
   public readonly dropdown: Locator
+  public readonly filterSelectionPanel: ComfyNodeSearchFilterSelectionPanel
 
   constructor(public readonly page: Page) {
     this.input = page.locator(
@@ -26,6 +54,11 @@ class ComfyNodeSearchBox {
     this.dropdown = page.locator(
       '.comfy-vue-node-search-container .p-autocomplete-list'
     )
+    this.filterSelectionPanel = new ComfyNodeSearchFilterSelectionPanel(page)
+  }
+
+  get filterButton() {
+    return this.page.locator('.comfy-vue-node-search-container ._filter-button')
   }
 
   async fillAndSelectFirstNode(
@@ -42,6 +75,21 @@ class ComfyNodeSearchBox {
       .locator('li')
       .nth(options?.suggestionIndex || 0)
       .click()
+  }
+
+  async addFilter(filterValue: string, filterType: string) {
+    await this.filterButton.click()
+    await this.filterSelectionPanel.addFilter(filterValue, filterType)
+  }
+
+  get filterChips() {
+    return this.page.locator(
+      '.comfy-vue-node-search-container .p-autocomplete-chip-item'
+    )
+  }
+
+  async removeFilter(index: number) {
+    await this.filterChips.nth(index).locator('.p-chip-remove-icon').click()
   }
 }
 
@@ -108,10 +156,29 @@ class NodeLibrarySidebarTab {
 class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
+  public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.saveButton = page
+      .locator('button[title="Save the current workflow"]')
+      .nth(0)
+  }
+
+  async saveWorkflow(name: string) {
+    const acceptDialog = async (dialog) => {
+      await dialog.accept(name)
+    }
+    this.page.on('dialog', acceptDialog)
+
+    await this.saveButton.click()
+
+    // Wait a moment to ensure the dialog has been handled
+    await this.page.waitForTimeout(300)
+
+    // Remove the dialog listener
+    this.page.off('dialog', acceptDialog)
   }
 
   get nodeLibraryTab() {
@@ -178,6 +245,10 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
+    await this.page.evaluate(() => {
+      localStorage.clear()
+      sessionStorage.clear()
+    })
     // Unify font for consistent screenshots.
     await this.page.addStyleTag({
       url: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'
@@ -437,6 +508,24 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async panWithTouch(offset: Position, safeSpot?: Position) {
+    safeSpot = safeSpot || { x: 10, y: 10 }
+    const client = await this.page.context().newCDPSession(this.page)
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [safeSpot]
+    })
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
+    })
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchEnd',
+      touchPoints: []
+    })
+    await this.nextFrame()
+  }
+
   async rightClickCanvas() {
     await this.page.mouse.click(10, 10, { button: 'right' })
     await this.nextFrame()
@@ -607,6 +696,16 @@ export class ComfyPage {
       percentY,
       revertAfter
     )
+  }
+
+  async convertAllNodesToGroupNode(groupNodeName: string) {
+    this.page.on('dialog', async (dialog) => {
+      await dialog.accept(groupNodeName)
+    })
+    await this.canvas.press('Control+a')
+    await this.rightClickEmptyLatentNode()
+    await this.page.getByText('Convert to Group Node').click()
+    await this.nextFrame()
   }
 }
 

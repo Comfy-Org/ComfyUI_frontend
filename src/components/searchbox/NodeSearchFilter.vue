@@ -1,13 +1,19 @@
 <template>
   <div class="_content">
     <SelectButton
+      class="filter-type-select"
       v-model="selectedFilter"
       :options="filters"
       :allowEmpty="false"
       optionLabel="name"
       @change="updateSelectedFilterValue"
     />
-    <Select v-model="selectedFilterValue" :options="filterValues" filter />
+    <Select
+      class="filter-value-select"
+      v-model="selectedFilterValue"
+      :options="filterValues"
+      filter
+    />
   </div>
   <div class="_footer">
     <Button type="button" :label="$t('add')" @click="submit"></Button>

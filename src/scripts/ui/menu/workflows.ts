@@ -9,6 +9,7 @@ import { ComfyAsyncDialog } from '../components/asyncDialog'
 import { trimJsonExt } from '@/utils/formatUtil'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyComponent } from '../components'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 export class ComfyWorkflowsMenu {
   #first = true
@@ -68,7 +69,11 @@ export class ComfyWorkflowsMenu {
     this.unsaved = prop(this, 'unsaved', classList.unsaved, (v) => {
       classList.unsaved = v
       this.button.classList = classList
-      setStorageValue('Comfy.PreviousWorkflowUnsaved', v)
+      setStorageValue('Comfy.PreviousWorkflowUnsaved', String(v))
+
+      if (this.app.vueAppReady) {
+        useWorkflowStore().previousWorkflowUnsaved = v
+      }
     })
   }
 

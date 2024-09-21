@@ -22,7 +22,11 @@ import { ref, computed, onUnmounted, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  ComfyNodeDefImpl,
+  useNodeDefStore,
+  useNodeFrequencyStore
+} from '@/stores/nodeDefStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
   LiteGraph,
@@ -140,6 +144,8 @@ onMounted(async () => {
   // node search is triggered
   useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
 
+  // Non-blocking load of node frequencies
+  useNodeFrequencyStore().loadNodeFrequencies()
   emit('ready')
 })
 
