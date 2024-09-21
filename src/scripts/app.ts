@@ -1726,12 +1726,6 @@ export class ComfyApp {
           }
         })
     )
-
-    try {
-      this.menu.workflows.registerExtension(this)
-    } catch (error) {
-      console.error(error)
-    }
   }
 
   async #migrateSettings() {
