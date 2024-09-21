@@ -1,4 +1,5 @@
 import type { Page, Locator, APIRequestContext } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
 import { ComfyAppMenu } from './helpers/appMenu'
 import dotenv from 'dotenv'
@@ -192,6 +193,15 @@ class WorkflowsSidebarTab extends SidebarTab {
     return await this.page
       .locator('.comfyui-workflows-browse .node-label')
       .allInnerTexts()
+  }
+
+  async switchToWorkflow(workflowName: string) {
+    const workflowLocator = this.page.locator(
+      '.comfyui-workflows-open .node-label',
+      { hasText: workflowName }
+    )
+    await workflowLocator.click()
+    await this.page.waitForTimeout(300)
   }
 }
 
@@ -796,6 +806,11 @@ export class ComfyPage {
     await this.rightClickEmptyLatentNode()
     await this.page.getByText('Convert to Group Node').click()
     await this.nextFrame()
+  }
+
+  async closeDialog() {
+    await this.page.locator('.p-dialog-close-button').click()
+    await expect(this.page.locator('.p-dialog')).toBeHidden()
   }
 }
 

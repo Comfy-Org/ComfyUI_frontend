@@ -400,6 +400,24 @@ test.describe('Menu', () => {
         'workflow2.json'
       ])
     })
+
+    test('Does not report warning when switching between opened workflows', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('missing_nodes')
+      await comfyPage.closeDialog()
+
+      // Load default workflow
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.workflowsTab.newDefaultWorkflowButton.click()
+
+      // Switch back to the missing_nodes workflow
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+
+      await expect(
+        comfyPage.page.locator('.comfy-missing-nodes')
+      ).not.toBeVisible()
+    })
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
