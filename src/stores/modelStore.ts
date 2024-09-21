@@ -142,17 +142,16 @@ export const useModelStore = defineStore('modelStore', {
         return this.modelStoreMap[folder]
       }
       if (this.isLoading[folder]) {
+        return this.isLoading[folder]
       }
-      const promise = new Promise<ModelStore>(async (resolve, reject) => {
-        const models = await api.getModels(folder)
+      const promise = api.getModels(folder).then((models) => {
         if (!models) {
-          resolve(null)
-          return
+          return null
         }
         const store = new ModelStore(folder, models)
         this.modelStoreMap[folder] = store
         this.isLoading[folder] = false
-        resolve(store)
+        return store
       })
       this.isLoading[folder] = promise
       return promise
