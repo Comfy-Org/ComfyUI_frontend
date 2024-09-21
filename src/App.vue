@@ -33,7 +33,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from '@/i18n'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkflowBookmarkStore, useWorkflowStore } from '@/stores/workflowStore'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
@@ -43,6 +43,8 @@ import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import AppMenu from '@/components/appMenu/AppMenu.vue'
+import WorkflowsSidebarTab from './components/sidebar/tabs/WorkflowsSidebarTab.vue'
+import { setupAutoQueueHandler } from './services/autoQueueService'
 
 const isLoading = computed<boolean>(() => useWorkspaceStore().spinner)
 
@@ -52,6 +54,7 @@ const settingStore = useSettingStore()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const executionStore = useExecutionStore()
 const workflowStore = useWorkflowStore()
+const workflowBookmarkStore = useWorkflowBookmarkStore()
 
 const theme = computed<string>(() => settingStore.get('Comfy.ColorPalette'))
 
@@ -117,6 +120,18 @@ const init = () => {
     component: markRaw(NodeLibrarySidebarTab),
     type: 'vue'
   })
+  app.extensionManager.registerSidebarTab({
+    id: 'workflows',
+    icon: 'pi pi-folder-open',
+    iconBadge: () => {
+      const value = useWorkflowStore().openWorkflows.length.toString()
+      return value === '0' ? null : value
+    },
+    title: t('sideToolbar.workflows'),
+    tooltip: t('sideToolbar.workflows'),
+    component: markRaw(WorkflowsSidebarTab),
+    type: 'vue'
+  })
 }
 
 const onStatus = (e: CustomEvent<StatusWsMessageStatus>) => {
@@ -143,10 +158,8 @@ const onReconnected = () => {
 }
 
 app.workflowManager.executionStore = executionStore
-watchEffect(() => {
-  app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
-})
 app.workflowManager.workflowStore = workflowStore
+app.workflowManager.workflowBookmarkStore = workflowBookmarkStore
 
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
