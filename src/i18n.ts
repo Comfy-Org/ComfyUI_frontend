@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    insert: 'Insert',
     systemInfo: 'System Info',
     devices: 'Devices',
     about: 'About',
@@ -35,6 +36,7 @@ const messages = {
     loadWorkflow: 'Load Workflow',
     goToNode: 'Go to Node',
     settings: 'Settings',
+    searchWorkflows: 'Search Workflows',
     searchSettings: 'Search Settings',
     searchNodes: 'Search Nodes',
     noResultsFound: 'No Results Found',
@@ -47,6 +49,7 @@ const messages = {
       themeToggle: 'Toggle Theme',
       queue: 'Queue',
       nodeLibrary: 'Node Library',
+      workflows: 'Workflows',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
@@ -101,6 +104,7 @@ const messages = {
     customize: '定制',
     loadWorkflow: '加载工作流',
     settings: '设置',
+    searchWorkflows: '搜索工作流',
     searchSettings: '搜索设置',
     searchNodes: '搜索节点',
     noResultsFound: '未找到结果',
@@ -113,6 +117,7 @@ const messages = {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
+      workflows: '工作流',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       },
