@@ -104,6 +104,25 @@ test.describe('Node search box', () => {
     await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
 
+  test('@mobile Does not trigger dismissable mask on opening double-tap', async ({
+    comfyPage
+  }) => {
+    await comfyPage.closeMenu()
+    await comfyPage.loadWorkflow('single_ksampler')
+    const screenBottom = {
+      x: 200,
+      y: 720
+    }
+    await comfyPage.canvas.tap({
+      position: screenBottom
+    })
+    await comfyPage.canvas.tap({
+      position: screenBottom
+    })
+    await comfyPage.page.waitForTimeout(256)
+    await expect(comfyPage.searchBox.input).not.toHaveCount(0)
+  })
+
   test.describe('Filtering', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.doubleClickCanvas()
