@@ -33,22 +33,31 @@
         :value="$t('deprecated')"
         severity="danger"
       />
-      <NodeSourceChip
-        v-if="nodeDef.python_module !== undefined"
-        :python_module="nodeDef.python_module"
+      <Tag
+        v-if="showNodeFrequency && nodeFrequency > 0"
+        :value="formatNumberWithSuffix(nodeFrequency, { roundToInt: true })"
+        severity="secondary"
       />
+      <Chip
+        v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        class="text-sm font-light"
+      >
+        {{ nodeDef.nodeSource.displayText }}
+      </Chip>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import Tag from 'primevue/tag'
-import NodeSourceChip from '@/components/node/NodeSourceChip.vue'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import Chip from 'primevue/chip'
+import { NodeSourceType } from '@/types/nodeSource'
+import { ComfyNodeDefImpl, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { highlightQuery } from '@/utils/formatUtil'
 import { computed } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { formatNumberWithSuffix } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const showCategory = computed(() =>
@@ -56,6 +65,13 @@ const showCategory = computed(() =>
 )
 const showIdName = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.ShowIdName')
+)
+const showNodeFrequency = computed(() =>
+  settingStore.get('Comfy.NodeSearchBoxImpl.ShowNodeFrequency')
+)
+const nodeFrequencyStore = useNodeFrequencyStore()
+const nodeFrequency = computed(() =>
+  nodeFrequencyStore.getNodeFrequency(props.nodeDef)
 )
 
 const nodeBookmarkStore = useNodeBookmarkStore()

@@ -60,7 +60,7 @@ watch(
         const start = 0
         const end = fileName.length
         const inputElement = inputRef.value.$el
-        inputElement.setSelectionRange(start, end)
+        inputElement.setSelectionRange?.(start, end)
       })
     }
   },

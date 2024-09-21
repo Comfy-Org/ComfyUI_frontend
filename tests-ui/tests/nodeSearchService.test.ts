@@ -51,7 +51,11 @@ const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
     category: 'latent/batch',
     output_node: false
   }
-].map((nodeDef) => plainToClass(ComfyNodeDefImpl, nodeDef))
+].map((nodeDef) => {
+  const def = plainToClass(ComfyNodeDefImpl, nodeDef)
+  def['postProcessSearchScores'] = (s) => s
+  return def
+})
 
 describe('nodeSearchService', () => {
   it('searches with input filter', () => {

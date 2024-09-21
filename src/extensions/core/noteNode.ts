@@ -26,7 +26,6 @@ app.registerExtension({
           // Should we extends LGraphNode?  Yesss
           this,
           '',
-          // @ts-expect-error
           ['', { default: this.properties.text, multiline: true }],
           app
         )
