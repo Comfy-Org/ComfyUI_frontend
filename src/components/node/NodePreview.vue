@@ -144,7 +144,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 .node_header {
   line-height: 1;
   padding: 8px 13px 7px;
-  background: var(--comfy-input-bg);
   margin-bottom: 5px;
   font-size: 15px;
   text-wrap: nowrap;
