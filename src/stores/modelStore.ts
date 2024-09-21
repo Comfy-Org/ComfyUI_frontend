@@ -153,7 +153,7 @@ export const useModelStore = defineStore('modelStore', {
         this.modelStoreMap[folder] = store
         this.isLoading[folder] = false
         resolve(store)
-      });
+      })
       this.isLoading[folder] = promise
       return promise
     },
