@@ -365,6 +365,61 @@ test.describe('Menu', () => {
     })
   })
 
+  test.describe('Workflows sidebar', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      // Open the sidebar
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+    })
+
+    test('Can create new blank workflow', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+
+      await tab.newBlankWorkflowButton.click()
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json',
+        '*Unsaved Workflow (2).json'
+      ])
+    })
+
+    test('Can show top level saved workflows', async ({ comfyPage }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json',
+        'workflow2.json': 'default.json'
+      })
+      // Avoid reset view as the button is not visible in BetaMenu UI.
+      await comfyPage.setup({ resetView: false })
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual([
+        'workflow1.json',
+        'workflow2.json'
+      ])
+    })
+
+    test('Does not report warning when switching between opened workflows', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('missing_nodes')
+      await comfyPage.closeDialog()
+
+      // Load default workflow
+      await comfyPage.menu.workflowsTab.open()
+      await comfyPage.menu.workflowsTab.newDefaultWorkflowButton.click()
+
+      // Switch back to the missing_nodes workflow
+      await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
+
+      await expect(
+        comfyPage.page.locator('.comfy-missing-nodes')
+      ).not.toBeVisible()
+    })
+  })
+
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
     const [defaultSpeed, maxSpeed] = [1.1, 2.5]
     expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(

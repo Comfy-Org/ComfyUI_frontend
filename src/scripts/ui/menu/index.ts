@@ -6,7 +6,6 @@ import { ComfyButton } from '../components/button'
 import { ComfyButtonGroup } from '../components/buttonGroup'
 import { ComfySplitButton } from '../components/splitButton'
 import { ComfyQueueButton } from './queueButton'
-import { ComfyWorkflowsMenu } from './workflows'
 import { getInterruptButton } from './interruptButton'
 import './menu.css'
 import type { ComfySettingsDialog } from '../settings'
@@ -34,7 +33,6 @@ export class ComfyAppMenu {
   #cachedInnerSize = null
   #cacheTimeout = null
   app: ComfyApp
-  workflows: ComfyWorkflowsMenu
   logo: HTMLElement
   saveButton: ComfySplitButton
   actionsGroup: ComfyButtonGroup
@@ -48,8 +46,6 @@ export class ComfyAppMenu {
 
   constructor(app: ComfyApp) {
     this.app = app
-
-    this.workflows = new ComfyWorkflowsMenu(app)
     const getSaveButton = (t?: string) =>
       new ComfyButton({
         icon: 'content-save',
@@ -145,7 +141,6 @@ export class ComfyAppMenu {
 
     this.element = $el('nav.comfyui-menu.lg', { style: { display: 'none' } }, [
       this.logo,
-      this.workflows.element,
       this.saveButton.element,
       collapseOnMobile(this.actionsGroup).element,
       $el('section.comfyui-menu-push'),
