@@ -187,6 +187,12 @@ class WorkflowsSidebarTab extends SidebarTab {
       .locator('.comfyui-workflows-open .node-label')
       .allInnerTexts()
   }
+
+  async getTopLevelSavedWorkflowNames() {
+    return await this.page
+      .locator('.comfyui-workflows-browse .node-label')
+      .allInnerTexts()
+  }
 }
 
 class ComfyMenu {
@@ -253,21 +259,6 @@ type FolderStructure = {
   [key: string]: FolderStructure | string
 }
 
-function convertLeafToContent(structure: FolderStructure): FolderStructure {
-  const result: FolderStructure = {}
-
-  for (const [key, value] of Object.entries(structure)) {
-    if (typeof value === 'string') {
-      const filePath = this.assetPath(value)
-      result[key] = fs.readFileSync(filePath, 'utf-8')
-    } else {
-      result[key] = convertLeafToContent(value)
-    }
-  }
-
-  return result
-}
-
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -301,6 +292,21 @@ export class ComfyPage {
     this.appMenu = new ComfyAppMenu(page)
   }
 
+  convertLeafToContent(structure: FolderStructure): FolderStructure {
+    const result: FolderStructure = {}
+
+    for (const [key, value] of Object.entries(structure)) {
+      if (typeof value === 'string') {
+        const filePath = this.assetPath(value)
+        result[key] = fs.readFileSync(filePath, 'utf-8')
+      } else {
+        result[key] = this.convertLeafToContent(value)
+      }
+    }
+
+    return result
+  }
+
   async getGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return window['app']?.graph?.nodes?.length || 0
@@ -308,15 +314,24 @@ export class ComfyPage {
   }
 
   async setupWorkflowsDirectory(structure: FolderStructure) {
-    await this.request.post(`${this.url}/api/devtools/setup_folder_structure`, {
-      data: {
-        tree_structure: convertLeafToContent(structure),
-        base_path: 'users/default/workflows'
+    const resp = await this.request.post(
+      `${this.url}/api/devtools/setup_folder_structure`,
+      {
+        data: {
+          tree_structure: this.convertLeafToContent(structure),
+          base_path: 'user/default/workflows'
+        }
       }
-    })
+    )
+
+    if (resp.status() !== 200) {
+      throw new Error(
+        `Failed to setup workflows directory: ${await resp.text()}`
+      )
+    }
   }
 
-  async setup() {
+  async setup({ resetView = true } = {}) {
     await this.goto()
     await this.page.evaluate(() => {
       localStorage.clear()
@@ -343,9 +358,11 @@ export class ComfyPage {
       window['app']['canvas'].show_info = false
     })
     await this.nextFrame()
-    // Reset view to force re-rendering of canvas. So that info fields like fps
-    // become hidden.
-    await this.resetView()
+    if (resetView) {
+      // Reset view to force re-rendering of canvas. So that info fields like fps
+      // become hidden.
+      await this.resetView()
+    }
 
     // Hide all badges by default.
     await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)

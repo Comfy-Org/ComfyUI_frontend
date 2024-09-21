@@ -384,6 +384,22 @@ test.describe('Menu', () => {
         '*Unsaved Workflow (2).json'
       ])
     })
+
+    test('Can show top level saved workflows', async ({ comfyPage }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json',
+        'workflow2.json': 'default.json'
+      })
+      // Avoid reset view as the button is not visible in BetaMenu UI.
+      await comfyPage.setup({ resetView: false })
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual([
+        'workflow1.json',
+        'workflow2.json'
+      ])
+    })
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
