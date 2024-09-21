@@ -22,7 +22,7 @@ declare module '@comfyorg/litegraph' {
     onNodeCreated?(this: LGraphNode): void
     setInnerNodes?(nodes: LGraphNode[]): void
     applyToGraph?(extraLinks?: LLink[]): void
-    updateLink?(link: LLink): LLink
+    updateLink?(link: LLink): LLink | null
 
     comfyClass?: string
 
