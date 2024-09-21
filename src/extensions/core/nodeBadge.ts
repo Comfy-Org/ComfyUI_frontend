@@ -1,6 +1,6 @@
 import { app, type ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
-import { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphBadge } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 import { computed, ComputedRef, watch } from 'vue'
