@@ -44,7 +44,6 @@ import type {
 import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
-import { api } from '@/scripts/api'
 const { t } = useI18n()
 const modelStore = useModelStore()
 const searchQuery = ref<string>('')
@@ -61,8 +60,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
     if (models) {
       if (Object.values(models.models).length) {
         modelList.push(...Object.values(models.models))
-      }
-      else {
+      } else {
         const fakeModel = new ComfyModelDef('(No Content)', folder)
         fakeModel.is_fake_object = true
         modelList.push(fakeModel)
@@ -102,20 +100,19 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
           },
           children: []
         }
-      }
-      else {
+      } else {
         return {
           key: node.key,
-        label: t('loading') + '...',
-        leaf: true,
-        data: node.data,
-        getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
-          return 'pi pi-spin pi-spinner'
-        },
-        children: []
+          label: t('loading') + '...',
+          leaf: true,
+          data: node.data,
+          getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
+            return 'pi pi-spin pi-spinner'
+          },
+          children: []
+        }
       }
     }
-  }
 
     return {
       key: node.key,
