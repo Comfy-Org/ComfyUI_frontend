@@ -3,7 +3,7 @@
     <Dialog
       v-model:visible="visible"
       modal
-      :dismissable-mask="dismissable"
+      dismissable-mask
       @hide="clearFilters"
       :pt="{
         root: {
@@ -50,7 +50,6 @@ import { LiteGraph } from '@comfyorg/litegraph'
 const settingStore = useSettingStore()
 
 const visible = ref(false)
-const dismissable = ref(true)
 const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
 const getNewNodeLocation = (): [number, number] => {
   if (triggerEvent.value === null) {
@@ -130,12 +129,6 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
 
   visible.value = true
   triggerEvent.value = e
-
-  // Prevent the dialog from being dismissed immediately
-  dismissable.value = false
-  setTimeout(() => {
-    dismissable.value = true
-  }, 300)
 }
 
 const showContextMenu = (e: LiteGraphCanvasEvent) => {
