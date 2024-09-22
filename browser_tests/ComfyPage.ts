@@ -312,6 +312,10 @@ export class ComfyPage {
     await this.page.goto(this.url)
   }
 
+  async gotoPath(url: string) {
+    await this.page.goto(this.url + url)
+  }
+
   async nextFrame() {
     await this.page.evaluate(() => {
       return new Promise<number>(requestAnimationFrame)
