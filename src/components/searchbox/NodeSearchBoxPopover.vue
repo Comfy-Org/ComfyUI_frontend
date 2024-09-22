@@ -226,12 +226,18 @@ onUnmounted(() => {
 
 <style>
 .invisible-dialog-root {
-  width: 30%;
+  width: 60%;
   min-width: 24rem;
   max-width: 48rem;
   border: 0 !important;
   background-color: transparent !important;
   margin-top: 25vh;
+  margin-left: 400px;
+}
+@media all and (max-width: 768px) {
+  .invisible-dialog-root {
+    margin-left: 0px;
+  }
 }
 
 .node-search-box-dialog-mask {
