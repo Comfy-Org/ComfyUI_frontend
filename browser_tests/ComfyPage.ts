@@ -718,13 +718,15 @@ export class ComfyPage {
     return new NodeReference(id, this)
   }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
-    return (
-      await this.page.evaluate((type) => {
-        return window['app'].graph._nodes
-          .filter((n) => n.type === type)
-          .map((n) => n.id)
-      }, type)
-    ).map((id: NodeId) => this.getNodeRefById(id))
+    return Promise.all(
+      (
+        await this.page.evaluate((type) => {
+          return window['app'].graph._nodes
+            .filter((n) => n.type === type)
+            .map((n) => n.id)
+        }, type)
+      ).map((id: NodeId) => this.getNodeRefById(id))
+    )
   }
 }
 class NodeSlotReference {

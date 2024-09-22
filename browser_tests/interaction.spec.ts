@@ -251,6 +251,50 @@ test.describe('Node Interaction', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
+
+  test('Shows tooltip on hover', async ({ comfyPage }) => {
+    const tooltip = comfyPage.page.locator('.node-tooltip')
+    const waitForTooltip = async (checkVisible: boolean) => {
+      await comfyPage.page.waitForTimeout(500)
+      if (checkVisible) {
+        await expect(tooltip).toBeVisible({ timeout: 50 })
+      }
+    }
+
+    // Hover over title and ensure tooltip is visible
+    const nodes = await comfyPage.getNodeRefsByType('EmptyLatentImage')
+    expect(nodes).toHaveLength(1)
+    const node = nodes[0]
+    const pos = await node.getPosition()
+    const size = await node.getSize()
+    pos.x += size.width / 2
+    pos.y -= 15
+    comfyPage.page.mouse.move(pos.x, pos.y)
+    await waitForTooltip(true)
+
+    // Move mouse, tooltip should be gone
+    await comfyPage.page.mouse.move(pos.x + 10, pos.y)
+    await expect(tooltip).toBeHidden({ timeout: 100 })
+
+    // Mouse down, tooltip should be gone
+    await waitForTooltip(true)
+    await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
+    await comfyPage.page.mouse.down()
+    await comfyPage.nextFrame()
+    await expect(tooltip).toBeHidden({ timeout: 250 })
+
+    // Drag and drop, tooltip should not show
+    await comfyPage.page.mouse.move(pos.x + 10, pos.y + 10)
+    await waitForTooltip(false)
+    await expect(tooltip).toBeHidden({ timeout: 250 })
+    await comfyPage.page.mouse.up()
+    await waitForTooltip(false)
+    await expect(tooltip).toBeHidden({ timeout: 100 })
+
+    // Move again, should then show
+    await comfyPage.page.mouse.move(pos.x - 1, pos.y)
+    await waitForTooltip(true)
+  })
 })
 
 test.describe('Group Interaction', () => {
