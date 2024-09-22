@@ -15,6 +15,7 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { LGraphCanvas } from '@comfyorg/litegraph'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
@@ -122,22 +123,32 @@ const onIdle = () => {
 }
 
 const onMouseMove = (e: MouseEvent) => {
+  if (!settingStore.get('Comfy.EnableTooltips')) return
+
   hideTooltip()
   clearTimeout(idleTimeout)
 
-  if ((e.target as Node).nodeName !== 'CANVAS') return
+  if ((e.target as Node).nodeName !== 'CANVAS' || e.buttons) return
   idleTimeout = window.setTimeout(onIdle, 500)
+}
+
+// Use the litegraph events as it prevents them from bubbling up
+const { processMouseDown, processMouseMove } = LGraphCanvas.prototype
+LGraphCanvas.prototype.processMouseDown = function () {
+  hideTooltip()
+  return processMouseDown.apply(this, arguments)
+}
+LGraphCanvas.prototype.processMouseMove = function (e) {
+  onMouseMove(e)
+  return processMouseMove.apply(this, arguments)
 }
 
 watch(
   () => settingStore.get('Comfy.EnableTooltips'),
   (enabled) => {
-    if (enabled) {
-      window.addEventListener('mousemove', onMouseMove)
-      window.addEventListener('click', hideTooltip)
-    } else {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('click', hideTooltip)
+    if (!enabled) {
+      clearTimeout(idleTimeout)
+      hideTooltip()
     }
   },
   { immediate: true }
