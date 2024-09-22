@@ -167,5 +167,9 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+
+  optimizeDeps: {
+    exclude: ['@comfyorg/litegraph']
   }
 }) as UserConfigExport
