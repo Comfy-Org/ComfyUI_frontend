@@ -1,6 +1,6 @@
 import { app, type ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
-import type { ComfyLGraphNode } from '@/types/comfyLGraphNode'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphBadge } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
 import { computed, ComputedRef, watch } from 'vue'
@@ -12,9 +12,8 @@ import type { Palette } from '@/types/colorPalette'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-function getNodeSource(node: ComfyLGraphNode): NodeSource | null {
-  const nodeDef = (node.constructor as typeof ComfyLGraphNode)
-    .nodeData as ComfyNodeDef
+function getNodeSource(node: LGraphNode): NodeSource | null {
+  const nodeDef = node.constructor.nodeData
   // Frontend-only nodes don't have nodeDef
   if (!nodeDef) {
     return null
@@ -23,29 +22,23 @@ function getNodeSource(node: ComfyLGraphNode): NodeSource | null {
   return nodeDefStore.nodeDefsByName[nodeDef.name]?.nodeSource ?? null
 }
 
-function isCoreNode(node: ComfyLGraphNode) {
+function isCoreNode(node: LGraphNode) {
   return getNodeSource(node)?.type === NodeSourceType.Core
 }
 
-function badgeTextVisible(
-  node: ComfyLGraphNode,
-  badgeMode: NodeBadgeMode
-): boolean {
+function badgeTextVisible(node: LGraphNode, badgeMode: NodeBadgeMode): boolean {
   return (
     badgeMode === NodeBadgeMode.None ||
     (isCoreNode(node) && badgeMode === NodeBadgeMode.HideBuiltIn)
   )
 }
 
-function getNodeIdBadgeText(
-  node: ComfyLGraphNode,
-  nodeIdBadgeMode: NodeBadgeMode
-) {
+function getNodeIdBadgeText(node: LGraphNode, nodeIdBadgeMode: NodeBadgeMode) {
   return badgeTextVisible(node, nodeIdBadgeMode) ? '' : `#${node.id}`
 }
 
 function getNodeSourceBadgeText(
-  node: ComfyLGraphNode,
+  node: LGraphNode,
   nodeSourceBadgeMode: NodeBadgeMode
 ) {
   const nodeSource = getNodeSource(node)
@@ -55,11 +48,11 @@ function getNodeSourceBadgeText(
 }
 
 function getNodeLifeCycleBadgeText(
-  node: ComfyLGraphNode,
+  node: LGraphNode,
   nodeLifeCycleBadgeMode: NodeBadgeMode
 ) {
   let text = ''
-  const nodeDef = (node.constructor as typeof ComfyLGraphNode).nodeData
+  const nodeDef = node.constructor.nodeData
 
   // Frontend-only nodes don't have nodeDef
   if (!nodeDef) {
@@ -118,7 +111,7 @@ class NodeBadgeExtension implements ComfyExtension {
     })
   }
 
-  nodeCreated(node: ComfyLGraphNode, app: ComfyApp) {
+  nodeCreated(node: LGraphNode, app: ComfyApp) {
     node.badgePosition = BadgePosition.TopRight
     // @ts-expect-error Disable ComfyUI-Manager's badge drawing by setting badge_enabled to true. Remove this when ComfyUI-Manager's badge drawing is removed.
     node.badge_enabled = true

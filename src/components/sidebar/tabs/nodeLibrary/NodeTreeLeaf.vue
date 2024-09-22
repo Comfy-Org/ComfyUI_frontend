@@ -125,9 +125,4 @@ onUnmounted(() => {
 .node-lib-node-container {
   @apply h-full w-full;
 }
-
-.bookmark-button {
-  width: unset;
-  padding: 0.25rem;
-}
 </style>

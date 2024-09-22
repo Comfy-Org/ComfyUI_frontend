@@ -59,3 +59,15 @@ export function formatNumberWithSuffix(
 
   return `${formattedNum}${suffixes[exp]}`
 }
+
+export function formatMemory(value?: number) {
+  if (value === null || value === undefined) {
+    return '-'
+  }
+
+  const mb = Math.round(value / (1024 * 1024))
+  if (mb >= 1024) {
+    return `${(mb / 1024).toFixed(2)} GB`
+  }
+  return `${mb} MB`
+}

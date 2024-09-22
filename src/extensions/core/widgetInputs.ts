@@ -3,6 +3,7 @@ import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
 import { LiteGraph, LGraphNode } from '@comfyorg/litegraph'
 import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
+import type { InputSpec } from '@/types/apiTypes'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
@@ -447,15 +448,19 @@ function showWidget(widget) {
   }
 }
 
-function convertToInput(node, widget, config) {
+function convertToInput(node: LGraphNode, widget: IWidget, config: InputSpec) {
   hideWidget(node, widget)
 
   const { type } = getWidgetType(config)
 
   // Add input and store widget config for creating on primitive node
   const sz = node.size
+  const inputIsOptional = !!widget.options?.inputIsOptional
   node.addInput(widget.name, type, {
-    widget: { name: widget.name, [GET_CONFIG]: () => config }
+    // @ts-expect-error GET_CONFIG is not defined in LiteGraph
+    widget: { name: widget.name, [GET_CONFIG]: () => config },
+    // @ts-expect-error LiteGraph.SlotShape is not typed.
+    ...(inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {})
   })
 
   for (const widget of node.widgets) {
@@ -479,7 +484,7 @@ function convertToWidget(node, widget) {
   node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
 }
 
-function getWidgetType(config) {
+function getWidgetType(config: InputSpec) {
   // Special handling for COMBO so we restrict links based on the entries
   let type = config[0]
   if (type instanceof Array) {

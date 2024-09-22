@@ -140,6 +140,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Node.Opacity',
+    name: 'Node opacity',
+    type: 'slider',
+    defaultValue: 1,
+    attrs: {
+      min: 0.01,
+      max: 1,
+      step: 0.01
+    }
+  },
+  {
     id: 'Comfy.Workflow.ShowMissingNodesWarning',
     name: 'Show missing nodes warning',
     type: 'boolean',

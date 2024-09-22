@@ -1,5 +1,6 @@
 type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }
+type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
 
 function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
@@ -92,10 +93,63 @@ function rgbToHex({ r, g, b }: RGB): string {
   )
 }
 
+function identifyColorFormat(color: string): ColorFormat | null {
+  if (!color) return null
+  if (color.startsWith('#')) return 'hex'
+  if (/^rgba?\(\d+,\s*\d+,\s*\d+/.test(color))
+    return color.includes('rgba') ? 'rgba' : 'rgb'
+  if (/^hsla?\(\d+(\.\d+)?,\s*\d+(\.\d+)?%,\s*\d+(\.\d+)?%/.test(color))
+    return color.includes('hsla') ? 'hsla' : 'hsl'
+  return null
+}
+
 export function lightenColor(hex: string, amount: number): string {
   let rgb = hexToRgb(hex)
   const hsl = rgbToHsl(rgb)
   hsl.l = Math.min(1, hsl.l + amount)
   rgb = hslToRgb(hsl)
   return rgbToHex(rgb)
+}
+
+export function applyOpacity(color: string, opacity: number): string {
+  const colorFormat = identifyColorFormat(color)
+
+  if (!colorFormat) {
+    console.warn(
+      `Unsupported color format in user color palette for color: ${color}`
+    )
+    return color
+  }
+
+  const clampedOpacity = Math.max(0, Math.min(1, opacity))
+
+  switch (colorFormat) {
+    case 'hex': {
+      const { r, g, b } = hexToRgb(color)
+      if (isNaN(r) || isNaN(g) || isNaN(b)) {
+        return color
+      }
+      return `rgba(${r}, ${g}, ${b}, ${clampedOpacity})`
+    }
+    case 'rgb': {
+      return color.replace('rgb', 'rgba').replace(')', `, ${clampedOpacity})`)
+    }
+    case 'rgba': {
+      return color.replace(
+        /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,[^)]+\)/,
+        `rgba($1, $2, $3, ${clampedOpacity})`
+      )
+    }
+    case 'hsl': {
+      return color.replace('hsl', 'hsla').replace(')', `, ${clampedOpacity})`)
+    }
+    case 'hsla': {
+      return color.replace(
+        /hsla\(\s*(\d+)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*,[^)]+\)/,
+        `hsla($1, $2%, $3%, ${clampedOpacity})`
+      )
+    }
+    default:
+      return color
+  }
 }

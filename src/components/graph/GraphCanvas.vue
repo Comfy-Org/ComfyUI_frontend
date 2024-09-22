@@ -44,6 +44,9 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { applyOpacity } from '@/utils/colorUtil'
+import { getColorPalette } from '@/extensions/core/colorPalette'
+import { debounce } from 'lodash'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -90,6 +93,24 @@ watchEffect(() => {
     textarea.focus()
     textarea.blur()
   })
+})
+
+const updateNodeOpacity = (nodeOpacity: number) => {
+  const colorPalette = getColorPalette()
+
+  if (!canvasStore.canvas) return
+
+  const nodeBgColor = colorPalette?.colors?.litegraph_base?.NODE_DEFAULT_BGCOLOR
+  if (nodeBgColor) {
+    LiteGraph.NODE_DEFAULT_BGCOLOR = applyOpacity(nodeBgColor, nodeOpacity)
+  }
+}
+
+const debouncedUpdateNodeOpacity = debounce(updateNodeOpacity, 128)
+
+watchEffect(() => {
+  const nodeOpacity = settingStore.get('Comfy.Node.Opacity')
+  debouncedUpdateNodeOpacity(nodeOpacity)
 })
 
 let dropTargetCleanup = () => {}
