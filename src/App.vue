@@ -22,6 +22,4 @@ onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
 })
-
-onBeforeUnmount(() => {})
 </script>
