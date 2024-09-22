@@ -1,9 +1,13 @@
-import type { Page, Locator } from '@playwright/test'
+import type { Page, Locator, APIRequestContext } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
+import { ComfyAppMenu } from './helpers/appMenu'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
 import { NodeBadgeMode } from '../src/types/nodeSource'
+import { NodeId } from '../src/types/comfyWorkflow'
+import { ManageGroupNode } from './helpers/manageGroupNode'
 
 interface Position {
   x: number
@@ -93,9 +97,11 @@ class ComfyNodeSearchBox {
   }
 }
 
-class NodeLibrarySidebarTab {
-  public readonly tabId: string = 'node-library'
-  constructor(public readonly page: Page) {}
+class SidebarTab {
+  constructor(
+    public readonly page: Page,
+    public readonly tabId: string
+  ) {}
 
   get tabButton() {
     return this.page.locator(`.${this.tabId}-tab-button`)
@@ -105,6 +111,19 @@ class NodeLibrarySidebarTab {
     return this.page.locator(
       `.${this.tabId}-tab-button.side-bar-button-selected`
     )
+  }
+
+  async open() {
+    if (await this.selectedTabButton.isVisible()) {
+      return
+    }
+    await this.tabButton.click()
+  }
+}
+
+class NodeLibrarySidebarTab extends SidebarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'node-library')
   }
 
   get nodeLibrarySearchBoxInput() {
@@ -128,11 +147,7 @@ class NodeLibrarySidebarTab {
   }
 
   async open() {
-    if (await this.selectedTabButton.isVisible()) {
-      return
-    }
-
-    await this.tabButton.click()
+    await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
@@ -150,6 +165,45 @@ class NodeLibrarySidebarTab {
 
   getNode(nodeName: string) {
     return this.page.locator(this.nodeSelector(nodeName))
+  }
+}
+
+class WorkflowsSidebarTab extends SidebarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'workflows')
+  }
+
+  get newBlankWorkflowButton() {
+    return this.page.locator('.new-blank-workflow-button')
+  }
+
+  get browseWorkflowsButton() {
+    return this.page.locator('.browse-workflows-button')
+  }
+
+  get newDefaultWorkflowButton() {
+    return this.page.locator('.new-default-workflow-button')
+  }
+
+  async getOpenedWorkflowNames() {
+    return await this.page
+      .locator('.comfyui-workflows-open .node-label')
+      .allInnerTexts()
+  }
+
+  async getTopLevelSavedWorkflowNames() {
+    return await this.page
+      .locator('.comfyui-workflows-browse .node-label')
+      .allInnerTexts()
+  }
+
+  async switchToWorkflow(workflowName: string) {
+    const workflowLocator = this.page.locator(
+      '.comfyui-workflows-open .node-label',
+      { hasText: workflowName }
+    )
+    await workflowLocator.click()
+    await this.page.waitForTimeout(300)
   }
 }
 
@@ -185,6 +239,10 @@ class ComfyMenu {
     return new NodeLibrarySidebarTab(this.page)
   }
 
+  get workflowsTab() {
+    return new WorkflowsSidebarTab(this.page)
+  }
+
   async toggleTheme() {
     await this.themeToggleButton.click()
     await this.page.evaluate(() => {
@@ -209,6 +267,10 @@ class ComfyMenu {
   }
 }
 
+type FolderStructure = {
+  [key: string]: FolderStructure | string
+}
+
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -225,8 +287,12 @@ export class ComfyPage {
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
+  public readonly appMenu: ComfyAppMenu
 
-  constructor(public readonly page: Page) {
+  constructor(
+    public readonly page: Page,
+    public readonly request: APIRequestContext
+  ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -235,6 +301,22 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
+    this.appMenu = new ComfyAppMenu(page)
+  }
+
+  convertLeafToContent(structure: FolderStructure): FolderStructure {
+    const result: FolderStructure = {}
+
+    for (const [key, value] of Object.entries(structure)) {
+      if (typeof value === 'string') {
+        const filePath = this.assetPath(value)
+        result[key] = fs.readFileSync(filePath, 'utf-8')
+      } else {
+        result[key] = this.convertLeafToContent(value)
+      }
+    }
+
+    return result
   }
 
   async getGraphNodesCount(): Promise<number> {
@@ -243,7 +325,25 @@ export class ComfyPage {
     })
   }
 
-  async setup() {
+  async setupWorkflowsDirectory(structure: FolderStructure) {
+    const resp = await this.request.post(
+      `${this.url}/api/devtools/setup_folder_structure`,
+      {
+        data: {
+          tree_structure: this.convertLeafToContent(structure),
+          base_path: 'user/default/workflows'
+        }
+      }
+    )
+
+    if (resp.status() !== 200) {
+      throw new Error(
+        `Failed to setup workflows directory: ${await resp.text()}`
+      )
+    }
+  }
+
+  async setup({ resetView = true } = {}) {
     await this.goto()
     await this.page.evaluate(() => {
       localStorage.clear()
@@ -270,9 +370,11 @@ export class ComfyPage {
       window['app']['canvas'].show_info = false
     })
     await this.nextFrame()
-    // Reset view to force re-rendering of canvas. So that info fields like fps
-    // become hidden.
-    await this.resetView()
+    if (resetView) {
+      // Reset view to force re-rendering of canvas. So that info fields like fps
+      // become hidden.
+      await this.resetView()
+    }
 
     // Hide all badges by default.
     await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
@@ -615,6 +717,11 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async closeDialog() {
+    await this.page.locator('.p-dialog-close-button').click()
+    await expect(this.page.locator('.p-dialog')).toBeHidden()
+  }
+
   async resizeNode(
     nodePos: Position,
     nodeSize: Size,
@@ -707,11 +814,182 @@ export class ComfyPage {
     await this.page.getByText('Convert to Group Node').click()
     await this.nextFrame()
   }
+  async convertOffsetToCanvas(pos: [number, number]) {
+    return this.page.evaluate((pos) => {
+      return window['app'].canvas.ds.convertOffsetToCanvas(pos)
+    }, pos)
+  }
+  async getNodeRefById(id: NodeId) {
+    return new NodeReference(id, this)
+  }
+  async getNodeRefsByType(type: string): Promise<NodeReference[]> {
+    return (
+      await this.page.evaluate((type) => {
+        return window['app'].graph._nodes
+          .filter((n) => n.type === type)
+          .map((n) => n.id)
+      }, type)
+    ).map((id: NodeId) => this.getNodeRefById(id))
+  }
+}
+class NodeSlotReference {
+  constructor(
+    readonly type: 'input' | 'output',
+    readonly index: number,
+    readonly node: NodeReference
+  ) {}
+  async getPosition() {
+    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+      ([type, id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        return window['app'].canvas.ds.convertOffsetToCanvas(
+          node.getConnectionPos(type === 'input', index)
+        )
+      },
+      [this.type, this.node.id, this.index] as const
+    )
+    return {
+      x: pos[0],
+      y: pos[1]
+    }
+  }
+  async getLinkCount() {
+    return await this.node.comfyPage.page.evaluate(
+      ([type, id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        if (type === 'input') {
+          return node.inputs[index].link == null ? 0 : 1
+        }
+        return node.outputs[index].links?.length ?? 0
+      },
+      [this.type, this.node.id, this.index] as const
+    )
+  }
+  async removeLinks() {
+    await this.node.comfyPage.page.evaluate(
+      ([type, id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        if (type === 'input') {
+          node.disconnectInput(index)
+        } else {
+          node.disconnectOutput(index)
+        }
+      },
+      [this.type, this.node.id, this.index] as const
+    )
+  }
+}
+class NodeReference {
+  constructor(
+    readonly id: NodeId,
+    readonly comfyPage: ComfyPage
+  ) {}
+  async exists(): Promise<boolean> {
+    return await this.comfyPage.page.evaluate((id) => {
+      const node = window['app'].graph.getNodeById(id)
+      return !!node
+    }, this.id)
+  }
+  getType(): Promise<string> {
+    return this.getProperty('type')
+  }
+  async getPosition(): Promise<Position> {
+    const pos = await this.comfyPage.convertOffsetToCanvas(
+      await this.getProperty<[number, number]>('pos')
+    )
+    return {
+      x: pos[0],
+      y: pos[1]
+    }
+  }
+  async getSize(): Promise<Size> {
+    const size = await this.getProperty<[number, number]>('size')
+    return {
+      width: size[0],
+      height: size[1]
+    }
+  }
+  async getProperty<T>(prop: string): Promise<T> {
+    return await this.comfyPage.page.evaluate(
+      ([id, prop]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error('Node not found')
+        return node[prop]
+      },
+      [this.id, prop] as const
+    )
+  }
+  async getOutput(index: number) {
+    return new NodeSlotReference('output', index, this)
+  }
+  async getInput(index: number) {
+    return new NodeSlotReference('input', index, this)
+  }
+  async click(position: 'title', options?: Parameters<Page['click']>[1]) {
+    const nodePos = await this.getPosition()
+    const nodeSize = await this.getSize()
+    let clickPos: Position
+    switch (position) {
+      case 'title':
+        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y + 15 }
+        break
+      default:
+        throw new Error(`Invalid click position ${position}`)
+    }
+    await this.comfyPage.canvas.click({
+      ...options,
+      position: clickPos
+    })
+    await this.comfyPage.nextFrame()
+  }
+  async connectOutput(
+    originSlotIndex: number,
+    targetNode: NodeReference,
+    targetSlotIndex: number
+  ) {
+    const originSlot = await this.getOutput(originSlotIndex)
+    const targetSlot = await targetNode.getInput(targetSlotIndex)
+    await this.comfyPage.dragAndDrop(
+      await originSlot.getPosition(),
+      await targetSlot.getPosition()
+    )
+    return originSlot
+  }
+  async clickContextMenuOption(optionText: string) {
+    await this.click('title', { button: 'right' })
+    const ctx = this.comfyPage.page.locator('.litecontextmenu')
+    await ctx.getByText(optionText).click()
+  }
+  async convertToGroupNode(groupNodeName: string = 'GroupNode') {
+    this.comfyPage.page.once('dialog', async (dialog) => {
+      await dialog.accept(groupNodeName)
+    })
+    await this.clickContextMenuOption('Convert to Group Node')
+    await this.comfyPage.nextFrame()
+    const nodes = await this.comfyPage.getNodeRefsByType(
+      `workflow/${groupNodeName}`
+    )
+    if (nodes.length !== 1) {
+      throw new Error(`Did not find single group node (found=${nodes.length})`)
+    }
+    return nodes[0]
+  }
+  async manageGroupNode() {
+    await this.clickContextMenuOption('Manage Group Node')
+    await this.comfyPage.nextFrame()
+    return new ManageGroupNode(
+      this.comfyPage.page,
+      this.comfyPage.page.locator('.comfy-group-manage')
+    )
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
-  comfyPage: async ({ page }, use) => {
-    const comfyPage = new ComfyPage(page)
+  comfyPage: async ({ page, request }, use) => {
+    const comfyPage = new ComfyPage(page, request)
     await comfyPage.setup()
     await use(comfyPage)
   }

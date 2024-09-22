@@ -18,4 +18,9 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('optional_input_correct_shape')
     await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
   })
+
+  test('Force input', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('force_input')
+    await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
+  })
 })
