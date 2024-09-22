@@ -81,6 +81,8 @@ test.describe('Group Node', () => {
     expect(await input.getLinkCount()).toBe(1)
     // Modify the group node via manage dialog
     const manage = await groupNode.manageGroupNode()
+    await manage.selectNode('KSampler')
+    await manage.changeTab('Inputs')
     await manage.setLabel('model', 'test')
     await manage.save()
     await manage.close()
