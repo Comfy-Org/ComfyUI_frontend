@@ -33,6 +33,7 @@
     "src/**/*",
     "src/**/*.vue",
     "src/types/**/*.d.ts",
-    "tests-ui/**/*"
+    "tests-ui/**/*",
+    "global.d.ts"
   ]
 }

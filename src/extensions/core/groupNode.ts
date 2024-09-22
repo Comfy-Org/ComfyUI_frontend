@@ -828,6 +828,9 @@ export class GroupNodeHandler {
       ]
 
       // Remove all converted nodes and relink them
+      const builder = new GroupNodeBuilder(nodes)
+      const nodeData = builder.getNodeData()
+      groupNode[GROUP].groupData.nodeData.links = nodeData.links
       groupNode[GROUP].replaceNodes(nodes)
       return groupNode
     }
