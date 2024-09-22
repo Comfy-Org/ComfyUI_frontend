@@ -1,6 +1,9 @@
 <template>
   <router-view />
-  <ProgressSpinner v-if="isLoading" class="spinner"></ProgressSpinner>
+  <ProgressSpinner
+    v-if="isLoading"
+    class="absolute inset-0 flex justify-center items-center h-screen"
+  />
   <BlockUI full-screen :blocked="isLoading" />
   <GlobalDialog />
   <GlobalToast />
@@ -154,15 +157,3 @@ onUnmounted(() => {
   executionStore.unbindExecutionEvents()
 })
 </script>
-
-<style>
-.p-tree-node-content {
-  padding: var(--comfy-tree-explorer-item-padding) !important;
-}
-</style>
-
-<style scoped>
-.spinner {
-  @apply absolute inset-0 flex justify-center items-center h-screen;
-}
-</style>
