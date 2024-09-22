@@ -47,10 +47,9 @@
                 slotProps.option.paths.length > 1 &&
                 showFolderSelect
               "
-              v-model="slotProps.option.downloadInfo.folder_path"
+              v-model="slotProps.option.folderPath"
               :options="slotProps.option.paths"
-              optionLabel=""
-              optionValue=""
+              @change="updateFolderPath(slotProps.option, $event)"
             />
             <Button
               v-if="
@@ -86,6 +85,7 @@ import { ref, computed } from 'vue'
 import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import Select from 'primevue/select'
+import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
@@ -122,6 +122,11 @@ const props = defineProps<{
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 let lastModel: string | null = null
 
+const updateFolderPath = (model: any, event: SelectChangeEvent) => {
+  const downloadInfo = modelDownloads.value[model.name]
+  downloadInfo.folder_path = event.value
+  return false
+}
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
   if (detail.download_path) {
     lastModel = detail.download_path
@@ -198,13 +203,17 @@ const missingModels = computed(() => {
         error: 'Invalid directory specified (does this require custom nodes?)'
       }
     }
-    const downloadInfo = modelDownloads.value[model.name] ?? {
+    const downloadInfo: ModelInfo = modelDownloads.value[model.name] ?? {
       downloading: false,
       completed: false,
       progress: 0,
       error: null,
+      name: model.name,
+      directory: model.directory,
+      url: model.url,
       folder_path: paths[0]
     }
+    modelDownloads.value[model.name] = downloadInfo
     if (!allowedSources.some((source) => model.url.startsWith(source))) {
       return {
         label: `${model.directory} / ${model.name}`,
@@ -227,8 +236,9 @@ const missingModels = computed(() => {
       completed: downloadInfo.completed,
       progress: downloadInfo.progress,
       error: downloadInfo.error,
+      name: model.name,
       paths: paths,
-      downloadInfo: downloadInfo,
+      folderPath: downloadInfo.folder_path,
       action: {
         text: 'Download',
         callback: () =>
