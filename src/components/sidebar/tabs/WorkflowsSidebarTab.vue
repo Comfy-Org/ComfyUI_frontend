@@ -127,8 +127,9 @@ const handleSearch = (query: string) => {
     expandedKeys.value = {}
     return
   }
+  const lowerQuery = query.toLocaleLowerCase()
   filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
-    return workflow.name.includes(query)
+    return workflow.name.toLocaleLowerCase().includes(lowerQuery)
   })
   nextTick(() => {
     expandNode(filteredRoot.value)
