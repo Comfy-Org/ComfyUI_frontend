@@ -150,4 +150,20 @@ test.describe('Color Palette', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
+
+  test('Can change node opacity setting', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
+    await comfyPage.page.waitForTimeout(128)
+
+    // Drag mouse to force canvas to redraw
+    await comfyPage.page.mouse.move(0, 0)
+
+    await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
+
+    await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
+    await comfyPage.page.waitForTimeout(128)
+
+    await comfyPage.page.mouse.move(8, 8)
+    await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
+  })
 })
