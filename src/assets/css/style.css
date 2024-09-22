@@ -708,3 +708,7 @@ audio.comfy-audio.empty-audio-widget {
 .p-autocomplete-overlay {
   max-width: 25vw;
 }
+
+.p-tree-node-content {
+  padding: var(--comfy-tree-explorer-item-padding) !important;
+}
