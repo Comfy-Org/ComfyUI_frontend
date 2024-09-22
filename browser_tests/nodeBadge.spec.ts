@@ -9,7 +9,6 @@ test.describe('Node Badge', () => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
-      // @ts-expect-error - accessing private property
       const nodes = graph.nodes
 
       for (const node of nodes) {
@@ -27,7 +26,6 @@ test.describe('Node Badge', () => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
-      // @ts-expect-error - accessing private property
       const nodes = graph.nodes
 
       for (const node of nodes) {
@@ -48,7 +46,6 @@ test.describe('Node Badge', () => {
       const LGraphBadge = window['LGraphBadge']
       const app = window['app'] as ComfyApp
       const graph = app.graph
-      // @ts-expect-error - accessing private property
       const nodes = graph.nodes
 
       for (const node of nodes) {
