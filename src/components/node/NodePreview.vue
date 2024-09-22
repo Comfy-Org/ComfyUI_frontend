@@ -5,7 +5,13 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 <template>
   <div class="_sb_node_preview">
     <div class="_sb_table">
-      <div class="node_header">
+      <div
+        class="node_header"
+        :style="{
+          backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
+          color: litegraphColors.NODE_TITLE_COLOR
+        }"
+      >
         <div class="_sb_dot headdot"></div>
         {{ nodeDef.display_name }}
       </div>
@@ -22,7 +28,12 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         </div>
         <div class="_sb_col">{{ slotInput ? slotInput.name : '' }}</div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit">
+        <div
+          class="_sb_col _sb_inherit"
+          :style="{
+            color: litegraphColors.NODE_TEXT_COLOR
+          }"
+        >
           {{ slotOutput ? slotOutput.name : '' }}
         </div>
         <div class="_sb_col">
@@ -37,15 +48,32 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         :key="widgetInput.name"
       >
         <div class="_sb_col _sb_arrow">&#x25C0;</div>
-        <div class="_sb_col">{{ widgetInput.name }}</div>
+        <div
+          class="_sb_col"
+          :style="{
+            color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
+          }"
+        >
+          {{ widgetInput.name }}
+        </div>
         <div class="_sb_col middle-column"></div>
-        <div class="_sb_col _sb_inherit">
+        <div
+          class="_sb_col _sb_inherit"
+          :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
+        >
           {{ truncateDefaultValue(widgetInput.default) }}
         </div>
         <div class="_sb_col _sb_arrow">&#x25B6;</div>
       </div>
     </div>
-    <div class="_sb_description" v-if="nodeDef.description">
+    <div
+      class="_sb_description"
+      v-if="nodeDef.description"
+      :style="{
+        color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
+        backgroundColor: litegraphColors.WIDGET_BGCOLOR
+      }"
+    >
       {{ nodeDef.description }}
     </div>
   </div>
@@ -53,6 +81,10 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 
 <script setup lang="ts">
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import {
+  getColorPalette,
+  defaultColorPalette
+} from '@/extensions/core/colorPalette'
 import _ from 'lodash'
 
 const props = defineProps({
@@ -61,6 +93,13 @@ const props = defineProps({
     required: true
   }
 })
+
+// Node preview currently is recreated every time something is hovered.
+// So not reactive to the color palette changes after setup is fine.
+// If later we want NodePreview to be shown more persistently, then we should
+// make the getColorPalette() call reactive.
+const colors = getColorPalette()?.colors?.litegraph_base
+const litegraphColors = colors ?? defaultColorPalette.colors.litegraph_base
 
 const nodeDefStore = useNodeDefStore()
 
@@ -106,7 +145,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 .node_header {
   line-height: 1;
   padding: 8px 13px 7px;
-  background: var(--comfy-input-bg);
   margin-bottom: 5px;
   font-size: 15px;
   text-wrap: nowrap;
