@@ -48,6 +48,7 @@ export function drawSlot(
   // Save the current fillStyle and strokeStyle
   const originalFillStyle = ctx.fillStyle;
   const originalStrokeStyle = ctx.strokeStyle;
+  const originalLineWidth = ctx.lineWidth;
 
   const slot_type = slot.type as SlotType;
   const slot_shape = (
@@ -90,12 +91,18 @@ export function drawSlot(
     if (low_quality) {
       ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8);
     } else {
-      ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2);
+      let radius: number;
       if (slot_shape === SlotShape.HollowCircle) {
         doFill = false;
         doStroke = true;
+        ctx.lineWidth = 3;
         ctx.strokeStyle = ctx.fillStyle;
+        radius = 3;
+      } else {
+        // Normal circle
+        radius = 4;
       }
+      ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2);
     }
   }
 
@@ -127,4 +134,5 @@ export function drawSlot(
   // Restore the original fillStyle and strokeStyle
   ctx.fillStyle = originalFillStyle;
   ctx.strokeStyle = originalStrokeStyle;
+  ctx.lineWidth = originalLineWidth;
 }
