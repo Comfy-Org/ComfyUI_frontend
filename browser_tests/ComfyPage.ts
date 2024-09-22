@@ -247,6 +247,10 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
+    await this.prepPage()
+  }
+
+  async prepPage() {
     await this.page.evaluate(() => {
       localStorage.clear()
       sessionStorage.clear()
