@@ -14,7 +14,14 @@ export default [
       'src/types/vue-shim.d.ts'
     ]
   },
-  { languageOptions: { globals: globals.browser } },
+  {
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        __COMFYUI_FRONTEND_VERSION__: 'readonly'
+      }
+    }
+  },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/essential'],
