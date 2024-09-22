@@ -1285,10 +1285,8 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
-        const key = e.code
-
         // Ctrl + M mute/unmute
-        if (key === 'KeyM' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 2) {
@@ -1303,7 +1301,7 @@ export class ComfyApp {
         }
 
         // Ctrl + B bypass
-        if (key === 'KeyB' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 4) {
@@ -1318,7 +1316,7 @@ export class ComfyApp {
         }
 
         // p pin/unpin
-        if (key === 'KeyP') {
+        if (e.key === 'p') {
           if (this.selected_nodes) {
             for (const i in this.selected_nodes) {
               const node = this.selected_nodes[i]
@@ -1329,7 +1327,7 @@ export class ComfyApp {
         }
 
         // Alt + C collapse/uncollapse
-        if (key === 'KeyC' && e.altKey) {
+        if (e.key === 'c' && e.altKey) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               this.selected_nodes[i].collapse()
@@ -1339,18 +1337,22 @@ export class ComfyApp {
         }
 
         // Ctrl+C Copy
-        if (key === 'KeyC' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
           // Trigger onCopy
           return true
         }
 
         // Ctrl+V Paste
-        if (key === 'KeyV' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (
+          (e.key === 'v' || e.key == 'V') &&
+          (e.metaKey || e.ctrlKey) &&
+          !e.shiftKey
+        ) {
           // Trigger onPaste
           return true
         }
 
-        if ((key === 'NumpadAdd' || key === 'Equal') && e.altKey) {
+        if (e.key === '+' && e.altKey) {
           block_default = true
           let scale = this.ds.scale * 1.1
           this.ds.changeScale(scale, [
@@ -1360,9 +1362,9 @@ export class ComfyApp {
           this.graph.change()
         }
 
-        if ((key === 'NumpadSubtract' || key === 'Minus') && e.altKey) {
+        if (e.key === '-' && e.altKey) {
           block_default = true
-          let scale = this.ds.scale / 1.1
+          let scale = (this.ds.scale * 1) / 1.1
           this.ds.changeScale(scale, [
             this.ds.element.width / 2,
             this.ds.element.height / 2
