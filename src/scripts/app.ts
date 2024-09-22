@@ -2012,6 +2012,7 @@ export class ComfyApp {
         for (const inputName in inputs) {
           const inputData = inputs[inputName]
           const type = inputData[0]
+          const inputIsRequired = inputName in requiredInputs
 
           let widgetCreated = true
           const widgetType = self.getWidgetType(inputData, inputName)
@@ -2029,7 +2030,6 @@ export class ComfyApp {
             }
           } else {
             // Node connection inputs
-            const inputIsRequired = inputName in requiredInputs
             const inputOptions = inputIsRequired
               ? {}
               : // @ts-expect-error LiteGraph.SlotShape is not typed.
@@ -2037,6 +2037,15 @@ export class ComfyApp {
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
+
+          // @ts-expect-error
+          if (widgetCreated && !inputIsRequired && config?.widget) {
+            // @ts-expect-error
+            if (!config.widget.options) config.widget.options = {}
+            // @ts-expect-error
+            config.widget.options.inputIsOptional = true
+          }
+
           // @ts-expect-error
           if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
             // @ts-expect-error
