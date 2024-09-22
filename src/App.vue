@@ -145,7 +145,7 @@ watchEffect(() => {
 app.workflowManager.workflowStore = workflowStore
 
 onMounted(() => {
-  window && (window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version)
+  window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
 
   api.addEventListener('status', onStatus)
