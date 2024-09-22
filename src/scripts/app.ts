@@ -2028,12 +2028,11 @@ export class ComfyApp {
           } else {
             // Node connection inputs
             const inputIsRequired = inputName in requiredInputs
-            const inputShape = inputIsRequired
-              ? // @ts-expect-error LiteGraph.SlotShape is not typed.
-                LiteGraph.SlotShape.Circle
+            const inputOptions = inputIsRequired
+              ? {}
               : // @ts-expect-error LiteGraph.SlotShape is not typed.
-                LiteGraph.SlotShape.HollowCircle
-            this.addInput(inputName, type, { shape: inputShape })
+                { shape: LiteGraph.SlotShape.HollowCircle }
+            this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
           // @ts-expect-error
@@ -2056,10 +2055,11 @@ export class ComfyApp {
           let output = nodeData['output'][o]
           if (output instanceof Array) output = 'COMBO'
           const outputName = nodeData['output_name'][o] || output
-          const outputShape = nodeData['output_is_list'][o]
-            ? LiteGraph.GRID_SHAPE
-            : LiteGraph.CIRCLE_SHAPE
-          this.addOutput(outputName, output, { shape: outputShape })
+          const outputIsList = nodeData['output_is_list'][o]
+          const outputOptions = outputIsList
+            ? { shape: LiteGraph.GRID_SHAPE }
+            : {}
+          this.addOutput(outputName, output, outputOptions)
         }
 
         const s = this.computeSize()
@@ -2069,6 +2069,29 @@ export class ComfyApp {
         this.serialize_widgets = true
 
         app.#invokeExtensionsAsync('nodeCreated', this)
+      }
+
+      configure(data: any) {
+        // Keep 'name', 'type', and 'shape' information from the original node definition.
+        const merge = (
+          current: Record<string, any>,
+          incoming: Record<string, any>
+        ) => {
+          const result = { ...incoming }
+          for (const key of ['name', 'type', 'shape']) {
+            if (current[key] !== undefined) {
+              result[key] = current[key]
+            }
+          }
+          return result
+        }
+        for (const field of ['inputs', 'outputs']) {
+          const slots = data[field] ?? []
+          data[field] = slots.map((slot, i) =>
+            merge(this[field][i] ?? {}, slot)
+          )
+        }
+        super.configure(data)
       }
     }
     node.prototype.comfyClass = nodeData.name
