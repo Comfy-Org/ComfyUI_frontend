@@ -109,7 +109,7 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    return showTooltip(nodeDef.output.all?.[outputSlot].tooltip)
+    return showTooltip(nodeDef.output.all?.[outputSlot]?.tooltip)
   }
 
   const widget = getHoveredWidget()
