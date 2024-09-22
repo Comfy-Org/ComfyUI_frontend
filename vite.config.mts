@@ -89,8 +89,7 @@ function getModuleName(id: string): string {
   return fileName.replace(/\.\w+$/, '')  // Remove file extension
 }
 
-/* we keep the old DEV_SERVER_COMFYUI_URL for compatibility with old .env files */
-const VITE_COMFYUI_SERVER_URL = process.env.VITE_COMFYUI_SERVER_URL || (process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188')
+const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
 const VITE_BASE_URL = process.env.VITE_BASE_URL || '/'
 
 export default defineConfig({
@@ -98,11 +97,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/internal': {
-        target: VITE_COMFYUI_SERVER_URL,
+        target: DEV_SERVER_COMFYUI_URL,
       },
 
       '/api': {
-        target: VITE_COMFYUI_SERVER_URL,
+        target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
         bypass: (req, res, options) => {
@@ -114,7 +113,7 @@ export default defineConfig({
       },
 
       '/ws': {
-        target: VITE_COMFYUI_SERVER_URL,
+        target: DEV_SERVER_COMFYUI_URL,
         ws: true
       }
     }
