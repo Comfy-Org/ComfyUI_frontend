@@ -1,4 +1,5 @@
 import { BadgePosition } from "./LGraphBadge";
+import { drawSlot, SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw";
 
 const globalExport = {};
 
@@ -15,6 +16,12 @@ const globalExport = {};
      */
 
     var LiteGraph = (globalThis.LiteGraph = {
+        // Enums
+        SlotShape,
+        SlotDirection,
+        SlotType,
+        LabelPosition,
+
         VERSION: 0.4,
 
         CANVAS_GRID_SIZE: 10,
@@ -9562,7 +9569,6 @@ const globalExport = {};
                         var slot = node.inputs[i];
 
                         var slot_type = slot.type;
-                        var slot_shape = slot.shape;
 
                         ctx.globalAlpha = editor_alpha;
                         //change opacity of incompatible slots when dragging a connection
@@ -9587,68 +9593,15 @@ const globalExport = {};
                             max_y = pos[1] + LiteGraph.NODE_SLOT_HEIGHT * 0.5;
                         }
 
-                        ctx.beginPath();
-
-                        if (slot_type == "array") {
-                            slot_shape = LiteGraph.GRID_SHAPE; // place in addInput? addOutput instead?
-                        }
-
-                        var doStroke = true;
-
-                        if (slot.type === LiteGraph.EVENT ||
-                            slot.shape === LiteGraph.BOX_SHAPE) {
-                            if (horizontal) {
-                                ctx.rect(
-                                    pos[0] - 5 + 0.5,
-                                    pos[1] - 8 + 0.5,
-                                    10,
-                                    14
-                                );
-                            } else {
-                                ctx.rect(
-                                    pos[0] - 6 + 0.5,
-                                    pos[1] - 5 + 0.5,
-                                    14,
-                                    10
-                                );
-                            }
-                        } else if (slot_shape === LiteGraph.ARROW_SHAPE) {
-                            ctx.moveTo(pos[0] + 8, pos[1] + 0.5);
-                            ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5);
-                            ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5);
-                            ctx.closePath();
-                        } else if (slot_shape === LiteGraph.GRID_SHAPE) {
-                            ctx.rect(pos[0] - 4, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] - 4, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] - 4, pos[1] + 2, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] + 2, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] + 2, 2, 2);
-                            doStroke = false;
-                        } else {
-                            if (low_quality)
-                                ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8); //faster
-
-                            else
-                                ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2);
-                        }
-                        ctx.fill();
-
-                        //render name
-                        if (render_text) {
-                            var text = slot.label != null ? slot.label : slot.name;
-                            if (text) {
-                                ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR;
-                                if (horizontal || slot.dir == LiteGraph.UP) {
-                                    ctx.fillText(text, pos[0], pos[1] - 10);
-                                } else {
-                                    ctx.fillText(text, pos[0] + 10, pos[1] + 5);
-                                }
-                            }
-                        }
+                        drawSlot(ctx, slot, pos, {
+                            horizontal,
+                            low_quality,
+                            render_text,
+                            label_color: LiteGraph.NODE_TEXT_COLOR,
+                            label_position: LabelPosition.Right,
+                            // Input slot is not stroked.
+                            do_stroke: false,
+                        });
                     }
                 }
 
@@ -9660,7 +9613,6 @@ const globalExport = {};
                         var slot = node.outputs[i];
 
                         var slot_type = slot.type;
-                        var slot_shape = slot.shape;
 
                         //change opacity of incompatible slots when dragging a connection
                         if (in_slot && !LiteGraph.isValidConnection(slot_type, in_slot.type)) {
@@ -9683,75 +9635,15 @@ const globalExport = {};
                                 this.default_connection_color_byTypeOff[slot_type] ||
                                 this.default_connection_color_byType[slot_type] ||
                                 this.default_connection_color.output_off;
-                        ctx.beginPath();
-                        //ctx.rect( node.size[0] - 14,i*14,10,10);
-                        if (slot_type == "array") {
-                            slot_shape = LiteGraph.GRID_SHAPE;
-                        }
 
-                        var doStroke = true;
-
-                        if (slot_type === LiteGraph.EVENT ||
-                            slot_shape === LiteGraph.BOX_SHAPE) {
-                            if (horizontal) {
-                                ctx.rect(
-                                    pos[0] - 5 + 0.5,
-                                    pos[1] - 8 + 0.5,
-                                    10,
-                                    14
-                                );
-                            } else {
-                                ctx.rect(
-                                    pos[0] - 6 + 0.5,
-                                    pos[1] - 5 + 0.5,
-                                    14,
-                                    10
-                                );
-                            }
-                        } else if (slot_shape === LiteGraph.ARROW_SHAPE) {
-                            ctx.moveTo(pos[0] + 8, pos[1] + 0.5);
-                            ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5);
-                            ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5);
-                            ctx.closePath();
-                        } else if (slot_shape === LiteGraph.GRID_SHAPE) {
-                            ctx.rect(pos[0] - 4, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] - 4, 2, 2);
-                            ctx.rect(pos[0] - 4, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] - 1, 2, 2);
-                            ctx.rect(pos[0] - 4, pos[1] + 2, 2, 2);
-                            ctx.rect(pos[0] - 1, pos[1] + 2, 2, 2);
-                            ctx.rect(pos[0] + 2, pos[1] + 2, 2, 2);
-                            doStroke = false;
-                        } else {
-                            if (low_quality)
-                                ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8);
-
-                            else
-                                ctx.arc(pos[0], pos[1], 4, 0, Math.PI * 2);
-                        }
-
-                        //trigger
-                        //if(slot.node_id != null && slot.slot == -1)
-                        //	ctx.fillStyle = "#F85";
-                        //if(slot.links != null && slot.links.length)
-                        ctx.fill();
-                        if (!low_quality && doStroke)
-                            ctx.stroke();
-
-                        //render output name
-                        if (render_text) {
-                            var text = slot.label != null ? slot.label : slot.name;
-                            if (text) {
-                                ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR;
-                                if (horizontal || slot.dir == LiteGraph.DOWN) {
-                                    ctx.fillText(text, pos[0], pos[1] - 8);
-                                } else {
-                                    ctx.fillText(text, pos[0] - 10, pos[1] + 5);
-                                }
-                            }
-                        }
+                        drawSlot(ctx, slot, pos, {
+                            horizontal,
+                            low_quality,
+                            render_text,
+                            label_color: LiteGraph.NODE_TEXT_COLOR,
+                            label_position: LabelPosition.Left,
+                            do_stroke: true,
+                        });
                     }
                 }
 
