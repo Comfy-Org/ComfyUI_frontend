@@ -2,13 +2,13 @@ import { api } from './api'
 import './domWidget'
 import type { ComfyApp } from './app'
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
   inputName: string,
-  inputData: ComfyNodeDef,
+  inputData: InputSpec,
   app?: ComfyApp,
   widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
@@ -27,7 +27,7 @@ const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 function getNumberDefaults(
-  inputData: ComfyNodeDef,
+  inputData: InputSpec,
   defaultStep,
   precision,
   enable_rounding
@@ -62,7 +62,7 @@ export function addValueControlWidget(
   defaultValue = 'randomize',
   values,
   widgetName,
-  inputData: ComfyNodeDef
+  inputData: InputSpec
 ) {
   let name = inputData[1]?.control_after_generate
   if (typeof name !== 'string') {
@@ -86,7 +86,7 @@ export function addValueControlWidgets(
   targetWidget,
   defaultValue = 'randomize',
   options,
-  inputData: ComfyNodeDef
+  inputData: InputSpec
 ) {
   if (!defaultValue) defaultValue = 'randomize'
   if (!options) options = {}
@@ -259,7 +259,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-function seedWidget(node, inputName, inputData: ComfyNodeDef, app, widgetName) {
+function seedWidget(node, inputName, inputData: InputSpec, app, widgetName) {
   const seed = createIntWidget(node, inputName, inputData, app, true)
   const seedControl = addValueControlWidget(
     node,
@@ -277,7 +277,7 @@ function seedWidget(node, inputName, inputData: ComfyNodeDef, app, widgetName) {
 function createIntWidget(
   node,
   inputName,
-  inputData: ComfyNodeDef,
+  inputData: InputSpec,
   app,
   isSeedInput: boolean = false
 ) {
@@ -382,7 +382,7 @@ export function initWidgets(app) {
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   'INT:seed': seedWidget,
   'INT:noise_seed': seedWidget,
-  FLOAT(node, inputName, inputData: ComfyNodeDef, app) {
+  FLOAT(node, inputName, inputData: InputSpec, app) {
     let widgetType: 'number' | 'slider' = isSlider(inputData[1]['display'], app)
     let precision = app.ui.settings.getSettingValue(
       'Comfy.FloatRoundingPrecision'
@@ -416,7 +416,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       )
     }
   },
-  INT(node, inputName, inputData: ComfyNodeDef, app) {
+  INT(node, inputName, inputData: InputSpec, app) {
     return createIntWidget(node, inputName, inputData, app)
   },
   BOOLEAN(node, inputName, inputData) {
@@ -431,7 +431,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       widget: node.addWidget('toggle', inputName, defaultVal, () => {}, options)
     }
   },
-  STRING(node, inputName, inputData: ComfyNodeDef, app) {
+  STRING(node, inputName, inputData: InputSpec, app) {
     const defaultVal = inputData[1].default || ''
     const multiline = !!inputData[1].multiline
 
@@ -454,7 +454,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 
     return res
   },
-  COMBO(node, inputName, inputData: ComfyNodeDef) {
+  COMBO(node, inputName, inputData: InputSpec) {
     const type = inputData[0]
     let defaultValue = type[0]
     if (inputData[1] && inputData[1].default) {
@@ -477,12 +477,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
     return res
   },
-  IMAGEUPLOAD(
-    node: LGraphNode,
-    inputName: string,
-    inputData: ComfyNodeDef,
-    app
-  ) {
+  IMAGEUPLOAD(node: LGraphNode, inputName: string, inputData: InputSpec, app) {
     // TODO make image upload handle a custom node type?
     const imageWidget = node.widgets.find(
       (w) => w.name === (inputData[1]?.widget ?? 'image')

@@ -2,7 +2,15 @@
 
 This document outlines the setup and usage of Playwright for testing the ComfyUI_frontend project.
 
+## WARNING
+
+The browser tests will change the ComfyUI backend state, such as user settings and saved workflows.
+Please backup your ComfyUI data before running the tests locally.
+
 ## Setup
+
+Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.
+ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing.
 
 Ensure you have Node.js v20 or later installed. Then, set up the Chromium test driver:
 

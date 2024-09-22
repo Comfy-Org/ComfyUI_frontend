@@ -92,12 +92,15 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
       : children.reduce((acc, child) => acc + child.totalLeaves, 0)
   }
 }
-const onNodeContentClick = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
+const onNodeContentClick = async (
+  e: MouseEvent,
+  node: RenderedTreeExplorerNode
+) => {
   if (!storeSelectionKeys) {
     selectionKeys.value = {}
   }
   if (node.handleClick) {
-    node.handleClick(node, e)
+    await node.handleClick(node, e)
   }
   emit('nodeClick', node, e)
 }
@@ -118,8 +121,8 @@ const { t } = useI18n()
 const renameCommand = (node: RenderedTreeExplorerNode) => {
   renameEditingNode.value = node
 }
-const deleteCommand = (node: RenderedTreeExplorerNode) => {
-  node.handleDelete?.(node)
+const deleteCommand = async (node: RenderedTreeExplorerNode) => {
+  await node.handleDelete?.(node)
   emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() =>
@@ -134,12 +137,15 @@ const menuItems = computed<MenuItem[]>(() =>
       label: t('delete'),
       icon: 'pi pi-trash',
       command: () => deleteCommand(menuTargetNode.value),
-      visible: menuTargetNode.value?.handleDelete !== undefined
+      visible: menuTargetNode.value?.handleDelete !== undefined,
+      isAsync: true // The delete command can be async
     },
     ...extraMenuItems.value
   ].map((menuItem) => ({
     ...menuItem,
-    command: wrapCommandWithErrorHandler(menuItem.command)
+    command: wrapCommandWithErrorHandler(menuItem.command, {
+      isAsync: menuItem.isAsync ?? false
+    })
   }))
 )
 
@@ -153,12 +159,18 @@ const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
 
 const errorHandling = useErrorHandling()
 const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void
+  command: (event: MenuItemCommandEvent) => void,
+  { isAsync = false }: { isAsync: boolean }
 ) => {
-  return errorHandling.wrapWithErrorHandling(
-    command,
-    menuTargetNode.value?.handleError
-  )
+  return isAsync
+    ? errorHandling.wrapWithErrorHandlingAsync(
+        command as (...args: any[]) => Promise<any>,
+        menuTargetNode.value?.handleError
+      )
+    : errorHandling.wrapWithErrorHandling(
+        command,
+        menuTargetNode.value?.handleError
+      )
 }
 
 defineExpose({

@@ -9,14 +9,17 @@ export interface TreeExplorerNode<T = any> {
   icon?: string
   getIcon?: (node: TreeExplorerNode<T>) => string
   // Function to handle renaming the node
-  handleRename?: (node: TreeExplorerNode<T>, newName: string) => void
+  handleRename?: (
+    node: TreeExplorerNode<T>,
+    newName: string
+  ) => void | Promise<void>
   // Function to handle deleting the node
-  handleDelete?: (node: TreeExplorerNode<T>) => void
+  handleDelete?: (node: TreeExplorerNode<T>) => void | Promise<void>
   // Function to handle adding a child node
   handleAddChild?: (
     node: TreeExplorerNode<T>,
     child: TreeExplorerNode<T>
-  ) => void
+  ) => void | Promise<void>
   // Whether the node is draggable
   draggable?: boolean
   // Whether the node is droppable
@@ -25,9 +28,12 @@ export interface TreeExplorerNode<T = any> {
   handleDrop?: (
     node: TreeExplorerNode<T>,
     data: TreeExplorerDragAndDropData
-  ) => void
+  ) => void | Promise<void>
   // Function to handle clicking a node
-  handleClick?: (node: TreeExplorerNode<T>, event: MouseEvent) => void
+  handleClick?: (
+    node: TreeExplorerNode<T>,
+    event: MouseEvent
+  ) => void | Promise<void>
   // Function to handle errors
   handleError?: (error: Error) => void
   // Extra context menu items

@@ -51,7 +51,6 @@ import { useToastStore } from '@/stores/toastStore'
 import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
-import { ComfyLGraphNode } from '@/types/comfyLGraphNode'
 import { useExecutionStore } from '@/stores/executionStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -1286,10 +1285,8 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
-        const key = e.code
-
         // Ctrl + M mute/unmute
-        if (key === 'KeyM' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 2) {
@@ -1304,7 +1301,7 @@ export class ComfyApp {
         }
 
         // Ctrl + B bypass
-        if (key === 'KeyB' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               if (this.selected_nodes[i].mode === 4) {
@@ -1319,7 +1316,7 @@ export class ComfyApp {
         }
 
         // p pin/unpin
-        if (key === 'KeyP') {
+        if (e.key === 'p') {
           if (this.selected_nodes) {
             for (const i in this.selected_nodes) {
               const node = this.selected_nodes[i]
@@ -1330,7 +1327,7 @@ export class ComfyApp {
         }
 
         // Alt + C collapse/uncollapse
-        if (key === 'KeyC' && e.altKey) {
+        if (e.key === 'c' && e.altKey) {
           if (this.selected_nodes) {
             for (var i in this.selected_nodes) {
               this.selected_nodes[i].collapse()
@@ -1340,18 +1337,22 @@ export class ComfyApp {
         }
 
         // Ctrl+C Copy
-        if (key === 'KeyC' && (e.metaKey || e.ctrlKey)) {
+        if (e.key === 'c' && (e.metaKey || e.ctrlKey)) {
           // Trigger onCopy
           return true
         }
 
         // Ctrl+V Paste
-        if (key === 'KeyV' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        if (
+          (e.key === 'v' || e.key == 'V') &&
+          (e.metaKey || e.ctrlKey) &&
+          !e.shiftKey
+        ) {
           // Trigger onPaste
           return true
         }
 
-        if ((key === 'NumpadAdd' || key === 'Equal') && e.altKey) {
+        if (e.key === '+' && e.altKey) {
           block_default = true
           let scale = this.ds.scale * 1.1
           this.ds.changeScale(scale, [
@@ -1361,9 +1362,9 @@ export class ComfyApp {
           this.graph.change()
         }
 
-        if ((key === 'NumpadSubtract' || key === 'Minus') && e.altKey) {
+        if (e.key === '-' && e.altKey) {
           block_default = true
-          let scale = this.ds.scale / 1.1
+          let scale = (this.ds.scale * 1) / 1.1
           this.ds.changeScale(scale, [
             this.ds.element.width / 2,
             this.ds.element.height / 2
@@ -1935,7 +1936,6 @@ export class ComfyApp {
         {
           name,
           display_name: name,
-          // @ts-expect-error
           category: node.category || '__frontend_only__',
           input: { required: {}, optional: {} },
           output: [],
@@ -1989,7 +1989,7 @@ export class ComfyApp {
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const self = this
-    const node: new () => ComfyLGraphNode = class ComfyNode extends LGraphNode {
+    const node = class ComfyNode extends LGraphNode {
       static comfyClass? = nodeData.name
       // TODO: change to "title?" once litegraph.d.ts has been updated
       static title = nodeData.display_name || nodeData.name
@@ -1998,6 +1998,8 @@ export class ComfyApp {
 
       constructor(title?: string) {
         super(title)
+        const requiredInputs = nodeData.input.required
+
         var inputs = nodeData['input']['required']
         if (nodeData['input']['optional'] != undefined) {
           inputs = Object.assign(
@@ -2010,6 +2012,7 @@ export class ComfyApp {
         for (const inputName in inputs) {
           const inputData = inputs[inputName]
           const type = inputData[0]
+          const inputIsRequired = inputName in requiredInputs
 
           let widgetCreated = true
           const widgetType = self.getWidgetType(inputData, inputName)
@@ -2027,9 +2030,22 @@ export class ComfyApp {
             }
           } else {
             // Node connection inputs
-            this.addInput(inputName, type)
+            const inputOptions = inputIsRequired
+              ? {}
+              : // @ts-expect-error LiteGraph.SlotShape is not typed.
+                { shape: LiteGraph.SlotShape.HollowCircle }
+            this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
+
+          // @ts-expect-error
+          if (widgetCreated && !inputIsRequired && config?.widget) {
+            // @ts-expect-error
+            if (!config.widget.options) config.widget.options = {}
+            // @ts-expect-error
+            config.widget.options.inputIsOptional = true
+          }
+
           // @ts-expect-error
           if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
             // @ts-expect-error
@@ -2050,10 +2066,11 @@ export class ComfyApp {
           let output = nodeData['output'][o]
           if (output instanceof Array) output = 'COMBO'
           const outputName = nodeData['output_name'][o] || output
-          const outputShape = nodeData['output_is_list'][o]
-            ? LiteGraph.GRID_SHAPE
-            : LiteGraph.CIRCLE_SHAPE
-          this.addOutput(outputName, output, { shape: outputShape })
+          const outputIsList = nodeData['output_is_list'][o]
+          const outputOptions = outputIsList
+            ? { shape: LiteGraph.GRID_SHAPE }
+            : {}
+          this.addOutput(outputName, output, outputOptions)
         }
 
         const s = this.computeSize()
@@ -2063,6 +2080,29 @@ export class ComfyApp {
         this.serialize_widgets = true
 
         app.#invokeExtensionsAsync('nodeCreated', this)
+      }
+
+      configure(data: any) {
+        // Keep 'name', 'type', and 'shape' information from the original node definition.
+        const merge = (
+          current: Record<string, any>,
+          incoming: Record<string, any>
+        ) => {
+          const result = { ...incoming }
+          for (const key of ['name', 'type', 'shape']) {
+            if (current[key] !== undefined) {
+              result[key] = current[key]
+            }
+          }
+          return result
+        }
+        for (const field of ['inputs', 'outputs']) {
+          const slots = data[field] ?? []
+          data[field] = slots.map((slot, i) =>
+            merge(this[field][i] ?? {}, slot)
+          )
+        }
+        super.configure(data)
       }
     }
     node.prototype.comfyClass = nodeData.name
@@ -2074,7 +2114,6 @@ export class ComfyApp {
     await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not move this to the class definition, it will be overwritten
-    // @ts-expect-error
     node.category = nodeData.category
   }
 
