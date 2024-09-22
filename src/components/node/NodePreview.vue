@@ -80,7 +80,6 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   getColorPalette,
@@ -95,10 +94,12 @@ const props = defineProps({
   }
 })
 
-const litegraphColors = computed(() => {
-  const colors = getColorPalette()?.colors?.litegraph_base
-  return colors ?? defaultColorPalette.colors.litegraph_base
-})
+// Node preview currently is recreated every time something is hovered.
+// So not reactive to the color palette changes after setup is fine.
+// If later we want NodePreview to be shown more persistently, then we should
+// make the getColorPalette() call reactive.
+const colors = getColorPalette()?.colors?.litegraph_base
+const litegraphColors = colors ?? defaultColorPalette.colors.litegraph_base
 
 const nodeDefStore = useNodeDefStore()
 
