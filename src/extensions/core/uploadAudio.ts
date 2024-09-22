@@ -95,11 +95,9 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement> = node.addDOMWidget(
           inputName,
           /* name=*/ 'audioUI',
-          audio
+          audio,
+          { serialize: false }
         )
-        // @ts-expect-error
-        // TODO: Sort out the DOMWidget type.
-        audioUIWidget.serialize = false
 
         const isOutputNode = node.constructor.nodeData.output_node
         if (isOutputNode) {
@@ -193,10 +191,10 @@ app.registerExtension({
           /* value=*/ '',
           () => {
             fileInput.click()
-          }
+          },
+          { serialize: false }
         )
         uploadWidget.label = 'choose file to upload'
-        uploadWidget.serialize = false
 
         return { widget: uploadWidget }
       }
