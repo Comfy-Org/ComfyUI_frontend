@@ -127,6 +127,14 @@ class GroupNodeBuilder {
       }
     }
 
+    const config = GroupNodeBuilder.getClipboardFormatNodes(this.nodes)
+    storeLinkTypes(config)
+    storeExternalLinks(config)
+
+    return config
+  }
+
+  static getClipboardFormatNodes(nodes: LGraphNode[]) {
     // Use the built in copyToClipboard function to generate the node data we need
     const backup = localStorage.getItem('litegrapheditor_clipboard')
     try {
@@ -136,9 +144,6 @@ class GroupNodeBuilder {
       const config = JSON.parse(
         localStorage.getItem('litegrapheditor_clipboard')
       )
-
-      storeLinkTypes(config)
-      storeExternalLinks(config)
 
       return config
     } finally {
@@ -827,6 +832,9 @@ export class GroupNodeHandler {
         Math.max(groupNode.size[1], sz[1])
       ]
 
+      // Replace the link data with the current state so it reconnects
+      const config = GroupNodeBuilder.getClipboardFormatNodes(nodes)
+      groupNode[GROUP].groupData.nodeData.links = config.links
       // Remove all converted nodes and relink them
       groupNode[GROUP].replaceNodes(nodes)
       return groupNode

@@ -53,4 +53,38 @@ test.describe('Group Node', () => {
     await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
+
+  test('Reconnects inputs after configuration changed via manage dialog save', async ({
+    comfyPage
+  }) => {
+    const expectSingleNode = async (type: string) => {
+      const nodes = await comfyPage.getNodeRefsByType(type)
+      expect(nodes).toHaveLength(1)
+      return nodes[0]
+    }
+    const latent = await expectSingleNode('EmptyLatentImage')
+    const sampler = await expectSingleNode('KSampler')
+    // Remove existing link
+    const samplerInput = await sampler.getInput(0)
+    await samplerInput.removeLinks()
+    // Group latent + sampler
+    await latent.click('title', {
+      modifiers: ['Shift']
+    })
+    await sampler.click('title', {
+      modifiers: ['Shift']
+    })
+    const groupNode = await sampler.convertToGroupNode()
+    // Connect node to group
+    const ckpt = await expectSingleNode('CheckpointLoaderSimple')
+    const input = await ckpt.connectOutput(0, groupNode, 0)
+    expect(await input.getLinkCount()).toBe(1)
+    // Modify the group node via manage dialog
+    const manage = await groupNode.manageGroupNode()
+    await manage.setLabel('model', 'test')
+    await manage.save()
+    await manage.close()
+    // Ensure the link is still present
+    expect(await input.getLinkCount()).toBe(1)
+  })
 })
