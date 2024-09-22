@@ -49,7 +49,7 @@ import { api } from '@/scripts/api'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
-const templates = ['default', 'image2image']
+const templates = ['default', 'image2image', 'upscale', 'flux_schnell']
 const loading = ref<string | null>(null)
 
 const loadWorkflow = async (id: string) => {

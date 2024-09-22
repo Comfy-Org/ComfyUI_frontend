@@ -86,7 +86,9 @@ const messages = {
       title: 'Get Started with a Template',
       template: {
         default: 'Image Generation',
-        image2image: 'Image to Image'
+        image2image: 'Image to Image',
+        upscale: '2 Pass Upscale',
+        flux_schnell: 'Flux Schnell'
       }
     }
   },
