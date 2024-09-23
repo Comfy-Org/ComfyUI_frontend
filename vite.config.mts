@@ -114,11 +114,6 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true
-      },
-
-      '/testsubrouteindex': {
-        target: 'http://localhost:5173',
-        rewrite: (path) => path.substring('/testsubrouteindex'.length)
       }
     }
   },

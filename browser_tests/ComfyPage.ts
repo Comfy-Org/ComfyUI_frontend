@@ -247,10 +247,6 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
-    await this.prepPage()
-  }
-
-  async prepPage() {
     await this.page.evaluate(() => {
       localStorage.clear()
       sessionStorage.clear()
@@ -314,10 +310,6 @@ export class ComfyPage {
 
   async goto() {
     await this.page.goto(this.url)
-  }
-
-  async gotoPath(url: string) {
-    await this.page.goto(this.url + url)
   }
 
   async nextFrame() {

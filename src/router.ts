@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 const router = createRouter({
-  history: createWebHistory(window.location.pathname),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',
