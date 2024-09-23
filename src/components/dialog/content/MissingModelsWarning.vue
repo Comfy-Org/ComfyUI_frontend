@@ -44,7 +44,6 @@
                 !slotProps.option.downloading &&
                 !slotProps.option.completed &&
                 !slotProps.option.error &&
-                slotProps.option.paths.length > 1 &&
                 showFolderSelect
               "
               v-model="slotProps.option.folderPath"
