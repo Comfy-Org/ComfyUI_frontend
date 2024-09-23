@@ -410,7 +410,9 @@ export const zSystemStats = z.object({
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
     pytorch_version: z.string(),
-    argv: z.array(z.string())
+    argv: z.array(z.string()),
+    ram_total: z.number(),
+    ram_free: z.number()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -491,8 +493,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
+      'Comfy.UseNewMenu': z.enum(['Disabled', 'Floating', 'Top', 'Bottom']),
       'Comfy.TreeExplorer.ItemPadding': z.number(),
-      'Comfy.UseNewMenu': z.any(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),

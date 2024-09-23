@@ -3,6 +3,7 @@
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
+  <AppMenu />
 </template>
 
 <script setup lang="ts">
@@ -27,12 +28,20 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from '@/i18n'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import {
+  useWorkflowStore,
+  useWorkflowBookmarkStore
+} from '@/stores/workflowStore'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
 import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
+import AppMenu from '@/components/appMenu/AppMenu.vue'
+import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
+import { setupAutoQueueHandler } from '@/services/autoQueueService'
+
+setupAutoQueueHandler()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -101,6 +110,18 @@ const init = () => {
     component: markRaw(NodeLibrarySidebarTab),
     type: 'vue'
   })
+  app.extensionManager.registerSidebarTab({
+    id: 'workflows',
+    icon: 'pi pi-folder-open',
+    iconBadge: () => {
+      const value = useWorkflowStore().openWorkflows.length.toString()
+      return value === '0' ? null : value
+    },
+    title: t('sideToolbar.workflows'),
+    tooltip: t('sideToolbar.workflows'),
+    component: markRaw(WorkflowsSidebarTab),
+    type: 'vue'
+  })
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
@@ -128,11 +149,10 @@ const onReconnected = () => {
 }
 
 const workflowStore = useWorkflowStore()
+const workflowBookmarkStore = useWorkflowBookmarkStore()
 app.workflowManager.executionStore = executionStore
-watchEffect(() => {
-  app.menu.workflows.buttonProgress.style.width = `${executionStore.executionProgress}%`
-})
 app.workflowManager.workflowStore = workflowStore
+app.workflowManager.workflowBookmarkStore = workflowBookmarkStore
 
 onMounted(() => {
   api.addEventListener('status', onStatus)

@@ -6,12 +6,11 @@ import { ComfyButton } from '../components/button'
 import { ComfyButtonGroup } from '../components/buttonGroup'
 import { ComfySplitButton } from '../components/splitButton'
 import { ComfyQueueButton } from './queueButton'
-import { ComfyWorkflowsMenu } from './workflows'
 import { getInterruptButton } from './interruptButton'
 import './menu.css'
 import type { ComfySettingsDialog } from '../settings'
 
-type MenuPosition = 'Disabled' | 'Top' | 'Bottom'
+type MenuPosition = 'Disabled' | 'Top' | 'Bottom' | 'Floating'
 
 const collapseOnMobile = (t) => {
   ;(t.element ?? t).classList.add('comfyui-menu-mobile-collapse')
@@ -34,7 +33,6 @@ export class ComfyAppMenu {
   #cachedInnerSize = null
   #cacheTimeout = null
   app: ComfyApp
-  workflows: ComfyWorkflowsMenu
   logo: HTMLElement
   saveButton: ComfySplitButton
   actionsGroup: ComfyButtonGroup
@@ -48,8 +46,6 @@ export class ComfyAppMenu {
 
   constructor(app: ComfyApp) {
     this.app = app
-
-    this.workflows = new ComfyWorkflowsMenu(app)
     const getSaveButton = (t?: string) =>
       new ComfyButton({
         icon: 'content-save',
@@ -89,7 +85,7 @@ export class ComfyAppMenu {
       })
     )
 
-    this.actionsGroup = new ComfyButtonGroup(
+    const actionButtons = [
       new ComfyButton({
         icon: 'refresh',
         content: 'Refresh',
@@ -123,13 +119,14 @@ export class ComfyAppMenu {
           }
         }
       })
-    )
+    ]
+    this.actionsGroup = new ComfyButtonGroup(...actionButtons)
+
     // Keep the settings group as there are custom scripts attaching extra
     // elements to it.
     this.settingsGroup = new ComfyButtonGroup()
-    this.viewGroup = new ComfyButtonGroup(
-      getInterruptButton('nlg-hide').element
-    )
+    const interruptButton = getInterruptButton('nlg-hide').element
+    this.viewGroup = new ComfyButtonGroup(interruptButton)
     this.mobileMenuButton = new ComfyButton({
       icon: 'menu',
       action: (_, btn) => {
@@ -144,7 +141,6 @@ export class ComfyAppMenu {
 
     this.element = $el('nav.comfyui-menu.lg', { style: { display: 'none' } }, [
       this.logo,
-      this.workflows.element,
       this.saveButton.element,
       collapseOnMobile(this.actionsGroup).element,
       $el('section.comfyui-menu-push'),
@@ -165,15 +161,36 @@ export class ComfyAppMenu {
       experimental: true,
       tooltip: 'On small screens the menu will always be at the top.',
       type: 'combo',
-      options: ['Disabled', 'Top', 'Bottom'],
+      options: ['Disabled', 'Floating', 'Top', 'Bottom'],
       onChange: async (v: MenuPosition) => {
         if (v && v !== 'Disabled') {
-          if (!resizeHandler) {
-            resizeHandler = () => {
-              this.calculateSizeBreak()
+          const floating = v === 'Floating'
+          if (floating) {
+            if (resizeHandler) {
+              window.removeEventListener('resize', resizeHandler)
+              resizeHandler = null
             }
-            window.addEventListener('resize', resizeHandler)
+            this.element.classList.add('floating')
+            document.body.classList.add('comfyui-floating-menu')
+          } else {
+            this.element.classList.remove('floating')
+            document.body.classList.remove('comfyui-floating-menu')
+            if (!resizeHandler) {
+              resizeHandler = () => {
+                this.calculateSizeBreak()
+              }
+              window.addEventListener('resize', resizeHandler)
+            }
           }
+
+          for (const b of [
+            ...actionButtons.map((b) => b.element),
+            interruptButton,
+            this.queueButton.element
+          ]) {
+            b.style.display = floating ? 'none' : null
+          }
+
           this.updatePosition(v)
         } else {
           if (resizeHandler) {
@@ -204,7 +221,11 @@ export class ComfyAppMenu {
     } else {
       this.app.bodyTop.prepend(this.element)
     }
-    this.calculateSizeBreak()
+    if (v === 'Floating') {
+      this.updateSizeBreak(0, this.#sizeBreaks.indexOf(this.#sizeBreak), -999)
+    } else {
+      this.calculateSizeBreak()
+    }
   }
 
   updateSizeBreak(idx: number, prevIdx: number, direction: number) {
