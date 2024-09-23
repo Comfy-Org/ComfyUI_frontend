@@ -90,9 +90,10 @@ function getModuleName(id: string): string {
 }
 
 const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+const VITE_BASE_URL = process.env.VITE_BASE_URL || '/'
 
 export default defineConfig({
-  base: '',
+  base: VITE_BASE_URL,
   server: {
     proxy: {
       '/internal': {
