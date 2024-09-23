@@ -87,6 +87,22 @@ watchEffect(() => {
   }
 })
 
+watchEffect(() => {
+  const useNewMenu = settingStore.get('Comfy.UseNewMenu')
+  if (useNewMenu === 'Disabled') {
+    app.ui.restoreMenuPosition()
+    document.body.style.removeProperty('display')
+    if (app.ui.menuContainer) {
+      app.ui.menuContainer.style.removeProperty('display')
+    }
+  } else {
+    document.body.style.setProperty('display', 'grid')
+    if (app.ui.menuContainer) {
+      app.ui.menuContainer.style.setProperty('display', 'none')
+    }
+  }
+})
+
 const init = () => {
   settingStore.addSettings(app.ui.settings)
   app.extensionManager = useWorkspaceStore()
