@@ -21,7 +21,7 @@ import {
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
 import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
-import { lightenColor } from '@/utils/colorUtil'
+import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
@@ -1568,13 +1568,23 @@ export class ComfyApp {
         this.editor_alpha = 0.2
       }
 
-      const adjustColor = (color?: string) => {
-        return color ? lightenColor(color, 0.5) : color
+      const adjustIfCustomColor = (color?: string) => {
+        if (!color) return color // default color
+
+        const adjustments: ColorAdjustOptions = {}
+
+        const opacity = useSettingStore().get('Comfy.Node.Opacity')
+        if (opacity) adjustments.opacity = opacity
+
+        if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
+          adjustments.lightness = 0.5
+        }
+
+        return adjustColor(color, adjustments)
       }
-      if (app.ui.settings.getSettingValue('Comfy.ColorPalette') === 'light') {
-        node.bgcolor = adjustColor(node.bgcolor)
-        node.color = adjustColor(node.color)
-      }
+
+      node.bgcolor = adjustIfCustomColor(node.bgcolor)
+      node.color = adjustIfCustomColor(node.color)
 
       const res = origDrawNode.apply(this, arguments)
 
