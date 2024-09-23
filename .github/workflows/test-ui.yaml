@@ -5,11 +5,20 @@ on:
     branches:
       - main
       - master
+    paths:
+      - "src/**"
+      - "browser_tests/**"
+      - "test_ui/**"
+
   pull_request:
     branches:
       - main
       - master
       - 'dev*'
+    paths:
+      - "src/**"
+      - "browser_tests/**"
+      - "test_ui/**"
 
 jobs:
   jest-tests:
