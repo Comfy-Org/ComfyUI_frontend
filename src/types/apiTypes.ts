@@ -488,7 +488,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.PreviewFormat': z.string(),
       'Comfy.PromptFilename': z.boolean(),
       'Comfy.Sidebar.Location': z.enum(['left', 'right']),
-      'Comfy.Sidebar.Size': z.number(),
+      'Comfy.Sidebar.Size': z.enum(['small', 'normal']),
       'Comfy.SwitchUser': z.any(),
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
