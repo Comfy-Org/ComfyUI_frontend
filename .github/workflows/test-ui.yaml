@@ -19,6 +19,9 @@ on:
       - "src/**"
       - "browser_tests/**"
       - "test_ui/**"
+      # This is necessary as we want to verify update of libraries like litegraph
+      # does not break the build.
+      - "package.json"
 
 jobs:
   jest-tests:
