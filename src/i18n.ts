@@ -50,6 +50,7 @@ const messages = {
       queue: 'Queue',
       nodeLibrary: 'Node Library',
       workflows: 'Workflows',
+      browseTemplates: 'Browse example templates',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
@@ -80,6 +81,15 @@ const messages = {
       clipspace: 'Open Clipspace',
       resetView: 'Reset canvas view',
       clear: 'Clear workflow'
+    },
+    templateWorkflows: {
+      title: 'Get Started with a Template',
+      template: {
+        default: 'Image Generation',
+        image2image: 'Image to Image',
+        upscale: '2 Pass Upscale',
+        flux_schnell: 'Flux Schnell'
+      }
     }
   },
   zh: {
