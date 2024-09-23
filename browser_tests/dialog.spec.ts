@@ -58,19 +58,48 @@ test.describe('Missing models warning', () => {
     // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
     await comfyPage.loadWorkflow('missing_models')
 
-    // Wait for the element with the .comfy-missing-models selector to be visible
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
-    await expect(comfyPage.canvas).toHaveScreenshot('missing_models_dialog_initial.png')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_initial.png'
+    )
 
-    // Click the download button
     const downloadButton = comfyPage.page.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
     await downloadButton.click()
 
-    // Wait for the element with the .download-complete selector to be visible
     const downloadComplete = comfyPage.page.locator('.download-complete')
     await expect(downloadComplete).toBeVisible()
-    await expect(comfyPage.canvas).toHaveScreenshot('missing_models_dialog_downloaded.png')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_downloaded.png'
+    )
+  })
+
+  test('Can configure downlaod folder', async ({ comfyPage }) => {
+    const folderSelectToggle = comfyPage.page.locator('.model-path-select')
+    await expect(folderSelectToggle).toBeVisible()
+
+    await folderSelectToggle.click()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_folder_select_visible.png'
+    )
+
+    const folderSelect = comfyPage.page.locator('.model-path-select')
+    await expect(folderSelect).toBeVisible()
+
+    await folderSelect.click()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_folder_select_clicked.png'
+    )
+
+    await folderSelect.click() // close the dropdown
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_folder_select_unclicked.png'
+    )
+
+    await folderSelectToggle.click() // hide the selectors
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'missing_models_dialog_folder_select_rehidden.png'
+    )
   })
 })
