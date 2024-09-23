@@ -8,7 +8,7 @@ test.describe('Group Node', () => {
 
   test.describe('Node library sidebar', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
     })
 
     test('Is added to node library sidebar', async ({ comfyPage }) => {

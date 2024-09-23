@@ -493,7 +493,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
-      'Comfy.UseNewMenu': z.enum(['Disabled', 'Floating', 'Top', 'Bottom']),
+      'Comfy.UseNewMenu': z.enum(['Disabled', 'Floating']),
       'Comfy.TreeExplorer.ItemPadding': z.number(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
