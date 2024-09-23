@@ -6,6 +6,7 @@
     </p>
     <p class="warning-options">
       <Checkbox
+        class="model-path-select-checkbox"
         v-model="showFolderSelect"
         label="Show folder selector"
         :binary="true"

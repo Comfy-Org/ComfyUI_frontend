@@ -81,7 +81,7 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const folderSelectToggle = comfyPage.page.locator('.model-path-select')
+    const folderSelectToggle = comfyPage.page.locator('.model-path-select-checkbox')
     await expect(folderSelectToggle).toBeVisible()
 
     await folderSelectToggle.click()
