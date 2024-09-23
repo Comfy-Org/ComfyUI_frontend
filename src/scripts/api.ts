@@ -33,6 +33,7 @@ interface QueuePromptRequestBody {
 class ComfyApi extends EventTarget {
   #registered = new Set()
   api_host: string
+  api_base: string
   initialClientId: string
   user: string
   socket?: WebSocket
@@ -42,21 +43,22 @@ class ComfyApi extends EventTarget {
 
   constructor() {
     super()
-    this.api_host = window.location.host
+    this.api_host = location.host
+    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 
   internalURL(route: string): string {
-    return '/internal' + route
+    return this.api_base + '/internal' + route
   }
 
   apiURL(route: string): string {
-    return '/api' + route
+    return this.api_base + '/api' + route
   }
 
   fileURL(route: string): string {
-    return route
+    return this.api_base + route
   }
 
   fetchApi(route: string, options?: RequestInit) {
@@ -112,7 +114,7 @@ class ComfyApi extends EventTarget {
       existingSession = '?clientId=' + existingSession
     }
     this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}/ws${existingSession}`
+      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
     )
     this.socket.binaryType = 'arraybuffer'
 
