@@ -2,23 +2,23 @@
   <teleport to=".comfyui-body-top">
     <div class="top-menubar comfyui-menu">
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
-      <Menubar :model="items" />
+      <Menubar
+        :model="items"
+        class="border-none p-0 bg-transparent"
+        :pt="{
+          rootList: 'gap-0'
+        }"
+      />
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
 import Menubar from 'primevue/menubar'
+import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
 
-const items = [
-  {
-    label: 'File',
-    items: [
-      { label: 'New', icon: 'pi pi-plus' },
-      { label: 'Open', icon: 'pi pi-download' }
-    ]
-  }
-]
+const coreMenuItemsStore = useCoreMenuItemStore()
+const items = coreMenuItemsStore.menuItems
 </script>
 
 <style scoped>
@@ -42,5 +42,11 @@ const items = [
   font-size: 1.2em;
   user-select: none;
   cursor: default;
+}
+</style>
+
+<style>
+.top-menubar .p-menubar-item-link svg {
+  display: none;
 }
 </style>
