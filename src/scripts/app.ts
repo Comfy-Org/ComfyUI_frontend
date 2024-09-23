@@ -1568,23 +1568,23 @@ export class ComfyApp {
         this.editor_alpha = 0.2
       }
 
-      const adjustIfCustomColor = (color?: string) => {
-        if (!color) return color // default color
+      const adjustments: ColorAdjustOptions = {}
 
-        const adjustments: ColorAdjustOptions = {}
+      const opacity = useSettingStore().get('Comfy.Node.Opacity')
+      if (opacity) adjustments.opacity = opacity
 
-        const opacity = useSettingStore().get('Comfy.Node.Opacity')
-        if (opacity) adjustments.opacity = opacity
-
-        if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
-          adjustments.lightness = 0.5
-        }
-
-        return adjustColor(color, adjustments)
+      if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
+        adjustments.lightness = 0.5
       }
 
-      node.bgcolor = adjustIfCustomColor(node.bgcolor)
-      node.color = adjustIfCustomColor(node.color)
+      node.bgcolor = adjustColor(
+        old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR,
+        adjustments
+      )
+      node.color = adjustColor(
+        old_color || LiteGraph.NODE_DEFAULT_COLOR,
+        adjustments
+      )
 
       const res = origDrawNode.apply(this, arguments)
 
