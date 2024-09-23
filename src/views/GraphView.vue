@@ -4,6 +4,7 @@
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
   <AppMenu />
+  <TopMenubar />
 </template>
 
 <script setup lang="ts">
@@ -39,6 +40,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import AppMenu from '@/components/appMenu/AppMenu.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
+import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 
 setupAutoQueueHandler()
