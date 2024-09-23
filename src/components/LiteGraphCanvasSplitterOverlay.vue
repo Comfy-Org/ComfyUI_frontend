@@ -75,9 +75,4 @@ const gutterClass = computed(() => {
   z-index: 999;
   border: none;
 }
-
-.comfyui-floating-menu .splitter-overlay {
-  top: var(--comfy-floating-menu-height);
-  height: calc(100% - var(--comfy-floating-menu-height));
-}
 </style>

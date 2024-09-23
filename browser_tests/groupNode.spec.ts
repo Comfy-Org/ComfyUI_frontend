@@ -13,7 +13,7 @@ test.describe('Group Node', () => {
     let libraryTab
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
