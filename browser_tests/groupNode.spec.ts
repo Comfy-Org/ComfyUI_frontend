@@ -6,33 +6,37 @@ test.describe('Group Node', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
-  test('Is added to node library sidebar', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    const groupNodeName = 'DefautWorkflowGroupNode'
-    await comfyPage.convertAllNodesToGroupNode(groupNodeName)
-    const tab = comfyPage.menu.nodeLibraryTab
-    await tab.open()
-    expect(await tab.getFolder('group nodes').count()).toBe(1)
-  })
+  test.describe('Node library sidebar', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    })
 
-  test('Can be added to canvas using node library sidebar', async ({
-    comfyPage
-  }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    const groupNodeName = 'DefautWorkflowGroupNode'
-    await comfyPage.convertAllNodesToGroupNode(groupNodeName)
-    const initialNodeCount = await comfyPage.getGraphNodesCount()
+    test('Is added to node library sidebar', async ({ comfyPage }) => {
+      const groupNodeName = 'DefautWorkflowGroupNode'
+      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.open()
+      expect(await tab.getFolder('group nodes').count()).toBe(1)
+    })
 
-    // Add group node from node library sidebar
-    const tab = comfyPage.menu.nodeLibraryTab
-    await tab.open()
-    await tab.getFolder('group nodes').click()
-    await tab.getFolder('workflow').click()
-    await tab.getFolder('workflow').last().click()
-    await tab.getNode(groupNodeName).click()
+    test('Can be added to canvas using node library sidebar', async ({
+      comfyPage
+    }) => {
+      const groupNodeName = 'DefautWorkflowGroupNode'
+      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
+      const initialNodeCount = await comfyPage.getGraphNodesCount()
 
-    // Verify the node is added to the canvas
-    expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
+      // Add group node from node library sidebar
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.open()
+      await tab.getFolder('group nodes').click()
+      await tab.getFolder('workflow').click()
+      await tab.getFolder('workflow').last().click()
+      await tab.getNode(groupNodeName).click()
+
+      // Verify the node is added to the canvas
+      expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
+    })
   })
 
   test('Can be added to canvas using search', async ({ comfyPage }) => {

@@ -1,5 +1,6 @@
 import type { Page, Locator } from '@playwright/test'
 import { test as base } from '@playwright/test'
+import { expect } from '@playwright/test'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
@@ -705,8 +706,9 @@ export class ComfyPage {
       await dialog.accept(groupNodeName)
     })
     await this.canvas.press('Control+a')
-    await this.rightClickEmptyLatentNode()
-    await this.page.getByText('Convert to Group Node').click()
+    const node = await this.getFirstNodeRef()
+    expect(node).not.toBeNull()
+    await node!.clickContextMenuOption('Convert to Group Node')
     await this.nextFrame()
   }
   async convertOffsetToCanvas(pos: [number, number]) {
@@ -720,11 +722,18 @@ export class ComfyPage {
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
     return (
       await this.page.evaluate((type) => {
-        return window['app'].graph._nodes
+        return window['app'].graph.nodes
           .filter((n) => n.type === type)
           .map((n) => n.id)
       }, type)
     ).map((id: NodeId) => this.getNodeRefById(id))
+  }
+  async getFirstNodeRef(): Promise<NodeReference | null> {
+    const id = await this.page.evaluate(() => {
+      return window['app'].graph.nodes[0]?.id
+    })
+    if (!id) return null
+    return this.getNodeRefById(id)
   }
 }
 class NodeSlotReference {
