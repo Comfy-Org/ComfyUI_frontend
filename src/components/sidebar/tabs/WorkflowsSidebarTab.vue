@@ -2,6 +2,13 @@
   <SidebarTabTemplate :title="$t('sideToolbar.workflows')">
     <template #tool-buttons>
       <Button
+        class="browse-templates-button"
+        icon="pi pi-th-large"
+        v-tooltip="$t('sideToolbar.browseTemplates')"
+        text
+        @click="browseTemplates"
+      />
+      <Button
         class="browse-workflows-button"
         icon="pi pi-folder-open"
         v-tooltip="'Browse for an image or exported workflow'"
@@ -112,6 +119,7 @@ import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+import { showTemplateWorkflowsDialog } from '@/services/dialogService'
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
@@ -143,6 +151,10 @@ const loadDefault = () => {
 
 const browse = () => {
   app.ui.loadFile()
+}
+
+const browseTemplates = () => {
+  showTemplateWorkflowsDialog()
 }
 
 const createBlank = () => {
