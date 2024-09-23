@@ -204,18 +204,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'cover'
   },
   {
-    id: 'Comfy.Workflow.ModelDownload.AllowedSources',
-    name: 'Allowed model download sources',
-    type: 'hidden',
-    defaultValue: ['https://huggingface.co/', 'https://civitai.com/']
-  },
-  {
-    id: 'Comfy.Workflow.ModelDownload.AllowedSuffixes',
-    name: 'Allowed model download suffixes',
-    type: 'hidden',
-    defaultValue: ['.safetensors', '.sft']
-  },
-  {
     id: 'Comfy.GroupSelectedNodes.Padding',
     name: 'Group selected nodes padding',
     type: 'slider',

@@ -89,17 +89,11 @@ import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
-import { useSettingStore } from '@/stores/settingStore'
 
 const showFolderSelect = ref(false)
 
-const settingStore = useSettingStore()
-const allowedSources = settingStore.get(
-  'Comfy.Workflow.ModelDownload.AllowedSources'
-)
-const allowedSuffixes = settingStore.get(
-  'Comfy.Workflow.ModelDownload.AllowedSuffixes'
-)
+const allowedSources = ['https://civitai.com/', 'https://huggingface.co/']
+const allowedSuffixes = ['.safetensors', '.sft']
 
 interface ModelInfo {
   name: string
@@ -219,7 +213,7 @@ const missingModels = computed(() => {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
         error:
-          'Download not allowed from this source: ' + allowedSources.join(', ')
+          `Download not allowed from source '${model.url}'', only allowed from '${allowedSources.join(', ')}''`
       }
     }
     if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
