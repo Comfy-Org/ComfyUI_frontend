@@ -2,6 +2,14 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Templates', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  })
+
   test('Can load template workflows', async ({ comfyPage }) => {
     // This test will need expanding on once the templates are decided
 
