@@ -75,7 +75,12 @@ test.describe('Missing models warning', () => {
     )
   })
 
-  test('Can configure downlaod folder', async ({ comfyPage }) => {
+  test('Can configure download folder', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('missing_models')
+
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+
     const folderSelectToggle = comfyPage.page.locator('.model-path-select')
     await expect(folderSelectToggle).toBeVisible()
 
