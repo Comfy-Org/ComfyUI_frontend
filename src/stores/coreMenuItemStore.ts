@@ -1,13 +1,10 @@
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
-import { app } from '@/scripts/app'
-import { globalTracker } from '@/scripts/changeTracker'
-
-const getTracker = () =>
-  app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+import { useCommandStore } from './commandStore'
 
 export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
+  const commandStore = useCommandStore()
   const menuItems = computed<MenuItem[]>(() => {
     return [
       {
@@ -16,12 +13,7 @@ export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
           {
             label: 'New',
             icon: 'pi pi-plus',
-            command: () => {
-              app.workflowManager.setWorkflow(null)
-              app.clean()
-              app.graph.clear()
-              app.workflowManager.activeWorkflow.track()
-            }
+            command: commandStore.commands['Comfy.NewBlankWorkflow']
           },
           {
             separator: true
@@ -29,9 +21,12 @@ export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
           {
             label: 'Open',
             icon: 'pi pi-folder-open',
-            command: () => {
-              app.ui.loadFile()
-            }
+            command: commandStore.commands['Comfy.OpenWorkflow']
+          },
+          {
+            label: 'Browse Templates',
+            icon: 'pi pi-th-large',
+            command: commandStore.commands['Comfy.BrowseTemplates']
           },
           {
             separator: true
@@ -39,30 +34,22 @@ export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
           {
             label: 'Save',
             icon: 'pi pi-save',
-            command: () => {
-              app.workflowManager.activeWorkflow.save()
-            }
+            command: commandStore.commands['Comfy.SaveWorkflow']
           },
           {
             label: 'Save As',
             icon: 'pi pi-save',
-            command: () => {
-              app.workflowManager.activeWorkflow.save(true)
-            }
+            command: commandStore.commands['Comfy.SaveWorkflowAs']
           },
           {
             label: 'Export',
             icon: 'pi pi-download',
-            command: () => {
-              app.menu.exportWorkflow('workflow', 'workflow')
-            }
+            command: commandStore.commands['Comfy.ExportWorkflow']
           },
           {
             label: 'Export (API Format)',
             icon: 'pi pi-download',
-            command: () => {
-              app.menu.exportWorkflow('workflow_api', 'output')
-            }
+            command: commandStore.commands['Comfy.ExportWorkflowAPI']
           }
         ]
       },
@@ -72,16 +59,20 @@ export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
           {
             label: 'Undo',
             icon: 'pi pi-undo',
-            command: async () => {
-              await getTracker().undo()
-            }
+            command: commandStore.commands['Comfy.Undo']
           },
           {
             label: 'Redo',
             icon: 'pi pi-refresh',
-            command: async () => {
-              await getTracker().redo()
-            }
+            command: commandStore.commands['Comfy.Redo']
+          },
+          {
+            separator: true
+          },
+          {
+            label: 'Clear Workflow',
+            icon: 'pi pi-trash',
+            command: commandStore.commands['Comfy.ClearWorkflow']
           }
         ]
       }

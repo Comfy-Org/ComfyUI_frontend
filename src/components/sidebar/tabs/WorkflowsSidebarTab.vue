@@ -6,27 +6,27 @@
         icon="pi pi-th-large"
         v-tooltip="$t('sideToolbar.browseTemplates')"
         text
-        @click="browseTemplates"
+        @click="commandStore.getCommand('Comfy.BrowseTemplates')"
       />
       <Button
         class="browse-workflows-button"
         icon="pi pi-folder-open"
         v-tooltip="'Browse for an image or exported workflow'"
         text
-        @click="browse"
+        @click="commandStore.getCommand('Comfy.OpenWorkflow')"
       />
       <Button
         class="new-default-workflow-button"
         icon="pi pi-code"
         v-tooltip="'Load default workflow'"
         text
-        @click="loadDefault"
+        @click="commandStore.getCommand('Comfy.LoadDefaultWorkflow')"
       />
       <Button
         class="new-blank-workflow-button"
         icon="pi pi-plus"
         v-tooltip="'Create a new blank workflow'"
-        @click="createBlank"
+        @click="commandStore.getCommand('Comfy.NewBlankWorkflow')"
         text
       />
     </template>
@@ -114,12 +114,12 @@ import TextDivider from '@/components/common/TextDivider.vue'
 import { app } from '@/scripts/app'
 import { computed, nextTick, ref } from 'vue'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
-import { showTemplateWorkflowsDialog } from '@/services/dialogService'
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
@@ -144,25 +144,7 @@ const handleSearch = (query: string) => {
   })
 }
 
-const loadDefault = () => {
-  app.loadGraphData()
-  app.resetView()
-}
-
-const browse = () => {
-  app.ui.loadFile()
-}
-
-const browseTemplates = () => {
-  showTemplateWorkflowsDialog()
-}
-
-const createBlank = () => {
-  app.workflowManager.setWorkflow(null)
-  app.clean()
-  app.graph.clear()
-  app.workflowManager.activeWorkflow.track()
-}
+const commandStore = useCommandStore()
 
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
