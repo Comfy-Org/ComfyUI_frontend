@@ -368,7 +368,7 @@ export const useNodeFrequencyStore = defineStore('nodeFrequency', () => {
   const loadNodeFrequencies = async () => {
     if (!isLoaded.value) {
       try {
-        const response = await axios.get('/assets/sorted-custom-node-map.json')
+        const response = await axios.get('assets/sorted-custom-node-map.json')
         nodeFrequencyLookup.value = response.data
         isLoaded.value = true
       } catch (error) {
