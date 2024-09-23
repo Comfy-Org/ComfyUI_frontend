@@ -61,6 +61,7 @@ test.describe('Missing models warning', () => {
     // Wait for the element with the .comfy-missing-models selector to be visible
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
+    await expect(comfyPage.canvas).toHaveScreenshot('missing_models_dialog_initial.png')
 
     // Click the download button
     const downloadButton = comfyPage.page.getByLabel('Download')
@@ -70,5 +71,6 @@ test.describe('Missing models warning', () => {
     // Wait for the element with the .download-complete selector to be visible
     const downloadComplete = comfyPage.page.locator('.download-complete')
     await expect(downloadComplete).toBeVisible()
+    await expect(comfyPage.canvas).toHaveScreenshot('missing_models_dialog_downloaded.png')
   })
 })
