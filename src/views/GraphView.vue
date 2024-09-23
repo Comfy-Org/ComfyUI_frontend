@@ -92,16 +92,10 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
+    app.ui.menuContainer.style.removeProperty('display')
     app.ui.restoreMenuPosition()
-    document.body.style.removeProperty('display')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.removeProperty('display')
-    }
   } else {
-    document.body.style.setProperty('display', 'grid')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.setProperty('display', 'none')
-    }
+    app.ui.menuContainer.style.setProperty('display', 'none')
   }
 })
 

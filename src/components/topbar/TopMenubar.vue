@@ -1,6 +1,6 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div class="top-menubar comfyui-menu">
+    <div class="top-menubar comfyui-menu" v-if="betaMenuEnabled">
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
         :model="items"
@@ -16,7 +16,13 @@
 <script setup lang="ts">
 import Menubar from 'primevue/menubar'
 import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
+import { computed } from 'vue'
+import { useSettingStore } from '@/stores/settingStore'
 
+const settingStore = useSettingStore()
+const betaMenuEnabled = computed(
+  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
 const coreMenuItemsStore = useCoreMenuItemStore()
 const items = coreMenuItemsStore.menuItems
 </script>
