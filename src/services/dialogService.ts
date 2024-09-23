@@ -8,6 +8,8 @@ import SettingDialogContent from '@/components/dialog/content/SettingDialogConte
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
+import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
+import { i18n } from '@/i18n'
 
 export function showLoadWorkflowWarning(props: {
   missingNodeTypes: any[]
@@ -45,5 +47,12 @@ export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
     props: {
       error
     }
+  })
+}
+
+export function showTemplateWorkflowsDialog() {
+  useDialogStore().showDialog({
+    title: i18n.global.t('templateWorkflows.title'),
+    component: TemplateWorkflowsContent
   })
 }
