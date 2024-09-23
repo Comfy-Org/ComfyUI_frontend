@@ -212,15 +212,14 @@ const missingModels = computed(() => {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
-        error:
-          `Download not allowed from source '${model.url}'', only allowed from '${allowedSources.join(', ')}''`
+        error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
       }
     }
     if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
-        error: 'Only allowed suffixes are ' + allowedSuffixes.join(', ')
+        error: `Only allowed suffixes are: '${allowedSuffixes.join("', '")}'`
       }
     }
     return {
