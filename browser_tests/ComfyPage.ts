@@ -8,6 +8,7 @@ import * as fs from 'fs'
 import { NodeBadgeMode } from '../src/types/nodeSource'
 import { NodeId } from '../src/types/comfyWorkflow'
 import { ManageGroupNode } from './helpers/manageGroupNode'
+import { ComfyTemplates } from './helpers/templates'
 
 interface Position {
   x: number
@@ -173,6 +174,10 @@ class WorkflowsSidebarTab extends SidebarTab {
     super(page, 'workflows')
   }
 
+  get browseGalleryButton() {
+    return this.page.locator('.browse-templates-button')
+  }
+
   get newBlankWorkflowButton() {
     return this.page.locator('.new-blank-workflow-button')
   }
@@ -288,6 +293,7 @@ export class ComfyPage {
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
   public readonly appMenu: ComfyAppMenu
+  public readonly templates: ComfyTemplates
 
   constructor(
     public readonly page: Page,
@@ -302,6 +308,7 @@ export class ComfyPage {
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
     this.appMenu = new ComfyAppMenu(page)
+    this.templates = new ComfyTemplates(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
