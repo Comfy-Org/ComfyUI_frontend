@@ -371,5 +371,14 @@ export const CORE_SETTINGS: SettingParams[] = [
         element.style.display = value ? 'flex' : 'none'
       }
     }
+  },
+  {
+    id: 'Comfy.UseNewMenu',
+    category: ['Comfy', 'Menu', 'UseNewMenu'],
+    defaultValue: 'Disabled',
+    name: 'Use new menu and workflow management.',
+    experimental: true,
+    type: 'combo',
+    options: ['Disabled', 'Floating']
   }
 ]
