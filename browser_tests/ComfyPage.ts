@@ -1,5 +1,6 @@
 import type { Page, Locator } from '@playwright/test'
 import { test as base } from '@playwright/test'
+import { expect } from '@playwright/test'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
