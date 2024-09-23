@@ -5,7 +5,6 @@ name: Update Playwright Expectations
 on:
   pull_request:
     types: [ labeled ]
-    branches: [ main, master ]
 
 jobs:
   test:
