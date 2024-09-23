@@ -92,7 +92,11 @@ import { DownloadModelStatus } from '@/types/apiTypes'
 
 const showFolderSelect = ref(false)
 
-const allowedSources = ['https://civitai.com/', 'https://huggingface.co/']
+const allowedSources = [
+  'https://civitai.com/',
+  'https://huggingface.co/',
+  'http://localhost:'
+]
 const allowedSuffixes = ['.safetensors', '.sft']
 
 interface ModelInfo {
@@ -183,7 +187,7 @@ const triggerDownload = async (
   handleDownloadProgress(download)
 }
 
-api.addEventListener('download_progress', (event) => {
+api.addEventListener('download_progress', (event: CustomEvent) => {
   handleDownloadProgress(event.detail)
 })
 
