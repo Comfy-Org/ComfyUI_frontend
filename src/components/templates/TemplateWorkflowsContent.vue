@@ -1,6 +1,13 @@
 <template>
-  <div class="flex flex-wrap content-around justify-around gap-4">
-    <div v-for="template in templates" :key="template">
+  <div
+    class="flex flex-wrap content-around justify-around gap-4"
+    data-testid="template-workflows-content"
+  >
+    <div
+      v-for="template in templates"
+      :key="template"
+      :data-testid="`template-workflow-${template}`"
+    >
       <Card>
         <template #header>
           <div
