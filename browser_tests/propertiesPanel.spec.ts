@@ -3,7 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Properties Panel', () => {
   test('Can change property value', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.getByText('Properties Panel').click()
     await comfyPage.nextFrame()
