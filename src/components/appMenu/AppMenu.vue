@@ -65,7 +65,7 @@
         icon="pi pi-times"
         severity="secondary"
         :disabled="!executingPrompt"
-        @click="commandStore.getCommand('Comfy.Interrupt')"
+        @click="() => commandStore.getCommand('Comfy.Interrupt')()"
       ></Button>
 
       <ButtonGroup>
@@ -73,19 +73,21 @@
           v-tooltip.bottom="$t('menu.refresh')"
           icon="pi pi-refresh"
           severity="secondary"
-          @click="commandStore.getCommand('Comfy.RefreshNodeDefinitions')"
+          @click="
+            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
+          "
         />
         <Button
           v-tooltip.bottom="$t('menu.clipspace')"
           icon="pi pi-clipboard"
           severity="secondary"
-          @click="commandStore.getCommand('Comfy.OpenClipspace')"
+          @click="() => commandStore.getCommand('Comfy.OpenClipspace')()"
         />
         <Button
           v-tooltip.bottom="$t('menu.resetView')"
           icon="pi pi-expand"
           severity="secondary"
-          @click="commandStore.getCommand('Comfy.ResetView')"
+          @click="() => commandStore.getCommand('Comfy.ResetView')()"
         />
       </ButtonGroup>
     </div>
