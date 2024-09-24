@@ -873,7 +873,7 @@ class NodeReference {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.getNodeRefsByType(
-      `workflow/${groupNodeName}`
+      `workflow>${groupNodeName}`
     )
     if (nodes.length !== 1) {
       throw new Error(`Did not find single group node (found=${nodes.length})`)
