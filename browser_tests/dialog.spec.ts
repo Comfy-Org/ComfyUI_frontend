@@ -45,37 +45,53 @@ test.describe('Execution error', () => {
 
 test.describe('Missing models warning', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', true)
     await comfyPage.page.evaluate((url: string) => {
       return fetch(`${url}/api/devtools/cleanup_fake_model`)
     }, comfyPage.url)
-    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSources', [
-      'http://localhost:8188'
-    ])
-    await comfyPage.setSetting('Comfy.Workflow.ModelDownload.AllowedSuffixes', [
-      '.safetensors'
-    ])
   })
 
   test('Should display a warning when missing models are found', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', true)
-
     // The fake_model.safetensors is served by
     // https://github.com/Comfy-Org/ComfyUI_devtools/blob/main/__init__.py
     await comfyPage.loadWorkflow('missing_models')
 
-    // Wait for the element with the .comfy-missing-models selector to be visible
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    // Click the download button
     const downloadButton = comfyPage.page.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
     await downloadButton.click()
 
-    // Wait for the element with the .download-complete selector to be visible
     const downloadComplete = comfyPage.page.locator('.download-complete')
     await expect(downloadComplete).toBeVisible()
+  })
+
+  test('Can configure download folder', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('missing_models')
+
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+
+    const folderSelectToggle = comfyPage.page.locator(
+      '.model-path-select-checkbox'
+    )
+    const folderSelect = comfyPage.page.locator('.model-path-select')
+    await expect(folderSelectToggle).toBeVisible()
+    await expect(folderSelect).not.toBeVisible()
+
+    await folderSelectToggle.click() // show the selectors
+    await expect(folderSelect).toBeVisible()
+
+    await folderSelect.click() // open dropdown
+    await expect(folderSelect).toHaveClass(/p-select-open/)
+
+    await folderSelect.click() // close the dropdown
+    await expect(folderSelect).not.toHaveClass(/p-select-open/)
+
+    await folderSelectToggle.click() // hide the selectors
+    await expect(folderSelect).not.toBeVisible()
   })
 })
