@@ -8244,7 +8244,30 @@ const globalExport = {};
                 JSON.stringify(clipboard_info)
             );
         }
-        pasteFromClipboard(isConnectUnselected = false) {
+
+        emitEvent(detail) {
+            this.canvas.dispatchEvent(new CustomEvent(
+                "litegraph:canvas",
+                {
+                    bubbles: true,
+                    detail
+                }
+            ));
+        }
+        
+        emitBeforeChange() {
+            this.emitEvent({
+                subType: "before-change",
+            })
+        }
+
+        emitAfterChange() {
+            this.emitEvent({
+                subType: "after-change",
+            })
+        }
+
+        _pasteFromClipboard(isConnectUnselected = false) {
             // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
             if (!LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs && isConnectUnselected) {
                 return;
@@ -8318,6 +8341,15 @@ const globalExport = {};
             this.selectNodes(nodes);
 
             this.graph.afterChange();
+        }
+
+        pasteFromClipboard(isConnectUnselected = false) {
+            this.emitBeforeChange();
+            try {
+                this._pasteFromClipboard(isConnectUnselected);
+            } finally {
+                this.emitAfterChange();
+            }
         }
         /**
              * process a item drop event on top the canvas
