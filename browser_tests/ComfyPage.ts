@@ -707,7 +707,6 @@ export class ComfyPage {
     })
     await this.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
-    expect(node).not.toBeNull()
     await node!.clickContextMenuOption('Convert to Group Node')
     await this.nextFrame()
   }
