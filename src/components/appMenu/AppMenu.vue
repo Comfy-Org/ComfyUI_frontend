@@ -65,7 +65,7 @@
         icon="pi pi-times"
         severity="secondary"
         :disabled="!executingPrompt"
-        @click="actions.interrupt"
+        @click="commandStore.getCommand('Comfy.Interrupt')"
       ></Button>
 
       <ButtonGroup>
@@ -73,25 +73,19 @@
           v-tooltip.bottom="$t('menu.refresh')"
           icon="pi pi-refresh"
           severity="secondary"
-          @click="actions.refresh"
+          @click="commandStore.getCommand('Comfy.RefreshNodeDefinitions')"
         />
         <Button
           v-tooltip.bottom="$t('menu.clipspace')"
           icon="pi pi-clipboard"
           severity="secondary"
-          @click="actions.openClipspace"
+          @click="commandStore.getCommand('Comfy.OpenClipspace')"
         />
         <Button
           v-tooltip.bottom="$t('menu.resetView')"
           icon="pi pi-expand"
           severity="secondary"
-          @click="actions.resetView"
-        />
-        <Button
-          v-tooltip.bottom="$t('menu.clear')"
-          icon="pi pi-ban"
-          severity="secondary"
-          @click="actions.clearWorkflow"
+          @click="commandStore.getCommand('Comfy.ResetView')"
         />
       </ButtonGroup>
     </div>
@@ -115,12 +109,12 @@ import {
   useQueueSettingsStore
 } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
 import { storeToRefs } from 'pinia'
 import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 const settingsStore = useSettingStore()
+const commandStore = useCommandStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { batchCount, mode: queueMode } = storeToRefs(useQueueSettingsStore())
 
@@ -146,31 +140,6 @@ const executingPrompt = computed(() => !!queueCountStore.count.value)
 
 const queuePrompt = (e: MouseEvent) => {
   app.queuePrompt(e.shiftKey ? -1 : 0, batchCount.value)
-}
-
-const actions = {
-  interrupt: async () => {
-    await api.interrupt()
-    useToastStore().add({
-      severity: 'info',
-      summary: 'Interrupted',
-      detail: 'Execution has been interrupted',
-      life: 1000
-    })
-  },
-  clearWorkflow: () => {
-    if (
-      !(settingsStore.get('Comfy.ComfirmClear') ?? true) ||
-      confirm('Clear workflow?')
-    ) {
-      app.clean()
-      app.graph.clear()
-      api.dispatchEvent(new CustomEvent('graphCleared'))
-    }
-  },
-  resetView: () => app.resetView(),
-  openClipspace: () => app['openClipspace'](),
-  refresh: () => app.refreshComboInNodes()
 }
 </script>
 

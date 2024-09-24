@@ -7,8 +7,8 @@ import { ComfyWorkflow } from './workflows'
 export class ChangeTracker {
   static MAX_HISTORY = 50
   #app: ComfyApp
-  undo = []
-  redo = []
+  undoQueue = []
+  redoQueue = []
   activeState = null
   isOurLoad = false
   workflow: ComfyWorkflow | null
@@ -54,12 +54,12 @@ export class ChangeTracker {
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
-      this.undo.push(this.activeState)
-      if (this.undo.length > ChangeTracker.MAX_HISTORY) {
-        this.undo.shift()
+      this.undoQueue.push(this.activeState)
+      if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
+        this.undoQueue.shift()
       }
       this.activeState = clone(currentState)
-      this.redo.length = 0
+      this.redoQueue.length = 0
       this.workflow.unsaved = true
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
@@ -80,13 +80,21 @@ export class ChangeTracker {
     }
   }
 
+  async undo() {
+    await this.updateState(this.undoQueue, this.redoQueue)
+  }
+
+  async redo() {
+    await this.updateState(this.redoQueue, this.undoQueue)
+  }
+
   async undoRedo(e) {
     if (e.ctrlKey || e.metaKey) {
       if (e.key === 'y') {
-        this.updateState(this.redo, this.undo)
+        await this.redo()
         return true
       } else if (e.key === 'z') {
-        this.updateState(this.undo, this.redo)
+        await this.undo()
         return true
       }
     }
@@ -276,4 +284,4 @@ export class ChangeTracker {
   }
 }
 
-const globalTracker = new ChangeTracker({} as ComfyWorkflow)
+export const globalTracker = new ChangeTracker({} as ComfyWorkflow)

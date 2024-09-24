@@ -122,24 +122,6 @@
 }
 
 /* Menu */
-.comfyui-menu {
-  width: 100vw;
-  background: var(--comfy-menu-bg);
-  color: var(--fg-color);
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.8em;
-  display: flex;
-  padding: 4px 8px;
-  align-items: center;
-  gap: 8px;
-  box-sizing: border-box;
-  z-index: 1000;
-  order: 0;
-  grid-column: 1/-1;
-  overflow: auto;
-  max-height: 90vh;
-}
-
 .comfyui-menu>* {
   flex-shrink: 0;
 }
@@ -181,13 +163,6 @@
 .comfyui-menu-push {
   margin-left: -0.8em;
   flex: auto;
-}
-
-.comfyui-logo {
-  font-size: 1.2em;
-  margin: 0;
-  user-select: none;
-  cursor: default;
 }
 
 /** Send to workflow widget selection dialog */
