@@ -56,7 +56,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
       'Test Node'
     )
-    expect(wrapper.findComponent(Badge).props()['value']).toBe(3)
+    expect(wrapper.findComponent(Badge).props()['value'].toString()).toBe('3')
   })
 
   it('makes node label editable when renamingEditingNode matches', async () => {
