@@ -85,7 +85,21 @@ test.describe('Menu', () => {
       const count = await comfyPage.getGraphNodesCount()
       // Drag the node onto the canvas
       const canvasSelector = '#graph-canvas'
-      await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector)
+
+      // Get the bounding box of the canvas element
+      const canvasBoundingBox = (await comfyPage.page
+        .locator(canvasSelector)
+        .boundingBox())!
+
+      // Calculate the center position of the canvas
+      const targetPosition = {
+        x: canvasBoundingBox.x + canvasBoundingBox.width / 2,
+        y: canvasBoundingBox.y + canvasBoundingBox.height / 2
+      }
+
+      await comfyPage.page.dragAndDrop(nodeSelector, canvasSelector, {
+        targetPosition
+      })
 
       // Verify the node is added to the canvas
       expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
