@@ -25,6 +25,7 @@ export function showLoadWorkflowWarning(props: {
 
 export function showMissingModelsWarning(props: {
   missingModels: any[]
+  paths: Record<string, string[]>
   [key: string]: any
 }) {
   const dialogStore = useDialogStore()
