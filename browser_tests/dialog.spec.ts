@@ -86,10 +86,10 @@ test.describe('Missing models warning', () => {
     await expect(folderSelect).toBeVisible()
 
     await folderSelect.click() // open dropdown
-    await expect(folderSelect).toHaveClass('p-select-open')
+    await expect(folderSelect).toHaveClass(/p-select-open/)
 
     await folderSelect.click() // close the dropdown
-    await expect(folderSelect).not.toHaveClass('p-select-open')
+    await expect(folderSelect).not.toHaveClass(/p-select-open/)
 
     await folderSelectToggle.click() // hide the selectors
     await expect(folderSelect).not.toBeVisible()
