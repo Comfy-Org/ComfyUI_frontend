@@ -9,17 +9,24 @@
           rootList: 'gap-0'
         }"
       />
+      <Divider layout="vertical" class="mx-2" />
+      <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
 import Menubar from 'primevue/menubar'
+import Divider from 'primevue/divider'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
 import { computed } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
+)
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )

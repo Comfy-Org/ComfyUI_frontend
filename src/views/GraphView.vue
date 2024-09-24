@@ -135,6 +135,11 @@ const init = () => {
     id: 'workflows',
     icon: 'pi pi-folder-open',
     iconBadge: () => {
+      if (
+        settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar'
+      ) {
+        return null
+      }
       const value = useWorkflowStore().openWorkflows.length.toString()
       return value === '0' ? null : value
     },
