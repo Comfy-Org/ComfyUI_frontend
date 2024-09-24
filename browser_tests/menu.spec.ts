@@ -454,6 +454,25 @@ test.describe('Menu', () => {
     })
   })
 
+  // Only test 'Top' to reduce test time.
+  // ['Bottom', 'Top']
+  ;['Top'].forEach(async (position) => {
+    test(`Can migrate deprecated menu positions (${position})`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', position)
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+    })
+
+    test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', position)
+      await comfyPage.setup()
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+    })
+  })
+
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
     const [defaultSpeed, maxSpeed] = [1.1, 2.5]
     expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(

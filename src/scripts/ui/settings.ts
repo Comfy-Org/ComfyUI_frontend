@@ -58,6 +58,17 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return Object.values(this.settingsLookup)
   }
 
+  private tryMigrateDeprecatedValue(id: string, value: any) {
+    if (this.app.vueAppReady) {
+      const settingStore = useSettingStore()
+      const setting = settingStore.settings[id]
+      if (setting?.migrateDeprecatedValue) {
+        return setting.migrateDeprecatedValue(value)
+      }
+    }
+    return value
+  }
+
   #dispatchChange<T>(id: string, value: T, oldValue?: T) {
     // Keep the settingStore updated. Not using `store.set` as it would trigger
     // setSettingValue again.
@@ -86,7 +97,12 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
     // Trigger onChange for any settings added before load
     for (const id in this.settingsLookup) {
-      const value = this.settingsValues[this.getId(id)]
+      const compatId = this.getId(id)
+      this.settingsValues[compatId] = this.tryMigrateDeprecatedValue(
+        id,
+        this.settingsValues[compatId]
+      )
+      const value = this.settingsValues[compatId]
       this.settingsLookup[id].onChange?.(value)
       this.#dispatchChange(id, value)
     }
@@ -123,6 +139,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     id: K,
     value: Settings[K]
   ) {
+    value = this.tryMigrateDeprecatedValue(id, value)
+
     const json = JSON.stringify(value)
     localStorage['Comfy.Settings.' + id] = json // backwards compatibility for extensions keep setting in storage
 
