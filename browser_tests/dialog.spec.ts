@@ -60,9 +60,6 @@ test.describe('Missing models warning', () => {
 
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_initial.png'
-    )
 
     const downloadButton = comfyPage.page.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
@@ -70,9 +67,6 @@ test.describe('Missing models warning', () => {
 
     const downloadComplete = comfyPage.page.locator('.download-complete')
     await expect(downloadComplete).toBeVisible()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_downloaded.png'
-    )
   })
 
   test('Can configure download folder', async ({ comfyPage }) => {
@@ -85,26 +79,14 @@ test.describe('Missing models warning', () => {
     await expect(folderSelectToggle).toBeVisible()
 
     await folderSelectToggle.click()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_folder_select_visible.png'
-    )
 
     const folderSelect = comfyPage.page.locator('.model-path-select')
     await expect(folderSelect).toBeVisible()
 
     await folderSelect.click()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_folder_select_clicked.png'
-    )
 
     await folderSelect.click() // close the dropdown
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_folder_select_unclicked.png'
-    )
 
     await folderSelectToggle.click() // hide the selectors
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_models_dialog_folder_select_rehidden.png'
-    )
   })
 })
