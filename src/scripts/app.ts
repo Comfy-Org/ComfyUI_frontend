@@ -1575,14 +1575,15 @@ export class ComfyApp {
 
       if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
         adjustments.lightness = 0.5
+
+        // Lighten title bar of colored nodes on light theme
+        if (old_color) {
+          node.color = adjustColor(old_color, { lightness: 0.5 })
+        }
       }
 
       node.bgcolor = adjustColor(
         old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR,
-        adjustments
-      )
-      node.color = adjustColor(
-        old_color || LiteGraph.NODE_DEFAULT_COLOR,
         adjustments
       )
 
