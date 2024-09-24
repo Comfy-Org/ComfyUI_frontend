@@ -1,7 +1,7 @@
 <template>
   <div class="workflow-tabs">
     <SelectButton
-      class="bg-transparent"
+      class="select-button-group bg-transparent"
       :modelValue="selectedWorkflow"
       @update:modelValue="onWorkflowChange"
       :options="options"
@@ -9,7 +9,9 @@
       dataKey="value"
     >
       <template #option="{ option }">
-        <span class="text-sm">{{ option.label }}</span>
+        <span class="text-sm max-w-[150px] truncate inline-block">{{
+          option.label
+        }}</span>
         <Button
           class="close-button p-0 w-auto invisible"
           icon="pi pi-times"
@@ -74,6 +76,18 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 </script>
 
 <style scoped>
+.select-button-group {
+  max-width: 70vw;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.select-button-group::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
+
 :deep(.p-togglebutton::before) {
   @apply hidden;
 }
