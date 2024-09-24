@@ -213,7 +213,6 @@ test.describe('Node Color Adjustments', () => {
   }) => {
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')
     await comfyPage.nextFrame()
-    // await comfyPage.page.mouse.move(0, 0)
     await expect(comfyPage.canvas).toHaveScreenshot('node-lightened-colors.png')
   })
 
