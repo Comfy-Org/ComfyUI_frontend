@@ -1,6 +1,24 @@
 <template>
   <Panel v-if="visible" class="app-menu">
     <div class="app-menu-content">
+      <ButtonGroup>
+        <Button
+          v-tooltip.bottom="$t('menu.refresh')"
+          icon="pi pi-refresh"
+          severity="secondary"
+          @click="
+            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
+          "
+        />
+        <Button
+          v-tooltip.bottom="$t('menu.resetView')"
+          icon="pi pi-expand"
+          severity="secondary"
+          @click="() => commandStore.getCommand('Comfy.ResetView')()"
+        />
+      </ButtonGroup>
+      <div class="separator"></div>
+
       <Popover ref="queuePopover" data-testid="queue-options">
         <div class="queue-options">
           <p class="batch-count">
@@ -45,7 +63,7 @@
         v-tooltip.bottom="$t('menu.queueWorkflow')"
         :label="$t('menu.generate')"
         :icon="`pi pi-${icon}`"
-        severity="secondary"
+        severity="primary"
         @click="queuePrompt"
         :model="[]"
         :pt="{
@@ -59,31 +77,14 @@
         data-testid="queue-button"
       >
       </SplitButton>
-      <div class="separator"></div>
       <Button
         v-tooltip.bottom="$t('menu.interrupt')"
         icon="pi pi-times"
-        severity="secondary"
+        severity="danger"
         :disabled="!executingPrompt"
         @click="() => commandStore.getCommand('Comfy.Interrupt')()"
-      ></Button>
-
-      <ButtonGroup>
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          severity="secondary"
-          @click="
-            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
-          "
-        />
-        <Button
-          v-tooltip.bottom="$t('menu.resetView')"
-          icon="pi pi-expand"
-          severity="secondary"
-          @click="() => commandStore.getCommand('Comfy.ResetView')()"
-        />
-      </ButtonGroup>
+      >
+      </Button>
     </div>
   </Panel>
 </template>
