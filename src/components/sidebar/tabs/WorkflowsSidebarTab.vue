@@ -6,27 +6,27 @@
         icon="pi pi-th-large"
         v-tooltip="$t('sideToolbar.browseTemplates')"
         text
-        @click="commandStore.getCommand('Comfy.BrowseTemplates')"
+        @click="() => commandStore.getCommand('Comfy.BrowseTemplates')()"
       />
       <Button
         class="browse-workflows-button"
         icon="pi pi-folder-open"
         v-tooltip="'Browse for an image or exported workflow'"
         text
-        @click="commandStore.getCommand('Comfy.OpenWorkflow')"
+        @click="() => commandStore.getCommand('Comfy.OpenWorkflow')()"
       />
       <Button
         class="new-default-workflow-button"
         icon="pi pi-code"
         v-tooltip="'Load default workflow'"
         text
-        @click="commandStore.getCommand('Comfy.LoadDefaultWorkflow')"
+        @click="() => commandStore.getCommand('Comfy.LoadDefaultWorkflow')()"
       />
       <Button
         class="new-blank-workflow-button"
         icon="pi pi-plus"
         v-tooltip="'Create a new blank workflow'"
-        @click="commandStore.getCommand('Comfy.NewBlankWorkflow')"
+        @click="() => commandStore.getCommand('Comfy.NewBlankWorkflow')()"
         text
       />
     </template>
