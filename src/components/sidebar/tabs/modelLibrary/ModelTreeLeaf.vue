@@ -15,7 +15,7 @@
       </template>
     </TreeExplorerTreeNode>
 
-    <teleport v-if="isHovered" to="#model-library-model-preview-container">
+    <teleport v-if="showPreview" to="#model-library-model-preview-container">
       <div class="model-lib-model-preview" :style="modelPreviewStyle">
         <ModelPreview ref="previewRef" :modelDef="modelDef"></ModelPreview>
       </div>
@@ -82,6 +82,21 @@ const handleModelHover = async () => {
 const container = ref<HTMLElement | null>(null)
 const modelContentElement = ref<HTMLElement | null>(null)
 const isHovered = ref(false)
+
+const showPreview = computed(() => {
+  return (
+    isHovered.value &&
+    modelDef.value &&
+    !modelDef.value.is_fake_object &&
+    modelDef.value.has_loaded_metadata &&
+    (modelDef.value.author ||
+      modelDef.value.description ||
+      modelDef.value.usage_hint ||
+      modelDef.value.trigger_phrase ||
+      modelDef.value.image)
+  )
+})
+
 const handleMouseEnter = async () => {
   if (modelDef.value.is_fake_object) {
     return
