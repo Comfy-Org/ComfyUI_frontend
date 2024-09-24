@@ -92,10 +92,12 @@ import { DownloadModelStatus } from '@/types/apiTypes'
 
 const showFolderSelect = ref(false)
 
+// TODO: Read this from server internal API rather than hardcoding here
+// as some installations may wish to use custom sources
 const allowedSources = [
   'https://civitai.com/',
   'https://huggingface.co/',
-  'http://localhost:'
+  'http://localhost:' // Included for testing usage only
 ]
 const allowedSuffixes = ['.safetensors', '.sft']
 
