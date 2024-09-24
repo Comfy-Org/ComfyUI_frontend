@@ -212,6 +212,16 @@ class WorkflowsSidebarTab extends SidebarTab {
   }
 }
 
+class Topbar {
+  constructor(public readonly page: Page) {}
+
+  async getTabNames(): Promise<string[]> {
+    return await this.page
+      .locator('.workflow-tabs .workflow-label')
+      .allInnerTexts()
+  }
+}
+
 class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
@@ -246,6 +256,10 @@ class ComfyMenu {
 
   get workflowsTab() {
     return new WorkflowsSidebarTab(this.page)
+  }
+
+  get topbar() {
+    return new Topbar(this.page)
   }
 
   async toggleTheme() {
