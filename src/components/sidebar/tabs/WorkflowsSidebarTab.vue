@@ -38,7 +38,10 @@
         :placeholder="$t('searchWorkflows') + '...'"
       />
       <div class="comfyui-workflows-panel" v-if="!isSearching">
-        <div class="comfyui-workflows-open">
+        <div
+          class="comfyui-workflows-open"
+          v-if="workflowTabsPosition === 'Sidebar'"
+        >
           <TextDivider text="Open" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="renderTreeNode(workflowStore.openWorkflowsTree).children"
@@ -120,6 +123,12 @@ import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useSettingStore } from '@/stores/settingStore'
+
+const settingStore = useSettingStore()
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
+)
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)

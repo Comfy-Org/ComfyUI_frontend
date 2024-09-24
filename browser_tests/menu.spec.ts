@@ -381,6 +381,11 @@ test.describe('Menu', () => {
 
   test.describe('Workflows sidebar', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Sidebar'
+      )
+
       // Open the sidebar
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
@@ -431,6 +436,21 @@ test.describe('Menu', () => {
       await expect(
         comfyPage.page.locator('.comfy-missing-nodes')
       ).not.toBeVisible()
+    })
+  })
+
+  test.describe('Workflows topbar tabs', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting(
+        'Comfy.Workflow.WorkflowTabsPosition',
+        'Topbar'
+      )
+    })
+
+    test('Can show opened workflows', async ({ comfyPage }) => {
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
+        'Unsaved Workflow'
+      ])
     })
   })
 
