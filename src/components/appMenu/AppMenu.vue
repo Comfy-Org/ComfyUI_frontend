@@ -18,59 +18,15 @@
         />
       </ButtonGroup>
       <div class="separator"></div>
-
-      <!-- <Popover ref="queuePopover" data-testid="queue-options">
-        <div class="queue-options">
-          <p class="batch-count">
-            <FloatLabel v-tooltip="$t('menu.batchCountTooltip')">
-              <InputNumber id="batchCount" v-model="batchCount" :min="1" />
-              <label for="batchCount">{{ $t('menu.batchCount') }}</label>
-            </FloatLabel>
-
-            <Slider
-              v-model="batchCount"
-              :min="1"
-              :max="100"
-              v-tooltip="$t('menu.batchCountTooltip')"
-            />
-          </p>
-
-          <Divider layout="vertical" />
-
-          <p class="auto-queue">
-            <span class="label">{{ $t('menu.autoQueue') }}</span>
-            <template v-for="mode in queueModes" :key="mode">
-              <div
-                v-tooltip="$t(`menu.${mode}Tooltip`)"
-                class="auto-queue-mode"
-              >
-                <RadioButton
-                  v-model="queueMode"
-                  :inputId="`autoqueue-${mode}`"
-                  name="dynamic"
-                  :value="mode"
-                  :data-testid="`autoqueue-${mode}`"
-                />
-                <label :for="`autoqueue-${mode}`">{{
-                  $t(`menu.${mode}`)
-                }}</label>
-              </div>
-            </template>
-          </p>
-        </div>
-      </Popover> -->
-
       <div class="queue-button-group">
         <SplitButton
-          v-tooltip.bottom="$t('menu.queueWorkflow')"
           :label="activeQueueModeMenuItem.label"
           :icon="activeQueueModeMenuItem.icon"
           severity="primary"
           @click="queuePrompt"
           :model="queueModeMenuItems"
           data-testid="queue-button"
-          v-tooltip="activeQueueModeMenuItem.tooltip"
-          :pt="{}"
+          v-tooltip.bottom="$t('menu.queueWorkflow')"
         >
           <template #item="{ item }">
             <Button
@@ -101,12 +57,6 @@ import { computed } from 'vue'
 import Panel from 'primevue/panel'
 import SplitButton from 'primevue/splitbutton'
 import Button from 'primevue/button'
-import FloatLabel from 'primevue/floatlabel'
-import InputNumber from 'primevue/inputnumber'
-import Popover from 'primevue/popover'
-import Divider from 'primevue/divider'
-import Slider from 'primevue/slider'
-import RadioButton from 'primevue/radiobutton'
 import ButtonGroup from 'primevue/buttongroup'
 import {
   AutoQueueMode,
