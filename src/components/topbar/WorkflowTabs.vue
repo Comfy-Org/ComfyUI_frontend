@@ -77,15 +77,14 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 
 <style scoped>
 .select-button-group {
+  /* TODO: Make this dynamic. Take rest of space after all tool buttons */
   max-width: 70vw;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
 
-.select-button-group::-webkit-scrollbar {
-  display: none; /* WebKit */
+  /* Scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
 }
 
 :deep(.p-togglebutton::before) {
@@ -93,7 +92,7 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 }
 
 :deep(.p-togglebutton) {
-  @apply px-2 bg-transparent rounded-none;
+  @apply px-2 bg-transparent rounded-none flex-shrink-0;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
