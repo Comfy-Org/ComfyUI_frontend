@@ -9,6 +9,7 @@
           rootList: 'gap-0'
         }"
       />
+      <Divider layout="vertical" class="mx-2" />
       <WorkflowTabs />
     </div>
   </teleport>
@@ -16,6 +17,7 @@
 
 <script setup lang="ts">
 import Menubar from 'primevue/menubar'
+import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
 import { computed } from 'vue'
