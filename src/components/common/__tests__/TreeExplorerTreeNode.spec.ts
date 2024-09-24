@@ -26,7 +26,8 @@ describe('TreeExplorerTreeNode', () => {
     totalLeaves: 3,
     icon: 'pi pi-folder',
     type: 'folder',
-    handleRename: () => {}
+    handleRename: () => {},
+    badgeText: '3'
   } as RenderedTreeExplorerNode
 
   beforeAll(() => {
