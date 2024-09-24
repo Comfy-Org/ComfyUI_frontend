@@ -11,8 +11,7 @@
       <template #option="{ option }">
         <span class="text-sm">{{ option.label }}</span>
         <Button
-          class="p-0 w-auto"
-          :class="{ invisible: option.value !== selectedWorkflow?.value }"
+          class="close-button p-0 w-auto invisible"
           icon="pi pi-times"
           text
           severity="secondary"
@@ -73,3 +72,23 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   app.workflowManager.closeWorkflow(workflow)
 }
 </script>
+
+<style scoped>
+:deep(.p-togglebutton::before) {
+  @apply hidden;
+}
+
+:deep(.p-togglebutton) {
+  @apply px-2 bg-transparent rounded-none;
+}
+
+:deep(.p-togglebutton.p-togglebutton-checked) {
+  @apply border-b-2;
+  border-bottom-color: var(--p-button-text-primary-color);
+}
+
+:deep(.p-togglebutton-checked) .close-button,
+:deep(.p-togglebutton:hover) .close-button {
+  @apply visible;
+}
+</style>
