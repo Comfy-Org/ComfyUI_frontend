@@ -4,6 +4,7 @@
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
   <AppMenu />
+  <TopMenubar />
 </template>
 
 <script setup lang="ts">
@@ -40,6 +41,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import AppMenu from '@/components/appMenu/AppMenu.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
+import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 
 setupAutoQueueHandler()
@@ -91,16 +93,10 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
+    app.ui.menuContainer.style.removeProperty('display')
     app.ui.restoreMenuPosition()
-    document.body.style.removeProperty('display')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.removeProperty('display')
-    }
   } else {
-    document.body.style.setProperty('display', 'grid')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.setProperty('display', 'none')
-    }
+    app.ui.menuContainer.style.setProperty('display', 'none')
   }
 })
 
