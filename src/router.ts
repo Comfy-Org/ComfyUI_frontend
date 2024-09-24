@@ -1,9 +1,8 @@
-import config from '@/config'
 import { createRouter, createWebHistory } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
 const router = createRouter({
-  history: createWebHistory(config.base_url),
+  history: createWebHistory(window.location.pathname),
   routes: [
     {
       path: '/',
