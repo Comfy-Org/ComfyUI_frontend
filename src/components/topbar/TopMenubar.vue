@@ -10,7 +10,7 @@
         }"
       />
       <Divider layout="vertical" class="mx-2" />
-      <WorkflowTabs />
+      <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
     </div>
   </teleport>
 </template>
@@ -24,6 +24,9 @@ import { computed } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
+)
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
