@@ -217,7 +217,7 @@ class Topbar {
 
   async getTabNames(): Promise<string[]> {
     return await this.page
-      .locator('.workflow-tabs .p-togglebutton .p-togglebutton-content')
+      .locator('.workflow-tabs .workflow-label')
       .allInnerTexts()
   }
 }

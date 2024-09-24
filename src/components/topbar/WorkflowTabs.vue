@@ -9,9 +9,10 @@
       dataKey="value"
     >
       <template #option="{ option }">
-        <span class="text-sm max-w-[150px] truncate inline-block">{{
-          option.label
-        }}</span>
+        <span
+          class="workflow-label text-sm max-w-[150px] truncate inline-block"
+          >{{ option.label }}</span
+        >
         <div class="relative">
           <span class="status-indicator" v-if="option.unsaved">•</span>
           <Button
