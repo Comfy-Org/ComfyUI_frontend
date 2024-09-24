@@ -151,7 +151,16 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
             }
           }
         }
-        return node.children?.length.toString() ?? '0'
+        const getTotalLeaves = (node: TreeExplorerNode<ComfyModelDef>) => {
+          if (node.leaf) {
+            return 1
+          }
+          return node.children.reduce(
+            (acc, child) => acc + getTotalLeaves(child),
+            0
+          )
+        }
+        return getTotalLeaves(node).toString()
       },
       children,
       draggable: node.leaf,
