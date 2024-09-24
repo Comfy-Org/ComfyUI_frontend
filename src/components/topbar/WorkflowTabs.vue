@@ -12,14 +12,17 @@
         <span class="text-sm max-w-[150px] truncate inline-block">{{
           option.label
         }}</span>
-        <Button
-          class="close-button p-0 w-auto invisible"
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          size="small"
-          @click.stop="onCloseWorkflow(option)"
-        />
+        <div class="relative">
+          <span class="status-indicator" v-if="option.unsaved">•</span>
+          <Button
+            class="close-button p-0 w-auto"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            size="small"
+            @click.stop="onCloseWorkflow(option)"
+          />
+        </div>
       </template>
     </SelectButton>
   </div>
@@ -37,11 +40,13 @@ const workflowStore = useWorkflowStore()
 interface WorkflowOption {
   label: string
   value: string
+  unsaved: boolean
 }
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   label: workflow.name,
-  value: workflow.key
+  value: workflow.key,
+  unsaved: workflow.unsaved
 })
 
 const optionToWorkflow = (option: WorkflowOption): ComfyWorkflow =>
@@ -73,6 +78,12 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
   app.workflowManager.closeWorkflow(workflow)
 }
+
+// Add this new function to check if a workflow is unsaved
+const isWorkflowUnsaved = (option: WorkflowOption): boolean => {
+  const workflow = optionToWorkflow(option)
+  return workflow.unsaved
+}
 </script>
 
 <style scoped>
@@ -92,7 +103,7 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 }
 
 :deep(.p-togglebutton) {
-  @apply px-2 bg-transparent rounded-none flex-shrink-0;
+  @apply px-2 bg-transparent rounded-none flex-shrink-0 relative;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
@@ -103,5 +114,21 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
+}
+
+.status-indicator {
+  @apply absolute font-bold;
+  font-size: 1.5rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+:deep(.p-togglebutton:hover) .status-indicator {
+  @apply hidden;
+}
+
+:deep(.p-togglebutton) .close-button {
+  @apply invisible;
 }
 </style>
