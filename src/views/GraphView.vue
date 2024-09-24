@@ -34,6 +34,7 @@ import {
 } from '@/stores/workflowStore'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
 import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
+import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
@@ -124,6 +125,14 @@ const init = () => {
     title: t('sideToolbar.nodeLibrary'),
     tooltip: t('sideToolbar.nodeLibrary'),
     component: markRaw(NodeLibrarySidebarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'model-library',
+    icon: 'pi pi-box',
+    title: t('sideToolbar.modelLibrary'),
+    tooltip: t('sideToolbar.modelLibrary'),
+    component: markRaw(ModelLibrarySidebarTab),
     type: 'vue'
   })
   app.extensionManager.registerSidebarTab({

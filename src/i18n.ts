@@ -21,6 +21,7 @@ const messages = {
     box: 'Box',
     briefcase: 'Briefcase',
     error: 'Error',
+    loading: 'Loading',
     findIssues: 'Find Issues',
     copyToClipboard: 'Copy to Clipboard',
     openNewIssue: 'Open New Issue',
@@ -39,9 +40,11 @@ const messages = {
     searchWorkflows: 'Search Workflows',
     searchSettings: 'Search Settings',
     searchNodes: 'Search Nodes',
+    searchModels: 'Search Models',
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
+    noContent: '(No Content)',
     noTasksFound: 'No Tasks Found',
     noTasksFoundMessage: 'There are no tasks in the queue.',
     newFolder: 'New Folder',
@@ -54,6 +57,7 @@ const messages = {
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
+      modelLibrary: 'Model Library',
       queueTab: {
         showFlatList: 'Show Flat List',
         backToAllTasks: 'Back to All Tasks',

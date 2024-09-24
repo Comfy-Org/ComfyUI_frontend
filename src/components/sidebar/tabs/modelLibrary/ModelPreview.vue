@@ -1,0 +1,89 @@
+<template>
+  <div class="model_preview">
+    <div class="model_preview_title">
+      {{ modelDef.title }}
+    </div>
+    <div class="model_preview_top_container">
+      <div class="model_preview_architecture" v-if="modelDef.architecture_id">
+        <span class="model_preview_prefix">Architecture: </span>
+        {{ modelDef.architecture_id }}
+      </div>
+      <div class="model_preview_author" v-if="modelDef.author">
+        <span class="model_preview_prefix">Author: </span>
+        {{ modelDef.author }}
+      </div>
+    </div>
+    <div class="model_preview_image" v-if="modelDef.image">
+      <img :src="modelDef.image" />
+    </div>
+    <div class="model_preview_usage_hint" v-if="modelDef.usage_hint">
+      <span class="model_preview_prefix">Usage hint: </span>
+      {{ modelDef.usage_hint }}
+    </div>
+    <div class="model_preview_trigger_phrase" v-if="modelDef.trigger_phrase">
+      <span class="model_preview_prefix">Trigger phrase: </span>
+      {{ modelDef.trigger_phrase }}
+    </div>
+    <div class="model_preview_description" v-if="modelDef.description">
+      <span class="model_preview_prefix">Description: </span>
+      {{ modelDef.description }}
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ComfyModelDef } from '@/stores/modelStore'
+
+const props = defineProps({
+  modelDef: {
+    type: ComfyModelDef,
+    required: true
+  }
+})
+
+const modelDef = props.modelDef
+</script>
+<style scoped>
+.model_preview {
+  background-color: var(--comfy-menu-bg);
+  font-family: 'Open Sans', sans-serif;
+  color: var(--descrip-text);
+  border: 1px solid var(--descrip-text);
+  min-width: 300px;
+  max-width: 500px;
+  width: fit-content;
+  height: fit-content;
+  z-index: 9999;
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 12px;
+  padding: 10px;
+}
+.model_preview_image {
+  margin: auto;
+  width: fit-content;
+}
+.model_preview_image img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+}
+.model_preview_title {
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+}
+.model_preview_top_container {
+  text-align: center;
+}
+.model_preview_author,
+.model_preview_architecture {
+  display: inline-block;
+  text-align: center;
+  margin: 5px;
+  font-size: 10px;
+}
+.model_preview_prefix {
+  font-weight: bold;
+}
+</style>
