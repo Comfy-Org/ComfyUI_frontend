@@ -90,7 +90,7 @@ export class ChangeTracker {
 
   async undoRedo(e) {
     if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'y') {
+      if (e.key === 'y' || e.key == 'Z') {
         await this.redo()
         return true
       } else if (e.key === 'z') {
