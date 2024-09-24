@@ -707,7 +707,6 @@ export class ComfyPage {
     })
     await this.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
-    expect(node).not.toBeNull()
     await node!.clickContextMenuOption('Convert to Group Node')
     await this.nextFrame()
   }
@@ -874,7 +873,7 @@ class NodeReference {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.getNodeRefsByType(
-      `workflow/${groupNodeName}`
+      `workflow>${groupNodeName}`
     )
     if (nodes.length !== 1) {
       throw new Error(`Did not find single group node (found=${nodes.length})`)
