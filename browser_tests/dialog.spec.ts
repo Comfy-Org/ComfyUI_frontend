@@ -75,18 +75,23 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const folderSelectToggle = comfyPage.page.locator('.model-path-select-checkbox')
-    await expect(folderSelectToggle).toBeVisible()
-
-    await folderSelectToggle.click()
-
+    const folderSelectToggle = comfyPage.page.locator(
+      '.model-path-select-checkbox'
+    )
     const folderSelect = comfyPage.page.locator('.model-path-select')
+    await expect(folderSelectToggle).toBeVisible()
+    await expect(folderSelect).not.toBeVisible()
+
+    await folderSelectToggle.click() // show the selectors
     await expect(folderSelect).toBeVisible()
 
-    await folderSelect.click()
+    await folderSelect.click() // open dropdown
+    await expect(folderSelect).toHaveClass('p-select-open')
 
     await folderSelect.click() // close the dropdown
+    await expect(folderSelect).not.toHaveClass('p-select-open')
 
     await folderSelectToggle.click() // hide the selectors
+    await expect(folderSelect).not.toBeVisible()
   })
 })
