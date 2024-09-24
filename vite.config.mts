@@ -90,10 +90,9 @@ function getModuleName(id: string): string {
 }
 
 const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
-const VITE_BASE_URL = process.env.VITE_BASE_URL || '/'
 
 export default defineConfig({
-  base: VITE_BASE_URL,
+  base: '',
   server: {
     proxy: {
       '/internal': {
@@ -115,6 +114,11 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true
+      },
+
+      '/testsubrouteindex': {
+        target: 'http://localhost:5173',
+        rewrite: (path) => path.substring('/testsubrouteindex'.length)
       }
     }
   },
