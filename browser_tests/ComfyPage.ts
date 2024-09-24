@@ -771,46 +771,43 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async ctrlC() {
+  async ctrlSend(keyToPress: string) {
     await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyC')
+    await this.page.keyboard.press(keyToPress)
     await this.page.keyboard.up('Control')
     await this.nextFrame()
+  }
+
+  async ctrlA() {
+    await this.ctrlSend('KeyA')
+  }
+
+  async ctrlB() {
+    await this.ctrlSend('KeyB')
+  }
+
+  async ctrlC() {
+    await this.ctrlSend('KeyC')
   }
 
   async ctrlV() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyV')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyV')
   }
 
   async ctrlZ() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyZ')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyZ')
   }
 
   async ctrlY() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyY')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyY')
   }
 
   async ctrlArrowUp() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('ArrowUp')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('ArrowUp')
   }
 
   async ctrlArrowDown() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('ArrowDown')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('ArrowDown')
   }
 
   async closeMenu() {
@@ -941,6 +938,9 @@ export class ComfyPage {
     if (!id) return null
     return this.getNodeRefById(id)
   }
+  async moveMouseToEmptyArea() {
+    await this.page.mouse.move(10, 10)
+  }
 }
 
 export class NodeSlotReference {
@@ -1046,12 +1046,38 @@ export class NodeReference {
       y: pos[1]
     }
   }
+  async getBounding(): Promise<Position & Size> {
+    const [x, y, width, height]: [number, number, number, number] =
+      await this.comfyPage.page.evaluate((id) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error('Node not found')
+        return node.getBounding()
+      }, this.id)
+    return {
+      x,
+      y,
+      width,
+      height
+    }
+  }
   async getSize(): Promise<Size> {
     const size = await this.getProperty<[number, number]>('size')
     return {
       width: size[0],
       height: size[1]
     }
+  }
+  async getFlags(): Promise<{ collapsed?: boolean; pinned?: boolean }> {
+    return await this.getProperty('flags')
+  }
+  async isPinned() {
+    return !!(await this.getFlags()).pinned
+  }
+  async isCollapsed() {
+    return !!(await this.getFlags()).collapsed
+  }
+  async isBypassed() {
+    return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
   async getProperty<T>(prop: string): Promise<T> {
     return await this.comfyPage.page.evaluate(
@@ -1069,25 +1095,44 @@ export class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
+<<<<<<< HEAD
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }
   async click(position: 'title', options?: Parameters<Page['click']>[1]) {
+=======
+  async click(
+    position: 'title' | 'collapse',
+    options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
+  ) {
+>>>>>>> fcbdefc (Add tests)
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
     let clickPos: Position
     switch (position) {
       case 'title':
-        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y + 15 }
+        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
+        break
+      case 'collapse':
+        clickPos = { x: nodePos.x + 5, y: nodePos.y - 10 }
         break
       default:
         throw new Error(`Invalid click position ${position}`)
     }
+
+    const moveMouseToEmptyArea = options?.moveMouseToEmptyArea
+    if (options) {
+      delete options.moveMouseToEmptyArea
+    }
+
     await this.comfyPage.canvas.click({
       ...options,
       position: clickPos
     })
     await this.comfyPage.nextFrame()
+    if (moveMouseToEmptyArea) {
+      await this.comfyPage.moveMouseToEmptyArea()
+    }
   }
   async connectWidget(
     originSlotIndex: number,
@@ -1150,4 +1195,36 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     await comfyPage.setup()
     await use(comfyPage)
   }
+})
+
+const makeMatcher = function <T>(
+  getValue: (node: NodeReference) => Promise<T> | T,
+  type: string
+) {
+  return async function (
+    node: NodeReference,
+    options?: { timeout?: number; intervals?: number[] }
+  ) {
+    const value = await getValue(node)
+    let assertion = expect(
+      value,
+      'Node is ' + (this.isNot ? '' : 'not ') + type
+    )
+    if (this.isNot) {
+      assertion = assertion.not
+    }
+    await expect(async () => {
+      assertion.toBeTruthy()
+    }).toPass({ timeout: 250, ...options })
+    return {
+      pass: !this.isNot,
+      message: () => 'Node is ' + (this.isNot ? 'not ' : '') + type
+    }
+  }
+}
+
+export const comfyExpect = expect.extend({
+  toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
+  toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
+  toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed')
 })

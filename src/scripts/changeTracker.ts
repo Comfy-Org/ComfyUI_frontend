@@ -47,7 +47,7 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!this.app.graph) return
+    if (!this.app.graph || this.changeCount) return
 
     const currentState = this.app.graph.serialize()
     if (!this.activeState) {
