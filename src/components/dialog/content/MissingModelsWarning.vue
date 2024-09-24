@@ -4,6 +4,15 @@
     <p class="warning-description">
       When loading the graph, the following models were not found:
     </p>
+    <p class="warning-options">
+      <Checkbox
+        class="model-path-select-checkbox"
+        v-model="showFolderSelect"
+        label="Show folder selector"
+        :binary="true"
+      />
+      Show folder selector
+    </p>
     <ListBox
       :options="missingModels"
       optionLabel="label"
@@ -29,6 +38,19 @@
             </div>
           </div>
           <div class="model-action">
+            <Select
+              class="model-path-select"
+              v-if="
+                slotProps.option.action &&
+                !slotProps.option.downloading &&
+                !slotProps.option.completed &&
+                !slotProps.option.error &&
+                showFolderSelect
+              "
+              v-model="slotProps.option.folderPath"
+              :options="slotProps.option.paths"
+              @change="updateFolderPath(slotProps.option, $event)"
+            />
             <Button
               v-if="
                 slotProps.option.action &&
@@ -60,19 +82,24 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
+import Select from 'primevue/select'
+import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
-import { useSettingStore } from '@/stores/settingStore'
 
-const settingStore = useSettingStore()
-const allowedSources = settingStore.get(
-  'Comfy.Workflow.ModelDownload.AllowedSources'
-)
-const allowedSuffixes = settingStore.get(
-  'Comfy.Workflow.ModelDownload.AllowedSuffixes'
-)
+const showFolderSelect = ref(false)
+
+// TODO: Read this from server internal API rather than hardcoding here
+// as some installations may wish to use custom sources
+const allowedSources = [
+  'https://civitai.com/',
+  'https://huggingface.co/',
+  'http://localhost:' // Included for testing usage only
+]
+const allowedSuffixes = ['.safetensors', '.sft']
 
 interface ModelInfo {
   name: string
@@ -83,19 +110,26 @@ interface ModelInfo {
   completed?: boolean
   progress?: number
   error?: string
+  folder_path?: string
 }
 
 const props = defineProps<{
   missingModels: ModelInfo[]
+  paths: Record<string, string[]>
   maximized: boolean
 }>()
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 let lastModel: string | null = null
 
+const updateFolderPath = (model: any, event: SelectChangeEvent) => {
+  const downloadInfo = modelDownloads.value[model.name]
+  downloadInfo.folder_path = event.value
+  return false
+}
 const handleDownloadProgress = (detail: DownloadModelStatus) => {
   if (detail.download_path) {
-    lastModel = detail.download_path.split('/', 2)[1]
+    lastModel = detail.download_path
   }
   if (!lastModel) return
   if (detail.status === 'in_progress') {
@@ -134,7 +168,8 @@ const handleDownloadProgress = (detail: DownloadModelStatus) => {
 const triggerDownload = async (
   url: string,
   directory: string,
-  filename: string
+  filename: string,
+  folder_path: string
 ) => {
   modelDownloads.value[filename] = {
     name: filename,
@@ -143,49 +178,75 @@ const triggerDownload = async (
     downloading: true,
     progress: 0
   }
-  const download = await api.internalDownloadModel(url, directory, filename, 1)
+  const download = await api.internalDownloadModel(
+    url,
+    directory,
+    filename,
+    1,
+    folder_path
+  )
+  lastModel = filename
   handleDownloadProgress(download)
 }
 
-api.addEventListener('download_progress', (event) => {
+api.addEventListener('download_progress', (event: CustomEvent) => {
   handleDownloadProgress(event.detail)
 })
 
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
-    const downloadInfo = modelDownloads.value[model.name]
-    if (!allowedSources.some((source) => model.url.startsWith(source))) {
-      return {
-        label: `${model.directory} / ${model.name}`,
-        hint: model.url,
-        error:
-          'Download not allowed from this source: ' + allowedSources.join(', ')
-      }
-    }
-    if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
-      return {
-        label: `${model.directory} / ${model.name}`,
-        hint: model.url,
-        error: 'Only allowed suffixes are ' + allowedSuffixes.join(', ')
-      }
-    }
-    if (model.directory_invalid) {
+    const paths = props.paths[model.directory]
+    if (model.directory_invalid || !paths) {
       return {
         label: `${model.directory} / ${model.name}`,
         hint: model.url,
         error: 'Invalid directory specified (does this require custom nodes?)'
       }
     }
+    const downloadInfo: ModelInfo = modelDownloads.value[model.name] ?? {
+      downloading: false,
+      completed: false,
+      progress: 0,
+      error: null,
+      name: model.name,
+      directory: model.directory,
+      url: model.url,
+      folder_path: paths[0]
+    }
+    modelDownloads.value[model.name] = downloadInfo
+    if (!allowedSources.some((source) => model.url.startsWith(source))) {
+      return {
+        label: `${model.directory} / ${model.name}`,
+        hint: model.url,
+        error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
+      }
+    }
+    if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
+      return {
+        label: `${model.directory} / ${model.name}`,
+        hint: model.url,
+        error: `Only allowed suffixes are: '${allowedSuffixes.join("', '")}'`
+      }
+    }
     return {
       label: `${model.directory} / ${model.name}`,
       hint: model.url,
-      downloading: downloadInfo?.downloading ?? false,
-      completed: downloadInfo?.completed ?? false,
-      progress: downloadInfo?.progress ?? 0,
-      error: downloadInfo?.error,
+      downloading: downloadInfo.downloading,
+      completed: downloadInfo.completed,
+      progress: downloadInfo.progress,
+      error: downloadInfo.error,
+      name: model.name,
+      paths: paths,
+      folderPath: downloadInfo.folder_path,
       action: {
         text: 'Download',
-        callback: () => triggerDownload(model.url, model.directory, model.name)
+        callback: () =>
+          triggerDownload(
+            model.url,
+            model.directory,
+            model.name,
+            downloadInfo.folder_path
+          )
       }
     }
   })
@@ -216,6 +277,10 @@ const missingModels = computed(() => {
 
 .warning-description {
   margin-bottom: 1rem;
+}
+
+.warning-options {
+  color: var(--fg-color);
 }
 
 .missing-models-list {

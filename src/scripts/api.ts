@@ -396,7 +396,8 @@ class ComfyApi extends EventTarget {
     url: string,
     model_directory: string,
     model_filename: string,
-    progress_interval: number
+    progress_interval: number,
+    folder_path: string
   ): Promise<DownloadModelStatus> {
     const res = await this.fetchApi('/internal/models/download', {
       method: 'POST',
@@ -407,7 +408,8 @@ class ComfyApi extends EventTarget {
         url,
         model_directory,
         model_filename,
-        progress_interval
+        progress_interval,
+        folder_path
       })
     })
     return await res.json()
@@ -715,6 +717,10 @@ class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     return (await axios.get(this.internalURL('/logs'))).data
+  }
+
+  async getFolderPaths(): Promise<Record<string, string[]>> {
+    return (await axios.get(this.internalURL('/folder_paths'))).data
   }
 }
 
