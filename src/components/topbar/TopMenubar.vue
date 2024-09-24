@@ -9,12 +9,14 @@
           rootList: 'gap-0'
         }"
       />
+      <WorkflowTabs />
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
 import Menubar from 'primevue/menubar'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
 import { computed } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
