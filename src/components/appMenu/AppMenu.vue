@@ -59,7 +59,8 @@
           </p>
         </div>
       </Popover> -->
-      <ButtonGroup>
+
+      <div class="queue-button-group">
         <SplitButton
           v-tooltip.bottom="$t('menu.queueWorkflow')"
           :label="activeQueueModeMenuItem.label"
@@ -81,15 +82,16 @@
             />
           </template>
         </SplitButton>
-        <Button
-          v-tooltip.bottom="$t('menu.interrupt')"
-          icon="pi pi-times"
-          severity="danger"
-          :disabled="!executingPrompt"
-          @click="() => commandStore.getCommand('Comfy.Interrupt')()"
-        >
-        </Button>
-      </ButtonGroup>
+        <ButtonGroup class="execution-actions" v-if="executingPrompt">
+          <Button
+            v-tooltip.bottom="$t('menu.interrupt')"
+            icon="pi pi-times"
+            severity="danger"
+            @click="() => commandStore.getCommand('Comfy.Interrupt')()"
+          >
+          </Button>
+        </ButtonGroup>
+      </div>
     </div>
   </Panel>
 </template>
