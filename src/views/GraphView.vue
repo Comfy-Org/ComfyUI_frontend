@@ -4,6 +4,7 @@
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
   <AppMenu />
+  <TopMenubar />
 </template>
 
 <script setup lang="ts">
@@ -34,11 +35,13 @@ import {
 } from '@/stores/workflowStore'
 import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
 import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
+import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import AppMenu from '@/components/appMenu/AppMenu.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
+import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 
 setupAutoQueueHandler()
@@ -90,16 +93,10 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
+    app.ui.menuContainer.style.removeProperty('display')
     app.ui.restoreMenuPosition()
-    document.body.style.removeProperty('display')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.removeProperty('display')
-    }
   } else {
-    document.body.style.setProperty('display', 'grid')
-    if (app.ui.menuContainer) {
-      app.ui.menuContainer.style.setProperty('display', 'none')
-    }
+    app.ui.menuContainer.style.setProperty('display', 'none')
   }
 })
 
@@ -124,6 +121,14 @@ const init = () => {
     title: t('sideToolbar.nodeLibrary'),
     tooltip: t('sideToolbar.nodeLibrary'),
     component: markRaw(NodeLibrarySidebarTab),
+    type: 'vue'
+  })
+  app.extensionManager.registerSidebarTab({
+    id: 'model-library',
+    icon: 'pi pi-box',
+    title: t('sideToolbar.modelLibrary'),
+    tooltip: t('sideToolbar.modelLibrary'),
+    component: markRaw(ModelLibrarySidebarTab),
     type: 'vue'
   })
   app.extensionManager.registerSidebarTab({

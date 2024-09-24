@@ -42,54 +42,71 @@ export class ComfyModelDef {
   image: string = ''
   /** Whether the model metadata has been loaded from the server, used for `load()` */
   has_loaded_metadata: boolean = false
+  /** If true, a metadata load request has been triggered, but may or may not yet have finished loading */
+  is_load_requested: boolean = false
+  /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
+  is_fake_object: boolean = false
 
   constructor(name: string, directory: string) {
     this.name = name
-    this.title = name
+    this.title = name.replaceAll('\\', '/').split('/').pop()
+    if (this.title.endsWith('.safetensors')) {
+      this.title = this.title.slice(0, -'.safetensors'.length)
+    }
     this.directory = directory
   }
 
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
-    if (this.has_loaded_metadata) {
+    if (this.has_loaded_metadata || this.is_load_requested) {
       return
     }
-    const metadata = await api.viewMetadata(this.directory, this.name)
-    if (!metadata) {
-      return
+    this.is_load_requested = true
+    try {
+      const metadata = await api.viewMetadata(this.directory, this.name)
+      if (!metadata) {
+        return
+      }
+      this.title =
+        _findInMetadata(
+          metadata,
+          'modelspec.title',
+          'title',
+          'display_name',
+          'name'
+        ) || this.title
+      this.architecture_id =
+        _findInMetadata(metadata, 'modelspec.architecture', 'architecture') ||
+        ''
+      this.author =
+        _findInMetadata(metadata, 'modelspec.author', 'author') || ''
+      this.description =
+        _findInMetadata(metadata, 'modelspec.description', 'description') || ''
+      this.resolution =
+        _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
+      this.usage_hint =
+        _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
+      this.trigger_phrase =
+        _findInMetadata(
+          metadata,
+          'modelspec.trigger_phrase',
+          'trigger_phrase'
+        ) || ''
+      this.image =
+        _findInMetadata(
+          metadata,
+          'modelspec.thumbnail',
+          'thumbnail',
+          'image',
+          'icon'
+        ) || ''
+      const tagsCommaSeparated =
+        _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
+      this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
+      this.has_loaded_metadata = true
+    } catch (error) {
+      console.error('Error loading model metadata', this.name, this, error)
     }
-    this.title =
-      _findInMetadata(
-        metadata,
-        'modelspec.title',
-        'title',
-        'display_name',
-        'name'
-      ) || this.name
-    this.architecture_id =
-      _findInMetadata(metadata, 'modelspec.architecture', 'architecture') || ''
-    this.author = _findInMetadata(metadata, 'modelspec.author', 'author') || ''
-    this.description =
-      _findInMetadata(metadata, 'modelspec.description', 'description') || ''
-    this.resolution =
-      _findInMetadata(metadata, 'modelspec.resolution', 'resolution') || ''
-    this.usage_hint =
-      _findInMetadata(metadata, 'modelspec.usage_hint', 'usage_hint') || ''
-    this.trigger_phrase =
-      _findInMetadata(metadata, 'modelspec.trigger_phrase', 'trigger_phrase') ||
-      ''
-    this.image =
-      _findInMetadata(
-        metadata,
-        'modelspec.thumbnail',
-        'thumbnail',
-        'image',
-        'icon'
-      ) || ''
-    const tagsCommaSeparated =
-      _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
-    this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
-    this.has_loaded_metadata = true
   }
 }
 
@@ -110,27 +127,42 @@ export class ModelStore {
   }
 }
 
+const folderBlacklist = ['configs', 'custom_nodes']
+
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelStoreMap: {} as Record<string, ModelStore>
+    modelStoreMap: {} as Record<string, ModelStore>,
+    isLoading: {} as Record<string, Promise<ModelStore>>,
+    modelFolders: [] as string[]
   }),
   actions: {
     async getModelsInFolderCached(folder: string): Promise<ModelStore> {
       if (folder in this.modelStoreMap) {
         return this.modelStoreMap[folder]
       }
-      // TODO: needs a lock to avoid overlapping calls
-      const models = await api.getModels(folder)
-      if (!models) {
-        return null
+      if (this.isLoading[folder]) {
+        return this.isLoading[folder]
       }
-      const store = new ModelStore(folder, models)
-      this.modelStoreMap[folder] = store
-      return store
+      const promise = api.getModels(folder).then((models) => {
+        if (!models) {
+          return null
+        }
+        const store = new ModelStore(folder, models)
+        this.modelStoreMap[folder] = store
+        this.isLoading[folder] = false
+        return store
+      })
+      this.isLoading[folder] = promise
+      return promise
     },
     clearCache() {
       this.modelStoreMap = {}
+    },
+    async getModelFolders() {
+      this.modelFolders = (await api.getModelFolders()).filter(
+        (folder) => !folderBlacklist.includes(folder)
+      )
     }
   }
 })

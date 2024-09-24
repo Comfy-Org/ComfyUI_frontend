@@ -1,0 +1,145 @@
+<template>
+  <div ref="container" class="model-lib-node-container h-full w-full">
+    <TreeExplorerTreeNode :node="node">
+      <template #before-label>
+        <span
+          v-if="modelDef && modelDef.image"
+          class="model-lib-model-icon-container"
+        >
+          <span
+            class="model-lib-model-icon"
+            :style="{ backgroundImage: `url(${modelDef.image})` }"
+          >
+          </span>
+        </span>
+      </template>
+    </TreeExplorerTreeNode>
+
+    <teleport v-if="showPreview" to="#model-library-model-preview-container">
+      <div class="model-lib-model-preview" :style="modelPreviewStyle">
+        <ModelPreview ref="previewRef" :modelDef="modelDef"></ModelPreview>
+      </div>
+    </teleport>
+  </div>
+</template>
+
+<script setup lang="ts">
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import ModelPreview from './ModelPreview.vue'
+import { ComfyModelDef } from '@/stores/modelStore'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import {
+  computed,
+  CSSProperties,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref
+} from 'vue'
+import { useSettingStore } from '@/stores/settingStore'
+
+const props = defineProps<{
+  node: RenderedTreeExplorerNode<ComfyModelDef>
+}>()
+
+const modelDef = computed(() => props.node.data)
+
+const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
+const modelPreviewStyle = ref<CSSProperties>({
+  position: 'absolute',
+  top: '0px',
+  left: '0px'
+})
+
+const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+
+const handleModelHover = async () => {
+  if (modelDef.value.is_fake_object) {
+    return
+  }
+  const hoverTarget = modelContentElement.value
+  const targetRect = hoverTarget.getBoundingClientRect()
+
+  const previewHeight = previewRef.value?.$el.offsetHeight || 0
+  const availableSpaceBelow = window.innerHeight - targetRect.bottom
+
+  modelPreviewStyle.value.top =
+    previewHeight > availableSpaceBelow
+      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
+      : `${targetRect.top - 40}px`
+  if (sidebarLocation.value === 'left') {
+    modelPreviewStyle.value.left = `${targetRect.right}px`
+  } else {
+    modelPreviewStyle.value.left = `${targetRect.left - 400}px`
+  }
+
+  modelDef.value.load()
+}
+
+const container = ref<HTMLElement | null>(null)
+const modelContentElement = ref<HTMLElement | null>(null)
+const isHovered = ref(false)
+
+const showPreview = computed(() => {
+  return (
+    isHovered.value &&
+    modelDef.value &&
+    !modelDef.value.is_fake_object &&
+    modelDef.value.has_loaded_metadata &&
+    (modelDef.value.author ||
+      modelDef.value.description ||
+      modelDef.value.usage_hint ||
+      modelDef.value.trigger_phrase ||
+      modelDef.value.image)
+  )
+})
+
+const handleMouseEnter = async () => {
+  if (modelDef.value.is_fake_object) {
+    return
+  }
+  isHovered.value = true
+  await nextTick()
+  handleModelHover()
+}
+const handleMouseLeave = () => {
+  isHovered.value = false
+}
+onMounted(() => {
+  modelContentElement.value = container.value?.closest('.p-tree-node-content')
+  modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
+  modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
+  if (!modelDef.value.is_fake_object) {
+    modelDef.value.load()
+  }
+})
+
+onUnmounted(() => {
+  modelContentElement.value?.removeEventListener('mouseenter', handleMouseEnter)
+  modelContentElement.value?.removeEventListener('mouseleave', handleMouseLeave)
+})
+</script>
+
+<style scoped>
+.model-lib-model-icon-container {
+  display: inline-block;
+  position: relative;
+  left: 0;
+  height: 1.5rem;
+  vertical-align: top;
+  width: 0px;
+}
+.model-lib-model-icon {
+  background-size: cover;
+  background-position: center;
+  display: inline-block;
+  position: relative;
+  left: -2.5rem;
+  height: 2rem;
+  width: 2rem;
+  vertical-align: top;
+}
+</style>

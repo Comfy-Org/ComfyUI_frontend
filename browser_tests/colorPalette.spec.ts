@@ -138,6 +138,7 @@ test.describe('Color Palette', () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', {})
     await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
+    await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
   })
 
   test('Can show custom color palette', async ({ comfyPage }) => {
