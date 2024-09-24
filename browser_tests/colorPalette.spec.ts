@@ -188,7 +188,7 @@ test.describe('Node Color Adjustments', () => {
     await comfyPage.nextFrame()
     await comfyPage.page.mouse.move(0, 0)
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'node-opacity-0.5-arc-theme.png'
+      'node-opacity-0.2-arc-theme.png'
     )
   })
 
