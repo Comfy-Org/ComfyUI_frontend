@@ -139,7 +139,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       },
       getBadgeText: (node: TreeExplorerNode<ComfyModelDef>) => {
         if (node.leaf) {
-          return ''
+          return null
         }
         if (node.children?.length === 1) {
           const onlyChild = node.children[0]
@@ -151,16 +151,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
             }
           }
         }
-        const getTotalLeaves = (node: TreeExplorerNode<ComfyModelDef>) => {
-          if (node.leaf) {
-            return 1
-          }
-          return node.children.reduce(
-            (acc, child) => acc + getTotalLeaves(child),
-            0
-          )
-        }
-        return getTotalLeaves(node).toString()
+        return null
       },
       children,
       draggable: node.leaf,

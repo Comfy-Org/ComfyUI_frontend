@@ -52,7 +52,7 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   /** Total number of leaves in the subtree */
   totalLeaves: number
   /** Text to display on the leaf-count badge */
-  badgeText: string
+  badgeText?: string
 }
 
 export type TreeExplorerDragAndDropData<T = any> = {
