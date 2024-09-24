@@ -379,7 +379,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu and workflow management.',
     experimental: true,
     type: 'combo',
-    options: ['Disabled', 'Floating']
+    options: ['Disabled', 'Floating'],
+    migrateDeprecatedValue: (value: string) => {
+      if (['Top', 'Bottom'].includes(value)) {
+        return 'Floating'
+      }
+      return value
+    }
   },
   {
     id: 'Comfy.Workflow.WorkflowTabsPosition',

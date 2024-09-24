@@ -45,4 +45,6 @@ export interface SettingParams {
   category?: string[]
   experimental?: boolean
   deprecated?: boolean
+  // Deprecated values are mapped to new values.
+  migrateDeprecatedValue?: (value: any) => any
 }
