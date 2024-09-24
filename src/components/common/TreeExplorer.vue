@@ -91,9 +91,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText
-      ? node.getBadgeText(node)
-      : totalLeaves.toString()
+    badgeText: node.getBadgeText ? node.getBadgeText(node) : null
   }
 }
 const onNodeContentClick = async (
