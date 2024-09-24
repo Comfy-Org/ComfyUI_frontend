@@ -78,12 +78,6 @@
           "
         />
         <Button
-          v-tooltip.bottom="$t('menu.clipspace')"
-          icon="pi pi-clipboard"
-          severity="secondary"
-          @click="() => commandStore.getCommand('Comfy.OpenClipspace')()"
-        />
-        <Button
           v-tooltip.bottom="$t('menu.resetView')"
           icon="pi pi-expand"
           severity="secondary"

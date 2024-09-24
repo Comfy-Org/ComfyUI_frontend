@@ -73,6 +73,14 @@ export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
             label: 'Clear Workflow',
             icon: 'pi pi-trash',
             command: commandStore.commands['Comfy.ClearWorkflow']
+          },
+          {
+            separator: true
+          },
+          {
+            label: 'Clipspace',
+            icon: 'pi pi-clipboard',
+            command: commandStore.commands['Comfy.OpenClipspace']
           }
         ]
       }
