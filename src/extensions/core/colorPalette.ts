@@ -684,12 +684,7 @@ app.registerExtension({
               colorPalette.colors.litegraph_base.hasOwnProperty(key) &&
               LiteGraph.hasOwnProperty(key)
             ) {
-              LiteGraph[key] =
-                key === 'NODE_DEFAULT_BGCOLOR'
-                  ? adjustColor(colorPalette.colors.litegraph_base[key], {
-                      opacity: useSettingStore().get('Comfy.Node.Opacity') ?? 1
-                    })
-                  : colorPalette.colors.litegraph_base[key]
+              LiteGraph[key] = colorPalette.colors.litegraph_base[key]
             }
           }
         }
