@@ -1,6 +1,14 @@
+import { memoize } from 'lodash'
+
 type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }
+type HSLA = { h: number; s: number; l: number; a: number }
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'
+
+export interface ColorAdjustOptions {
+  lightness?: number
+  opacity?: number
+}
 
 function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
@@ -33,35 +41,6 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
   return { h, s, l }
 }
 
-function hslToRgb({ h, s, l }: HSL): RGB {
-  let r: number, g: number, b: number
-
-  if (s === 0) {
-    r = g = b = l // achromatic
-  } else {
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1
-      if (t > 1) t -= 1
-      if (t < 1 / 6) return p + (q - p) * 6 * t
-      if (t < 1 / 2) return q
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6
-      return p
-    }
-
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
-    const p = 2 * l - q
-    r = hue2rgb(p, q, h + 1 / 3)
-    g = hue2rgb(p, q, h)
-    b = hue2rgb(p, q, h - 1 / 3)
-  }
-
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255)
-  }
-}
-
 function hexToRgb(hex: string): RGB {
   let r = 0,
     g = 0,
@@ -81,75 +60,105 @@ function hexToRgb(hex: string): RGB {
   return { r, g, b }
 }
 
-function rgbToHex({ r, g, b }: RGB): string {
-  return (
-    '#' +
-    [r, g, b]
-      .map((x) => {
-        const hex = x.toString(16)
-        return hex.length === 1 ? '0' + hex : hex
-      })
-      .join('')
-  )
-}
-
-function identifyColorFormat(color: string): ColorFormat | null {
+const identifyColorFormat = (color: string): ColorFormat | null => {
   if (!color) return null
-  if (color.startsWith('#')) return 'hex'
-  if (/^rgba?\(\d+,\s*\d+,\s*\d+/.test(color))
+  if (color.startsWith('#') && (color.length === 4 || color.length === 7))
+    return 'hex'
+  if (/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*/.test(color))
     return color.includes('rgba') ? 'rgba' : 'rgb'
-  if (/^hsla?\(\d+(\.\d+)?,\s*\d+(\.\d+)?%,\s*\d+(\.\d+)?%/.test(color))
+  if (/hsla?\(\s*\d+(\.\d+)?\s*,\s*\d+(\.\d+)?%\s*,\s*\d+(\.\d+)?%/.test(color))
     return color.includes('hsla') ? 'hsla' : 'hsl'
   return null
 }
 
-export function lightenColor(hex: string, amount: number): string {
-  let rgb = hexToRgb(hex)
-  const hsl = rgbToHsl(rgb)
-  hsl.l = Math.min(1, hsl.l + amount)
-  rgb = hslToRgb(hsl)
-  return rgbToHex(rgb)
+const isHSLA = (color: unknown): color is HSLA => {
+  if (typeof color !== 'object' || color === null) return false
+
+  return ['h', 's', 'l', 'a'].every(
+    (key) =>
+      typeof (color as Record<string, unknown>)[key] === 'number' &&
+      !isNaN((color as Record<string, number>)[key])
+  )
 }
 
-export function applyOpacity(color: string, opacity: number): string {
-  const colorFormat = identifyColorFormat(color)
+function parseToHSLA(color: string, format: ColorFormat): HSLA | null {
+  let match: RegExpMatchArray | null
 
-  if (!colorFormat) {
-    console.warn(
-      `Unsupported color format in user color palette for color: ${color}`
-    )
+  switch (format) {
+    case 'hex': {
+      const hsl = rgbToHsl(hexToRgb(color))
+      return {
+        h: Math.round(hsl.h * 360),
+        s: +(hsl.s * 100).toFixed(1),
+        l: +(hsl.l * 100).toFixed(1),
+        a: 1
+      }
+    }
+
+    case 'rgb':
+    case 'rgba': {
+      match = color.match(/\d+(\.\d+)?/g)
+      if (!match || match.length < 3) return null
+      const [r, g, b] = match.map(Number)
+      const hsl = rgbToHsl({ r, g, b })
+
+      const a = format === 'rgba' && match[3] ? parseFloat(match[3]) : 1
+
+      return {
+        h: Math.round(hsl.h * 360),
+        s: +(hsl.s * 100).toFixed(1),
+        l: +(hsl.l * 100).toFixed(1),
+        a
+      }
+    }
+
+    case 'hsl':
+    case 'hsla': {
+      match = color.match(/\d+(\.\d+)?/g)
+      if (!match || match.length < 3) return null
+      const [h, s, l] = match.map(Number)
+      const a = format === 'hsla' && match[3] ? parseFloat(match[3]) : 1
+      return { h, s, l, a }
+    }
+    default:
+      return null
+  }
+}
+
+const applyColorAdjustments = (
+  color: string,
+  options: ColorAdjustOptions
+): string => {
+  if (!Object.keys(options).length) return color
+
+  const format = identifyColorFormat(color)
+  if (!format) {
+    console.warn(`Unsupported color format in color palette: ${color}`)
     return color
   }
 
-  const clampedOpacity = Math.max(0, Math.min(1, opacity))
-
-  switch (colorFormat) {
-    case 'hex': {
-      const { r, g, b } = hexToRgb(color)
-      if (isNaN(r) || isNaN(g) || isNaN(b)) {
-        return color
-      }
-      return `rgba(${r}, ${g}, ${b}, ${clampedOpacity})`
-    }
-    case 'rgb': {
-      return color.replace('rgb', 'rgba').replace(')', `, ${clampedOpacity})`)
-    }
-    case 'rgba': {
-      return color.replace(
-        /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,[^)]+\)/,
-        `rgba($1, $2, $3, ${clampedOpacity})`
-      )
-    }
-    case 'hsl': {
-      return color.replace('hsl', 'hsla').replace(')', `, ${clampedOpacity})`)
-    }
-    case 'hsla': {
-      return color.replace(
-        /hsla\(\s*(\d+)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*,[^)]+\)/,
-        `hsla($1, $2%, $3%, ${clampedOpacity})`
-      )
-    }
-    default:
-      return color
+  const hsla = parseToHSLA(color, format)
+  if (!isHSLA(hsla)) {
+    console.warn(`Invalid color values in color palette: ${color}`)
+    return color
   }
+
+  if (options.lightness) {
+    hsla.l = Math.max(0, Math.min(100, hsla.l + options.lightness * 100.0))
+  }
+
+  if (options.opacity) {
+    hsla.a = Math.max(0, Math.min(1, options.opacity))
+  }
+
+  return `hsla(${hsla.h}, ${hsla.s}%, ${hsla.l}%, ${hsla.a})`
 }
+
+export const adjustColor: (
+  color: string,
+  options: ColorAdjustOptions
+) => string = memoize(
+  applyColorAdjustments,
+  (color: string, options: ColorAdjustOptions): string =>
+    `${color}-${JSON.stringify(options)}`
+)

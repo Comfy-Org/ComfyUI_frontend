@@ -21,7 +21,7 @@ import {
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
 import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
-import { lightenColor } from '@/utils/colorUtil'
+import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
@@ -1568,13 +1568,24 @@ export class ComfyApp {
         this.editor_alpha = 0.2
       }
 
-      const adjustColor = (color?: string) => {
-        return color ? lightenColor(color, 0.5) : color
+      const adjustments: ColorAdjustOptions = {}
+
+      const opacity = useSettingStore().get('Comfy.Node.Opacity')
+      if (opacity) adjustments.opacity = opacity
+
+      if (useSettingStore().get('Comfy.ColorPalette') === 'light') {
+        adjustments.lightness = 0.5
+
+        // Lighten title bar of colored nodes on light theme
+        if (old_color) {
+          node.color = adjustColor(old_color, { lightness: 0.5 })
+        }
       }
-      if (app.ui.settings.getSettingValue('Comfy.ColorPalette') === 'light') {
-        node.bgcolor = adjustColor(node.bgcolor)
-        node.color = adjustColor(node.color)
-      }
+
+      node.bgcolor = adjustColor(
+        old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR,
+        adjustments
+      )
 
       const res = origDrawNode.apply(this, arguments)
 
