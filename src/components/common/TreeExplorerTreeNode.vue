@@ -22,7 +22,7 @@
       </span>
       <Badge
         v-if="!props.node.leaf"
-        :value="props.node.totalLeaves"
+        :value="props.node.badgeText"
         severity="secondary"
         class="leaf-count-badge"
       />

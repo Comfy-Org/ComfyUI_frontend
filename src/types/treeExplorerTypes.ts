@@ -7,36 +7,39 @@ export interface TreeExplorerNode<T = any> {
   data?: T
   children?: TreeExplorerNode<T>[]
   icon?: string
+  /** Function to override what icon to use for the node */
   getIcon?: (node: TreeExplorerNode<T>) => string
-  // Function to handle renaming the node
+  /** Function to override what text to use for the leaf-count badge on a folder node */
+  getBadgeText?: (node: TreeExplorerNode<T>) => string
+  /** Function to handle renaming the node */
   handleRename?: (
     node: TreeExplorerNode<T>,
     newName: string
   ) => void | Promise<void>
-  // Function to handle deleting the node
+  /** Function to handle deleting the node */
   handleDelete?: (node: TreeExplorerNode<T>) => void | Promise<void>
-  // Function to handle adding a child node
+  /** Function to handle adding a child node */
   handleAddChild?: (
     node: TreeExplorerNode<T>,
     child: TreeExplorerNode<T>
   ) => void | Promise<void>
-  // Whether the node is draggable
+  /** Whether the node is draggable */
   draggable?: boolean
-  // Whether the node is droppable
+  /** Whether the node is droppable */
   droppable?: boolean
-  // Function to handle dropping a node
+  /** Function to handle dropping a node */
   handleDrop?: (
     node: TreeExplorerNode<T>,
     data: TreeExplorerDragAndDropData
   ) => void | Promise<void>
-  // Function to handle clicking a node
+  /** Function to handle clicking a node */
   handleClick?: (
     node: TreeExplorerNode<T>,
     event: MouseEvent
   ) => void | Promise<void>
-  // Function to handle errors
+  /** Function to handle errors */
   handleError?: (error: Error) => void
-  // Extra context menu items
+  /** Extra context menu items */
   contextMenuItems?:
     | MenuItem[]
     | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
@@ -46,8 +49,10 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   children?: RenderedTreeExplorerNode<T>[]
   icon: string
   type: 'folder' | 'node'
-  // Total number of leaves in the subtree
+  /** Total number of leaves in the subtree */
   totalLeaves: number
+  /** Text to display on the leaf-count badge */
+  badgeText: string
 }
 
 export type TreeExplorerDragAndDropData<T = any> = {

@@ -137,6 +137,22 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
           return 'pi pi-file'
         }
       },
+      getBadgeText: (node: TreeExplorerNode<ComfyModelDef>) => {
+        if (node.leaf) {
+          return ''
+        }
+        if (node.children?.length === 1) {
+          const onlyChild = node.children[0]
+          if (onlyChild.data?.is_fake_object) {
+            if (onlyChild.data.name === '(No Content)') {
+              return '0'
+            } else if (onlyChild.data.name === 'Loading') {
+              return '?'
+            }
+          }
+        }
+        return node.children?.length.toString() ?? '0'
+      },
       children,
       draggable: node.leaf,
       handleClick: (
