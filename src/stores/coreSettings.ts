@@ -368,5 +368,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     experimental: true,
     type: 'combo',
     options: ['Disabled', 'Floating']
+  },
+  {
+    id: 'Comfy.Workflow.WorkflowTabsPosition',
+    name: 'Opened workflows position',
+    type: 'combo',
+    options: ['Sidebar', 'Topbar'],
+    defaultValue: 'Sidebar'
   }
 ]
