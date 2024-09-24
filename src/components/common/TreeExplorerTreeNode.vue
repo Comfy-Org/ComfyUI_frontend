@@ -10,8 +10,8 @@
     ]"
     ref="container"
   >
-    <div class="node-content truncate">
-      <span class="node-label text-sm">
+    <div class="node-content">
+      <span class="node-label">
         <slot name="before-label" :node="props.node"></slot>
         <EditableText
           :modelValue="node.label"

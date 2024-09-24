@@ -331,6 +331,18 @@ class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
+   * @returns The list of model folder keys
+   */
+  async getModelFolders(): Promise<string[]> {
+    const res = await this.fetchApi(`/models`)
+    if (res.status === 404) {
+      return null
+    }
+    return await res.json()
+  }
+
+  /**
    * Gets a list of models in the specified folder
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
@@ -353,7 +365,22 @@ class ComfyApi extends EventTarget {
     const res = await this.fetchApi(
       `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
     )
-    return await res.json()
+    const rawResponse = await res.text()
+    if (!rawResponse) {
+      return null
+    }
+    try {
+      return JSON.parse(rawResponse)
+    } catch (error) {
+      console.error(
+        'Error viewing metadata',
+        res.status,
+        res.statusText,
+        rawResponse,
+        error
+      )
+      return null
+    }
   }
 
   /**

@@ -42,6 +42,8 @@ import {
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { ComfyModelDef } from '@/stores/modelStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -49,7 +51,7 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
-
+const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -132,6 +134,22 @@ onMounted(async () => {
             loc.clientY
           ])
           comfyApp.addNodeOnGraph(nodeDef, { pos })
+        } else if (node.data instanceof ComfyModelDef) {
+          const model = node.data
+          const provider = modelToNodeStore.getNodeProvider(model.directory)
+          if (provider) {
+            const pos = comfyApp.clientPosToCanvasPos([
+              loc.clientX - 20,
+              loc.clientY
+            ])
+            const node = comfyApp.addNodeOnGraph(provider.nodeDef, { pos })
+            const widget = node.widgets.find(
+              (widget) => widget.name === provider.key
+            )
+            if (widget) {
+              widget.value = model.name
+            }
+          }
         }
       }
     }
