@@ -82,14 +82,16 @@ const getTreeNodeIcon = (node: TreeExplorerNode) => {
 }
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
   const children = node.children?.map(fillNodeInfo)
+  const totalLeaves = node.leaf
+    ? 1
+    : children.reduce((acc, child) => acc + child.totalLeaves, 0)
   return {
     ...node,
     icon: getTreeNodeIcon(node),
     children,
     type: node.leaf ? 'node' : 'folder',
-    totalLeaves: node.leaf
-      ? 1
-      : children.reduce((acc, child) => acc + child.totalLeaves, 0)
+    totalLeaves,
+    badgeText: node.getBadgeText ? node.getBadgeText(node) : null
   }
 }
 const onNodeContentClick = async (
