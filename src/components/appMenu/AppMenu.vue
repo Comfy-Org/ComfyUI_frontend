@@ -1,24 +1,7 @@
 <template>
   <Panel v-if="visible" class="app-menu">
     <div class="app-menu-content">
-      <ButtonGroup>
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          severity="secondary"
-          @click="
-            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
-          "
-        />
-        <Button
-          v-tooltip.bottom="$t('menu.resetView')"
-          icon="pi pi-expand"
-          severity="secondary"
-          @click="() => commandStore.getCommand('Comfy.ResetView')()"
-        />
-      </ButtonGroup>
-      <div class="separator"></div>
-      <div class="queue-button-group">
+      <div class="queue-button-group flex flex-row">
         <SplitButton
           :label="activeQueueModeMenuItem.label"
           :icon="activeQueueModeMenuItem.icon"
@@ -38,6 +21,7 @@
             />
           </template>
         </SplitButton>
+        <BatchCountEdit />
         <ButtonGroup class="execution-actions" v-if="executingPrompt">
           <Button
             v-tooltip.bottom="$t('menu.interrupt')"
@@ -48,6 +32,23 @@
           </Button>
         </ButtonGroup>
       </div>
+      <div class="separator"></div>
+      <ButtonGroup>
+        <Button
+          v-tooltip.bottom="$t('menu.refresh')"
+          icon="pi pi-refresh"
+          severity="secondary"
+          @click="
+            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
+          "
+        />
+        <Button
+          v-tooltip.bottom="$t('menu.resetView')"
+          icon="pi pi-expand"
+          severity="secondary"
+          @click="() => commandStore.getCommand('Comfy.ResetView')()"
+        />
+      </ButtonGroup>
     </div>
   </Panel>
 </template>
@@ -58,6 +59,7 @@ import Panel from 'primevue/panel'
 import SplitButton from 'primevue/splitbutton'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
+import BatchCountEdit from './BatchCountEdit.vue'
 import {
   AutoQueueMode,
   useQueuePendingTaskCountStore,
@@ -160,13 +162,6 @@ const queuePrompt = (e: MouseEvent) => {
 
 .queue-options {
   display: flex;
-}
-
-.batch-count {
-  padding-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
 }
 
 .p-slider {
