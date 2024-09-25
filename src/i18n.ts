@@ -163,14 +163,12 @@ const messages = {
     },
     menu: {
       batchCount: '批次数量',
-      batchCountTooltip:
-        '工作流生成次数',
+      batchCountTooltip: '工作流生成次数',
       autoQueue: '自动执行',
       disabled: '禁用',
       disabledTooltip: '工作流将不会自动执行',
       instant: '实时',
-      instantTooltip:
-        '工作流将会在生成完成后立即执行',
+      instantTooltip: '工作流将会在生成完成后立即执行',
       change: '变动',
       changeTooltip: '工作流将会在改变后执行',
       queueWorkflow: '执行工作流',
