@@ -1,10 +1,12 @@
 <template>
+  <!-- Top menu bar needs to load before the GraphCanvas as it needs to host
+  the menu buttons added by legacy extension scripts.-->
+  <TopMenubar />
   <GraphCanvas />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
   <AppMenu />
-  <TopMenubar />
 </template>
 
 <script setup lang="ts">
