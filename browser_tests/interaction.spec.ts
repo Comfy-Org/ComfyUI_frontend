@@ -251,6 +251,18 @@ test.describe('Node Interaction', () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
+
+  test('Can bypass/unbypass nodes with keyboard shortcut', async ({
+    comfyPage
+  }) => {
+    await comfyPage.select2Nodes()
+    await comfyPage.canvas.press('Control+b')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-bypassed.png')
+    await comfyPage.canvas.press('Control+b')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('nodes-unbypassed.png')
+  })
 })
 
 test.describe('Group Interaction', () => {
