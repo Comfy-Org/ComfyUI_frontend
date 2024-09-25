@@ -56,6 +56,11 @@ describe('example workflows', () => {
       skip = !!Object.keys(parsedWorkflow?.extra?.groupNodes ?? {}).length
     } catch (error) {}
 
+    // https://github.com/comfyanonymous/ComfyUI_examples/issues/40
+    if (file === 'audio_stable_audio_example.flac.json') {
+      skip = true
+    }
+
     return { file, workflow, prompt, parsedWorkflow, skip }
   })
 
