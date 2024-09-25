@@ -4,6 +4,9 @@
       <template #side-bar-panel>
         <SideToolbar />
       </template>
+      <template #graph-canvas-panel>
+        <GraphCanvasMenu />
+      </template>
     </LiteGraphCanvasSplitterOverlay>
     <TitleEditor />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
@@ -44,6 +47,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)

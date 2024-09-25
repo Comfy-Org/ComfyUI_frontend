@@ -180,6 +180,32 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: showTemplateWorkflowsDialog
+    },
+    {
+      id: 'Comfy.Canvas.ZoomIn',
+      icon: 'pi pi-plus',
+      label: 'Zoom In',
+      function: () => {
+        app.canvas.ds.changeScale(app.canvas.ds.scale + 0.1)
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ZoomOut',
+      icon: 'pi pi-minus',
+      label: 'Zoom Out',
+      function: () => {
+        app.canvas.ds.changeScale(app.canvas.ds.scale - 0.1)
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleLock',
+      icon: 'pi pi-lock',
+      label: 'Toggle Lock',
+      function: () => {
+        app.canvas['read_only'] = !app.canvas['read_only']
+      }
     }
   ]
 

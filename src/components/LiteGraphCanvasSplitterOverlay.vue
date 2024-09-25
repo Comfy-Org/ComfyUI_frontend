@@ -9,8 +9,8 @@
     >
       <slot name="side-bar-panel"></slot>
     </SplitterPanel>
-    <SplitterPanel class="graph-canvas-panel" :size="100">
-      <div></div>
+    <SplitterPanel class="graph-canvas-panel relative" :size="100">
+      <slot name="graph-canvas-panel"></slot>
     </SplitterPanel>
     <SplitterPanel
       class="side-bar-panel"
