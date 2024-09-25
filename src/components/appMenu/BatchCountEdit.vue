@@ -1,5 +1,9 @@
 <template>
-  <div class="batch-count" :class="props.class">
+  <div
+    class="batch-count"
+    :class="props.class"
+    v-tooltip.bottom="$t('menu.batchCount')"
+  >
     <InputNumber
       class="w-14"
       v-model="batchCount"
