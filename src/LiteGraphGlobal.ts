@@ -50,6 +50,8 @@ export class LiteGraphGlobal {
     WIDGET_SECONDARY_TEXT_COLOR = "#999";
 
     LINK_COLOR = "#9A9";
+    // TODO: This is a workaround until LGraphCanvas.link_type_colors is no longer static.
+    static DEFAULT_EVENT_LINK_COLOR = "#A86";
     EVENT_LINK_COLOR = "#A86";
     CONNECTING_LINK_COLOR = "#AFA";
 

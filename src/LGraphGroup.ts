@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { LiteGraph, LGraphCanvas } from "./litegraph";
+import { LiteGraph } from "./litegraph";
+import { LGraphCanvas } from "./LGraphCanvas";
 import { overlapBounding } from "./LiteGraphGlobal";
 
 
