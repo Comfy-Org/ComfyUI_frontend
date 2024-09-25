@@ -382,8 +382,9 @@ export class ComfyUI {
       accept: '.json,image/png,.latent,.safetensors,image/webp,audio/flac',
       style: { display: 'none' },
       parent: document.body,
-      onchange: () => {
-        app.handleFile(fileInput.files[0])
+      onchange: async () => {
+        await app.handleFile(fileInput.files[0])
+        fileInput.value = ''
       }
     })
 
