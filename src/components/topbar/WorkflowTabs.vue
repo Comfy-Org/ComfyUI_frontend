@@ -1,6 +1,6 @@
 <template>
   <SelectButton
-    class="workflow-tabs bg-transparent w-full flex flex-wrap"
+    class="workflow-tabs bg-transparent flex flex-wrap"
     :class="props.class"
     :modelValue="selectedWorkflow"
     @update:modelValue="onWorkflowChange"
