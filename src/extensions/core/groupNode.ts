@@ -5,8 +5,10 @@ import { ManageGroupDialog } from './groupNodeManage'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 const GROUP = Symbol()
+const SEPARATOR = '>'
 
 const Workflow = {
   InUse: {
@@ -15,7 +17,7 @@ const Workflow = {
     InWorkflow: 2
   },
   isInUseGroupNode(name) {
-    const id = `workflow>${name}`
+    const id = `workflow${SEPARATOR}${name}`
     // Check if lready registered/in use in this workflow
     if (app.graph.extra?.groupNodes?.[name]) {
       if (app.graph.nodes.find((n) => n.type === id)) {
@@ -191,9 +193,9 @@ export class GroupNodeConfig {
       output_name: [],
       output_is_list: [],
       output_is_hidden: [],
-      name: source + '>' + this.name,
+      name: source + SEPARATOR + this.name,
       display_name: this.name,
-      category: 'group nodes' + ('>' + source),
+      category: 'group nodes' + (SEPARATOR + source),
       input: { required: {} },
       description: `Group node combining ${this.nodeData.nodes
         .map((n) => n.type)
@@ -216,7 +218,7 @@ export class GroupNodeConfig {
       p()
     }
     this.#convertedToProcess = null
-    await app.registerNodeDef('workflow>' + this.name, this.nodeDef)
+    await app.registerNodeDef(`workflow${SEPARATOR}` + this.name, this.nodeDef)
     useNodeDefStore().addNodeDef(this.nodeDef)
   }
 
@@ -647,7 +649,7 @@ export class GroupNodeConfig {
     app.clean = function () {
       for (const g in groupNodes) {
         try {
-          LiteGraph.unregisterNodeType('workflow/' + g)
+          LiteGraph.unregisterNodeType(`workflow${SEPARATOR}` + g)
         } catch (error) {}
       }
       app.clean = clean
@@ -662,11 +664,11 @@ export class GroupNodeConfig {
         if (!(n.type in LiteGraph.registered_node_types)) {
           missingNodeTypes.push({
             type: n.type,
-            hint: ` (In group node 'workflow/${g}')`
+            hint: ` (In group node 'workflow${SEPARATOR}${g}')`
           })
 
           missingNodeTypes.push({
-            type: 'workflow/' + g,
+            type: `workflow${SEPARATOR}` + g,
             action: {
               text: 'Remove from workflow',
               callback: (e) => {
@@ -1380,7 +1382,7 @@ export class GroupNodeHandler {
     const config = new GroupNodeConfig(name, nodeData)
     await config.registerType()
 
-    const groupNode = LiteGraph.createNode(`workflow>${name}`)
+    const groupNode = LiteGraph.createNode(`workflow${SEPARATOR}${name}`)
     // Reuse the existing nodes for this instance
     groupNode.setInnerNodes(builder.nodes)
     groupNode[GROUP].populateWidgets()
@@ -1444,6 +1446,14 @@ function addConvertToGroupOptions() {
   }
 }
 
+const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
+  for (const node of nodes) {
+    if (typeof node.type === 'string' && node.type.startsWith('workflow/')) {
+      node.type = node.type.replace(/^workflow\//, `workflow${SEPARATOR}`)
+    }
+  }
+}
+
 const id = 'Comfy.GroupNode'
 let globalDefs
 const ext = {
@@ -1451,9 +1461,13 @@ const ext = {
   setup() {
     addConvertToGroupOptions()
   },
-  async beforeConfigureGraph(graphData, missingNodeTypes) {
+  async beforeConfigureGraph(
+    graphData: ComfyWorkflowJSON,
+    missingNodeTypes: string[]
+  ) {
     const nodes = graphData?.extra?.groupNodes
     if (nodes) {
+      replaceLegacySeparators(graphData.nodes)
       await GroupNodeConfig.registerFromWorkflow(nodes, missingNodeTypes)
     }
   },
