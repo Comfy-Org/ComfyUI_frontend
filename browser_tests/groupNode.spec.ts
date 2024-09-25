@@ -19,6 +19,11 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
+      await libraryTab.close()
+    })
+
     test('Is added to node library sidebar', async ({ comfyPage }) => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
@@ -29,8 +34,8 @@ test.describe('Group Node', () => {
       const initialNodeCount = await comfyPage.getGraphNodesCount()
 
       // Add group node from node library sidebar
-      await libraryTab.getFolder(groupNodeCategory).first().click()
-      await libraryTab.getNode(groupNodeName).first().click()
+      await libraryTab.getFolder(groupNodeCategory).click()
+      await libraryTab.getNode(groupNodeName).click()
 
       // Verify the node is added to the canvas
       expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
@@ -41,7 +46,6 @@ test.describe('Group Node', () => {
       await libraryTab
         .getNode(groupNodeName)
         .locator('.bookmark-button')
-        .first()
         .click()
 
       // Verify the node is added to the bookmarks tab
@@ -62,7 +66,6 @@ test.describe('Group Node', () => {
       expect(
         await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toHaveLength(0)
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
     })
 
     test('Displays preview on bookmark hover', async ({ comfyPage }) => {
@@ -70,7 +73,6 @@ test.describe('Group Node', () => {
       await libraryTab
         .getNode(groupNodeName)
         .locator('.bookmark-button')
-        .first()
         .click()
       await comfyPage.page.hover('.p-tree-node-label.tree-explorer-node-label')
       expect(await comfyPage.page.isVisible('.node-lib-node-preview')).toBe(
@@ -81,7 +83,6 @@ test.describe('Group Node', () => {
         .locator('.bookmark-button')
         .first()
         .click()
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
     })
   })
 
