@@ -1,5 +1,6 @@
 // @ts-nocheck
-import { LiteGraph, LGraphCanvas, LGraphGroup, LGraphNode } from "./litegraph";
+import { LiteGraph, LGraphCanvas, LGraphGroup } from "./litegraph";
+import { LGraphNode } from "./LGraphNode";
 import { LLink } from "./LLink";
 
 //*********************************************************************************

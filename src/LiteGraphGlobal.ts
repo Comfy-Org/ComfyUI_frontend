@@ -1,4 +1,5 @@
-import { LiteGraph, LGraphNode } from "./litegraph";
+import { LiteGraph } from "./litegraph";
+import { LGraphNode } from "./LGraphNode";
 import { drawSlot, SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw";
 
 // *************************************************************
