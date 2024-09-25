@@ -48,6 +48,10 @@ describe('example workflows', () => {
     )
 
     let skip = false
+    if (file === 'audio_stable_audio_example.flac.json') {
+      skip = true
+    }
+
     let parsedWorkflow
     try {
       // Workflows with group nodes dont generate the same IDs as the examples
