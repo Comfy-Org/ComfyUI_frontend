@@ -140,4 +140,12 @@ test.describe('Group Node', () => {
     // Ensure the link is still present
     expect(await input.getLinkCount()).toBe(1)
   })
+
+  test('Loads from a workflow using the legacy path separator ("/")', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('legacy_group_node')
+    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+    expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  })
 })
