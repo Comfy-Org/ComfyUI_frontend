@@ -13611,14 +13611,15 @@ const globalExport = {};
      * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
      * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
      */
-    function ContextMenu(values, options) {
+    class ContextMenu {
+        constructor(values, options) {
         options = options || {};
         this.options = options;
         var that = this;
 
         //to link a menu with its parent
         if (options.parentMenu) {
-            if (options.parentMenu.constructor !== this.constructor) {
+            if (!(options.parentMenu instanceof ContextMenu)) {
                 console.error(
                     "parentMenu must be of class ContextMenu, ignoring it"
                 );
@@ -13628,17 +13629,19 @@ const globalExport = {};
                 this.parentMenu.lock = true;
                 this.parentMenu.current_submenu = this;
             }
+            if (options.parentMenu.options?.className === "dark") {
+                options.className = "dark"
+            }
         }
 
-		var eventClass = null;
-		if(options.event) //use strings because comparing classes between windows doesnt work
-			eventClass = options.event.constructor.name;
-        if ( eventClass !== "MouseEvent" &&
+        var eventClass = null;
+        if (options.event) //use strings because comparing classes between windows doesnt work
+            eventClass = options.event.constructor.name;
+        if (eventClass !== "MouseEvent" &&
             eventClass !== "CustomEvent" &&
-			eventClass !== "PointerEvent"
-        ) {
+            eventClass !== "PointerEvent") {
             console.error(
-                "Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. ("+eventClass+")"
+                "Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it. (" + eventClass + ")"
             );
             options.event = null;
         }
@@ -13651,14 +13654,15 @@ const globalExport = {};
         root.style.minWidth = 100;
         root.style.minHeight = 100;
         root.style.pointerEvents = "none";
-        setTimeout(function() {
+        setTimeout(function () {
             root.style.pointerEvents = "auto";
         }, 100); //delay so the mouse up event is not caught by this element
 
+
         //this prevents the default context browser menu to open in case this menu was created when pressing right button
-		LiteGraph.pointerListenerAdd(root,"up",
-            function(e) {
-			  	//console.log("pointerevents: ContextMenu up root prevent");
+        LiteGraph.pointerListenerAdd(root, "up",
+            function (e) {
+                //console.log("pointerevents: ContextMenu up root prevent");
                 e.preventDefault();
                 return true;
             },
@@ -13666,7 +13670,7 @@ const globalExport = {};
         );
         root.addEventListener(
             "contextmenu",
-            function(e) {
+            function (e) {
                 if (e.button != 2) {
                     //right button
                     return false;
@@ -13677,9 +13681,9 @@ const globalExport = {};
             true
         );
 
-        LiteGraph.pointerListenerAdd(root,"down",
-            function(e) {
-			  	//console.log("pointerevents: ContextMenu down");
+        LiteGraph.pointerListenerAdd(root, "down",
+            function (e) {
+                //console.log("pointerevents: ContextMenu down");
                 if (e.button == 2) {
                     that.close();
                     e.preventDefault();
@@ -13716,7 +13720,7 @@ const globalExport = {};
 
         //entries
         var num = 0;
-        for (var i=0; i < values.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             var name = values.constructor == Array ? values[i] : i;
             if (name != null && name.constructor !== String) {
                 name = name.content === undefined ? String(name) : name.content;
@@ -13728,7 +13732,7 @@ const globalExport = {};
 
         //close on leave? touch enabled devices won't work TODO use a global device detector and condition on that
         /*LiteGraph.pointerListenerAdd(root,"leave", function(e) {
-		  	console.log("pointerevents: ContextMenu leave");
+            console.log("pointerevents: ContextMenu leave");
             if (that.lock) {
                 return;
             }
@@ -13738,9 +13742,8 @@ const globalExport = {};
             root.closing_timer = setTimeout(that.close.bind(that, e), 500);
             //that.close(e);
         });*/
-
-		LiteGraph.pointerListenerAdd(root,"enter", function(e) {
-		  	//console.log("pointerevents: ContextMenu enter");
+        LiteGraph.pointerListenerAdd(root, "enter", function (e) {
+            //console.log("pointerevents: ContextMenu enter");
             if (root.closing_timer) {
                 clearTimeout(root.closing_timer);
             }
@@ -13756,10 +13759,11 @@ const globalExport = {};
             root_document = document;
         }
 
-		if( root_document.fullscreenElement )
-	        root_document.fullscreenElement.appendChild(root);
-		else
-		    root_document.body.appendChild(root);
+        if (root_document.fullscreenElement)
+            root_document.fullscreenElement.appendChild(root);
+
+        else
+            root_document.body.appendChild(root);
 
         //compute best position
         var left = options.left || 0;
@@ -13778,8 +13782,8 @@ const globalExport = {};
 
             var body_rect = document.body.getBoundingClientRect();
             var root_rect = root.getBoundingClientRect();
-			if(body_rect.height == 0)
-				console.error("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
+            if (body_rect.height == 0)
+                console.error("document.body height is 0. That is dangerous, set html,body { height: 100%; }");
 
             if (body_rect.width && left > body_rect.width - root_rect.width - 10) {
                 left = body_rect.width - root_rect.width - 10;
@@ -13797,7 +13801,7 @@ const globalExport = {};
         }
     }
 
-    ContextMenu.prototype.addItem = function(name, value, options) {
+    addItem(name, value, options) {
         var that = this;
         options = options || {};
 
@@ -13845,7 +13849,7 @@ const globalExport = {};
             element.addEventListener("click", inner_onclick);
         }
         if (!disabled && options.autoopen) {
-			LiteGraph.pointerListenerAdd(element,"enter",inner_over);
+            LiteGraph.pointerListenerAdd(element, "enter", inner_over);
         }
 
         function setAriaExpanded() {
@@ -13897,11 +13901,9 @@ const globalExport = {};
 
             //special cases
             if (value) {
-                if (
-                    value.callback &&
+                if (value.callback &&
                     !options.ignore_item_callbacks &&
-                    value.disabled !== true
-                ) {
+                    value.disabled !== true) {
                     //item callback
                     var r = value.callback.call(
                         this,
@@ -13923,8 +13925,7 @@ const globalExport = {};
                         callback: value.submenu.callback,
                         event: e,
                         parentMenu: that,
-                        ignore_item_callbacks:
-                            value.submenu.ignore_item_callbacks,
+                        ignore_item_callbacks: value.submenu.ignore_item_callbacks,
                         title: value.submenu.title,
                         extra: value.submenu.extra,
                         autoopen: options.autoopen
@@ -13939,9 +13940,9 @@ const globalExport = {};
         }
 
         return element;
-    };
+    }
 
-    ContextMenu.prototype.close = function(e, ignore_parent_menu) {
+    close(e, ignore_parent_menu) {
         if (this.root.parentNode) {
             this.root.parentNode.removeChild(this.root);
         }
@@ -13950,11 +13951,9 @@ const globalExport = {};
             this.parentMenu.current_submenu = null;
             if (e === undefined) {
                 this.parentMenu.close();
-            } else if (
-                e &&
-                !ContextMenu.isCursorOverElement(e, this.parentMenu.root)
-            ) {
-                ContextMenu.trigger(this.parentMenu.root, LiteGraph.pointerevents_method+"leave", e);
+            } else if (e &&
+                !ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
+                ContextMenu.trigger(this.parentMenu.root, LiteGraph.pointerevents_method + "leave", e);
             }
         }
         if (this.current_submenu) {
@@ -13964,13 +13963,13 @@ const globalExport = {};
         if (this.root.closing_timer) {
             clearTimeout(this.root.closing_timer);
         }
-        
+
         // TODO implement : LiteGraph.contextMenuClosed(); :: keep track of opened / closed / current ContextMenu
         // on key press, allow filtering/selecting the context menu elements
-    };
+    }
 
     //this code is used to trigger events easily (used in the context menu mouseleave
-    ContextMenu.trigger = function(element, event_name, params, origin) {
+    static trigger(element, event_name, params, origin) {
         var evt = document.createEvent("CustomEvent");
         evt.initCustomEvent(event_name, true, true, params); //canBubble, cancelable, detail
         evt.srcElement = origin;
@@ -13981,24 +13980,24 @@ const globalExport = {};
         }
         //else nothing seems binded here so nothing to do
         return evt;
-    };
+    }
 
     //returns the top most menu
-    ContextMenu.prototype.getTopMenu = function() {
+    getTopMenu() {
         if (this.options.parentMenu) {
             return this.options.parentMenu.getTopMenu();
         }
         return this;
-    };
+    }
 
-    ContextMenu.prototype.getFirstEvent = function() {
+    getFirstEvent() {
         if (this.options.parentMenu) {
             return this.options.parentMenu.getFirstEvent();
         }
         return this.options.event;
-    };
+    }
 
-    ContextMenu.isCursorOverElement = function(event, element) {
+    static isCursorOverElement(event, element) {
         var left = event.clientX;
         var top = event.clientY;
         var rect = element.getBoundingClientRect();
@@ -14014,7 +14013,8 @@ const globalExport = {};
             return true;
         }
         return false;
-    };
+    }
+    }
 
     LiteGraph.ContextMenu = ContextMenu;
 
