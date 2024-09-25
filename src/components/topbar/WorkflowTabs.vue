@@ -1,32 +1,31 @@
 <template>
-  <div class="workflow-tabs">
-    <SelectButton
-      class="select-button-group bg-transparent"
-      :modelValue="selectedWorkflow"
-      @update:modelValue="onWorkflowChange"
-      :options="options"
-      optionLabel="label"
-      dataKey="value"
-    >
-      <template #option="{ option }">
-        <span
-          class="workflow-label text-sm max-w-[150px] truncate inline-block"
-          >{{ option.label }}</span
-        >
-        <div class="relative">
-          <span class="status-indicator" v-if="option.unsaved">•</span>
-          <Button
-            class="close-button p-0 w-auto"
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            size="small"
-            @click.stop="onCloseWorkflow(option)"
-          />
-        </div>
-      </template>
-    </SelectButton>
-  </div>
+  <SelectButton
+    class="workflow-tabs bg-transparent flex flex-wrap"
+    :class="props.class"
+    :modelValue="selectedWorkflow"
+    @update:modelValue="onWorkflowChange"
+    :options="options"
+    optionLabel="label"
+    dataKey="value"
+  >
+    <template #option="{ option }">
+      <span
+        class="workflow-label text-sm max-w-[150px] truncate inline-block"
+        >{{ option.label }}</span
+      >
+      <div class="relative">
+        <span class="status-indicator" v-if="option.unsaved">•</span>
+        <Button
+          class="close-button p-0 w-auto"
+          icon="pi pi-times"
+          text
+          severity="secondary"
+          size="small"
+          @click.stop="onCloseWorkflow(option)"
+        />
+      </div>
+    </template>
+  </SelectButton>
 </template>
 
 <script setup lang="ts">
@@ -36,6 +35,10 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed } from 'vue'
+
+const props = defineProps<{
+  class?: string
+}>()
 
 const workflowStore = useWorkflowStore()
 interface WorkflowOption {
@@ -79,26 +82,9 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
   app.workflowManager.closeWorkflow(workflow)
 }
-
-// Add this new function to check if a workflow is unsaved
-const isWorkflowUnsaved = (option: WorkflowOption): boolean => {
-  const workflow = optionToWorkflow(option)
-  return workflow.unsaved
-}
 </script>
 
 <style scoped>
-.select-button-group {
-  /* TODO: Make this dynamic. Take rest of space after all tool buttons */
-  max-width: 70vw;
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  /* Scrollbar styling */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
-}
-
 :deep(.p-togglebutton::before) {
   @apply hidden;
 }
