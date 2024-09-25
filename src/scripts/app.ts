@@ -1551,9 +1551,9 @@ export class ComfyApp {
 
     const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
-      var editor_alpha = this.editor_alpha
-      var old_color = node.color
-      var old_bgcolor = node.bgcolor
+      const editor_alpha = this.editor_alpha
+      const old_color = node.color
+      const old_bgcolor = node.bgcolor
 
       if (node.mode === 2) {
         // never
@@ -1561,11 +1561,14 @@ export class ComfyApp {
       }
 
       // ComfyUI's custom node mode enum value 4 => bypass/never.
+      let bgColor: string
       // @ts-expect-error
       if (node.mode === 4) {
         // never
-        node.bgcolor = '#FF00FF'
+        bgColor = '#FF00FF'
         this.editor_alpha = 0.2
+      } else {
+        bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
       }
 
       const adjustments: ColorAdjustOptions = {}
@@ -1582,10 +1585,7 @@ export class ComfyApp {
         }
       }
 
-      node.bgcolor = adjustColor(
-        old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR,
-        adjustments
-      )
+      node.bgcolor = adjustColor(bgColor, adjustments)
 
       const res = origDrawNode.apply(this, arguments)
 
