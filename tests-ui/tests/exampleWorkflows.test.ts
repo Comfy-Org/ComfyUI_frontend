@@ -48,6 +48,7 @@ describe('example workflows', () => {
     )
 
     let skip = false
+    // https://github.com/comfyanonymous/ComfyUI_examples/issues/40
     if (file === 'audio_stable_audio_example.flac.json') {
       skip = true
     }
