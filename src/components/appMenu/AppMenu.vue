@@ -1,8 +1,9 @@
 <template>
   <Panel v-if="visible" class="app-menu">
-    <div class="app-menu-content">
-      <div class="queue-button-group flex flex-row">
+    <div class="app-menu-content flex align-center">
+      <div class="queue-button-group flex">
         <SplitButton
+          class="comfyui-queue-button"
           :label="activeQueueModeMenuItem.label"
           :icon="activeQueueModeMenuItem.icon"
           severity="primary"
@@ -139,11 +140,6 @@ const queuePrompt = (e: MouseEvent) => {
   z-index: 1000;
 }
 
-.app-menu-content {
-  display: flex;
-  align-items: center;
-}
-
 :deep(.p-panel-content) {
   padding: 10px;
 }
@@ -152,7 +148,8 @@ const queuePrompt = (e: MouseEvent) => {
   display: none;
 }
 
-.queue-options {
-  display: flex;
+.comfyui-queue-button :deep(.p-splitbutton-dropdown) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 </style>

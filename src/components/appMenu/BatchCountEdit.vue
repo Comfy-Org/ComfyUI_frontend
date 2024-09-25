@@ -1,7 +1,7 @@
 <template>
-  <div class="batch-count relative">
+  <div class="batch-count" :class="props.class">
     <InputNumber
-      class="max-w-16"
+      class="w-14"
       v-model="batchCount"
       :min="minQueueCount"
       :max="maxQueueCount"
@@ -30,6 +30,14 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import { storeToRefs } from 'pinia'
 import InputNumber from 'primevue/inputnumber'
 
+interface Props {
+  class?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  class: ''
+})
+
 const queueSettingsStore = useQueueSettingsStore()
 const { batchCount } = storeToRefs(queueSettingsStore)
 const minQueueCount = 1
@@ -48,3 +56,10 @@ const handleClick = (increment: boolean) => {
   batchCount.value = newCount
 }
 </script>
+
+<style scoped>
+:deep(.p-inputtext) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+</style>
