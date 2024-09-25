@@ -5,7 +5,7 @@
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemColumns" :key="col.field">
           <div class="font-medium">{{ $t(col.header) }}</div>
-          <div>{{ systemInfo[col.field] }}</div>
+          <div>{{ formatValue(systemInfo[col.field], col.field) }}</div>
         </template>
       </div>
     </div>
@@ -35,6 +35,7 @@ import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
 import type { SystemStats } from '@/types/apiTypes'
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
+import { formatMemory } from '@/utils/formatUtil'
 
 const props = defineProps<{
   stats: SystemStats
@@ -50,6 +51,15 @@ const systemColumns = [
   { field: 'python_version', header: 'Python Version' },
   { field: 'embedded_python', header: 'Embedded Python' },
   { field: 'pytorch_version', header: 'Pytorch Version' },
-  { field: 'argv', header: 'Arguments' }
+  { field: 'argv', header: 'Arguments' },
+  { field: 'ram_total', header: 'RAM Total' },
+  { field: 'ram_free', header: 'RAM Free' }
 ]
+
+const formatValue = (value: any, field: string) => {
+  if (['ram_total', 'ram_free'].includes(field)) {
+    return formatMemory(value)
+  }
+  return value
+}
 </script>

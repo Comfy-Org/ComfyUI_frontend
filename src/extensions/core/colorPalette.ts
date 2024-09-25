@@ -2,8 +2,6 @@ import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPalette'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { applyOpacity } from '@/utils/colorUtil'
-import { useSettingStore } from '@/stores/settingStore'
 
 // Manage color palettes
 
@@ -684,13 +682,7 @@ app.registerExtension({
               colorPalette.colors.litegraph_base.hasOwnProperty(key) &&
               LiteGraph.hasOwnProperty(key)
             ) {
-              LiteGraph[key] =
-                key === 'NODE_DEFAULT_BGCOLOR'
-                  ? applyOpacity(
-                      colorPalette.colors.litegraph_base[key],
-                      useSettingStore().get('Comfy.Node.Opacity')
-                    )
-                  : colorPalette.colors.litegraph_base[key]
+              LiteGraph[key] = colorPalette.colors.litegraph_base[key]
             }
           }
         }

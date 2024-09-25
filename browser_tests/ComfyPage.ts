@@ -1,5 +1,6 @@
 import type { Page, Locator } from '@playwright/test'
 import { test as base } from '@playwright/test'
+import { expect } from '@playwright/test'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
@@ -136,6 +137,15 @@ class NodeLibrarySidebarTab {
 
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
+  }
+
+  async close() {
+    if (!this.tabButton.isVisible()) {
+      return
+    }
+
+    await this.tabButton.click()
+    await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
 
   folderSelector(folderName: string) {
@@ -705,8 +715,8 @@ export class ComfyPage {
       await dialog.accept(groupNodeName)
     })
     await this.canvas.press('Control+a')
-    await this.rightClickEmptyLatentNode()
-    await this.page.getByText('Convert to Group Node').click()
+    const node = await this.getFirstNodeRef()
+    await node!.clickContextMenuOption('Convert to Group Node')
     await this.nextFrame()
   }
   async convertOffsetToCanvas(pos: [number, number]) {
@@ -721,12 +731,19 @@ export class ComfyPage {
     return Promise.all(
       (
         await this.page.evaluate((type) => {
-          return window['app'].graph._nodes
+          return window['app'].graph.nodes
             .filter((n) => n.type === type)
             .map((n) => n.id)
         }, type)
       ).map((id: NodeId) => this.getNodeRefById(id))
     )
+  }
+  async getFirstNodeRef(): Promise<NodeReference | null> {
+    const id = await this.page.evaluate(() => {
+      return window['app'].graph.nodes[0]?.id
+    })
+    if (!id) return null
+    return this.getNodeRefById(id)
   }
 }
 class NodeSlotReference {
@@ -867,7 +884,7 @@ class NodeReference {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.getNodeRefsByType(
-      `workflow/${groupNodeName}`
+      `workflow>${groupNodeName}`
     )
     if (nodes.length !== 1) {
       throw new Error(`Did not find single group node (found=${nodes.length})`)

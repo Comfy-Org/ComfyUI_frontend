@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 import type { DeviceStats } from '@/types/apiTypes'
+import { formatMemory } from '@/utils/formatUtil'
 
 const props = defineProps<{
   device: DeviceStats
@@ -29,11 +30,7 @@ const formatValue = (value: any, field: string) => {
       field
     )
   ) {
-    const mb = Math.round(value / (1024 * 1024))
-    if (mb >= 1024) {
-      return `${(mb / 1024).toFixed(2)} GB`
-    }
-    return `${mb} MB`
+    return formatMemory(value)
   }
   return value
 }

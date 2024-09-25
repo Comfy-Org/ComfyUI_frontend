@@ -15,7 +15,7 @@ const Workflow = {
     InWorkflow: 2
   },
   isInUseGroupNode(name) {
-    const id = `workflow/${name}`
+    const id = `workflow>${name}`
     // Check if lready registered/in use in this workflow
     if (app.graph.extra?.groupNodes?.[name]) {
       if (app.graph.nodes.find((n) => n.type === id)) {
@@ -191,9 +191,9 @@ export class GroupNodeConfig {
       output_name: [],
       output_is_list: [],
       output_is_hidden: [],
-      name: source + '/' + this.name,
+      name: source + '>' + this.name,
       display_name: this.name,
-      category: 'group nodes' + ('/' + source),
+      category: 'group nodes' + ('>' + source),
       input: { required: {} },
       description: `Group node combining ${this.nodeData.nodes
         .map((n) => n.type)
@@ -216,7 +216,7 @@ export class GroupNodeConfig {
       p()
     }
     this.#convertedToProcess = null
-    await app.registerNodeDef('workflow/' + this.name, this.nodeDef)
+    await app.registerNodeDef('workflow>' + this.name, this.nodeDef)
     useNodeDefStore().addNodeDef(this.nodeDef)
   }
 
@@ -1380,7 +1380,7 @@ export class GroupNodeHandler {
     const config = new GroupNodeConfig(name, nodeData)
     await config.registerType()
 
-    const groupNode = LiteGraph.createNode(`workflow/${name}`)
+    const groupNode = LiteGraph.createNode(`workflow>${name}`)
     // Reuse the existing nodes for this instance
     groupNode.setInnerNodes(builder.nodes)
     groupNode[GROUP].populateWidgets()
