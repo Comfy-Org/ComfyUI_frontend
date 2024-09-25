@@ -139,6 +139,15 @@ class NodeLibrarySidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
+  async close() {
+    if (!this.tabButton.isVisible()) {
+      return
+    }
+
+    await this.tabButton.click()
+    await this.nodeLibraryTree.waitFor({ state: 'hidden' })
+  }
+
   folderSelector(folderName: string) {
     return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-folder .node-label:has-text("${folderName}")))`
   }
