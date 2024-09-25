@@ -32,7 +32,7 @@
           </Button>
         </ButtonGroup>
       </div>
-      <div class="separator"></div>
+      <Divider layout="vertical" class="mx-2" />
       <ButtonGroup>
         <Button
           v-tooltip.bottom="$t('menu.refresh')"
@@ -56,6 +56,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
 import Panel from 'primevue/panel'
+import Divider from 'primevue/divider'
 import SplitButton from 'primevue/splitbutton'
 import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
@@ -140,7 +141,6 @@ const queuePrompt = (e: MouseEvent) => {
 
 .app-menu-content {
   display: flex;
-  gap: 10px;
   align-items: center;
 }
 
@@ -152,43 +152,7 @@ const queuePrompt = (e: MouseEvent) => {
   display: none;
 }
 
-.separator {
-  background-color: var(--p-content-border-color);
-  border-radius: 10px;
-  opacity: 0.75;
-  width: 5px;
-  height: 20px;
-}
-
 .queue-options {
   display: flex;
-}
-
-.p-slider {
-  --p-slider-border-radius: 5px;
-  margin: 5px;
-  padding: 2px;
-}
-
-.p-floatlabel label {
-  left: 2px;
-}
-
-.label {
-  font-size: 12px;
-  color: var(--p-floatlabel-focus-color);
-}
-
-.auto-queue {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 6px;
-}
-
-.auto-queue-mode {
-  display: flex;
-  align-items: center;
-  gap: 5px;
 }
 </style>
