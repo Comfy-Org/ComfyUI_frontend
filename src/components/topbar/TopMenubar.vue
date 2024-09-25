@@ -1,28 +1,28 @@
 <template>
   <teleport to=".comfyui-body-top">
     <div
-      class="top-menubar comfyui-menu flex justify-end"
+      class="top-menubar comfyui-menu flex items-center"
       v-show="betaMenuEnabled"
     >
-      <Fluid class="comfyui-menu-left flex flex-1">
-        <h1 class="comfyui-logo mx-2">ComfyUI</h1>
-        <Menubar
-          :model="items"
-          class="border-none p-0 bg-transparent"
-          :pt="{
-            rootList: 'gap-0'
-          }"
-        />
-        <Divider layout="vertical" class="mx-2" />
-        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
-      </Fluid>
+      <h1 class="comfyui-logo mx-2">ComfyUI</h1>
+      <Menubar
+        :model="items"
+        class="border-none p-0 bg-transparent"
+        :pt="{
+          rootList: 'gap-0 flex-nowrap'
+        }"
+      />
+      <Divider layout="vertical" class="mx-2" />
+      <WorkflowTabs
+        v-if="workflowTabsPosition === 'Topbar'"
+        class="flex-grow"
+      />
       <div class="comfyui-menu-right" ref="menuRight"></div>
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
-import Fluid from 'primevue/fluid'
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -57,13 +57,10 @@ onMounted(() => {
   color: var(--fg-color);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.8em;
-  display: flex;
-  align-items: center;
   box-sizing: border-box;
   z-index: 1000;
   order: 0;
   grid-column: 1/-1;
-  overflow: auto;
   max-height: 90vh;
 }
 
