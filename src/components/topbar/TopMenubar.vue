@@ -1,27 +1,35 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div class="top-menubar comfyui-menu" v-if="betaMenuEnabled">
-      <h1 class="comfyui-logo mx-2">ComfyUI</h1>
-      <Menubar
-        :model="items"
-        class="border-none p-0 bg-transparent"
-        :pt="{
-          rootList: 'gap-0'
-        }"
-      />
-      <Divider layout="vertical" class="mx-2" />
-      <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+    <div
+      class="top-menubar comfyui-menu flex justify-end"
+      v-show="betaMenuEnabled"
+    >
+      <Fluid class="comfyui-menu-left flex flex-1">
+        <h1 class="comfyui-logo mx-2">ComfyUI</h1>
+        <Menubar
+          :model="items"
+          class="border-none p-0 bg-transparent"
+          :pt="{
+            rootList: 'gap-0'
+          }"
+        />
+        <Divider layout="vertical" class="mx-2" />
+        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+      </Fluid>
+      <div class="comfyui-menu-right" ref="menuRight"></div>
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
+import Fluid from 'primevue/fluid'
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
+import { app } from '@/scripts/app'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -32,6 +40,14 @@ const betaMenuEnabled = computed(
 )
 const coreMenuItemsStore = useCoreMenuItemStore()
 const items = coreMenuItemsStore.menuItems
+
+const menuRight = ref<HTMLDivElement | null>(null)
+// Menu-right holds legacy topbar elements attached by custom scripts
+onMounted(() => {
+  if (menuRight.value) {
+    menuRight.value.appendChild(app.menu.element)
+  }
+})
 </script>
 
 <style scoped>

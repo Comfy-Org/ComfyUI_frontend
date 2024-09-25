@@ -79,18 +79,10 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
   app.workflowManager.closeWorkflow(workflow)
 }
-
-// Add this new function to check if a workflow is unsaved
-const isWorkflowUnsaved = (option: WorkflowOption): boolean => {
-  const workflow = optionToWorkflow(option)
-  return workflow.unsaved
-}
 </script>
 
 <style scoped>
 .select-button-group {
-  /* TODO: Make this dynamic. Take rest of space after all tool buttons */
-  max-width: 70vw;
   overflow-x: auto;
   overflow-y: hidden;
 
