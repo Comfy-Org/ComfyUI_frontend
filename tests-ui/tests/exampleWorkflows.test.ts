@@ -48,11 +48,6 @@ describe('example workflows', () => {
     )
 
     let skip = false
-    // https://github.com/comfyanonymous/ComfyUI_examples/issues/40
-    if (file === 'audio_stable_audio_example.flac.json') {
-      skip = true
-    }
-
     let parsedWorkflow
     try {
       // Workflows with group nodes dont generate the same IDs as the examples
@@ -60,6 +55,11 @@ describe('example workflows', () => {
       parsedWorkflow = JSON.parse(workflow)
       skip = !!Object.keys(parsedWorkflow?.extra?.groupNodes ?? {}).length
     } catch (error) {}
+
+    // https://github.com/comfyanonymous/ComfyUI_examples/issues/40
+    if (file === 'audio_stable_audio_example.flac.json') {
+      skip = true
+    }
 
     return { file, workflow, prompt, parsedWorkflow, skip }
   })
