@@ -133,8 +133,7 @@ const queueModeMenuItems = computed(() =>
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
-const queueStore = useQueueStore()
-const hasPendingTasks = computed(() => queueStore.hasPendingTasks)
+const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 
 const queuePrompt = (e: MouseEvent) => {
   app.queuePrompt(e.shiftKey ? -1 : 0, batchCount.value)
