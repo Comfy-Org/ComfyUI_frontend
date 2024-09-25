@@ -16,7 +16,7 @@
             <Button
               :label="item.label"
               :icon="item.icon"
-              severity="secondary"
+              :severity="item.key === queueMode ? 'primary' : 'secondary'"
               text
               v-tooltip="item.tooltip"
             />
@@ -73,8 +73,7 @@ import BatchCountEdit from './BatchCountEdit.vue'
 import {
   AutoQueueMode,
   useQueuePendingTaskCountStore,
-  useQueueSettingsStore,
-  useQueueStore
+  useQueueSettingsStore
 } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
 import { storeToRefs } from 'pinia'
@@ -127,9 +126,7 @@ const activeQueueModeMenuItem = computed(
   () => queueModeMenuItemLookup[queueMode.value]
 )
 const queueModeMenuItems = computed(() =>
-  Object.values(queueModeMenuItemLookup).filter(
-    (item) => item.key !== queueMode.value
-  )
+  Object.values(queueModeMenuItemLookup)
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
