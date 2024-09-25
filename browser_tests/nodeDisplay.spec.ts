@@ -23,4 +23,10 @@ test.describe('Optional input', () => {
     await comfyPage.loadWorkflow('force_input')
     await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
   })
+
+  test('Only optional inputs', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('only_optional_inputs')
+    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+    expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  })
 })
