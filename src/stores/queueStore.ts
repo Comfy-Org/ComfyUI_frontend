@@ -9,7 +9,7 @@ import type {
   TaskOutput,
   ResultItem
 } from '@/types/apiTypes'
-import type { ComfyNode, NodeId } from '@/types/comfyWorkflow'
+import type { NodeId } from '@/types/comfyWorkflow'
 import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'

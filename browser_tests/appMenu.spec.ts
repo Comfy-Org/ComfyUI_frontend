@@ -12,10 +12,6 @@ test.describe('AppMenu', () => {
   })
 
   test.afterEach(async ({ comfyPage }) => {
-    const currentThemeId = await comfyPage.menu.getThemeId()
-    if (currentThemeId !== 'dark') {
-      await comfyPage.menu.toggleTheme()
-    }
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
@@ -27,7 +23,7 @@ test.describe('AppMenu', () => {
     ws
   }) => {
     // Enable change auto-queue mode
-    let queueOpts = await comfyPage.appMenu.queueButton.toggleOptions()
+    const queueOpts = await comfyPage.appMenu.queueButton.toggleOptions()
     expect(await queueOpts.getMode()).toBe('disabled')
     await queueOpts.setMode('change')
     await comfyPage.nextFrame()

@@ -79,7 +79,7 @@ const messages = {
       change: 'On Change',
       changeTooltip: 'The workflow will be queued once a change is made',
       queueWorkflow: 'Queue workflow',
-      generate: 'Generate',
+      queue: 'Queue',
       interrupt: 'Cancel current run',
       refresh: 'Refresh node definitions',
       clipspace: 'Open Clipspace',

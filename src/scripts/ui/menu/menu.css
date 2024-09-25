@@ -269,10 +269,6 @@
   display: none;
 }
 
-.lt-lg .comfyui-queue-button {
-  margin-right: 44px;
-}
-
 .lt-lg .comfyui-menu-button {
   position: absolute;
   top: 4px;
@@ -296,13 +292,6 @@
 }
 
 /** Extra small */
-.lt-sm .comfyui-queue-button {
-  margin-right: 0;
-  width: 100%;
-}
-.lt-sm .comfyui-queue-button .comfyui-button {
-  justify-content: center;
-}
 .lt-sm .comfyui-interrupt-button {
   margin-right: 45px;
 }

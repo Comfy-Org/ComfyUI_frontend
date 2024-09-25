@@ -1,4 +1,5 @@
 import type { Page, Locator } from '@playwright/test'
+import type { AutoQueueMode } from '../../src/stores/queueStore'
 
 export class ComfyAppMenu {
   public readonly root: Locator
@@ -27,39 +28,17 @@ class ComfyQueueButton {
 }
 
 class ComfyQueueButtonOptions {
-  public readonly popup: Locator
-  public readonly modes: {
-    disabled: { input: Locator; wrapper: Locator }
-    instant: { input: Locator; wrapper: Locator }
-    change: { input: Locator; wrapper: Locator }
-  }
+  constructor(public readonly page: Page) {}
 
-  constructor(public readonly page: Page) {
-    this.popup = page.getByTestId('queue-options')
-    this.modes = (['disabled', 'instant', 'change'] as const).reduce(
-      (modes, mode) => {
-        modes[mode] = {
-          input: page.locator(`#autoqueue-${mode}`),
-          wrapper: page.getByTestId(`autoqueue-${mode}`)
-        }
-        return modes
-      },
-      {} as ComfyQueueButtonOptions['modes']
-    )
-  }
-
-  public async setMode(mode: keyof ComfyQueueButtonOptions['modes']) {
-    await this.modes[mode].input.click()
+  public async setMode(mode: AutoQueueMode) {
+    await this.page.evaluate((mode) => {
+      window['app'].extensionManager.queueSettings.mode = mode
+    }, mode)
   }
 
   public async getMode() {
-    return (
-      await Promise.all(
-        Object.entries(this.modes).map(async ([mode, opt]) => [
-          mode,
-          await opt.wrapper.getAttribute('data-p-checked')
-        ])
-      )
-    ).find(([, checked]) => checked === 'true')?.[0]
+    return await this.page.evaluate(() => {
+      return window['app'].extensionManager.queueSettings.mode
+    })
   }
 }

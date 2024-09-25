@@ -6,6 +6,7 @@ import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { showTemplateWorkflowsDialog } from '@/services/dialogService'
+import { useQueueStore } from './queueStore'
 
 type Command = () => void | Promise<void>
 
@@ -71,6 +72,15 @@ export const useCommandStore = defineStore('command', () => {
         summary: 'Interrupted',
         detail: 'Execution has been interrupted',
         life: 1000
+      })
+    },
+    'Comfy.ClearPendingTasks': async () => {
+      await useQueueStore().clear(['queue'])
+      useToastStore().add({
+        severity: 'info',
+        summary: 'Confirmed',
+        detail: 'Pending tasks deleted',
+        life: 3000
       })
     },
     'Comfy.BrowseTemplates': showTemplateWorkflowsDialog

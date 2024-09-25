@@ -34,11 +34,10 @@
         <Button
           v-if="queueStore.hasPendingTasks"
           icon="pi pi-stop"
-          text
           severity="danger"
-          @click="clearPendingTasks"
-          class="clear-pending-button"
-          v-tooltip="$t('sideToolbar.queueTab.clearPendingTasks')"
+          text
+          @click="() => commandStore.getCommand('Comfy.ClearPendingTasks')()"
+          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
         />
         <Button
           icon="pi pi-trash"
@@ -109,6 +108,7 @@ import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { app } from '@/scripts/app'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
@@ -116,6 +116,7 @@ const confirm = useConfirm()
 const toast = useToast()
 const queueStore = useQueueStore()
 const settingStore = useSettingStore()
+const commandStore = useCommandStore()
 const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
@@ -227,16 +228,6 @@ const confirmRemoveAll = (event: Event) => {
         life: 3000
       })
     }
-  })
-}
-
-const clearPendingTasks = async () => {
-  await queueStore.clear(['queue'])
-  toast.add({
-    severity: 'info',
-    summary: 'Confirmed',
-    detail: 'Pending tasks deleted',
-    life: 3000
   })
 }
 
