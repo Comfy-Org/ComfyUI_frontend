@@ -23,14 +23,22 @@
           </template>
         </SplitButton>
         <BatchCountEdit />
-        <ButtonGroup class="execution-actions" v-if="executingPrompt">
+        <ButtonGroup class="execution-actions ml-2">
           <Button
             v-tooltip.bottom="$t('menu.interrupt')"
             icon="pi pi-times"
-            severity="danger"
+            :severity="executingPrompt ? 'danger' : 'secondary'"
+            :disabled="!executingPrompt"
             @click="() => commandStore.getCommand('Comfy.Interrupt')()"
           >
           </Button>
+          <Button
+            v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
+            icon="pi pi-stop"
+            :severity="hasPendingTasks ? 'danger' : 'secondary'"
+            :disabled="!hasPendingTasks"
+            @click="() => commandStore.getCommand('Comfy.ClearPendingTasks')()"
+          />
         </ButtonGroup>
       </div>
       <Divider layout="vertical" class="mx-2" />
@@ -65,7 +73,8 @@ import BatchCountEdit from './BatchCountEdit.vue'
 import {
   AutoQueueMode,
   useQueuePendingTaskCountStore,
-  useQueueSettingsStore
+  useQueueSettingsStore,
+  useQueueStore
 } from '@/stores/queueStore'
 import { app } from '@/scripts/app'
 import { storeToRefs } from 'pinia'
@@ -124,6 +133,8 @@ const queueModeMenuItems = computed(() =>
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
+const queueStore = useQueueStore()
+const hasPendingTasks = computed(() => queueStore.hasPendingTasks)
 
 const queuePrompt = (e: MouseEvent) => {
   app.queuePrompt(e.shiftKey ? -1 : 0, batchCount.value)
