@@ -2017,7 +2017,7 @@ export class ComfyApp {
         for (const inputName in inputs) {
           const inputData = inputs[inputName]
           const type = inputData[0]
-          const inputIsRequired = inputName in requiredInputs
+          const inputIsRequired = requiredInputs && inputName in requiredInputs
 
           let widgetCreated = true
           const widgetType = self.getWidgetType(inputData, inputName)
