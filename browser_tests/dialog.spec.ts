@@ -51,8 +51,7 @@ test.describe('Missing models warning', () => {
     }, comfyPage.url)
   })
 
-  // Regressed by https://github.com/comfyanonymous/ComfyUI/pull/4981
-  test.skip('Should display a warning when missing models are found', async ({
+  test('Should display a warning when missing models are found', async ({
     comfyPage
   }) => {
     // The fake_model.safetensors is served by
