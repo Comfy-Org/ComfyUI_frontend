@@ -97,6 +97,13 @@ const messages = {
     }
   },
   zh: {
+    insert: '插入',
+    systemInfo: '系统信息',
+    devices: '设备',
+    about: '关于',
+    add: '添加',
+    confirm: '确认',
+    reset: '重置',
     customizeFolder: '定制文件夹',
     icon: '图标',
     color: '颜色',
@@ -109,6 +116,10 @@ const messages = {
     box: '盒子',
     briefcase: '公文包',
     error: '错误',
+    loading: '加载中',
+    findIssues: '查找 Issue',
+    copyToClipboard: '复制到剪贴板',
+    openNewIssue: '开启新 Issue',
     showReport: '显示报告',
     imageFailedToLoad: '图像加载失败',
     reconnecting: '重新连接中',
@@ -116,29 +127,67 @@ const messages = {
     delete: '删除',
     rename: '重命名',
     customize: '定制',
+    experimental: '测试',
+    deprecated: '弃用',
     loadWorkflow: '加载工作流',
+    goToNode: '前往节点',
     settings: '设置',
     searchWorkflows: '搜索工作流',
     searchSettings: '搜索设置',
     searchNodes: '搜索节点',
+    searchModels: '搜索模型',
     noResultsFound: '未找到结果',
-    noTasksFound: '未找到任务',
-    noTasksFoundMessage: '队列中没有任务。',
     searchFailedMessage:
       '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
+    noContent: '(无内容)',
+    noTasksFound: '未找到任务',
+    noTasksFoundMessage: '队列中没有任务。',
     newFolder: '新建文件夹',
     sideToolbar: {
       themeToggle: '主题切换',
       queue: '队列',
       nodeLibrary: '节点库',
       workflows: '工作流',
+      browseTemplates: '浏览示例模板',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       },
+      modelLibrary: '模型库',
       queueTab: {
         showFlatList: '平铺结果',
         backToAllTasks: '返回',
+        containImagePreview: '填充图像预览',
+        coverImagePreview: '适应图像预览',
         clearPendingTasks: '清除待处理任务'
+      }
+    },
+    menu: {
+      batchCount: '批次数量',
+      batchCountTooltip:
+        '工作流生成次数',
+      autoQueue: '自动执行',
+      disabled: '禁用',
+      disabledTooltip: '工作流将不会自动执行',
+      instant: '实时',
+      instantTooltip:
+        '工作流将会在生成完成后立即执行',
+      change: '变动',
+      changeTooltip: '工作流将会在改变后执行',
+      queueWorkflow: '执行工作流',
+      queue: '队列',
+      interrupt: '取消当前任务',
+      refresh: '刷新节点',
+      clipspace: '打开剪贴板',
+      resetView: '重置画布视图',
+      clear: '清空工作流'
+    },
+    templateWorkflows: {
+      title: '从模板开始',
+      template: {
+        default: 'Image Generation',
+        image2image: 'Image to Image',
+        upscale: '2 Pass Upscale',
+        flux_schnell: 'Flux Schnell'
       }
     }
   }
