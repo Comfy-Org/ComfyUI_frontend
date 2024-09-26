@@ -183,19 +183,22 @@ function updateNode(node) {
           '<div><b>' + outputs[i] + '</b>: ' + def.output_tooltips[i] + '</div>'
       }
     }
+    if (content == '') {
+      content = 'No documentation available'
+    }
     helpDOM.innerHTML = content
   }
 }
-var bringToFront
 app.registerExtension({
   name: 'Comfy.longformDocumentation',
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (typeof nodeData.description == 'Object') {
-      nodeData.description = 'redirected'
+    //TODO: Find better method. Likely require explicit opt in
+    if (nodeData.description.includes('</div>') && !nodeData.longDescription) {
+      nodeData.longDescription = nodeData.description
     }
   }
 })
-
+var bringToFront
 let documentationSidebar = {
   id: 'documentationSidebar',
   title: 'Documentation',
