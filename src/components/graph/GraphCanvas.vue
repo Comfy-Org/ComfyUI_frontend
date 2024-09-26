@@ -46,7 +46,10 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import {
+  ModelNodeProvider,
+  useModelToNodeStore
+} from '@/stores/modelToNodeStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 
 const emit = defineEmits(['ready'])
@@ -143,15 +146,33 @@ onMounted(async () => {
           comfyApp.addNodeOnGraph(nodeDef, { pos })
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
-          const provider = modelToNodeStore.getNodeProvider(model.directory)
-          if (provider) {
-            const pos = comfyApp.clientPosToCanvasPos([
-              loc.clientX - 20,
-              loc.clientY
-            ])
-            const node = comfyApp.addNodeOnGraph(provider.nodeDef, { pos })
-            const widget = node.widgets.find(
-              (widget) => widget.name === provider.key
+          const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
+          const nodeAtPos = comfyApp.graph.getNodeOnPos(pos[0], pos[1])
+          let targetProvider: ModelNodeProvider | null = null
+          let targetGraphNode: LGraphNode | null = null
+          if (nodeAtPos) {
+            const providers = modelToNodeStore.getAllNodeProviders(
+              model.directory
+            )
+            for (const provider of providers) {
+              if (provider.nodeDef.name === nodeAtPos.comfyClass) {
+                targetGraphNode = nodeAtPos
+                targetProvider = provider
+              }
+            }
+          }
+          if (!targetGraphNode) {
+            const provider = modelToNodeStore.getNodeProvider(model.directory)
+            if (provider) {
+              targetGraphNode = comfyApp.addNodeOnGraph(provider.nodeDef, {
+                pos
+              })
+              targetProvider = provider
+            }
+          }
+          if (targetGraphNode) {
+            const widget = targetGraphNode.widgets.find(
+              (widget) => widget.name === targetProvider.key
             )
             if (widget) {
               widget.value = model.name
