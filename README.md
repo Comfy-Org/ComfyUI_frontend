@@ -91,6 +91,13 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.3.1: **Litegraph** Shift drag link to create a new link</summary>
+
+[rec.webm](https://github.com/user-attachments/assets/7e73aaf9-79e2-4c3c-a26a-911cba3b85e4)
+
+</details>
+
+<details>
   <summary>v1.2.44: **Litegraph** Double click group title to edit</summary>
 
 https://github.com/user-attachments/assets/5bf0e2b6-8b3a-40a7-b44f-f0879e9ad26f
