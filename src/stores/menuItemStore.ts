@@ -43,6 +43,14 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   }
 
   const registerCommands = (path: string[], commands: ComfyCommand[]) => {
+    // Register commands that are not already registered
+    for (const command of commands) {
+      if (commandStore.isRegistered(command.id)) {
+        continue
+      }
+      commandStore.registerCommand(command)
+    }
+
     const items = commands.map(
       (command) =>
         ({

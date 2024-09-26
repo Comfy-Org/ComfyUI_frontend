@@ -192,9 +192,14 @@ export const useCommandStore = defineStore('command', () => {
     return commands.value[command]
   }
 
+  const isRegistered = (command: string) => {
+    return !!commands.value[command]
+  }
+
   return {
     getCommand,
     getCommandFunction,
-    registerCommand
+    registerCommand,
+    isRegistered
   }
 })
