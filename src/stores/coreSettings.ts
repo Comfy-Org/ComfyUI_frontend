@@ -160,8 +160,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true
+    defaultValue: true
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',
