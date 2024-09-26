@@ -1,13 +1,10 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div
-      class="top-menubar comfyui-menu flex items-center"
-      v-show="betaMenuEnabled"
-    >
+    <div class="comfyui-menu flex items-center" v-show="betaMenuEnabled">
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
         :model="items"
-        class="border-none p-0 bg-transparent"
+        class="top-menubar border-none p-0 bg-transparent"
         :pt="{
           rootList: 'gap-0 flex-nowrap'
         }"
