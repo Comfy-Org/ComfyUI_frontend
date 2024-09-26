@@ -41,7 +41,8 @@ app.registerExtension({
         o: '#comfy-file-input',
         Backspace: '#comfy-clear-button',
         d: '#comfy-load-default-button',
-        g: '#comfy-group-selected-nodes-button'
+        g: '#comfy-group-selected-nodes-button',
+        ',': '.settings-icon-button'
       }
 
       const modifierKeybindId = modifierKeyIdMap[event.key]
