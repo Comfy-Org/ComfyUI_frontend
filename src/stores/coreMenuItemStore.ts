@@ -1,93 +1,116 @@
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
-import { computed } from 'vue'
-import { useCommandStore } from './commandStore'
+import { ref } from 'vue'
+import { type ComfyCommand, useCommandStore } from './commandStore'
 
 export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
   const commandStore = useCommandStore()
-  const menuItems = computed<MenuItem[]>(() => {
-    return [
-      {
-        label: 'Workflow',
-        items: [
-          {
-            label: 'New',
-            icon: 'pi pi-plus',
-            command: commandStore.commands['Comfy.NewBlankWorkflow']
-          },
-          {
-            separator: true
-          },
-          {
-            label: 'Open',
-            icon: 'pi pi-folder-open',
-            command: commandStore.commands['Comfy.OpenWorkflow']
-          },
-          {
-            label: 'Browse Templates',
-            icon: 'pi pi-th-large',
-            command: commandStore.commands['Comfy.BrowseTemplates']
-          },
-          {
-            separator: true
-          },
-          {
-            label: 'Save',
-            icon: 'pi pi-save',
-            command: commandStore.commands['Comfy.SaveWorkflow']
-          },
-          {
-            label: 'Save As',
-            icon: 'pi pi-save',
-            command: commandStore.commands['Comfy.SaveWorkflowAs']
-          },
-          {
-            label: 'Export',
-            icon: 'pi pi-download',
-            command: commandStore.commands['Comfy.ExportWorkflow']
-          },
-          {
-            label: 'Export (API Format)',
-            icon: 'pi pi-download',
-            command: commandStore.commands['Comfy.ExportWorkflowAPI']
-          }
-        ]
-      },
-      {
-        label: 'Edit',
-        items: [
-          {
-            label: 'Undo',
-            icon: 'pi pi-undo',
-            command: commandStore.commands['Comfy.Undo']
-          },
-          {
-            label: 'Redo',
-            icon: 'pi pi-refresh',
-            command: commandStore.commands['Comfy.Redo']
-          },
-          {
-            separator: true
-          },
-          {
-            label: 'Clear Workflow',
-            icon: 'pi pi-trash',
-            command: commandStore.commands['Comfy.ClearWorkflow']
-          },
-          {
-            separator: true
-          },
-          {
-            label: 'Clipspace',
-            icon: 'pi pi-clipboard',
-            command: commandStore.commands['Comfy.OpenClipspace']
-          }
-        ]
+  const menuItems = ref<MenuItem[]>([])
+
+  const registerMenuGroup = (path: string[], items: MenuItem[]) => {
+    let currentLevel = menuItems.value
+
+    // Traverse the path, creating nodes if necessary
+    for (let i = 0; i < path.length; i++) {
+      const segment = path[i]
+      let found = currentLevel.find((item) => item.label === segment)
+
+      if (!found) {
+        // Create a new node if it doesn't exist
+        found = {
+          label: segment,
+          items: []
+        }
+        currentLevel.push(found)
       }
+
+      // Ensure the found item has an 'items' array
+      if (!found.items) {
+        found.items = []
+      }
+
+      // Move to the next level
+      currentLevel = found.items
+    }
+
+    if (currentLevel.length > 0) {
+      currentLevel.push({
+        separator: true
+      })
+    }
+    // Add the new items to the last level
+    currentLevel.push(...items)
+  }
+
+  const registerCommands = (path: string[], commands: ComfyCommand[]) => {
+    const items = commands.map(
+      (command) =>
+        ({
+          ...command,
+          command: command.function
+        }) as MenuItem
+    )
+    registerMenuGroup(path, items)
+  }
+
+  const workflowMenuGroup: MenuItem[] = [
+    {
+      label: 'New',
+      icon: 'pi pi-plus',
+      command: commandStore.getCommandFunction('Comfy.NewBlankWorkflow')
+    },
+    {
+      separator: true
+    },
+    {
+      label: 'Open',
+      icon: 'pi pi-folder-open',
+      command: commandStore.getCommandFunction('Comfy.OpenWorkflow')
+    },
+    {
+      label: 'Browse Templates',
+      icon: 'pi pi-th-large',
+      command: commandStore.getCommandFunction('Comfy.BrowseTemplates')
+    },
+    {
+      separator: true
+    },
+    {
+      label: 'Save',
+      icon: 'pi pi-save',
+      command: commandStore.getCommandFunction('Comfy.SaveWorkflow')
+    },
+    {
+      label: 'Save As',
+      icon: 'pi pi-save',
+      command: commandStore.getCommandFunction('Comfy.SaveWorkflowAs')
+    },
+    {
+      label: 'Export',
+      icon: 'pi pi-download',
+      command: commandStore.getCommandFunction('Comfy.ExportWorkflow')
+    },
+    {
+      label: 'Export (API Format)',
+      icon: 'pi pi-download',
+      command: commandStore.getCommandFunction('Comfy.ExportWorkflowAPI')
+    }
+  ]
+
+  registerMenuGroup(['Workflow'], workflowMenuGroup)
+  registerCommands(
+    ['Edit'],
+    [
+      commandStore.getCommand('Comfy.Undo'),
+      commandStore.getCommand('Comfy.Redo')
     ]
-  })
+  )
+  registerCommands(['Edit'], [commandStore.getCommand('Comfy.ClearWorkflow')])
+  registerCommands(['Edit'], [commandStore.getCommand('Comfy.OpenClipspace')])
 
   return {
-    menuItems
+    menuItems,
+    registerMenuGroup,
+    registerCommands
   }
 })

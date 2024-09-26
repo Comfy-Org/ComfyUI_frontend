@@ -36,7 +36,9 @@
           icon="pi pi-stop"
           severity="danger"
           text
-          @click="() => commandStore.getCommand('Comfy.ClearPendingTasks')()"
+          @click="
+            () => commandStore.getCommandFunction('Comfy.ClearPendingTasks')()
+          "
           v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
         />
         <Button
