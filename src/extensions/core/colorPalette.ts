@@ -73,6 +73,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fff',
         'content-hover-bg': '#222',
         'content-hover-fg': '#fff'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -138,6 +141,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#222',
         'content-hover-bg': '#adadad',
         'content-hover-fg': '#222'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -198,6 +204,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fdf6e3',
         'content-hover-bg': '#002b36',
         'content-hover-fg': '#fdf6e3'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -272,6 +281,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fff',
         'content-hover-bg': '#2b2f38',
         'content-hover-fg': '#fff'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -346,6 +358,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#2e3440',
         'content-hover-fg': '#e5eaf0'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -420,6 +435,9 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#161b22',
         'content-hover-fg': '#e5eaf0'
+      },
+      other: {
+        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   }
@@ -695,6 +713,13 @@ app.registerExtension({
               colorPalette.colors.comfy_base[key]
             )
           }
+        }
+        // Sets the other colors
+        if (
+          colorPalette.colors.other &&
+          colorPalette.colors.other.NODE_BYPASS_BGCOLOR
+        ) {
+          app.bypassBgColor = colorPalette.colors.other.NODE_BYPASS_BGCOLOR
         }
         app.canvas.draw(true, true)
       }

@@ -77,11 +77,16 @@ const comfyBaseSchema = z.object({
   ['content-hover-fg']: z.string()
 })
 
+const otherColorsSchema = z.object({
+  NODE_BYPASS_BGCOLOR: z.string()
+})
+
 const colorsSchema = z
   .object({
     node_slot: nodeSlotSchema,
     litegraph_base: litegraphBaseSchema,
-    comfy_base: comfyBaseSchema
+    comfy_base: comfyBaseSchema,
+    other: otherColorsSchema
   })
   .passthrough()
 
