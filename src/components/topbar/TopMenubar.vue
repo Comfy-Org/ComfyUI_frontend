@@ -26,7 +26,7 @@
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { computed, onMounted, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
@@ -38,8 +38,8 @@ const workflowTabsPosition = computed(() =>
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
-const coreMenuItemsStore = useCoreMenuItemStore()
-const items = coreMenuItemsStore.menuItems
+const menuItemsStore = useMenuItemStore()
+const items = menuItemsStore.menuItems
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts

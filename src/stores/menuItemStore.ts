@@ -3,7 +3,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { type ComfyCommand, useCommandStore } from './commandStore'
 
-export const useCoreMenuItemStore = defineStore('coreMenuItem', () => {
+export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
 
