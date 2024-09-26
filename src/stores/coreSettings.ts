@@ -251,6 +251,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.ModelLibrary.NameFormat',
+    name: 'What name to display in the model library tree view',
+    type: 'combo',
+    options: ['filename', 'title'],
+    defaultValue: 'title'
+  },
+  {
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',

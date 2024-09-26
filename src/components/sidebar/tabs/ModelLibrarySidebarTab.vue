@@ -94,6 +94,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
+  const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
@@ -126,7 +127,11 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
 
     return {
       key: node.key,
-      label: model ? model.title : node.label,
+      label: model
+        ? nameFormat === 'title'
+          ? model.title
+          : model.simplified_name
+        : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
