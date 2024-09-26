@@ -1,9 +1,11 @@
 import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app.js'
+import { getColorPalette } from './colorPalette'
+import { ComfyWidgets } from '../../scripts/widgets'
 import { LGraphNode } from '@comfyorg/litegraph'
-//import { ComfyWidgets } from '../../scripts/widgets'
+import type { IWidget, widgetTypes } from '@comfyorg/litegraph'
 
-function inner_value_change(widget, value) {
+function inner_value_change(widget, value, node, pos) {
   widget.value = value
   if (
     widget.options &&
@@ -11,6 +13,9 @@ function inner_value_change(widget, value) {
     node.properties[widget.options.property] !== undefined
   ) {
     node.setProperty(widget.options.property, value)
+  }
+  if (widget.callback) {
+    widget.callback(this.value, app.canvas, node, event)
   }
 }
 
@@ -40,11 +45,12 @@ function button_action(widget) {
 }
 
 function draw(ctx, node, widget_width, y, H) {
+  const litegraph_base = getColorPalette().colors.litegraph_base
   const show_text = app.canvas.ds.scale > 0.5
   const margin = 15
   ctx.textAlign = 'left'
-  ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
-  ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR
+  ctx.strokeStyle = litegraph_base.WIDGET_OUTLINE_COLOR
+  ctx.fillStyle = litegraph_base.WIDGET_BGCOLOR
   ctx.beginPath()
   if (show_text)
     ctx.roundRect(margin, y, widget_width - margin * 2, H, [H * 0.5])
@@ -58,9 +64,9 @@ function draw(ctx, node, widget_width, y, H) {
       ctx.save()
       ctx.font = ctx.font.split(' ')[0] + ' monospace'
       if (button.startsWith('No ')) {
-        ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+        ctx.fillStyle = litegraph_base.WIDGET_OUTLINE_COLOR
       } else {
-        ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
+        ctx.fillStyle = litegraph_base.WIDGET_TEXT_COLOR
       }
       if (button.endsWith('Reset')) {
         ctx.fillText('\u21ba', margin + 6, y + H * 0.7)
@@ -69,7 +75,7 @@ function draw(ctx, node, widget_width, y, H) {
       }
       ctx.restore()
     }
-    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
+    ctx.fillStyle = litegraph_base.WIDGET_TEXT_COLOR
     if (!this.disabled) {
       ctx.beginPath()
       ctx.moveTo(margin + 16 + padding, y + 5)
@@ -82,9 +88,9 @@ function draw(ctx, node, widget_width, y, H) {
       ctx.lineTo(widget_width - margin - 16, y + H - 5)
       ctx.fill()
     }
-    ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
+    ctx.fillStyle = litegraph_base.WIDGET_SECONDARY_TEXT_COLOR
     ctx.fillText(this.label || this.name, margin * 2 + 5 + padding, y + H * 0.7)
-    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR
+    ctx.fillStyle = litegraph_base.WIDGET_TEXT_COLOR
     ctx.textAlign = 'right'
     const text = Number(this.value).toFixed(
       this.options.precision !== undefined ? this.options.precision : 3
@@ -92,7 +98,7 @@ function draw(ctx, node, widget_width, y, H) {
     ctx.fillText(text, widget_width - margin * 2 - 20, y + H * 0.7)
     if (this.options.mappedValues && this.value in this.options.mappedValues) {
       //TODO: measure this text
-      ctx.fillStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+      ctx.fillStyle = litegraph_base.WIDGET_OUTLINE_COLOR
       const value_width = ctx.measureText(text).width
       ctx.fillText(
         this.options.mappedValues[this.value],
@@ -115,7 +121,7 @@ function mouse(event, [x, y], node) {
       allow_scroll = false
     }
   }
-  if (allow_scroll && event.type == LiteGraph.pointerevents_method + 'move') {
+  if (allow_scroll && event.type == 'pointermove') {
     if (event.deltaX)
       this.value += event.deltaX * 0.1 * (this.options.step || 1)
     if (this.options.min != null && this.value < this.options.min) {
@@ -124,7 +130,7 @@ function mouse(event, [x, y], node) {
     if (this.options.max != null && this.value > this.options.max) {
       this.value = this.options.max
     }
-  } else if (event.type == LiteGraph.pointerevents_method + 'down') {
+  } else if (event.type == 'pointerdown') {
     if (x < padding + margin) {
       if (button == 'Reset') {
         this.value = this.options.reset
@@ -141,7 +147,7 @@ function mouse(event, [x, y], node) {
       }
     }
   } //end mousedown
-  else if (event.type == LiteGraph.pointerevents_method + 'up') {
+  else if (event.type == 'pointerup') {
     if (event.click_time < 200 && delta == 0) {
       app.canvas.prompt(
         'Value',
@@ -149,9 +155,7 @@ function mouse(event, [x, y], node) {
         function (v) {
           //NOTE: Original code uses eval here. This will not be reproduced
           this.value = Number(v)
-          if (this.callback) {
-            this.callback(this.value, app.canvas, node, [x, y], event)
-          }
+          inner_value_change(this, this.value, node, [x, y])
         }.bind(this),
         event
       )
@@ -161,44 +165,81 @@ function mouse(event, [x, y], node) {
   if (old_value != this.value)
     setTimeout(
       function () {
-        if (this.callback) {
-          this.callback(this.value, app.canvas, node, [x, y], event)
-        }
+        inner_value_change(this, this.value, node, [x, y])
       }.bind(this),
       20
     )
-  this.dirty_canvas = true
+  return true
+}
+function mappednumber(node, inputName, inputData, app): { widget: IWidget } {
+  // @ts-expect-error We are defining a new type
+  const type: widgetType = 'MAPPEDNUMBER'
+  let w = {
+    name: inputName,
+    type: type,
+    value: 0,
+    draw: draw,
+    mouse: mouse,
+    computeSize: undefined, //TODO: calculate minimum width
+    options: {},
+    linkedWidgets: []
+  }
+  if (inputData.length > 1) {
+    w.options = inputData[1]
+    for (let k of ['default', 'min', 'max']) {
+      if (inputData[1][k] != undefined) {
+        w.value = inputData[1][k]
+        break
+      }
+    }
+  }
+  if (!node.widgets) {
+    node.widgets = []
+  }
+  node.widgets.push(w)
+  return { widget: w }
+}
+const originalFLOAT = ComfyWidgets.FLOAT
+ComfyWidgets.FLOAT = function (
+  node,
+  inputName,
+  inputData,
+  app
+): { widget: IWidget } {
+  if (
+    inputData[1]?.reset == undefined &&
+    inputData[1]?.disable == undefined &&
+    inputData[1]?.mappedValues == undefined
+  ) {
+    return originalFLOAT(node, inputName, inputData, app)
+  }
+  if (inputData[1]['display'] === 'slider') {
+    return originalFLOAT(node, inputName, inputData, app)
+  }
+  return mappednumber(node, inputName, inputData, app)
+}
+const originalINT = ComfyWidgets.INT
+ComfyWidgets.INT = function (
+  node,
+  inputName,
+  inputData,
+  app
+): { widget: IWidget } {
+  if (
+    inputData[1]?.reset ||
+    inputData[1]?.disable ||
+    inputData[1]?.mappedValues
+  ) {
+    return mappednumber(node, inputName, inputData, app)
+  }
+  return originalINT(node, inputName, inputData, app)
 }
 
 app.registerExtension({
   name: 'Comfy.MappedNumber',
   async getCustomWidgets(app) {
     return {
-      MAPPEDNUMBER(node, inputName, inputData) {
-        let w = {
-          name: inputName,
-          type: 'MAPPEDNUMBER',
-          value: 0,
-          draw: draw,
-          mouse: mouse,
-          computeSize: undefined, //TODO: calculate minimum width
-          options: {}
-        }
-        if (inputData.length > 1) {
-          w.options = inputData[1]
-          for (let k of ['default', 'min', 'max']) {
-            if (inputData[1][k] != undefined) {
-              w.value = inputData[1][k]
-              break
-            }
-          }
-        }
-        if (!node.widgets) {
-          node.widgets = []
-        }
-        node.widgets.push(w)
-        return w
-      }
+      MAPPEDNUMBER: mappednumber
     }
   },
   registerCustomNodes() {
