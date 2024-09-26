@@ -12,13 +12,16 @@ describe("LegacyLGraph Compatibility Layer", () => {
 
   test("LGraph can be extended via prototype", () => {
     const graph = new LGraph();
+    // @ts-expect-error Should always be an error.
     LGraph.prototype.newMethod = function () {
       return "New method added via prototype";
     };
+    // @ts-expect-error Should always be an error.
     expect(graph.newMethod()).toBe("New method added via prototype");
   });
 
   test("LegacyLGraph is correctly assigned to LiteGraph", () => {
+    // @ts-expect-error Fixed later in the TS conversion process.
     expect(LiteGraph.LGraph).toBe(LGraph);
   });
 });
