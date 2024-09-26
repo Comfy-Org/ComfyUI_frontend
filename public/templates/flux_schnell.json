@@ -409,5 +409,12 @@
         ]
       }
     },
+    "models": [
+      {
+        "name": "flux1-schnell-fp8.safetensors",
+        "url": "https://huggingface.co/Comfy-Org/flux1-schnell/resolve/main/flux1-schnell-fp8.safetensors?download=true",
+        "directory": "checkpoints"
+      }
+    ],
     "version": 0.4
   }
