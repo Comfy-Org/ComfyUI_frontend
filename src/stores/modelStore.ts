@@ -22,6 +22,8 @@ export class ComfyModelDef {
   name: string = ''
   /** Directory containing the model, eg 'checkpoints' */
   directory: string = ''
+  /** Simplified copy of name, used as a default title */
+  simplified_name: string = ''
   /** Title / display name of the model, sometimes same as the name but not always */
   title: string = ''
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
@@ -49,10 +51,14 @@ export class ComfyModelDef {
 
   constructor(name: string, directory: string) {
     this.name = name
-    this.title = name.replaceAll('\\', '/').split('/').pop()
-    if (this.title.endsWith('.safetensors')) {
-      this.title = this.title.slice(0, -'.safetensors'.length)
+    this.simplified_name = name.replaceAll('\\', '/').split('/').pop()
+    if (this.simplified_name.endsWith('.safetensors')) {
+      this.simplified_name = this.simplified_name.slice(
+        0,
+        -'.safetensors'.length
+      )
     }
+    this.title = this.simplified_name
     this.directory = directory
   }
 
