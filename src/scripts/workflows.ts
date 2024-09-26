@@ -152,6 +152,7 @@ export class ComfyWorkflowManager extends EventTarget {
     }
     workflow.changeTracker = null
     workflow.isOpen = false
+    workflow.unsaved = false
     if (this.openWorkflows.length > 0) {
       this._activeWorkflow = this.openWorkflows[0]
       await this._activeWorkflow.load()
