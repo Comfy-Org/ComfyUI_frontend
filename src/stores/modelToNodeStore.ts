@@ -55,6 +55,19 @@ export const useModelToNodeStore = defineStore('modelToNode', {
       this.modelToNodeMap[modelType].push(nodeProvider)
     },
 
+    /**
+     * Register a node provider for the given simple names.
+     * @param modelType The name of the model type to register the node provider for.
+     * @param nodeClass The node class name to register.
+     * @param key The key to use for the node input.
+     */
+    quickRegister(modelType: string, nodeClass: string, key: string) {
+      this.registerNodeProvider(
+        modelType,
+        new ModelNodeProvider(this.nodeDefStore.nodeDefsByName[nodeClass], key)
+      )
+    },
+
     registerDefaults() {
       if (this.haveDefaultsLoaded) {
         return
@@ -63,34 +76,10 @@ export const useModelToNodeStore = defineStore('modelToNode', {
         return
       }
       this.haveDefaultsLoaded = true
-      this.registerNodeProvider(
-        'checkpoints',
-        new ModelNodeProvider(
-          this.nodeDefStore.nodeDefsByName['CheckpointLoaderSimple'],
-          'ckpt_name'
-        )
-      )
-      this.registerNodeProvider(
-        'loras',
-        new ModelNodeProvider(
-          this.nodeDefStore.nodeDefsByName['LoraLoader'],
-          'lora_name'
-        )
-      )
-      this.registerNodeProvider(
-        'vae',
-        new ModelNodeProvider(
-          this.nodeDefStore.nodeDefsByName['VAELoader'],
-          'vae_name'
-        )
-      )
-      this.registerNodeProvider(
-        'controlnet',
-        new ModelNodeProvider(
-          this.nodeDefStore.nodeDefsByName['ControlNetLoader'],
-          'control_net_name'
-        )
-      )
+      this.quickRegister('checkpoints', 'CheckpointLoaderSimple', 'ckpt_name')
+      this.quickRegister('loras', 'LoraLoader', 'lora_name')
+      this.quickRegister('vae', 'VAELoader', 'vae_name')
+      this.quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
     }
   }
 })
