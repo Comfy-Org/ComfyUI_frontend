@@ -1,13 +1,10 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div
-      class="top-menubar comfyui-menu flex items-center"
-      v-show="betaMenuEnabled"
-    >
+    <div class="comfyui-menu flex items-center" v-show="betaMenuEnabled">
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
         :model="items"
-        class="border-none p-0 bg-transparent"
+        class="top-menubar border-none p-0 bg-transparent"
         :pt="{
           rootList: 'gap-0 flex-nowrap'
         }"
@@ -26,7 +23,7 @@
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { useCoreMenuItemStore } from '@/stores/coreMenuItemStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { computed, onMounted, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
@@ -38,8 +35,8 @@ const workflowTabsPosition = computed(() =>
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
-const coreMenuItemsStore = useCoreMenuItemStore()
-const items = coreMenuItemsStore.menuItems
+const menuItemsStore = useMenuItemStore()
+const items = menuItemsStore.menuItems
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts

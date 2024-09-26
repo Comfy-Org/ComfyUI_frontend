@@ -29,7 +29,7 @@
             icon="pi pi-times"
             :severity="executingPrompt ? 'danger' : 'secondary'"
             :disabled="!executingPrompt"
-            @click="() => commandStore.getCommand('Comfy.Interrupt')()"
+            @click="() => commandStore.getCommandFunction('Comfy.Interrupt')()"
           >
           </Button>
           <Button
@@ -37,7 +37,9 @@
             icon="pi pi-stop"
             :severity="hasPendingTasks ? 'danger' : 'secondary'"
             :disabled="!hasPendingTasks"
-            @click="() => commandStore.getCommand('Comfy.ClearPendingTasks')()"
+            @click="
+              () => commandStore.getCommandFunction('Comfy.ClearPendingTasks')()
+            "
           />
         </ButtonGroup>
       </div>
@@ -48,14 +50,15 @@
           icon="pi pi-refresh"
           severity="secondary"
           @click="
-            () => commandStore.getCommand('Comfy.RefreshNodeDefinitions')()
+            () =>
+              commandStore.getCommandFunction('Comfy.RefreshNodeDefinitions')()
           "
         />
         <Button
           v-tooltip.bottom="$t('menu.resetView')"
           icon="pi pi-expand"
           severity="secondary"
-          @click="() => commandStore.getCommand('Comfy.ResetView')()"
+          @click="() => commandStore.getCommandFunction('Comfy.ResetView')()"
         />
       </ButtonGroup>
     </div>

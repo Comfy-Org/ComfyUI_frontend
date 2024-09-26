@@ -229,6 +229,32 @@ class Topbar {
       .locator('.workflow-tabs .workflow-label')
       .allInnerTexts()
   }
+
+  async triggerTopbarCommand(path: string[]) {
+    if (path.length < 2) {
+      throw new Error('Path is too short')
+    }
+
+    const tabName = path[0]
+    const topLevelMenu = this.page.locator(
+      `.top-menubar .p-menubar-item:has-text("${tabName}")`
+    )
+    await topLevelMenu.waitFor({ state: 'visible' })
+    await topLevelMenu.click()
+
+    for (let i = 1; i < path.length; i++) {
+      const commandName = path[i]
+      const menuItem = this.page.locator(
+        `.top-menubar .p-menubar-submenu .p-menubar-item:has-text("${commandName}")`
+      )
+      await menuItem.waitFor({ state: 'visible' })
+      await menuItem.hover()
+
+      if (i === path.length - 1) {
+        await menuItem.click()
+      }
+    }
+  }
 }
 
 class ComfyMenu {
