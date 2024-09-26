@@ -425,9 +425,9 @@ test.describe('Load duplicate workflow', () => {
 
 test.describe('Menu interactions', () => {
   test('Can open settings with hotkey', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.keyboard.down('ControlOrMeta')
     await comfyPage.page.keyboard.press(',')
-    await comfyPage.page.keyboard.up('Control')
+    await comfyPage.page.keyboard.up('ControlOrMeta')
     const settingsLocator = comfyPage.page.locator('.settings-container')
     await expect(settingsLocator).toBeVisible()
     await comfyPage.page.keyboard.press('Escape')

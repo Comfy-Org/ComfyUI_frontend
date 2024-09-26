@@ -1,7 +1,7 @@
 <template>
   <SidebarIcon
     icon="pi pi-cog"
-    class="settings-icon-button"
+    class="comfy-settings-btn"
     @click="showSetting"
     :tooltip="$t('settings')"
   />

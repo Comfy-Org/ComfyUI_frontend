@@ -42,7 +42,7 @@ app.registerExtension({
         Backspace: '#comfy-clear-button',
         d: '#comfy-load-default-button',
         g: '#comfy-group-selected-nodes-button',
-        ',': '.settings-icon-button'
+        ',': '.comfy-settings-btn'
       }
 
       const modifierKeybindId = modifierKeyIdMap[event.key]
