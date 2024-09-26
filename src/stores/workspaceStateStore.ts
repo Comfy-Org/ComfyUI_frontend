@@ -25,8 +25,7 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
     menu() {
       return {
-        registerMenuGroup: useMenuItemStore().registerMenuGroup,
-        registerCommands: useMenuItemStore().registerCommands
+        registerTopbarCommands: useMenuItemStore().registerCommands
       }
     }
   },

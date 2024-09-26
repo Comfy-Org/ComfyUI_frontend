@@ -137,6 +137,37 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 </details>
 
 ### Node developers API
+
+<details>
+  <summary>v1.3.1: Extension API to register custom topbar menu items</summary>
+
+  Extensions can call the following API to register custom topbar menu items.
+
+```js
+  app.extensionManager.menu.registerTopbarCommands(["ext", "ext2"], [{id:"foo", label: "foo", function: () => alert(1)}])
+```
+
+![image](https://github.com/user-attachments/assets/ae7b082f-7ce9-4549-a446-4563567102fe)
+</details>
+
+<details>
+  <summary>v1.2.27: Extension API to add toast message</summary>i
+
+  Extensions can call the following API to add toast messages.
+
+```js
+  app.extensionManager.toast.add({
+    severity: 'info',
+    summary: 'Loaded!',
+    detail: 'Extension loaded!',
+    life: 3000
+  })
+```
+Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
+
+![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
+</details>
+
 <details>
   <summary>v1.2.4: Extension API to register custom sidebar tab</summary>
 
@@ -160,24 +191,6 @@ The list of supported icons can be found here: <https://primevue.org/icons/#list
 We will support custom icons later.
 
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
-</details>
-
-<details>
-  <summary>v1.2.27: Extension API to add toast message</summary>
-
-  Extensions can call the following API to add toast messages.
-
-```js
-  app.extensionManager.toast.add({
-    severity: 'info',
-    summary: 'Loaded!',
-    detail: 'Extension loaded!',
-    life: 3000
-  })
-```
-Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
-
-![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
 </details>
 
 ## Road Map
