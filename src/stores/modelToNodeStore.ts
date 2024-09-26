@@ -77,7 +77,13 @@ export const useModelToNodeStore = defineStore('modelToNode', {
       }
       this.haveDefaultsLoaded = true
       this.quickRegister('checkpoints', 'CheckpointLoaderSimple', 'ckpt_name')
+      this.quickRegister(
+        'checkpoints',
+        'ImageOnlyCheckpointLoader',
+        'ckpt_name'
+      )
       this.quickRegister('loras', 'LoraLoader', 'lora_name')
+      this.quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
       this.quickRegister('vae', 'VAELoader', 'vae_name')
       this.quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
     }
