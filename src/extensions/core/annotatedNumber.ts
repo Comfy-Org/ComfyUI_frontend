@@ -1,5 +1,5 @@
 import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
-import { app } from '../../scripts/app.js'
+import { app } from '../../scripts/app'
 import { getColorPalette } from './colorPalette'
 import { ComfyWidgets } from '../../scripts/widgets'
 import { LGraphNode } from '@comfyorg/litegraph'
@@ -96,12 +96,21 @@ function draw(ctx, node, widget_width, y, H) {
       this.options.precision !== undefined ? this.options.precision : 3
     )
     ctx.fillText(text, widget_width - margin * 2 - 20, y + H * 0.7)
-    if (this.options.mappedValues && this.value in this.options.mappedValues) {
+    let annotation = ''
+    if (this.annotation) {
+      annotation = this.annotation(this.value)
+    } else if (
+      this.options.annotation &&
+      this.value in this.options.annotation
+    ) {
+      annotation = this.options.annotation[this.value]
+    }
+    if (annotation) {
       //TODO: measure this text
       ctx.fillStyle = litegraph_base.WIDGET_OUTLINE_COLOR
       const value_width = ctx.measureText(text).width
       ctx.fillText(
-        this.options.mappedValues[this.value],
+        annotation,
         widget_width - margin * 2 - 25 - value_width,
         y + H * 0.7
       )
@@ -171,28 +180,35 @@ function mouse(event, [x, y], node) {
     )
   return true
 }
-function mappednumber(node, inputName, inputData, app): { widget: IWidget } {
-  // @ts-expect-error We are defining a new type
-  const type: widgetType = 'MAPPEDNUMBER'
-  let w = {
-    name: inputName,
-    type: type,
-    value: 0,
-    draw: draw,
-    mouse: mouse,
-    computeSize: undefined, //TODO: calculate minimum width
-    options: {},
-    linkedWidgets: []
+class AnnotatedNumber implements IWidget {
+  // @ts-expect-error We must forcibly set a type here to allow custom mouse and draw
+  type: widgetTypes = 'annotatedNumber'
+  draw = draw
+  mouse = mouse
+  options = {}
+  linkedWidgets = []
+  name: string
+  value: number
+  annotation: (value: number) => string
+  computeSize(width: number): [number, number] {
+    return [width, 20]
   }
-  if (inputData.length > 1) {
-    w.options = inputData[1]
-    for (let k of ['default', 'min', 'max']) {
-      if (inputData[1][k] != undefined) {
-        w.value = inputData[1][k]
-        break
+  constructor(inputName, inputData) {
+    this.name = inputName
+    if (inputData.length > 1) {
+      this.options = inputData[1]
+      for (let k of ['default', 'min', 'max']) {
+        if (inputData[1][k] != undefined) {
+          this.value = inputData[1][k]
+          break
+        }
       }
     }
   }
+}
+
+function annotatedNumber(node, inputName, inputData, app): { widget: IWidget } {
+  let w = new AnnotatedNumber(inputName, inputData)
   if (!node.widgets) {
     node.widgets = []
   }
@@ -209,14 +225,14 @@ ComfyWidgets.FLOAT = function (
   if (
     inputData[1]?.reset == undefined &&
     inputData[1]?.disable == undefined &&
-    inputData[1]?.mappedValues == undefined
+    inputData[1]?.annotation == undefined
   ) {
     return originalFLOAT(node, inputName, inputData, app)
   }
   if (inputData[1]['display'] === 'slider') {
     return originalFLOAT(node, inputName, inputData, app)
   }
-  return mappednumber(node, inputName, inputData, app)
+  return annotatedNumber(node, inputName, inputData, app)
 }
 const originalINT = ComfyWidgets.INT
 ComfyWidgets.INT = function (
@@ -228,27 +244,23 @@ ComfyWidgets.INT = function (
   if (
     inputData[1]?.reset ||
     inputData[1]?.disable ||
-    inputData[1]?.mappedValues
+    inputData[1]?.annotation
   ) {
-    return mappednumber(node, inputName, inputData, app)
+    return annotatedNumber(node, inputName, inputData, app)
   }
   return originalINT(node, inputName, inputData, app)
 }
 
 app.registerExtension({
-  name: 'Comfy.MappedNumber',
+  name: 'Comfy.AnnotatedNumber',
   async getCustomWidgets(app) {
     return {
-      MAPPEDNUMBER: mappednumber
+      ANNOTATEDNUMBER: annotatedNumber
     }
   },
   registerCustomNodes() {
     class TestNum extends LGraphNode {
       static category = 'utils'
-
-      color = LGraphCanvas.node_colors.yellow.color
-      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
-      groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
       isVirtualNode = true
       collapsable = true
       title_mode = LiteGraph.NORMAL_TITLE
@@ -256,25 +268,30 @@ app.registerExtension({
 
       constructor(title?: string) {
         super(title)
-        app.widgets.MAPPEDNUMBER(
+        app.widgets.ANNOTATEDNUMBER(
           // Should we extends LGraphNode?  Yesss
           this,
           'x',
           [
-            'MAPPEDNUMBER',
+            'ANNOTATEDNUMBER',
             {
               default: 5,
               reset: 5,
               disable: 0,
-              mappedValues: { 6: 'def+1', 5: 'default', 0: 'disabled' },
+              annotation: { 6: 'def+1', 5: 'default', 0: 'disabled' },
               step: 10
             }
           ],
           app
         )
+        let annotatedWidget = this.widgets[0] as AnnotatedNumber
+        annotatedWidget.annotation = function (value) {
+          return ['smol', 'medium', 'big', 'real big'][
+            Math.floor(Math.log10(value))
+          ]
+        }
       }
     }
-
     // Load default visibility
 
     LiteGraph.registerNodeType('TestNum', TestNum)
