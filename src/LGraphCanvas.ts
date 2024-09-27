@@ -1119,6 +1119,8 @@ export class LGraphCanvas {
         this.connecting_links = null;
         this.highlighted_links = {};
 
+        this.dragging_canvas = false;
+
         this.dirty_canvas = true;
         this.dirty_bgcanvas = true;
         this.dirty_area = null;
