@@ -334,6 +334,26 @@ class PrimitiveNode extends LGraphNode {
     }
   }
 
+  isValidWidgetLink(
+    originSlot: number,
+    targetNode: LGraphNode,
+    targetWidget: IWidget
+  ) {
+    const config2 = getConfig.call(targetNode, targetWidget.name) ?? [
+      targetWidget.type,
+      targetWidget.options || {}
+    ]
+    if (!isConvertibleWidget(targetWidget, config2)) return false
+
+    const output = this.outputs[originSlot]
+    if (!(output.widget?.[CONFIG] ?? output.widget?.[GET_CONFIG]())) {
+      // No widget defined for this primitive yet so allow it
+      return true
+    }
+
+    return !!mergeIfValid.call(this, output, config2)
+  }
+
   #isValidConnection(input: INodeInputSlot, forceUpdate?: boolean) {
     // Only allow connections where the configs match
     const output = this.outputs[0]
@@ -448,7 +468,11 @@ function showWidget(widget) {
   }
 }
 
-function convertToInput(node: LGraphNode, widget: IWidget, config: InputSpec) {
+export function convertToInput(
+  node: LGraphNode,
+  widget: IWidget,
+  config: InputSpec
+) {
   hideWidget(node, widget)
 
   const { type } = getWidgetType(config)
@@ -456,7 +480,7 @@ function convertToInput(node: LGraphNode, widget: IWidget, config: InputSpec) {
   // Add input and store widget config for creating on primitive node
   const sz = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
-  node.addInput(widget.name, type, {
+  const input = node.addInput(widget.name, type, {
     // @ts-expect-error GET_CONFIG is not defined in LiteGraph
     widget: { name: widget.name, [GET_CONFIG]: () => config },
     // @ts-expect-error LiteGraph.SlotShape is not typed.
@@ -469,6 +493,7 @@ function convertToInput(node: LGraphNode, widget: IWidget, config: InputSpec) {
 
   // Restore original size but grow if needed
   node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+  return input
 }
 
 function convertToWidget(node, widget) {
