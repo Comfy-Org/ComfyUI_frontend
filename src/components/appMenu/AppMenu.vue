@@ -1,6 +1,13 @@
 <template>
-  <Panel v-if="visible" class="app-menu">
-    <div class="app-menu-content flex align-center">
+  <Panel
+    v-show="visible"
+    class="app-menu w-fit"
+    :style="style"
+    :class="{ 'is-dragging': isDragging }"
+  >
+    <div class="app-menu-content flex items-center" ref="panelRef">
+      <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
+      </span>
       <div class="queue-button-group flex">
         <SplitButton
           class="comfyui-queue-button"
@@ -66,7 +73,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import Panel from 'primevue/panel'
 import Divider from 'primevue/divider'
 import SplitButton from 'primevue/splitbutton'
@@ -84,6 +91,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
+import { useDraggable } from '@vueuse/core'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
@@ -138,16 +146,46 @@ const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 const queuePrompt = (e: MouseEvent) => {
   app.queuePrompt(e.shiftKey ? -1 : 0, batchCount.value)
 }
+
+const panelRef = ref<HTMLElement | null>(null)
+const dragHandleRef = ref<HTMLElement | null>(null)
+const { x, y, style, isDragging } = useDraggable(panelRef, {
+  initialValue: { x: 0, y: 0 },
+  handle: dragHandleRef,
+  containerElement: document.body
+})
+
+// Set initial position to bottom center
+const setInitialPosition = () => {
+  if (panelRef.value) {
+    const screenWidth = window.innerWidth
+    const screenHeight = window.innerHeight
+    const menuWidth = panelRef.value.offsetWidth
+    const menuHeight = panelRef.value.offsetHeight
+
+    console.log(menuWidth, menuHeight)
+
+    x.value = (screenWidth - menuWidth) / 2
+    y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
+  }
+}
+onMounted(setInitialPosition)
+watch(visible, (newVisible) => {
+  if (newVisible) {
+    nextTick(setInitialPosition)
+  }
+})
 </script>
 
 <style scoped>
 .app-menu {
   pointer-events: all;
   position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1000;
+}
+
+.app-menu.is-dragging {
+  user-select: none;
 }
 
 :deep(.p-panel-content) {
