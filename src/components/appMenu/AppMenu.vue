@@ -144,7 +144,7 @@ const queuePrompt = (e: MouseEvent) => {
 .app-menu {
   pointer-events: all;
   position: fixed;
-  bottom: 50px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
