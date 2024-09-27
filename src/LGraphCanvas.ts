@@ -69,6 +69,21 @@ export class LGraphCanvas {
         }
     }
 
+    // if set to true users cannot modify the graph
+    private _read_only = false;
+    get read_only() {
+        return this._read_only
+    }
+    set read_only(value) {
+        if (value != this._read_only) {
+            this._read_only = value;
+            this.emitEvent({
+                subType: "read-only",
+                readOnly: value
+            })
+        }
+    }
+
     constructor(canvas, graph, options) {
         this.options = options = options || {};
 
@@ -113,7 +128,6 @@ export class LGraphCanvas {
         this.clear_background = true;
         this.clear_background_color = "#222";
 
-        this.read_only = false; //if set to true users cannot modify the graph
         this.render_only_selected = true;
         this.live_mode = false;
         this.show_info = true;

@@ -1393,6 +1393,7 @@ export declare class LGraphCanvas {
     graph_mouse: Vector2;
 
     pointer_is_down?: boolean;
+    read_only: boolean;
 
     /** clears all the data inside */
     clear(): void;
