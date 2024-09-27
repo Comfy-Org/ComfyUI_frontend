@@ -102,24 +102,11 @@ export class ChangeTracker {
   }
 
   beforeChange() {
-    console.log(
-      '[change] increment',
-      this.changeCount,
-      '->',
-      this.changeCount + 1
-    )
     this.changeCount++
   }
 
   afterChange() {
-    console.log(
-      '[change] decrement',
-      this.changeCount,
-      '->',
-      this.changeCount - 1
-    )
     if (!--this.changeCount) {
-      console.log('[change] check state')
       this.checkState()
     }
   }
