@@ -164,6 +164,9 @@ export class LiteGraphGlobal {
 
     // Whether to highlight the bounding box of selected groups
     highlight_selected_group = false
+    LGraphGroup: any;
+    ContextMenu: any;
+    availableCanvasOptions: any;
 
     constructor() {
         //timer that works everywhere

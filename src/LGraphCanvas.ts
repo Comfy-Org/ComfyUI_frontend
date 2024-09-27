@@ -56,6 +56,19 @@ export class LGraphCanvas {
         black: { color: "#222", bgcolor: "#000", groupcolor: "#444" }
     };
 
+    public canvas: HTMLCanvasElement;
+
+    private _dragging_canvas: boolean = false;
+    get dragging_canvas(): boolean {
+        return this._dragging_canvas;
+    }
+    set dragging_canvas(value: boolean) {
+        this._dragging_canvas = value;
+        if (this.canvas) {
+            this.canvas.style.cursor = value ? "grab" : "default";
+        }
+    }
+
     constructor(canvas, graph, options) {
         this.options = options = options || {};
 
@@ -1105,8 +1118,6 @@ export class LGraphCanvas {
         this.node_capturing_input = null;
         this.connecting_links = null;
         this.highlighted_links = {};
-
-        this.dragging_canvas = false;
 
         this.dirty_canvas = true;
         this.dirty_bgcanvas = true;
