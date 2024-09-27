@@ -85,6 +85,9 @@ const onIdle = () => {
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
+    if (Array.isArray(nodeDef.description)) {
+      return showTooltip(nodeDef.description[0])
+    }
     return showTooltip(nodeDef.description)
   }
 

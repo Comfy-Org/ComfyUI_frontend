@@ -149,8 +149,8 @@ function updateNode(node) {
     return
   }
   helpDOM.def = def
-  if (def.longDescription) {
-    helpDOM.innerHTML = def.longDescription
+  if (Array.isArray(def.description)) {
+    helpDOM.innerHTML = def.description[1]
   } else {
     //do additional parsing to prettify output and combine tooltips
     let content = ''
@@ -189,15 +189,6 @@ function updateNode(node) {
     helpDOM.innerHTML = content
   }
 }
-app.registerExtension({
-  name: 'Comfy.longformDocumentation',
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    //TODO: Find better method. Likely require explicit opt in
-    if (nodeData.description.includes('</div>') && !nodeData.longDescription) {
-      nodeData.longDescription = nodeData.description
-    }
-  }
-})
 var bringToFront
 let documentationSidebar = {
   id: 'documentationSidebar',
