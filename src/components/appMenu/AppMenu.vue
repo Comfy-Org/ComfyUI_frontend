@@ -157,13 +157,18 @@ const { x, y, style, isDragging } = useDraggable(panelRef, {
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
+  if (x.value !== 0 || y.value !== 0) {
+    return
+  }
   if (panelRef.value) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
     const menuWidth = panelRef.value.offsetWidth
     const menuHeight = panelRef.value.offsetHeight
 
-    console.log(menuWidth, menuHeight)
+    if (menuWidth === 0 || menuHeight === 0) {
+      return
+    }
 
     x.value = (screenWidth - menuWidth) / 2
     y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
