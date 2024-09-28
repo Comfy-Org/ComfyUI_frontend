@@ -640,9 +640,10 @@ export class ComfyPage {
         y: 645
       }
     })
-    await page.locator('input[type="text"]').click()
-    await page.locator('input[type="text"]').fill('128')
-    await page.locator('input[type="text"]').press('Enter')
+    const dialogInput = page.locator('.graphdialog input[type="text"]')
+    await dialogInput.click()
+    await dialogInput.fill('128')
+    await dialogInput.press('Enter')
     await this.nextFrame()
   }
 
