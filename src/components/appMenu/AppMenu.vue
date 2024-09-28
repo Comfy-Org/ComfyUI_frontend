@@ -91,8 +91,8 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
-import { useDraggable, useLocalStorage } from '@vueuse/core'
-import { debounce } from 'lodash'
+import { useDraggable, useEventListener, useLocalStorage } from '@vueuse/core'
+import { debounce, clamp } from 'lodash'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
@@ -198,6 +198,23 @@ watch(visible, (newVisible) => {
     nextTick(setInitialPosition)
   }
 })
+
+const adjustMenuPosition = () => {
+  if (panelRef.value) {
+    const screenWidth = window.innerWidth
+    const screenHeight = window.innerHeight
+    const menuWidth = panelRef.value.offsetWidth
+    const menuHeight = panelRef.value.offsetHeight
+
+    // Adjust x position if menu is off-screen horizontally
+    x.value = clamp(x.value, 0, screenWidth - menuWidth)
+
+    // Adjust y position if menu is off-screen vertically
+    y.value = clamp(y.value, 0, screenHeight - menuHeight)
+  }
+}
+
+useEventListener(window, 'resize', adjustMenuPosition)
 </script>
 
 <style scoped>
