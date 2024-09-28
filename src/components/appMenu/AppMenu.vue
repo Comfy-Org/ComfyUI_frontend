@@ -212,7 +212,7 @@ watch(visible, (newVisible) => {
 }
 
 :deep(.p-panel-content) {
-  padding: 10px;
+  @apply p-2;
 }
 
 :deep(.p-panel-header) {
