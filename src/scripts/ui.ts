@@ -172,7 +172,7 @@ function dragElement(dragEl, settings): () => void {
   settings.addSetting({
     id: 'Comfy.MenuPosition',
     category: ['Comfy', 'Menu', 'MenuPosition'],
-    name: "Save legacy menu's position",
+    name: "Save menu's position",
     type: 'boolean',
     defaultValue: savePos,
     onChange(value) {

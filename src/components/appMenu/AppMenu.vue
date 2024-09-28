@@ -91,7 +91,8 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { MenuItem } from 'primevue/menuitem'
 import { useI18n } from 'vue-i18n'
-import { useDraggable } from '@vueuse/core'
+import { useDraggable, useLocalStorage } from '@vueuse/core'
+import { debounce } from 'lodash'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
@@ -149,15 +150,32 @@ const queuePrompt = (e: MouseEvent) => {
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
+const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
+  x: 0,
+  y: 0
+})
 const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
 })
 
+// Update storedPosition when x or y changes
+watch(
+  [x, y],
+  debounce(([newX, newY]) => {
+    storedPosition.value = { x: newX, y: newY }
+  }, 300)
+)
+
 // Set initial position to bottom center
 const setInitialPosition = () => {
   if (x.value !== 0 || y.value !== 0) {
+    return
+  }
+  if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
+    x.value = storedPosition.value.x
+    y.value = storedPosition.value.y
     return
   }
   if (panelRef.value) {
