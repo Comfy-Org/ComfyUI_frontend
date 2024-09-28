@@ -30,7 +30,7 @@
           </template>
         </SplitButton>
         <BatchCountEdit />
-        <ButtonGroup class="execution-actions ml-2">
+        <ButtonGroup class="execution-actions ml-2 flex flex-nowrap">
           <Button
             v-tooltip.bottom="$t('menu.interrupt')"
             icon="pi pi-times"
@@ -51,7 +51,7 @@
         </ButtonGroup>
       </div>
       <Divider layout="vertical" class="mx-2" />
-      <ButtonGroup>
+      <ButtonGroup class="flex flex-nowrap">
         <Button
           v-tooltip.bottom="$t('menu.refresh')"
           icon="pi pi-refresh"
