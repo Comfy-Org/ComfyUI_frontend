@@ -230,6 +230,10 @@ class Topbar {
       .allInnerTexts()
   }
 
+  async openSubmenuMobile() {
+    await this.page.locator('.p-menubar-mobile').click()
+  }
+
   async triggerTopbarCommand(path: string[]) {
     if (path.length < 2) {
       throw new Error('Path is too short')

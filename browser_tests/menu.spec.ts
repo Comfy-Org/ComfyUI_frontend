@@ -454,6 +454,21 @@ test.describe('Menu', () => {
     })
   })
 
+  test.describe('Topbar submmenus', () => {
+    test('@mobile Items fully visible on mobile screen width', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.openSubmenuMobile()
+      const topLevelMenuItem = comfyPage.page
+        .locator('a.p-menubar-item-link')
+        .first()
+      const isTextCutoff = await topLevelMenuItem.evaluate((el) => {
+        return el.scrollWidth > el.clientWidth
+      })
+      expect(isTextCutoff).toBe(false)
+    })
+  })
+
   // Only test 'Top' to reduce test time.
   // ['Bottom', 'Top']
   ;['Top'].forEach(async (position) => {
