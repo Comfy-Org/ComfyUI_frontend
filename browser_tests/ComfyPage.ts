@@ -231,7 +231,7 @@ class Topbar {
   }
 
   async openSubmenuMobile() {
-    await this.page.locator('.p-menubar-mobile').click()
+    await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
   }
 
   async triggerTopbarCommand(path: string[]) {
