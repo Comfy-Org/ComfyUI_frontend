@@ -128,8 +128,6 @@ export class ComfyApp {
   ctx: CanvasRenderingContext2D
   widgets: Record<string, ComfyWidgetConstructor>
   workflowManager: ComfyWorkflowManager
-  bodyTop: HTMLElement
-  bodyLeft: HTMLElement
   bodyRight: HTMLElement
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
@@ -146,13 +144,10 @@ export class ComfyApp {
     this.ui = new ComfyUI(this)
     this.logging = new ComfyLogging(this)
     this.workflowManager = new ComfyWorkflowManager(this)
-    this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
-    this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
+
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
     this.bodyBottom = $el('div.comfyui-body-bottom', { parent: document.body })
-    this.canvasContainer = $el('div.graph-canvas-container', {
-      parent: document.body
-    })
+
     this.menu = new ComfyAppMenu(this)
 
     /**
@@ -1831,6 +1826,8 @@ export class ComfyApp {
    */
   async setup(canvasEl: HTMLCanvasElement) {
     this.canvasEl = canvasEl
+    this.canvasContainer = canvasEl.parentElement
+
     await this.#setUser()
 
     this.resizeCanvas()
@@ -1862,9 +1859,9 @@ export class ComfyApp {
     // Ensure the canvas fills the window
     this.resizeCanvas()
     window.addEventListener('resize', () => this.resizeCanvas())
+
     const ro = new ResizeObserver(() => this.resizeCanvas())
-    ro.observe(this.bodyTop)
-    ro.observe(this.bodyLeft)
+
     ro.observe(this.bodyRight)
     ro.observe(this.bodyBottom)
 

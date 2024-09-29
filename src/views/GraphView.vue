@@ -1,7 +1,4 @@
 <template>
-  <!-- Top menu bar needs to load before the GraphCanvas as it needs to host
-  the menu buttons added by legacy extension scripts.-->
-  <TopMenubar />
   <GraphCanvas />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
@@ -43,7 +40,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import AppMenu from '@/components/appMenu/AppMenu.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
-import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 
 setupAutoQueueHandler()

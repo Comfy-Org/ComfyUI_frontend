@@ -73,7 +73,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import Panel from 'primevue/panel'
 import Divider from 'primevue/divider'
 import SplitButton from 'primevue/splitbutton'
@@ -192,10 +192,12 @@ const setInitialPosition = () => {
     y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
   }
 }
-onMounted(setInitialPosition)
+
 watch(visible, (newVisible) => {
   if (newVisible) {
-    nextTick(setInitialPosition)
+    nextTick(() => {
+      setInitialPosition()
+    })
   }
 })
 
@@ -214,7 +216,14 @@ const adjustMenuPosition = () => {
   }
 }
 
-useEventListener(window, 'resize', adjustMenuPosition)
+onMounted(() => {
+  setInitialPosition()
+  window.addEventListener('resize', adjustMenuPosition)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', adjustMenuPosition)
+})
 </script>
 
 <style scoped>

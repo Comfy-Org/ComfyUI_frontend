@@ -1,21 +1,22 @@
 <template>
-  <teleport to=".graph-canvas-container">
-    <LiteGraphCanvasSplitterOverlay v-if="betaMenuEnabled">
-      <template #side-bar-panel>
-        <SideToolbar />
-      </template>
-    </LiteGraphCanvasSplitterOverlay>
+  <div
+    :class="[
+      betaMenuEnabled
+        ? 'left-12 top-10 w-[calc(100vw-3.0rem)] h-[calc(100vh-2.5rem)]'
+        : 'left-0 top-0 w-full h-full'
+    ]"
+    class="graph-canvas-container absolute overflow-hidden"
+  >
     <TitleEditor />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
-  </teleport>
+  </div>
+
   <NodeSearchboxPopover />
   <NodeTooltip />
 </template>
 
 <script setup lang="ts">
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import { ref, computed, onUnmounted, onMounted, watchEffect } from 'vue'
@@ -46,12 +47,14 @@ import { ComfyModelDef } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const emit = defineEmits(['ready'])
+
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const modelToNodeStore = useModelToNodeStore()
+
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -111,6 +114,7 @@ onMounted(async () => {
 
   workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
+
   canvasStore.canvas = comfyApp.canvas
   workspaceStore.spinner = false
 

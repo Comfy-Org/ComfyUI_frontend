@@ -74,7 +74,7 @@
           style="width: 50px; left: 50%; transform: translateX(-50%)"
         />
       </div>
-      <div v-else>
+      <div v-else class="bg-zinc-900 h-full">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="$t('noTasksFound')"
