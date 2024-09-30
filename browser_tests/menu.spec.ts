@@ -447,9 +447,28 @@ test.describe('Menu', () => {
       )
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      // Delete the saved workflow for cleanup.
+      await comfyPage.page.evaluate(async () => {
+        window['app'].workflowManager.activeWorkflow.delete()
+      })
+    })
+
     test('Can show opened workflows', async ({ comfyPage }) => {
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
         'Unsaved Workflow'
+      ])
+    })
+
+    test('Can close saved-workflow tabs', async ({ comfyPage }) => {
+      const savedWorkflowName = 'default'
+      await comfyPage.menu.topbar.saveWorkflow(savedWorkflowName)
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
+        savedWorkflowName
+      ])
+      await comfyPage.menu.topbar.closeWorkflowTab('default')
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
+        'Unsaved Workflow (2)'
       ])
     })
   })
