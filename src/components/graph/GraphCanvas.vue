@@ -5,7 +5,7 @@
         <SideToolbar />
       </template>
       <template #graph-canvas-panel>
-        <GraphCanvasMenu />
+        <GraphCanvasMenu v-if="canvasMenuEnabled" />
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <TitleEditor />
@@ -58,6 +58,9 @@ const canvasStore = useCanvasStore()
 const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
+const canvasMenuEnabled = computed(() =>
+  settingStore.get('Comfy.Graph.CanvasMenu')
 )
 
 watchEffect(() => {

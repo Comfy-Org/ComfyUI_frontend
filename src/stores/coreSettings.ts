@@ -12,7 +12,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true
   },
-
   {
     id: 'Comfy.NodeSearchBoxImpl',
     category: ['Comfy', 'Node Search Box', 'Implementation'],
@@ -381,5 +380,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     options: ['Sidebar', 'Topbar'],
     defaultValue: 'Sidebar'
+  },
+  {
+    id: 'Comfy.Graph.CanvasMenu',
+    name: 'Show graph canvas menu',
+    type: 'boolean',
+    defaultValue: true
   }
 ]
