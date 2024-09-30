@@ -230,7 +230,6 @@ class Topbar {
       .allInnerTexts()
   }
 
-
   async openSubmenuMobile() {
     await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
   }
