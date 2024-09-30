@@ -44,7 +44,7 @@ helpDOM.collapseOnClick = function () {
 //If doc sidebar is opened, the current node should not display tooltips,
 //but navigate the sidebar pane as appropriate.
 helpDOM.selectHelp = function (name: string, value?: string) {
-  if (helpDOM.def[2].select) {
+  if (helpDOM.def[2]?.select) {
     return helpDOM.def[2].select(this, name, value)
   }
   //attempt to navigate to name in help
@@ -63,7 +63,7 @@ helpDOM.selectHelp = function (name: string, value?: string) {
     }
     //For longer documentation items with fewer collapsable elements,
     //scroll to make sure the entirety of the selected item is visible
-    match.scrollIntoView(false)
+    match.scrollIntoView({ block: 'nearest' })
     //The previous floating help implementation would try to scroll the window
     //itself if the display was partiall offscreen. As the sidebar documentation
     //does not pan with the canvas, this should no longer be needed
@@ -78,9 +78,22 @@ helpDOM.selectHelp = function (name: string, value?: string) {
     return match
   }
   let target = collapseUnlessMatch(helpDOM, name)
-  if (target && value) {
-    collapseUnlessMatch(target, value)
+  if (target) {
+    target.focus()
+    if (value) {
+      collapseUnlessMatch(target, value)
+    }
   }
+}
+app.tooltipCallback = function (node, name, value) {
+  if (node != app.graph._nodes[app.graph._nodes.length - 1]) {
+    return false
+  }
+  if (name == 'DESCRIPTION') {
+    return false
+  }
+  helpDOM.selectHelp(name, value)
+  return true
 }
 function updateNode(node) {
   //Always use latest node. If it lacks documentation, that should be communicated
@@ -113,7 +126,12 @@ function updateNode(node) {
     if (inputs.length) {
       content += '<div class="doc-section">Inputs</div>'
       for (let [k, v] of inputs) {
-        content += '<div>' + k + '<div class="doc-item">' + v + '</div></div>'
+        content +=
+          '<div tabindex=-1 class="doc-item">' +
+          k +
+          '<div>' +
+          v +
+          '</div></div>'
       }
       //content += "</div>"
       //content += '<br><br><div>' + inputs.join('</div><div>') + '</div>'
@@ -123,9 +141,9 @@ function updateNode(node) {
       let outputs = def.output_name || def.output
       for (let i = 0; i < outputs.length; i++) {
         content +=
-          '<div>' +
+          '<div tabindex=-1 class="doc-item">' +
           outputs[i] +
-          '<div class="doc-item">' +
+          '<div>' +
           def.output_tooltips[i] +
           '</div></div>'
       }
@@ -169,8 +187,11 @@ let documentationSidebar = {
     .doc-section {
        background-color: ${getColorPalette().colors.comfy_base['tr-odd-bg-color']}
     }
-    .doc-item {
+    .doc-item div {
        margin-inline-start: 1vw;
+    }
+    .doc-item:focus {
+       background-color: #666
     }
     .DocumentationIcon:before {
        font-size: 1.5em; content: '?';

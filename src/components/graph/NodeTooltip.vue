@@ -85,7 +85,9 @@ const onIdle = () => {
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
-    if (Array.isArray(nodeDef.description)) {
+    if (comfyApp?.tooltipCallback?.(node, 'DESCRIPTION')) {
+      return
+    } else if (Array.isArray(nodeDef.description)) {
       return showTooltip(nodeDef.description[0])
     }
     return showTooltip(nodeDef.description)
@@ -101,7 +103,9 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
+    if (!comfyApp?.tooltipCallback?.(node, inputName)) {
+      return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
+    }
   }
 
   const outputSlot = canvas.isOverNodeOutput(
@@ -111,15 +115,20 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    return showTooltip(nodeDef.output.all?.[outputSlot]?.tooltip)
+    const outputDef = nodeDef.output.all?.[outputSlot]
+    if (!comfyApp?.tooltipCallback?.(node, outputDef?.name)) {
+      return showTooltip(outputDef?.tooltip)
+    }
   }
 
   const widget = getHoveredWidget()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
-    return showTooltip(
-      widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
-    )
+    if (!comfyApp?.tooltipCallback?.(node, widget.name, widget.value)) {
+      return showTooltip(
+        widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
+      )
+    }
   }
 }
 
