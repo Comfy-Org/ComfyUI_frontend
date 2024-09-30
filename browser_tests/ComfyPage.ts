@@ -230,8 +230,37 @@ class Topbar {
       .allInnerTexts()
   }
 
+
   async openSubmenuMobile() {
     await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
+  }
+
+  async getMenuItem(itemLabel: string): Promise<Locator> {
+    return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
+  }
+
+  async getWorkflowTab(tabName: string): Promise<Locator> {
+    return this.page
+      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
+      .locator('..')
+  }
+
+  async closeWorkflowTab(tabName: string) {
+    const tab = await this.getWorkflowTab(tabName)
+    await tab.locator('.close-button').click({ force: true })
+  }
+
+  async saveWorkflow(workflowName: string) {
+    this.page.on('dialog', async (dialog) => {
+      await dialog.accept(workflowName)
+    })
+    const workflowMenuItem = await this.getMenuItem('Workflow')
+    workflowMenuItem.click()
+    await this.page.evaluate(() => {
+      return new Promise<number>(requestAnimationFrame)
+    })
+    const saveButton = await this.getMenuItem('Save')
+    await saveButton.click()
   }
 
   async triggerTopbarCommand(path: string[]) {
