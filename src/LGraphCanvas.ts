@@ -63,24 +63,27 @@ export class LGraphCanvas {
         return this._dragging_canvas;
     }
     set dragging_canvas(value: boolean) {
-        this._dragging_canvas = value;
-        if (this.canvas) {
-            this.canvas.style.cursor = value ? "grab" : "default";
+        if (value !== this._dragging_canvas) {
+            this._dragging_canvas = value;
+            this.emitEvent({
+                subType: "dragging-canvas",
+                draggingCanvas: value
+            });
         }
     }
 
     // if set to true users cannot modify the graph
-    private _read_only = false;
-    get read_only() {
-        return this._read_only
+    private _read_only: boolean = false;
+    get read_only(): boolean {
+        return this._read_only;
     }
-    set read_only(value) {
-        if (value != this._read_only) {
+    set read_only(value: boolean) {
+        if (value !== this._read_only) {
             this._read_only = value;
             this.emitEvent({
                 subType: "read-only",
                 readOnly: value
-            })
+            });
         }
     }
 
@@ -2831,8 +2834,8 @@ export class LGraphCanvas {
 
         if (e.type == "keydown") {
             if (e.keyCode == 32) {
-                //space
-                this.dragging_canvas = true;
+                // space
+                this.read_only = true;
                 block_default = true;
             }
 
@@ -2884,7 +2887,7 @@ export class LGraphCanvas {
         } else if (e.type == "keyup") {
             if (e.keyCode == 32) {
                 // space
-                this.dragging_canvas = false;
+                this.read_only = false;
             }
 
             if (this.selected_nodes) {
