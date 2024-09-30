@@ -437,6 +437,19 @@ test.describe('Menu', () => {
         comfyPage.page.locator('.comfy-missing-nodes')
       ).not.toBeVisible()
     })
+
+    test('Can close saved-workflows from the open workflows section', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.saveWorkflow('deault')
+      const closeButton = comfyPage.page.locator(
+        '.comfyui-workflows-open .p-button-icon.pi-times'
+      )
+      await closeButton.click()
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow (2).json'])
+    })
   })
 
   test.describe('Workflows topbar tabs', () => {
@@ -447,9 +460,28 @@ test.describe('Menu', () => {
       )
     })
 
+    test.afterEach(async ({ comfyPage }) => {
+      // Delete the saved workflow for cleanup.
+      await comfyPage.page.evaluate(async () => {
+        window['app'].workflowManager.activeWorkflow.delete()
+      })
+    })
+
     test('Can show opened workflows', async ({ comfyPage }) => {
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
         'Unsaved Workflow'
+      ])
+    })
+
+    test('Can close saved-workflow tabs', async ({ comfyPage }) => {
+      const savedWorkflowName = 'default'
+      await comfyPage.menu.topbar.saveWorkflow(savedWorkflowName)
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
+        savedWorkflowName
+      ])
+      await comfyPage.menu.topbar.closeWorkflowTab('default')
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
+        'Unsaved Workflow (2)'
       ])
     })
   })
