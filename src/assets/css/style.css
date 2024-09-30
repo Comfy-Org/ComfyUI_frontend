@@ -76,38 +76,6 @@ body {
   +------------------+------------------+------------------+
 */
 
-.comfyui-body-top {
-  order: -5;
-  /* Span across all columns */
-  grid-column: 1/-1;
-  /* Position at the first row */
-  grid-row: 1;
-  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-}
-
-.comfyui-body-left {
-  order: -4;
-  /* Position in the first column */
-  grid-column: 1;
-  /* Position below the top element */
-  grid-row: 2;
-  z-index: 10;
-  display: flex;
-}
-
-.graph-canvas-container {
-  width: 100%;
-  height: 100%;
-  order: -3;
-  grid-column: 2;
-  grid-row: 2;
-  position: relative;
-  overflow: hidden;
-}
-
 #graph-canvas {
   width: 100%;
   height: 100%;
@@ -702,7 +670,6 @@ audio.comfy-audio.empty-audio-widget {
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
 }
 
 /* Set auto complete panel's width as it is not accessible within vue-root */

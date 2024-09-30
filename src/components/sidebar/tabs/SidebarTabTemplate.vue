@@ -1,6 +1,6 @@
 <template>
   <div class="comfy-vue-side-bar-container">
-    <Toolbar class="comfy-vue-side-bar-header">
+    <Toolbar class="comfy-vue-side-bar-header h-12">
       <template #start>
         <span class="comfy-vue-side-bar-header-span">{{
           props.title.toUpperCase()
@@ -42,7 +42,6 @@ const props = defineProps({
   border-top: none;
   border-radius: 0;
   padding: 0.25rem 1rem;
-  min-height: 2.5rem;
 }
 
 .comfy-vue-side-bar-header-span {

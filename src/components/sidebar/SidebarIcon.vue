@@ -12,6 +12,7 @@
         'aria-label': props.tooltip
       }
     }"
+    class="w-10 h-10 bg-zinc-900/50"
     @click="emit('click', $event)"
     v-tooltip="{ value: props.tooltip, showDelay: 300, hideDelay: 300 }"
   >
@@ -54,32 +55,3 @@ const overlayValue = computed(() =>
 )
 const shouldShowBadge = computed(() => !!overlayValue.value)
 </script>
-
-<style>
-.side-bar-button-icon {
-  font-size: var(--sidebar-icon-size) !important;
-}
-
-.side-bar-button-selected .side-bar-button-icon {
-  font-size: var(--sidebar-icon-size) !important;
-  font-weight: bold;
-}
-</style>
-
-<style scoped>
-.side-bar-button {
-  width: var(--sidebar-width);
-  height: var(--sidebar-width);
-  border-radius: 0;
-}
-
-.comfyui-body-left .side-bar-button.side-bar-button-selected,
-.comfyui-body-left .side-bar-button.side-bar-button-selected:hover {
-  border-left: 4px solid var(--p-button-text-primary-color);
-}
-
-.comfyui-body-right .side-bar-button.side-bar-button-selected,
-.comfyui-body-right .side-bar-button.side-bar-button-selected:hover {
-  border-right: 4px solid var(--p-button-text-primary-color);
-}
-</style>

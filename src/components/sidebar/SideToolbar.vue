@@ -1,6 +1,9 @@
 <template>
-  <teleport :to="teleportTarget">
-    <nav :class="'side-tool-bar-container' + (isSmall ? ' small-sidebar' : '')">
+  <div
+    class="SideToolbar side-tool-bar-container bg-zinc-950 flex-1 py-1 fixed z-[500] w-12 top-10 h-[calc(100vh-2.5rem)] flex flex-col items-center justify-between"
+    :class="isSmall ? ' small-sidebar' : ''"
+  >
+    <nav class="flex flex-col items-center space-y-1">
       <SidebarIcon
         v-for="tab in tabs"
         :key="tab.id"
@@ -11,27 +14,39 @@
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
-      <div class="side-tool-bar-end">
-        <SidebarThemeToggleIcon />
-        <SidebarSettingsToggleIcon />
-      </div>
     </nav>
-  </teleport>
-  <div v-if="selectedTab" class="sidebar-content-container">
-    <component v-if="selectedTab.type === 'vue'" :is="selectedTab.component" />
-    <div
-      v-else
-      :ref="
-        (el) => {
-          if (el)
-            mountCustomTab(
-              selectedTab as CustomSidebarTabExtension,
-              el as HTMLElement
-            )
-        }
-      "
-    ></div>
+    <div class="flex-1">
+      <!-- dummy -->
+    </div>
+    <nav class="flex-1 flex flex-col items-center justify-end space-y-1">
+      <SidebarThemeToggleIcon />
+      <SidebarSettingsToggleIcon />
+    </nav>
   </div>
+
+  <teleport to="#modals">
+    <div
+      v-if="selectedTab"
+      class="duration-300 fixed z-50 left-11 top-10 w-84 h-[calc(100vh-2.5rem)]"
+    >
+      <component
+        v-if="selectedTab.type === 'vue'"
+        :is="selectedTab.component"
+      />
+      <div
+        v-else
+        :ref="
+          (el) => {
+            if (el)
+              mountCustomTab(
+                selectedTab as CustomSidebarTabExtension,
+                el as HTMLElement
+              )
+          }
+        "
+      ></div>
+    </div>
+  </teleport>
 </template>
 
 <script setup lang="ts">
@@ -48,12 +63,6 @@ import {
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
-
-const teleportTarget = computed(() =>
-  settingStore.get('Comfy.Sidebar.Location') === 'left'
-    ? '.comfyui-body-left'
-    : '.comfyui-body-right'
-)
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
@@ -81,39 +90,18 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style>
-:root {
-  --sidebar-width: 64px;
-  --sidebar-icon-size: 1.5rem;
-}
-:root .small-sidebar {
-  --sidebar-width: 40px;
-  --sidebar-icon-size: 1rem;
-}
-</style>
-
 <style scoped>
 .side-tool-bar-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  pointer-events: auto;
-
-  width: var(--sidebar-width);
-  height: 100%;
-
+  /*
   background-color: var(--comfy-menu-bg);
-  color: var(--fg-color);
-}
-
-.side-tool-bar-end {
-  align-self: flex-end;
-  margin-top: auto;
+  color: var(--comfyui-text-color);
+  */
 }
 
 .sidebar-content-container {
   height: 100%;
   overflow-y: auto;
+  background-color: var(--comfy-menu-bg);
+  color: var(--fg-color);
 }
 </style>
