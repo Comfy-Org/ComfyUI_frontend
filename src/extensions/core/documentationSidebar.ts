@@ -1,12 +1,8 @@
-import { app } from '../../scripts/app.js'
-import { api } from '../../scripts/api.js'
+import { app } from '../../scripts/app'
+import { api } from '../../scripts/api'
+import { getColorPalette } from './colorPalette'
 
-let iconOverride = document.createElement('style')
-iconOverride.innerHTML = `.VHSTestIcon:before {font-size: 1.5em; content: '?';}`
-document.body.append(iconOverride)
-
-var helpDOM
-helpDOM = document.createElement('div')
+var helpDOM = document.createElement('div')
 
 function setCollapse(el, doCollapse) {
   if (doCollapse) {
@@ -44,10 +40,16 @@ helpDOM.collapseOnClick = function () {
   let doCollapse = this.children[0].innerHTML == '-'
   setCollapse(this.parentElement, doCollapse)
 }
-helpDOM.selectHelp = function (name, value) {
+//TODO: connect with doc tooltips
+//If doc sidebar is opened, the current node should not display tooltips,
+//but navigate the sidebar pane as appropriate.
+helpDOM.selectHelp = function (name: string, value?: string) {
+  if (helpDOM.def[2].select) {
+    return helpDOM.def[2].select(this, name, value)
+  }
   //attempt to navigate to name in help
   function collapseUnlessMatch(items, t) {
-    var match = items.querySelector('[vhs_title="' + t + '"]')
+    var match = items.querySelector('[doc_title="' + t + '"]')
     if (!match) {
       for (let i of items.children) {
         if (i.innerHTML.slice(0, t.length + 5).includes(t)) {
@@ -61,13 +63,12 @@ helpDOM.selectHelp = function (name, value) {
     }
     //For longer documentation items with fewer collapsable elements,
     //scroll to make sure the entirety of the selected item is visible
-    //This has the unfortunate side effect of trying to scroll the main
-    //window if the documentation windows is forcibly offscreen,
-    //but it's easy to simply scroll the main window back and seems to
-    //have no visual side effects
     match.scrollIntoView(false)
-    window.scrollTo(0, 0)
-    for (let i of items.querySelectorAll('.VHS_collapse')) {
+    //The previous floating help implementation would try to scroll the window
+    //itself if the display was partiall offscreen. As the sidebar documentation
+    //does not pan with the canvas, this should no longer be needed
+    //window.scrollTo(0, 0)
+    for (let i of items.querySelectorAll('.doc_collapse')) {
       if (i.contains(match)) {
         setCollapse(i, false)
       } else {
@@ -80,65 +81,6 @@ helpDOM.selectHelp = function (name, value) {
   if (target && value) {
     collapseUnlessMatch(target, value)
   }
-}
-helpDOM.addHelp = function (node, nodeType, description) {
-  let timeout = null
-  chainCallback(node, 'onMouseMove', function (e, pos, canvas) {
-    if (timeout) {
-      clearTimeout(timeout)
-      timeout = null
-    }
-    if (helpDOM.node != this) {
-      return
-    }
-    timeout = setTimeout(() => {
-      let n = this
-      if (
-        pos[0] > 0 &&
-        pos[0] < n.size[0] &&
-        pos[1] > 0 &&
-        pos[1] < n.size[1]
-      ) {
-        //TODO: provide help specific to element clicked
-        let inputRows = Math.max(n.inputs?.length || 0, n.outputs?.length || 0)
-        if (pos[1] < LiteGraph.NODE_SLOT_HEIGHT * inputRows) {
-          let row = Math.floor((pos[1] - 7) / LiteGraph.NODE_SLOT_HEIGHT)
-          if (pos[0] < n.size[0] / 2) {
-            if (row < n.inputs.length) {
-              helpDOM.selectHelp(n.inputs[row].name)
-            }
-          } else {
-            if (row < n.outputs.length) {
-              helpDOM.selectHelp(n.outputs[row].name)
-            }
-          }
-        } else {
-          //probably widget, but widgets have variable height.
-          let basey = LiteGraph.NODE_SLOT_HEIGHT * inputRows + 6
-          for (let w of n.widgets) {
-            if (w.y) {
-              basey = w.y
-            }
-            let wheight = LiteGraph.NODE_WIDGET_HEIGHT + 4
-            if (w.computeSize) {
-              wheight = w.computeSize(n.size[0])[1]
-            }
-            if (pos[1] < basey + wheight) {
-              helpDOM.selectHelp(w.name, w.value)
-              break
-            }
-            basey += wheight
-          }
-        }
-      }
-    }, 500)
-  })
-  chainCallback(node, 'onMouseLeave', function (e, pos, canvas) {
-    if (timeout) {
-      clearTimeout(timeout)
-      timeout = null
-    }
-  })
 }
 function updateNode(node) {
   //Always use latest node. If it lacks documentation, that should be communicated
@@ -155,45 +97,61 @@ function updateNode(node) {
     //do additional parsing to prettify output and combine tooltips
     let content = ''
     if (def.description) {
-      content += def.description
+      content += '<section>' + def.description + '</section>'
     }
     let inputs = []
     for (let input in def?.input?.required || {}) {
       if (def.input.required[input][1]?.tooltip) {
-        inputs.push(
-          '<b>' + input + '</b>: ' + def.input.required[input][1].tooltip
-        )
+        inputs.push([input, def.input.required[input][1].tooltip])
       }
     }
     for (let input in def?.input?.optional || {}) {
       if (def.input.optional[input][1]?.tooltip) {
-        inputs.push(
-          '<b>' + input + '</b>: ' + def.input.optional[input][1].tooltip
-        )
+        inputs.push([input, def.input.optional[input][1].tooltip])
       }
     }
     if (inputs.length) {
-      content += '<br><br><div>' + inputs.join('</div><div>') + '</div>'
+      content += '<div class="doc-section">Inputs</div>'
+      for (let [k, v] of inputs) {
+        content += '<div>' + k + '<div class="doc-item">' + v + '</div></div>'
+      }
+      //content += "</div>"
+      //content += '<br><br><div>' + inputs.join('</div><div>') + '</div>'
     }
     if (def.output_tooltips) {
-      content += '<br><br>'
+      content += '<div class="doc-section">Outputs</div>'
       let outputs = def.output_name || def.output
       for (let i = 0; i < outputs.length; i++) {
         content +=
-          '<div><b>' + outputs[i] + '</b>: ' + def.output_tooltips[i] + '</div>'
+          '<div>' +
+          outputs[i] +
+          '<div class="doc-item">' +
+          def.output_tooltips[i] +
+          '</div></div>'
       }
+      //outputs += '</div>'
     }
     if (content == '') {
       content = 'No documentation available'
     }
+    content = '<div class="doc-node">' + def.display_name + '</div>' + content
     helpDOM.innerHTML = content
   }
 }
+let docStyleElement = document.createElement('style')
+let documentationStyle = `
+.DocumentationIcon:before {
+   font-size: 1.5em; content: '?';
+}
+`
+docStyleElement.innerHTML = documentationStyle
+document.body.append(docStyleElement)
+
 var bringToFront
 let documentationSidebar = {
   id: 'documentationSidebar',
   title: 'Documentation',
-  icon: 'VHSTestIcon',
+  icon: 'DocumentationIcon',
   type: 'custom',
   render: (e) => {
     if (!bringToFront) {
@@ -203,10 +161,28 @@ let documentationSidebar = {
         return bringToFront.apply(this, arguments)
       }
     }
+    //TODO: properly update colors when theme is toggled
+    let documentationStyle = `
+    .doc-node {
+       font-size: 1.5em
+    }
+    .doc-section {
+       background-color: ${getColorPalette().colors.comfy_base['tr-odd-bg-color']}
+    }
+    .doc-item {
+       margin-inline-start: 1vw;
+    }
+    .DocumentationIcon:before {
+       font-size: 1.5em; content: '?';
+    }
+    `
+    docStyleElement.innerHTML = documentationStyle
     updateNode()
-    e.parentElement.style.overflowX = ''
     if (!e?.children?.length) {
       e.appendChild(helpDOM)
+    }
+    if (helpDOM.def.description[2]?.render) {
+      helpDOM.def.description[2].render(e)
     }
   }
 }
