@@ -94,6 +94,13 @@ const messages = {
         upscale: '2 Pass Upscale',
         flux_schnell: 'Flux Schnell'
       }
+    },
+    graphCanvasMenu: {
+      zoomIn: 'Zoom In',
+      zoomOut: 'Zoom Out',
+      resetView: 'Reset View',
+      lock: 'Lock Graph',
+      unlock: 'Unlock Graph'
     }
   },
   zh: {
