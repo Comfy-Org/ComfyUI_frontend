@@ -61,12 +61,6 @@
               commandStore.getCommandFunction('Comfy.RefreshNodeDefinitions')()
           "
         />
-        <Button
-          v-tooltip.bottom="$t('menu.resetView')"
-          icon="pi pi-expand"
-          severity="secondary"
-          @click="() => commandStore.getCommandFunction('Comfy.ResetView')()"
-        />
       </ButtonGroup>
     </div>
   </Panel>

@@ -124,7 +124,7 @@ export const useCommandStore = defineStore('command', () => {
       }
     },
     {
-      id: 'Comfy.ResetView',
+      id: 'Comfy.Canvas.ResetView',
       icon: 'pi pi-expand',
       label: 'Reset View',
       function: () => {
