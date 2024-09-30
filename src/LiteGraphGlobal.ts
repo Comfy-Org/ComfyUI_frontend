@@ -1,6 +1,7 @@
 import { LiteGraph } from "./litegraph";
 import { LGraphNode } from "./LGraphNode";
 import { drawSlot, SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw";
+import { LGraph, LLink, LGraphGroup, DragAndScale, LGraphCanvas, ContextMenu, CurveEditor } from './litegraph'
 
 // *************************************************************
 //   LiteGraph CLASS                                     *******
@@ -164,6 +165,15 @@ export class LiteGraphGlobal {
 
     // Whether to highlight the bounding box of selected groups
     highlight_selected_group = false
+
+    LGraph = LGraph
+    LLink = LLink
+    LGraphNode = LGraphNode
+    LGraphGroup = LGraphGroup
+    DragAndScale = DragAndScale
+    LGraphCanvas = LGraphCanvas
+    ContextMenu = ContextMenu
+    CurveEditor = CurveEditor
 
     constructor() {
         //timer that works everywhere

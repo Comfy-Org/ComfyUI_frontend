@@ -2,6 +2,7 @@
 import { LiteGraph } from "./litegraph";
 import { LGraphCanvas } from "./LGraphCanvas";
 import { overlapBounding } from "./LiteGraphGlobal";
+import { LGraphNode } from "./LGraphNode";
 
 
 export class LGraphGroup {
@@ -248,4 +249,7 @@ export class LGraphGroup {
             { content: "Remove", callback: LGraphCanvas.onMenuNodeRemove }
         ];
     }
+
+    isPointInside = LGraphNode.prototype.isPointInside
+    setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
 }
