@@ -32,8 +32,8 @@
       "
     >
       <template #icon>
-        <i-material-symbols:lock-outline v-if="canvasStore.readOnly" />
-        <i-material-symbols:lock-open-outline v-else />
+        <i-material-symbols:pan-tool-outline v-if="canvasStore.readOnly" />
+        <i-simple-line-icons:cursor v-else />
       </template>
     </Button>
   </ButtonGroup>
