@@ -437,6 +437,19 @@ test.describe('Menu', () => {
         comfyPage.page.locator('.comfy-missing-nodes')
       ).not.toBeVisible()
     })
+
+    test('Can close saved-workflows from the open workflows section', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.saveWorkflow('deault')
+      const closeButton = comfyPage.page.locator(
+        '.comfyui-workflows-open .p-button-icon.pi-times'
+      )
+      await closeButton.click()
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow (2).json'])
+    })
   })
 
   test.describe('Workflows topbar tabs', () => {
