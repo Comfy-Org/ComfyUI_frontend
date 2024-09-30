@@ -230,6 +230,10 @@ class Topbar {
       .allInnerTexts()
   }
 
+  async openSubmenuMobile() {
+    await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
+  }
+
   async getMenuItem(itemLabel: string): Promise<Locator> {
     return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
   }
