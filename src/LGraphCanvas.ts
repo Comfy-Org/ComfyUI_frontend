@@ -1608,7 +1608,7 @@ export class LGraphCanvas {
 
         //left button mouse / single finger
         if (e.which == 1 && !this.pointer_is_double) {
-            if (e.ctrlKey && !e.altKey) {
+            if ((e.metaKey || e.ctrlKey) && !e.altKey) {
                 this.dragging_rectangle = new Float32Array(4);
                 this.dragging_rectangle[0] = e.canvasX;
                 this.dragging_rectangle[1] = e.canvasY;
@@ -3176,7 +3176,7 @@ export class LGraphCanvas {
         this.setDirty(true);
     }
     processNodeSelected(node, e) {
-        this.selectNode(node, e && (e.shiftKey || e.ctrlKey || this.multi_select));
+        this.selectNode(node, e && (e.shiftKey || e.metaKey || e.ctrlKey || this.multi_select));
         if (this.onNodeSelected) {
             this.onNodeSelected(node);
         }
