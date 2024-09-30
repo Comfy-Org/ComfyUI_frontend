@@ -27,7 +27,9 @@
       v-tooltip.left="
         t('graphCanvasMenu.' + (canvasStore.readOnly ? 'unlock' : 'lock'))
       "
-      @click="() => commandStore.getCommandFunction('Comfy.Canvas.ToggleLock')()"
+      @click="
+        () => commandStore.getCommandFunction('Comfy.Canvas.ToggleLock')()
+      "
     >
       <template #icon>
         <i-material-symbols:lock-outline v-if="canvasStore.readOnly" />
@@ -63,7 +65,7 @@ const stopRepeat = () => {
 }
 </script>
 
-<style lang="css" scoped>
+<style scoped>
 .p-buttongroup-vertical {
   display: flex;
   flex-direction: column;
