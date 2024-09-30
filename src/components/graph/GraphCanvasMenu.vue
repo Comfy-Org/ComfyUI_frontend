@@ -25,7 +25,9 @@
     <Button
       severity="secondary"
       v-tooltip.left="
-        t('graphCanvasMenu.' + (canvasStore.readOnly ? 'unlock' : 'lock'))
+        t(
+          'graphCanvasMenu.' + (canvasStore.readOnly ? 'panMode' : 'selectMode')
+        )
       "
       @click="
         () => commandStore.getCommandFunction('Comfy.Canvas.ToggleLock')()
