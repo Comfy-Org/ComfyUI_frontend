@@ -13,6 +13,7 @@ export const useTitleEditorStore = defineStore('titleEditor', () => {
 export const useCanvasStore = defineStore('canvas', () => {
   const canvas = shallowRef<LGraphCanvas | null>(null)
   const readOnly = ref(false)
+  const draggingCanvas = ref(false)
 
   document.addEventListener(
     'litegraph:canvas',
@@ -23,8 +24,18 @@ export const useCanvasStore = defineStore('canvas', () => {
     }
   )
 
+  document.addEventListener(
+    'litegraph:canvas',
+    (e: CustomEvent<{ subType: string; draggingCanvas: boolean }>) => {
+      if (e.detail?.subType === 'dragging-canvas') {
+        draggingCanvas.value = e.detail.draggingCanvas
+      }
+    }
+  )
+
   return {
     canvas,
-    readOnly
+    readOnly,
+    draggingCanvas
   }
 })

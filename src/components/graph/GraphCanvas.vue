@@ -99,6 +99,22 @@ watchEffect(() => {
   })
 })
 
+watchEffect(() => {
+  if (!canvasStore.canvas) return
+
+  if (canvasStore.draggingCanvas) {
+    canvasStore.canvas.canvas.style.cursor = 'grabbing'
+    return
+  }
+
+  if (canvasStore.readOnly) {
+    canvasStore.canvas.canvas.style.cursor = 'grab'
+    return
+  }
+
+  canvasStore.canvas.canvas.style.cursor = 'default'
+})
+
 let dropTargetCleanup = () => {}
 
 onMounted(async () => {
