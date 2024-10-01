@@ -27,7 +27,7 @@
       v-tooltip.left="
         t(
           'graphCanvasMenu.' + (canvasStore.readOnly ? 'panMode' : 'selectMode')
-        )
+        ) + ' (Space)'
       "
       @click="
         () => commandStore.getCommandFunction('Comfy.Canvas.ToggleLock')()

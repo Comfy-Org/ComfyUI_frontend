@@ -9,6 +9,7 @@
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <TitleEditor />
+    <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover />
