@@ -14,9 +14,8 @@ export const zTriggerCondition = z.function().returns(z.boolean())
 
 // Keybinding schema
 export const zKeybinding = z.object({
-  id: z.string(),
+  commandId: z.string(),
   combo: zKeyCombo,
-  command: z.string(),
   triggerCondition: zTriggerCondition,
   source: z.string()
 })
