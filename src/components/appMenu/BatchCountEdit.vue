@@ -48,7 +48,7 @@ const { batchCount } = storeToRefs(queueSettingsStore)
 const minQueueCount = 1
 const maxQueueCount = 5000
 
-const handleClick = (increment: boolean) => {
+const handleClick = (increment: boolean, event: MouseEvent) => {
   const shiftModifier = event.shiftKey ? 10 : 1 // Change increment/decrement value if Shift is held
   let newCount: number
   if (increment) {
