@@ -49,14 +49,14 @@ const minQueueCount = 1
 const maxQueueCount = 5000
 
 const handleClick = (increment: boolean) => {
-  const shiftModifier = event.shiftKey ? 10 : 1; // Change increment/decrement value if Shift is held
+  const shiftModifier = event.shiftKey ? 10 : 1 // Change increment/decrement value if Shift is held
   let newCount: number
   if (increment) {
     const originalCount = batchCount.value - 1
-    newCount = Math.min(originalCount + shiftModifier, maxQueueCount);
+    newCount = Math.min(originalCount + shiftModifier, maxQueueCount)
   } else {
     const originalCount = batchCount.value + 1
-    newCount = Math.max(originalCount - shiftModifier, minQueueCount);
+    newCount = Math.max(originalCount - shiftModifier, minQueueCount)
   }
 
   batchCount.value = newCount
