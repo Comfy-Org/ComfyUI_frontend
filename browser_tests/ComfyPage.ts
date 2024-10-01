@@ -413,6 +413,16 @@ export class ComfyPage {
     })
   }
 
+  async getSelectedGraphNodesCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return (
+        window['app']?.graph?.nodes?.filter(
+          (node: any) => node.is_selected === true
+        ).length || 0
+      )
+    })
+  }
+
   async setupWorkflowsDirectory(structure: FolderStructure) {
     const resp = await this.request.post(
       `${this.url}/api/devtools/setup_folder_structure`,
@@ -914,13 +924,15 @@ export class ComfyPage {
     return new NodeReference(id, this)
   }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
-    return (
-      await this.page.evaluate((type) => {
-        return window['app'].graph.nodes
-          .filter((n) => n.type === type)
-          .map((n) => n.id)
-      }, type)
-    ).map((id: NodeId) => this.getNodeRefById(id))
+    return Promise.all(
+      (
+        await this.page.evaluate((type) => {
+          return window['app'].graph.nodes
+            .filter((n) => n.type === type)
+            .map((n) => n.id)
+        }, type)
+      ).map((id: NodeId) => this.getNodeRefById(id))
+    )
   }
   async getFirstNodeRef(): Promise<NodeReference | null> {
     const id = await this.page.evaluate(() => {
