@@ -6,6 +6,7 @@
   >
     <InputNumber
       class="w-14"
+      style="width: 85px;"
       v-model="batchCount"
       :min="minQueueCount"
       :max="maxQueueCount"
