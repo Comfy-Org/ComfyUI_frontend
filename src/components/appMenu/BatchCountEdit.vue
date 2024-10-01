@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
 const queueSettingsStore = useQueueSettingsStore()
 const { batchCount } = storeToRefs(queueSettingsStore)
 const minQueueCount = 1
-const maxQueueCount = 100
+const maxQueueCount = 5000
 
 const handleClick = (increment: boolean) => {
   const shiftModifier = event.shiftKey ? 10 : 1; // Change increment/decrement value if Shift is held
