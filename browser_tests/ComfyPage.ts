@@ -470,6 +470,8 @@ export class ComfyPage {
       'Comfy.NodeBadge.NodeSourceBadgeMode',
       NodeBadgeMode.None
     )
+    // Hide canvas menu by default.
+    await this.setSetting('Comfy.Graph.CanvasMenu', false)
   }
 
   public assetPath(fileName: string) {
