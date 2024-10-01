@@ -18,21 +18,20 @@ export function deserializeKeyCombo(serialized: string): KeyCombo {
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {
-  const keybindingsByCommandId = ref<Map<string, Keybinding[]>>(new Map())
   const keybindingByKeyCombo = ref<Map<string, Keybinding>>(new Map())
   const keybindings = computed<Keybinding[]>(() =>
     Array.from(keybindingByKeyCombo.value.values())
   )
 
-  const getCommandKeybindings = (command: string) =>
-    keybindingsByCommandId.value.get(command) ?? []
-
   function getKeybinding(combo: KeyCombo) {
     return keybindingByKeyCombo.value.get(serializeKeyCombo(combo))
   }
 
-  function addKeybinding(keybinding: Keybinding) {
-    if (getKeybinding(keybinding.combo)) {
+  function addKeybinding(
+    keybinding: Keybinding,
+    { existOk = false }: { existOk: boolean }
+  ) {
+    if (!existOk && getKeybinding(keybinding.combo)) {
       throw new Error(
         `Keybinding on ${keybinding.combo} already exists on ${getKeybinding(
           keybinding.combo
@@ -44,29 +43,14 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       serializeKeyCombo(keybinding.combo),
       keybinding
     )
-
-    const command = keybinding.commandId
-    if (!keybindingsByCommandId.value.has(command)) {
-      keybindingsByCommandId.value.set(command, [])
-    }
-    keybindingsByCommandId.value.get(command)?.push(keybinding)
   }
 
   function removeKeybinding(keybinding: Keybinding) {
     keybindingByKeyCombo.value.delete(serializeKeyCombo(keybinding.combo))
-    const command = keybinding.commandId
-    const commandKeybindings = keybindingsByCommandId.value.get(command)
-    if (commandKeybindings) {
-      keybindingsByCommandId.value.set(
-        command,
-        commandKeybindings.filter((kb) => kb.commandId !== keybinding.commandId)
-      )
-    }
   }
 
   return {
     keybindings,
-    getCommandKeybindings,
     getKeybinding,
     addKeybinding,
     removeKeybinding
