@@ -57,6 +57,7 @@ export class LGraphCanvas {
     };
 
     public canvas: HTMLCanvasElement;
+    public pointer_is_down: boolean = false;
 
     private _dragging_canvas: boolean = false;
     get dragging_canvas(): boolean {
@@ -71,6 +72,10 @@ export class LGraphCanvas {
             });
         }
     }
+
+    // Whether the canvas was previously being dragged prior to pressing space key.
+    // null if space key is not pressed.
+    private _previously_dragging_canvas: boolean | null = null;
 
     // if set to true users cannot modify the graph
     private _read_only: boolean = false;
@@ -1545,7 +1550,7 @@ export class LGraphCanvas {
         this.block_click = true;
         this.last_mouseclick = 0;
     }
-    processMouseDown(e) {
+    processMouseDown(e: MouseEvent) {
 
         if (this.set_canvas_dirty_on_mouse_event)
             this.dirty_canvas = true;
@@ -2836,6 +2841,10 @@ export class LGraphCanvas {
             if (e.keyCode == 32) {
                 // space
                 this.read_only = true;
+                if (this._previously_dragging_canvas === null) {
+                    this._previously_dragging_canvas = this.dragging_canvas;
+                }
+                this.dragging_canvas = this.pointer_is_down;
                 block_default = true;
             }
 
@@ -2888,6 +2897,8 @@ export class LGraphCanvas {
             if (e.keyCode == 32) {
                 // space
                 this.read_only = false;
+                this.dragging_canvas = this._previously_dragging_canvas ?? false;
+                this._previously_dragging_canvas = null;
             }
 
             if (this.selected_nodes) {
