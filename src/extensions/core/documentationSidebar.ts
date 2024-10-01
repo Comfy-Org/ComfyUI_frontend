@@ -185,13 +185,18 @@ let documentationSidebar = {
        font-size: 1.5em
     }
     .doc-section {
-       background-color: ${getColorPalette().colors.comfy_base['tr-odd-bg-color']}
+       background-color: ${getColorPalette().colors.comfy_base['comfy-menu-bg']}
     }
     .doc-item div {
        margin-inline-start: 1vw;
     }
+    @keyframes selectAnimation {
+      0% { background-color: #5555}
+      80% { background-color: #5555}
+      100% { background-color: #0000}
+    }
     .doc-item:focus {
-       background-color: #666
+      animation: selectAnimation 2s;
     }
     .DocumentationIcon:before {
        font-size: 1.5em; content: '?';
