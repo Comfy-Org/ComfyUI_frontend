@@ -930,7 +930,8 @@ export class ComfyPage {
     return this.getNodeRefById(id)
   }
 }
-class NodeSlotReference {
+
+export class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -980,7 +981,37 @@ class NodeSlotReference {
     )
   }
 }
-class NodeReference {
+
+export class NodeWidgetReference {
+  constructor(
+    readonly index: number,
+    readonly node: NodeReference
+  ) {}
+
+  async getPosition(): Promise<Position> {
+    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+      ([id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const widget = node.widgets[index]
+        if (!widget) throw new Error(`Widget ${index} not found.`)
+
+        const [x, y, w, h] = node.getBounding()
+        return window['app'].canvas.ds.convertOffsetToCanvas([
+          x + w / 2,
+          y + window['LiteGraph']['NODE_TITLE_HEIGHT'] + widget.last_y + 1
+        ])
+      },
+      [this.node.id, this.index] as const
+    )
+    return {
+      x: pos[0],
+      y: pos[1]
+    }
+  }
+}
+
+export class NodeReference {
   constructor(
     readonly id: NodeId,
     readonly comfyPage: ComfyPage
@@ -1026,6 +1057,9 @@ class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
+  async getWidget(index: number) {
+    return new NodeWidgetReference(index, this)
+  }
   async click(position: 'title', options?: Parameters<Page['click']>[1]) {
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
@@ -1042,6 +1076,19 @@ class NodeReference {
       position: clickPos
     })
     await this.comfyPage.nextFrame()
+  }
+  async connectWidget(
+    originSlotIndex: number,
+    targetNode: NodeReference,
+    targetWidgetIndex: number
+  ) {
+    const originSlot = await this.getOutput(originSlotIndex)
+    const targetWidget = await targetNode.getWidget(targetWidgetIndex)
+    await this.comfyPage.dragAndDrop(
+      await originSlot.getPosition(),
+      await targetWidget.getPosition()
+    )
+    return originSlot
   }
   async connectOutput(
     originSlotIndex: number,
