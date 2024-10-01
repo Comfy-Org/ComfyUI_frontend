@@ -99,8 +99,8 @@ const messages = {
       zoomIn: 'Zoom In',
       zoomOut: 'Zoom Out',
       resetView: 'Reset View',
-      lock: 'Lock Graph',
-      unlock: 'Unlock Graph'
+      selectMode: 'Select Mode',
+      panMode: 'Pan Mode'
     }
   },
   zh: {

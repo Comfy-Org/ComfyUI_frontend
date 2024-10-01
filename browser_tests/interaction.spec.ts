@@ -347,6 +347,32 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')
   })
 
+  test('Cursor style changes when panning', async ({ comfyPage }) => {
+    const getCursorStyle = async () => {
+      return await comfyPage.page.evaluate(() => {
+        return (
+          document.getElementById('graph-canvas')!.style.cursor || 'default'
+        )
+      })
+    }
+
+    await comfyPage.page.mouse.move(10, 10)
+    expect(await getCursorStyle()).toBe('default')
+    await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+    await comfyPage.page.mouse.up()
+    expect(await getCursorStyle()).toBe('default')
+
+    await comfyPage.page.keyboard.down('Space')
+    expect(await getCursorStyle()).toBe('grab')
+    await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+    await comfyPage.page.mouse.up()
+    expect(await getCursorStyle()).toBe('grab')
+    await comfyPage.page.keyboard.up('Space')
+    expect(await getCursorStyle()).toBe('default')
+  })
+
   test('Can pan very far and back', async ({ comfyPage }) => {
     // intentionally slice the edge of where the clip text encode dom widgets are
     await comfyPage.pan({ x: -800, y: -300 }, { x: 1000, y: 10 })

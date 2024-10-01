@@ -9,6 +9,7 @@
       </template>
     </LiteGraphCanvasSplitterOverlay>
     <TitleEditor />
+    <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover />
@@ -97,6 +98,22 @@ watchEffect(() => {
     textarea.focus()
     textarea.blur()
   })
+})
+
+watchEffect(() => {
+  if (!canvasStore.canvas) return
+
+  if (canvasStore.draggingCanvas) {
+    canvasStore.canvas.canvas.style.cursor = 'grabbing'
+    return
+  }
+
+  if (canvasStore.readOnly) {
+    canvasStore.canvas.canvas.style.cursor = 'grab'
+    return
+  }
+
+  canvasStore.canvas.canvas.style.cursor = 'default'
 })
 
 let dropTargetCleanup = () => {}
