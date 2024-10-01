@@ -21,7 +21,7 @@ export interface ComfyExtension {
   /**
    * The keybindings for the extension
    */
-  keybindings: Keybinding[]
+  keybindings?: Keybinding[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
