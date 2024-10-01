@@ -1,7 +1,8 @@
 // @ts-nocheck
+import { IWidget } from "public/litegraph";
 import { DragAndScale } from "./DragAndScale";
 import { drawSlot, LabelPosition } from "./draw";
-import { LiteGraph, clamp } from "./litegraph";
+import { LGraphNode, LiteGraph, clamp } from "./litegraph";
 import { isInsideRectangle, distance, overlapBounding, LiteGraphGlobal } from "./LiteGraphGlobal";
 
 //*********************************************************************************
@@ -1550,6 +1551,44 @@ export class LGraphCanvas {
         this.block_click = true;
         this.last_mouseclick = 0;
     }
+
+    /**
+     * Gets the widget at the current cursor position
+     * @param node Optional node to check for widgets under cursor
+     * @returns The widget located at the current cursor position or null
+     */
+    getWidgetAtCursor(node?: LGraphNode): IWidget | null {
+        node ??= this.node_over;
+
+        if (!node.widgets) return null;
+
+        const graphPos = this.graph_mouse
+        const x = graphPos[0] - node.pos[0]
+        const y = graphPos[1] - node.pos[1]
+
+        for (const widget of node.widgets) {
+            let widgetWidth, widgetHeight;
+            if (widget.computeSize) {
+                ([widgetWidth, widgetHeight] = widget.computeSize(node.size[0]))
+            } else {
+                widgetWidth = (widget).width || node.size[0]
+                widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
+            }
+
+            if (
+                widget.last_y !== undefined &&
+                x >= 6 &&
+                x <= widgetWidth - 12 &&
+                y >= widget.last_y &&
+                y <= widget.last_y + widgetHeight
+            ) {
+                return widget;
+            }
+        }
+
+        return null;
+    }
+
     processMouseDown(e: MouseEvent) {
 
         if (this.set_canvas_dirty_on_mouse_event)
@@ -2140,6 +2179,8 @@ export class LGraphCanvas {
          * @method processMouseMove
          **/
     processMouseMove(e) {
+        this.link_over_widget = null;
+
         if (this.autoresize) {
             this.resize();
         }
@@ -2262,8 +2303,6 @@ export class LGraphCanvas {
 
                         var pos = this._highlight_input || [0, 0]; //to store the output of isOverNodeInput
 
-
-
                         //on top of input
                         if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
                             //mouse on top of the corner box, don't know what to do
@@ -2274,6 +2313,21 @@ export class LGraphCanvas {
                                 this._highlight_input = pos;
                                 this._highlight_input_slot = node.inputs[slot]; // XXX CHECK THIS
                             } else {
+                                // Allow support for linking to widgets, handled externally to LiteGraph
+                                if (this.getWidgetLinkType) {
+                                    const overWidget = this.getWidgetAtCursor(node);
+                                    
+                                    if (overWidget) {
+                                        const widgetLinkType = this.getWidgetLinkType(overWidget, node);
+                                        if (widgetLinkType && LiteGraph.isValidConnection(firstLink.output.type, widgetLinkType)) {
+                                            if (firstLink.node.isValidWidgetLink?.(firstLink.output.slot_index, node, overWidget) !== false) {
+                                                this.link_over_widget = overWidget;
+                                                this.link_over_widget_type = widgetLinkType;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 this._highlight_input = null;
                                 this._highlight_input_slot = null; // XXX CHECK THIS
                             }
@@ -2536,6 +2590,14 @@ export class LGraphCanvas {
                             );
                             if (slot != -1) {
                                 link.node.connect(link.slot, node, slot);
+                            } else if (this.link_over_widget) {
+                                this.emitEvent({
+                                    subType: "connectingWidgetLink",
+                                    link,
+                                    node,
+                                    widget: this.link_over_widget
+                                })
+                                this.link_over_widget = null
                             } else {
                                 //not on top of an input
                                 // look for a good slot
@@ -5439,6 +5501,15 @@ export class LGraphCanvas {
             if (w.y) {
                 y = w.y;
             }
+
+            if (w === this.link_over_widget) {
+                ctx.fillStyle = this.default_connection_color_byType[this.link_over_widget_type] ||
+                    this.default_connection_color.input_on;
+                
+                // Manually draw a slot next to the widget simulating an input
+                drawSlot(ctx, {}, [10, y + 10], {})
+            }
+
             w.last_y = y;
             ctx.strokeStyle = outline_color;
             ctx.fillStyle = "#222";

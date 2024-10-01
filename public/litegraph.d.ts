@@ -1326,6 +1326,8 @@ export declare class LGraphCanvas {
     node_title_color: string;
     node_widget: [LGraphNode, IWidget] | null;
     last_mouse_dragging: boolean;
+    /** Implement this function to allow conversion of widget types to input types, e.g. number -> INT or FLOAT for widget link validation checks */
+    getWidgetLinkType?: (widget: IWidget, node: LGraphNode) => string | null | undefined;
 
     /** Called by `LGraphCanvas.drawBackCanvas` */
     onDrawBackground:
