@@ -14,14 +14,14 @@
       :pt="{
         incrementButton: {
           class: 'w-6',
-          onmousedown: () => {
-            handleClick(true)
+          onmousedown: (event) => {
+            handleClick(true, event)
           }
         },
         decrementButton: {
           class: 'w-6',
-          onmousedown: () => {
-            handleClick(false)
+          onmousedown: (event) => {
+            handleClick(false, event)
           }
         }
       }"
@@ -48,13 +48,14 @@ const minQueueCount = 1
 const maxQueueCount = 100
 
 const handleClick = (increment: boolean) => {
+  const shiftModifier = event.shiftKey ? 10 : 1; // Change increment/decrement value if Shift is held
   let newCount: number
   if (increment) {
     const originalCount = batchCount.value - 1
-    newCount = originalCount * 2
+    newCount = Math.min(originalCount + shiftModifier, maxQueueCount);
   } else {
     const originalCount = batchCount.value + 1
-    newCount = Math.floor(originalCount / 2)
+    newCount = Math.max(originalCount - shiftModifier, minQueueCount);
   }
 
   batchCount.value = newCount
