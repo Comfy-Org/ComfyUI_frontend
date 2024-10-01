@@ -503,7 +503,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Window.UnloadConfirmation': z.boolean(),
       'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
       'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
-      'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode
+      'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
+      'Comfy.QueueButton.BatchCountLimit': z.number()
     })
     .optional()
 )
