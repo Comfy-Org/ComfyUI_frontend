@@ -386,5 +386,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show graph canvas menu',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.QueueButton.BatchCountLimit',
+    name: 'Batch count limit',
+    tooltip:
+      'The maximum number of tasks added to the queue at one button click',
+    type: 'number',
+    defaultValue: 100,
+    versionAdded: '1.3.5'
   }
 ]
