@@ -197,6 +197,11 @@ const messages = {
       }
     },
     graphCanvasMenu: {
+      zoomIn: '放大',
+      zoomOut: '缩小',
+      resetView: '重置视图',
+      selectMode: '选择模式',
+      panMode: '平移模式',
       toggleLinkVisibility: '切换链接可见性'
     }
   }
