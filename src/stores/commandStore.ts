@@ -17,8 +17,6 @@ export interface ComfyCommand {
   icon?: string | (() => string)
   tooltip?: string | (() => string)
   versionAdded?: string
-
-  [key: string]: any
 }
 
 const getTracker = () =>
