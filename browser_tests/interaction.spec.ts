@@ -11,12 +11,41 @@ test.describe('Node Interaction', () => {
     await expect(textBox).toHaveValue('Hello World 2')
   })
 
-  test('Can highlight selected', async ({ comfyPage }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('default.png')
-    await comfyPage.clickTextEncodeNode1()
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
-    await comfyPage.clickTextEncodeNode2()
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
+  test.describe('Node Selection', () => {
+    test.afterEach(async ({ comfyPage }) => {
+      // Deselect all nodes
+      await comfyPage.clickEmptySpace()
+    })
+
+    test('Can highlight selected', async ({ comfyPage }) => {
+      await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+      await comfyPage.clickTextEncodeNode1()
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
+      await comfyPage.clickTextEncodeNode2()
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
+    })
+
+    test('Can drag-select nodes with Meta (mac)', async ({ comfyPage }) => {
+      const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+      const clipNode1Pos = await clipNodes[0].getPosition()
+      const clipNode2Pos = await clipNodes[1].getPosition()
+      const offset = 64
+      await comfyPage.page.keyboard.down('Meta')
+      await comfyPage.dragAndDrop(
+        {
+          x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
+          y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
+        },
+        {
+          x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
+          y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
+        }
+      )
+      await comfyPage.page.keyboard.up('Meta')
+      expect(await comfyPage.getSelectedGraphNodesCount()).toBe(
+        clipNodes.length
+      )
+    })
   })
 
   test('Can drag node', async ({ comfyPage }) => {
