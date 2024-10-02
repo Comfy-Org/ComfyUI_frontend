@@ -63,11 +63,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.2.1",
-<<<<<<< HEAD
     "@comfyorg/litegraph": "^0.7.83",
-=======
-    "@comfyorg/litegraph": "^0.7.80",
->>>>>>> 1f6e339 (Update package)
     "@primevue/themes": "^4.0.5",
     "@vitejs/plugin-vue": "^5.0.5",
     "@vueuse/core": "^11.0.0",
