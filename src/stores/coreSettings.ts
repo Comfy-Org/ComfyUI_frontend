@@ -1,3 +1,4 @@
+import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   LinkReleaseTriggerAction,
@@ -404,5 +405,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'number',
     defaultValue: 100,
     versionAdded: '1.3.5'
+  },
+  {
+    id: 'Comfy.Keybinding.UnsetBindings',
+    name: 'Keybindings unset by the user',
+    type: 'hidden',
+    defaultValue: [] as Keybinding[],
+    versionAdded: '1.3.6'
+  },
+  {
+    id: 'Comfy.Keybinding.NewBindings',
+    name: 'Keybindings set by the user',
+    type: 'hidden',
+    defaultValue: [] as Keybinding[],
+    versionAdded: '1.3.6'
   }
 ]
