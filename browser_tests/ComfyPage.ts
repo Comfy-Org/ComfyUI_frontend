@@ -269,7 +269,7 @@ class Topbar {
 
     const tabName = path[0]
     const topLevelMenu = this.page.locator(
-      `.top-menubar .p-menubar-item:has-text("${tabName}")`
+      `.top-menubar .p-menubar-item-label:text-is("${tabName}")`
     )
     await topLevelMenu.waitFor({ state: 'visible' })
     await topLevelMenu.click()
@@ -1129,6 +1129,11 @@ export class NodeReference {
     if (moveMouseToEmptyArea) {
       await this.comfyPage.moveMouseToEmptyArea()
     }
+  }
+  async copy() {
+    await this.click('title')
+    await this.comfyPage.ctrlC()
+    await this.comfyPage.nextFrame()
   }
   async connectWidget(
     originSlotIndex: number,
