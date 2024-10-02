@@ -16,8 +16,7 @@ export const zTriggerCondition = z.function().returns(z.boolean())
 export const zKeybinding = z.object({
   commandId: z.string(),
   combo: zKeyCombo,
-  triggerCondition: zTriggerCondition,
-  source: z.string()
+  triggerCondition: zTriggerCondition
 })
 
 // Infer types from schemas
