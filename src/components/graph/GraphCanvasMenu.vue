@@ -24,6 +24,15 @@
     />
     <Button
       severity="secondary"
+      icon="pi pi-eye"
+      v-tooltip.left="t('graphCanvasMenu.toggleLinkVisibility')"
+      @click="
+        () =>
+          commandStore.getCommandFunction('Comfy.Canvas.ToggleLinkVisibility')()
+      "
+    />
+    <Button
+      severity="secondary"
       v-tooltip.left="
         t(
           'graphCanvasMenu.' + (canvasStore.readOnly ? 'panMode' : 'selectMode')

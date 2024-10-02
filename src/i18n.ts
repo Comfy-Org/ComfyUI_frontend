@@ -100,7 +100,8 @@ const messages = {
       zoomOut: 'Zoom Out',
       resetView: 'Reset View',
       selectMode: 'Select Mode',
-      panMode: 'Pan Mode'
+      panMode: 'Pan Mode',
+      toggleLinkVisibility: 'Toggle Link Visibility'
     }
   },
   zh: {
@@ -194,6 +195,9 @@ const messages = {
         upscale: '2 Pass Upscale',
         flux_schnell: 'Flux Schnell'
       }
+    },
+    graphCanvasMenu: {
+      toggleLinkVisibility: '切换链接可见性'
     }
   }
   // TODO: Add more languages

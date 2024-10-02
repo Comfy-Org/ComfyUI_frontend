@@ -7,6 +7,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { showTemplateWorkflowsDialog } from '@/services/dialogService'
 import { useQueueStore } from './queueStore'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 export interface ComfyCommand {
   id: string
@@ -15,7 +16,9 @@ export interface ComfyCommand {
   label?: string | (() => string)
   icon?: string | (() => string)
   tooltip?: string | (() => string)
-  shortcut?: string
+  versionAdded?: string
+
+  [key: string]: any
 }
 
 const getTracker = () =>
@@ -206,6 +209,29 @@ export const useCommandStore = defineStore('command', () => {
       function: () => {
         app.canvas['read_only'] = !app.canvas['read_only']
       }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleLinkVisibility',
+      icon: 'pi pi-eye',
+      label: 'Toggle Link Visibility',
+      versionAdded: '1.3.6',
+
+      function: (() => {
+        let lastLinksRenderMode = LiteGraph.SPLINE_LINK
+
+        return () => {
+          const currentMode = settingStore.get('Comfy.LinkRenderMode')
+
+          if (currentMode === LiteGraph.HIDDEN_LINK) {
+            // If links are hidden, restore the last positive value or default to spline mode
+            settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
+          } else {
+            // If links are visible, store the current mode and hide links
+            lastLinksRenderMode = currentMode
+            settingStore.set('Comfy.LinkRenderMode', LiteGraph.HIDDEN_LINK)
+          }
+        }
+      })()
     }
   ]
 
