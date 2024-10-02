@@ -1,58 +1,157 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
 
-export function serializeKeyCombo(combo: KeyCombo): string {
-  return `${combo.key}:${combo.ctrl ?? false}:${combo.alt ?? false}:${combo.shift ?? false}:${combo.meta ?? false}`
+export class KeybindingImpl implements Keybinding {
+  commandId: string
+  combo: KeyComboImpl
+
+  constructor(obj: Keybinding) {
+    this.commandId = obj.commandId
+    this.combo = new KeyComboImpl(obj.combo)
+  }
+
+  equals(other: any): boolean {
+    if (toRaw(other) instanceof KeybindingImpl) {
+      return (
+        this.commandId === other.commandId && this.combo.equals(other.combo)
+      )
+    }
+    return false
+  }
 }
 
-export function deserializeKeyCombo(serialized: string): KeyCombo {
-  const [key, ctrl, alt, shift, meta] = serialized.split(':')
-  return {
-    key,
-    ctrl: ctrl === 'true',
-    alt: alt === 'true',
-    shift: shift === 'true',
-    meta: meta === 'true'
+export class KeyComboImpl implements KeyCombo {
+  key: string
+  ctrl: boolean
+  alt: boolean
+  shift: boolean
+  meta: boolean
+
+  constructor(obj: KeyCombo) {
+    this.key = obj.key
+    this.ctrl = obj.ctrl ?? false
+    this.alt = obj.alt ?? false
+    this.shift = obj.shift ?? false
+    this.meta = obj.meta ?? false
+  }
+
+  equals(other: any): boolean {
+    if (toRaw(other) instanceof KeyComboImpl) {
+      return (
+        this.key === other.key &&
+        this.ctrl === other.ctrl &&
+        this.alt === other.alt &&
+        this.shift === other.shift &&
+        this.meta === other.meta
+      )
+    }
+    return false
+  }
+
+  serialize(): string {
+    return `${this.key}:${this.ctrl}:${this.alt}:${this.shift}:${this.meta}`
+  }
+
+  deserialize(serialized: string): KeyComboImpl {
+    const [key, ctrl, alt, shift, meta] = serialized.split(':')
+    return new KeyComboImpl({
+      key,
+      ctrl: ctrl === 'true',
+      alt: alt === 'true',
+      shift: shift === 'true',
+      meta: meta === 'true'
+    })
   }
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {
-  const keybindingByKeyCombo = ref<Map<string, Keybinding>>(new Map())
-  const keybindings = computed<Keybinding[]>(() =>
-    Array.from(keybindingByKeyCombo.value.values())
+  /**
+   * Default keybindings provided by core and extensions.
+   */
+  const defaultKeybindings = ref<Record<string, KeybindingImpl>>({})
+  /**
+   * User-defined keybindings.
+   */
+  const userKeybindings = ref<Record<string, KeybindingImpl>>({})
+  /**
+   * User-defined keybindings that unset default keybindings.
+   */
+  const userUnsetKeybindings = ref<Record<string, KeybindingImpl>>({})
+
+  const keybindingByKeyCombo = computed<Record<string, KeybindingImpl>>(() => {
+    const result: Record<string, KeybindingImpl> = {
+      ...defaultKeybindings.value,
+      ...userKeybindings.value
+    }
+
+    for (const keybinding of Object.values(userUnsetKeybindings.value)) {
+      const serializedCombo = keybinding.combo.serialize()
+      if (result[serializedCombo]?.equals(keybinding)) {
+        delete result[serializedCombo]
+      }
+    }
+    return result
+  })
+
+  const keybindings = computed<KeybindingImpl[]>(() =>
+    Object.values(keybindingByKeyCombo.value)
   )
 
-  function getKeybinding(combo: KeyCombo) {
-    return keybindingByKeyCombo.value.get(serializeKeyCombo(combo))
+  function getKeybinding(combo: KeyComboImpl) {
+    return keybindingByKeyCombo.value[combo.serialize()]
   }
 
   function addKeybinding(
-    keybinding: Keybinding,
+    target: Ref<Record<string, KeybindingImpl>>,
+    keybinding: KeybindingImpl,
     { existOk = false }: { existOk: boolean }
   ) {
-    if (!existOk && getKeybinding(keybinding.combo)) {
+    if (
+      !existOk &&
+      keybinding.combo.serialize() in keybindingByKeyCombo.value
+    ) {
       throw new Error(
         `Keybinding on ${keybinding.combo} already exists on ${getKeybinding(
           keybinding.combo
         )}`
       )
     }
-
-    keybindingByKeyCombo.value.set(
-      serializeKeyCombo(keybinding.combo),
-      keybinding
-    )
+    target.value[keybinding.combo.serialize()] = keybinding
   }
 
-  function removeKeybinding(keybinding: Keybinding) {
-    keybindingByKeyCombo.value.delete(serializeKeyCombo(keybinding.combo))
+  function addDefaultKeybinding(keybinding: KeybindingImpl) {
+    addKeybinding(defaultKeybindings, keybinding, { existOk: false })
+  }
+
+  function addUserKeybinding(keybinding: KeybindingImpl) {
+    addKeybinding(userKeybindings, keybinding, { existOk: true })
+  }
+
+  function unsetKeybinding(keybinding: KeybindingImpl) {
+    const serializedCombo = keybinding.combo.serialize()
+    if (!(serializedCombo in keybindingByKeyCombo.value)) {
+      throw new Error(`Keybinding on ${keybinding.combo} does not exist`)
+    }
+
+    if (userKeybindings.value[serializedCombo]?.equals(keybinding)) {
+      delete userKeybindings.value[serializedCombo]
+      return
+    }
+
+    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
+      addKeybinding(userUnsetKeybindings, keybinding, { existOk: false })
+      return
+    }
+
+    throw new Error(`NOT_REACHED`)
   }
 
   return {
     keybindings,
     getKeybinding,
-    addKeybinding,
-    removeKeybinding
+    addDefaultKeybinding,
+    addUserKeybinding,
+    unsetKeybinding
   }
 })
