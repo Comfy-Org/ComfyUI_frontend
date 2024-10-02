@@ -411,13 +411,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Keybindings unset by the user',
     type: 'hidden',
     defaultValue: [] as Keybinding[],
-    versionAdded: '1.3.6'
+    versionAdded: '1.3.7'
   },
   {
     id: 'Comfy.Keybinding.NewBindings',
     name: 'Keybindings set by the user',
     type: 'hidden',
     defaultValue: [] as Keybinding[],
-    versionAdded: '1.3.6'
+    versionAdded: '1.3.7'
   }
 ]
