@@ -252,6 +252,7 @@ export const LiteGraph: {
     RIGHT: 4;
     CENTER: 5;
 
+    HIDDEN_LINK: -1;
     STRAIGHT_LINK: 0;
     LINEAR_LINK: 1;
     SPLINE_LINK: 2;
@@ -1317,7 +1318,9 @@ export declare class LGraphCanvas {
     links_render_mode:
         | typeof LiteGraph.STRAIGHT_LINK
         | typeof LiteGraph.LINEAR_LINK
-        | typeof LiteGraph.SPLINE_LINK;
+        | typeof LiteGraph.SPLINE_LINK
+        | typeof LiteGraph.HIDDEN_LINK
+        | number; // Custom render mode
     live_mode: boolean;
     node_capturing_input: LGraphNode | null;
     node_dragged: LGraphNode | null;

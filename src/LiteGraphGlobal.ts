@@ -91,6 +91,7 @@ export class LiteGraphGlobal {
     CENTER = 5;
 
     LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]; // helper
+    HIDDEN_LINK = -1;
     STRAIGHT_LINK = 0;
     LINEAR_LINK = 1;
     SPLINE_LINK = 2;
