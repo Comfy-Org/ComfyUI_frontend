@@ -703,10 +703,9 @@ app.registerExtension({
           }
         }
         // Sets special case colors
-        if (
-          colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
-        ) {
-          app.bypassBgColor = colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
+        if (colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR) {
+          app.bypassBgColor =
+            colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
         }
         app.canvas.draw(true, true)
       }
