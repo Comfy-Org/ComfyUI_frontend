@@ -42,6 +42,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#666',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -73,9 +74,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fff',
         'content-hover-bg': '#222',
         'content-hover-fg': '#fff'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -110,6 +108,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#CCC',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#000',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.1)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -141,9 +140,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#222',
         'content-hover-bg': '#adadad',
         'content-hover-fg': '#222'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -176,6 +172,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#839496', // Base0
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#fdf6e3', // Base3
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -204,9 +201,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fdf6e3',
         'content-hover-bg': '#002b36',
         'content-hover-fg': '#fdf6e3'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -255,6 +249,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#6e7581',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 22,
         WIDGET_BGCOLOR: '#2b2f38',
@@ -281,9 +276,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#fff',
         'content-hover-bg': '#2b2f38',
         'content-hover-fg': '#fff'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -332,6 +324,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#545d70',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#2e3440',
@@ -358,9 +351,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#2e3440',
         'content-hover-fg': '#e5eaf0'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   },
@@ -409,6 +399,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#30363d',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#161b22',
@@ -435,9 +426,6 @@ const colorPalettes: ColorPalettes = {
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#161b22',
         'content-hover-fg': '#e5eaf0'
-      },
-      other: {
-        NODE_BYPASS_BGCOLOR: '#FF00FF'
       }
     }
   }
@@ -714,12 +702,11 @@ app.registerExtension({
             )
           }
         }
-        // Sets the other colors
+        // Sets special case colors
         if (
-          colorPalette.colors.other &&
-          colorPalette.colors.other.NODE_BYPASS_BGCOLOR
+          colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
         ) {
-          app.bypassBgColor = colorPalette.colors.other.NODE_BYPASS_BGCOLOR
+          app.bypassBgColor = colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
         }
         app.canvas.draw(true, true)
       }

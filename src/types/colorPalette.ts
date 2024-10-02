@@ -44,6 +44,7 @@ const litegraphBaseSchema = z
     NODE_DEFAULT_BOXCOLOR: z.string(),
     NODE_DEFAULT_SHAPE: z.string(),
     NODE_BOX_OUTLINE_COLOR: z.string(),
+    NODE_BYPASS_BGCOLOR: z.string(),
     DEFAULT_SHADOW_COLOR: z.string(),
     DEFAULT_GROUP_FONT: z.number(),
     WIDGET_BGCOLOR: z.string(),
@@ -77,16 +78,11 @@ const comfyBaseSchema = z.object({
   ['content-hover-fg']: z.string()
 })
 
-const otherColorsSchema = z.object({
-  NODE_BYPASS_BGCOLOR: z.string()
-})
-
 const colorsSchema = z
   .object({
     node_slot: nodeSlotSchema,
     litegraph_base: litegraphBaseSchema,
-    comfy_base: comfyBaseSchema,
-    other: otherColorsSchema
+    comfy_base: comfyBaseSchema
   })
   .passthrough()
 
