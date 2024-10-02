@@ -2552,7 +2552,7 @@ export class LGraphCanvas {
                         }
                     } else {
                         // will select of update selection
-                        this.selectNodes([node], e.shiftKey || e.ctrlKey); // add to selection add to selection with ctrlKey or shiftKey
+                        this.selectNodes([node], e.shiftKey || e.ctrlKey || e.metaKey); // add to selection add to selection with ctrlKey or shiftKey
                     }
 
                 }
