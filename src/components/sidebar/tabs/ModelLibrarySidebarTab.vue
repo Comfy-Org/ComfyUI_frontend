@@ -84,22 +84,26 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.name.toLocaleLowerCase().includes(search)
+      return model.file_name.toLocaleLowerCase().includes(search)
     })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
-    return [model.directory, ...model.name.replaceAll('\\', '/').split('/')]
+    return [
+      model.directory,
+      ...model.file_name.replaceAll('\\', '/').split('/')
+    ]
   })
   return tree
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
+  const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
   const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
     if (model?.is_fake_object) {
-      if (model.name === '(No Content)') {
+      if (model.file_name === '(No Content)') {
         return {
           key: node.key,
           label: t('noContent'),
@@ -126,7 +130,11 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
 
     return {
       key: node.key,
-      label: model ? model.title : node.label,
+      label: model
+        ? nameFormat === 'title'
+          ? model.title
+          : model.simplified_file_name
+        : node.label,
       leaf: node.leaf,
       data: node.data,
       getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
@@ -144,9 +152,9 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         if (node.children?.length === 1) {
           const onlyChild = node.children[0]
           if (onlyChild.data?.is_fake_object) {
-            if (onlyChild.data.name === '(No Content)') {
+            if (onlyChild.data.file_name === '(No Content)') {
               return '0'
-            } else if (onlyChild.data.name === 'Loading') {
+            } else if (onlyChild.data.file_name === 'Loading') {
               return '?'
             }
           }
@@ -169,7 +177,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
               (widget) => widget.name === provider.key
             )
             if (widget) {
-              widget.value = model.name
+              widget.value = model.file_name
             }
           }
         }

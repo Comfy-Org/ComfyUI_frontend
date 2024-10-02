@@ -4,6 +4,9 @@
       {{ modelDef.title }}
     </div>
     <div class="model_preview_top_container">
+      <div class="model_preview_filename">
+        {{ modelDef.file_name }}
+      </div>
       <div class="model_preview_architecture" v-if="modelDef.architecture_id">
         <span class="model_preview_prefix">Architecture: </span>
         {{ modelDef.architecture_id }}
@@ -75,7 +78,9 @@ const modelDef = props.modelDef
 }
 .model_preview_top_container {
   text-align: center;
+  line-height: 0.5;
 }
+.model_preview_filename,
 .model_preview_author,
 .model_preview_architecture {
   display: inline-block;
