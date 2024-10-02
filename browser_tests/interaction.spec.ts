@@ -404,6 +404,26 @@ test.describe('Canvas Interaction', () => {
     expect(await getCursorStyle()).toBe('default')
   })
 
+  test('Can pan when dragging a link', async ({ comfyPage }) => {
+    const posSlot1 = comfyPage.clipTextEncodeNode1InputSlot
+    await comfyPage.page.mouse.move(posSlot1.x, posSlot1.y)
+    await comfyPage.page.mouse.down()
+    const posEmpty = comfyPage.emptySpace
+    await comfyPage.page.mouse.move(posEmpty.x, posEmpty.y)
+    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link1.png')
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(posEmpty.x + 100, posEmpty.y + 100)
+    // Canvas should be panned.
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'panning-when-dragging-link.png'
+    )
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(posEmpty.x, posEmpty.y)
+    // Should be back to dragging link mode when space is released.
+    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link2.png')
+    await comfyPage.page.mouse.up()
+  })
+
   test('Can pan very far and back', async ({ comfyPage }) => {
     // intentionally slice the edge of where the clip text encode dom widgets are
     await comfyPage.pan({ x: -800, y: -300 }, { x: 1000, y: 10 })

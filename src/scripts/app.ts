@@ -52,6 +52,7 @@ import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { IWidget } from '@comfyorg/litegraph'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1694,6 +1695,52 @@ export class ComfyApp {
     }
   }
 
+  #addWidgetLinkHandling() {
+    app.canvas.getWidgetLinkType = function (widget, node) {
+      const nodeDefStore = useNodeDefStore()
+      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const input = nodeDef.input.getInput(widget.name)
+      return input?.type
+    }
+
+    type ConnectingWidgetLink = {
+      subType: 'connectingWidgetLink'
+      widget: IWidget
+      node: LGraphNode
+      link: { node: LGraphNode; slot: number }
+    }
+
+    document.addEventListener(
+      'litegraph:canvas',
+      async (e: CustomEvent<ConnectingWidgetLink>) => {
+        if (e.detail.subType === 'connectingWidgetLink') {
+          const { convertToInput } = await import(
+            '@/extensions/core/widgetInputs'
+          )
+
+          const { node, link, widget } = e.detail
+          if (!node || !link || !widget) return
+
+          const nodeData = node.constructor.nodeData
+          if (!nodeData) return
+          const all = {
+            ...nodeData?.input?.required,
+            ...nodeData?.input?.optional
+          }
+          const inputSpec = all[widget.name]
+          if (!inputSpec) return
+
+          const input = convertToInput(node, widget, inputSpec)
+          if (!input) return
+
+          const originNode = link.node
+
+          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
+        }
+      }
+    )
+  }
+
   #addAfterConfigureHandler() {
     const app = this
     // @ts-expect-error
@@ -1915,6 +1962,7 @@ export class ComfyApp {
     this.#addCopyHandler()
     this.#addPasteHandler()
     this.#addKeyboardHandler()
+    this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
   }
