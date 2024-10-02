@@ -135,6 +135,7 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
+  bypassBgColor: string
 
   // @deprecated
   // Use useExecutionStore().executingNodeId instead
@@ -155,6 +156,7 @@ export class ComfyApp {
       parent: document.body
     })
     this.menu = new ComfyAppMenu(this)
+    this.bypassBgColor = '#FF00FF'
 
     /**
      * List of extensions that are registered with the app
@@ -1566,7 +1568,7 @@ export class ComfyApp {
       // @ts-expect-error
       if (node.mode === 4) {
         // never
-        bgColor = '#FF00FF'
+        bgColor = app.bypassBgColor
         this.editor_alpha = 0.2
       } else {
         bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR

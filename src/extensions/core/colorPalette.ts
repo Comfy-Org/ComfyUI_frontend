@@ -42,6 +42,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#666',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -107,6 +108,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#CCC',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#000',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.1)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -170,6 +172,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#839496', // Base0
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#fdf6e3', // Base3
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -246,6 +249,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#6e7581',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 22,
         WIDGET_BGCOLOR: '#2b2f38',
@@ -320,6 +324,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#545d70',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#2e3440',
@@ -394,6 +399,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_BOXCOLOR: '#30363d',
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
+        NODE_BYPASS_BGCOLOR: '#FF00FF',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#161b22',
@@ -695,6 +701,11 @@ app.registerExtension({
               colorPalette.colors.comfy_base[key]
             )
           }
+        }
+        // Sets special case colors
+        if (colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR) {
+          app.bypassBgColor =
+            colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
         }
         app.canvas.draw(true, true)
       }
