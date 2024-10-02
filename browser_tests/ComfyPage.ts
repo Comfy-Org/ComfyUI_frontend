@@ -1107,14 +1107,10 @@ export class NodeReference {
     let clickPos: Position
     switch (position) {
       case 'title':
-<<<<<<< HEAD
         clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
         break
       case 'collapse':
         clickPos = { x: nodePos.x + 5, y: nodePos.y - 10 }
-=======
-        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y + 1 }
->>>>>>> 263f05b (Fix group node copy paste)
         break
       default:
         throw new Error(`Invalid click position ${position}`)
