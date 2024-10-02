@@ -12,6 +12,7 @@ export class ChangeTracker {
   activeState = null
   isOurLoad = false
   workflow: ComfyWorkflow | null
+  changeCount = 0
 
   ds: { scale: number; offset: [number, number] }
   nodeOutputs: any
@@ -46,7 +47,7 @@ export class ChangeTracker {
   }
 
   checkState() {
-    if (!this.app.graph) return
+    if (!this.app.graph || this.changeCount) return
 
     const currentState = this.app.graph.serialize()
     if (!this.activeState) {
@@ -97,6 +98,16 @@ export class ChangeTracker {
         await this.undo()
         return true
       }
+    }
+  }
+
+  beforeChange() {
+    this.changeCount++
+  }
+
+  afterChange() {
+    if (!--this.changeCount) {
+      this.checkState()
     }
   }
 
@@ -209,6 +220,15 @@ export class ChangeTracker {
       }
       return v
     }
+
+    // Handle multiple commands as a single transaction
+    document.addEventListener('litegraph:canvas', (e: CustomEvent) => {
+      if (e.detail.subType === 'before-change') {
+        changeTracker().beforeChange()
+      } else if (e.detail.subType === 'after-change') {
+        changeTracker().afterChange()
+      }
+    })
 
     // Store node outputs
     api.addEventListener('executed', ({ detail }) => {
