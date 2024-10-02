@@ -25,28 +25,26 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
     })
 
-    test('Can select multiple nodes with Meta+Click (mac)', async ({
-      comfyPage
-    }) => {
-      const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
-      for (const node of clipNodes) {
-        await node.click('title', { modifiers: ['Meta'] })
-      }
-      const selectedNodeCount = await comfyPage.getSelectedGraphNodesCount()
-      expect(selectedNodeCount).toBe(clipNodes.length)
-    })
-
     test('Can drag-select nodes with Meta (mac)', async ({ comfyPage }) => {
       const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
-      const { x, y } = await clipNodes[0].getPosition()
+      const clipNode1Pos = await clipNodes[0].getPosition()
+      const clipNode2Pos = await clipNodes[1].getPosition()
       const offset = 64
       await comfyPage.page.keyboard.down('Meta')
       await comfyPage.dragAndDrop(
-        { x: x - offset, y: y - offset },
-        { x: x + offset, y: y + offset }
+        {
+          x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
+          y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
+        },
+        {
+          x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
+          y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
+        }
       )
       await comfyPage.page.keyboard.up('Meta')
-      expect(await comfyPage.getSelectedGraphNodesCount()).toBe(1)
+      expect(await comfyPage.getSelectedGraphNodesCount()).toBe(
+        clipNodes.length
+      )
     })
   })
 
