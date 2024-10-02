@@ -5,7 +5,13 @@ import { ManageGroupDialog } from './groupNodeManage'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+
+type GroupNodeWorkflowData = {
+  external: ComfyLink[]
+  links: ComfyLink[]
+  nodes: ComfyNode[]
+}
 
 const GROUP = Symbol()
 
@@ -32,7 +38,7 @@ const Workflow = {
     }
     return Workflow.InUse.Free
   },
-  storeGroupNode(name, data) {
+  storeGroupNode(name: string, data: GroupNodeWorkflowData) {
     let extra = app.graph.extra
     if (!extra) app.graph.extra = extra = {}
     let groupNodes = extra.groupNodes
@@ -649,16 +655,6 @@ export class GroupNodeConfig {
   }
 
   static async registerFromWorkflow(groupNodes, missingNodeTypes) {
-    const clean = app.clean
-    app.clean = function () {
-      for (const g in groupNodes) {
-        try {
-          LiteGraph.unregisterNodeType(`${PREFIX}${SEPARATOR}` + g)
-        } catch (error) {}
-      }
-      app.clean = clean
-    }
-
     for (const g in groupNodes) {
       const groupData = groupNodes[g]
 
@@ -1482,6 +1478,11 @@ const ext = {
   nodeCreated(node) {
     if (GroupNodeHandler.isGroupNode(node)) {
       node[GROUP] = new GroupNodeHandler(node)
+
+      // Ensure group nodes pasted from other workflows are stored
+      if (node.title && node[GROUP]?.groupData?.nodeData) {
+        Workflow.storeGroupNode(node.title, node[GROUP].groupData.nodeData)
+      }
     }
   },
   async refreshComboInNodes(defs) {
