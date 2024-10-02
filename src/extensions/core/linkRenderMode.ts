@@ -10,15 +10,15 @@ const ext = {
       name: 'Link Render Mode',
       defaultValue: 2,
       type: 'combo',
-      // @ts-expect-error
-      options: [...LiteGraph.LINK_RENDER_MODES, 'Hidden'].map((m, i) => ({
-        value: i,
-        text: m,
-        selected: i == app.canvas.links_render_mode
-      })),
-      onChange(value) {
+      options: [
+        { value: LiteGraph.STRAIGHT_LINK, text: 'Straight' },
+        { value: LiteGraph.LINEAR_LINK, text: 'Linear' },
+        { value: LiteGraph.SPLINE_LINK, text: 'Spline' },
+        { value: LiteGraph.HIDDEN_LINK, text: 'Hidden' }
+      ],
+      onChange(value: number) {
         app.canvas.links_render_mode = +value
-        app.graph.setDirtyCanvas(true)
+        app.canvas.setDirty(/* fg */ false, /* bg */ true)
       }
     })
   }

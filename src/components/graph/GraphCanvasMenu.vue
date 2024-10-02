@@ -38,6 +38,16 @@
         <i-simple-line-icons:cursor v-else />
       </template>
     </Button>
+    <Button
+      severity="secondary"
+      :icon="linkHidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
+      v-tooltip.left="t('graphCanvasMenu.toggleLinkVisibility')"
+      @click="
+        () =>
+          commandStore.getCommandFunction('Comfy.Canvas.ToggleLinkVisibility')()
+      "
+      data-testid="toggle-link-visibility-button"
+    />
   </ButtonGroup>
 </template>
 
@@ -46,11 +56,19 @@ import ButtonGroup from 'primevue/buttongroup'
 import Button from 'primevue/button'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useI18n } from 'vue-i18n'
+import { LiteGraph } from '@comfyorg/litegraph'
+import { computed } from 'vue'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
+const settingStore = useSettingStore()
+
+const linkHidden = computed(
+  () => settingStore.get('Comfy.LinkRenderMode') === LiteGraph.HIDDEN_LINK
+)
 
 let interval: number | null = null
 const repeat = (command: string) => {
