@@ -200,6 +200,16 @@ export class ChangeTracker {
       return v
     }
 
+    // Handle litegraph dialog popup for number/string widgets
+    const prompt = LGraphCanvas.prototype.prompt
+    LGraphCanvas.prototype.prompt = function (title, value, callback, event) {
+      const extendedCallback = (v) => {
+        callback(v)
+        changeTracker().checkState()
+      }
+      return prompt.apply(this, [title, value, extendedCallback, event])
+    }
+
     // Handle litegraph context menu for COMBO widgets
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e) {
