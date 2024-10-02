@@ -46,6 +46,7 @@
         () =>
           commandStore.getCommandFunction('Comfy.Canvas.ToggleLinkVisibility')()
       "
+      data-testid="toggle-link-visibility-button"
     />
   </ButtonGroup>
 </template>
