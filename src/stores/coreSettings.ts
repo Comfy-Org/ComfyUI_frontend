@@ -253,6 +253,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.ModelLibrary.NameFormat',
     name: 'What name to display in the model library tree view',
+    tooltip:
+      'Select "filename" to render a simplified view of the raw filename in the model list. Select "title" to display the configurable model metadata title.',
     type: 'combo',
     options: ['filename', 'title'],
     defaultValue: 'title'
