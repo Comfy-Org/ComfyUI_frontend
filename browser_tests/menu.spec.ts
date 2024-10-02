@@ -420,6 +420,43 @@ test.describe('Menu', () => {
       ])
     })
 
+    test('Can save, load, and delete workflows', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+      await tab.newBlankWorkflowButton.click()
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json',
+        '*Unsaved Workflow (2).json'
+      ])
+      await comfyPage.menu.saveWorkflow('test-save-workflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json',
+        'test-save-workflow.json'
+      ])
+      const labels = comfyPage.page.locator(
+        '.comfyui-workflows-open .node-label'
+      )
+      await labels.first().click()
+      await comfyPage.nextFrame()
+      await labels.last().click()
+      await comfyPage.nextFrame()
+      // Verify no '*' prefix on the saved one after reopening it
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json',
+        'test-save-workflow.json'
+      ])
+      await labels.last().click({ button: 'right' })
+      await comfyPage.page
+        .locator('.p-contextmenu-item-label:has-text("Delete")')
+        .click()
+      await comfyPage.nextFrame()
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+    })
+
     test('Does not report warning when switching between opened workflows', async ({
       comfyPage
     }) => {
