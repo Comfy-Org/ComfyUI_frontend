@@ -5,7 +5,7 @@
     </div>
     <div class="model_preview_top_container">
       <div class="model_preview_filename">
-        {{ modelDef.name }}
+        {{ modelDef.file_name }}
       </div>
       <div class="model_preview_architecture" v-if="modelDef.architecture_id">
         <span class="model_preview_prefix">Architecture: </span>

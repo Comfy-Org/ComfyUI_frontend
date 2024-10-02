@@ -69,7 +69,7 @@ describe('useModelStore', () => {
     const folderStore = await store.getModelsInFolderCached('checkpoints')
     const model = folderStore.models['noinfo.safetensors']
     await model.load()
-    expect(model.name).toBe('noinfo.safetensors')
+    expect(model.file_name).toBe('noinfo.safetensors')
     expect(model.title).toBe('noinfo')
     expect(model.architecture_id).toBe('')
     expect(model.author).toBe('')

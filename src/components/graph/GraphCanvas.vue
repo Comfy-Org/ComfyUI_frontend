@@ -147,7 +147,7 @@ onMounted(async () => {
               (widget) => widget.name === provider.key
             )
             if (widget) {
-              widget.value = model.name
+              widget.value = model.file_name
             }
           }
         }

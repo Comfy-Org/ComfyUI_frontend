@@ -19,11 +19,11 @@ function _findInMetadata(metadata: any, ...keys: string[]): string | null {
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Proper filename of the model */
-  name: string = ''
+  file_name: string = ''
   /** Directory containing the model, eg 'checkpoints' */
   directory: string = ''
-  /** Simplified copy of name, used as a default title */
-  simplified_name: string = ''
+  /** Simplified copy of name, used as a default title. Excludes the directory and the '.safetensors' file extension */
+  simplified_file_name: string = ''
   /** Title / display name of the model, sometimes same as the name but not always */
   title: string = ''
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
@@ -50,15 +50,15 @@ export class ComfyModelDef {
   is_fake_object: boolean = false
 
   constructor(name: string, directory: string) {
-    this.name = name
-    this.simplified_name = name.replaceAll('\\', '/').split('/').pop()
-    if (this.simplified_name.endsWith('.safetensors')) {
-      this.simplified_name = this.simplified_name.slice(
+    this.file_name = name
+    this.simplified_file_name = name.replaceAll('\\', '/').split('/').pop()
+    if (this.simplified_file_name.endsWith('.safetensors')) {
+      this.simplified_file_name = this.simplified_file_name.slice(
         0,
         -'.safetensors'.length
       )
     }
-    this.title = this.simplified_name
+    this.title = this.simplified_file_name
     this.directory = directory
   }
 
@@ -69,7 +69,7 @@ export class ComfyModelDef {
     }
     this.is_load_requested = true
     try {
-      const metadata = await api.viewMetadata(this.directory, this.name)
+      const metadata = await api.viewMetadata(this.directory, this.file_name)
       if (!metadata) {
         return
       }
@@ -111,7 +111,7 @@ export class ComfyModelDef {
       this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
       this.has_loaded_metadata = true
     } catch (error) {
-      console.error('Error loading model metadata', this.name, this, error)
+      console.error('Error loading model metadata', this.file_name, this, error)
     }
   }
 }
