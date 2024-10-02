@@ -1095,17 +1095,13 @@ export class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
-<<<<<<< HEAD
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }
-  async click(position: 'title', options?: Parameters<Page['click']>[1]) {
-=======
   async click(
     position: 'title' | 'collapse',
     options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
   ) {
->>>>>>> fcbdefc (Add tests)
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
     let clickPos: Position
