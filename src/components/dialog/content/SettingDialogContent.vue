@@ -54,6 +54,9 @@
           <TabPanel key="about" value="About">
             <AboutPanel />
           </TabPanel>
+          <TabPanel key="keybinding" value="Keybinding">
+            <KeybindingPanel />
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </div>
@@ -74,6 +77,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
+import KeybindingPanel from './setting/KeybindingPanel.vue'
 
 interface ISettingGroup {
   label: string
@@ -86,10 +90,17 @@ const aboutPanelNode: SettingTreeNode = {
   children: []
 }
 
+const keybindingPanelNode: SettingTreeNode = {
+  key: 'keybinding',
+  label: 'Keybinding',
+  children: []
+}
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
+  keybindingPanelNode,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)

@@ -53,6 +53,25 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybinding(userKeybinding.combo)).toEqual(userKeybinding)
   })
 
+  it('Should allow binding to unsetted default keybindings', () => {
+    const store = useKeybindingStore()
+    const defaultKeybinding = new KeybindingImpl({
+      commandId: 'test.command1',
+      combo: { key: 'C', ctrl: true }
+    })
+    store.addDefaultKeybinding(defaultKeybinding)
+    store.unsetKeybinding(defaultKeybinding)
+
+    const userKeybinding = new KeybindingImpl({
+      commandId: 'test.command2',
+      combo: { key: 'C', ctrl: true }
+    })
+    store.addUserKeybinding(userKeybinding)
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(userKeybinding.combo)).toEqual(userKeybinding)
+  })
+
   it('should unset user keybindings', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
@@ -118,5 +137,30 @@ describe('useKeybindingStore', () => {
     })
 
     expect(() => store.unsetKeybinding(keybinding)).toThrow()
+  })
+
+  it('should remove unset keybinding when adding back a default keybinding', () => {
+    const store = useKeybindingStore()
+    const defaultKeybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'I', ctrl: true }
+    })
+
+    // Add default keybinding
+    store.addDefaultKeybinding(defaultKeybinding)
+    expect(store.keybindings).toHaveLength(1)
+
+    // Unset the default keybinding
+    store.unsetKeybinding(defaultKeybinding)
+    expect(store.keybindings).toHaveLength(0)
+
+    // Add the same keybinding as a user keybinding
+    store.addUserKeybinding(defaultKeybinding)
+
+    // Check that the keybinding is back and not in the unset list
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(defaultKeybinding.combo)).toEqual(
+      defaultKeybinding
+    )
   })
 })

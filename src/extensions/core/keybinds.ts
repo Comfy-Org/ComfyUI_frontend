@@ -59,6 +59,6 @@ app.registerExtension({
       }
     }
 
-    window.addEventListener('keydown', keybindListener, true)
+    window.addEventListener('keydown', keybindListener)
   }
 })
