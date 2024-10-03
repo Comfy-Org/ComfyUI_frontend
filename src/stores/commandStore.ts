@@ -5,10 +5,16 @@ import { ref } from 'vue'
 import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { showTemplateWorkflowsDialog } from '@/services/dialogService'
-import { useQueueStore } from './queueStore'
+import {
+  showSettingsDialog,
+  showTemplateWorkflowsDialog
+} from '@/services/dialogService'
+import { useQueueSettingsStore, useQueueStore } from './queueStore'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { ComfyExtension } from '@/types/comfy'
+import { useWorkspaceStore } from './workspaceStateStore'
+import { LGraphGroup } from '@comfyorg/litegraph'
+import { useTitleEditorStore } from './graphStore'
 
 export interface ComfyCommand {
   id: string
@@ -231,6 +237,75 @@ export const useCommandStore = defineStore('command', () => {
           }
         }
       })()
+    },
+    {
+      id: 'Comfy.QueuePrompt',
+      icon: 'pi pi-play',
+      label: 'Queue Prompt',
+      versionAdded: '1.3.7',
+      function: () => {
+        const batchCount = useQueueSettingsStore().batchCount
+        app.queuePrompt(0, batchCount)
+      }
+    },
+    {
+      id: 'Comfy.QueuePromptFront',
+      icon: 'pi pi-play',
+      label: 'Queue Prompt (Front)',
+      versionAdded: '1.3.7',
+      function: () => {
+        const batchCount = useQueueSettingsStore().batchCount
+        app.queuePrompt(-1, batchCount)
+      }
+    },
+    {
+      id: 'Comfy.ToggleQueueSidebarTab',
+      icon: 'pi pi-history',
+      label: 'Queue',
+      versionAdded: '1.3.7',
+      function: () => {
+        const tabId = 'queue'
+        const workspaceStore = useWorkspaceStore()
+        workspaceStore.updateActiveSidebarTab(
+          workspaceStore.activeSidebarTab === tabId ? null : tabId
+        )
+      }
+    },
+    {
+      id: 'Comfy.ShowSettingsDialog',
+      icon: 'pi pi-cog',
+      label: 'Settings',
+      versionAdded: '1.3.7',
+      function: () => {
+        showSettingsDialog()
+      }
+    },
+    {
+      id: 'Comfy.Graph.GroupSelectedNodes',
+      icon: 'pi pi-sitemap',
+      label: 'Group Selected Nodes',
+      versionAdded: '1.3.7',
+      function: () => {
+        if (
+          !app.canvas.selected_nodes ||
+          Object.keys(app.canvas.selected_nodes).length === 0
+        ) {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'No nodes selected',
+            detail: 'Please select nodes to group',
+            life: 3000
+          })
+          return
+        }
+        const group = new LGraphGroup()
+        const padding = useSettingStore().get(
+          'Comfy.GroupSelectedNodes.Padding'
+        )
+        group.addNodes(Object.values(app.canvas.selected_nodes), padding)
+        app.canvas.graph.add(group)
+        useTitleEditorStore().titleEditorTarget = group
+      }
     }
   ]
 
