@@ -316,6 +316,7 @@ span.drag-handle {
   letter-spacing: 2px;
   color: var(--drag-text);
   text-shadow: 1px 0 1px black;
+  touch-action: none;
 }
 
 span.drag-handle::after {

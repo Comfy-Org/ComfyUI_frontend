@@ -18,6 +18,9 @@ def download_and_extract(version, temp_dir):
 
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(temp_dir)
+
+        # Clean up the zip file after extraction
+        os.remove(zip_path)
     else:
         raise Exception(
             f"Failed to download release asset. Status code: {response.status_code}"

@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { ComfyPage, NodeReference, comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Group Node', () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -147,5 +147,109 @@ test.describe('Group Node', () => {
     await comfyPage.loadWorkflow('legacy_group_node')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
     expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+  })
+
+  test.describe('Copy and paste', () => {
+    let groupNode: NodeReference | null
+    const WORKFLOW_NAME = 'group_node_v1.3.3'
+    const GROUP_NODE_CATEGORY = 'group nodes>workflow'
+    const GROUP_NODE_PREFIX = 'workflow>'
+    const GROUP_NODE_NAME = 'group_node' // Node name in given workflow
+    const GROUP_NODE_TYPE = `${GROUP_NODE_PREFIX}${GROUP_NODE_NAME}`
+
+    const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
+      return await comfyPage.page.evaluate((nodeType: string) => {
+        return !!window['LiteGraph'].registered_node_types[nodeType]
+      }, GROUP_NODE_TYPE)
+    }
+
+    const isRegisteredNodeDefStore = async (comfyPage: ComfyPage) => {
+      const groupNodesFolderCt = await comfyPage.menu.nodeLibraryTab
+        .getFolder(GROUP_NODE_CATEGORY)
+        .count()
+      return groupNodesFolderCt === 1
+    }
+
+    const verifyNodeLoaded = async (
+      comfyPage: ComfyPage,
+      expectedCount: number
+    ) => {
+      expect(await comfyPage.getNodeRefsByType(GROUP_NODE_TYPE)).toHaveLength(
+        expectedCount
+      )
+      expect(await isRegisteredLitegraph(comfyPage)).toBe(true)
+      expect(await isRegisteredNodeDefStore(comfyPage)).toBe(true)
+    }
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+      await comfyPage.loadWorkflow(WORKFLOW_NAME)
+      await comfyPage.menu.nodeLibraryTab.open()
+
+      groupNode = await comfyPage.getFirstNodeRef()
+      if (!groupNode)
+        throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
+      await groupNode.copy()
+    })
+
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.page.evaluate((groupNodeName) => {
+        window['LiteGraph'].unregisterNodeType(groupNodeName)
+      }, GROUP_NODE_TYPE)
+    })
+
+    test('Copies and pastes group node within the same workflow', async ({
+      comfyPage
+    }) => {
+      await comfyPage.ctrlV()
+      await verifyNodeLoaded(comfyPage, 2)
+    })
+
+    test('Copies and pastes group node after clearing workflow', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.triggerTopbarCommand([
+        'Edit',
+        'Clear Workflow'
+      ])
+      await comfyPage.ctrlV()
+      await verifyNodeLoaded(comfyPage, 1)
+    })
+
+    test('Copies and pastes group node into a newly created blank workflow', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.ctrlV()
+      await verifyNodeLoaded(comfyPage, 1)
+    })
+
+    test('Copies and pastes group node across different workflows', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('default')
+      await comfyPage.ctrlV()
+      await verifyNodeLoaded(comfyPage, 1)
+    })
+
+    test('Serializes group node after copy and paste across workflows', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.ctrlV()
+      const currentGraphState = await comfyPage.page.evaluate(() =>
+        window['app'].graph.serialize()
+      )
+
+      await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
+        await comfyPage.page.evaluate(
+          (workflow) => window['app'].loadGraphData(workflow),
+          currentGraphState
+        )
+        await comfyPage.nextFrame()
+        await verifyNodeLoaded(comfyPage, 1)
+      })
+    })
   })
 })

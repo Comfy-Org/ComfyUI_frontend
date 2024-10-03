@@ -406,7 +406,13 @@ export class ComfyWorkflow {
 
     if (!this.path) {
       // Saved new workflow, patch this instance
+      const oldKey = this.key
       this.updatePath(path, null)
+
+      // Update workflowLookup: change the key from the old unsaved path to the new saved path
+      delete this.manager.workflowStore.workflowLookup[oldKey]
+      this.manager.workflowStore.workflowLookup[this.key] = this
+
       await this.manager.loadWorkflows()
       this.unsaved = false
       this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))

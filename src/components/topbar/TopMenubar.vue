@@ -6,7 +6,7 @@
         :model="items"
         class="top-menubar border-none p-0 bg-transparent"
         :pt="{
-          rootList: 'gap-0 flex-nowrap'
+          rootList: 'gap-0 flex-nowrap w-auto'
         }"
       />
       <Divider layout="vertical" class="mx-2" />

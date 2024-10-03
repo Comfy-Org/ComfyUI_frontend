@@ -11,12 +11,41 @@ test.describe('Node Interaction', () => {
     await expect(textBox).toHaveValue('Hello World 2')
   })
 
-  test('Can highlight selected', async ({ comfyPage }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('default.png')
-    await comfyPage.clickTextEncodeNode1()
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
-    await comfyPage.clickTextEncodeNode2()
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
+  test.describe('Node Selection', () => {
+    test.afterEach(async ({ comfyPage }) => {
+      // Deselect all nodes
+      await comfyPage.clickEmptySpace()
+    })
+
+    test('Can highlight selected', async ({ comfyPage }) => {
+      await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+      await comfyPage.clickTextEncodeNode1()
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-node1.png')
+      await comfyPage.clickTextEncodeNode2()
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-node2.png')
+    })
+
+    test('Can drag-select nodes with Meta (mac)', async ({ comfyPage }) => {
+      const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+      const clipNode1Pos = await clipNodes[0].getPosition()
+      const clipNode2Pos = await clipNodes[1].getPosition()
+      const offset = 64
+      await comfyPage.page.keyboard.down('Meta')
+      await comfyPage.dragAndDrop(
+        {
+          x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
+          y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
+        },
+        {
+          x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
+          y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
+        }
+      )
+      await comfyPage.page.keyboard.up('Meta')
+      expect(await comfyPage.getSelectedGraphNodesCount()).toBe(
+        clipNodes.length
+      )
+    })
   })
 
   test('Can drag node', async ({ comfyPage }) => {
@@ -347,6 +376,52 @@ test.describe('Canvas Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('panned.png')
   })
 
+  test('Cursor style changes when panning', async ({ comfyPage }) => {
+    const getCursorStyle = async () => {
+      return await comfyPage.page.evaluate(() => {
+        return (
+          document.getElementById('graph-canvas')!.style.cursor || 'default'
+        )
+      })
+    }
+
+    await comfyPage.page.mouse.move(10, 10)
+    expect(await getCursorStyle()).toBe('default')
+    await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+    await comfyPage.page.mouse.up()
+    expect(await getCursorStyle()).toBe('default')
+
+    await comfyPage.page.keyboard.down('Space')
+    expect(await getCursorStyle()).toBe('grab')
+    await comfyPage.page.mouse.down()
+    expect(await getCursorStyle()).toBe('grabbing')
+    await comfyPage.page.mouse.up()
+    expect(await getCursorStyle()).toBe('grab')
+    await comfyPage.page.keyboard.up('Space')
+    expect(await getCursorStyle()).toBe('default')
+  })
+
+  test('Can pan when dragging a link', async ({ comfyPage }) => {
+    const posSlot1 = comfyPage.clipTextEncodeNode1InputSlot
+    await comfyPage.page.mouse.move(posSlot1.x, posSlot1.y)
+    await comfyPage.page.mouse.down()
+    const posEmpty = comfyPage.emptySpace
+    await comfyPage.page.mouse.move(posEmpty.x, posEmpty.y)
+    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link1.png')
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(posEmpty.x + 100, posEmpty.y + 100)
+    // Canvas should be panned.
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'panning-when-dragging-link.png'
+    )
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(posEmpty.x, posEmpty.y)
+    // Should be back to dragging link mode when space is released.
+    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link2.png')
+    await comfyPage.page.mouse.up()
+  })
+
   test('Can pan very far and back', async ({ comfyPage }) => {
     // intentionally slice the edge of where the clip text encode dom widgets are
     await comfyPage.pan({ x: -800, y: -300 }, { x: 1000, y: 10 })
@@ -420,5 +495,17 @@ test.describe('Load duplicate workflow', () => {
     await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
     await comfyPage.loadWorkflow('single_ksampler')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
+  })
+})
+
+test.describe('Menu interactions', () => {
+  test('Can open settings with hotkey', async ({ comfyPage }) => {
+    await comfyPage.page.keyboard.down('ControlOrMeta')
+    await comfyPage.page.keyboard.press(',')
+    await comfyPage.page.keyboard.up('ControlOrMeta')
+    const settingsLocator = comfyPage.page.locator('.settings-container')
+    await expect(settingsLocator).toBeVisible()
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(settingsLocator).not.toBeVisible()
   })
 })

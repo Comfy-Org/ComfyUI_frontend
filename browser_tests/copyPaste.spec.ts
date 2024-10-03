@@ -86,4 +86,23 @@ test.describe('Copy Paste', () => {
     await comfyPage.page.keyboard.up('Alt')
     await expect(comfyPage.canvas).toHaveScreenshot('drag-copy-copied-node.png')
   })
+
+  test('Can undo paste multiple nodes as single action', async ({
+    comfyPage
+  }) => {
+    const initialCount = await comfyPage.getGraphNodesCount()
+    expect(initialCount).toBeGreaterThan(1)
+    await comfyPage.canvas.click()
+    await comfyPage.ctrlA()
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.ctrlC()
+    await comfyPage.ctrlV()
+
+    const pasteCount = await comfyPage.getGraphNodesCount()
+    expect(pasteCount).toBe(initialCount * 2)
+
+    await comfyPage.ctrlZ()
+    const undoCount = await comfyPage.getGraphNodesCount()
+    expect(undoCount).toBe(initialCount)
+  })
 })

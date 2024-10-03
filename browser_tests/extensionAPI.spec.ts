@@ -29,4 +29,32 @@ test.describe('Topbar commands', () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo'])
     expect(await comfyPage.page.evaluate(() => window['foo'])).toBe(true)
   })
+
+  test('Should allow registering keybindings', async ({ comfyPage }) => {
+    await comfyPage.page.evaluate(() => {
+      const app = window['app']
+      app.registerExtension({
+        name: 'TestExtension1',
+        commands: [
+          {
+            id: 'TestCommand',
+            function: () => {
+              window['TestCommand'] = true
+            }
+          }
+        ],
+        keybindings: [
+          {
+            combo: { key: 'k' },
+            commandId: 'TestCommand'
+          }
+        ]
+      })
+    })
+
+    await comfyPage.page.keyboard.press('k')
+    expect(await comfyPage.page.evaluate(() => window['TestCommand'])).toBe(
+      true
+    )
+  })
 })

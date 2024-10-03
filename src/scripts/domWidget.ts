@@ -354,7 +354,8 @@ LGraphNode.prototype.addDOMWidget = function (
         width: `${widgetWidth - margin * 2}px`,
         height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
         position: 'absolute',
-        zIndex: app.graph.nodes.indexOf(node)
+        zIndex: app.graph.nodes.indexOf(node),
+        pointerEvents: app.canvas.read_only ? 'none' : 'auto'
       })
 
       if (enableDomClipping) {

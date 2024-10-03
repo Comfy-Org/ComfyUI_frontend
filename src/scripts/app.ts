@@ -52,6 +52,9 @@ import { ModelStore, useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { IWidget } from '@comfyorg/litegraph'
+import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -134,6 +137,7 @@ export class ComfyApp {
   bodyBottom: HTMLElement
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
+  bypassBgColor: string
 
   // @deprecated
   // Use useExecutionStore().executingNodeId instead
@@ -154,6 +158,7 @@ export class ComfyApp {
       parent: document.body
     })
     this.menu = new ComfyAppMenu(this)
+    this.bypassBgColor = '#FF00FF'
 
     /**
      * List of extensions that are registered with the app
@@ -1565,7 +1570,7 @@ export class ComfyApp {
       // @ts-expect-error
       if (node.mode === 4) {
         // never
-        bgColor = '#FF00FF'
+        bgColor = app.bypassBgColor
         this.editor_alpha = 0.2
       } else {
         bgColor = old_bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
@@ -1692,6 +1697,52 @@ export class ComfyApp {
         app.configuringGraph = false
       }
     }
+  }
+
+  #addWidgetLinkHandling() {
+    app.canvas.getWidgetLinkType = function (widget, node) {
+      const nodeDefStore = useNodeDefStore()
+      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const input = nodeDef.input.getInput(widget.name)
+      return input?.type
+    }
+
+    type ConnectingWidgetLink = {
+      subType: 'connectingWidgetLink'
+      widget: IWidget
+      node: LGraphNode
+      link: { node: LGraphNode; slot: number }
+    }
+
+    document.addEventListener(
+      'litegraph:canvas',
+      async (e: CustomEvent<ConnectingWidgetLink>) => {
+        if (e.detail.subType === 'connectingWidgetLink') {
+          const { convertToInput } = await import(
+            '@/extensions/core/widgetInputs'
+          )
+
+          const { node, link, widget } = e.detail
+          if (!node || !link || !widget) return
+
+          const nodeData = node.constructor.nodeData
+          if (!nodeData) return
+          const all = {
+            ...nodeData?.input?.required,
+            ...nodeData?.input?.optional
+          }
+          const inputSpec = all[widget.name]
+          if (!inputSpec) return
+
+          const input = convertToInput(node, widget, inputSpec)
+          if (!input) return
+
+          const originNode = link.node
+
+          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
+        }
+      }
+    )
   }
 
   #addAfterConfigureHandler() {
@@ -1915,6 +1966,7 @@ export class ComfyApp {
     this.#addCopyHandler()
     this.#addPasteHandler()
     this.#addKeyboardHandler()
+    this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
   }
@@ -2901,6 +2953,10 @@ export class ComfyApp {
     if (this.extensions.find((ext) => ext.name === extension.name)) {
       throw new Error(`Extension named '${extension.name}' already registered.`)
     }
+    if (this.vueAppReady) {
+      useKeybindingStore().loadExtensionKeybindings(extension)
+      useCommandStore().loadExtensionCommands(extension)
+    }
     this.extensions.push(extension)
   }
 
@@ -2939,15 +2995,6 @@ export class ComfyApp {
           def['input']['required'][widget.name] !== undefined
         ) {
           widget.options.values = def['input']['required'][widget.name][0]
-
-          if (
-            widget.name != 'image' &&
-            !widget.options.values.includes(widget.value)
-          ) {
-            widget.value = widget.options.values[0]
-            // @ts-expect-error
-            widget.callback(widget.value)
-          }
         }
       }
     }

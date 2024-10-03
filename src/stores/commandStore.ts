@@ -5,8 +5,16 @@ import { ref } from 'vue'
 import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { showTemplateWorkflowsDialog } from '@/services/dialogService'
-import { useQueueStore } from './queueStore'
+import {
+  showSettingsDialog,
+  showTemplateWorkflowsDialog
+} from '@/services/dialogService'
+import { useQueueSettingsStore, useQueueStore } from './queueStore'
+import { LiteGraph } from '@comfyorg/litegraph'
+import { ComfyExtension } from '@/types/comfy'
+import { useWorkspaceStore } from './workspaceStateStore'
+import { LGraphGroup } from '@comfyorg/litegraph'
+import { useTitleEditorStore } from './graphStore'
 
 export interface ComfyCommand {
   id: string
@@ -15,7 +23,7 @@ export interface ComfyCommand {
   label?: string | (() => string)
   icon?: string | (() => string)
   tooltip?: string | (() => string)
-  shortcut?: string
+  versionAdded?: string
 }
 
 const getTracker = () =>
@@ -124,7 +132,7 @@ export const useCommandStore = defineStore('command', () => {
       }
     },
     {
-      id: 'Comfy.ResetView',
+      id: 'Comfy.Canvas.ResetView',
       icon: 'pi pi-expand',
       label: 'Reset View',
       function: () => {
@@ -180,6 +188,124 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
       function: showTemplateWorkflowsDialog
+    },
+    {
+      id: 'Comfy.Canvas.ZoomIn',
+      icon: 'pi pi-plus',
+      label: 'Zoom In',
+      function: () => {
+        app.canvas.ds.changeScale(app.canvas.ds.scale + 0.1)
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ZoomOut',
+      icon: 'pi pi-minus',
+      label: 'Zoom Out',
+      function: () => {
+        app.canvas.ds.changeScale(app.canvas.ds.scale - 0.1)
+        app.canvas.setDirty(true, true)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleLock',
+      icon: 'pi pi-lock',
+      label: 'Toggle Lock',
+      function: () => {
+        app.canvas['read_only'] = !app.canvas['read_only']
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleLinkVisibility',
+      icon: 'pi pi-eye',
+      label: 'Toggle Link Visibility',
+      versionAdded: '1.3.6',
+
+      function: (() => {
+        let lastLinksRenderMode = LiteGraph.SPLINE_LINK
+
+        return () => {
+          const currentMode = settingStore.get('Comfy.LinkRenderMode')
+
+          if (currentMode === LiteGraph.HIDDEN_LINK) {
+            // If links are hidden, restore the last positive value or default to spline mode
+            settingStore.set('Comfy.LinkRenderMode', lastLinksRenderMode)
+          } else {
+            // If links are visible, store the current mode and hide links
+            lastLinksRenderMode = currentMode
+            settingStore.set('Comfy.LinkRenderMode', LiteGraph.HIDDEN_LINK)
+          }
+        }
+      })()
+    },
+    {
+      id: 'Comfy.QueuePrompt',
+      icon: 'pi pi-play',
+      label: 'Queue Prompt',
+      versionAdded: '1.3.7',
+      function: () => {
+        const batchCount = useQueueSettingsStore().batchCount
+        app.queuePrompt(0, batchCount)
+      }
+    },
+    {
+      id: 'Comfy.QueuePromptFront',
+      icon: 'pi pi-play',
+      label: 'Queue Prompt (Front)',
+      versionAdded: '1.3.7',
+      function: () => {
+        const batchCount = useQueueSettingsStore().batchCount
+        app.queuePrompt(-1, batchCount)
+      }
+    },
+    {
+      id: 'Comfy.ToggleQueueSidebarTab',
+      icon: 'pi pi-history',
+      label: 'Queue',
+      versionAdded: '1.3.7',
+      function: () => {
+        const tabId = 'queue'
+        const workspaceStore = useWorkspaceStore()
+        workspaceStore.updateActiveSidebarTab(
+          workspaceStore.activeSidebarTab === tabId ? null : tabId
+        )
+      }
+    },
+    {
+      id: 'Comfy.ShowSettingsDialog',
+      icon: 'pi pi-cog',
+      label: 'Settings',
+      versionAdded: '1.3.7',
+      function: () => {
+        showSettingsDialog()
+      }
+    },
+    {
+      id: 'Comfy.Graph.GroupSelectedNodes',
+      icon: 'pi pi-sitemap',
+      label: 'Group Selected Nodes',
+      versionAdded: '1.3.7',
+      function: () => {
+        if (
+          !app.canvas.selected_nodes ||
+          Object.keys(app.canvas.selected_nodes).length === 0
+        ) {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'No nodes selected',
+            detail: 'Please select nodes to group',
+            life: 3000
+          })
+          return
+        }
+        const group = new LGraphGroup()
+        const padding = useSettingStore().get(
+          'Comfy.GroupSelectedNodes.Padding'
+        )
+        group.addNodes(Object.values(app.canvas.selected_nodes), padding)
+        app.canvas.graph.add(group)
+        useTitleEditorStore().titleEditorTarget = group
+      }
     }
   ]
 
@@ -196,10 +322,19 @@ export const useCommandStore = defineStore('command', () => {
     return !!commands.value[command]
   }
 
+  const loadExtensionCommands = (extension: ComfyExtension) => {
+    if (extension.commands) {
+      for (const command of extension.commands) {
+        registerCommand(command)
+      }
+    }
+  }
+
   return {
     getCommand,
     getCommandFunction,
     registerCommand,
-    isRegistered
+    isRegistered,
+    loadExtensionCommands
   }
 })

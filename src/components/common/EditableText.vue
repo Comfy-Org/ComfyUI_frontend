@@ -73,7 +73,7 @@ const vFocus = {
 
 <style scoped>
 .editable-text {
-  display: inline-block;
+  display: inline;
 }
 .editable-text input {
   width: 100%;

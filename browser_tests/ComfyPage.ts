@@ -6,7 +6,8 @@ import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
 import { NodeBadgeMode } from '../src/types/nodeSource'
-import { NodeId } from '../src/types/comfyWorkflow'
+import type { NodeId } from '../src/types/comfyWorkflow'
+import type { KeyCombo } from '../src/types/keyBindingTypes'
 import { ManageGroupNode } from './helpers/manageGroupNode'
 import { ComfyTemplates } from './helpers/templates'
 
@@ -230,6 +231,38 @@ class Topbar {
       .allInnerTexts()
   }
 
+  async openSubmenuMobile() {
+    await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
+  }
+
+  async getMenuItem(itemLabel: string): Promise<Locator> {
+    return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
+  }
+
+  async getWorkflowTab(tabName: string): Promise<Locator> {
+    return this.page
+      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
+      .locator('..')
+  }
+
+  async closeWorkflowTab(tabName: string) {
+    const tab = await this.getWorkflowTab(tabName)
+    await tab.locator('.close-button').click({ force: true })
+  }
+
+  async saveWorkflow(workflowName: string) {
+    this.page.on('dialog', async (dialog) => {
+      await dialog.accept(workflowName)
+    })
+    const workflowMenuItem = await this.getMenuItem('Workflow')
+    workflowMenuItem.click()
+    await this.page.evaluate(() => {
+      return new Promise<number>(requestAnimationFrame)
+    })
+    const saveButton = await this.getMenuItem('Save')
+    await saveButton.click()
+  }
+
   async triggerTopbarCommand(path: string[]) {
     if (path.length < 2) {
       throw new Error('Path is too short')
@@ -237,7 +270,7 @@ class Topbar {
 
     const tabName = path[0]
     const topLevelMenu = this.page.locator(
-      `.top-menubar .p-menubar-item:has-text("${tabName}")`
+      `.top-menubar .p-menubar-item-label:text-is("${tabName}")`
     )
     await topLevelMenu.waitFor({ state: 'visible' })
     await topLevelMenu.click()
@@ -381,6 +414,16 @@ export class ComfyPage {
     })
   }
 
+  async getSelectedGraphNodesCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return (
+        window['app']?.graph?.nodes?.filter(
+          (node: any) => node.is_selected === true
+        ).length || 0
+      )
+    })
+  }
+
   async setupWorkflowsDirectory(structure: FolderStructure) {
     const resp = await this.request.post(
       `${this.url}/api/devtools/setup_folder_structure`,
@@ -438,10 +481,40 @@ export class ComfyPage {
       'Comfy.NodeBadge.NodeSourceBadgeMode',
       NodeBadgeMode.None
     )
+    // Hide canvas menu by default.
+    await this.setSetting('Comfy.Graph.CanvasMenu', false)
   }
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
+  }
+
+  async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
+    await this.page.evaluate(
+      ({ keyCombo, commandStr }) => {
+        const app = window['app']
+        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const extensionName = `TestExtension_${randomSuffix}`
+        const commandId = `TestCommand_${randomSuffix}`
+
+        app.registerExtension({
+          name: extensionName,
+          keybindings: [
+            {
+              combo: keyCombo,
+              commandId: commandId
+            }
+          ],
+          commands: [
+            {
+              id: commandId,
+              function: eval(commandStr)
+            }
+          ]
+        })
+      },
+      { keyCombo, commandStr: command.toString() }
+    )
   }
 
   async setSetting(settingId: string, settingValue: any) {
@@ -640,9 +713,10 @@ export class ComfyPage {
         y: 645
       }
     })
-    await page.locator('input[type="text"]').click()
-    await page.locator('input[type="text"]').fill('128')
-    await page.locator('input[type="text"]').press('Enter')
+    const dialogInput = page.locator('.graphdialog input[type="text"]')
+    await dialogInput.click()
+    await dialogInput.fill('128')
+    await dialogInput.press('Enter')
     await this.nextFrame()
   }
 
@@ -726,46 +800,43 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async ctrlC() {
+  async ctrlSend(keyToPress: string) {
     await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyC')
+    await this.page.keyboard.press(keyToPress)
     await this.page.keyboard.up('Control')
     await this.nextFrame()
+  }
+
+  async ctrlA() {
+    await this.ctrlSend('KeyA')
+  }
+
+  async ctrlB() {
+    await this.ctrlSend('KeyB')
+  }
+
+  async ctrlC() {
+    await this.ctrlSend('KeyC')
   }
 
   async ctrlV() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyV')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyV')
   }
 
   async ctrlZ() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyZ')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyZ')
   }
 
   async ctrlY() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('KeyY')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('KeyY')
   }
 
   async ctrlArrowUp() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('ArrowUp')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('ArrowUp')
   }
 
   async ctrlArrowDown() {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press('ArrowDown')
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    await this.ctrlSend('ArrowDown')
   }
 
   async closeMenu() {
@@ -879,13 +950,15 @@ export class ComfyPage {
     return new NodeReference(id, this)
   }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
-    return (
-      await this.page.evaluate((type) => {
-        return window['app'].graph.nodes
-          .filter((n) => n.type === type)
-          .map((n) => n.id)
-      }, type)
-    ).map((id: NodeId) => this.getNodeRefById(id))
+    return Promise.all(
+      (
+        await this.page.evaluate((type) => {
+          return window['app'].graph.nodes
+            .filter((n) => n.type === type)
+            .map((n) => n.id)
+        }, type)
+      ).map((id: NodeId) => this.getNodeRefById(id))
+    )
   }
   async getFirstNodeRef(): Promise<NodeReference | null> {
     const id = await this.page.evaluate(() => {
@@ -894,8 +967,12 @@ export class ComfyPage {
     if (!id) return null
     return this.getNodeRefById(id)
   }
+  async moveMouseToEmptyArea() {
+    await this.page.mouse.move(10, 10)
+  }
 }
-class NodeSlotReference {
+
+export class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -945,7 +1022,37 @@ class NodeSlotReference {
     )
   }
 }
-class NodeReference {
+
+export class NodeWidgetReference {
+  constructor(
+    readonly index: number,
+    readonly node: NodeReference
+  ) {}
+
+  async getPosition(): Promise<Position> {
+    const pos: [number, number] = await this.node.comfyPage.page.evaluate(
+      ([id, index]) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const widget = node.widgets[index]
+        if (!widget) throw new Error(`Widget ${index} not found.`)
+
+        const [x, y, w, h] = node.getBounding()
+        return window['app'].canvas.ds.convertOffsetToCanvas([
+          x + w / 2,
+          y + window['LiteGraph']['NODE_TITLE_HEIGHT'] + widget.last_y + 1
+        ])
+      },
+      [this.node.id, this.index] as const
+    )
+    return {
+      x: pos[0],
+      y: pos[1]
+    }
+  }
+}
+
+export class NodeReference {
   constructor(
     readonly id: NodeId,
     readonly comfyPage: ComfyPage
@@ -968,12 +1075,38 @@ class NodeReference {
       y: pos[1]
     }
   }
+  async getBounding(): Promise<Position & Size> {
+    const [x, y, width, height]: [number, number, number, number] =
+      await this.comfyPage.page.evaluate((id) => {
+        const node = window['app'].graph.getNodeById(id)
+        if (!node) throw new Error('Node not found')
+        return node.getBounding()
+      }, this.id)
+    return {
+      x,
+      y,
+      width,
+      height
+    }
+  }
   async getSize(): Promise<Size> {
     const size = await this.getProperty<[number, number]>('size')
     return {
       width: size[0],
       height: size[1]
     }
+  }
+  async getFlags(): Promise<{ collapsed?: boolean; pinned?: boolean }> {
+    return await this.getProperty('flags')
+  }
+  async isPinned() {
+    return !!(await this.getFlags()).pinned
+  }
+  async isCollapsed() {
+    return !!(await this.getFlags()).collapsed
+  }
+  async isBypassed() {
+    return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
   async getProperty<T>(prop: string): Promise<T> {
     return await this.comfyPage.page.evaluate(
@@ -991,22 +1124,58 @@ class NodeReference {
   async getInput(index: number) {
     return new NodeSlotReference('input', index, this)
   }
-  async click(position: 'title', options?: Parameters<Page['click']>[1]) {
+  async getWidget(index: number) {
+    return new NodeWidgetReference(index, this)
+  }
+  async click(
+    position: 'title' | 'collapse',
+    options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
+  ) {
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
     let clickPos: Position
     switch (position) {
       case 'title':
-        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y + 15 }
+        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
+        break
+      case 'collapse':
+        clickPos = { x: nodePos.x + 5, y: nodePos.y - 10 }
         break
       default:
         throw new Error(`Invalid click position ${position}`)
     }
+
+    const moveMouseToEmptyArea = options?.moveMouseToEmptyArea
+    if (options) {
+      delete options.moveMouseToEmptyArea
+    }
+
     await this.comfyPage.canvas.click({
       ...options,
       position: clickPos
     })
     await this.comfyPage.nextFrame()
+    if (moveMouseToEmptyArea) {
+      await this.comfyPage.moveMouseToEmptyArea()
+    }
+  }
+  async copy() {
+    await this.click('title')
+    await this.comfyPage.ctrlC()
+    await this.comfyPage.nextFrame()
+  }
+  async connectWidget(
+    originSlotIndex: number,
+    targetNode: NodeReference,
+    targetWidgetIndex: number
+  ) {
+    const originSlot = await this.getOutput(originSlotIndex)
+    const targetWidget = await targetNode.getWidget(targetWidgetIndex)
+    await this.comfyPage.dragAndDrop(
+      await originSlot.getPosition(),
+      await targetWidget.getPosition()
+    )
+    return originSlot
   }
   async connectOutput(
     originSlotIndex: number,
@@ -1056,4 +1225,36 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     await comfyPage.setup()
     await use(comfyPage)
   }
+})
+
+const makeMatcher = function <T>(
+  getValue: (node: NodeReference) => Promise<T> | T,
+  type: string
+) {
+  return async function (
+    node: NodeReference,
+    options?: { timeout?: number; intervals?: number[] }
+  ) {
+    const value = await getValue(node)
+    let assertion = expect(
+      value,
+      'Node is ' + (this.isNot ? '' : 'not ') + type
+    )
+    if (this.isNot) {
+      assertion = assertion.not
+    }
+    await expect(async () => {
+      assertion.toBeTruthy()
+    }).toPass({ timeout: 250, ...options })
+    return {
+      pass: !this.isNot,
+      message: () => 'Node is ' + (this.isNot ? 'not ' : '') + type
+    }
+  }
+}
+
+export const comfyExpect = expect.extend({
+  toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
+  toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
+  toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed')
 })

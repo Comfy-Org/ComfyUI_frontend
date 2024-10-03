@@ -90,6 +90,7 @@ const showPreview = computed(() => {
     !modelDef.value.is_fake_object &&
     modelDef.value.has_loaded_metadata &&
     (modelDef.value.author ||
+      modelDef.value.simplified_file_name != modelDef.value.title ||
       modelDef.value.description ||
       modelDef.value.usage_hint ||
       modelDef.value.trigger_phrase ||

@@ -1,55 +1,38 @@
 import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
-import { useToastStore } from '@/stores/toastStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 app.registerExtension({
   name: 'Comfy.Keybinds',
   init() {
-    const keybindListener = async function (event) {
-      const modifierPressed = event.ctrlKey || event.metaKey
+    const keybindListener = async function (event: KeyboardEvent) {
+      // Ignore keybindings for legacy jest tests as jest tests don't have
+      // a Vue app instance or pinia stores.
+      if (!app.vueAppReady) return
 
-      // Queue prompt using (ctrl or command) + enter
-      if (modifierPressed && event.key === 'Enter') {
-        // Cancel current prompt using (ctrl or command) + alt + enter
-        if (event.altKey) {
-          await api.interrupt()
-          useToastStore().add({
-            severity: 'info',
-            summary: 'Interrupted',
-            detail: 'Execution has been interrupted',
-            life: 1000
-          })
-          return
-        }
-        // Queue prompt as first for generation using (ctrl or command) + shift + enter
-        app.queuePrompt(event.shiftKey ? -1 : 0).then()
+      const keyCombo = KeyComboImpl.fromEvent(event)
+      if (keyCombo.isModifier) {
         return
       }
 
-      const target = event.composedPath()[0]
+      // Ignore non-modifier keybindings if typing in input fields
+      const target = event.composedPath()[0] as HTMLElement
       if (
-        target.tagName === 'TEXTAREA' ||
-        target.tagName === 'INPUT' ||
-        (target.tagName === 'SPAN' &&
-          target.classList.contains('property_value'))
+        !keyCombo.hasModifier &&
+        (target.tagName === 'TEXTAREA' ||
+          target.tagName === 'INPUT' ||
+          (target.tagName === 'SPAN' &&
+            target.classList.contains('property_value')))
       ) {
         return
       }
 
-      const modifierKeyIdMap = {
-        s: '#comfy-save-button',
-        o: '#comfy-file-input',
-        Backspace: '#comfy-clear-button',
-        d: '#comfy-load-default-button',
-        g: '#comfy-group-selected-nodes-button'
-      }
-
-      const modifierKeybindId = modifierKeyIdMap[event.key]
-      if (modifierPressed && modifierKeybindId) {
+      const keybindingStore = useKeybindingStore()
+      const commandStore = useCommandStore()
+      const keybinding = keybindingStore.getKeybinding(keyCombo)
+      if (keybinding) {
+        await commandStore.getCommandFunction(keybinding.commandId)()
         event.preventDefault()
-
-        const elem = document.querySelector(modifierKeybindId)
-        elem.click()
         return
       }
 
@@ -73,18 +56,6 @@ app.registerExtension({
         ;[...document.querySelectorAll('dialog')].forEach((d) => {
           d.close()
         })
-      }
-
-      const keyIdMap = {
-        q: '.queue-tab-button.side-bar-button',
-        h: '.queue-tab-button.side-bar-button',
-        r: '#comfy-refresh-button'
-      }
-
-      const buttonId = keyIdMap[event.key]
-      if (buttonId) {
-        const button = document.querySelector(buttonId)
-        button.click()
       }
     }
 

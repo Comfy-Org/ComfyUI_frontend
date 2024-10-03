@@ -4,13 +4,10 @@ import { downloadBlob } from '../../utils'
 import { ComfyButtonGroup } from '../components/buttonGroup'
 import './menu.css'
 
-// Import ComfyButton to make sure it's shimmed and exported by vite
-import { ComfyButton } from '../components/button'
-import { ComfySplitButton } from '../components/splitButton'
-import { ComfyPopup } from '../components/popup'
-console.debug(
-  `Keep following definitions ${ComfyButton} ${ComfySplitButton} ${ComfyPopup}`
-)
+// Export to make sure following components are shimmed and exported by vite
+export { ComfyButton } from '../components/button'
+export { ComfySplitButton } from '../components/splitButton'
+export { ComfyPopup } from '../components/popup'
 
 export class ComfyAppMenu {
   app: ComfyApp

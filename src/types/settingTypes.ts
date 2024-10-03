@@ -47,4 +47,8 @@ export interface SettingParams {
   deprecated?: boolean
   // Deprecated values are mapped to new values.
   migrateDeprecatedValue?: (value: any) => any
+  // Version of the setting when it was added
+  versionAdded?: string
+  // Version of the setting when it was last modified
+  versionModified?: string
 }

@@ -1,3 +1,4 @@
+import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   LinkReleaseTriggerAction,
@@ -12,7 +13,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true
   },
-
   {
     id: 'Comfy.NodeSearchBoxImpl',
     category: ['Comfy', 'Node Search Box', 'Implementation'],
@@ -251,6 +251,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.ModelLibrary.NameFormat',
+    name: 'What name to display in the model library tree view',
+    tooltip:
+      'Select "filename" to render a simplified view of the raw filename (without directory or ".safetensors" extension) in the model list. Select "title" to display the configurable model metadata title.',
+    type: 'combo',
+    options: ['filename', 'title'],
+    defaultValue: 'title'
+  },
+  {
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',
@@ -378,8 +387,37 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
-    type: 'hidden',
+    type: 'combo',
     options: ['Sidebar', 'Topbar'],
     defaultValue: 'Sidebar'
+  },
+  {
+    id: 'Comfy.Graph.CanvasMenu',
+    name: 'Show graph canvas menu',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.QueueButton.BatchCountLimit',
+    name: 'Batch count limit',
+    tooltip:
+      'The maximum number of tasks added to the queue at one button click',
+    type: 'number',
+    defaultValue: 100,
+    versionAdded: '1.3.5'
+  },
+  {
+    id: 'Comfy.Keybinding.UnsetBindings',
+    name: 'Keybindings unset by the user',
+    type: 'hidden',
+    defaultValue: [] as Keybinding[],
+    versionAdded: '1.3.7'
+  },
+  {
+    id: 'Comfy.Keybinding.NewBindings',
+    name: 'Keybindings set by the user',
+    type: 'hidden',
+    defaultValue: [] as Keybinding[],
+    versionAdded: '1.3.7'
   }
 ]

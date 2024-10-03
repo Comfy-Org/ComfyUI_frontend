@@ -146,6 +146,35 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Node developers API
 
 <details>
+  <summary>v1.3.7: Register commands and keybindings</summary>
+
+  Extensions can call the following API to register commands and keybindings. Do
+  note that keybindings defined in core cannot be overwritten, and some keybindings
+  are reserved by the browser.
+
+```js
+  app.registerExtension({
+    name: 'TestExtension1',
+    commands: [
+      {
+        id: 'TestCommand',
+        function: () => {
+          alert('TestCommand')
+        }
+      }
+    ],
+    keybindings: [
+      {
+        combo: { key: 'k' },
+        commandId: 'TestCommand'
+      }
+    ]
+  })
+```
+
+</details>
+
+<details>
   <summary>v1.3.1: Extension API to register custom topbar menu items</summary>
 
   Extensions can call the following API to register custom topbar menu items.
@@ -199,31 +228,6 @@ We will support custom icons later.
 
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
 </details>
-
-## Road Map
-
-### What has been done
-
-- Migrate all code to TypeScript with minimal change modification to the original logic.
-- Bundle all code with Vite's rollup build.
-- Added a shim layer to be backward compatible with the existing extension system. <https://github.com/huchenlei/ComfyUI_frontend/pull/15>
-- Front-end dev server.
-- Zod schema for input validation on ComfyUI workflow.
-- Make litegraph a npm dependency. <https://github.com/Comfy-Org/ComfyUI_frontend/pull/89>
-- Introduce Vue to start managing part of the UI.
-- Easy install and version management (<https://github.com/comfyanonymous/ComfyUI/pull/3897>).
-- Better node management. Sherlock <https://github.com/Nuked88/ComfyUI-N-Sidebar>.
-- Replace the existing ComfyUI front-end implementation. <https://github.com/comfyanonymous/ComfyUI/pull/4379>
-
-
-### What to be done
-
-- Remove `@ts-ignore`s.
-- Turn on `strict` on `tsconfig.json`.
-- Add more widget types for node developers.
-- LLM streaming node.
-- Linear mode (Similar to InvokeAI's linear mode).
-- Keybinding settings management. Register keybindings API for custom nodes.
 
 ## Development
 

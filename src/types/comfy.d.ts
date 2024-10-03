@@ -1,6 +1,8 @@
 import { LGraphNode, IWidget } from './litegraph'
 import { ComfyApp } from '../scripts/app'
 import type { ComfyNodeDef } from '@/types/apiTypes'
+import type { Keybinding } from '@/types/keyBindingTypes'
+import type { ComfyCommand } from '@/stores/commandStore'
 
 export type Widgets = Record<
   string,
@@ -17,6 +19,14 @@ export interface ComfyExtension {
    * The name of the extension
    */
   name: string
+  /**
+   * The commands defined by the extension
+   */
+  commands?: ComfyCommand[]
+  /**
+   * The keybindings defined by the extension
+   */
+  keybindings?: Keybinding[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
