@@ -14,11 +14,6 @@ export interface ComfyCommand {
   id: string
   function: () => void | Promise<void>
 
-  /**
-   * The condition that must be met for the command to be enabled
-   */
-  condition?: () => boolean
-
   label?: string | (() => string)
   icon?: string | (() => string)
   tooltip?: string | (() => string)
