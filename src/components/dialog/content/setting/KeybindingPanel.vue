@@ -41,8 +41,8 @@
     <Dialog
       class="min-w-96"
       v-model:visible="editDialogVisible"
-      header="Edit Keybinding"
       modal
+      :header="currentEditingCommand?.id"
       @hide="cancelEdit"
     >
       <div>
