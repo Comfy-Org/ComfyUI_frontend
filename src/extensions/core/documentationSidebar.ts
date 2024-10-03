@@ -159,13 +159,29 @@ function updateNode(node?) {
   }
 }
 let docStyleElement = document.createElement('style')
-let documentationStyle = `
+docStyleElement.innerHTML = `
+.doc-node {
+  font-size: 1.5em
+}
+.doc-section {
+  background-color: var(--comfy-menu-bg)
+}
+.doc-item div {
+  margin-inline-start: 1vw;
+}
+@keyframes selectAnimation {
+  0% { background-color: #5555}
+  80% { background-color: #5555}
+  100% { background-color: #0000}
+}
+.doc-item:focus {
+  animation: selectAnimation 2s;
+}
 .DocumentationIcon:before {
-   font-size: 1.5em; content: '?';
+  font-size: 1.5em; content: '?';
 }
 `
-docStyleElement.innerHTML = documentationStyle
-document.body.append(docStyleElement)
+document.querySelector('.side-tool-bar-container').append(docStyleElement)
 
 var bringToFront
 class DocumentationSidebar implements CustomSidebarTabExtension {
@@ -181,30 +197,6 @@ class DocumentationSidebar implements CustomSidebarTabExtension {
         return bringToFront.apply(this, arguments)
       }
     }
-    //TODO: properly update colors when theme is toggled
-    let documentationStyle = `
-    .doc-node {
-       font-size: 1.5em
-    }
-    .doc-section {
-       background-color: ${getColorPalette().colors.comfy_base['comfy-menu-bg']}
-    }
-    .doc-item div {
-       margin-inline-start: 1vw;
-    }
-    @keyframes selectAnimation {
-      0% { background-color: #5555}
-      80% { background-color: #5555}
-      100% { background-color: #0000}
-    }
-    .doc-item:focus {
-      animation: selectAnimation 2s;
-    }
-    .DocumentationIcon:before {
-       font-size: 1.5em; content: '?';
-    }
-    `
-    docStyleElement.innerHTML = documentationStyle
     updateNode()
     if (!e?.children?.length) {
       e.appendChild(helpDOM)
