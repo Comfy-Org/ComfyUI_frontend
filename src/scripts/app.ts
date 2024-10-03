@@ -54,6 +54,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
 import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2954,6 +2955,7 @@ export class ComfyApp {
     }
     if (this.vueAppReady) {
       useKeybindingStore().loadExtensionKeybindings(extension)
+      useCommandStore().loadExtensionCommands(extension)
     }
     this.extensions.push(extension)
   }
