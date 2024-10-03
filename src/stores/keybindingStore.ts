@@ -184,7 +184,14 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   function loadExtensionKeybindings(extension: ComfyExtension) {
     if (extension.keybindings) {
       for (const keybinding of extension.keybindings) {
-        addDefaultKeybinding(new KeybindingImpl(keybinding))
+        try {
+          addDefaultKeybinding(new KeybindingImpl(keybinding))
+        } catch (error) {
+          console.warn(
+            `Failed to load keybinding for extension ${extension.name}`,
+            error
+          )
+        }
       }
     }
   }
