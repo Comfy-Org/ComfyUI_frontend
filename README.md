@@ -146,6 +146,35 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Node developers API
 
 <details>
+  <summary>v1.3.7: Register commands and keybindings</summary>
+
+  Extensions can call the following API to register commands and keybindings. Do
+  note that keybindings defined in core cannot be overwritten, and some keybindings
+  are reserved by the browser.
+
+```js
+  app.registerExtension({
+    name: 'TestExtension1',
+    commands: [
+      {
+        id: 'TestCommand',
+        function: () => {
+          alert('TestCommand')
+        }
+      }
+    ],
+    keybindings: [
+      {
+        combo: { key: 'k' },
+        commandId: 'TestCommand'
+      }
+    ]
+  })
+```
+
+</details>
+
+<details>
   <summary>v1.3.1: Extension API to register custom topbar menu items</summary>
 
   Extensions can call the following API to register custom topbar menu items.

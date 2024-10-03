@@ -4,6 +4,7 @@ import { fromZodError } from 'zod-validation-error'
 import { colorPalettesSchema } from './colorPalette'
 import { LinkReleaseTriggerAction } from './searchBoxTypes'
 import { NodeBadgeMode } from './nodeSource'
+import { zKeybinding } from './keyBindingTypes'
 
 const zNodeType = z.string()
 const zQueueIndex = z.number()
@@ -504,7 +505,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
       'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
       'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
-      'Comfy.QueueButton.BatchCountLimit': z.number()
+      'Comfy.QueueButton.BatchCountLimit': z.number(),
+      'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
+      'Comfy.Keybinding.NewBindings': z.array(zKeybinding)
     })
     .optional()
 )

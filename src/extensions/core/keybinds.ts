@@ -1,11 +1,26 @@
 import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { useToastStore } from '@/stores/toastStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 app.registerExtension({
   name: 'Comfy.Keybinds',
   init() {
-    const keybindListener = async function (event) {
+    const keybindListener = async function (event: KeyboardEvent) {
+      // Ignore keybindings for legacy jest tests as jest tests don't have
+      // a Vue app instance or pinia stores.
+      if (!app.vueAppReady) return
+
+      const keyCombo = KeyComboImpl.fromEvent(event)
+      const keybindingStore = useKeybindingStore()
+      const commandStore = useCommandStore()
+      const keybinding = keybindingStore.getKeybinding(keyCombo)
+      if (keybinding) {
+        await commandStore.getCommandFunction(keybinding.commandId)()
+        return
+      }
+
       const modifierPressed = event.ctrlKey || event.metaKey
 
       // Queue prompt using (ctrl or command) + enter
@@ -26,7 +41,7 @@ app.registerExtension({
         return
       }
 
-      const target = event.composedPath()[0]
+      const target = event.composedPath()[0] as HTMLElement
       if (
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'INPUT' ||

@@ -8,6 +8,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { showTemplateWorkflowsDialog } from '@/services/dialogService'
 import { useQueueStore } from './queueStore'
 import { LiteGraph } from '@comfyorg/litegraph'
+import { ComfyExtension } from '@/types/comfy'
 
 export interface ComfyCommand {
   id: string
@@ -246,10 +247,19 @@ export const useCommandStore = defineStore('command', () => {
     return !!commands.value[command]
   }
 
+  const loadExtensionCommands = (extension: ComfyExtension) => {
+    if (extension.commands) {
+      for (const command of extension.commands) {
+        registerCommand(command)
+      }
+    }
+  }
+
   return {
     getCommand,
     getCommandFunction,
     registerCommand,
-    isRegistered
+    isRegistered,
+    loadExtensionCommands
   }
 })
