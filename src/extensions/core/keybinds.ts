@@ -29,6 +29,7 @@ app.registerExtension({
       const keybinding = keybindingStore.getKeybinding(keyCombo)
       if (keybinding) {
         await commandStore.getCommandFunction(keybinding.commandId)()
+        event.preventDefault()
         return
       }
 
