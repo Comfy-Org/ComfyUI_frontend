@@ -23,17 +23,16 @@ export class KeybindingImpl implements Keybinding {
 
 export class KeyComboImpl implements KeyCombo {
   key: string
+  // ctrl or meta(cmd on mac)
   ctrl: boolean
   alt: boolean
   shift: boolean
-  meta: boolean
 
   constructor(obj: KeyCombo) {
     this.key = obj.key
     this.ctrl = obj.ctrl ?? false
     this.alt = obj.alt ?? false
     this.shift = obj.shift ?? false
-    this.meta = obj.meta ?? false
   }
 
   equals(other: any): boolean {
@@ -42,26 +41,28 @@ export class KeyComboImpl implements KeyCombo {
         this.key === other.key &&
         this.ctrl === other.ctrl &&
         this.alt === other.alt &&
-        this.shift === other.shift &&
-        this.meta === other.meta
+        this.shift === other.shift
       )
     }
     return false
   }
 
   serialize(): string {
-    return `${this.key}:${this.ctrl}:${this.alt}:${this.shift}:${this.meta}`
+    return `${this.key}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   deserialize(serialized: string): KeyComboImpl {
-    const [key, ctrl, alt, shift, meta] = serialized.split(':')
+    const [key, ctrl, alt, shift] = serialized.split(':')
     return new KeyComboImpl({
       key,
       ctrl: ctrl === 'true',
       alt: alt === 'true',
-      shift: shift === 'true',
-      meta: meta === 'true'
+      shift: shift === 'true'
     })
+  }
+
+  toString(): string {
+    return `${this.key} + ${this.ctrl ? 'Ctrl' : ''}${this.alt ? 'Alt' : ''}${this.shift ? 'Shift' : ''}`
   }
 }
 
@@ -107,14 +108,11 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     keybinding: KeybindingImpl,
     { existOk = false }: { existOk: boolean }
   ) {
-    if (
-      !existOk &&
-      keybinding.combo.serialize() in keybindingByKeyCombo.value
-    ) {
+    if (!existOk && keybinding.combo.serialize() in target.value) {
       throw new Error(
-        `Keybinding on ${keybinding.combo} already exists on ${getKeybinding(
-          keybinding.combo
-        )}`
+        `Keybinding on ${keybinding.combo} already exists on ${
+          target.value[keybinding.combo.serialize()].commandId
+        }`
       )
     }
     target.value[keybinding.combo.serialize()] = keybinding
@@ -125,6 +123,11 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
+    const defaultKeybinding =
+      defaultKeybindings.value[keybinding.combo.serialize()]
+    if (defaultKeybinding) {
+      unsetKeybinding(defaultKeybinding)
+    }
     addKeybinding(userKeybindings, keybinding, { existOk: true })
   }
 
