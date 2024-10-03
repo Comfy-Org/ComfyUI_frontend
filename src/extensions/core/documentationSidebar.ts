@@ -1,8 +1,10 @@
 import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
 import { getColorPalette } from './colorPalette'
+import type { CustomSidebarTabExtension } from '../../types/extensionTypes'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 var helpDOM = document.createElement('div')
+var cdef
 
 function setCollapse(el, doCollapse) {
   if (doCollapse) {
@@ -36,16 +38,16 @@ function setCollapse(el, doCollapse) {
     }
   }
 }
-helpDOM.collapseOnClick = function () {
+function collapseOnClick() {
   let doCollapse = this.children[0].innerHTML == '-'
   setCollapse(this.parentElement, doCollapse)
 }
 //TODO: connect with doc tooltips
 //If doc sidebar is opened, the current node should not display tooltips,
 //but navigate the sidebar pane as appropriate.
-helpDOM.selectHelp = function (name: string, value?: string) {
-  if (helpDOM.def[2]?.select) {
-    return helpDOM.def[2].select(this, name, value)
+function selectHelp(name: string, value?: string) {
+  if (cdef[2]?.select) {
+    return cdef[2].select(this, name, value)
   }
   //attempt to navigate to name in help
   function collapseUnlessMatch(items, t) {
@@ -86,24 +88,24 @@ helpDOM.selectHelp = function (name: string, value?: string) {
   }
 }
 app.tooltipCallback = function (node, name, value) {
-  if (node != app.graph._nodes[app.graph._nodes.length - 1]) {
+  if (node != app.canvas.current_node) {
     return false
   }
   if (name == 'DESCRIPTION') {
     return false
   }
-  helpDOM.selectHelp(name, value)
+  selectHelp(name, value)
   return true
 }
-function updateNode(node) {
+function updateNode(node?) {
   //Always use latest node. If it lacks documentation, that should be communicated
   //instead of confusing users by picking a different recent node that does
-  node ||= app.graph._nodes[app.graph._nodes.length - 1]
+  node ||= app.canvas.current_node
   const def = LiteGraph.getNodeType(node.type).nodeData
-  if (helpDOM.def == def) {
+  if (cdef == def) {
     return
   }
-  helpDOM.def = def
+  cdef = def
   if (Array.isArray(def.description)) {
     helpDOM.innerHTML = def.description[1]
   } else {
@@ -166,12 +168,12 @@ docStyleElement.innerHTML = documentationStyle
 document.body.append(docStyleElement)
 
 var bringToFront
-let documentationSidebar = {
-  id: 'documentationSidebar',
-  title: 'Documentation',
-  icon: 'DocumentationIcon',
-  type: 'custom',
-  render: (e) => {
+class DocumentationSidebar implements CustomSidebarTabExtension {
+  id = 'documentationSidebar'
+  title = 'Documentation'
+  type
+  icon = 'DocumentationIcon'
+  render(e) {
     if (!bringToFront) {
       var bringToFront = app.canvas.bringToFront
       app.canvas.bringToFront = function (node) {
@@ -207,9 +209,9 @@ let documentationSidebar = {
     if (!e?.children?.length) {
       e.appendChild(helpDOM)
     }
-    if (helpDOM.def.description[2]?.render) {
-      helpDOM.def.description[2].render(e)
+    if (cdef.description[2]?.render) {
+      cdef.description[2].render(e)
     }
   }
 }
-app.extensionManager.registerSidebarTab(documentationSidebar)
+app.extensionManager.registerSidebarTab(new DocumentationSidebar())
