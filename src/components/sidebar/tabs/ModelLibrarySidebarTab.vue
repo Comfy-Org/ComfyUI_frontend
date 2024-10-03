@@ -202,20 +202,22 @@ const handleNodeClick = (
   }
 }
 
+const hasExpanded = new Set<string>()
+
 watch(
   toRef(expandedKeys, 'value'),
   (newExpandedKeys) => {
     Object.entries(newExpandedKeys).forEach(([key, isExpanded]) => {
       if (isExpanded) {
         const folderPath = key.split('/').slice(1).join('/')
-        if (
-          folderPath &&
-          !folderPath.includes('/') &&
-          !modelStore.modelStoreMap[folderPath]
-        ) {
+        if (folderPath && !folderPath.includes('/')) {
           // Trigger (async) load of model data for this folder
-          modelStore.getModelsInFolderCached(folderPath).then((models) => {
-            if (settingStore.get('Comfy.ModelLibrary.AutoExpandFolders')) {
+          modelStore.getModelsInFolderCached(folderPath).then(() => {
+            if (
+              settingStore.get('Comfy.ModelLibrary.AutoExpandFolders') &&
+              !hasExpanded.has(folderPath)
+            ) {
+              hasExpanded.add(folderPath)
               const node = root.value.children.find((node) => node.key === key)
               if (node) {
                 expandNode(node)
