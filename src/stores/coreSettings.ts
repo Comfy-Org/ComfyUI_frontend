@@ -251,6 +251,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.ModelLibrary.AutoExpandFolders',
+    name: 'Automatically expand all model folders',
+    tooltip:
+      'If true, all sub-folders will expand as soon as you open the root folder the first time. If false, you will have to click on each folder to expand it.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
     id: 'Comfy.ModelLibrary.NameFormat',
     name: 'What name to display in the model library tree view',
     tooltip:

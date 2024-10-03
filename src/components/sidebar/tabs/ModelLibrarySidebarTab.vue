@@ -53,7 +53,7 @@ const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
-const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { toggleNodeOnEvent, expandNode } = useTreeExpansion(expandedKeys)
 
 const root: ComputedRef<TreeNode> = computed(() => {
   let modelList: ComfyModelDef[] = []
@@ -208,9 +208,20 @@ watch(
     Object.entries(newExpandedKeys).forEach(([key, isExpanded]) => {
       if (isExpanded) {
         const folderPath = key.split('/').slice(1).join('/')
-        if (folderPath && !folderPath.includes('/')) {
+        if (
+          folderPath &&
+          !folderPath.includes('/') &&
+          !modelStore.modelStoreMap[folderPath]
+        ) {
           // Trigger (async) load of model data for this folder
-          modelStore.getModelsInFolderCached(folderPath)
+          modelStore.getModelsInFolderCached(folderPath).then((models) => {
+            if (settingStore.get('Comfy.ModelLibrary.AutoExpandFolders')) {
+              const node = root.value.children.find((node) => node.key === key)
+              if (node) {
+                expandNode(node)
+              }
+            }
+          })
         }
       }
     })
