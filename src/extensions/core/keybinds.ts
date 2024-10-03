@@ -8,6 +8,10 @@ app.registerExtension({
   name: 'Comfy.Keybinds',
   init() {
     const keybindListener = async function (event: KeyboardEvent) {
+      // Ignore keybindings for legacy jest tests as jest tests don't have
+      // a Vue app instance or pinia stores.
+      if (!app.vueAppReady) return
+
       const keyCombo = KeyComboImpl.fromEvent(event)
       const keybindingStore = useKeybindingStore()
       const commandStore = useCommandStore()
