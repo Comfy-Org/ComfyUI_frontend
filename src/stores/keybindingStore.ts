@@ -38,6 +38,15 @@ export class KeyComboImpl implements KeyCombo {
     this.shift = obj.shift ?? false
   }
 
+  static fromEvent(event: KeyboardEvent) {
+    return new KeyComboImpl({
+      key: event.key,
+      ctrl: event.ctrlKey,
+      alt: event.altKey,
+      shift: event.shiftKey
+    })
+  }
+
   equals(other: any): boolean {
     if (toRaw(other) instanceof KeyComboImpl) {
       return (
