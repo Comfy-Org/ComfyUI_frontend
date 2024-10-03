@@ -42,9 +42,6 @@ function collapseOnClick() {
   let doCollapse = this.children[0].innerHTML == '-'
   setCollapse(this.parentElement, doCollapse)
 }
-//TODO: connect with doc tooltips
-//If doc sidebar is opened, the current node should not display tooltips,
-//but navigate the sidebar pane as appropriate.
 function selectHelp(name: string, value?: string) {
   if (cdef[2]?.select) {
     return cdef[2].select(this, name, value)
@@ -156,6 +153,9 @@ function updateNode(node?) {
     }
     content = '<div class="doc-node">' + def.display_name + '</div>' + content
     helpDOM.innerHTML = content
+    if (cdef.description[2]?.render) {
+      cdef.description[2].render(helpDOM)
+    }
   }
 }
 let docStyleElement = document.createElement('style')
@@ -200,9 +200,6 @@ class DocumentationSidebar implements CustomSidebarTabExtension {
     updateNode()
     if (!e?.children?.length) {
       e.appendChild(helpDOM)
-    }
-    if (cdef.description[2]?.render) {
-      cdef.description[2].render(e)
     }
   }
 }
