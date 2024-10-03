@@ -6,7 +6,8 @@ import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
 import { NodeBadgeMode } from '../src/types/nodeSource'
-import { NodeId } from '../src/types/comfyWorkflow'
+import type { NodeId } from '../src/types/comfyWorkflow'
+import type { KeyCombo } from '../src/types/keyBindingTypes'
 import { ManageGroupNode } from './helpers/manageGroupNode'
 import { ComfyTemplates } from './helpers/templates'
 
@@ -486,6 +487,34 @@ export class ComfyPage {
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
+  }
+
+  async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
+    await this.page.evaluate(
+      ({ keyCombo, commandStr }) => {
+        const app = window['app']
+        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const extensionName = `TestExtension_${randomSuffix}`
+        const commandId = `TestCommand_${randomSuffix}`
+
+        app.registerExtension({
+          name: extensionName,
+          keybindings: [
+            {
+              combo: keyCombo,
+              commandId: commandId
+            }
+          ],
+          commands: [
+            {
+              id: commandId,
+              function: eval(commandStr)
+            }
+          ]
+        })
+      },
+      { keyCombo, commandStr: command.toString() }
+    )
   }
 
   async setSetting(settingId: string, settingValue: any) {

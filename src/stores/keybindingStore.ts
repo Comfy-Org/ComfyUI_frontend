@@ -80,6 +80,10 @@ export class KeyComboImpl implements KeyCombo {
   get hasModifier(): boolean {
     return this.ctrl || this.alt || this.shift
   }
+
+  get isModifier(): boolean {
+    return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
+  }
 }
 
 export const useKeybindingStore = defineStore('keybinding', () => {

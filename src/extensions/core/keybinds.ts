@@ -11,6 +11,9 @@ app.registerExtension({
       if (!app.vueAppReady) return
 
       const keyCombo = KeyComboImpl.fromEvent(event)
+      if (keyCombo.isModifier) {
+        return
+      }
 
       // Ignore non-modifier keybindings if typing in input fields
       const target = event.composedPath()[0] as HTMLElement
