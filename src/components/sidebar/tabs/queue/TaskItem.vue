@@ -8,10 +8,14 @@
           @preview="handlePreview"
         />
       </template>
-      <i
-        v-else-if="task.displayStatus === TaskItemDisplayStatus.Running"
-        class="pi pi-spin pi-spinner"
-      ></i>
+      <template v-if="task.displayStatus === TaskItemDisplayStatus.Running">
+        <i v-if="!progressPreviewBlobUrl" class="pi pi-spin pi-spinner"></i>
+        <img
+          v-else
+          :src="progressPreviewBlobUrl"
+          class="progress-preview-img"
+        />
+      </template>
       <span v-else-if="task.displayStatus === TaskItemDisplayStatus.Pending"
         >...</span
       >
@@ -60,12 +64,14 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 
 const props = defineProps<{
   task: TaskItemImpl
@@ -82,6 +88,7 @@ const node: ComfyNode | null = flatOutputs.length
       (n: ComfyNode) => n.id == coverResult.nodeId
     ) ?? null
   : null
+const progressPreviewBlobUrl = ref('')
 
 const emit = defineEmits<{
   (
@@ -91,6 +98,14 @@ const emit = defineEmits<{
   (e: 'preview', value: TaskItemImpl): void
   (e: 'task-output-length-clicked', value: TaskItemImpl): void
 }>()
+
+onMounted(() => {
+  api.addEventListener('b_preview', onProgressPreviewReceived)
+})
+
+onUnmounted(() => {
+  api.removeEventListener('b_preview', onProgressPreviewReceived)
+})
 
 const handleContextMenu = (e: MouseEvent) => {
   emit('contextmenu', { task: props.task, event: e, node })
@@ -124,7 +139,7 @@ const taskStatusText = (status: TaskItemDisplayStatus) => {
     case TaskItemDisplayStatus.Pending:
       return 'Pending'
     case TaskItemDisplayStatus.Running:
-      return 'Running'
+      return '<i class="pi pi-spin pi-spinner" style="font-weight: bold"></i> Running'
     case TaskItemDisplayStatus.Completed:
       return '<i class="pi pi-check" style="font-weight: bold"></i>'
     case TaskItemDisplayStatus.Failed:
@@ -139,6 +154,12 @@ const formatTime = (time?: number) => {
     return ''
   }
   return `${time.toFixed(2)}s`
+}
+
+const onProgressPreviewReceived = async ({ detail }: CustomEvent) => {
+  if (props.task.displayStatus === TaskItemDisplayStatus.Running) {
+    progressPreviewBlobUrl.value = URL.createObjectURL(detail)
+  }
 }
 </script>
 
@@ -196,5 +217,12 @@ are floating on top of images. */
 .status-tag-group {
   display: flex;
   flex-direction: column;
+}
+
+.progress-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 </style>
