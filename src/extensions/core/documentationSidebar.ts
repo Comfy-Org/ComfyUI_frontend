@@ -181,7 +181,7 @@ docStyleElement.innerHTML = `
   font-size: 1.5em; content: '?';
 }
 `
-document.querySelector('.side-tool-bar-container').append(docStyleElement)
+document.body.append(docStyleElement)
 
 var bringToFront
 class DocumentationSidebar implements CustomSidebarTabExtension {

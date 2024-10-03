@@ -2,13 +2,25 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Documentation Sidebar', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.loadWorkflow('default')
+  })
+
+  test.afterEach(async ({ comfyPage }) => {
+    const currentThemeId = await comfyPage.menu.getThemeId()
+    if (currentThemeId !== 'dark') {
+      await comfyPage.menu.toggleTheme()
+    }
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  })
+
   test('Sidebar registered', async ({ comfyPage }) => {
     await expect(
       comfyPage.page.locator('.documentationSidebar-tab-button')
     ).toBeVisible()
   })
   test('Parses help for basic node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
     await comfyPage.page.locator('.documentationSidebar-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     //Check that each independently parsed element exists
@@ -18,7 +30,6 @@ test.describe('Documentation Sidebar', () => {
     await expect(docPane).toContainText('The VAE model used')
   })
   test('Responds to hovering over node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
     await comfyPage.page.locator('.documentationSidebar-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     await comfyPage.page.mouse.move(321, 593)
@@ -32,7 +43,6 @@ test.describe('Documentation Sidebar', () => {
     ).toBeFocused()
   })
   test('Updates when a new node is selected', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('default')
     await comfyPage.page.locator('.documentationSidebar-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     await comfyPage.page.mouse.click(557, 440)
@@ -43,21 +53,12 @@ test.describe('Documentation Sidebar', () => {
       'A conditioning containing the embedded text'
     )
   })
-  test.describe('Theming', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
-    })
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
-    })
-    test('Responds to a change in theme', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('default')
-      await comfyPage.page.locator('.documentationSidebar-tab-button').click()
-      const docPane = comfyPage.page.locator('.sidebar-content-container')
-      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-      await expect(docPane).toHaveScreenshot(
-        'documentation-sidebar-light-theme.png'
-      )
-    })
+  test('Responds to a change in theme', async ({ comfyPage }) => {
+    await comfyPage.page.locator('.documentationSidebar-tab-button').click()
+    const docPane = comfyPage.page.locator('.sidebar-content-container')
+    comfyPage.menu.toggleTheme()
+    await expect(docPane).toHaveScreenshot(
+      'documentation-sidebar-light-theme.png'
+    )
   })
 })
