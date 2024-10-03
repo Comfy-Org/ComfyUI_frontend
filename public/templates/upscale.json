@@ -429,7 +429,7 @@
           "Node name for S&R": "CheckpointLoaderSimple"
         },
         "widgets_values": [
-          "v2-1_768-ema-pruned.ckpt"
+          "v2-1_768-ema-pruned.safetensors"
         ]
       },
       {
@@ -641,5 +641,12 @@
     ],
     "config": {},
     "extra": {},
-    "version": 0.4
+    "version": 0.4,
+    "models": [
+      {
+        "name": "v2-1_768-ema-pruned.safetensors",
+        "url": "https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.safetensors?download=true",
+        "directory": "checkpoints"
+      }
+    ]
   }
