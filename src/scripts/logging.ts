@@ -377,7 +377,5 @@ export class ComfyLogging {
     if (!this.enabled) return
     const source = 'ComfyUI.Logging'
     this.addEntry(source, 'debug', { UserAgent: navigator.userAgent })
-    const systemStats = await api.getSystemStats()
-    this.addEntry(source, 'debug', systemStats)
   }
 }
