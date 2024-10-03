@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
+import { useSettingStore } from './settingStore'
+import { CORE_KEYBINDINGS } from './coreKeybindings'
+import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string
@@ -150,11 +153,41 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     throw new Error(`NOT_REACHED`)
   }
 
+  function loadUserKeybindings() {
+    const settingStore = useSettingStore()
+    // Unset bindings first as new bindings might conflict with default bindings.
+    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
+    for (const keybinding of unsetBindings) {
+      unsetKeybinding(new KeybindingImpl(keybinding))
+    }
+    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
+    for (const keybinding of newBindings) {
+      addUserKeybinding(new KeybindingImpl(keybinding))
+    }
+  }
+
+  function loadCoreKeybindings() {
+    for (const keybinding of CORE_KEYBINDINGS) {
+      addDefaultKeybinding(new KeybindingImpl(keybinding))
+    }
+  }
+
+  function loadExtensionKeybindings(extension: ComfyExtension) {
+    if (extension.keybindings) {
+      for (const keybinding of extension.keybindings) {
+        addDefaultKeybinding(new KeybindingImpl(keybinding))
+      }
+    }
+  }
+
   return {
     keybindings,
     getKeybinding,
     addDefaultKeybinding,
     addUserKeybinding,
-    unsetKeybinding
+    unsetKeybinding,
+    loadUserKeybindings,
+    loadCoreKeybindings,
+    loadExtensionKeybindings
   }
 })
