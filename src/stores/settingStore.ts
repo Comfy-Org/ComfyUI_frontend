@@ -67,9 +67,9 @@ export const useSettingStore = defineStore('setting', {
       })
     },
 
-    set<K extends keyof Settings>(key: K, value: Settings[K]) {
+    async set<K extends keyof Settings>(key: K, value: Settings[K]) {
       this.settingValues[key] = value
-      app.ui.settings.setSettingValue(key, value)
+      await app.ui.settings.setSettingValueAsync(key, value)
     },
 
     get<K extends keyof Settings>(key: K): Settings[K] {

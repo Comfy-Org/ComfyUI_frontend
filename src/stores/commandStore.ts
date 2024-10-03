@@ -1,7 +1,7 @@
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
@@ -32,12 +32,14 @@ const getTracker = () =>
 export const useCommandStore = defineStore('command', () => {
   const settingStore = useSettingStore()
 
-  const commands = ref<Record<string, ComfyCommand>>({})
+  const commandsById = ref<Record<string, ComfyCommand>>({})
+  const commands = computed(() => Object.values(commandsById.value))
+
   const registerCommand = (command: ComfyCommand) => {
-    if (commands.value[command.id]) {
+    if (commandsById.value[command.id]) {
       console.warn(`Command ${command.id} already registered`)
     }
-    commands.value[command.id] = command
+    commandsById.value[command.id] = command
   }
 
   const commandDefinitions: ComfyCommand[] = [
@@ -311,15 +313,15 @@ export const useCommandStore = defineStore('command', () => {
 
   commandDefinitions.forEach(registerCommand)
   const getCommandFunction = (command: string) => {
-    return commands.value[command]?.function ?? (() => {})
+    return commandsById.value[command]?.function ?? (() => {})
   }
 
   const getCommand = (command: string) => {
-    return commands.value[command]
+    return commandsById.value[command]
   }
 
   const isRegistered = (command: string) => {
-    return !!commands.value[command]
+    return !!commandsById.value[command]
   }
 
   const loadExtensionCommands = (extension: ComfyExtension) => {
@@ -331,6 +333,7 @@ export const useCommandStore = defineStore('command', () => {
   }
 
   return {
+    commands,
     getCommand,
     getCommandFunction,
     registerCommand,

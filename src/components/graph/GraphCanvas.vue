@@ -52,6 +52,7 @@ import {
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import { useKeybindingStore } from '@/stores/keybindingStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -199,6 +200,9 @@ onMounted(async () => {
       }
     }
   })
+
+  // Load keybindings. This must be done after comfyApp loads settings.
+  useKeybindingStore().loadUserKeybindings()
 
   // Migrate legacy bookmarks
   useNodeBookmarkStore().migrateLegacyBookmarks()
