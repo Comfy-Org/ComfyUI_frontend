@@ -45,6 +45,7 @@ import AppMenu from '@/components/appMenu/AppMenu.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
+import { useKeybindingStore } from '@/stores/keybindingStore'
 
 setupAutoQueueHandler()
 
@@ -104,6 +105,8 @@ watchEffect(() => {
 
 const init = () => {
   settingStore.addSettings(app.ui.settings)
+  useKeybindingStore().loadCoreKeybindings()
+
   app.extensionManager = useWorkspaceStore()
   app.extensionManager.registerSidebarTab({
     id: 'queue',

@@ -91,7 +91,7 @@ import { debounce, clamp } from 'lodash'
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
-const { batchCount, mode: queueMode } = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 
 const visible = computed(
   () => settingsStore.get('Comfy.UseNewMenu') === 'Floating'
@@ -139,7 +139,8 @@ const executingPrompt = computed(() => !!queueCountStore.count.value)
 const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 
 const queuePrompt = (e: MouseEvent) => {
-  app.queuePrompt(e.shiftKey ? -1 : 0, batchCount.value)
+  const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
+  commandStore.getCommandFunction(commandId)()
 }
 
 const panelRef = ref<HTMLElement | null>(null)

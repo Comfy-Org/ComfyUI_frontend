@@ -41,7 +41,7 @@ export class KeyComboImpl implements KeyCombo {
   static fromEvent(event: KeyboardEvent) {
     return new KeyComboImpl({
       key: event.key,
-      ctrl: event.ctrlKey,
+      ctrl: event.ctrlKey || event.metaKey,
       alt: event.altKey,
       shift: event.shiftKey
     })
@@ -75,6 +75,14 @@ export class KeyComboImpl implements KeyCombo {
 
   toString(): string {
     return `${this.key} + ${this.ctrl ? 'Ctrl' : ''}${this.alt ? 'Alt' : ''}${this.shift ? 'Shift' : ''}`
+  }
+
+  get hasModifier(): boolean {
+    return this.ctrl || this.alt || this.shift
+  }
+
+  get isModifier(): boolean {
+    return ['Control', 'Meta', 'Alt', 'Shift'].includes(this.key)
   }
 }
 
