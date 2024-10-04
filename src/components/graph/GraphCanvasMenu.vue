@@ -20,7 +20,7 @@
       severity="secondary"
       icon="pi pi-expand"
       v-tooltip.left="t('graphCanvasMenu.resetView')"
-      @click="() => commandStore.getCommandFunction('Comfy.Canvas.ResetView')()"
+      @click="() => commandStore.execute('Comfy.Canvas.ResetView')"
     />
     <Button
       severity="secondary"
@@ -29,9 +29,7 @@
           'graphCanvasMenu.' + (canvasStore.readOnly ? 'panMode' : 'selectMode')
         ) + ' (Space)'
       "
-      @click="
-        () => commandStore.getCommandFunction('Comfy.Canvas.ToggleLock')()
-      "
+      @click="() => commandStore.execute('Comfy.Canvas.ToggleLock')"
     >
       <template #icon>
         <i-material-symbols:pan-tool-outline v-if="canvasStore.readOnly" />
@@ -42,10 +40,7 @@
       severity="secondary"
       :icon="linkHidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
       v-tooltip.left="t('graphCanvasMenu.toggleLinkVisibility')"
-      @click="
-        () =>
-          commandStore.getCommandFunction('Comfy.Canvas.ToggleLinkVisibility')()
-      "
+      @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       data-testid="toggle-link-visibility-button"
     />
   </ButtonGroup>
@@ -73,7 +68,7 @@ const linkHidden = computed(
 let interval: number | null = null
 const repeat = (command: string) => {
   if (interval) return
-  const cmd = commandStore.getCommandFunction(command)
+  const cmd = () => commandStore.execute(command)
   cmd()
   interval = window.setInterval(cmd, 100)
 }

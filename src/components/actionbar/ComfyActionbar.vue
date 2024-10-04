@@ -37,7 +37,7 @@
             :severity="executingPrompt ? 'danger' : 'secondary'"
             :disabled="!executingPrompt"
             text
-            @click="() => commandStore.getCommandFunction('Comfy.Interrupt')()"
+            @click="() => commandStore.execute('Comfy.Interrupt')"
           >
           </Button>
           <Button
@@ -46,9 +46,7 @@
             :severity="hasPendingTasks ? 'danger' : 'secondary'"
             :disabled="!hasPendingTasks"
             text
-            @click="
-              () => commandStore.getCommandFunction('Comfy.ClearPendingTasks')()
-            "
+            @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
           />
         </ButtonGroup>
       </div>
@@ -59,10 +57,7 @@
           icon="pi pi-refresh"
           severity="secondary"
           text
-          @click="
-            () =>
-              commandStore.getCommandFunction('Comfy.RefreshNodeDefinitions')()
-          "
+          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
         />
       </ButtonGroup>
     </div>
@@ -143,7 +138,7 @@ const hasPendingTasks = computed(() => queueCountStore.count.value > 1)
 
 const queuePrompt = (e: MouseEvent) => {
   const commandId = e.shiftKey ? 'Comfy.QueuePromptFront' : 'Comfy.QueuePrompt'
-  commandStore.getCommandFunction(commandId)()
+  commandStore.execute(commandId)
 }
 
 const panelRef = ref<HTMLElement | null>(null)

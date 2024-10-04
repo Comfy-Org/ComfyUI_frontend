@@ -313,19 +313,18 @@ export const useCommandStore = defineStore('command', () => {
   ]
 
   commandDefinitions.forEach(registerCommand)
-  const getCommandFunction = (command: string) => {
-    return commandsById.value[command]?.function ?? (() => {})
-  }
-
   const getCommand = (command: string) => {
     return commandsById.value[command]
   }
 
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const execute = (commandId: string, errorHandler?: (error: any) => void) => {
+  const execute = async (
+    commandId: string,
+    errorHandler?: (error: any) => void
+  ) => {
     const command = getCommand(commandId)
     if (command) {
-      wrapWithErrorHandlingAsync(command.function, errorHandler)()
+      await wrapWithErrorHandlingAsync(command.function, errorHandler)()
     } else {
       throw new Error(`Command ${commandId} not found`)
     }
@@ -347,7 +346,6 @@ export const useCommandStore = defineStore('command', () => {
     commands,
     execute,
     getCommand,
-    getCommandFunction,
     registerCommand,
     isRegistered,
     loadExtensionCommands
