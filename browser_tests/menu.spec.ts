@@ -426,9 +426,9 @@ test.describe('Menu', () => {
       await comfyPage.loadWorkflow('missing_nodes')
       await comfyPage.closeDialog()
 
-      // Load default workflow
+      // Load blank workflow
       await comfyPage.menu.workflowsTab.open()
-      await comfyPage.menu.workflowsTab.newDefaultWorkflowButton.click()
+      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
 
       // Switch back to the missing_nodes workflow
       await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
