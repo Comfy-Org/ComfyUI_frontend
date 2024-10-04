@@ -30,12 +30,13 @@
           </template>
         </SplitButton>
         <BatchCountEdit />
-        <ButtonGroup class="execution-actions ml-2 flex flex-nowrap">
+        <ButtonGroup class="execution-actions flex flex-nowrap">
           <Button
             v-tooltip.bottom="$t('menu.interrupt')"
             icon="pi pi-times"
             :severity="executingPrompt ? 'danger' : 'secondary'"
             :disabled="!executingPrompt"
+            text
             @click="() => commandStore.getCommandFunction('Comfy.Interrupt')()"
           >
           </Button>
@@ -44,18 +45,20 @@
             icon="pi pi-stop"
             :severity="hasPendingTasks ? 'danger' : 'secondary'"
             :disabled="!hasPendingTasks"
+            text
             @click="
               () => commandStore.getCommandFunction('Comfy.ClearPendingTasks')()
             "
           />
         </ButtonGroup>
       </div>
-      <Divider layout="vertical" class="mx-2" />
+      <Divider layout="vertical" class="mx-1" />
       <ButtonGroup class="flex flex-nowrap">
         <Button
           v-tooltip.bottom="$t('menu.refresh')"
           icon="pi pi-refresh"
           severity="secondary"
+          text
           @click="
             () =>
               commandStore.getCommandFunction('Comfy.RefreshNodeDefinitions')()
@@ -224,7 +227,7 @@ useEventListener(window, 'resize', adjustMenuPosition)
 }
 
 :deep(.p-panel-content) {
-  @apply p-2;
+  @apply p-1;
 }
 
 :deep(.p-panel-header) {
