@@ -6,24 +6,20 @@
         icon="pi pi-th-large"
         v-tooltip="$t('sideToolbar.browseTemplates')"
         text
-        @click="
-          () => commandStore.getCommandFunction('Comfy.BrowseTemplates')()
-        "
+        @click="() => commandStore.execute('Comfy.BrowseTemplates')"
       />
       <Button
         class="open-workflow-button"
         icon="pi pi-folder-open"
         v-tooltip="$t('sideToolbar.openWorkflow')"
         text
-        @click="() => commandStore.getCommandFunction('Comfy.OpenWorkflow')()"
+        @click="() => commandStore.execute('Comfy.OpenWorkflow')"
       />
       <Button
         class="new-blank-workflow-button"
         icon="pi pi-plus"
         v-tooltip="$t('sideToolbar.newBlankWorkflow')"
-        @click="
-          () => commandStore.getCommandFunction('Comfy.NewBlankWorkflow')()
-        "
+        @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
         text
       />
     </template>
