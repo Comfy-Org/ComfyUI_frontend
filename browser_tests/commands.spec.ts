@@ -17,7 +17,7 @@ test.describe('Keybindings', () => {
         setTimeout(() => {
           window['foo'] = true
           resolve()
-        }, 500)
+        }, 5)
       )
     })
 
@@ -39,7 +39,7 @@ test.describe('Keybindings', () => {
       await new Promise<void>((resolve, reject) =>
         setTimeout(() => {
           reject(new Error('Test error'))
-        }, 500)
+        }, 5)
       )
     })
 
