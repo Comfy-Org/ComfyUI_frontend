@@ -23,10 +23,3 @@ onMounted(() => {
   console.log('ComfyUI Front-end version:', config.app_version)
 })
 </script>
-
-<style>
-/* Globally remove bottom padding from dialog header. More compact dialog. */
-.p-dialog-header {
-  @apply pb-0;
-}
-</style>

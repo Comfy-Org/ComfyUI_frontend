@@ -11,6 +11,7 @@
     @hide="dialogStore.closeDialog"
     @maximize="onMaximize"
     @unmaximize="onUnmaximize"
+    :pt="{ header: 'pb-0' }"
   >
     <template #header>
       <component

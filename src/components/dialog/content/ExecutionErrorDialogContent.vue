@@ -191,8 +191,4 @@ const openNewGithubIssue = async () => {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-
-.no-results-placeholder {
-  padding-top: 0;
-}
 </style>
