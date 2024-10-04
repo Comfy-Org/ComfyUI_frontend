@@ -320,6 +320,13 @@ export const useCommandStore = defineStore('command', () => {
     return commandsById.value[command]
   }
 
+  const execute = (commandId: string) => {
+    const command = getCommand(commandId)
+    if (command) {
+      command.function()
+    }
+  }
+
   const isRegistered = (command: string) => {
     return !!commandsById.value[command]
   }
@@ -334,6 +341,7 @@ export const useCommandStore = defineStore('command', () => {
 
   return {
     commands,
+    execute,
     getCommand,
     getCommandFunction,
     registerCommand,

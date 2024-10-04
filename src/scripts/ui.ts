@@ -6,6 +6,7 @@ import { ComfyApp, app } from './app'
 import { TaskItem } from '@/types/apiTypes'
 import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -585,30 +586,7 @@ export class ComfyUI {
         id: 'comfy-save-button',
         textContent: 'Save',
         onclick: () => {
-          let filename = 'workflow.json'
-          if (useSettingStore().get('Comfy.PromptFilename')) {
-            filename = prompt('Save workflow as:', filename)
-            if (!filename) return
-            if (!filename.toLowerCase().endsWith('.json')) {
-              filename += '.json'
-            }
-          }
-          app.graphToPrompt().then((p) => {
-            const json = JSON.stringify(p.workflow, null, 2) // convert the data to a JSON string
-            const blob = new Blob([json], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = $el('a', {
-              href: url,
-              download: filename,
-              style: { display: 'none' },
-              parent: document.body
-            })
-            a.click()
-            setTimeout(function () {
-              a.remove()
-              window.URL.revokeObjectURL(url)
-            }, 0)
-          })
+          useCommandStore().execute('Comfy.ExportWorkflow')
         }
       }),
       $el('button', {
@@ -616,30 +594,7 @@ export class ComfyUI {
         textContent: 'Save (API Format)',
         style: { width: '100%', display: 'none' },
         onclick: () => {
-          let filename = 'workflow_api.json'
-          if (useSettingStore().get('Comfy.PromptFilename')) {
-            filename = prompt('Save workflow (API) as:', filename)
-            if (!filename) return
-            if (!filename.toLowerCase().endsWith('.json')) {
-              filename += '.json'
-            }
-          }
-          app.graphToPrompt().then((p) => {
-            const json = JSON.stringify(p.output, null, 2) // convert the data to a JSON string
-            const blob = new Blob([json], { type: 'application/json' })
-            const url = URL.createObjectURL(blob)
-            const a = $el('a', {
-              href: url,
-              download: filename,
-              style: { display: 'none' },
-              parent: document.body
-            })
-            a.click()
-            setTimeout(function () {
-              a.remove()
-              window.URL.revokeObjectURL(url)
-            }, 0)
-          })
+          useCommandStore().execute('Comfy.ExportWorkflowAPI')
         }
       }),
       $el('button', {

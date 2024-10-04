@@ -2,6 +2,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { $el } from '../../ui'
 import { downloadBlob } from '../../utils'
 import { ComfyButtonGroup } from '../components/buttonGroup'
+import { showPromptDialog } from '@/services/dialogService'
 import './menu.css'
 
 // Export to make sure following components are shimmed and exported by vite
@@ -32,13 +33,14 @@ export class ComfyAppMenu {
     ])
   }
 
-  getFilename(defaultName: string) {
+  async getFilename(defaultName: string) {
     if (this.app.ui.settings.getSettingValue('Comfy.PromptFilename', true)) {
-      defaultName = prompt('Save workflow as:', defaultName)
-      if (!defaultName) return
-      if (!defaultName.toLowerCase().endsWith('.json')) {
-        defaultName += '.json'
+      let filename = await showPromptDialog('Save workflow as:', defaultName)
+      if (!filename) return
+      if (!filename.toLowerCase().endsWith('.json')) {
+        filename += '.json'
       }
+      return filename
     }
     return defaultName
   }
@@ -53,7 +55,7 @@ export class ComfyAppMenu {
     const p = await this.app.graphToPrompt()
     const json = JSON.stringify(p[promptProperty], null, 2)
     const blob = new Blob([json], { type: 'application/json' })
-    const file = this.getFilename(filename)
+    const file = await this.getFilename(filename)
     if (!file) return
     downloadBlob(file, blob)
   }

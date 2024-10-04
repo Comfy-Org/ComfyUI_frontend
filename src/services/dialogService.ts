@@ -9,6 +9,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
+import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { i18n } from '@/i18n'
 
 export function showLoadWorkflowWarning(props: {
@@ -55,5 +56,28 @@ export function showTemplateWorkflowsDialog() {
   useDialogStore().showDialog({
     title: i18n.global.t('templateWorkflows.title'),
     component: TemplateWorkflowsContent
+  })
+}
+
+export async function showPromptDialog(
+  message: string,
+  defaultValue: string = ''
+): Promise<string> {
+  const dialogStore = useDialogStore()
+
+  return new Promise((resolve) => {
+    dialogStore.showDialog({
+      component: PromptDialogContent,
+      props: {
+        message,
+        defaultValue,
+        onConfirm: (value: string) => {
+          resolve(value)
+        },
+        onClose: () => {
+          resolve(defaultValue)
+        }
+      }
+    })
   })
 }

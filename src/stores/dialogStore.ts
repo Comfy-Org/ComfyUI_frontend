@@ -36,6 +36,9 @@ export const useDialogStore = defineStore('dialog', {
     },
 
     closeDialog() {
+      if (this.props.onClose) {
+        this.props.onClose()
+      }
       this.isVisible = false
     }
   }
