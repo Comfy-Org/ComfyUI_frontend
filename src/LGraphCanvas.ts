@@ -4376,7 +4376,10 @@ export class LGraphCanvas {
             node.is_selected,
             node.mouseOver
         );
-        node.drawBadges(ctx);
+
+        if (!low_quality) {
+            node.drawBadges(ctx);
+        }
 
         ctx.shadowColor = "transparent";
 
