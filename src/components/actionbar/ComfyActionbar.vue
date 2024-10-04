@@ -1,11 +1,11 @@
 <template>
   <Panel
     v-show="visible"
-    class="app-menu w-fit"
+    class="actionbar w-fit"
     :style="style"
     :class="{ 'is-dragging': isDragging }"
   >
-    <div class="app-menu-content flex items-center" ref="panelRef">
+    <div class="actionbar-content flex items-center" ref="panelRef">
       <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
       </span>
       <div class="queue-button-group flex">
@@ -216,13 +216,13 @@ useEventListener(window, 'resize', adjustMenuPosition)
 </script>
 
 <style scoped>
-.app-menu {
+.actionbar {
   pointer-events: all;
   position: fixed;
   z-index: 1000;
 }
 
-.app-menu.is-dragging {
+.actionbar.is-dragging {
   user-select: none;
 }
 
