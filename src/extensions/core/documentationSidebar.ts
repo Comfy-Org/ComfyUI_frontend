@@ -158,30 +158,6 @@ function updateNode(node?) {
     }
   }
 }
-let docStyleElement = document.createElement('style')
-docStyleElement.innerHTML = `
-.doc-node {
-  font-size: 1.5em
-}
-.doc-section {
-  background-color: var(--comfy-menu-bg)
-}
-.doc-item div {
-  margin-inline-start: 1vw;
-}
-@keyframes selectAnimation {
-  0% { background-color: #5555}
-  80% { background-color: #5555}
-  100% { background-color: #0000}
-}
-.doc-item:focus {
-  animation: selectAnimation 2s;
-}
-.DocumentationIcon:before {
-  font-size: 1.5em; content: '?';
-}
-`
-document.body.append(docStyleElement)
 
 var bringToFront
 class DocumentationSidebar implements CustomSidebarTabExtension {
