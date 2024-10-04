@@ -192,12 +192,8 @@ class WorkflowsSidebarTab extends SidebarTab {
     return this.page.locator('.new-blank-workflow-button')
   }
 
-  get browseWorkflowsButton() {
-    return this.page.locator('.browse-workflows-button')
-  }
-
-  get newDefaultWorkflowButton() {
-    return this.page.locator('.new-default-workflow-button')
+  get openWorkflowButton() {
+    return this.page.locator('.open-workflow-button')
   }
 
   async getOpenedWorkflowNames() {

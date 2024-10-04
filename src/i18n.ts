@@ -55,6 +55,8 @@ const messages = {
       nodeLibrary: 'Node Library',
       workflows: 'Workflows',
       browseTemplates: 'Browse example templates',
+      openWorkflow: 'Open workflow in local file system',
+      newBlankWorkflow: 'Create a new blank workflow',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
@@ -159,6 +161,8 @@ const messages = {
       nodeLibrary: '节点库',
       workflows: '工作流',
       browseTemplates: '浏览示例模板',
+      openWorkflow: '在本地文件系统中打开工作流',
+      newBlankWorkflow: '创建一个新空白工作流',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       },
