@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { useToastStore } from './toastStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useMenuItemStore } from './menuItemStore'
+import { useCommandStore } from './commandStore'
 
 interface WorkspaceState {
   spinner: boolean
@@ -26,6 +27,11 @@ export const useWorkspaceStore = defineStore('workspace', {
     menu() {
       return {
         registerTopbarCommands: useMenuItemStore().registerCommands
+      }
+    },
+    command() {
+      return {
+        execute: useCommandStore().execute
       }
     }
   },

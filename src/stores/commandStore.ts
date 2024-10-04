@@ -15,6 +15,7 @@ import { ComfyExtension } from '@/types/comfy'
 import { useWorkspaceStore } from './workspaceStateStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 export interface ComfyCommand {
   id: string
@@ -320,10 +321,13 @@ export const useCommandStore = defineStore('command', () => {
     return commandsById.value[command]
   }
 
-  const execute = (commandId: string) => {
+  const { wrapWithErrorHandlingAsync } = useErrorHandling()
+  const execute = (commandId: string, errorHandler?: (error: any) => void) => {
     const command = getCommand(commandId)
     if (command) {
-      command.function()
+      wrapWithErrorHandlingAsync(command.function, errorHandler)()
+    } else {
+      throw new Error(`Command ${commandId} not found`)
     }
   }
 

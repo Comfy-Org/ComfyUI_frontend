@@ -39,4 +39,9 @@ export interface ExtensionManager {
 
   // Toast
   toast: ToastManager
+  command: CommandManager
+}
+
+export interface CommandManager {
+  execute(command: string, errorHandler?: (error: any) => void): void
 }

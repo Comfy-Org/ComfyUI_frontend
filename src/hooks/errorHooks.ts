@@ -26,7 +26,7 @@ export function useErrorHandling() {
 
   const wrapWithErrorHandlingAsync =
     (
-      action: (...args: any[]) => Promise<any>,
+      action: ((...args: any[]) => Promise<any>) | ((...args: any[]) => any),
       errorHandler?: (error: any) => void
     ) =>
     async (...args: any[]) => {
