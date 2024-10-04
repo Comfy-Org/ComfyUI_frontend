@@ -1,12 +1,12 @@
 import type { Page, Locator } from '@playwright/test'
 import type { AutoQueueMode } from '../../src/stores/queueStore'
 
-export class ComfyAppMenu {
+export class ComfyActionbar {
   public readonly root: Locator
   public readonly queueButton: ComfyQueueButton
 
   constructor(public readonly page: Page) {
-    this.root = page.locator('.app-menu')
+    this.root = page.locator('.actionbar')
     this.queueButton = new ComfyQueueButton(this)
   }
 }
@@ -15,15 +15,15 @@ class ComfyQueueButton {
   public readonly root: Locator
   public readonly primaryButton: Locator
   public readonly dropdownButton: Locator
-  constructor(public readonly appMenu: ComfyAppMenu) {
-    this.root = appMenu.root.getByTestId('queue-button')
+  constructor(public readonly actionbar: ComfyActionbar) {
+    this.root = actionbar.root.getByTestId('queue-button')
     this.primaryButton = this.root.locator('.p-splitbutton-button')
     this.dropdownButton = this.root.locator('.p-splitbutton-dropdown')
   }
 
   public async toggleOptions() {
     await this.dropdownButton.click()
-    return new ComfyQueueButtonOptions(this.appMenu.page)
+    return new ComfyQueueButtonOptions(this.actionbar.page)
   }
 }
 
