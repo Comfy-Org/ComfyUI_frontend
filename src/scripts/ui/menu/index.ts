@@ -36,7 +36,11 @@ export class ComfyAppMenu {
 
   async getFilename(defaultName: string): Promise<string | null> {
     if (useSettingStore().get('Comfy.PromptFilename')) {
-      let filename = await showPromptDialog('Save workflow as:', defaultName)
+      let filename = await showPromptDialog({
+        title: 'Export Workflow',
+        message: 'Enter the filename:',
+        defaultValue: defaultName
+      })
       if (!filename) return null
       if (!filename.toLowerCase().endsWith('.json')) {
         filename += '.json'

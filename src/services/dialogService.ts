@@ -65,14 +65,20 @@ export function showTemplateWorkflowsDialog() {
   })
 }
 
-export async function showPromptDialog(
-  message: string,
-  defaultValue: string = ''
-): Promise<string | null> {
+export async function showPromptDialog({
+  title,
+  message,
+  defaultValue = ''
+}: {
+  title: string
+  message: string
+  defaultValue?: string
+}): Promise<string | null> {
   const dialogStore = useDialogStore()
 
   return new Promise((resolve) => {
     dialogStore.showDialog({
+      title,
       component: PromptDialogContent,
       props: {
         message,
