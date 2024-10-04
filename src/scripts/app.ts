@@ -2231,8 +2231,7 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({
         missingNodeTypes,
-        hasAddedNodes,
-        maximizable: true
+        hasAddedNodes
       })
     }
 
@@ -2245,8 +2244,7 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
-        paths,
-        maximizable: true
+        paths
       })
     }
 
