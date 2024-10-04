@@ -30,7 +30,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 import Dialog from 'primevue/dialog'
 
 const dialogStore = useDialogStore()
-const maximizable = computed(() => dialogStore.props.maximizable ?? false)
+const maximizable = computed(
+  () => dialogStore.dialogComponentProps.maximizable ?? false
+)
 const maximized = ref(false)
 
 const onMaximize = () => {

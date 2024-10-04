@@ -20,7 +20,10 @@ export function showLoadWorkflowWarning(props: {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: LoadWorkflowWarning,
-    props
+    props,
+    dialogComponentProps: {
+      maximizable: true
+    }
   })
 }
 
@@ -32,7 +35,10 @@ export function showMissingModelsWarning(props: {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: MissingModelsWarning,
-    props
+    props,
+    dialogComponentProps: {
+      maximizable: true
+    }
   })
 }
 
@@ -62,7 +68,7 @@ export function showTemplateWorkflowsDialog() {
 export async function showPromptDialog(
   message: string,
   defaultValue: string = ''
-): Promise<string> {
+): Promise<string | null> {
   const dialogStore = useDialogStore()
 
   return new Promise((resolve) => {
@@ -73,9 +79,11 @@ export async function showPromptDialog(
         defaultValue,
         onConfirm: (value: string) => {
           resolve(value)
-        },
+        }
+      },
+      dialogComponentProps: {
         onClose: () => {
-          resolve(defaultValue)
+          resolve(null)
         }
       }
     })

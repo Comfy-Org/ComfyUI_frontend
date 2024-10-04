@@ -3,6 +3,7 @@ import { $el } from '../../ui'
 import { downloadBlob } from '../../utils'
 import { ComfyButtonGroup } from '../components/buttonGroup'
 import { showPromptDialog } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 import './menu.css'
 
 // Export to make sure following components are shimmed and exported by vite
@@ -33,10 +34,10 @@ export class ComfyAppMenu {
     ])
   }
 
-  async getFilename(defaultName: string) {
-    if (this.app.ui.settings.getSettingValue('Comfy.PromptFilename', true)) {
+  async getFilename(defaultName: string): Promise<string | null> {
+    if (useSettingStore().get('Comfy.PromptFilename')) {
       let filename = await showPromptDialog('Save workflow as:', defaultName)
-      if (!filename) return
+      if (!filename) return null
       if (!filename.toLowerCase().endsWith('.json')) {
         filename += '.json'
       }
@@ -48,7 +49,7 @@ export class ComfyAppMenu {
   async exportWorkflow(
     filename: string,
     promptProperty: 'workflow' | 'output'
-  ) {
+  ): Promise<void> {
     if (this.app.workflowManager.activeWorkflow?.path) {
       filename = this.app.workflowManager.activeWorkflow.name
     }
