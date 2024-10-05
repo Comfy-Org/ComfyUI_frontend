@@ -65,7 +65,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     {
       label: 'New',
       icon: 'pi pi-plus',
-      command: () => commandStore.execute('Comfy.NewBlankWorkflow')
+      command: () => commandStore.execute('Comfy.NewBlankWorkflow'),
+      id: 'Comfy.NewBlankWorkflow'
     },
     {
       separator: true
@@ -73,12 +74,14 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     {
       label: 'Open',
       icon: 'pi pi-folder-open',
-      command: () => commandStore.execute('Comfy.OpenWorkflow')
+      command: () => commandStore.execute('Comfy.OpenWorkflow'),
+      id: 'Comfy.OpenWorkflow'
     },
     {
       label: 'Browse Templates',
       icon: 'pi pi-th-large',
-      command: () => commandStore.execute('Comfy.BrowseTemplates')
+      command: () => commandStore.execute('Comfy.BrowseTemplates'),
+      id: 'Comfy.BrowseTemplates'
     },
     {
       separator: true
@@ -86,22 +89,26 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     {
       label: 'Save',
       icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflow')
+      command: () => commandStore.execute('Comfy.SaveWorkflow'),
+      id: 'Comfy.SaveWorkflow'
     },
     {
       label: 'Save As',
       icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflowAs')
+      command: () => commandStore.execute('Comfy.SaveWorkflowAs'),
+      id: 'Comfy.SaveWorkflowAs'
     },
     {
       label: 'Export',
       icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflow')
+      command: () => commandStore.execute('Comfy.ExportWorkflow'),
+      id: 'Comfy.ExportWorkflow'
     },
     {
       label: 'Export (API Format)',
       icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflowAPI')
+      command: () => commandStore.execute('Comfy.ExportWorkflowAPI'),
+      id: 'Comfy.ExportWorkflowAPI'
     }
   ]
 

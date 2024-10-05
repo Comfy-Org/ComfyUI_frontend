@@ -94,5 +94,19 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.ShowSettingsDialog'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true
+    },
+    commandId: 'Comfy.Undo'
+  },
+  {
+    combo: {
+      key: 'y',
+      ctrl: true
+    },
+    commandId: 'Comfy.Redo'
   }
 ]

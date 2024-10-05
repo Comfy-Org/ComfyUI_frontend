@@ -15,7 +15,19 @@
           submenu: `dropdown-direction-${dropdownDirection}`,
           item: 'relative'
         }"
-      />
+      >
+        <template #item="{ item, props, root }">
+          <a v-bind="props" class="p-menubar-item-link flex items-center">
+            <span class="p-menuitem-text">{{ item.label }}</span>
+            <span
+              v-if="!root && keybindings[item.id]"
+              class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
+            >
+              {{ keybindings[item.id] }}
+            </span>
+          </a>
+        </template>
+      </Menubar>
       <Divider layout="vertical" class="mx-2" />
       <div class="flex-grow">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
@@ -36,6 +48,8 @@ import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus } from '@vueuse/core'
+import { useKeybindingStore } from '@/stores/keybindingStore'
+import { MenuItem } from 'primevue/menuitem'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -55,6 +69,26 @@ const dropdownDirection = computed(() =>
 
 const menuItemsStore = useMenuItemStore()
 const items = menuItemsStore.menuItems
+
+const keybindingStore = useKeybindingStore()
+const keybindings = computed(() => {
+  const bindings: Record<string, string> = {}
+  const stack: MenuItem[] = [...items]
+
+  while (stack.length) {
+    const item = stack.pop()!
+    if (item.id) {
+      const keybinding = keybindingStore.getKeybindingByCommandId(item.id)
+      if (keybinding) {
+        bindings[item.id] = keybinding.combo.toString()
+      }
+    }
+    if (item.items) {
+      stack.push(...item.items)
+    }
+  }
+  return bindings
+})
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts
@@ -103,6 +137,12 @@ eventBus.on((event: string, payload: any) => {
   font-size: 1.2em;
   user-select: none;
   cursor: default;
+}
+
+.keybinding-tag {
+  background: var(--p-content-hover-background);
+  border-color: var(--p-content-border-color);
+  border-style: solid;
 }
 </style>
 
