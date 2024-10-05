@@ -504,7 +504,9 @@ export class ComfyApp {
                 throw error
               }
             } catch (error) {
-              alert('Error copying image: ' + (error.message ?? error))
+              useToastStore().addAlert(
+                'Error copying image: ' + (error.message ?? error)
+              )
             }
           }
         }
@@ -2301,7 +2303,9 @@ export class ComfyApp {
       // TODO: Show validation error in a dialog.
       const validatedGraphData = await validateComfyWorkflow(
         graphData,
-        /* onError=*/ alert
+        /* onError=*/ (err) => {
+          useToastStore().addAlert(err)
+        }
       )
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.

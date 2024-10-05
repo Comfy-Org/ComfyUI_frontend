@@ -12,6 +12,7 @@ import {
 import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
 import { UserDataFullInfo } from '@/types/apiTypes'
+import { useToastStore } from '@/stores/toastStore'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: ReturnType<typeof useExecutionStore> | null
@@ -76,7 +77,9 @@ export class ComfyWorkflowManager extends EventTarget {
         }
       })
     } catch (error) {
-      alert('Error loading workflows: ' + (error.message ?? error))
+      useToastStore().addAlert(
+        'Error loading workflows: ' + (error.message ?? error)
+      )
     }
   }
 
@@ -227,7 +230,7 @@ export class ComfyWorkflow {
   async getWorkflowData() {
     const resp = await api.getUserData('workflows/' + this.path)
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error loading workflow file '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return
@@ -268,7 +271,7 @@ export class ComfyWorkflow {
       this.manager.workflowBookmarkStore?.setBookmarked(this.path, value)
       this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
-      alert(
+      useToastStore().addAlert(
         'Error favoriting workflow ' +
           this.path +
           '\n' +
@@ -299,7 +302,7 @@ export class ComfyWorkflow {
     }
 
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return
@@ -343,7 +346,7 @@ export class ComfyWorkflow {
     }
     const resp = await api.deleteUserData('workflows/' + this.path)
     if (resp.status !== 204) {
-      alert(
+      useToastStore().addAlert(
         `Error removing user data file '${this.path}': ${resp.status} ${resp.statusText}`
       )
     }
@@ -395,7 +398,7 @@ export class ComfyWorkflow {
     }
 
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return

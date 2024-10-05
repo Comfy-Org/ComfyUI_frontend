@@ -20,6 +20,9 @@ export const useToastStore = defineStore('toast', {
     },
     removeAll() {
       this.removeAllRequested = true
+    },
+    addAlert(message: string) {
+      this.add({ severity: 'warn', summary: 'Alert', detail: message })
     }
   }
 })

@@ -4,6 +4,7 @@ import type { ComfyApp } from './app'
 import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
 import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -578,10 +579,10 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
             imageWidget.value = path
           }
         } else {
-          alert(resp.status + ' - ' + resp.statusText)
+          useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
         }
       } catch (error) {
-        alert(error)
+        useToastStore().addAlert(error)
       }
     }
 
