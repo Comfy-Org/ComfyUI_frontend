@@ -159,6 +159,7 @@ watch(isDragging, (newIsDragging) => {
 
 .actionbar.is-docked {
   position: static;
+  @apply bg-transparent border-none p-0;
 }
 
 .actionbar.is-dragging {
