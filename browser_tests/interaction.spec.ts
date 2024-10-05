@@ -480,7 +480,7 @@ test.describe('Load workflow', () => {
 
 test.describe('Load duplicate workflow', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {

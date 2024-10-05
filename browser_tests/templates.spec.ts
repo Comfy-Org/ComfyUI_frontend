@@ -3,7 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Templates', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {

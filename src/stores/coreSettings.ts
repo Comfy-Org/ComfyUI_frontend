@@ -376,10 +376,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu and workflow management.',
     experimental: true,
     type: 'combo',
-    options: ['Disabled', 'Floating'],
+    options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {
-      if (['Top', 'Bottom'].includes(value)) {
-        return 'Floating'
+      // Floating is now supported by dragging the docked actionbar off.
+      if (value === 'Floating') {
+        return 'Top'
       }
       return value
     }

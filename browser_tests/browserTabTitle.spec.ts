@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 test.describe('Browser tab title', () => {
   test.describe('Beta Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test.afterEach(async ({ comfyPage }) => {
