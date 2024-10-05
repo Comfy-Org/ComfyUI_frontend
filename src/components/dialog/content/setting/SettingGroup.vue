@@ -108,13 +108,3 @@ function getSettingComponent(setting: SettingParams): Component {
   }
 }
 </script>
-
-<style scoped>
-/* Ensure PrimeVue components take full width of their container */
-.setting-input :deep(.p-inputtext),
-.setting-input :deep(.input-slider),
-.setting-input :deep(.p-select),
-.setting-input :deep(.p-togglebutton) {
-  max-width: 200px;
-}
-</style>
