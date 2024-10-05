@@ -1,5 +1,5 @@
 <template>
-  <teleport to=".comfyui-body-top">
+  <teleport :to="teleportTarget">
     <div
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
@@ -41,6 +41,11 @@ const workflowTabsPosition = computed(() =>
 )
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
+const teleportTarget = computed(() =>
+  settingStore.get('Comfy.UseNewMenu') === 'Top'
+    ? '.comfyui-body-top'
+    : '.comfyui-body-bottom'
 )
 const menuItemsStore = useMenuItemStore()
 const items = menuItemsStore.menuItems
