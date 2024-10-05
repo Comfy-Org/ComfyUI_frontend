@@ -17,7 +17,7 @@
           {{ setting.name }}
           <i
             v-if="setting.tooltip"
-            class="pi pi-info-circle info-chip bg-transparent"
+            class="pi pi-info-circle bg-transparent"
             v-tooltip="setting.tooltip"
         /></span>
       </div>
