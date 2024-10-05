@@ -3,7 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -508,7 +508,7 @@ test.describe('Menu', () => {
       comfyPage
     }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', position)
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
 
     test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
@@ -516,7 +516,7 @@ test.describe('Menu', () => {
     }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
   })
 

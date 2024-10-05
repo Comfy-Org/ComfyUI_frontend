@@ -13,7 +13,7 @@ test.describe('Group Node', () => {
     let libraryTab
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
@@ -182,7 +182,7 @@ test.describe('Group Node', () => {
     }
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.loadWorkflow(WORKFLOW_NAME)
       await comfyPage.menu.nodeLibraryTab.open()
 

@@ -1,5 +1,5 @@
 <template>
-  <teleport to=".comfyui-body-top">
+  <teleport :to="teleportTarget">
     <div
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
@@ -11,7 +11,9 @@
         :model="items"
         class="top-menubar border-none p-0 bg-transparent"
         :pt="{
-          rootList: 'gap-0 flex-nowrap w-auto'
+          rootList: 'gap-0 flex-nowrap w-auto',
+          submenu: `dropdown-direction-${dropdownDirection}`,
+          item: 'relative'
         }"
       />
       <Divider layout="vertical" class="mx-2" />
@@ -42,6 +44,15 @@ const workflowTabsPosition = computed(() =>
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
+const teleportTarget = computed(() =>
+  settingStore.get('Comfy.UseNewMenu') === 'Top'
+    ? '.comfyui-body-top'
+    : '.comfyui-body-bottom'
+)
+const dropdownDirection = computed(() =>
+  settingStore.get('Comfy.UseNewMenu') === 'Top' ? 'down' : 'up'
+)
+
 const menuItemsStore = useMenuItemStore()
 const items = menuItemsStore.menuItems
 
@@ -98,5 +109,9 @@ eventBus.on((event: string, payload: any) => {
 <style>
 .top-menubar .p-menubar-item-link svg {
   display: none;
+}
+
+.p-menubar-submenu.dropdown-direction-up {
+  @apply top-auto bottom-full flex-col-reverse;
 }
 </style>
