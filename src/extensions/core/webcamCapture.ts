@@ -1,5 +1,6 @@
 import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
+import { useToastStore } from '@/stores/toastStore'
 
 const WEBCAM_READY = Symbol()
 
@@ -102,7 +103,7 @@ app.registerExtension({
         capture()
       } else if (!node.imgs?.length) {
         const err = `No webcam image captured`
-        alert(err)
+        useToastStore().addAlert(err)
         throw new Error(err)
       }
 
@@ -120,7 +121,7 @@ app.registerExtension({
       })
       if (resp.status !== 200) {
         const err = `Error uploading camera image: ${resp.status} - ${resp.statusText}`
-        alert(err)
+        useToastStore().addAlert(err)
         throw new Error(err)
       }
       return `webcam/${name} [temp]`

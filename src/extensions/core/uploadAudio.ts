@@ -3,6 +3,7 @@ import { api } from '../../scripts/api'
 import type { IWidget } from '@comfyorg/litegraph'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { ComfyNodeDef } from '@/types/apiTypes'
+import { useToastStore } from '@/stores/toastStore'
 
 type FolderType = 'input' | 'output' | 'temp'
 
@@ -66,10 +67,10 @@ async function uploadFile(
         audioWidget.value = path
       }
     } else {
-      alert(resp.status + ' - ' + resp.statusText)
+      useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
     }
   } catch (error) {
-    alert(error)
+    useToastStore().addAlert(error)
   }
 }
 

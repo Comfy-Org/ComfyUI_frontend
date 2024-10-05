@@ -29,8 +29,7 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph,
-  LGraphGroup
+  LiteGraph
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
 import { ExtensionManager } from '@/types/extensionTypes'
@@ -48,7 +47,7 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ModelStore, useModelStore } from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -504,7 +503,9 @@ export class ComfyApp {
                 throw error
               }
             } catch (error) {
-              alert('Error copying image: ' + (error.message ?? error))
+              useToastStore().addAlert(
+                'Error copying image: ' + (error.message ?? error)
+              )
             }
           }
         }
@@ -2301,7 +2302,9 @@ export class ComfyApp {
       // TODO: Show validation error in a dialog.
       const validatedGraphData = await validateComfyWorkflow(
         graphData,
-        /* onError=*/ alert
+        /* onError=*/ (err) => {
+          useToastStore().addAlert(err)
+        }
       )
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.

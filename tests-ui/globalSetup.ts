@@ -28,6 +28,14 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/toastStore', () => {
+    return {
+      useToastStore: () => ({
+        addAlert: jest.fn()
+      })
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()

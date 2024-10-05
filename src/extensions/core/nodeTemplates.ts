@@ -3,6 +3,7 @@ import { api } from '../../scripts/api'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
+import { useToastStore } from '@/stores/toastStore'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -118,7 +119,7 @@ class ManageTemplates extends ComfyDialog {
         await api.storeUserData(file, templates, { stringify: false })
       } catch (error) {
         console.error(error)
-        alert(error.message)
+        useToastStore().addAlert(error.message)
       }
     } else {
       localStorage.setItem(id, JSON.stringify(this.templates))
@@ -151,7 +152,7 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      alert('No templates to export.')
+      useToastStore().addAlert('No templates to export.')
       return
     }
 
