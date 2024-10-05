@@ -715,6 +715,7 @@ app.registerExtension({
         widget.options || {}
       ]
       if (!isConvertibleWidget(widget, config)) return false
+      if (widget.type?.startsWith(CONVERTED_TYPE)) return false
       convertToInput(this, widget, config)
       return true
     }
