@@ -5,9 +5,9 @@
     <div
       v-for="setting in group.settings"
       :key="setting.id"
-      class="setting-item"
+      class="setting-item flex items-center mb-4"
     >
-      <div class="setting-label">
+      <div class="setting-label flex flex-grow items-center">
         <span>
           <Tag v-if="setting.experimental" :value="$t('experimental')" />
           <Tag
@@ -17,11 +17,11 @@
           {{ setting.name }}
           <i
             v-if="setting.tooltip"
-            class="pi pi-info-circle info-chip"
+            class="pi pi-info-circle info-chip bg-transparent"
             v-tooltip="setting.tooltip"
         /></span>
       </div>
-      <div class="setting-input">
+      <div class="setting-input flex justify-end">
         <component
           :is="markRaw(getSettingComponent(setting))"
           :id="setting.id"
@@ -110,45 +110,11 @@ function getSettingComponent(setting: SettingParams): Component {
 </script>
 
 <style scoped>
-.info-chip {
-  background: transparent;
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.setting-label {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.setting-input {
-  flex: 1;
-  display: flex;
-  justify-content: flex-end;
-  margin-left: 1rem;
-}
-
 /* Ensure PrimeVue components take full width of their container */
 .setting-input :deep(.p-inputtext),
 .setting-input :deep(.input-slider),
 .setting-input :deep(.p-select),
 .setting-input :deep(.p-togglebutton) {
-  width: 100%;
   max-width: 200px;
-}
-
-.setting-input :deep(.p-inputtext) {
-  max-width: unset;
-}
-
-/* Special case for ToggleSwitch to align it to the right */
-.setting-input :deep(.p-toggleswitch) {
-  margin-left: auto;
 }
 </style>
