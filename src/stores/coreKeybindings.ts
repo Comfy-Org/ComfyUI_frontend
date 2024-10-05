@@ -38,12 +38,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'h'
-    },
-    commandId: 'Workspace.ToggleSidebarTab.queue'
-  },
-  {
-    combo: {
       key: 'w'
     },
     commandId: 'Workspace.ToggleSidebarTab.workflows'
