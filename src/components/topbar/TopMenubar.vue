@@ -1,6 +1,10 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div class="comfyui-menu flex items-center" v-show="betaMenuEnabled">
+    <div
+      ref="topMenuRef"
+      class="comfyui-menu flex items-center"
+      v-show="betaMenuEnabled"
+    >
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
         :model="items"
@@ -14,7 +18,7 @@
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
-      <div class="comfyui-menu-action-bar-docking"></div>
+      <Actionbar />
     </div>
   </teleport>
 </template>
@@ -23,8 +27,9 @@
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 
@@ -45,6 +50,9 @@ onMounted(() => {
     menuRight.value.appendChild(app.menu.element)
   }
 })
+
+const topMenuRef = ref<HTMLDivElement | null>(null)
+provide('topMenuRef', topMenuRef)
 </script>
 
 <style scoped>

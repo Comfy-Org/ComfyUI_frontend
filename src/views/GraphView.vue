@@ -6,7 +6,6 @@
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
-  <Actionbar />
 </template>
 
 <script setup lang="ts">
@@ -41,7 +40,6 @@ import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySideba
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
-import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
