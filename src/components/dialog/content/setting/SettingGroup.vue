@@ -8,7 +8,7 @@
       class="setting-item flex items-center mb-4"
     >
       <div class="setting-label flex flex-grow items-center">
-        <span>
+        <span class="text-[var(--p-text-muted-color)]">
           <Tag v-if="setting.experimental" :value="$t('experimental')" />
           <Tag
             v-if="setting.deprecated"
