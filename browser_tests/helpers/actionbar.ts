@@ -9,6 +9,11 @@ export class ComfyActionbar {
     this.root = page.locator('.actionbar')
     this.queueButton = new ComfyQueueButton(this)
   }
+
+  async isDocked() {
+    const className = await this.root.getAttribute('class')
+    return className?.includes('is-docked') ?? false
+  }
 }
 
 class ComfyQueueButton {
