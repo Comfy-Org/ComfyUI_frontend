@@ -1,6 +1,11 @@
 <template>
   <teleport to=".comfyui-body-top">
-    <div class="comfyui-menu flex items-center" v-show="betaMenuEnabled">
+    <div
+      ref="topMenuRef"
+      class="comfyui-menu flex items-center"
+      v-show="betaMenuEnabled"
+      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
+    >
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
         :model="items"
@@ -10,11 +15,11 @@
         }"
       />
       <Divider layout="vertical" class="mx-2" />
-      <WorkflowTabs
-        v-if="workflowTabsPosition === 'Topbar'"
-        class="flex-grow"
-      />
+      <div class="flex-grow">
+        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+      </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
+      <Actionbar />
     </div>
   </teleport>
 </template>
@@ -23,10 +28,12 @@
 import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
+import { useEventBus } from '@vueuse/core'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -45,6 +52,18 @@ onMounted(() => {
     menuRight.value.appendChild(app.menu.element)
   }
 })
+
+const topMenuRef = ref<HTMLDivElement | null>(null)
+provide('topMenuRef', topMenuRef)
+const eventBus = useEventBus<string>('topMenu')
+const isDropZone = ref(false)
+const isDroppable = ref(false)
+eventBus.on((event: string, payload: any) => {
+  if (event === 'updateHighlight') {
+    isDropZone.value = payload.isDragging
+    isDroppable.value = payload.isOverlapping && payload.isDragging
+  }
+})
 </script>
 
 <style scoped>
@@ -59,6 +78,14 @@ onMounted(() => {
   order: 0;
   grid-column: 1/-1;
   max-height: 90vh;
+}
+
+.comfyui-menu.dropzone {
+  background: var(--p-highlight-background);
+}
+
+.comfyui-menu.dropzone-active {
+  background: var(--p-highlight-background-focus);
 }
 
 .comfyui-logo {

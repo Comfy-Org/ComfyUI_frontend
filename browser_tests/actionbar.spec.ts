@@ -113,4 +113,15 @@ test.describe('Actionbar', () => {
     ).toBe(END)
     expect(promptNumber, 'queued prompt count should be 2').toBe(2)
   })
+
+  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+    await comfyPage.page.dragAndDrop(
+      '.actionbar .drag-handle',
+      '.comfyui-menu',
+      {
+        targetPosition: { x: 0, y: 0 }
+      }
+    )
+    expect(await comfyPage.actionbar.isDocked()).toBe(true)
+  })
 })

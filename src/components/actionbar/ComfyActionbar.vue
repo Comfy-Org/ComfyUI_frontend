@@ -1,9 +1,8 @@
 <template>
   <Panel
-    v-show="visible"
     class="actionbar w-fit"
     :style="style"
-    :class="{ 'is-dragging': isDragging }"
+    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
   >
     <div class="actionbar-content flex items-center" ref="panelRef">
       <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
@@ -24,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, Ref, ref, watch } from 'vue'
 import Panel from 'primevue/panel'
 import Divider from 'primevue/divider'
 import Button from 'primevue/button'
@@ -32,34 +31,48 @@ import ButtonGroup from 'primevue/buttongroup'
 import ComfyQueueButton from './ComfyQueueButton.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDraggable, useEventListener, useLocalStorage } from '@vueuse/core'
-import { debounce, clamp } from 'lodash'
+import {
+  useDraggable,
+  useElementBounding,
+  useEventBus,
+  useEventListener,
+  useLocalStorage,
+  watchDebounced
+} from '@vueuse/core'
+import { clamp } from 'lodash'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 
 const visible = computed(
-  () => settingsStore.get('Comfy.UseNewMenu') === 'Floating'
+  () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelRef, {
+const {
+  x,
+  y,
+  style: style,
+  isDragging
+} = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
-watch(
+watchDebounced(
   [x, y],
-  debounce(([newX, newY]) => {
+  ([newX, newY]) => {
     storedPosition.value = { x: newX, y: newY }
-  }, 300)
+  },
+  { debounce: 300 }
 )
 
 // Set initial position to bottom center
@@ -109,6 +122,41 @@ const adjustMenuPosition = () => {
 }
 
 useEventListener(window, 'resize', adjustMenuPosition)
+
+const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
+const topMenuBounds = useElementBounding(topMenuRef)
+const overlapThreshold = 20 // pixels
+const isOverlappingWithTopMenu = computed(() => {
+  if (!panelRef.value) {
+    return false
+  }
+  const { height } = panelRef.value.getBoundingClientRect()
+  const actionbarBottom = y.value + height
+  const topMenuBottom = topMenuBounds.bottom.value
+
+  const overlapPixels =
+    Math.min(actionbarBottom, topMenuBottom) -
+    Math.max(y.value, topMenuBounds.top.value)
+  return overlapPixels > overlapThreshold
+})
+
+watch(isDragging, (newIsDragging) => {
+  if (!newIsDragging) {
+    // Stop dragging
+    isDocked.value = isOverlappingWithTopMenu.value
+  } else {
+    // Start dragging
+    isDocked.value = false
+  }
+})
+
+const eventBus = useEventBus<string>('topMenu')
+watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
+  eventBus.emit('updateHighlight', {
+    isDragging: dragging,
+    isOverlapping: overlapping
+  })
+})
 </script>
 
 <style scoped>
@@ -116,6 +164,11 @@ useEventListener(window, 'resize', adjustMenuPosition)
   pointer-events: all;
   position: fixed;
   z-index: 1000;
+}
+
+.actionbar.is-docked {
+  position: static;
+  @apply bg-transparent border-none p-0;
 }
 
 .actionbar.is-dragging {
