@@ -4,6 +4,7 @@
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
       v-show="betaMenuEnabled"
+      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <Menubar
@@ -32,6 +33,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
+import { useEventBus } from '@vueuse/core'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -53,6 +55,15 @@ onMounted(() => {
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
 provide('topMenuRef', topMenuRef)
+const eventBus = useEventBus<string>('topMenu')
+const isDropZone = ref(false)
+const isDroppable = ref(false)
+eventBus.on((event: string, payload: any) => {
+  if (event === 'updateHighlight') {
+    isDropZone.value = payload.isDragging
+    isDroppable.value = payload.isOverlapping && payload.isDragging
+  }
+})
 </script>
 
 <style scoped>
@@ -67,6 +78,14 @@ provide('topMenuRef', topMenuRef)
   order: 0;
   grid-column: 1/-1;
   max-height: 90vh;
+}
+
+.comfyui-menu.dropzone {
+  background: var(--p-highlight-background);
+}
+
+.comfyui-menu.dropzone-active {
+  background: var(--p-highlight-background-focus);
 }
 
 .comfyui-logo {

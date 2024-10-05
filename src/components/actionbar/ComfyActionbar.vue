@@ -34,6 +34,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import {
   useDraggable,
   useElementBounding,
+  useEventBus,
   useEventListener,
   useLocalStorage,
   watchDebounced
@@ -125,7 +126,7 @@ useEventListener(window, 'resize', adjustMenuPosition)
 const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const topMenuBounds = useElementBounding(topMenuRef)
 const overlapThreshold = 20 // pixels
-const getIsOverlappingWithTopMenu = () => {
+const isOverlappingWithTopMenu = computed(() => {
   if (!panelRef.value) {
     return false
   }
@@ -137,16 +138,24 @@ const getIsOverlappingWithTopMenu = () => {
     Math.min(actionbarBottom, topMenuBottom) -
     Math.max(y.value, topMenuBounds.top.value)
   return overlapPixels > overlapThreshold
-}
+})
 
 watch(isDragging, (newIsDragging) => {
   if (!newIsDragging) {
     // Stop dragging
-    isDocked.value = getIsOverlappingWithTopMenu()
+    isDocked.value = isOverlappingWithTopMenu.value
   } else {
     // Start dragging
     isDocked.value = false
   }
+})
+
+const eventBus = useEventBus<string>('topMenu')
+watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
+  eventBus.emit('updateHighlight', {
+    isDragging: dragging,
+    isOverlapping: overlapping
+  })
 })
 </script>
 
