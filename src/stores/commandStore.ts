@@ -16,6 +16,7 @@ import { useWorkspaceStore } from './workspaceStateStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
+import { useWorkflowStore } from './workflowStore'
 
 export interface ComfyCommand {
   id: string
@@ -295,6 +296,22 @@ export const useCommandStore = defineStore('command', () => {
         group.addNodes(Object.values(app.canvas.selected_nodes), padding)
         app.canvas.graph.add(group)
         useTitleEditorStore().titleEditorTarget = group
+      }
+    },
+    {
+      id: 'Workspace.NextOpenedWorkflow',
+      icon: 'pi pi-step-forward',
+      label: 'Next Opened Workflow',
+      function: () => {
+        useWorkflowStore().loadNextOpenedWorkflow()
+      }
+    },
+    {
+      id: 'Workspace.PreviousOpenedWorkflow',
+      icon: 'pi pi-step-backward',
+      label: 'Previous Opened Workflow',
+      function: () => {
+        useWorkflowStore().loadPreviousOpenedWorkflow()
       }
     }
   ]
