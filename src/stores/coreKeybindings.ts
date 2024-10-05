@@ -34,13 +34,31 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       key: 'q'
     },
-    commandId: 'Comfy.ToggleQueueSidebarTab'
+    commandId: 'Workspace.ToggleSidebarTab.queue'
   },
   {
     combo: {
       key: 'h'
     },
-    commandId: 'Comfy.ToggleQueueSidebarTab'
+    commandId: 'Workspace.ToggleSidebarTab.queue'
+  },
+  {
+    combo: {
+      key: 'w'
+    },
+    commandId: 'Workspace.ToggleSidebarTab.workflows'
+  },
+  {
+    combo: {
+      key: 'n'
+    },
+    commandId: 'Workspace.ToggleSidebarTab.node-library'
+  },
+  {
+    combo: {
+      key: 'm'
+    },
+    commandId: 'Workspace.ToggleSidebarTab.model-library'
   },
   {
     combo: {
