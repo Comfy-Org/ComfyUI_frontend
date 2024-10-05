@@ -12,6 +12,8 @@ import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
 const DEFAULT_TITLE = 'ComfyUI'
+const TITLE_SUFFIX = ' - ComfyUI'
+
 const executionStore = useExecutionStore()
 const executionText = computed(() =>
   executionStore.isIdle ? '' : `[${executionStore.executionProgress}%]`
@@ -28,7 +30,9 @@ const isUnsavedText = computed(() =>
 )
 const workflowNameText = computed(() => {
   const workflowName = workflowStore.activeWorkflow?.name
-  return workflowName ? isUnsavedText.value + workflowName : DEFAULT_TITLE
+  return workflowName
+    ? isUnsavedText.value + workflowName + TITLE_SUFFIX
+    : DEFAULT_TITLE
 })
 
 const nodeExecutionTitle = computed(() =>
