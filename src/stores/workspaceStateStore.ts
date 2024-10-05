@@ -39,8 +39,20 @@ export const useWorkspaceStore = defineStore('workspace', {
     updateActiveSidebarTab(tabId: string) {
       this.activeSidebarTab = tabId
     },
+    toggleSidebarTab(tabId: string) {
+      this.activeSidebarTab = this.activeSidebarTab === tabId ? null : tabId
+    },
     registerSidebarTab(tab: SidebarTabExtension) {
       this.sidebarTabs = [...this.sidebarTabs, tab]
+      useCommandStore().registerCommand({
+        id: `Workspace.ToggleSidebarTab.${tab.id}`,
+        icon: tab.icon,
+        label: tab.tooltip,
+        tooltip: tab.tooltip,
+        function: () => {
+          this.toggleSidebarTab(tab.id)
+        }
+      })
     },
     unregisterSidebarTab(id: string) {
       const index = this.sidebarTabs.findIndex((tab) => tab.id === id)

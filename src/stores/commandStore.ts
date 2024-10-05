@@ -262,19 +262,6 @@ export const useCommandStore = defineStore('command', () => {
       }
     },
     {
-      id: 'Comfy.ToggleQueueSidebarTab',
-      icon: 'pi pi-history',
-      label: 'Queue',
-      versionAdded: '1.3.7',
-      function: () => {
-        const tabId = 'queue'
-        const workspaceStore = useWorkspaceStore()
-        workspaceStore.updateActiveSidebarTab(
-          workspaceStore.activeSidebarTab === tabId ? null : tabId
-        )
-      }
-    },
-    {
       id: 'Comfy.ShowSettingsDialog',
       icon: 'pi pi-cog',
       label: 'Settings',
