@@ -5,21 +5,23 @@
     :style="style"
     :class="{ 'is-dragging': isDragging }"
   >
-    <div class="actionbar-content flex items-center" ref="panelRef">
-      <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
-      </span>
-      <ComfyQueueButton />
-      <Divider layout="vertical" class="mx-1" />
-      <ButtonGroup class="flex flex-nowrap">
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          severity="secondary"
-          text
-          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
-        />
-      </ButtonGroup>
-    </div>
+    <teleport to=".comfyui-menu-action-bar-docking" :disabled="!isDocked">
+      <div class="actionbar-content flex items-center" ref="panelRef">
+        <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
+        </span>
+        <ComfyQueueButton />
+        <Divider layout="vertical" class="mx-1" />
+        <ButtonGroup class="flex flex-nowrap">
+          <Button
+            v-tooltip.bottom="$t('menu.refresh')"
+            icon="pi pi-refresh"
+            severity="secondary"
+            text
+            @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
+          />
+        </ButtonGroup>
+      </div>
+    </teleport>
   </Panel>
 </template>
 
@@ -32,18 +34,24 @@ import ButtonGroup from 'primevue/buttongroup'
 import ComfyQueueButton from './ComfyQueueButton.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDraggable, useEventListener, useLocalStorage } from '@vueuse/core'
-import { debounce, clamp } from 'lodash'
+import {
+  useDraggable,
+  useEventListener,
+  useLocalStorage,
+  watchDebounced
+} from '@vueuse/core'
+import { clamp } from 'lodash'
 
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 
 const visible = computed(
-  () => settingsStore.get('Comfy.UseNewMenu') === 'Floating'
+  () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
@@ -55,11 +63,12 @@ const { x, y, style, isDragging } = useDraggable(panelRef, {
 })
 
 // Update storedPosition when x or y changes
-watch(
+watchDebounced(
   [x, y],
-  debounce(([newX, newY]) => {
+  ([newX, newY]) => {
     storedPosition.value = { x: newX, y: newY }
-  }, 300)
+  },
+  { debounce: 300 }
 )
 
 // Set initial position to bottom center

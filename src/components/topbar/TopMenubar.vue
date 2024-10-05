@@ -10,11 +10,11 @@
         }"
       />
       <Divider layout="vertical" class="mx-2" />
-      <WorkflowTabs
-        v-if="workflowTabsPosition === 'Topbar'"
-        class="flex-grow"
-      />
+      <div class="flex-grow">
+        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+      </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
+      <div class="comfyui-menu-action-bar-docking"></div>
     </div>
   </teleport>
 </template>
