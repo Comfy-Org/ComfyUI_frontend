@@ -1,6 +1,5 @@
 <template>
   <Panel
-    v-show="visible"
     class="actionbar w-fit"
     :style="style"
     :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
