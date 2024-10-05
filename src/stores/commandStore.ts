@@ -12,7 +12,6 @@ import {
 import { useQueueSettingsStore, useQueueStore } from './queueStore'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { ComfyExtension } from '@/types/comfy'
-import { useWorkspaceStore } from './workspaceStateStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'

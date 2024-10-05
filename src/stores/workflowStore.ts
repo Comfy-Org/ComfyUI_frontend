@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
