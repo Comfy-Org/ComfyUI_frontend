@@ -49,6 +49,7 @@ export const useWorkspaceStore = defineStore('workspace', {
         icon: tab.icon,
         label: tab.tooltip,
         tooltip: tab.tooltip,
+        versionAdded: '1.3.9',
         function: () => {
           this.toggleSidebarTab(tab.id)
         }
