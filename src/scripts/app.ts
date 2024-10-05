@@ -29,8 +29,7 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph,
-  LGraphGroup
+  LiteGraph
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
 import { ExtensionManager } from '@/types/extensionTypes'
@@ -48,7 +47,7 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ModelStore, useModelStore } from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
