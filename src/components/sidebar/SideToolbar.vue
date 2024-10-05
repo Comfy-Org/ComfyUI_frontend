@@ -7,7 +7,7 @@
         :icon="tab.icon"
         :iconBadge="tab.iconBadge"
         :tooltip="tab.tooltip"
-        :selected="tab === selectedTab"
+        :selected="tab.id === selectedTab?.id"
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
       />
@@ -60,17 +60,12 @@ const isSmall = computed(
 )
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
-const selectedTab = computed<SidebarTabExtension | null>(() => {
-  const tabId = workspaceStore.activeSidebarTab
-  return tabs.value.find((tab) => tab.id === tabId) || null
-})
+const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
   tab.render(el)
 }
 const onTabClick = (item: SidebarTabExtension) => {
-  workspaceStore.updateActiveSidebarTab(
-    workspaceStore.activeSidebarTab === item.id ? null : item.id
-  )
+  workspaceStore.sidebarTab.toggleSidebarTab(item.id)
 }
 onBeforeUnmount(() => {
   tabs.value.forEach((tab) => {
