@@ -47,6 +47,7 @@
 import SplitButton from 'primevue/splitbutton'
 import Button from 'primevue/button'
 import BatchCountEdit from './BatchCountEdit.vue'
+import ButtonGroup from 'primevue/buttongroup'
 import { useI18n } from 'vue-i18n'
 import {
   AutoQueueMode,
