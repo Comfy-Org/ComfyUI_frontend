@@ -53,13 +53,12 @@ import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
-import { useMenuItemStore } from '@/stores/menuItemStore'
+import { ComfyMenuItem, useMenuItemStore } from '@/stores/menuItemStore'
 import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus } from '@vueuse/core'
 import { useKeybindingStore } from '@/stores/keybindingStore'
-import { MenuItem } from 'primevue/menuitem'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -83,7 +82,7 @@ const items = menuItemsStore.menuItems
 const keybindingStore = useKeybindingStore()
 const keybindings = computed(() => {
   const bindings: Record<string, string> = {}
-  const stack: MenuItem[] = [...items]
+  const stack: ComfyMenuItem[] = [...items]
 
   while (stack.length) {
     const item = stack.pop()!
