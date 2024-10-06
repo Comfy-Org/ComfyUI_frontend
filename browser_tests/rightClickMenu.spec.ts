@@ -125,6 +125,7 @@ test.describe('Node Right Click Menu', () => {
           },
           [nodeType, widgetType]
         )
+        await comfyPage.nextFrame()
 
         // Verify the context menu contains the option to convert the widget to input
         const menuOptions = await node?.getContextMenuOptionNames()
