@@ -16,6 +16,7 @@ import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
 import { useWorkflowStore } from './workflowStore'
+import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string
@@ -64,6 +65,10 @@ export class ComfyCommandImpl implements ComfyCommand {
     return typeof this._menubarLabel === 'function'
       ? this._menubarLabel()
       : this._menubarLabel
+  }
+
+  get keybinding(): KeybindingImpl | null {
+    return useKeybindingStore().getKeybindingByCommandId(this.id)
   }
 }
 
