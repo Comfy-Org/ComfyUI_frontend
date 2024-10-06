@@ -17,8 +17,18 @@
         }"
       >
         <template #item="{ item, props, root }">
-          <a v-bind="props" class="p-menubar-item-link flex items-center">
-            <span class="p-menuitem-text">{{ item.label }}</span>
+          <a v-ripple class="p-menubar-item-link" v-bind="props.action">
+            <span
+              v-if="item.icon"
+              class="p-menubar-item-icon"
+              :class="item.icon"
+            />
+            <span class="p-menubar-item-label">{{ item.label }}</span>
+            <Badge
+              v-if="item.badge"
+              :class="{ 'ml-auto': !root, 'ml-2': root }"
+              :value="item.badge"
+            />
             <span
               v-if="!root && keybindings[item.id]"
               class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
