@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    extensionName: 'Extension Name',
     insert: 'Insert',
     systemInfo: 'System Info',
     devices: 'Devices',
@@ -108,6 +109,7 @@ const messages = {
     }
   },
   zh: {
+    extensionName: '扩展名称',
     insert: '插入',
     systemInfo: '系统信息',
     devices: '设备',
