@@ -19,12 +19,6 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    if (extension.name === 'pysssss.Locking') {
-      console.log('pysssss.Locking is replaced by pin/unpin in ComfyUI core.')
-      return
-    }
-
     if (extensionByName.value[extension.name]) {
       throw new Error(`Extension named '${extension.name}' already registered.`)
     }
