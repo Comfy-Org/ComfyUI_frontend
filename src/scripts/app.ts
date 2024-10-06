@@ -52,8 +52,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
-import { useKeybindingStore } from '@/stores/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2943,22 +2942,12 @@ export class ComfyApp {
    * @param {ComfyExtension} extension
    */
   registerExtension(extension: ComfyExtension) {
-    if (!extension.name) {
-      throw new Error("Extensions must have a 'name' property.")
-    }
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    if (extension.name === 'pysssss.Locking') {
-      console.log('pysssss.Locking is replaced by pin/unpin in ComfyUI core.')
-      return
-    }
-    if (this.extensions.find((ext) => ext.name === extension.name)) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
-    }
     if (this.vueAppReady) {
-      useKeybindingStore().loadExtensionKeybindings(extension)
-      useCommandStore().loadExtensionCommands(extension)
+      useExtensionStore().registerExtension(extension)
+    } else {
+      // For jest testing.
+      this.extensions.push(extension)
     }
-    this.extensions.push(extension)
   }
 
   /**
