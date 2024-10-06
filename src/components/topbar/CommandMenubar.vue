@@ -8,22 +8,14 @@
       item: 'relative'
     }"
   >
-    <template #item="{ item, props, root }">
-      <a class="p-menubar-item-link" v-bind="props.action">
-        <span v-if="item.icon" class="p-menubar-item-icon" :class="item.icon" />
-        <span class="p-menubar-item-label">{{ item.label }}</span>
-        <Badge
-          v-if="item.badge"
-          :class="{ 'ml-auto': !root, 'ml-2': root }"
-          :value="item.badge"
-        />
-        <span
-          v-if="!root && keybindings[item.id]"
-          class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
-        >
-          {{ keybindings[item.id] }}
-        </span>
-      </a>
+    <template #itemLabel="{ item }">
+      <span class="p-menubar-item-label">{{ item.label }}</span>
+      <span
+        v-if="keybindings[item.id]"
+        class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
+      >
+        {{ keybindings[item.id] }}
+      </span>
     </template>
   </Menubar>
 </template>
@@ -33,7 +25,6 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'
 import Menubar from 'primevue/menubar'
-import Badge from 'primevue/badge'
 import { computed } from 'vue'
 import type { MenuItem } from 'primevue/menuitem'
 

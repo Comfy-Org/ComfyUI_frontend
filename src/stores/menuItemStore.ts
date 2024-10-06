@@ -3,13 +3,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { type ComfyCommand, useCommandStore } from './commandStore'
 
-export type ComfyMenuItem = MenuItem & ComfyCommand
-
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
 
-  const registerMenuGroup = (path: string[], items: ComfyMenuItem[]) => {
+  const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
 
     // Traverse the path, creating nodes if necessary
@@ -56,9 +54,12 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     const items = commands.map(
       (command) =>
         ({
-          ...command,
-          command: command.function
-        }) as ComfyMenuItem
+          command: command.function,
+          label: command.menubarLabel,
+          icon: command.icon,
+          tooltip: command.tooltip,
+          comfyCommand: command
+        }) as MenuItem
     )
     registerMenuGroup(path, items)
   }
