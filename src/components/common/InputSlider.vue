@@ -1,5 +1,5 @@
 <template>
-  <div class="input-slider">
+  <div class="input-slider flex flex-row items-center gap-2">
     <Slider
       :modelValue="modelValue"
       @update:modelValue="updateValue"
@@ -17,6 +17,7 @@
       :min="min"
       :max="max"
       :step="step"
+      :allowEmpty="false"
     />
   </div>
 </template>
@@ -69,19 +70,3 @@ const updateValue = (newValue: number | null) => {
   emit('update:modelValue', newValue)
 }
 </script>
-
-<style scoped>
-.input-slider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.slider-part {
-  flex-grow: 1;
-}
-
-.input-part {
-  width: 5rem !important;
-}
-</style>
