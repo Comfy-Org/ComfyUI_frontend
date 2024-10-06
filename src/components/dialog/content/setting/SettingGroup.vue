@@ -108,3 +108,15 @@ function getSettingComponent(setting: SettingParams): Component {
   }
 }
 </script>
+
+<style scoped>
+.setting-input :deep(.input-slider) .p-inputnumber input,
+.setting-input :deep(.input-slider) .slider-part {
+  @apply w-20;
+}
+
+.setting-input :deep(.p-inputtext),
+.setting-input :deep(.p-select) {
+  @apply w-44;
+}
+</style>

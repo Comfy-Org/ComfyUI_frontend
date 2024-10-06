@@ -17,6 +17,7 @@
       :min="min"
       :max="max"
       :step="step"
+      :allowEmpty="false"
     />
   </div>
 </template>
