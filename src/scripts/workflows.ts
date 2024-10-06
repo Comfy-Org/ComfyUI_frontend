@@ -13,6 +13,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
 import { UserDataFullInfo } from '@/types/apiTypes'
 import { useToastStore } from '@/stores/toastStore'
+import { showPromptDialog } from '@/services/dialogService'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: ReturnType<typeof useExecutionStore> | null
@@ -369,10 +370,11 @@ export class ComfyWorkflow {
 
   private async _save(path: string | null, overwrite: boolean) {
     if (!path) {
-      path = prompt(
-        'Save workflow as:',
-        trimJsonExt(this.path) ?? this.name ?? 'workflow'
-      )
+      path = await showPromptDialog({
+        title: 'Save workflow',
+        message: 'Enter the filename:',
+        defaultValue: trimJsonExt(this.path) ?? this.name ?? 'workflow'
+      })
       if (!path) return
     }
 
