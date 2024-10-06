@@ -247,16 +247,9 @@ class Topbar {
   }
 
   async saveWorkflow(workflowName: string) {
-    this.page.on('dialog', async (dialog) => {
-      await dialog.accept(workflowName)
-    })
-    const workflowMenuItem = await this.getMenuItem('Workflow')
-    workflowMenuItem.click()
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
-    const saveButton = await this.getMenuItem('Save')
-    await saveButton.click()
+    await this.triggerTopbarCommand(['Workflow', 'Save'])
+    await this.page.locator('.p-dialog-content input').fill(workflowName)
+    await this.page.keyboard.press('Enter')
   }
 
   async triggerTopbarCommand(path: string[]) {
@@ -297,21 +290,6 @@ class ComfyMenu {
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
-  }
-
-  async saveWorkflow(name: string) {
-    const acceptDialog = async (dialog) => {
-      await dialog.accept(name)
-    }
-    this.page.on('dialog', acceptDialog)
-
-    await this.saveButton.click()
-
-    // Wait a moment to ensure the dialog has been handled
-    await this.page.waitForTimeout(300)
-
-    // Remove the dialog listener
-    this.page.off('dialog', acceptDialog)
   }
 
   get nodeLibraryTab() {
