@@ -3,13 +3,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { type ComfyCommand, useCommandStore } from './commandStore'
 
-export interface ComfyMenuItem extends MenuItem {
-  id?: string
-}
+export type ComfyMenuItem = MenuItem & ComfyCommand
 
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
-  const menuItems = ref<ComfyMenuItem[]>([])
+  const menuItems = ref<MenuItem[]>([])
 
   const registerMenuGroup = (path: string[], items: ComfyMenuItem[]) => {
     let currentLevel = menuItems.value
@@ -65,58 +63,28 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerMenuGroup(path, items)
   }
 
-  const workflowMenuGroup: ComfyMenuItem[] = [
-    {
-      label: 'New',
-      icon: 'pi pi-plus',
-      command: () => commandStore.execute('Comfy.NewBlankWorkflow'),
-      id: 'Comfy.NewBlankWorkflow'
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Open',
-      icon: 'pi pi-folder-open',
-      command: () => commandStore.execute('Comfy.OpenWorkflow'),
-      id: 'Comfy.OpenWorkflow'
-    },
-    {
-      label: 'Browse Templates',
-      icon: 'pi pi-th-large',
-      command: () => commandStore.execute('Comfy.BrowseTemplates'),
-      id: 'Comfy.BrowseTemplates'
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Save',
-      icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflow'),
-      id: 'Comfy.SaveWorkflow'
-    },
-    {
-      label: 'Save As',
-      icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflowAs'),
-      id: 'Comfy.SaveWorkflowAs'
-    },
-    {
-      label: 'Export',
-      icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflow'),
-      id: 'Comfy.ExportWorkflow'
-    },
-    {
-      label: 'Export (API Format)',
-      icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflowAPI'),
-      id: 'Comfy.ExportWorkflowAPI'
-    }
-  ]
+  registerCommands(
+    ['Workflow'],
+    [commandStore.getCommand('Comfy.NewBlankWorkflow')]
+  )
 
-  registerMenuGroup(['Workflow'], workflowMenuGroup)
+  registerCommands(
+    ['Workflow'],
+    [
+      commandStore.getCommand('Comfy.OpenWorkflow'),
+      commandStore.getCommand('Comfy.BrowseTemplates')
+    ]
+  )
+  registerCommands(
+    ['Workflow'],
+    [
+      commandStore.getCommand('Comfy.SaveWorkflow'),
+      commandStore.getCommand('Comfy.SaveWorkflowAs'),
+      commandStore.getCommand('Comfy.ExportWorkflow'),
+      commandStore.getCommand('Comfy.ExportWorkflowAPI')
+    ]
+  )
+
   registerCommands(
     ['Edit'],
     [
