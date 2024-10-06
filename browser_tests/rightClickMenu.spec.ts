@@ -96,6 +96,11 @@ test.describe('Node Right Click Menu', () => {
   test.describe('Widget conversion', () => {
     const convertibleWidgetTypes = ['text', 'string', 'number', 'toggle']
 
+    test.afterEach(async ({ comfyPage }) => {
+      // Restore default setting value
+      await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', true)
+    })
+
     test('Can convert widget to input', async ({ comfyPage }) => {
       await comfyPage.rightClickEmptyLatentNode()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
@@ -113,9 +118,11 @@ test.describe('Node Right Click Menu', () => {
         comfyPage
       }) => {
         const nodeType = 'KSampler'
-        const node = (await comfyPage.getNodeRefsByType(nodeType))[0]
 
-        // Use the node's `addWidget` method to add the widget
+        // To avoid needing multiple clicks, disable nesting of conversion options
+        await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', false)
+
+        // Add the widget using the node's `addWidget` method
         await comfyPage.page.evaluate(
           ([nodeType, widgetType]) => {
             const node = window['app'].graph.nodes.find(
@@ -125,11 +132,10 @@ test.describe('Node Right Click Menu', () => {
           },
           [nodeType, widgetType]
         )
-        await comfyPage.page.waitForTimeout(256)
-        await comfyPage.page.mouse.move(64, 64)
 
-        // Verify the context menu contains the option to convert the widget to input
-        const menuOptions = await node?.getContextMenuOptionNames()
+        // Verify the context menu includes the conversion option
+        const node = (await comfyPage.getNodeRefsByType(nodeType))[0]
+        const menuOptions = await node.getContextMenuOptionNames()
         expect(menuOptions.includes(`Convert ${widgetType} to input`)).toBe(
           true
         )
