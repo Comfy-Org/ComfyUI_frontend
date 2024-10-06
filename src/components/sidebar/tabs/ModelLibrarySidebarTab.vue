@@ -7,7 +7,6 @@
           <SearchBox
             class="model-lib-search-box mx-4 mt-4"
             v-model:modelValue="searchQuery"
-            @search="handleSearch"
             :placeholder="$t('searchModels') + '...'"
           />
         </div>
@@ -186,10 +185,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   }
   return fillNodeInfo(root.value)
 })
-
-const handleSearch = (query: string) => {
-  // TODO
-}
 
 const handleNodeClick = (
   node: RenderedTreeExplorerNode<ComfyModelDef>,
