@@ -12,7 +12,7 @@ export const useExtensionStore = defineStore('extension', () => {
   const extensions = computed(() => Object.values(extensionByName.value))
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
-  const disabledExtensionNames = ref<string[]>([])
+  const disabledExtensionNames = ref<Set<string>>(new Set())
 
   function registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
@@ -23,8 +23,12 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error(`Extension named '${extension.name}' already registered.`)
     }
 
-    extensionByName.value[extension.name] = extension
+    if (disabledExtensionNames.value.has(extension.name)) {
+      console.log(`Extension ${extension.name} is disabled.`)
+      return
+    }
 
+    extensionByName.value[extension.name] = extension
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
 
@@ -36,8 +40,8 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function loadDisabledExtensionNames() {
-    disabledExtensionNames.value = useSettingStore().get(
-      'Comfy.Extension.Disabled'
+    disabledExtensionNames.value = new Set(
+      useSettingStore().get('Comfy.Extension.Disabled')
     )
   }
 
