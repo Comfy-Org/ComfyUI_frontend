@@ -1772,6 +1772,8 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
+    useExtensionStore().loadDisabledExtensionNames()
+
     const extensions = await api.getExtensions()
     this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 

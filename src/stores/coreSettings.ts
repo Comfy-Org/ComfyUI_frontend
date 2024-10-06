@@ -420,5 +420,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7'
+  },
+  {
+    id: 'Comfy.Extension.Disabled',
+    name: 'Disabled extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.3.11'
   }
 ]
