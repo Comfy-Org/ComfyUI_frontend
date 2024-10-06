@@ -3,14 +3,7 @@
     <template #tool-buttons> </template>
     <template #body>
       <div class="flex flex-col h-full">
-        <div class="flex-shrink-0">
-          <SearchBox
-            class="model-lib-search-box mx-4 mt-4"
-            v-model:modelValue="searchQuery"
-            @search="handleSearch"
-            :placeholder="$t('searchModels') + '...'"
-          />
-        </div>
+        <div class="flex-shrink-0"></div>
         <div class="flex-grow overflow-y-auto">
           <TreeExplorer
             class="model-lib-tree-explorer mt-1"
@@ -30,7 +23,6 @@
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/common/SearchBox.vue'
 import { useI18n } from 'vue-i18n'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
@@ -186,10 +178,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   }
   return fillNodeInfo(root.value)
 })
-
-const handleSearch = (query: string) => {
-  // TODO
-}
 
 const handleNodeClick = (
   node: RenderedTreeExplorerNode<ComfyModelDef>,
