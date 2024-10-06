@@ -1,8 +1,18 @@
 <template>
   <div class="extension-panel">
-    <DataTable :value="extensions" stripedRows size="small">
+    <DataTable
+      :value="extensions"
+      stripedRows
+      size="small"
+      scrollable
+      scrollHeight="800px"
+    >
       <Column field="name" :header="$t('extensionName')" sortable></Column>
-      <Column>
+      <Column
+        :pt="{
+          bodyCell: 'flex items-center justify-end'
+        }"
+      >
         <template #body="slotProps">
           <ToggleSwitch
             v-model="enabledExtensions[slotProps.data.name]"
