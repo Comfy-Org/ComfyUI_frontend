@@ -499,6 +499,15 @@ test.describe('Menu', () => {
       })
       expect(isTextCutoff).toBe(false)
     })
+
+    test('Displays keybinding next to item', async ({ comfyPage }) => {
+      const workflowMenuItem = await comfyPage.menu.topbar.getMenuItem('Edit')
+      await workflowMenuItem.click()
+      const undoTag = comfyPage.page.locator('.keybinding-tag', {
+        hasText: 'Ctrl + z'
+      })
+      expect(await undoTag.count()).toBe(1)
+    })
   })
 
   // Only test 'Top' to reduce test time.
