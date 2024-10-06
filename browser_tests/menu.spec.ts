@@ -501,12 +501,13 @@ test.describe('Menu', () => {
     })
 
     test('Displays keybinding next to item', async ({ comfyPage }) => {
-      const workflowMenuItem = await comfyPage.menu.topbar.getMenuItem('Edit')
+      const workflowMenuItem =
+        await comfyPage.menu.topbar.getMenuItem('Workflow')
       await workflowMenuItem.click()
-      const undoTag = comfyPage.page.locator('.keybinding-tag', {
-        hasText: 'Ctrl + z'
+      const exportTag = comfyPage.page.locator('.keybinding-tag', {
+        hasText: 'Ctrl + s'
       })
-      expect(await undoTag.count()).toBe(1)
+      expect(await exportTag.count()).toBe(1)
     })
   })
 
