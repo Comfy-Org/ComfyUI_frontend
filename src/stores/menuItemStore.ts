@@ -51,16 +51,19 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       commandStore.registerCommand(command)
     }
 
-    const items = commands.map(
-      (command) =>
-        ({
-          command: command.function,
-          label: command.menubarLabel,
-          icon: command.icon,
-          tooltip: command.tooltip,
-          comfyCommand: command
-        }) as MenuItem
-    )
+    const items = commands
+      // Convert command to commandImpl
+      .map((command) => commandStore.getCommand(command.id))
+      .map(
+        (command) =>
+          ({
+            command: command.function,
+            label: command.menubarLabel,
+            icon: command.icon,
+            tooltip: command.tooltip,
+            comfyCommand: command
+          }) as MenuItem
+      )
     registerMenuGroup(path, items)
   }
 
