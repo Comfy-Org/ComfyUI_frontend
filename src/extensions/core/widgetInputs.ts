@@ -6,7 +6,15 @@ import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 import type { InputSpec } from '@/types/apiTypes'
 
 const CONVERTED_TYPE = 'converted-widget'
-const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
+const VALID_TYPES = [
+  'STRING',
+  'combo',
+  'number',
+  'toggle',
+  'BOOLEAN',
+  'text',
+  'string'
+]
 const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
 const TARGET = Symbol() // Used for reroutes to specify the real target widget

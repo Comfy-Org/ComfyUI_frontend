@@ -1198,6 +1198,11 @@ export class NodeReference {
     )
     return originSlot
   }
+  async getContextMenuOptionNames() {
+    await this.click('title', { button: 'right' })
+    const ctx = this.comfyPage.page.locator('.litecontextmenu')
+    return await ctx.locator('.litemenu-entry').allInnerTexts()
+  }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
     const ctx = this.comfyPage.page.locator('.litecontextmenu')
