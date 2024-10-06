@@ -128,7 +128,9 @@ test.describe('Node Right Click Menu', () => {
 
         // Verify the context menu contains the option to convert the widget to input
         const menuOptions = await node?.getContextMenuOptionNames()
-        expect(menuOptions).toContain(`Convert ${widgetType} to input`)
+        expect(menuOptions.includes(`Convert ${widgetType} to input`)).toBe(
+          true
+        )
       })
     })
   })
