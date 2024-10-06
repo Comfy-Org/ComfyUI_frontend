@@ -7,15 +7,7 @@
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
-      <Menubar
-        :model="items"
-        class="top-menubar border-none p-0 bg-transparent"
-        :pt="{
-          rootList: 'gap-0 flex-nowrap w-auto',
-          submenu: `dropdown-direction-${dropdownDirection}`,
-          item: 'relative'
-        }"
-      />
+      <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
       <div class="flex-grow">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
@@ -27,11 +19,10 @@
 </template>
 
 <script setup lang="ts">
-import Menubar from 'primevue/menubar'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
@@ -49,12 +40,6 @@ const teleportTarget = computed(() =>
     ? '.comfyui-body-top'
     : '.comfyui-body-bottom'
 )
-const dropdownDirection = computed(() =>
-  settingStore.get('Comfy.UseNewMenu') === 'Top' ? 'down' : 'up'
-)
-
-const menuItemsStore = useMenuItemStore()
-const items = menuItemsStore.menuItems
 
 const menuRight = ref<HTMLDivElement | null>(null)
 // Menu-right holds legacy topbar elements attached by custom scripts
@@ -103,15 +88,5 @@ eventBus.on((event: string, payload: any) => {
   font-size: 1.2em;
   user-select: none;
   cursor: default;
-}
-</style>
-
-<style>
-.top-menubar .p-menubar-item-link svg {
-  display: none;
-}
-
-.p-menubar-submenu.dropdown-direction-up {
-  @apply top-auto bottom-full flex-col-reverse;
 }
 </style>

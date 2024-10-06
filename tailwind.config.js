@@ -174,6 +174,10 @@ export default {
           900: '#7b341e',
           950: '#431407'
         }
+      },
+
+      textColor: {
+        muted: 'var(--p-text-muted-color)'
       }
     }
   },

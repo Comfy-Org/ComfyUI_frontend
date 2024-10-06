@@ -16,6 +16,7 @@ import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
 import { useWorkflowStore } from './workflowStore'
+import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string
@@ -24,7 +25,51 @@ export interface ComfyCommand {
   label?: string | (() => string)
   icon?: string | (() => string)
   tooltip?: string | (() => string)
+  /** Menubar item label, if different from command label */
+  menubarLabel?: string | (() => string)
   versionAdded?: string
+}
+
+export class ComfyCommandImpl implements ComfyCommand {
+  id: string
+  function: () => void | Promise<void>
+  _label?: string | (() => string)
+  _icon?: string | (() => string)
+  _tooltip?: string | (() => string)
+  _menubarLabel?: string | (() => string)
+  versionAdded?: string
+
+  constructor(command: ComfyCommand) {
+    this.id = command.id
+    this.function = command.function
+    this._label = command.label
+    this._icon = command.icon
+    this._tooltip = command.tooltip
+    this._menubarLabel = command.menubarLabel ?? command.label
+    this.versionAdded = command.versionAdded
+  }
+
+  get label() {
+    return typeof this._label === 'function' ? this._label() : this._label
+  }
+
+  get icon() {
+    return typeof this._icon === 'function' ? this._icon() : this._icon
+  }
+
+  get tooltip() {
+    return typeof this._tooltip === 'function' ? this._tooltip() : this._tooltip
+  }
+
+  get menubarLabel() {
+    return typeof this._menubarLabel === 'function'
+      ? this._menubarLabel()
+      : this._menubarLabel
+  }
+
+  get keybinding(): KeybindingImpl | null {
+    return useKeybindingStore().getKeybindingByCommandId(this.id)
+  }
 }
 
 const getTracker = () =>
@@ -33,14 +78,14 @@ const getTracker = () =>
 export const useCommandStore = defineStore('command', () => {
   const settingStore = useSettingStore()
 
-  const commandsById = ref<Record<string, ComfyCommand>>({})
+  const commandsById = ref<Record<string, ComfyCommandImpl>>({})
   const commands = computed(() => Object.values(commandsById.value))
 
   const registerCommand = (command: ComfyCommand) => {
     if (commandsById.value[command.id]) {
       console.warn(`Command ${command.id} already registered`)
     }
-    commandsById.value[command.id] = command
+    commandsById.value[command.id] = new ComfyCommandImpl(command)
   }
 
   const commandDefinitions: ComfyCommand[] = [
@@ -48,6 +93,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.NewBlankWorkflow',
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
+      menubarLabel: 'New',
       function: () => {
         app.workflowManager.setWorkflow(null)
         app.clean()
@@ -59,6 +105,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.OpenWorkflow',
       icon: 'pi pi-folder-open',
       label: 'Open Workflow',
+      menubarLabel: 'Open',
       function: () => {
         app.ui.loadFile()
       }
@@ -75,6 +122,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.SaveWorkflow',
       icon: 'pi pi-save',
       label: 'Save Workflow',
+      menubarLabel: 'Save',
       function: () => {
         app.workflowManager.activeWorkflow.save()
       }
@@ -83,6 +131,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.SaveWorkflowAs',
       icon: 'pi pi-save',
       label: 'Save Workflow As',
+      menubarLabel: 'Save As',
       function: () => {
         app.workflowManager.activeWorkflow.save(true)
       }
@@ -91,6 +140,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.ExportWorkflow',
       icon: 'pi pi-download',
       label: 'Export Workflow',
+      menubarLabel: 'Export',
       function: () => {
         app.menu.exportWorkflow('workflow', 'workflow')
       }
@@ -99,6 +149,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.ExportWorkflowAPI',
       icon: 'pi pi-download',
       label: 'Export Workflow (API Format)',
+      menubarLabel: 'Export (API)',
       function: () => {
         app.menu.exportWorkflow('workflow_api', 'output')
       }

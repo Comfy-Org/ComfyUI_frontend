@@ -51,61 +51,44 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       commandStore.registerCommand(command)
     }
 
-    const items = commands.map(
-      (command) =>
-        ({
-          ...command,
-          command: command.function
-        }) as MenuItem
-    )
+    const items = commands
+      // Convert command to commandImpl
+      .map((command) => commandStore.getCommand(command.id))
+      .map(
+        (command) =>
+          ({
+            command: command.function,
+            label: command.menubarLabel,
+            icon: command.icon,
+            tooltip: command.tooltip,
+            comfyCommand: command
+          }) as MenuItem
+      )
     registerMenuGroup(path, items)
   }
 
-  const workflowMenuGroup: MenuItem[] = [
-    {
-      label: 'New',
-      icon: 'pi pi-plus',
-      command: () => commandStore.execute('Comfy.NewBlankWorkflow')
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Open',
-      icon: 'pi pi-folder-open',
-      command: () => commandStore.execute('Comfy.OpenWorkflow')
-    },
-    {
-      label: 'Browse Templates',
-      icon: 'pi pi-th-large',
-      command: () => commandStore.execute('Comfy.BrowseTemplates')
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Save',
-      icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflow')
-    },
-    {
-      label: 'Save As',
-      icon: 'pi pi-save',
-      command: () => commandStore.execute('Comfy.SaveWorkflowAs')
-    },
-    {
-      label: 'Export',
-      icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflow')
-    },
-    {
-      label: 'Export (API Format)',
-      icon: 'pi pi-download',
-      command: () => commandStore.execute('Comfy.ExportWorkflowAPI')
-    }
-  ]
+  registerCommands(
+    ['Workflow'],
+    [commandStore.getCommand('Comfy.NewBlankWorkflow')]
+  )
 
-  registerMenuGroup(['Workflow'], workflowMenuGroup)
+  registerCommands(
+    ['Workflow'],
+    [
+      commandStore.getCommand('Comfy.OpenWorkflow'),
+      commandStore.getCommand('Comfy.BrowseTemplates')
+    ]
+  )
+  registerCommands(
+    ['Workflow'],
+    [
+      commandStore.getCommand('Comfy.SaveWorkflow'),
+      commandStore.getCommand('Comfy.SaveWorkflowAs'),
+      commandStore.getCommand('Comfy.ExportWorkflow'),
+      commandStore.getCommand('Comfy.ExportWorkflowAPI')
+    ]
+  )
+
   registerCommands(
     ['Edit'],
     [
