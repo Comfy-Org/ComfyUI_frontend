@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
-import { type ComfyCommand, useCommandStore } from './commandStore'
+import { useCommandStore } from './commandStore'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
@@ -42,18 +42,9 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     currentLevel.push(...items)
   }
 
-  const registerCommands = (path: string[], commands: ComfyCommand[]) => {
-    // Register commands that are not already registered
-    for (const command of commands) {
-      if (commandStore.isRegistered(command.id)) {
-        continue
-      }
-      commandStore.registerCommand(command)
-    }
-
-    const items = commands
-      // Convert command to commandImpl
-      .map((command) => commandStore.getCommand(command.id))
+  const registerCommands = (path: string[], commandIds: string[]) => {
+    const items = commandIds
+      .map((commandId) => commandStore.getCommand(commandId))
       .map(
         (command) =>
           ({
@@ -67,37 +58,25 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerMenuGroup(path, items)
   }
 
-  registerCommands(
-    ['Workflow'],
-    [commandStore.getCommand('Comfy.NewBlankWorkflow')]
-  )
+  registerCommands(['Workflow'], ['Comfy.NewBlankWorkflow'])
 
   registerCommands(
     ['Workflow'],
-    [
-      commandStore.getCommand('Comfy.OpenWorkflow'),
-      commandStore.getCommand('Comfy.BrowseTemplates')
-    ]
+    ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']
   )
   registerCommands(
     ['Workflow'],
     [
-      commandStore.getCommand('Comfy.SaveWorkflow'),
-      commandStore.getCommand('Comfy.SaveWorkflowAs'),
-      commandStore.getCommand('Comfy.ExportWorkflow'),
-      commandStore.getCommand('Comfy.ExportWorkflowAPI')
+      'Comfy.SaveWorkflow',
+      'Comfy.SaveWorkflowAs',
+      'Comfy.ExportWorkflow',
+      'Comfy.ExportWorkflowAPI'
     ]
   )
 
-  registerCommands(
-    ['Edit'],
-    [
-      commandStore.getCommand('Comfy.Undo'),
-      commandStore.getCommand('Comfy.Redo')
-    ]
-  )
-  registerCommands(['Edit'], [commandStore.getCommand('Comfy.ClearWorkflow')])
-  registerCommands(['Edit'], [commandStore.getCommand('Comfy.OpenClipspace')])
+  registerCommands(['Edit'], ['Comfy.Undo', 'Comfy.Redo'])
+  registerCommands(['Edit'], ['Comfy.ClearWorkflow'])
+  registerCommands(['Edit'], ['Comfy.OpenClipspace'])
 
   return {
     menuItems,

@@ -2,7 +2,6 @@ import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { useToastStore } from './toastStore'
 import { useQueueSettingsStore } from './queueStore'
-import { useMenuItemStore } from './menuItemStore'
 import { useCommandStore } from './commandStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
@@ -20,11 +19,6 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
     queueSettings() {
       return useQueueSettingsStore()
-    },
-    menu() {
-      return {
-        registerTopbarCommands: useMenuItemStore().registerCommands
-      }
     },
     command() {
       return {
