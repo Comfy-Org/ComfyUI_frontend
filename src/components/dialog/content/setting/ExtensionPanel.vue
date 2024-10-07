@@ -1,12 +1,6 @@
 <template>
   <div class="extension-panel">
-    <DataTable
-      :value="extensionStore.extensions"
-      stripedRows
-      size="small"
-      scrollable
-      scrollHeight="800px"
-    >
+    <DataTable :value="extensionStore.extensions" stripedRows size="small">
       <Column field="name" :header="$t('extensionName')" sortable></Column>
       <Column
         :pt="{
