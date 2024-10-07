@@ -180,7 +180,24 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
   Extensions can call the following API to register custom topbar menu items.
 
 ```js
-  app.extensionManager.menu.registerTopbarCommands(["ext", "ext2"], [{id:"foo", label: "foo", function: () => alert(1)}])
+  app.registerExtension({
+    name: 'TestExtension1',
+    commands: [
+      {
+        id: 'foo-id',
+        label: 'foo',
+        function: () => {
+          alert(1)
+        }
+      }
+    ],
+    menuCommands: [
+      {
+        path: ['ext', 'ext2'],
+        commands: ['foo-id']
+      }
+    ]
+  })
 ```
 
 ![image](https://github.com/user-attachments/assets/ae7b082f-7ce9-4549-a446-4563567102fe)
