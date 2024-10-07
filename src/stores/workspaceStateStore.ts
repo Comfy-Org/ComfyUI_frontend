@@ -7,11 +7,14 @@ import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 interface WorkspaceState {
   spinner: boolean
+  // Whether the shift key is down globally
+  shiftDown: boolean
 }
 
 export const useWorkspaceStore = defineStore('workspace', {
   state: (): WorkspaceState => ({
-    spinner: false
+    spinner: false,
+    shiftDown: false
   }),
   getters: {
     toast(): ToastManager {

@@ -45,6 +45,15 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/workspaceStateStore', () => {
+    return {
+      useWorkspaceStore: () => ({
+        shiftDown: false,
+        spinner: false
+      })
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()
