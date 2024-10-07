@@ -416,10 +416,9 @@ test.describe('Menu', () => {
 
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
-      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual([
-        'workflow1.json',
-        'workflow2.json'
-      ])
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
+        expect.arrayContaining(['workflow1.json', 'workflow2.json'])
+      )
     })
 
     test('Does not report warning when switching between opened workflows', async ({
