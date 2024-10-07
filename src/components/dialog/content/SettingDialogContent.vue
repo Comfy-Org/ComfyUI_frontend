@@ -106,12 +106,18 @@ const extensionPanelNode: SettingTreeNode = {
   children: []
 }
 
+const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
+  const settingStore = useSettingStore()
+  const showExtensionPanel = settingStore.get('Comfy.Settings.ExtensionPanel')
+  return showExtensionPanel ? [extensionPanelNode] : []
+})
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
   keybindingPanelNode,
-  extensionPanelNode,
+  ...extensionPanelNodeList.value,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)

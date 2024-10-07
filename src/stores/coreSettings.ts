@@ -427,5 +427,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as string[],
     versionAdded: '1.3.11'
+  },
+  {
+    id: 'Comfy.Settings.ExtensionPanel',
+    name: 'Show extension panel in settings dialog',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.3.11'
   }
 ]
