@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, markRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type { ComfyExtension } from '@/types/comfy'
 import { useKeybindingStore } from './keybindingStore'
@@ -30,10 +30,9 @@ export const useExtensionStore = defineStore('extension', () => {
 
     if (disabledExtensionNames.value.has(extension.name)) {
       console.log(`Extension ${extension.name} is disabled.`)
-      return
     }
 
-    extensionByName.value[extension.name] = extension
+    extensionByName.value[extension.name] = markRaw(extension)
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
 
@@ -48,6 +47,14 @@ export const useExtensionStore = defineStore('extension', () => {
     disabledExtensionNames.value = new Set(
       useSettingStore().get('Comfy.Extension.Disabled')
     )
+  }
+
+  // Some core extensions are registered before the store is initialized, e.g.
+  // colorPalette.
+  // Register them manually here so the state of app.extensions and
+  // extensionByName are in sync.
+  for (const ext of app.extensions) {
+    extensionByName.value[ext.name] = markRaw(ext)
   }
 
   return {

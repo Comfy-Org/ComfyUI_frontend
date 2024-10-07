@@ -9,7 +9,6 @@ import _ from 'lodash'
 import { getColorPalette, defaultColorPalette } from './colorPalette'
 import { BadgePosition } from '@comfyorg/litegraph'
 import type { Palette } from '@/types/colorPalette'
-import type { ComfyNodeDef } from '@/types/apiTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 function getNodeSource(node: LGraphNode): NodeSource | null {

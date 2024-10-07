@@ -356,6 +356,13 @@ export class ComfyApp {
     }
   }
 
+  get enabledExtensions() {
+    if (!this.vueAppReady) {
+      return this.extensions
+    }
+    return useExtensionStore().enabledExtensions
+  }
+
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
@@ -364,7 +371,7 @@ export class ComfyApp {
    */
   #invokeExtensions(method, ...args) {
     let results = []
-    for (const ext of this.extensions) {
+    for (const ext of this.enabledExtensions) {
       if (method in ext) {
         try {
           results.push(ext[method](...args, this))
@@ -390,7 +397,7 @@ export class ComfyApp {
    */
   async #invokeExtensionsAsync(method, ...args) {
     return await Promise.all(
-      this.extensions.map(async (ext) => {
+      this.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
             return await ext[method](...args, this)
