@@ -3,13 +3,20 @@
     <SplitButton
       class="comfyui-queue-button"
       :label="activeQueueModeMenuItem.label"
-      :icon="activeQueueModeMenuItem.icon"
       severity="primary"
       @click="queuePrompt"
       :model="queueModeMenuItems"
       data-testid="queue-button"
-      v-tooltip.bottom="$t('menu.queueWorkflow')"
+      v-tooltip.bottom="
+        workspaceStore.shiftDown
+          ? $t('menu.queueWorkflowFront')
+          : $t('menu.queueWorkflow')
+      "
     >
+      <template #icon>
+        <i-lucide:list-start v-if="workspaceStore.shiftDown" />
+        <i v-else :class="activeQueueModeMenuItem.icon" />
+      </template>
       <template #item="{ item }">
         <Button
           :label="item.label"
@@ -58,7 +65,9 @@ import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 
+const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 
