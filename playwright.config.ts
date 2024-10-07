@@ -30,6 +30,10 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry'
   },
+  /* Path to global setup file. Exported function runs once before all the tests */
+  globalSetup: './browser_tests/globalSetup.ts',
+  /* Path to global teardown file. Exported function runs once after all the tests */
+  globalTeardown: './browser_tests/globalTeardown.ts',
 
   /* Configure projects for major browsers */
   projects: [
