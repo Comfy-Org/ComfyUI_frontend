@@ -1,6 +1,5 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
-import { computed } from 'vue'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
