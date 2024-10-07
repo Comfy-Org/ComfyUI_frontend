@@ -1,11 +1,27 @@
-// @ts-nocheck
+import type { Point, Rect, Rect32 } from "./interfaces"
 import { LiteGraph } from "./litegraph";
 
 //****************************************
 //Scale and Offset
 
 export class DragAndScale {
-    constructor(element, skip_events) {
+    max_scale: number
+    min_scale: number
+    offset: Point
+    scale: number
+    enabled: boolean
+    last_mouse: Point
+    element?: HTMLCanvasElement
+    visible_area: Rect32
+    _binded_mouse_callback
+    dragging?: boolean
+    viewport?: Rect
+
+    onredraw?(das: DragAndScale): void
+    /** @deprecated */
+    onmouse?(e: any): boolean
+
+    constructor(element?: HTMLCanvasElement, skip_events?: boolean) {
         this.offset = new Float32Array([0, 0]);
         this.scale = 1;
         this.max_scale = 10;
@@ -41,7 +57,7 @@ export class DragAndScale {
         element.addEventListener("wheel", this._binded_mouse_callback, false);
     }
 
-    computeVisibleArea(viewport) {
+    computeVisibleArea(viewport: Rect): void {
         if (!this.element) {
             this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0;
             return;
@@ -134,12 +150,12 @@ export class DragAndScale {
         }
     }
 
-    toCanvasContext(ctx) {
+    toCanvasContext(ctx: CanvasRenderingContext2D): void {
         ctx.scale(this.scale, this.scale);
         ctx.translate(this.offset[0], this.offset[1]);
     }
 
-    convertOffsetToCanvas(pos) {
+    convertOffsetToCanvas(pos: Point): Point {
         //return [pos[0] / this.scale - this.offset[0], pos[1] / this.scale - this.offset[1]];
         return [
             (pos[0] + this.offset[0]) * this.scale,
@@ -147,7 +163,7 @@ export class DragAndScale {
         ];
     }
 
-    convertCanvasToOffset(pos, out) {
+    convertCanvasToOffset(pos: Point, out?: Point): Point {
         out = out || [0, 0];
         out[0] = pos[0] / this.scale - this.offset[0];
         out[1] = pos[1] / this.scale - this.offset[1];
@@ -163,7 +179,7 @@ export class DragAndScale {
         }
     }
 
-    changeScale(value, zooming_center) {
+    changeScale(value: number, zooming_center?: Point): void {
         if (value < this.min_scale) {
             value = this.min_scale;
         } else if (value > this.max_scale) {
@@ -207,11 +223,11 @@ export class DragAndScale {
         }
     }
 
-    changeDeltaScale(value, zooming_center) {
+    changeDeltaScale(value: number, zooming_center?: Point) {
         this.changeScale(this.scale * value, zooming_center);
     }
 
-    reset() {
+    reset(): void {
         this.scale = 1;
         this.offset[0] = 0;
         this.offset[1] = 0;

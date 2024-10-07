@@ -1,4 +1,5 @@
 // @ts-nocheck
+import type { IContextMenuOptions, IContextMenuValue } from "./interfaces"
 import { LiteGraph } from "./litegraph";
 
 /* LiteGraph GUI elements used for canvas editing *************************************/
@@ -15,7 +16,13 @@ import { LiteGraph } from "./litegraph";
  * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
  */
 export class ContextMenu {
-    constructor(values, options) {
+    options?: IContextMenuOptions
+    parentMenu?: ContextMenu
+    root: HTMLDivElement
+    current_submenu?: ContextMenu
+    lock?: boolean
+
+    constructor(values: IContextMenuValue[] | string[], options: IContextMenuOptions) {
         options = options || {};
         this.options = options;
         var that = this;
@@ -206,7 +213,7 @@ export class ContextMenu {
         }
     }
 
-    addItem(name, value, options) {
+    addItem(name: string, value: IContextMenuValue, options: IContextMenuOptions): HTMLElement {
         var that = this;
         options = options || {};
 
@@ -347,7 +354,7 @@ export class ContextMenu {
         return element;
     }
 
-    close(e, ignore_parent_menu) {
+    close(e?: MouseEvent, ignore_parent_menu?: boolean): void {
         if (this.root.parentNode) {
             this.root.parentNode.removeChild(this.root);
         }
@@ -374,7 +381,7 @@ export class ContextMenu {
     }
 
     //this code is used to trigger events easily (used in the context menu mouseleave
-    static trigger(element, event_name, params, origin) {
+    static trigger(element: HTMLDivElement, event_name: string, params: MouseEvent, origin?: undefined) {
         var evt = document.createEvent("CustomEvent");
         evt.initCustomEvent(event_name, true, true, params); //canBubble, cancelable, detail
         evt.srcElement = origin;
@@ -388,21 +395,21 @@ export class ContextMenu {
     }
 
     //returns the top most menu
-    getTopMenu() {
+    getTopMenu(): ContextMenu {
         if (this.options.parentMenu) {
             return this.options.parentMenu.getTopMenu();
         }
         return this;
     }
 
-    getFirstEvent() {
+    getFirstEvent(): MouseEvent {
         if (this.options.parentMenu) {
             return this.options.parentMenu.getFirstEvent();
         }
         return this.options.event;
     }
 
-    static isCursorOverElement(event, element) {
+    static isCursorOverElement(event: MouseEvent, element: HTMLDivElement): boolean {
         var left = event.clientX;
         var top = event.clientY;
         var rect = element.getBoundingClientRect();

@@ -1,7 +1,23 @@
-// @ts-nocheck
-//this is the class in charge of storing link information
+import type { ISlotType } from "./interfaces"
+import type { NodeId } from "./LGraphNode"
 
+export type LinkId = number | string
+
+export type SerialisedLLinkArray = [LinkId, NodeId, number, NodeId, number, ISlotType]
+
+//this is the class in charge of storing link information
 export class LLink {
+    id?: LinkId
+    type?: ISlotType
+    origin_id?: NodeId
+    origin_slot?: number
+    target_id?: NodeId
+    target_slot?: number
+    data?: number | string | boolean | { toToolTip?(): string }
+    _data?: unknown
+    _pos: Float32Array
+    _last_time?: number
+
     constructor(id, type, origin_id, origin_slot, target_id, target_slot) {
         this.id = id;
         this.type = type;
@@ -13,6 +29,8 @@ export class LLink {
         this._data = null;
         this._pos = new Float32Array(2); //center
     }
+
+    // configure(o: LLink | SerialisedLLinkArray) {
     configure(o) {
         if (o.constructor === Array) {
             this.id = o[0];
@@ -30,7 +48,8 @@ export class LLink {
             this.target_slot = o.target_slot;
         }
     }
-    serialize() {
+
+    serialize(): SerialisedLLinkArray {
         return [
             this.id,
             this.origin_id,

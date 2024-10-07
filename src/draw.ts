@@ -1,4 +1,5 @@
-import type { Vector2, INodeSlot } from "../public/litegraph";
+import type { Vector2 } from "./litegraph";
+import type { INodeSlot } from "./interfaces"
 
 export enum SlotType {
   Array = "array",

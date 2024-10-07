@@ -1,17 +1,40 @@
 // @ts-nocheck
+import type { Point, Size } from "./interfaces"
+import type { LGraph } from "./LGraph"
 import { LiteGraph } from "./litegraph";
 import { LGraphCanvas } from "./LGraphCanvas";
 import { overlapBounding } from "./LiteGraphGlobal";
 import { LGraphNode } from "./LGraphNode";
 
+export interface IGraphGroup {
+    _pos: Point
+    _size: Size
+    title: string
+}
+
+export interface IGraphGroupFlags extends Record<string, unknown> {
+    pinned?: true
+}
 
 export class LGraphGroup {
+    pos: Point
+    color: string
+    title: string
+    font?: string
+    font_size: number
+    _bounding: Float32Array
+    _pos: Point
+    _size: Size
+    _nodes: LGraphNode[]
+    graph?: LGraph
+    flags: IGraphGroupFlags
+    size?: Size
 
-    constructor(title) {
+    constructor(title?: string) {
         this._ctor(title);
     }
 
-    _ctor(title) {
+    _ctor(title?: string) {
         this.title = title || "Group";
         this.font_size = LiteGraph.DEFAULT_GROUP_FONT || 24;
         this.color = LGraphCanvas.node_colors.pale_blue
