@@ -83,10 +83,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      // Note: the backing pinia store creates a proxy that breaks 'computed' values,
-      // so use toRaw to fix that
-      const rawModel = toRaw(model)
-      return rawModel.searchable.value.includes(search)
+      return model.searchable.includes(search)
     })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
