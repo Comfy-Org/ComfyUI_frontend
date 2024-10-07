@@ -266,9 +266,11 @@ class Topbar {
 
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = this.page.locator(
-        `.top-menubar .p-menubar-submenu .p-menubar-item:text-is("${commandName}")`
-      )
+      const menuItem = this.page
+        .locator(
+          `.top-menubar .p-menubar-submenu .p-menubar-item:has-text("${commandName}")`
+        )
+        .first()
       await menuItem.waitFor({ state: 'visible' })
       await menuItem.hover()
 
