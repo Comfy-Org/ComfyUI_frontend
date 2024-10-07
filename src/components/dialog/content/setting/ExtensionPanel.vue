@@ -23,7 +23,14 @@
     </DataTable>
     <div class="mt-4">
       <Message v-if="hasChanges" severity="info">
-        {{ $t('extensionChangesDetected') }}
+        <ul>
+          <li v-for="ext in changedExtensions" :key="ext.name">
+            <span>
+              {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            </span>
+            {{ ext.name }}
+          </li>
+        </ul>
       </Message>
       <Button
         :label="$t('reloadToApplyChanges')"
@@ -60,12 +67,16 @@ onMounted(() => {
   })
 })
 
-const hasChanges = computed(() => {
-  return extensionStore.enabledExtensions.some(
+const changedExtensions = computed(() => {
+  return extensionStore.extensions.filter(
     (ext) =>
       editingEnabledExtensions.value[ext.name] !==
       extensionStore.isExtensionEnabled(ext.name)
   )
+})
+
+const hasChanges = computed(() => {
+  return changedExtensions.value.length > 0
 })
 
 const updateExtensionStatus = () => {
