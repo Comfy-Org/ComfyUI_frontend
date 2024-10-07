@@ -13,6 +13,16 @@ export const useExtensionStore = defineStore('extension', () => {
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
+
+  // Disabled extension names that are currently not in the extension list.
+  // If a node pack is disabled in the backend, we shouldn't remove the configuration
+  // of the frontend extension disable list, in case the node pack is re-enabled.
+  const inactiveDisabledExtensionNames = computed(() => {
+    return Array.from(disabledExtensionNames.value).filter(
+      (name) => !(name in extensionByName.value)
+    )
+  })
+
   const isExtensionEnabled = (name: string) =>
     !disabledExtensionNames.value.has(name)
   const enabledExtensions = computed(() => {
@@ -60,6 +70,7 @@ export const useExtensionStore = defineStore('extension', () => {
   return {
     extensions,
     enabledExtensions,
+    inactiveDisabledExtensionNames,
     isExtensionEnabled,
     registerExtension,
     loadDisabledExtensionNames

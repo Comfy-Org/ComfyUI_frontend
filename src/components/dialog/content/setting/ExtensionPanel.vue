@@ -16,7 +16,7 @@
         <template #body="slotProps">
           <ToggleSwitch
             v-model="editingEnabledExtensions[slotProps.data.name]"
-            @change="updateExtensionStatus(slotProps.data.name)"
+            @change="updateExtensionStatus"
           />
         </template>
       </Column>
@@ -68,13 +68,17 @@ const hasChanges = computed(() => {
   )
 })
 
-const updateExtensionStatus = (name: string) => {
-  settingStore.set(
-    'Comfy.Extension.Disabled',
-    Object.entries(editingEnabledExtensions.value)
-      .filter(([_, enabled]) => !enabled)
-      .map(([name]) => name)
+const updateExtensionStatus = () => {
+  const editingDisabledExtensionNames = Object.entries(
+    editingEnabledExtensions.value
   )
+    .filter(([_, enabled]) => !enabled)
+    .map(([name]) => name)
+
+  settingStore.set('Comfy.Extension.Disabled', [
+    ...extensionStore.inactiveDisabledExtensionNames,
+    ...editingDisabledExtensionNames
+  ])
 }
 
 const applyChanges = () => {
