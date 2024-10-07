@@ -48,6 +48,8 @@ export class ComfyModelDef {
   is_load_requested: boolean = false
   /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
   is_fake_object: boolean = false
+  /** A string full of auto-computed lowercase-only searchable text for this model */
+  searchable: string = ''
 
   constructor(name: string, directory: string) {
     this.file_name = name
@@ -60,6 +62,20 @@ export class ComfyModelDef {
     }
     this.title = this.simplified_file_name
     this.directory = directory
+    this.updateSearchable()
+  }
+
+  updateSearchable() {
+    this.searchable = [
+      this.file_name,
+      this.title,
+      this.author,
+      this.description,
+      this.trigger_phrase,
+      this.tags.join(', ')
+    ]
+      .join('\n')
+      .toLowerCase()
   }
 
   /** Loads the model metadata from the server, filling in this object if data is available */
@@ -110,6 +126,7 @@ export class ComfyModelDef {
         _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
       this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
       this.has_loaded_metadata = true
+      this.updateSearchable()
     } catch (error) {
       console.error('Error loading model metadata', this.file_name, this, error)
     }

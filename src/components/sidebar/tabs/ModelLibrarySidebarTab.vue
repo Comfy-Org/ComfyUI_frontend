@@ -83,7 +83,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.file_name.toLocaleLowerCase().includes(search)
+      return model.searchable.includes(search)
     })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
