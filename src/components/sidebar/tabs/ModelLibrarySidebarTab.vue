@@ -42,7 +42,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, type ComputedRef, watch, toRef, toRaw } from 'vue'
+import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
