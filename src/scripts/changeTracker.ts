@@ -32,7 +32,7 @@ export class ChangeTracker {
   store() {
     this.ds = {
       scale: this.app.canvas.ds.scale,
-      offset: [...this.app.canvas.ds.offset]
+      offset: [this.app.canvas.ds.offset[0], this.app.canvas.ds.offset[1]]
     }
   }
 

@@ -158,7 +158,7 @@ app.registerExtension({
 
         const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(
-            getResourceURL(...splitFilePath(audioWidget.value))
+            getResourceURL(...splitFilePath(audioWidget.value as string))
           )
         }
         // Initially load default audio file to audioUIWidget.

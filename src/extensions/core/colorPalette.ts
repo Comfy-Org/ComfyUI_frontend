@@ -667,7 +667,6 @@ app.registerExtension({
         // Sets the colors of node slots and links
         if (colorPalette.colors.node_slot) {
           Object.assign(
-            // @ts-expect-error
             app.canvas.default_connection_color_byType,
             colorPalette.colors.node_slot
           )

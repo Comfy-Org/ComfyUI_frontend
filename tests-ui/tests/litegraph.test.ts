@@ -18,7 +18,7 @@ function createGraph(...nodes: LGraphNode[]) {
 
 class DummyNode extends LGraphNode {
   constructor() {
-    super()
+    super('dummy')
   }
 }
 
@@ -31,7 +31,6 @@ describe('LGraph', () => {
 
     const result1 = graph.serialize({ sortNodes: true })
     expect(result1.nodes).not.toHaveLength(0)
-    // @ts-expect-error Access private property.
     graph._nodes = swapNodes(graph.nodes)
     const result2 = graph.serialize({ sortNodes: true })
 

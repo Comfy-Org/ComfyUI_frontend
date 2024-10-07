@@ -329,7 +329,6 @@ export class ComfyWorkflow {
     const old = localStorage.getItem('litegrapheditor_clipboard')
     const graph = new LGraph(data)
     const canvas = new LGraphCanvas(null, graph, {
-      // @ts-expect-error
       skip_events: true,
       skip_render: true
     })

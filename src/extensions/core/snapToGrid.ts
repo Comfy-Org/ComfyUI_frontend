@@ -80,7 +80,6 @@ app.registerExtension({
 
         let w, h
         if (node.flags.collapsed) {
-          // @ts-expect-error
           w = node._collapsed_width
           h = LiteGraph.NODE_TITLE_HEIGHT
           shiftY -= LiteGraph.NODE_TITLE_HEIGHT
@@ -161,7 +160,7 @@ app.registerExtension({
           const s = ctx.strokeStyle
           ctx.fillStyle = 'rgba(100, 100, 100, 0.33)'
           ctx.strokeStyle = 'rgba(100, 100, 100, 0.66)'
-          ctx.rect(x, y, ...selectedAndMovingGroup.size)
+          ctx.rect(x, y, ...(selectedAndMovingGroup.size as [number, number]))
           ctx.fill()
           ctx.stroke()
           ctx.fillStyle = f

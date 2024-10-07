@@ -28,7 +28,6 @@ const ext = {
 
         // We must request an animation frame for the current node of the active canvas to update.
         requestAnimationFrame(() => {
-          // @ts-expect-error
           const currentNode = LGraphCanvas.active_canvas.current_node
           const clickedComboValue = currentNode.widgets
             ?.filter(

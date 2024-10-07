@@ -6,6 +6,7 @@ import type {
   INodeOutputSlot,
   INodeSlot
 } from '@comfyorg/litegraph'
+import type { ISlotType } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
 export class ConnectingLinkImpl implements ConnectingLink {
@@ -39,7 +40,7 @@ export class ConnectingLinkImpl implements ConnectingLink {
     )
   }
 
-  get type(): string | null {
+  get type(): ISlotType | null {
     const result = this.input ? this.input.type : this.output.type
     return result === -1 ? null : result
   }
