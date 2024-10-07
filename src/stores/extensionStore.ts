@@ -13,6 +13,11 @@ export const useExtensionStore = defineStore('extension', () => {
   // Not using computed because disable extension requires reloading of the page.
   // Dynamically update this list won't affect extensions that are already loaded.
   const disabledExtensionNames = ref<Set<string>>(new Set())
+  const isExtensionEnabled = (name: string) =>
+    !disabledExtensionNames.value.has(name)
+  const enabledExtensions = computed(() => {
+    return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
+  })
 
   function registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
@@ -47,6 +52,8 @@ export const useExtensionStore = defineStore('extension', () => {
 
   return {
     extensions,
+    enabledExtensions,
+    isExtensionEnabled,
     registerExtension,
     loadDisabledExtensionNames
   }

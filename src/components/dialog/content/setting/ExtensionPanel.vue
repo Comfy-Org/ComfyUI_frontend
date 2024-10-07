@@ -1,7 +1,7 @@
 <template>
   <div class="extension-panel">
     <DataTable
-      :value="extensions"
+      :value="extensionStore.extensions"
       stripedRows
       size="small"
       scrollable
@@ -15,7 +15,7 @@
       >
         <template #body="slotProps">
           <ToggleSwitch
-            v-model="enabledExtensions[slotProps.data.name]"
+            v-model="editingEnabledExtensions[slotProps.data.name]"
             @change="updateExtensionStatus(slotProps.data.name)"
           />
         </template>
@@ -26,10 +26,13 @@
         {{ $t('extensionChangesDetected') }}
       </Message>
       <Button
-        :label="$t('applyChanges')"
+        :label="$t('reloadToApplyChanges')"
         icon="pi pi-refresh"
         @click="applyChanges"
         :disabled="!hasChanges"
+        text
+        fluid
+        severity="danger"
       />
     </div>
   </div>
@@ -48,41 +51,33 @@ import Message from 'primevue/message'
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
 
-const extensions = computed(() => extensionStore.extensions)
-const enabledExtensions = ref<Record<string, boolean>>({})
-const originalEnabledExtensions = ref<Record<string, boolean>>({})
+const editingEnabledExtensions = ref<Record<string, boolean>>({})
 
 onMounted(() => {
-  const disabledExtensions = new Set(
-    settingStore.get('Comfy.Extension.Disabled')
-  )
-  extensions.value.forEach((ext) => {
-    enabledExtensions.value[ext.name] = !disabledExtensions.has(ext.name)
-    originalEnabledExtensions.value[ext.name] = !disabledExtensions.has(
-      ext.name
-    )
+  extensionStore.extensions.forEach((ext) => {
+    editingEnabledExtensions.value[ext.name] =
+      extensionStore.isExtensionEnabled(ext.name)
   })
 })
 
 const hasChanges = computed(() => {
-  return Object.keys(enabledExtensions.value).some(
-    (name) =>
-      enabledExtensions.value[name] !== originalEnabledExtensions.value[name]
+  return extensionStore.enabledExtensions.some(
+    (ext) =>
+      editingEnabledExtensions.value[ext.name] !==
+      extensionStore.isExtensionEnabled(ext.name)
   )
 })
 
 const updateExtensionStatus = (name: string) => {
-  // This function is called when a ToggleButton is changed
-  // No need to do anything here as the v-model will update enabledExtensions
+  settingStore.set(
+    'Comfy.Extension.Disabled',
+    Object.entries(editingEnabledExtensions.value)
+      .filter(([_, enabled]) => !enabled)
+      .map(([name]) => name)
+  )
 }
 
 const applyChanges = () => {
-  const disabledExtensions = Object.keys(enabledExtensions.value).filter(
-    (name) => !enabledExtensions.value[name]
-  )
-
-  settingStore.set('Comfy.Extension.Disabled', disabledExtensions)
-
   // Refresh the page to apply changes
   window.location.reload()
 }
