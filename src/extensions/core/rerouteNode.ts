@@ -1,3 +1,4 @@
+import type { IContextMenuValue } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 import { mergeIfValid, getWidgetConfig, setWidgetConfig } from './widgetInputs'
 import { LiteGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
@@ -32,12 +33,7 @@ app.registerExtension({
           })
         }
 
-        this.onConnectionsChange = function (
-          type,
-          index,
-          connected,
-          link_info
-        ) {
+        this.onConnectionsChange = (type, index, connected, link_info) => {
           this.applyOrientation()
 
           // Prevent multiple connections to different types when we have no input
@@ -63,7 +59,7 @@ app.registerExtension({
           }
 
           // Find root input
-          let currentNode = this
+          let currentNode: LGraphNode | null = this
           let updateNodes = []
           let inputType = null
           let inputNode = null
@@ -98,7 +94,7 @@ app.registerExtension({
           }
 
           // Find all outputs
-          const nodes = [this]
+          const nodes: LGraphNode[] = [this]
           let outputType = null
           while (nodes.length) {
             currentNode = nodes.pop()
@@ -177,7 +173,7 @@ app.registerExtension({
                   }
                   if (!targetWidget) {
                     targetWidget = targetNode.widgets?.find(
-                      (w) => w.name === targetInput.widget.name
+                      (w) => w.name === (targetInput.widget as any).name
                     )
                   }
 
@@ -227,7 +223,7 @@ app.registerExtension({
         this.isVirtualNode = true
       }
 
-      getExtraMenuOptions(_, options) {
+      getExtraMenuOptions(_, options): IContextMenuValue[] {
         options.unshift(
           {
             content:
@@ -268,6 +264,7 @@ app.registerExtension({
             }
           }
         )
+        return []
       }
       applyOrientation() {
         this.horizontal = this.properties.horizontal

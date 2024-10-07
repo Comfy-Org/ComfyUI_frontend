@@ -483,7 +483,6 @@ export function convertToInput(
   const input = node.addInput(widget.name, type, {
     // @ts-expect-error GET_CONFIG is not defined in LiteGraph
     widget: { name: widget.name, [GET_CONFIG]: () => config },
-    // @ts-expect-error LiteGraph.SlotShape is not typed.
     ...(inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {})
   })
 

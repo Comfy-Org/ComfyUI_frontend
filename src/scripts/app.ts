@@ -1110,6 +1110,7 @@ export class ComfyApp {
           // No image node selected: add a new one
           if (!imageNode) {
             const newNode = LiteGraph.createNode('LoadImage')
+            // @ts-expect-error array to Float32Array
             newNode.pos = [...this.canvas.graph_mouse]
             imageNode = this.graph.add(newNode)
             this.graph.change()
@@ -1212,9 +1213,7 @@ export class ComfyApp {
         // Move group by header
         if (
           LiteGraph.isInsideRectangle(
-            // @ts-expect-error
             e.canvasX,
-            // @ts-expect-error
             e.canvasY,
             this.selected_group.pos[0],
             this.selected_group.pos[1],
@@ -1574,7 +1573,6 @@ export class ComfyApp {
 
       // ComfyUI's custom node mode enum value 4 => bypass/never.
       let bgColor: string
-      // @ts-expect-error
       if (node.mode === 4) {
         // never
         bgColor = app.bypassBgColor
@@ -1754,9 +1752,7 @@ export class ComfyApp {
 
   #addAfterConfigureHandler() {
     const app = this
-    // @ts-expect-error
     const onConfigure = app.graph.onConfigure
-    // @ts-expect-error
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
@@ -2499,8 +2495,8 @@ export class ComfyApp {
         }
       }
 
-      const innerNodes = outerNode.getInnerNodes
-        ? outerNode.getInnerNodes()
+      const innerNodes = outerNode['getInnerNodes']
+        ? outerNode['getInnerNodes']()
         : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2520,8 +2516,8 @@ export class ComfyApp {
     for (const outerNode of graph.computeExecutionOrder(false)) {
       const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
-        !skipNode && outerNode.getInnerNodes
-          ? outerNode.getInnerNodes()
+        !skipNode && outerNode['getInnerNodes']
+          ? outerNode['getInnerNodes']()
           : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2868,7 +2864,6 @@ export class ComfyApp {
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
-      // @ts-expect-error
       node.id = isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
       app.graph.add(node)
@@ -2901,7 +2896,6 @@ export class ComfyApp {
             const widget = node.widgets?.find((w) => w.name === input)
             if (widget) {
               widget.value = value
-              // @ts-expect-error
               widget.callback?.(value)
             }
           }
@@ -2936,7 +2930,6 @@ export class ComfyApp {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
             widget.value = value
-            // @ts-expect-error
             widget.callback?.(value)
           }
         }
