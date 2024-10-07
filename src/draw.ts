@@ -1,5 +1,5 @@
 import type { Vector2 } from "./litegraph";
-import type { INodeSlot } from "./interfaces"
+import type { INodeSlot } from "./interfaces";
 
 export enum SlotType {
   Array = "array",
@@ -44,7 +44,7 @@ export function drawSlot(
     low_quality?: boolean;
     render_text?: boolean;
     do_stroke?: boolean;
-  } = {}
+  } = {},
 ) {
   // Save the current fillStyle and strokeStyle
   const originalFillStyle = ctx.fillStyle;
@@ -82,7 +82,7 @@ export function drawSlot(
           pos[0] - 4 + x * spacing,
           pos[1] - 4 + y * spacing,
           cellSize,
-          cellSize
+          cellSize,
         );
       }
     }

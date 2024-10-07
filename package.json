@@ -24,6 +24,8 @@
     "dev": "vite",
     "preview": "vite preview",
     "test": "jest",
+    "format": "prettier --write './**/*.{js,ts}'",
+    "prepare": "husky || true",
     "deprecated-test:allVersions": "./utils/test.sh",
     "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
     "deprecated-lint": "npx eslint src",
@@ -45,11 +47,20 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
+    "husky": "^9.1.6",
     "jest-environment-jsdom": "^29.7.0",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2",
     "vite": "^5.3.4",
     "vite-plugin-dts": "^4.2.1"
+  },
+  "lint-staged": {
+    "./**/*.{js,ts}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }

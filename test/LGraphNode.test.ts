@@ -1,6 +1,4 @@
-import {
-  LGraphNode,
-} from "../dist/litegraph.es.js";
+import { LGraphNode } from "../dist/litegraph.es.js";
 
 describe("LGraphNode", () => {
   it("should serialize position correctly", () => {
