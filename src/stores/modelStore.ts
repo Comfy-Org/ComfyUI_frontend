@@ -1,5 +1,6 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
+import { computed } from 'vue'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -48,6 +49,19 @@ export class ComfyModelDef {
   is_load_requested: boolean = false
   /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
   is_fake_object: boolean = false
+  /** A string full of auto-computed lowercase-only searchable text for this model */
+  searchable = computed<string>(() => {
+    return [
+      this.file_name,
+      this.title,
+      this.author,
+      this.description,
+      this.trigger_phrase,
+      this.tags.join(', ')
+    ]
+      .join('\n')
+      .toLowerCase()
+  })
 
   constructor(name: string, directory: string) {
     this.file_name = name

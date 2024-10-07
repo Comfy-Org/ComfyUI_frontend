@@ -42,7 +42,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
+import { computed, ref, type ComputedRef, watch, toRef, toRaw } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
@@ -83,7 +83,10 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.file_name.toLocaleLowerCase().includes(search)
+      // Note: the backing pinia store creates a proxy that breaks 'computed' values,
+      // so use toRaw to fix that
+      const rawModel = toRaw(model)
+      return rawModel.searchable.value.includes(search)
     })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
