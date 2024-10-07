@@ -3,9 +3,20 @@
     <DataTable
       :value="commandsData"
       v-model:selection="selectedCommandData"
+      :global-filter-fields="['id']"
+      :filters="filters"
       selectionMode="single"
       stripedRows
+      :pt="{
+        header: 'px-0'
+      }"
     >
+      <template #header>
+        <SearchBox
+          v-model="filters['global'].value"
+          :placeholder="$t('searchKeybindings') + '...'"
+        />
+      </template>
       <Column field="actions" header="">
         <template #body="slotProps">
           <div class="actions invisible">
@@ -103,7 +114,13 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import { useToast } from 'primevue/usetoast'
+import { FilterMatchMode } from '@primevue/core/api'
+
+const filters = ref({
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
+})
 
 const keybindingStore = useKeybindingStore()
 const commandStore = useCommandStore()
