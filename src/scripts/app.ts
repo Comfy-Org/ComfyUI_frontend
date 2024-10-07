@@ -113,7 +113,6 @@ export class ComfyApp {
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, typeof Image>
-  shiftDown: boolean
   graph: LGraph
   enableWorkflowViewRestore: any
   canvas: LGraphCanvas
@@ -139,10 +138,18 @@ export class ComfyApp {
   menu: ComfyAppMenu
   bypassBgColor: string
 
-  // @deprecated
-  // Use useExecutionStore().executingNodeId instead
+  /**
+   * @deprecated Use useExecutionStore().executingNodeId instead
+   */
   get runningNodeId(): string | null {
     return useExecutionStore().executingNodeId
+  }
+
+  /**
+   * @deprecated Use useWorkspaceStore().shiftDown instead
+   */
+  get shiftDown(): boolean {
+    return useWorkspaceStore().shiftDown
   }
 
   constructor() {
@@ -177,12 +184,6 @@ export class ComfyApp {
      * @type {Record<string, Image>}
      */
     this.nodePreviewImages = {}
-
-    /**
-     * If the shift key on the keyboard is pressed
-     * @type {boolean}
-     */
-    this.shiftDown = false
   }
 
   get nodeOutputs() {
@@ -1617,15 +1618,6 @@ export class ComfyApp {
     api.init()
   }
 
-  #addKeyboardHandler() {
-    window.addEventListener('keydown', (e) => {
-      this.shiftDown = e.shiftKey
-    })
-    window.addEventListener('keyup', (e) => {
-      this.shiftDown = e.shiftKey
-    })
-  }
-
   #addConfigureHandler() {
     const app = this
     const configure = LGraph.prototype.configure
@@ -1906,7 +1898,6 @@ export class ComfyApp {
     this.#addDropHandler()
     this.#addCopyHandler()
     this.#addPasteHandler()
-    this.#addKeyboardHandler()
     this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
