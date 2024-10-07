@@ -253,6 +253,8 @@ onMounted(() => {
       const textBeforeCursor = textarea.value.substring(0, cursorPosition)
       const textAfterCursor = textarea.value.substring(cursorPosition)
       textarea.value = textBeforeCursor + insertText + textAfterCursor
+      // This setTimeout is a workaround for browsers behaving weirdly about the drop event itself
+      // so apply the textarea focus outside of the event (with a timeout zero)
       setTimeout(() => {
         textarea.focus()
         const newCursorPosition = cursorPosition + insertText.length
