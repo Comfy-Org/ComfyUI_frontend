@@ -42,10 +42,20 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
+import {
+  computed,
+  ref,
+  type ComputedRef,
+  watch,
+  toRef,
+  onMounted,
+  onUnmounted
+} from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+
 const { t } = useI18n()
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
@@ -212,6 +222,50 @@ watch(
   },
   { deep: true }
 )
+
+let dropTargetCleanup = () => {}
+
+onMounted(() => {
+  dropTargetCleanup = dropTargetForElements({
+    element: document.body,
+    onDrop: (event) => {
+      const loc = event.location.current.input
+      const dndData = event.source.data
+      if (dndData.type !== 'tree-explorer-node') {
+        return
+      }
+      const node = dndData.data as RenderedTreeExplorerNode
+      if (!(node.data instanceof ComfyModelDef)) {
+        return
+      }
+      const model = node.data
+      if (model.directory != 'embeddings') {
+        return
+      }
+      // TODO: There should be a way to get the actual element? but this drop handle goes by location only, no elem, so...
+      const elementAtDrop = document.elementFromPoint(loc.clientX, loc.clientY)
+      if (!elementAtDrop || elementAtDrop.tagName !== 'TEXTAREA') {
+        return
+      }
+      const textarea = elementAtDrop as HTMLTextAreaElement
+      const insertText = ` embedding:${model.file_name} `
+      const cursorPosition = textarea.selectionStart
+      const textBeforeCursor = textarea.value.substring(0, cursorPosition)
+      const textAfterCursor = textarea.value.substring(cursorPosition)
+      textarea.value = textBeforeCursor + insertText + textAfterCursor
+      setTimeout(() => {
+        textarea.focus()
+        const newCursorPosition = cursorPosition + insertText.length
+        textarea.setSelectionRange(newCursorPosition, newCursorPosition)
+        textarea.dispatchEvent(new Event('input', { bubbles: true }))
+      }, 0)
+    }
+  })
+})
+
+onUnmounted(() => {
+  dropTargetCleanup()
+})
 </script>
 
 <style>
