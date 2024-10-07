@@ -53,6 +53,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1278,13 +1280,10 @@ export class ComfyApp {
 
   /**
    * Handle keypress
-   *
-   * Ctrl + M mute/unmute selected nodes
    */
   #addProcessKeyHandler() {
-    const self = this
     const origProcessKey = LGraphCanvas.prototype.processKey
-    LGraphCanvas.prototype.processKey = function (e) {
+    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
       if (!this.graph) {
         return
       }
@@ -1296,54 +1295,11 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
-        // Ctrl + M mute/unmute
-        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 2) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 2 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // Ctrl + B bypass
-        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 4) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 4 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // p pin/unpin
-        if (e.key === 'p') {
-          if (this.selected_nodes) {
-            for (const i in this.selected_nodes) {
-              const node = this.selected_nodes[i]
-              node.pin()
-            }
-          }
-          block_default = true
-        }
-
-        // Alt + C collapse/uncollapse
-        if (e.key === 'c' && e.altKey) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              this.selected_nodes[i].collapse()
-            }
-          }
+        const keyCombo = KeyComboImpl.fromEvent(e)
+        const keybindingStore = useKeybindingStore()
+        const keybinding = keybindingStore.getKeybinding(keyCombo)
+        if (keybinding && keybinding.targetSelector === '#graph-canvas') {
+          useCommandStore().execute(keybinding.commandId)
           block_default = true
         }
 
@@ -1361,26 +1317,6 @@ export class ComfyApp {
         ) {
           // Trigger onPaste
           return true
-        }
-
-        if (e.key === '+' && e.altKey) {
-          block_default = true
-          let scale = this.ds.scale * 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
-        }
-
-        if (e.key === '-' && e.altKey) {
-          block_default = true
-          let scale = (this.ds.scale * 1) / 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
         }
       }
 
