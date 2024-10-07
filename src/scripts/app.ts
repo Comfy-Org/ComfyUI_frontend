@@ -52,8 +52,7 @@ import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
-import { useKeybindingStore } from '@/stores/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -357,6 +356,13 @@ export class ComfyApp {
     }
   }
 
+  get enabledExtensions() {
+    if (!this.vueAppReady) {
+      return this.extensions
+    }
+    return useExtensionStore().enabledExtensions
+  }
+
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
@@ -365,7 +371,7 @@ export class ComfyApp {
    */
   #invokeExtensions(method, ...args) {
     let results = []
-    for (const ext of this.extensions) {
+    for (const ext of this.enabledExtensions) {
       if (method in ext) {
         try {
           results.push(ext[method](...args, this))
@@ -391,7 +397,7 @@ export class ComfyApp {
    */
   async #invokeExtensionsAsync(method, ...args) {
     return await Promise.all(
-      this.extensions.map(async (ext) => {
+      this.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
             return await ext[method](...args, this)
@@ -1773,6 +1779,8 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
+    useExtensionStore().loadDisabledExtensionNames()
+
     const extensions = await api.getExtensions()
     this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 
@@ -2943,22 +2951,12 @@ export class ComfyApp {
    * @param {ComfyExtension} extension
    */
   registerExtension(extension: ComfyExtension) {
-    if (!extension.name) {
-      throw new Error("Extensions must have a 'name' property.")
-    }
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    if (extension.name === 'pysssss.Locking') {
-      console.log('pysssss.Locking is replaced by pin/unpin in ComfyUI core.')
-      return
-    }
-    if (this.extensions.find((ext) => ext.name === extension.name)) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
-    }
     if (this.vueAppReady) {
-      useKeybindingStore().loadExtensionKeybindings(extension)
-      useCommandStore().loadExtensionCommands(extension)
+      useExtensionStore().registerExtension(extension)
+    } else {
+      // For jest testing.
+      this.extensions.push(extension)
     }
-    this.extensions.push(extension)
   }
 
   /**

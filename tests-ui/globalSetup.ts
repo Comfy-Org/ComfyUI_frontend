@@ -36,6 +36,15 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/extensionStore', () => {
+    return {
+      useExtensionStore: () => ({
+        registerExtension: jest.fn(),
+        loadDisabledExtensionNames: jest.fn()
+      })
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()

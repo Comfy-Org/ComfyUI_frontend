@@ -57,6 +57,9 @@
           <TabPanel key="keybinding" value="Keybinding">
             <KeybindingPanel />
           </TabPanel>
+          <TabPanel key="extension" value="Extension">
+            <ExtensionPanel />
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </div>
@@ -78,6 +81,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
 import KeybindingPanel from './setting/KeybindingPanel.vue'
+import ExtensionPanel from './setting/ExtensionPanel.vue'
 
 interface ISettingGroup {
   label: string
@@ -96,11 +100,24 @@ const keybindingPanelNode: SettingTreeNode = {
   children: []
 }
 
+const extensionPanelNode: SettingTreeNode = {
+  key: 'extension',
+  label: 'Extension',
+  children: []
+}
+
+const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
+  const settingStore = useSettingStore()
+  const showExtensionPanel = settingStore.get('Comfy.Settings.ExtensionPanel')
+  return showExtensionPanel ? [extensionPanelNode] : []
+})
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
   keybindingPanelNode,
+  ...extensionPanelNodeList.value,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)
@@ -225,5 +242,16 @@ const tabValue = computed(() =>
   .settings-sidebar {
     width: 100%;
   }
+}
+
+/* Show a separator line above the Keybinding tab */
+/* This indicates the start of custom setting panels */
+.settings-sidebar :deep(.p-listbox-option[aria-label='Keybinding']) {
+  position: relative;
+}
+
+.settings-sidebar :deep(.p-listbox-option[aria-label='Keybinding'])::before {
+  @apply content-[''] top-0 left-0 absolute w-full;
+  border-top: 1px solid var(--p-divider-border-color);
 }
 </style>

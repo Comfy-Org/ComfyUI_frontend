@@ -507,7 +507,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
       'Comfy.QueueButton.BatchCountLimit': z.number(),
       'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
-      'Comfy.Keybinding.NewBindings': z.array(zKeybinding)
+      'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+      'Comfy.Extension.Disabled': z.array(z.string()),
+      'Comfy.Settings.ExtensionPanel': z.boolean()
     })
     .optional()
 )

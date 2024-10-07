@@ -2,6 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    extensionName: 'Extension Name',
+    reloadToApplyChanges: 'Reload to apply changes',
     insert: 'Insert',
     systemInfo: 'System Info',
     devices: 'Devices',
@@ -108,6 +110,8 @@ const messages = {
     }
   },
   zh: {
+    extensionName: '扩展名称',
+    reloadToApplyChanges: '重新加载以应用更改',
     insert: '插入',
     systemInfo: '系统信息',
     devices: '设备',
