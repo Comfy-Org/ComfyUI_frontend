@@ -30,7 +30,7 @@ app.registerExtension({
       const keybindingStore = useKeybindingStore()
       const commandStore = useCommandStore()
       const keybinding = keybindingStore.getKeybinding(keyCombo)
-      if (keybinding) {
+      if (keybinding && keybinding.targetSelector !== '#graph-canvas') {
         await commandStore.execute(keybinding.commandId)
         event.preventDefault()
         return

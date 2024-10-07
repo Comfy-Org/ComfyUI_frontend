@@ -8,16 +8,20 @@ import type { ComfyExtension } from '@/types/comfy'
 export class KeybindingImpl implements Keybinding {
   commandId: string
   combo: KeyComboImpl
+  targetSelector?: string
 
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
     this.combo = new KeyComboImpl(obj.combo)
+    this.targetSelector = obj.targetSelector
   }
 
   equals(other: any): boolean {
     if (toRaw(other) instanceof KeybindingImpl) {
       return (
-        this.commandId === other.commandId && this.combo.equals(other.combo)
+        this.commandId === other.commandId &&
+        this.combo.equals(other.combo) &&
+        this.targetSelector === other.targetSelector
       )
     }
     return false
