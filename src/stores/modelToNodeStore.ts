@@ -41,7 +41,7 @@ export const useModelToNodeStore = defineStore('modelToNode', {
      */
     getAllNodeProviders(modelType: string): ModelNodeProvider[] {
       this.registerDefaults()
-      return this.modelToNodeMap[modelType]
+      return this.modelToNodeMap[modelType] ?? []
     },
 
     /**
