@@ -389,6 +389,8 @@ test.describe('Menu', () => {
       // Open the sidebar
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
+
+      await comfyPage.setupWorkflowsDirectory({})
     })
 
     test('Can create new blank workflow', async ({ comfyPage }) => {
@@ -441,7 +443,9 @@ test.describe('Menu', () => {
     test('Can close saved-workflows from the open workflows section', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.saveWorkflow('deault')
+      await comfyPage.menu.topbar.saveWorkflow(
+        `tempWorkflow-${test.info().title}`
+      )
       const closeButton = comfyPage.page.locator(
         '.comfyui-workflows-open .p-button-icon.pi-times'
       )
@@ -458,13 +462,7 @@ test.describe('Menu', () => {
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      // Delete the saved workflow for cleanup.
-      await comfyPage.page.evaluate(async () => {
-        window['app'].workflowManager.activeWorkflow.delete()
-      })
+      await comfyPage.setupWorkflowsDirectory({})
     })
 
     test('Can show opened workflows', async ({ comfyPage }) => {
@@ -474,12 +472,10 @@ test.describe('Menu', () => {
     })
 
     test('Can close saved-workflow tabs', async ({ comfyPage }) => {
-      const savedWorkflowName = 'default'
-      await comfyPage.menu.topbar.saveWorkflow(savedWorkflowName)
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        savedWorkflowName
-      ])
-      await comfyPage.menu.topbar.closeWorkflowTab('default')
+      const workflowName = `tempWorkflow-${test.info().title}`
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
+      await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
         'Unsaved Workflow (2)'
       ])
