@@ -425,11 +425,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Extension.Disabled',
     name: 'Disabled extension names',
     type: 'hidden',
-    defaultValue: [
-      // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
-      // https://github.com/Comfy-Org/litegraph.js/pull/117
-      'pysssss.Locking'
-    ],
+    defaultValue: [] as string[],
     versionAdded: '1.3.11'
   }
 ]

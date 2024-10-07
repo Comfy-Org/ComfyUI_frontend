@@ -57,6 +57,9 @@ export const useExtensionStore = defineStore('extension', () => {
     disabledExtensionNames.value = new Set(
       useSettingStore().get('Comfy.Extension.Disabled')
     )
+    // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
+    // https://github.com/Comfy-Org/litegraph.js/pull/117
+    disabledExtensionNames.value.add('pysssss.Locking')
   }
 
   // Some core extensions are registered before the store is initialized, e.g.
