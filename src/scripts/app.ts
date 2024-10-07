@@ -2094,8 +2094,7 @@ export class ComfyApp {
             // Node connection inputs
             const inputOptions = inputIsRequired
               ? {}
-              : // @ts-expect-error LiteGraph.SlotShape is not typed.
-                { shape: LiteGraph.SlotShape.HollowCircle }
+              : { shape: LiteGraph.SlotShape.HollowCircle }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -2433,7 +2432,10 @@ export class ComfyApp {
         for (let widget of node.widgets) {
           if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
             if (widget.name == 'sampler_name') {
-              if (widget.value.startsWith('sample_')) {
+              if (
+                typeof widget.value === 'string' &&
+                widget.value.startsWith('sample_')
+              ) {
                 widget.value = widget.value.slice(7)
               }
             }
@@ -2445,8 +2447,10 @@ export class ComfyApp {
           ) {
             if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
+                // @ts-expect-error change widget type from boolean to string
                 widget.value = 'randomize'
               } else if (widget.value === false) {
+                // @ts-expect-error change widget type from boolean to string
                 widget.value = 'fixed'
               }
             }
@@ -2454,7 +2458,7 @@ export class ComfyApp {
           if (reset_invalid_values) {
             if (widget.type == 'combo') {
               if (
-                !widget.options.values.includes(widget.value) &&
+                !widget.options.values.includes(widget.value as string) &&
                 widget.options.values.length > 0
               ) {
                 widget.value = widget.options.values[0]

@@ -42,28 +42,28 @@ declare module '@comfyorg/litegraph' {
     ): DOMWidget
   }
 
-  interface IWidget<TValue = any, TOptions = any> {
-    type?: string
+  // interface IWidget<TValue = any, TOptions = any> {
+  //   type?: string
 
-    /**
-     * Allows for additional cleanup when removing a widget when converting to input.
-     */
-    onRemove?(): void
+  //   /**
+  //    * Allows for additional cleanup when removing a widget when converting to input.
+  //    */
+  //   onRemove?(): void
 
-    serializeValue?(node?: LGraphNode, i?: string)
-    beforeQueued?(): void
+  //   serializeValue?(node?: LGraphNode, i?: string)
+  //   beforeQueued?(): void
 
-    /**
-     * DOM element used for the widget
-     */
-    element?: HTMLElement
+  //   /**
+  //    * DOM element used for the widget
+  //    */
+  //   element?: HTMLElement
 
-    tooltip?: string
+  //   tooltip?: string
 
-    origType?: IWidget['type']
-    origComputeSize?: IWidget['computeSize']
-    origSerializeValue?: IWidget['serializeValue']
-  }
+  //   origType?: IWidget['type']
+  //   origComputeSize?: IWidget['computeSize']
+  //   origSerializeValue?: IWidget['serializeValue']
+  // }
 
   interface INodeSlot {
     widget?: unknown & { name?: string }
