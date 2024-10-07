@@ -1,6 +1,7 @@
 import { $el, ComfyDialog } from './ui'
 import { api } from './api'
 import type { ComfyApp } from './app'
+import { useToastStore } from '@/stores/toastStore'
 
 $el('style', {
   textContent: `
@@ -130,7 +131,7 @@ class ComfyLoggingDialog extends ComfyDialog {
             throw new Error('Invalid file selected.')
           }
         } catch (error) {
-          alert('Unable to load logs: ' + error.message)
+          useToastStore().addAlert('Unable to load logs: ' + error.message)
         }
       }
       reader.readAsText(fileInput.files[0])

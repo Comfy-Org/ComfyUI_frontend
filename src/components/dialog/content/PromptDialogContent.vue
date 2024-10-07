@@ -1,0 +1,43 @@
+<template>
+  <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
+    <FloatLabel>
+      <InputText
+        ref="inputRef"
+        v-model="inputValue"
+        @keyup.enter="onConfirm"
+        @focus="selectAllText"
+        autofocus
+      />
+      <label>{{ message }}</label>
+    </FloatLabel>
+    <Button @click="onConfirm">{{ $t('confirm') }}</Button>
+  </div>
+</template>
+
+<script setup lang="ts">
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import FloatLabel from 'primevue/floatlabel'
+import { ref } from 'vue'
+import { useDialogStore } from '@/stores/dialogStore'
+
+const props = defineProps<{
+  message: string
+  defaultValue: string
+  onConfirm: (value: string) => void
+}>()
+
+const inputValue = ref<string>(props.defaultValue)
+
+const onConfirm = () => {
+  props.onConfirm(inputValue.value)
+  useDialogStore().closeDialog()
+}
+
+const inputRef = ref(null)
+const selectAllText = () => {
+  if (!inputRef.value) return
+  const inputElement = inputRef.value.$el
+  inputElement.setSelectionRange(0, inputElement.value.length)
+}
+</script>

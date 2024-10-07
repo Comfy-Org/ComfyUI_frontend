@@ -6,9 +6,9 @@ import { webSocketFixture } from './fixtures/ws.ts'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-test.describe('AppMenu', () => {
+test.describe('Actionbar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -23,12 +23,12 @@ test.describe('AppMenu', () => {
     ws
   }) => {
     // Enable change auto-queue mode
-    const queueOpts = await comfyPage.appMenu.queueButton.toggleOptions()
+    const queueOpts = await comfyPage.actionbar.queueButton.toggleOptions()
     expect(await queueOpts.getMode()).toBe('disabled')
     await queueOpts.setMode('change')
     await comfyPage.nextFrame()
     expect(await queueOpts.getMode()).toBe('change')
-    await comfyPage.appMenu.queueButton.toggleOptions()
+    await comfyPage.actionbar.queueButton.toggleOptions()
 
     // Intercept the prompt queue endpoint
     let promptNumber = 0
@@ -112,5 +112,16 @@ test.describe('AppMenu', () => {
       'last queued prompt width should be the last change'
     ).toBe(END)
     expect(promptNumber, 'queued prompt count should be 2').toBe(2)
+  })
+
+  test('Can dock actionbar into top menu', async ({ comfyPage }) => {
+    await comfyPage.page.dragAndDrop(
+      '.actionbar .drag-handle',
+      '.comfyui-menu',
+      {
+        targetPosition: { x: 0, y: 0 }
+      }
+    )
+    expect(await comfyPage.actionbar.isDocked()).toBe(true)
   })
 })

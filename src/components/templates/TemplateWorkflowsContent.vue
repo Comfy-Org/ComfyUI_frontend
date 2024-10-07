@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-wrap content-around justify-around gap-4"
+    class="flex flex-wrap content-around justify-around gap-4 mt-4"
     data-testid="template-workflows-content"
   >
     <div

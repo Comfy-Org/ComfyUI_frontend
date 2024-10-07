@@ -12,6 +12,8 @@ import {
 import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
 import { UserDataFullInfo } from '@/types/apiTypes'
+import { useToastStore } from '@/stores/toastStore'
+import { showPromptDialog } from '@/services/dialogService'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: ReturnType<typeof useExecutionStore> | null
@@ -76,7 +78,9 @@ export class ComfyWorkflowManager extends EventTarget {
         }
       })
     } catch (error) {
-      alert('Error loading workflows: ' + (error.message ?? error))
+      useToastStore().addAlert(
+        'Error loading workflows: ' + (error.message ?? error)
+      )
     }
   }
 
@@ -228,7 +232,7 @@ export class ComfyWorkflow {
   async getWorkflowData() {
     const resp = await api.getUserData('workflows/' + this.path)
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error loading workflow file '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return
@@ -269,7 +273,7 @@ export class ComfyWorkflow {
       this.manager.workflowBookmarkStore?.setBookmarked(this.path, value)
       this.manager.dispatchEvent(new CustomEvent('favorite', { detail: this }))
     } catch (error) {
-      alert(
+      useToastStore().addAlert(
         'Error favoriting workflow ' +
           this.path +
           '\n' +
@@ -300,7 +304,7 @@ export class ComfyWorkflow {
     }
 
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return
@@ -326,7 +330,6 @@ export class ComfyWorkflow {
     const old = localStorage.getItem('litegrapheditor_clipboard')
     const graph = new LGraph(data)
     const canvas = new LGraphCanvas(null, graph, {
-      // @ts-expect-error
       skip_events: true,
       skip_render: true
     })
@@ -344,7 +347,7 @@ export class ComfyWorkflow {
     }
     const resp = await api.deleteUserData('workflows/' + this.path)
     if (resp.status !== 204) {
-      alert(
+      useToastStore().addAlert(
         `Error removing user data file '${this.path}': ${resp.status} ${resp.statusText}`
       )
     }
@@ -367,10 +370,11 @@ export class ComfyWorkflow {
 
   private async _save(path: string | null, overwrite: boolean) {
     if (!path) {
-      path = prompt(
-        'Save workflow as:',
-        trimJsonExt(this.path) ?? this.name ?? 'workflow'
-      )
+      path = await showPromptDialog({
+        title: 'Save workflow',
+        message: 'Enter the filename:',
+        defaultValue: trimJsonExt(this.path) ?? this.name ?? 'workflow'
+      })
       if (!path) return
     }
 
@@ -396,7 +400,7 @@ export class ComfyWorkflow {
     }
 
     if (resp.status !== 200) {
-      alert(
+      useToastStore().addAlert(
         `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
       )
       return

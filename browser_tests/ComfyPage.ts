@@ -1,7 +1,7 @@
 import type { Page, Locator, APIRequestContext } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
-import { ComfyAppMenu } from './helpers/appMenu'
+import { ComfyActionbar } from './helpers/actionbar'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
@@ -192,12 +192,8 @@ class WorkflowsSidebarTab extends SidebarTab {
     return this.page.locator('.new-blank-workflow-button')
   }
 
-  get browseWorkflowsButton() {
-    return this.page.locator('.browse-workflows-button')
-  }
-
-  get newDefaultWorkflowButton() {
-    return this.page.locator('.new-default-workflow-button')
+  get openWorkflowButton() {
+    return this.page.locator('.open-workflow-button')
   }
 
   async getOpenedWorkflowNames() {
@@ -251,16 +247,11 @@ class Topbar {
   }
 
   async saveWorkflow(workflowName: string) {
-    this.page.on('dialog', async (dialog) => {
-      await dialog.accept(workflowName)
-    })
-    const workflowMenuItem = await this.getMenuItem('Workflow')
-    workflowMenuItem.click()
-    await this.page.evaluate(() => {
-      return new Promise<number>(requestAnimationFrame)
-    })
-    const saveButton = await this.getMenuItem('Save')
-    await saveButton.click()
+    await this.triggerTopbarCommand(['Workflow', 'Save'])
+    await this.page.locator('.p-dialog-content input').fill(workflowName)
+    await this.page.keyboard.press('Enter')
+    // Wait for the dialog to close.
+    await this.page.waitForTimeout(300)
   }
 
   async triggerTopbarCommand(path: string[]) {
@@ -277,9 +268,11 @@ class Topbar {
 
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = this.page.locator(
-        `.top-menubar .p-menubar-submenu .p-menubar-item:has-text("${commandName}")`
-      )
+      const menuItem = this.page
+        .locator(
+          `.top-menubar .p-menubar-submenu .p-menubar-item:has-text("${commandName}")`
+        )
+        .first()
       await menuItem.waitFor({ state: 'visible' })
       await menuItem.hover()
 
@@ -301,21 +294,6 @@ class ComfyMenu {
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
-  }
-
-  async saveWorkflow(name: string) {
-    const acceptDialog = async (dialog) => {
-      await dialog.accept(name)
-    }
-    this.page.on('dialog', acceptDialog)
-
-    await this.saveButton.click()
-
-    // Wait a moment to ensure the dialog has been handled
-    await this.page.waitForTimeout(300)
-
-    // Remove the dialog listener
-    this.page.off('dialog', acceptDialog)
   }
 
   get nodeLibraryTab() {
@@ -374,7 +352,7 @@ export class ComfyPage {
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
-  public readonly appMenu: ComfyAppMenu
+  public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
 
   constructor(
@@ -389,7 +367,7 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
-    this.appMenu = new ComfyAppMenu(page)
+    this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
   }
 
@@ -487,6 +465,36 @@ export class ComfyPage {
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
+  }
+
+  async executeCommand(commandId: string) {
+    await this.page.evaluate((id: string) => {
+      return window['app'].extensionManager.command.execute(id)
+    }, commandId)
+  }
+
+  async registerCommand(
+    commandId: string,
+    command: (() => void) | (() => Promise<void>)
+  ) {
+    await this.page.evaluate(
+      ({ commandId, commandStr }) => {
+        const app = window['app']
+        const randomSuffix = Math.random().toString(36).substring(2, 8)
+        const extensionName = `TestExtension_${randomSuffix}`
+
+        app.registerExtension({
+          name: extensionName,
+          commands: [
+            {
+              id: commandId,
+              function: eval(commandStr)
+            }
+          ]
+        })
+      },
+      { commandId, commandStr: command.toString() }
+    )
   }
 
   async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
@@ -1189,6 +1197,11 @@ export class NodeReference {
       await targetSlot.getPosition()
     )
     return originSlot
+  }
+  async getContextMenuOptionNames() {
+    await this.click('title', { button: 'right' })
+    const ctx = this.comfyPage.page.locator('.litecontextmenu')
+    return await ctx.locator('.litemenu-entry').allInnerTexts()
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })

@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 test.describe('Browser tab title', () => {
   test.describe('Beta Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test.afterEach(async ({ comfyPage }) => {
@@ -16,7 +16,7 @@ test.describe('Browser tab title', () => {
         return window['app'].workflowManager.activeWorkflow.name
       })
       // Note: unsaved workflow name is always prepended with "*".
-      expect(await comfyPage.page.title()).toBe(`*${workflowName}`)
+      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
 
     // Broken by https://github.com/Comfy-Org/ComfyUI_frontend/pull/893
@@ -28,15 +28,15 @@ test.describe('Browser tab title', () => {
         return window['app'].workflowManager.activeWorkflow.name
       })
       // Note: unsaved workflow name is always prepended with "*".
-      expect(await comfyPage.page.title()).toBe(`*${workflowName}`)
+      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
 
       await comfyPage.menu.saveWorkflow('test')
-      expect(await comfyPage.page.title()).toBe('test')
+      expect(await comfyPage.page.title()).toBe('test - ComfyUI')
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
       await comfyPage.clickEmptySpace()
-      expect(await comfyPage.page.title()).toBe(`*test`)
+      expect(await comfyPage.page.title()).toBe(`*test - ComfyUI`)
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {

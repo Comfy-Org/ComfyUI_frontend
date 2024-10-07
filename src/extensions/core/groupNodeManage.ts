@@ -8,6 +8,7 @@ import {
   type LGraphNode,
   type LGraphNodeConstructor
 } from '@comfyorg/litegraph'
+import { useToastStore } from '@/stores/toastStore'
 
 const ORDER: symbol = Symbol()
 const PREFIX = 'workflow'
@@ -396,7 +397,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 (n) => n.type === `${PREFIX}${SEPARATOR}` + this.selectedGroup
               )
               if (node) {
-                alert(
+                useToastStore().addAlert(
                   'This group node is in use in the current workflow, please first remove these.'
                 )
                 return

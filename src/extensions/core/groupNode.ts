@@ -6,6 +6,7 @@ import type { LGraphNode } from '@comfyorg/litegraph'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { useToastStore } from '@/stores/toastStore'
 
 type GroupNodeWorkflowData = {
   external: ComfyLink[]
@@ -75,7 +76,7 @@ class GroupNodeBuilder {
     const used = Workflow.isInUseGroupNode(name)
     switch (used) {
       case Workflow.InUse.InWorkflow:
-        alert(
+        useToastStore().addAlert(
           'An in use group node with this name already exists embedded in this workflow, please remove any instances or use a new name.'
         )
         return
@@ -97,6 +98,7 @@ class GroupNodeBuilder {
     const nodesInOrder = app.graph.computeExecutionOrder(false)
     this.nodes = this.nodes
       .map((node) => ({ index: nodesInOrder.indexOf(node), node }))
+      // @ts-expect-error id might be string
       .sort((a, b) => a.index - b.index || a.node.id - b.node.id)
       .map(({ node }) => node)
   }
@@ -800,7 +802,6 @@ export class GroupNodeHandler {
           this.groupData.nodeData.nodes.map((n, i) => {
             const innerNode = LiteGraph.createNode(n.type)
             innerNode.configure(n)
-            // @ts-expect-error
             innerNode.id = `${this.node.id}:${i}`
             return innerNode
           })

@@ -37,7 +37,7 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 )
 
 const sidebarPanelVisible = computed(
-  () => useWorkspaceStore().activeSidebarTab !== null
+  () => useWorkspaceStore().sidebarTab.activeSidebarTab !== null
 )
 const gutterClass = computed(() => {
   return sidebarPanelVisible.value ? '' : 'gutter-hidden'

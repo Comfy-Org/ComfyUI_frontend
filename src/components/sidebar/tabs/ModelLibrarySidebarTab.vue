@@ -7,7 +7,6 @@
           <SearchBox
             class="model-lib-search-box mx-4 mt-4"
             v-model:modelValue="searchQuery"
-            @search="handleSearch"
             :placeholder="$t('searchModels') + '...'"
           />
         </div>
@@ -84,7 +83,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.file_name.toLocaleLowerCase().includes(search)
+      return model.searchable.includes(search)
     })
   }
   const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
@@ -186,10 +185,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
   }
   return fillNodeInfo(root.value)
 })
-
-const handleSearch = (query: string) => {
-  // TODO
-}
 
 const handleNodeClick = (
   node: RenderedTreeExplorerNode<ComfyModelDef>,

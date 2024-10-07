@@ -14,6 +14,18 @@ export type Widgets = Record<
   ) => { widget?: IWidget; minWidth?: number; minHeight?: number }
 >
 
+export type MenuCommandGroup = {
+  /**
+   * The path to the menu group.
+   */
+  path: string[]
+  /**
+   * Command ids.
+   * Note: Commands must be defined in `commands` array in the extension.
+   */
+  commands: string[]
+}
+
 export interface ComfyExtension {
   /**
    * The name of the extension
@@ -27,6 +39,10 @@ export interface ComfyExtension {
    * The keybindings defined by the extension
    */
   keybindings?: Keybinding[]
+  /**
+   * Menu commands to add to the menu bar
+   */
+  menuCommands?: MenuCommandGroup[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance

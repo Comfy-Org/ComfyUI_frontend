@@ -376,10 +376,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use new menu and workflow management.',
     experimental: true,
     type: 'combo',
-    options: ['Disabled', 'Floating'],
+    options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {
-      if (['Top', 'Bottom'].includes(value)) {
-        return 'Floating'
+      // Floating is now supported by dragging the docked actionbar off.
+      if (value === 'Floating') {
+        return 'Top'
       }
       return value
     }
@@ -419,5 +420,20 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7'
+  },
+  {
+    id: 'Comfy.Extension.Disabled',
+    name: 'Disabled extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.3.11'
+  },
+  {
+    id: 'Comfy.Settings.ExtensionPanel',
+    name: 'Show extension panel in settings dialog',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true,
+    versionAdded: '1.3.11'
   }
 ]

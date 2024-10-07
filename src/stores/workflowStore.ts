@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
@@ -40,6 +40,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
     buildTree(openWorkflows.value, (workflow: ComfyWorkflow) => [workflow.key])
   )
 
+  const loadOpenedWorkflowIndexShift = async (shift: number) => {
+    const index = openWorkflows.value.indexOf(
+      activeWorkflow.value as ComfyWorkflow
+    )
+    if (index !== -1) {
+      const length = openWorkflows.value.length
+      const nextIndex = (index + shift + length) % length
+      const nextWorkflow = openWorkflows.value[nextIndex]
+      if (nextWorkflow) {
+        await nextWorkflow.load()
+      }
+    }
+  }
+
+  const loadNextOpenedWorkflow = async () => {
+    await loadOpenedWorkflowIndexShift(1)
+  }
+
+  const loadPreviousOpenedWorkflow = async () => {
+    await loadOpenedWorkflowIndexShift(-1)
+  }
+
   return {
     activeWorkflow,
     workflows,
@@ -50,7 +72,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflowsTree,
     bookmarkedWorkflowsTree,
     openWorkflowsTree,
-    buildWorkflowTree
+    buildWorkflowTree,
+    loadNextOpenedWorkflow,
+    loadPreviousOpenedWorkflow
   }
 })
 

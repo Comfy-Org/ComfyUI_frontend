@@ -2,6 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    extensionName: 'Extension Name',
+    reloadToApplyChanges: 'Reload to apply changes',
     insert: 'Insert',
     systemInfo: 'System Info',
     devices: 'Devices',
@@ -9,6 +11,7 @@ const messages = {
     add: 'Add',
     confirm: 'Confirm',
     reset: 'Reset',
+    resetKeybindingsTooltip: 'Reset keybindings to default',
     customizeFolder: 'Customize Folder',
     icon: 'Icon',
     color: 'Color',
@@ -41,6 +44,7 @@ const messages = {
     searchSettings: 'Search Settings',
     searchNodes: 'Search Nodes',
     searchModels: 'Search Models',
+    searchKeybindings: 'Search Keybindings',
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
@@ -54,6 +58,8 @@ const messages = {
       nodeLibrary: 'Node Library',
       workflows: 'Workflows',
       browseTemplates: 'Browse example templates',
+      openWorkflow: 'Open workflow in local file system',
+      newBlankWorkflow: 'Create a new blank workflow',
       nodeLibraryTab: {
         sortOrder: 'Sort Order'
       },
@@ -105,6 +111,8 @@ const messages = {
     }
   },
   zh: {
+    extensionName: '扩展名称',
+    reloadToApplyChanges: '重新加载以应用更改',
     insert: '插入',
     systemInfo: '系统信息',
     devices: '设备',
@@ -112,6 +120,7 @@ const messages = {
     add: '添加',
     confirm: '确认',
     reset: '重置',
+    resetKeybindingsTooltip: '重置键位',
     customizeFolder: '定制文件夹',
     icon: '图标',
     color: '颜色',
@@ -144,6 +153,7 @@ const messages = {
     searchSettings: '搜索设置',
     searchNodes: '搜索节点',
     searchModels: '搜索模型',
+    searchKeybindings: '搜索键位',
     noResultsFound: '未找到结果',
     searchFailedMessage:
       '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
@@ -157,6 +167,8 @@ const messages = {
       nodeLibrary: '节点库',
       workflows: '工作流',
       browseTemplates: '浏览示例模板',
+      openWorkflow: '在本地文件系统中打开工作流',
+      newBlankWorkflow: '创建一个新空白工作流',
       nodeLibraryTab: {
         sortOrder: '排序顺序'
       },

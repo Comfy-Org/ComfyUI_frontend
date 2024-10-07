@@ -6,7 +6,15 @@ import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
 import type { InputSpec } from '@/types/apiTypes'
 
 const CONVERTED_TYPE = 'converted-widget'
-const VALID_TYPES = ['STRING', 'combo', 'number', 'toggle', 'BOOLEAN']
+const VALID_TYPES = [
+  'STRING',
+  'combo',
+  'number',
+  'toggle',
+  'BOOLEAN',
+  'text',
+  'string'
+]
 const CONFIG = Symbol()
 const GET_CONFIG = Symbol()
 const TARGET = Symbol() // Used for reroutes to specify the real target widget
@@ -52,7 +60,7 @@ class PrimitiveNode extends LGraphNode {
     ]
     let v = this.widgets?.[0].value
     if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(app, v)
+      v = applyTextReplacements(app, v as string)
     }
 
     // For each output link copy our value over the original widget value
@@ -89,7 +97,7 @@ class PrimitiveNode extends LGraphNode {
     if (widget?.type === 'combo') {
       widget.options.values = this.outputs[0].widget[GET_CONFIG]()[0]
 
-      if (!widget.options.values.includes(widget.value)) {
+      if (!widget.options.values.includes(widget.value as string)) {
         widget.value = widget.options.values[0]
         ;(widget.callback as Function)(widget.value)
       }
@@ -107,6 +115,7 @@ class PrimitiveNode extends LGraphNode {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
+            // @ts-expect-error change widget type from string to unknown
             w.value = this.widgets_values[i]
           }
         }
@@ -239,6 +248,7 @@ class PrimitiveNode extends LGraphNode {
       )
       let filter = this.widgets_values?.[2]
       if (filter && this.widgets.length === 3) {
+        // @ts-expect-error change widget type from string to unknown
         this.widgets[2].value = filter
       }
     }
@@ -481,9 +491,7 @@ export function convertToInput(
   const sz = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
   const input = node.addInput(widget.name, type, {
-    // @ts-expect-error GET_CONFIG is not defined in LiteGraph
     widget: { name: widget.name, [GET_CONFIG]: () => config },
-    // @ts-expect-error LiteGraph.SlotShape is not typed.
     ...(inputIsOptional ? { shape: LiteGraph.SlotShape.HollowCircle } : {})
   })
 
@@ -715,6 +723,7 @@ app.registerExtension({
         widget.options || {}
       ]
       if (!isConvertibleWidget(widget, config)) return false
+      if (widget.type?.startsWith(CONVERTED_TYPE)) return false
       convertToInput(this, widget, config)
       return true
     }

@@ -5,6 +5,7 @@ import type { ComfyApp } from '../app'
 import type { Setting, SettingParams } from '@/types/settingTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { Settings } from '@/types/apiTypes'
+import { useToastStore } from '@/stores/toastStore'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
@@ -157,8 +158,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
   setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
     this.setSettingValueAsync(id, value).catch((err) => {
-      alert(`Error saving setting '${id}'`)
-      console.error(err)
+      useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
     })
   }
 

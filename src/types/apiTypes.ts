@@ -494,7 +494,7 @@ const zSettings = z.record(z.any()).and(
       'Comfy.SnapToGrid.GridSize': z.number(),
       'Comfy.TextareaWidget.FontSize': z.number(),
       'Comfy.TextareaWidget.Spellcheck': z.boolean(),
-      'Comfy.UseNewMenu': z.enum(['Disabled', 'Floating']),
+      'Comfy.UseNewMenu': z.enum(['Disabled', 'Top', 'Bottom']),
       'Comfy.TreeExplorer.ItemPadding': z.number(),
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
@@ -507,7 +507,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
       'Comfy.QueueButton.BatchCountLimit': z.number(),
       'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
-      'Comfy.Keybinding.NewBindings': z.array(zKeybinding)
+      'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
+      'Comfy.Extension.Disabled': z.array(z.string()),
+      'Comfy.Settings.ExtensionPanel': z.boolean()
     })
     .optional()
 )

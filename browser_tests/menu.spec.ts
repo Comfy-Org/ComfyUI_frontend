@@ -3,7 +3,7 @@ import { comfyPageFixture as test } from './ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -389,6 +389,8 @@ test.describe('Menu', () => {
       // Open the sidebar
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
+
+      await comfyPage.setupWorkflowsDirectory({})
     })
 
     test('Can create new blank workflow', async ({ comfyPage }) => {
@@ -414,10 +416,9 @@ test.describe('Menu', () => {
 
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
-      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual([
-        'workflow1.json',
-        'workflow2.json'
-      ])
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
+        expect.arrayContaining(['workflow1.json', 'workflow2.json'])
+      )
     })
 
     test('Does not report warning when switching between opened workflows', async ({
@@ -426,9 +427,9 @@ test.describe('Menu', () => {
       await comfyPage.loadWorkflow('missing_nodes')
       await comfyPage.closeDialog()
 
-      // Load default workflow
+      // Load blank workflow
       await comfyPage.menu.workflowsTab.open()
-      await comfyPage.menu.workflowsTab.newDefaultWorkflowButton.click()
+      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
 
       // Switch back to the missing_nodes workflow
       await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
@@ -441,7 +442,9 @@ test.describe('Menu', () => {
     test('Can close saved-workflows from the open workflows section', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.topbar.saveWorkflow('deault')
+      await comfyPage.menu.topbar.saveWorkflow(
+        `tempWorkflow-${test.info().title}`
+      )
       const closeButton = comfyPage.page.locator(
         '.comfyui-workflows-open .p-button-icon.pi-times'
       )
@@ -458,13 +461,7 @@ test.describe('Menu', () => {
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      // Delete the saved workflow for cleanup.
-      await comfyPage.page.evaluate(async () => {
-        window['app'].workflowManager.activeWorkflow.delete()
-      })
+      await comfyPage.setupWorkflowsDirectory({})
     })
 
     test('Can show opened workflows', async ({ comfyPage }) => {
@@ -474,12 +471,10 @@ test.describe('Menu', () => {
     })
 
     test('Can close saved-workflow tabs', async ({ comfyPage }) => {
-      const savedWorkflowName = 'default'
-      await comfyPage.menu.topbar.saveWorkflow(savedWorkflowName)
-      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        savedWorkflowName
-      ])
-      await comfyPage.menu.topbar.closeWorkflowTab('default')
+      const workflowName = `tempWorkflow-${test.info().title}`
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
+      await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
         'Unsaved Workflow (2)'
       ])
@@ -499,6 +494,16 @@ test.describe('Menu', () => {
       })
       expect(isTextCutoff).toBe(false)
     })
+
+    test('Displays keybinding next to item', async ({ comfyPage }) => {
+      const workflowMenuItem =
+        await comfyPage.menu.topbar.getMenuItem('Workflow')
+      await workflowMenuItem.click()
+      const exportTag = comfyPage.page.locator('.keybinding-tag', {
+        hasText: 'Ctrl + s'
+      })
+      expect(await exportTag.count()).toBe(1)
+    })
   })
 
   // Only test 'Top' to reduce test time.
@@ -508,7 +513,7 @@ test.describe('Menu', () => {
       comfyPage
     }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', position)
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
 
     test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
@@ -516,7 +521,7 @@ test.describe('Menu', () => {
     }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Floating')
+      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
   })
 

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
-import { type ComfyCommand, useCommandStore } from './commandStore'
+import { useCommandStore } from './commandStore'
+import { ComfyExtension } from '@/types/comfy'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
@@ -42,83 +43,65 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     currentLevel.push(...items)
   }
 
-  const registerCommands = (path: string[], commands: ComfyCommand[]) => {
-    // Register commands that are not already registered
-    for (const command of commands) {
-      if (commandStore.isRegistered(command.id)) {
-        continue
-      }
-      commandStore.registerCommand(command)
-    }
-
-    const items = commands.map(
-      (command) =>
-        ({
-          ...command,
-          command: command.function
-        }) as MenuItem
-    )
+  const registerCommands = (path: string[], commandIds: string[]) => {
+    const items = commandIds
+      .map((commandId) => commandStore.getCommand(commandId))
+      .map(
+        (command) =>
+          ({
+            command: command.function,
+            label: command.menubarLabel,
+            icon: command.icon,
+            tooltip: command.tooltip,
+            comfyCommand: command
+          }) as MenuItem
+      )
     registerMenuGroup(path, items)
   }
 
-  const workflowMenuGroup: MenuItem[] = [
-    {
-      label: 'New',
-      icon: 'pi pi-plus',
-      command: commandStore.getCommandFunction('Comfy.NewBlankWorkflow')
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Open',
-      icon: 'pi pi-folder-open',
-      command: commandStore.getCommandFunction('Comfy.OpenWorkflow')
-    },
-    {
-      label: 'Browse Templates',
-      icon: 'pi pi-th-large',
-      command: commandStore.getCommandFunction('Comfy.BrowseTemplates')
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Save',
-      icon: 'pi pi-save',
-      command: commandStore.getCommandFunction('Comfy.SaveWorkflow')
-    },
-    {
-      label: 'Save As',
-      icon: 'pi pi-save',
-      command: commandStore.getCommandFunction('Comfy.SaveWorkflowAs')
-    },
-    {
-      label: 'Export',
-      icon: 'pi pi-download',
-      command: commandStore.getCommandFunction('Comfy.ExportWorkflow')
-    },
-    {
-      label: 'Export (API Format)',
-      icon: 'pi pi-download',
-      command: commandStore.getCommandFunction('Comfy.ExportWorkflowAPI')
+  const loadExtensionMenuCommands = (extension: ComfyExtension) => {
+    if (!extension.menuCommands) {
+      return
     }
-  ]
 
-  registerMenuGroup(['Workflow'], workflowMenuGroup)
+    const extensionCommandIds = new Set(
+      extension.commands?.map((command) => command.id) ?? []
+    )
+    extension.menuCommands.forEach((menuCommand) => {
+      const commands = menuCommand.commands.filter((command) =>
+        extensionCommandIds.has(command)
+      )
+      if (commands.length) {
+        registerCommands(menuCommand.path, commands)
+      }
+    })
+  }
+
+  // Core menu commands
+  registerCommands(['Workflow'], ['Comfy.NewBlankWorkflow'])
+
   registerCommands(
-    ['Edit'],
+    ['Workflow'],
+    ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']
+  )
+  registerCommands(
+    ['Workflow'],
     [
-      commandStore.getCommand('Comfy.Undo'),
-      commandStore.getCommand('Comfy.Redo')
+      'Comfy.SaveWorkflow',
+      'Comfy.SaveWorkflowAs',
+      'Comfy.ExportWorkflow',
+      'Comfy.ExportWorkflowAPI'
     ]
   )
-  registerCommands(['Edit'], [commandStore.getCommand('Comfy.ClearWorkflow')])
-  registerCommands(['Edit'], [commandStore.getCommand('Comfy.OpenClipspace')])
+
+  registerCommands(['Edit'], ['Comfy.Undo', 'Comfy.Redo'])
+  registerCommands(['Edit'], ['Comfy.ClearWorkflow'])
+  registerCommands(['Edit'], ['Comfy.OpenClipspace'])
 
   return {
     menuItems,
     registerMenuGroup,
-    registerCommands
+    registerCommands,
+    loadExtensionMenuCommands
   }
 })

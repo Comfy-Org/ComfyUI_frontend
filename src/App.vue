@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 import config from '@/config'
-import { computed, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'

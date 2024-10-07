@@ -33,11 +33,11 @@
 
 ### Nightly Release
 
-Nightly releases are published daily at [https://github.com/Comfy-Org/ComfyUI_frontend/releases](https://github.com/Comfy-Org/ComfyUI_frontend/releases). 
+Nightly releases are published daily at [https://github.com/Comfy-Org/ComfyUI_frontend/releases](https://github.com/Comfy-Org/ComfyUI_frontend/releases).
 
 To use the latest nightly release, add the following command line argument to your ComfyUI launch script:
 
-```
+```bat
 --front-end-version Comfy-Org/ComfyUI_frontend@latest
 ```
 
@@ -61,6 +61,23 @@ There will be a 2-day feature freeze before each stable release. During this per
 ## Release Summary
 
 ### Major features
+
+<details>
+  <summary>v1.3.7: Keybinding customization</summary>
+
+## Basic UI
+![image](https://github.com/user-attachments/assets/c84a1609-3880-48e0-a746-011f36beda68)
+
+## Reset button
+![image](https://github.com/user-attachments/assets/4d2922da-bb4f-4f90-8017-a8e4a0db07c7)
+
+## Edit Keybinding
+![image](https://github.com/user-attachments/assets/77626b7a-cb46-48f8-9465-e03120aac66a)
+![image](https://github.com/user-attachments/assets/79131a4e-75c6-4715-bd11-c6aaed887779)
+
+[rec.webm](https://github.com/user-attachments/assets/a3984ed9-eb28-4d47-86c0-7fc3efc2b5d0)
+
+</details>
 
 <details>
   <summary>v1.2.4: Node library sidebar tab</summary>
@@ -91,9 +108,42 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 ### QoL changes
 
 <details>
+  <summary>v1.3.6: **Litegraph** Toggle link visibility</summary>
+
+[rec.webm](https://github.com/user-attachments/assets/34e460ac-fbbc-44ef-bfbb-99a84c2ae2be)
+
+</details>
+
+<details>
+  <summary>v1.3.4: **Litegraph** Auto widget to input conversion</summary>
+
+Dropping a link of correct type on node widget will automatically convert the widget to input.
+
+[rec.webm](https://github.com/user-attachments/assets/15cea0b0-b225-4bec-af50-2cdb16dc46bf)
+
+</details>
+
+<details>
+  <summary>v1.3.4: **Litegraph** Canvas pan mode</summary>
+
+The canvas becomes readonly in pan mode. Pan mode is activated by clicking the pan mode button on the canvas menu
+or by holding the space key.
+
+[rec.webm](https://github.com/user-attachments/assets/c7872532-a2ac-44c1-9e7d-9e03b5d1a80b)
+
+</details>
+
+<details>
   <summary>v1.3.1: **Litegraph** Shift drag link to create a new link</summary>
 
 [rec.webm](https://github.com/user-attachments/assets/7e73aaf9-79e2-4c3c-a26a-911cba3b85e4)
+
+</details>
+
+<details>
+  <summary>v1.2.62: **Litegraph** Show optional input slots as donuts</summary>
+
+![GYEIRidb0AYGO-v](https://github.com/user-attachments/assets/e6cde0b6-654b-4afd-a117-133657a410b1)
 
 </details>
 
@@ -180,7 +230,24 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
   Extensions can call the following API to register custom topbar menu items.
 
 ```js
-  app.extensionManager.menu.registerTopbarCommands(["ext", "ext2"], [{id:"foo", label: "foo", function: () => alert(1)}])
+  app.registerExtension({
+    name: 'TestExtension1',
+    commands: [
+      {
+        id: 'foo-id',
+        label: 'foo',
+        function: () => {
+          alert(1)
+        }
+      }
+    ],
+    menuCommands: [
+      {
+        path: ['ext', 'ext2'],
+        commands: ['foo-id']
+      }
+    ]
+  })
 ```
 
 ![image](https://github.com/user-attachments/assets/ae7b082f-7ce9-4549-a446-4563567102fe)

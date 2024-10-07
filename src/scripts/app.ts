@@ -29,8 +29,7 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph,
-  LGraphGroup
+  LiteGraph
 } from '@comfyorg/litegraph'
 import { StorageLocation } from '@/types/settingTypes'
 import { ExtensionManager } from '@/types/extensionTypes'
@@ -48,12 +47,13 @@ import {
 } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
-import { ModelStore, useModelStore } from '@/stores/modelStore'
+import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -358,6 +358,13 @@ export class ComfyApp {
     }
   }
 
+  get enabledExtensions() {
+    if (!this.vueAppReady) {
+      return this.extensions
+    }
+    return useExtensionStore().enabledExtensions
+  }
+
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
@@ -366,7 +373,7 @@ export class ComfyApp {
    */
   #invokeExtensions(method, ...args) {
     let results = []
-    for (const ext of this.extensions) {
+    for (const ext of this.enabledExtensions) {
       if (method in ext) {
         try {
           results.push(ext[method](...args, this))
@@ -392,7 +399,7 @@ export class ComfyApp {
    */
   async #invokeExtensionsAsync(method, ...args) {
     return await Promise.all(
-      this.extensions.map(async (ext) => {
+      this.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
             return await ext[method](...args, this)
@@ -504,7 +511,9 @@ export class ComfyApp {
                 throw error
               }
             } catch (error) {
-              alert('Error copying image: ' + (error.message ?? error))
+              useToastStore().addAlert(
+                'Error copying image: ' + (error.message ?? error)
+              )
             }
           }
         }
@@ -1103,6 +1112,7 @@ export class ComfyApp {
           // No image node selected: add a new one
           if (!imageNode) {
             const newNode = LiteGraph.createNode('LoadImage')
+            // @ts-expect-error array to Float32Array
             newNode.pos = [...this.canvas.graph_mouse]
             imageNode = this.graph.add(newNode)
             this.graph.change()
@@ -1205,9 +1215,7 @@ export class ComfyApp {
         // Move group by header
         if (
           LiteGraph.isInsideRectangle(
-            // @ts-expect-error
             e.canvasX,
-            // @ts-expect-error
             e.canvasY,
             this.selected_group.pos[0],
             this.selected_group.pos[1],
@@ -1272,13 +1280,10 @@ export class ComfyApp {
 
   /**
    * Handle keypress
-   *
-   * Ctrl + M mute/unmute selected nodes
    */
   #addProcessKeyHandler() {
-    const self = this
     const origProcessKey = LGraphCanvas.prototype.processKey
-    LGraphCanvas.prototype.processKey = function (e) {
+    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
       if (!this.graph) {
         return
       }
@@ -1290,54 +1295,11 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
-        // Ctrl + M mute/unmute
-        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 2) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 2 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // Ctrl + B bypass
-        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 4) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 4 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // p pin/unpin
-        if (e.key === 'p') {
-          if (this.selected_nodes) {
-            for (const i in this.selected_nodes) {
-              const node = this.selected_nodes[i]
-              node.pin()
-            }
-          }
-          block_default = true
-        }
-
-        // Alt + C collapse/uncollapse
-        if (e.key === 'c' && e.altKey) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              this.selected_nodes[i].collapse()
-            }
-          }
+        const keyCombo = KeyComboImpl.fromEvent(e)
+        const keybindingStore = useKeybindingStore()
+        const keybinding = keybindingStore.getKeybinding(keyCombo)
+        if (keybinding && keybinding.targetSelector === '#graph-canvas') {
+          useCommandStore().execute(keybinding.commandId)
           block_default = true
         }
 
@@ -1355,26 +1317,6 @@ export class ComfyApp {
         ) {
           // Trigger onPaste
           return true
-        }
-
-        if (e.key === '+' && e.altKey) {
-          block_default = true
-          let scale = this.ds.scale * 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
-        }
-
-        if (e.key === '-' && e.altKey) {
-          block_default = true
-          let scale = (this.ds.scale * 1) / 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
         }
       }
 
@@ -1567,7 +1509,6 @@ export class ComfyApp {
 
       // ComfyUI's custom node mode enum value 4 => bypass/never.
       let bgColor: string
-      // @ts-expect-error
       if (node.mode === 4) {
         // never
         bgColor = app.bypassBgColor
@@ -1747,9 +1688,7 @@ export class ComfyApp {
 
   #addAfterConfigureHandler() {
     const app = this
-    // @ts-expect-error
     const onConfigure = app.graph.onConfigure
-    // @ts-expect-error
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
@@ -1772,6 +1711,8 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
+    useExtensionStore().loadDisabledExtensionNames()
+
     const extensions = await api.getExtensions()
     this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 
@@ -2089,8 +2030,7 @@ export class ComfyApp {
             // Node connection inputs
             const inputOptions = inputIsRequired
               ? {}
-              : // @ts-expect-error LiteGraph.SlotShape is not typed.
-                { shape: LiteGraph.SlotShape.HollowCircle }
+              : { shape: LiteGraph.SlotShape.HollowCircle }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -2231,8 +2171,7 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({
         missingNodeTypes,
-        hasAddedNodes,
-        maximizable: true
+        hasAddedNodes
       })
     }
 
@@ -2245,8 +2184,7 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
-        paths,
-        maximizable: true
+        paths
       })
     }
 
@@ -2303,7 +2241,9 @@ export class ComfyApp {
       // TODO: Show validation error in a dialog.
       const validatedGraphData = await validateComfyWorkflow(
         graphData,
-        /* onError=*/ alert
+        /* onError=*/ (err) => {
+          useToastStore().addAlert(err)
+        }
       )
       // If the validation failed, use the original graph data.
       // Ideally we should not block users from loading the workflow.
@@ -2428,7 +2368,10 @@ export class ComfyApp {
         for (let widget of node.widgets) {
           if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
             if (widget.name == 'sampler_name') {
-              if (widget.value.startsWith('sample_')) {
+              if (
+                typeof widget.value === 'string' &&
+                widget.value.startsWith('sample_')
+              ) {
                 widget.value = widget.value.slice(7)
               }
             }
@@ -2440,8 +2383,10 @@ export class ComfyApp {
           ) {
             if (widget.name == 'control_after_generate') {
               if (widget.value === true) {
+                // @ts-expect-error change widget type from boolean to string
                 widget.value = 'randomize'
               } else if (widget.value === false) {
+                // @ts-expect-error change widget type from boolean to string
                 widget.value = 'fixed'
               }
             }
@@ -2449,7 +2394,7 @@ export class ComfyApp {
           if (reset_invalid_values) {
             if (widget.type == 'combo') {
               if (
-                !widget.options.values.includes(widget.value) &&
+                !widget.options.values.includes(widget.value as string) &&
                 widget.options.values.length > 0
               ) {
                 widget.value = widget.options.values[0]
@@ -2490,8 +2435,8 @@ export class ComfyApp {
         }
       }
 
-      const innerNodes = outerNode.getInnerNodes
-        ? outerNode.getInnerNodes()
+      const innerNodes = outerNode['getInnerNodes']
+        ? outerNode['getInnerNodes']()
         : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2511,8 +2456,8 @@ export class ComfyApp {
     for (const outerNode of graph.computeExecutionOrder(false)) {
       const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
-        !skipNode && outerNode.getInnerNodes
-          ? outerNode.getInnerNodes()
+        !skipNode && outerNode['getInnerNodes']
+          ? outerNode['getInnerNodes']()
           : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2859,7 +2804,6 @@ export class ComfyApp {
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
-      // @ts-expect-error
       node.id = isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
       app.graph.add(node)
@@ -2892,7 +2836,6 @@ export class ComfyApp {
             const widget = node.widgets?.find((w) => w.name === input)
             if (widget) {
               widget.value = value
-              // @ts-expect-error
               widget.callback?.(value)
             }
           }
@@ -2927,7 +2870,6 @@ export class ComfyApp {
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
             widget.value = value
-            // @ts-expect-error
             widget.callback?.(value)
           }
         }
@@ -2942,22 +2884,12 @@ export class ComfyApp {
    * @param {ComfyExtension} extension
    */
   registerExtension(extension: ComfyExtension) {
-    if (!extension.name) {
-      throw new Error("Extensions must have a 'name' property.")
-    }
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    if (extension.name === 'pysssss.Locking') {
-      console.log('pysssss.Locking is replaced by pin/unpin in ComfyUI core.')
-      return
-    }
-    if (this.extensions.find((ext) => ext.name === extension.name)) {
-      throw new Error(`Extension named '${extension.name}' already registered.`)
-    }
     if (this.vueAppReady) {
-      useKeybindingStore().loadExtensionKeybindings(extension)
-      useCommandStore().loadExtensionCommands(extension)
+      useExtensionStore().registerExtension(extension)
+    } else {
+      // For jest testing.
+      this.extensions.push(extension)
     }
-    this.extensions.push(extension)
   }
 
   /**

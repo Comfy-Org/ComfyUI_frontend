@@ -11,8 +11,10 @@
     <template #option="{ option }">
       <span
         class="workflow-label text-sm max-w-[150px] truncate inline-block"
-        >{{ option.label }}</span
+        v-tooltip="option.tooltip"
       >
+        {{ option.label }}
+      </span>
       <div class="relative">
         <span class="status-indicator" v-if="option.unsaved">•</span>
         <Button
@@ -43,12 +45,14 @@ const props = defineProps<{
 const workflowStore = useWorkflowStore()
 interface WorkflowOption {
   label: string
+  tooltip: string
   value: string
   unsaved: boolean
 }
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   label: workflow.name,
+  tooltip: workflow.path,
   value: workflow.key,
   unsaved: workflow.unsaved
 })

@@ -1,3 +1,4 @@
+import { useToastStore } from '@/stores/toastStore'
 import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPalette'
@@ -588,22 +589,22 @@ app.registerExtension({
 
     const addCustomColorPalette = async (colorPalette) => {
       if (typeof colorPalette !== 'object') {
-        alert('Invalid color palette.')
+        useToastStore().addAlert('Invalid color palette.')
         return
       }
 
       if (!colorPalette.id) {
-        alert('Color palette missing id.')
+        useToastStore().addAlert('Color palette missing id.')
         return
       }
 
       if (!colorPalette.name) {
-        alert('Color palette missing name.')
+        useToastStore().addAlert('Color palette missing name.')
         return
       }
 
       if (!colorPalette.colors) {
-        alert('Color palette missing colors.')
+        useToastStore().addAlert('Color palette missing colors.')
         return
       }
 
@@ -611,7 +612,7 @@ app.registerExtension({
         colorPalette.colors.node_slot &&
         typeof colorPalette.colors.node_slot !== 'object'
       ) {
-        alert('Invalid color palette colors.node_slot.')
+        useToastStore().addAlert('Invalid color palette colors.node_slot.')
         return
       }
 
@@ -666,7 +667,6 @@ app.registerExtension({
         // Sets the colors of node slots and links
         if (colorPalette.colors.node_slot) {
           Object.assign(
-            // @ts-expect-error
             app.canvas.default_connection_color_byType,
             colorPalette.colors.node_slot
           )
@@ -842,7 +842,9 @@ app.registerExtension({
                     )
 
                     if (colorPalettes[colorPaletteId]) {
-                      alert('You cannot delete a built-in color palette.')
+                      useToastStore().addAlert(
+                        'You cannot delete a built-in color palette.'
+                      )
                       return
                     }
 
