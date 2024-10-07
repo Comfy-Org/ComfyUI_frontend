@@ -93,16 +93,54 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test('Can convert widget to input', async ({ comfyPage }) => {
-    await comfyPage.rightClickEmptyLatentNode()
-    await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
-    await comfyPage.page.getByText('Convert Widget to Input').click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText('Convert width to input').click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'right-click-node-widget-converted.png'
-    )
+  test.describe('Widget conversion', () => {
+    const convertibleWidgetTypes = ['text', 'string', 'number', 'toggle']
+
+    test.afterEach(async ({ comfyPage }) => {
+      // Restore default setting value
+      await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', true)
+    })
+
+    test('Can convert widget to input', async ({ comfyPage }) => {
+      await comfyPage.rightClickEmptyLatentNode()
+      await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
+      await comfyPage.page.getByText('Convert Widget to Input').click()
+      await comfyPage.nextFrame()
+      await comfyPage.page.getByText('Convert width to input').click()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'right-click-node-widget-converted.png'
+      )
+    })
+
+    convertibleWidgetTypes.forEach((widgetType) => {
+      test(`Can convert ${widgetType} widget to input`, async ({
+        comfyPage
+      }) => {
+        const nodeType = 'KSampler'
+
+        // To avoid needing multiple clicks, disable nesting of conversion options
+        await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', false)
+
+        // Add the widget using the node's `addWidget` method
+        await comfyPage.page.evaluate(
+          ([nodeType, widgetType]) => {
+            const node = window['app'].graph.nodes.find(
+              (n) => n.type === nodeType
+            )
+            node.addWidget(widgetType, widgetType, 'defaultValue', () => {}, {})
+          },
+          [nodeType, widgetType]
+        )
+
+        // Verify the context menu includes the conversion option
+        const node = (await comfyPage.getNodeRefsByType(nodeType))[0]
+        const menuOptions = await node.getContextMenuOptionNames()
+        expect(menuOptions.includes(`Convert ${widgetType} to input`)).toBe(
+          true
+        )
+      })
+    })
   })
 
   test('Can pin and unpin', async ({ comfyPage }) => {
