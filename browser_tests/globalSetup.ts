@@ -5,7 +5,13 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 export default function globalSetup(config: FullConfig) {
-  if (!process.env.CI && process.env.DEPLOY_COMFYUI_DIR) {
-    backupPath([process.env.DEPLOY_COMFYUI_DIR, '..', 'user'])
+  if (!process.env.CI) {
+    if (process.env.DEPLOY_COMFYUI_DIR) {
+      backupPath([process.env.DEPLOY_COMFYUI_DIR, '..', 'user'])
+    } else {
+      console.warn(
+        'Set DEPLOY_COMFYUI_DIR in .env to prevent user data (settings, workflows, etc.) from being overwritten'
+      )
+    }
   }
 }
