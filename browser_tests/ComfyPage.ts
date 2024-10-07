@@ -250,6 +250,8 @@ class Topbar {
     await this.triggerTopbarCommand(['Workflow', 'Save'])
     await this.page.locator('.p-dialog-content input').fill(workflowName)
     await this.page.keyboard.press('Enter')
+    // Wait for the dialog to close.
+    await this.page.waitForTimeout(300)
   }
 
   async triggerTopbarCommand(path: string[]) {
