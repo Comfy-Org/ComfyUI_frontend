@@ -5,6 +5,7 @@ import { useKeybindingStore } from './keybindingStore'
 import { useCommandStore } from './commandStore'
 import { useSettingStore } from './settingStore'
 import { app } from '@/scripts/app'
+import { useMenuItemStore } from './menuItemStore'
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
@@ -45,6 +46,7 @@ export const useExtensionStore = defineStore('extension', () => {
     extensionByName.value[extension.name] = markRaw(extension)
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
+    useMenuItemStore().loadExtensionMenuCommands(extension)
 
     /*
      * Extensions are currently stored in both extensionStore and app.extensions.

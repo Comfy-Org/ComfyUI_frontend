@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { useCommandStore } from './commandStore'
+import { ComfyExtension } from '@/types/comfy'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
@@ -58,6 +59,17 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerMenuGroup(path, items)
   }
 
+  const loadExtensionMenuCommands = (extension: ComfyExtension) => {
+    if (!extension.menuCommands) {
+      return
+    }
+
+    extension.menuCommands.forEach((menuCommand) => {
+      registerCommands(menuCommand.path, menuCommand.commands)
+    })
+  }
+
+  // Core menu commands
   registerCommands(['Workflow'], ['Comfy.NewBlankWorkflow'])
 
   registerCommands(
@@ -81,6 +93,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   return {
     menuItems,
     registerMenuGroup,
-    registerCommands
+    registerCommands,
+    loadExtensionMenuCommands
   }
 })

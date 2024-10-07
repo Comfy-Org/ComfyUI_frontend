@@ -12,21 +12,27 @@ test.describe('Topbar commands', () => {
 
   test('Should allow registering topbar commands', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      window['app'].extensionManager.menu.registerTopbarCommands(
-        ['ext'],
-        [
+      window['app'].registerExtension({
+        name: 'TestExtension1',
+        commands: [
           {
             id: 'foo',
-            label: 'foo',
+            label: 'foo-command',
             function: () => {
               window['foo'] = true
             }
           }
+        ],
+        menuCommands: [
+          {
+            path: ['ext'],
+            commands: ['foo']
+          }
         ]
-      )
+      })
     })
 
-    await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
     expect(await comfyPage.page.evaluate(() => window['foo'])).toBe(true)
   })
 
