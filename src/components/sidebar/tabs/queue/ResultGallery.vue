@@ -25,7 +25,12 @@
         :src="item.url"
         :contain="false"
         class="galleria-image"
+        v-if="item.isImage"
       />
+      <video v-else-if="item.isVideo" controls width="100%" height="100%">
+        <source :src="item.url" :type="item.format" />
+        {{ $t('videoFailedToLoad') }}
+      </video>
     </template>
   </Galleria>
 </template>
