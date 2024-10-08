@@ -35,6 +35,10 @@ export class ResultItemImpl {
   // 'audio' | 'images' | ...
   mediaType: string
 
+  // VHS output specific fields
+  format?: string
+  frame_rate?: number
+
   get url(): string {
     return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
 					subfolder=${encodeURIComponent(this.subfolder || '')}`)
@@ -44,8 +48,16 @@ export class ResultItemImpl {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isGif(): boolean {
+    return this.filename.endsWith('.gif')
+  }
+
+  get isImage(): boolean {
+    return this.mediaType === 'images' || this.isGif
+  }
+
   get supportsPreview(): boolean {
-    return ['images', 'gifs'].includes(this.mediaType)
+    return this.isImage
   }
 }
 

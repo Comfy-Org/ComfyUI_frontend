@@ -1,8 +1,6 @@
 <template>
   <div class="result-container" ref="resultContainer">
-    <template
-      v-if="result.mediaType === 'images' || result.mediaType === 'gifs'"
-    >
+    <template v-if="result.isImage">
       <ComfyImage
         :src="result.url"
         class="task-output-image"
