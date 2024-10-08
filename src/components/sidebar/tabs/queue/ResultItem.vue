@@ -17,7 +17,7 @@
       <span>{{ result.mediaType }}</span>
     </div>
 
-    <div v-if="result.supportsPreview" class="image-preview-mask">
+    <div v-if="result.supportsPreview" class="preview-mask">
       <Button
         icon="pi pi-eye"
         severity="secondary"
@@ -70,7 +70,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.image-preview-mask {
+.preview-mask {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -83,7 +83,7 @@ onMounted(() => {
   z-index: 1;
 }
 
-.result-container:hover .image-preview-mask {
+.result-container:hover .preview-mask {
   opacity: 1;
 }
 </style>
