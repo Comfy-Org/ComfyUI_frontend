@@ -5,7 +5,7 @@ import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useCommandStore } from '../commandStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])
