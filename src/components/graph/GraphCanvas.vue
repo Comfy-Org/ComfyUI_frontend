@@ -13,7 +13,7 @@
     <canvas ref="canvasRef" id="graph-canvas" tabindex="1" />
   </teleport>
   <NodeSearchboxPopover />
-  <NodeTooltip />
+  <NodeTooltip v-if="tooltipEnabled" />
 </template>
 
 <script setup lang="ts">
@@ -67,6 +67,7 @@ const betaMenuEnabled = computed(
 const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
 )
+const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 
 watchEffect(() => {
   const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
