@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    videoFailedToLoad: 'Video failed to load',
     extensionName: 'Extension Name',
     reloadToApplyChanges: 'Reload to apply changes',
     insert: 'Insert',
@@ -112,6 +113,7 @@ const messages = {
     }
   },
   zh: {
+    videoFailedToLoad: '视频加载失败',
     extensionName: '扩展名称',
     reloadToApplyChanges: '重新加载以应用更改',
     insert: '插入',

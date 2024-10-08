@@ -1,5 +1,5 @@
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 import type {
   TaskItem,
   TaskType,
@@ -10,7 +10,6 @@ import type {
   ResultItem
 } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
-import { plainToClass } from 'class-transformer'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -35,6 +34,22 @@ export class ResultItemImpl {
   // 'audio' | 'images' | ...
   mediaType: string
 
+  // VHS output specific fields
+  format?: string
+  frame_rate?: number
+
+  constructor(obj: Record<string, any>) {
+    this.filename = obj.filename
+    this.subfolder = obj.subfolder
+    this.type = obj.type
+
+    this.nodeId = obj.nodeId
+    this.mediaType = obj.mediaType
+
+    this.format = obj.format
+    this.frame_rate = obj.frame_rate
+  }
+
   get url(): string {
     return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
 					subfolder=${encodeURIComponent(this.subfolder || '')}`)
@@ -44,8 +59,20 @@ export class ResultItemImpl {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isVideo(): boolean {
+    return this.format && this.format.startsWith('video/')
+  }
+
+  get isGif(): boolean {
+    return this.filename.endsWith('.gif')
+  }
+
+  get isImage(): boolean {
+    return this.mediaType === 'images' || this.isGif
+  }
+
   get supportsPreview(): boolean {
-    return ['images', 'gifs'].includes(this.mediaType)
+    return this.isImage || this.isVideo
   }
 }
 
@@ -76,12 +103,13 @@ export class TaskItemImpl {
     }
     return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).map((item: ResultItem) =>
-          plainToClass(ResultItemImpl, {
-            ...item,
-            nodeId,
-            mediaType
-          })
+        (items as ResultItem[]).map(
+          (item: ResultItem) =>
+            new ResultItemImpl({
+              ...item,
+              nodeId,
+              mediaType
+            })
         )
       )
     )
@@ -213,7 +241,7 @@ export class TaskItemImpl {
       : undefined
   }
 
-  public async loadWorkflow() {
+  public async loadWorkflow(app: ComfyApp) {
     await app.loadGraphData(toRaw(this.workflow))
     if (this.outputs) {
       app.nodeOutputs = toRaw(this.outputs)
