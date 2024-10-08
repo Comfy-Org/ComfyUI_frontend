@@ -95,3 +95,11 @@ test.describe('Missing models warning', () => {
     await expect(folderSelect).not.toBeVisible()
   })
 })
+
+test.describe('Settings', () => {
+  test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
+    await comfyPage.page.keyboard.press('Control+,')
+    const searchBox = comfyPage.page.locator('.settings-content')
+    await expect(searchBox).toBeVisible()
+  })
+})
