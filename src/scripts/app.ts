@@ -1846,6 +1846,8 @@ export class ComfyApp {
       })
     )
     // Bind event/ start rendering later, so that event handlers get reactive canvas reference.
+    this.canvas.options.skip_events = false
+    this.canvas.options.skip_render = false
     this.canvas.bindEvents()
     this.canvas.startRendering()
 
