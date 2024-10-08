@@ -15,6 +15,7 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useEventListener } from '@vueuse/core'
+import { selectDocItem } from '@/components/sidebar/tabs/DocumentationSidebarTab.vue'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
@@ -85,7 +86,7 @@ const onIdle = () => {
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
-    if (comfyApp?.tooltipCallback?.(node, 'DESCRIPTION')) {
+    if (selectDocItem(node, 'DESCRIPTION')) {
       return
     } else if (Array.isArray(nodeDef.description)) {
       return showTooltip(nodeDef.description[0])
@@ -103,7 +104,7 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    if (!comfyApp?.tooltipCallback?.(node, inputName)) {
+    if (selectDocItem(node, inputName)) {
       return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
     }
   }
@@ -116,7 +117,7 @@ const onIdle = () => {
   )
   if (outputSlot !== -1) {
     const outputDef = nodeDef.output.all?.[outputSlot]
-    if (!comfyApp?.tooltipCallback?.(node, outputDef?.name)) {
+    if (selectDocItem(node, outputDef?.name)) {
       return showTooltip(outputDef?.tooltip)
     }
   }
@@ -124,7 +125,7 @@ const onIdle = () => {
   const widget = getHoveredWidget()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
-    if (!comfyApp?.tooltipCallback?.(node, widget.name, widget.value)) {
+    if (selectDocItem(node, widget.name, widget.value)) {
       return showTooltip(
         widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
       )

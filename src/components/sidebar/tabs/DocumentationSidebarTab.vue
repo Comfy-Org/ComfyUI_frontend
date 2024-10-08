@@ -27,22 +27,24 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from 'vue'
-import { DocItem } from 'DocItems'
+<script lang="ts">
+import { ref, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
+var docElement = ref(null)
 
 let def
 const inputs = ref([])
 const outputs = ref([])
-const docElement = ref(null)
 
-function hasInputDoc() {
-  return !!inputs.value.length
-}
-function hasAnyDoc() {
-  return def?.description || inputs.value.length || outputs.value.length
+export function selectDocItem(node, name, value) {
+  if (node != app?.canvas?.current_node || name == 'DESCRIPTION') {
+    return false
+  }
+  if (node != app?.canvas?.current_node || name == 'DESCRIPTION') {
+    return false
+  }
+  selectHelp(name, value)
+  return true
 }
 function setCollapse(el, doCollapse) {
   if (doCollapse) {
@@ -126,17 +128,9 @@ function selectHelp(name: string, value?: string) {
     }
   }
 }
-app.tooltipCallback = function (node, name, value) {
-  if (node != app.canvas.current_node || name == 'DESCRIPTION') {
-    return false
-  }
-  selectHelp(name, value)
-  return true
-}
-
 function updateNode(node?) {
   console.log('updating node')
-  node ||= app.canvas.current_node
+  node ||= app?.canvas?.current_node
   if (!node) {
     // Graph has no nodes
     return
@@ -165,14 +159,19 @@ function updateNode(node?) {
     outputs.value = []
   }
 }
-watch(
-  () => app.canvas.current_node,
-  (node) => {
-    console.log('watched')
-    updateNode(ndoe)
-  }
-)
+watchEffect(() => app?.canvas?.current_node, updateNode)
 updateNode()
+function hasInputDoc() {
+  return !!inputs.value.length
+}
+function hasAnyDoc() {
+  return def?.description || inputs.value.length || outputs.value.length
+}
+export default {
+  setup() {
+    return { hasInputDoc, hasAnyDoc, inputs, outputs, def }
+  }
+}
 </script>
 
 <style scoped>
