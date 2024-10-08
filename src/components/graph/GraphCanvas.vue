@@ -108,12 +108,12 @@ watchEffect(() => {
 watchEffect(() => {
   if (!canvasStore.canvas) return
 
-  if (canvasStore.draggingCanvas) {
+  if (canvasStore.canvas.dragging_canvas) {
     canvasStore.canvas.canvas.style.cursor = 'grabbing'
     return
   }
 
-  if (canvasStore.readOnly) {
+  if (canvasStore.canvas.read_only) {
     canvasStore.canvas.canvas.style.cursor = 'grab'
     return
   }

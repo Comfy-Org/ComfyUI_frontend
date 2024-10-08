@@ -55,6 +55,7 @@ import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { shallowReactive } from 'vue'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1836,7 +1837,20 @@ export class ComfyApp {
 
     this.#addAfterConfigureHandler()
 
-    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    // Make LGraphCanvas shallow reactive so that any change on the root object
+    // triggers reactivity.
+    this.canvas = shallowReactive(
+      new LGraphCanvas(canvasEl, this.graph, {
+        skip_events: true,
+        skip_render: true
+      })
+    )
+    // Bind event/ start rendering later, so that event handlers get reactive canvas reference.
+    this.canvas.options.skip_events = false
+    this.canvas.options.skip_render = false
+    this.canvas.bindEvents()
+    this.canvas.startRendering()
+
     this.ctx = canvasEl.getContext('2d')
 
     LiteGraph.alt_drag_do_clone_nodes = true
