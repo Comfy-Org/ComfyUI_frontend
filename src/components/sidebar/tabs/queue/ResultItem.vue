@@ -1,30 +1,29 @@
 <template>
   <div class="result-container" ref="resultContainer">
-    <template v-if="result.isImage">
-      <ComfyImage
-        :src="result.url"
-        class="task-output-image"
-        :contain="imageFit === 'contain'"
-      />
-      <div class="image-preview-mask">
-        <Button
-          icon="pi pi-eye"
-          severity="secondary"
-          @click="emit('preview', result)"
-          rounded
-        />
-      </div>
-    </template>
+    <ComfyImage
+      v-if="result.isImage"
+      :src="result.url"
+      class="task-output-image"
+      :contain="imageFit === 'contain'"
+    />
     <template v-else-if="result.isVideo">
       <video controls width="100%" height="100%">
         <source :src="result.url" :type="result.format" />
         {{ $t('videoFailedToLoad') }}
       </video>
     </template>
-    <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
       <i class="pi pi-file"></i>
       <span>{{ result.mediaType }}</span>
+    </div>
+
+    <div v-if="result.supportsPreview" class="image-preview-mask">
+      <Button
+        icon="pi pi-eye"
+        severity="secondary"
+        @click="emit('preview', result)"
+        rounded
+      />
     </div>
   </div>
 </template>
