@@ -10,15 +10,14 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref, onBeforeUnmount, watch } from 'vue'
+import { nextTick, ref } from 'vue'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useEventListener } from '@vueuse/core'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
-const settingStore = useSettingStore()
 const tooltipRef = ref<HTMLDivElement>()
 const tooltipText = ref('')
 const left = ref<string>()
@@ -129,24 +128,8 @@ const onMouseMove = (e: MouseEvent) => {
   idleTimeout = window.setTimeout(onIdle, 500)
 }
 
-watch(
-  () => settingStore.get('Comfy.EnableTooltips'),
-  (enabled) => {
-    if (enabled) {
-      window.addEventListener('mousemove', onMouseMove)
-      window.addEventListener('click', hideTooltip)
-    } else {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('click', hideTooltip)
-    }
-  },
-  { immediate: true }
-)
-
-onBeforeUnmount(() => {
-  window.removeEventListener('mousemove', onMouseMove)
-  window.removeEventListener('click', hideTooltip)
-})
+useEventListener(window, 'mousemove', onMouseMove)
+useEventListener(window, 'click', hideTooltip)
 </script>
 
 <style lang="css" scoped>
