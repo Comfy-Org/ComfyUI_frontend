@@ -441,6 +441,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.ToggleTheme',
       icon: 'pi pi-moon',
       label: 'Toggle Theme',
+      versionAdded: '1.3.12',
       function: (() => {
         let previousDarkTheme: string = 'dark'
 
