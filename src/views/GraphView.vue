@@ -11,14 +11,7 @@
 <script setup lang="ts">
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 
-import {
-  computed,
-  markRaw,
-  onMounted,
-  onBeforeUnmount,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useI18n } from 'vue-i18n'
@@ -34,16 +27,13 @@ import {
   useWorkflowStore,
   useWorkflowBookmarkStore
 } from '@/stores/workflowStore'
-import QueueSidebarTab from '@/components/sidebar/tabs/QueueSidebarTab.vue'
-import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
-import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDialog.vue'
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
-import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 setupAutoQueueHandler()
 
@@ -104,53 +94,8 @@ watchEffect(() => {
 const init = () => {
   settingStore.addSettings(app.ui.settings)
   useKeybindingStore().loadCoreKeybindings()
-
+  useSidebarTabStore().registerCoreSidebarTabs()
   app.extensionManager = useWorkspaceStore()
-  app.extensionManager.registerSidebarTab({
-    id: 'queue',
-    icon: 'pi pi-history',
-    iconBadge: () => {
-      const value = useQueuePendingTaskCountStore().count.toString()
-      return value === '0' ? null : value
-    },
-    title: t('sideToolbar.queue'),
-    tooltip: t('sideToolbar.queue'),
-    component: markRaw(QueueSidebarTab),
-    type: 'vue'
-  })
-  app.extensionManager.registerSidebarTab({
-    id: 'node-library',
-    icon: 'pi pi-book',
-    title: t('sideToolbar.nodeLibrary'),
-    tooltip: t('sideToolbar.nodeLibrary'),
-    component: markRaw(NodeLibrarySidebarTab),
-    type: 'vue'
-  })
-  app.extensionManager.registerSidebarTab({
-    id: 'model-library',
-    icon: 'pi pi-box',
-    title: t('sideToolbar.modelLibrary'),
-    tooltip: t('sideToolbar.modelLibrary'),
-    component: markRaw(ModelLibrarySidebarTab),
-    type: 'vue'
-  })
-  app.extensionManager.registerSidebarTab({
-    id: 'workflows',
-    icon: 'pi pi-folder-open',
-    iconBadge: () => {
-      if (
-        settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar'
-      ) {
-        return null
-      }
-      const value = useWorkflowStore().openWorkflows.length.toString()
-      return value === '0' ? null : value
-    },
-    title: t('sideToolbar.workflows'),
-    tooltip: t('sideToolbar.workflows'),
-    component: markRaw(WorkflowsSidebarTab),
-    type: 'vue'
-  })
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()

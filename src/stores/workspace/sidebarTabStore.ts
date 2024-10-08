@@ -1,3 +1,7 @@
+import { useModelLibrarySidebarTab } from '@/hooks/sidebarTabs/modelLibrarySidebarTab'
+import { useNodeLibrarySidebarTab } from '@/hooks/sidebarTabs/nodeLibrarySidebarTab'
+import { useQueueSidebarTab } from '@/hooks/sidebarTabs/queueSidebarTab'
+import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -34,12 +38,23 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     }
   }
 
+  /**
+   * Register the core sidebar tabs.
+   */
+  const registerCoreSidebarTabs = () => {
+    registerSidebarTab(useQueueSidebarTab())
+    registerSidebarTab(useNodeLibrarySidebarTab())
+    registerSidebarTab(useModelLibrarySidebarTab())
+    registerSidebarTab(useWorkflowsSidebarTab())
+  }
+
   return {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
     toggleSidebarTab,
     registerSidebarTab,
-    unregisterSidebarTab
+    unregisterSidebarTab,
+    registerCoreSidebarTabs
   }
 })
