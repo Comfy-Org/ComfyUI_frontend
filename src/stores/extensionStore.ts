@@ -62,6 +62,11 @@ export const useExtensionStore = defineStore('extension', () => {
     // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
     // https://github.com/Comfy-Org/litegraph.js/pull/117
     disabledExtensionNames.value.add('pysssss.Locking')
+    // pysssss.SnapToGrid is replaced by Comfy.Graph.AlwaysSnapToGrid in ComfyUI core.
+    // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
+    // allowed since v1.3.12.
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
+    disabledExtensionNames.value.add('pysssss.SnapToGrid')
   }
 
   // Some core extensions are registered before the store is initialized, e.g.
