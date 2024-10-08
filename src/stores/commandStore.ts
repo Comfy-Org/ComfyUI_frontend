@@ -436,6 +436,27 @@ export const useCommandStore = defineStore('command', () => {
           node.collapse()
         })
       }
+    },
+    {
+      id: 'Comfy.ToggleTheme',
+      icon: 'pi pi-moon',
+      label: 'Toggle Theme',
+      versionAdded: '1.3.12',
+      function: (() => {
+        let previousDarkTheme: string = 'dark'
+
+        // Official light theme is the only light theme supported now.
+        const isDarkMode = (themeId: string) => themeId !== 'light'
+        return () => {
+          const currentTheme = settingStore.get('Comfy.ColorPalette')
+          if (isDarkMode(currentTheme)) {
+            previousDarkTheme = currentTheme
+            settingStore.set('Comfy.ColorPalette', 'light')
+          } else {
+            settingStore.set('Comfy.ColorPalette', previousDarkTheme)
+          }
+        }
+      })()
     }
   ]
 
