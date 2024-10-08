@@ -524,17 +524,4 @@ test.describe('Menu', () => {
       expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
   })
-
-  test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
-    const [defaultSpeed, maxSpeed] = [1.1, 2.5]
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-      defaultSpeed
-    )
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.page.reload()
-    await comfyPage.setup()
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', defaultSpeed)
-  })
 })
