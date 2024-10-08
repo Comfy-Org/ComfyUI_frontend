@@ -26,13 +26,16 @@
       severity="secondary"
       v-tooltip.left="
         t(
-          'graphCanvasMenu.' + (canvasStore.readOnly ? 'panMode' : 'selectMode')
+          'graphCanvasMenu.' +
+            (canvasStore.canvas?.read_only ? 'panMode' : 'selectMode')
         ) + ' (Space)'
       "
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLock')"
     >
       <template #icon>
-        <i-material-symbols:pan-tool-outline v-if="canvasStore.readOnly" />
+        <i-material-symbols:pan-tool-outline
+          v-if="canvasStore.canvas?.read_only"
+        />
         <i-simple-line-icons:cursor v-else />
       </template>
     </Button>
