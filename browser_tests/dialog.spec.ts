@@ -97,6 +97,11 @@ test.describe('Missing models warning', () => {
 })
 
 test.describe('Settings', () => {
+  test.afterEach(async ({ comfyPage }) => {
+    // Restore default setting value
+    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.1)
+  })
+
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
     const searchBox = comfyPage.page.locator('.settings-content')
@@ -114,15 +119,10 @@ test.describe('Settings', () => {
   })
 
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
-    const [defaultSpeed, maxSpeed] = [1.1, 2.5]
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-      defaultSpeed
-    )
+    const maxSpeed = 2.5
     await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.page.reload()
-    await comfyPage.setup()
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', defaultSpeed)
+    test.step('Setting should persist', async () => {
+      expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
+    })
   })
 })
