@@ -16,9 +16,9 @@
       </div>
     </template>
     <template v-else-if="result.isVideo">
-      <video width="320" height="240" controls>
+      <video controls width="100%" height="100%">
         <source :src="result.url" :type="result.format" />
-        Your browser does not support the video tag.
+        {{ $t('videoFailedToLoad') }}
       </video>
     </template>
     <!-- TODO: handle more media types -->
