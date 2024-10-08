@@ -48,6 +48,10 @@ export class ResultItemImpl {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isVideo(): boolean {
+    return this.format && this.format.startsWith('video/')
+  }
+
   get isGif(): boolean {
     return this.filename.endsWith('.gif')
   }
@@ -57,7 +61,7 @@ export class ResultItemImpl {
   }
 
   get supportsPreview(): boolean {
-    return this.isImage
+    return this.isImage || this.isVideo
   }
 }
 

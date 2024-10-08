@@ -15,6 +15,12 @@
         />
       </div>
     </template>
+    <template v-else-if="result.isVideo">
+      <video width="320" height="240" controls>
+        <source :src="result.url" :type="result.format" />
+        Your browser does not support the video tag.
+      </video>
+    </template>
     <!-- TODO: handle more media types -->
     <div v-else class="task-result-preview">
       <i class="pi pi-file"></i>
