@@ -132,6 +132,8 @@ export class ChangeTracker {
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
+        // Do not trigger on repeat events (Holding down a key)
+        // This can happen when user is holding down "Space" to pan the canvas.
         if (e.repeat) return
 
         const activeEl = document.activeElement
