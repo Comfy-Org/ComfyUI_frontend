@@ -5,6 +5,7 @@ import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useCommandStore } from '../commandStore'
 
 export const useSidebarTabStore = defineStore('sidebarTab', () => {
   const sidebarTabs = ref<SidebarTabExtension[]>([])
@@ -23,6 +24,16 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
   const registerSidebarTab = (tab: SidebarTabExtension) => {
     sidebarTabs.value = [...sidebarTabs.value, tab]
+    useCommandStore().registerCommand({
+      id: `Workspace.ToggleSidebarTab.${tab.id}`,
+      icon: tab.icon,
+      label: tab.tooltip,
+      tooltip: tab.tooltip,
+      versionAdded: '1.3.9',
+      function: () => {
+        toggleSidebarTab(tab.id)
+      }
+    })
   }
 
   const unregisterSidebarTab = (id: string) => {
