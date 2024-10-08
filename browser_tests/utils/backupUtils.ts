@@ -1,9 +1,11 @@
 import path from 'path'
 import fs from 'fs-extra'
 
+type PathParts = readonly [string, ...string[]]
+
 const getBackupPath = (originalPath: string): string => `${originalPath}.bak`
 
-const getPathIfExists = (pathParts: [string, ...string[]]): string | null => {
+const resolvePathIfExists = (pathParts: PathParts): string | null => {
   const resolvedPath = path.resolve(...pathParts)
   if (!fs.pathExistsSync(resolvedPath)) {
     console.warn(`Path not found: ${resolvedPath}`)
@@ -31,40 +33,37 @@ const createScaffoldingCopy = (srcDir: string, destDir: string) => {
 }
 
 export function backupPath(
-  pathParts: [string, ...string[]],
+  pathParts: PathParts,
   { renameAndReplaceWithScaffolding = false } = {}
 ) {
-  const resolvedPath = getPathIfExists(pathParts)
-  if (!resolvedPath) return
+  const originalPath = resolvePathIfExists(pathParts)
+  if (!originalPath) return
 
-  const backupPath = getBackupPath(resolvedPath)
+  const backupPath = getBackupPath(originalPath)
   try {
     if (renameAndReplaceWithScaffolding) {
       // Rename the original path and create scaffolding in its place
-      fs.moveSync(resolvedPath, backupPath)
-      createScaffoldingCopy(backupPath, resolvedPath)
+      fs.moveSync(originalPath, backupPath)
+      createScaffoldingCopy(backupPath, originalPath)
     } else {
       // Create a copy of the original path
-      fs.copySync(resolvedPath, backupPath)
+      fs.copySync(originalPath, backupPath)
     }
   } catch (error) {
-    console.error(`Failed to backup ${resolvedPath} to ${backupPath}`, error)
+    console.error(`Failed to backup ${originalPath} from ${backupPath}`, error)
   }
 }
 
-export function restorePath(pathParts: [string, ...string[]]) {
-  const resolvedPath = getPathIfExists(pathParts)
-  if (!resolvedPath) return
+export function restorePath(pathParts: PathParts) {
+  const originalPath = resolvePathIfExists(pathParts)
+  if (!originalPath) return
 
-  const backupPath = getBackupPath(resolvedPath)
-  if (!fs.pathExistsSync(backupPath)) {
-    console.warn(`Backup not found for: ${resolvedPath}, skipping restore.`)
-    return
-  }
+  const backupPath = getBackupPath(originalPath)
+  if (!fs.pathExistsSync(backupPath)) return
 
   try {
-    fs.moveSync(backupPath, resolvedPath, { overwrite: true })
+    fs.moveSync(backupPath, originalPath, { overwrite: true })
   } catch (error) {
-    console.error(`Failed to restore ${resolvedPath} from ${backupPath}`, error)
+    console.error(`Failed to restore ${originalPath} from ${backupPath}`, error)
   }
 }
