@@ -33,10 +33,7 @@ import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingStore } from '@/stores/keybindingStore'
-import { useNodeLibrarySidebarTab } from '@/hooks/sidebarTabs/nodeLibrarySidebarTab'
-import { useQueueSidebarTab } from '@/hooks/sidebarTabs/queueSidebarTab'
-import { useModelLibrarySidebarTab } from '@/hooks/sidebarTabs/modelLibrarySidebarTab'
-import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 setupAutoQueueHandler()
 
@@ -97,17 +94,8 @@ watchEffect(() => {
 const init = () => {
   settingStore.addSettings(app.ui.settings)
   useKeybindingStore().loadCoreKeybindings()
-
-  const queueSidebarTab = useQueueSidebarTab()
-  const nodeLibrarySidebarTab = useNodeLibrarySidebarTab()
-  const modelLibrarySidebarTab = useModelLibrarySidebarTab()
-  const workflowsSidebarTab = useWorkflowsSidebarTab()
-
+  useSidebarTabStore().registerCoreSidebarTabs()
   app.extensionManager = useWorkspaceStore()
-  app.extensionManager.registerSidebarTab(queueSidebarTab)
-  app.extensionManager.registerSidebarTab(nodeLibrarySidebarTab)
-  app.extensionManager.registerSidebarTab(modelLibrarySidebarTab)
-  app.extensionManager.registerSidebarTab(workflowsSidebarTab)
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
