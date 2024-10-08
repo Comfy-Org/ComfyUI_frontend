@@ -131,7 +131,9 @@ export class ChangeTracker {
     let keyIgnored = false
     window.addEventListener(
       'keydown',
-      (e) => {
+      (e: KeyboardEvent) => {
+        if (e.repeat) return
+
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
           let bindInputEl
