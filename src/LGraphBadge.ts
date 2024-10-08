@@ -54,7 +54,11 @@ export class LGraphBadge {
     return textWidth + this.padding * 2;
   }
 
-  draw(ctx: CanvasRenderingContext2D, x: number, y: number): void {
+  draw(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+  ): void {
     if (!this.visible) return;
 
     ctx.save();
@@ -78,7 +82,7 @@ export class LGraphBadge {
     ctx.fillText(
       this.text,
       x + badgeX + this.padding,
-      y + this.height - this.padding,
+      y + this.height - this.padding
     );
 
     ctx.restore();
