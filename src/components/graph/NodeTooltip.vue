@@ -104,7 +104,7 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    if (selectDocItem(node, inputName)) {
+    if (!selectDocItem(node, inputName)) {
       return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
     }
   }
@@ -117,7 +117,7 @@ const onIdle = () => {
   )
   if (outputSlot !== -1) {
     const outputDef = nodeDef.output.all?.[outputSlot]
-    if (selectDocItem(node, outputDef?.name)) {
+    if (!selectDocItem(node, outputDef?.name)) {
       return showTooltip(outputDef?.tooltip)
     }
   }
@@ -125,7 +125,7 @@ const onIdle = () => {
   const widget = getHoveredWidget()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
-    if (selectDocItem(node, widget.name, widget.value)) {
+    if (!selectDocItem(node, widget.name, widget.value)) {
       return showTooltip(
         widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
       )

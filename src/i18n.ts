@@ -58,6 +58,7 @@ const messages = {
       nodeLibrary: 'Node Library',
       workflows: 'Workflows',
       browseTemplates: 'Browse example templates',
+      documentation: 'Display documentation for nodes',
       openWorkflow: 'Open workflow in local file system',
       newBlankWorkflow: 'Create a new blank workflow',
       nodeLibraryTab: {

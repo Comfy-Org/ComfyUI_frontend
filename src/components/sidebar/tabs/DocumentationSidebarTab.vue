@@ -28,8 +28,9 @@
   </div>
 </template>
 <script lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, watch } from 'vue'
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/stores/graphStore'
 var docElement = ref(null)
 
 let def
@@ -37,9 +38,6 @@ const inputs = ref([])
 const outputs = ref([])
 
 export function selectDocItem(node, name, value) {
-  if (node != app?.canvas?.current_node || name == 'DESCRIPTION') {
-    return false
-  }
   if (node != app?.canvas?.current_node || name == 'DESCRIPTION') {
     return false
   }
@@ -159,8 +157,6 @@ function updateNode(node?) {
     outputs.value = []
   }
 }
-watchEffect(() => app?.canvas?.current_node, updateNode)
-updateNode()
 function hasInputDoc() {
   return !!inputs.value.length
 }
@@ -169,7 +165,10 @@ function hasAnyDoc() {
 }
 export default {
   setup() {
-    return { hasInputDoc, hasAnyDoc, inputs, outputs, def }
+    const canvasStore = useCanvasStore()
+    watch(() => canvasStore?.canvas?.current_node, updateNode)
+    updateNode()
+    return { hasInputDoc, hasAnyDoc, inputs, outputs, def, docElement }
   }
 }
 </script>
