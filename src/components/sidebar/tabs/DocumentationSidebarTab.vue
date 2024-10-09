@@ -1,13 +1,11 @@
 <template>
   <div v-if="!hasAnyDoc()">No documentation available</div>
-  <div v-else-if="Array.isArray(def.description)" ref="docElement">
-    {{ def[1] }}
-  </div>
+  <div v-else-if="rawDoc" ref="docElement" v-html="rawDoc"></div>
   <div v-else ref="docElement">
-    <div class="doc-node">{{ def.display_name }}</div>
-    <div v-if="hasInputDoc()" class="doc-section">Inputs</div>
+    <div class="doc-node">{{ title }}</div>
+    <div v-if="inputs.length" class="doc-section">Inputs</div>
     <div
-      v-if="hasInputDoc()"
+      v-if="inputs.length"
       v-for="input in inputs"
       tabindex="-1"
       class="doc-item"
@@ -34,6 +32,8 @@ import { useCanvasStore } from '@/stores/graphStore'
 var docElement = ref(null)
 
 let def
+const rawDoc = ref(null)
+const title = ref(null)
 const inputs = ref([])
 const outputs = ref([])
 
@@ -127,13 +127,21 @@ function selectHelp(name: string, value?: string) {
   }
 }
 function updateNode(node?) {
-  console.log('updating node')
   node ||= app?.canvas?.current_node
   if (!node) {
     // Graph has no nodes
     return
   }
   def = LiteGraph.getNodeType(node.type).nodeData
+  title.value = def.display_name
+  if (Array.isArray(def.description)) {
+    rawDoc.value = def.description[1]
+    outputs.value = []
+    inputs.value = []
+    return
+  } else {
+    rawDoc.value = null
+  }
   let input_temp = []
   for (let k in def?.input?.required) {
     if (def.input.required[k][1]?.tooltip) {
@@ -157,9 +165,6 @@ function updateNode(node?) {
     outputs.value = []
   }
 }
-function hasInputDoc() {
-  return !!inputs.value.length
-}
 function hasAnyDoc() {
   return def?.description || inputs.value.length || outputs.value.length
 }
@@ -168,7 +173,7 @@ export default {
     const canvasStore = useCanvasStore()
     watch(() => canvasStore?.canvas?.current_node, updateNode)
     updateNode()
-    return { hasInputDoc, hasAnyDoc, inputs, outputs, def, docElement }
+    return { hasAnyDoc, inputs, outputs, def, docElement, title, rawDoc }
   }
 }
 </script>
@@ -196,9 +201,5 @@ export default {
 }
 .doc-item:focus {
   animation: selectAnimation 2s;
-}
-.DocumentationIcon:before {
-  font-size: 1.5em;
-  content: '?';
 }
 </style>

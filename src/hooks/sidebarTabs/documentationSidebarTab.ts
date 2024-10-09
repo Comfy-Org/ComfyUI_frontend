@@ -9,7 +9,7 @@ export const useDocumentationSidebarTab = (): SidebarTabExtension => {
   const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
   return {
     id: 'documentation',
-    icon: 'pi pi-question',
+    icon: 'mdi mdi-help',
     title: t('sideToolbar.documentation'),
     tooltip: t('sideToolbar.documentation'),
     component: markRaw(DocumentationSidebarTab),
