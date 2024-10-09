@@ -28,7 +28,7 @@
         v-if="item.isImage"
       />
       <video v-else-if="item.isVideo" controls width="100%" height="100%">
-        <source :src="item.url" :type="item.HTML5VideoType" />
+        <source :src="item.url" :type="item.htmlVideoType" />
         {{ $t('videoFailedToLoad') }}
       </video>
     </template>

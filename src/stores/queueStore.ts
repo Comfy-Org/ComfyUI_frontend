@@ -50,23 +50,41 @@ export class ResultItemImpl {
     this.frame_rate = obj.frame_rate
   }
 
+  private get urlParams(): URLSearchParams {
+    const params = new URLSearchParams()
+    params.set('filename', this.filename)
+    params.set('type', this.type)
+    params.set('subfolder', this.subfolder || '')
+
+    if (this.format) {
+      params.set('format', this.format)
+    }
+    if (this.frame_rate) {
+      params.set('frame_rate', this.frame_rate.toString())
+    }
+    return params
+  }
+
+  get vhsAdvancedPreviewUrl(): string {
+    return api.apiURL('/viewvideo?' + this.urlParams)
+  }
+
   get url(): string {
-    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
-					subfolder=${encodeURIComponent(this.subfolder || '')}`)
+    return api.apiURL('/view?' + this.urlParams)
   }
 
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
 
-  get isVHSFormat(): boolean {
+  get isVhsFormat(): boolean {
     return !!this.format && !!this.frame_rate
   }
 
-  get HTML5VideoType(): string {
-    const defaultType = 'video/mp4'
+  get htmlVideoType(): string | undefined {
+    const defaultType = undefined
 
-    if (!this.isVHSFormat) {
+    if (!this.isVhsFormat) {
       return defaultType
     }
 
