@@ -65,6 +65,9 @@ export class ResultItemImpl {
     return params
   }
 
+  /**
+   * VHS advanced preview URL. `/viewvideo` endpoint is provided by VHS node.
+   */
   get vhsAdvancedPreviewUrl(): string {
     return api.apiURL('/viewvideo?' + this.urlParams)
   }
