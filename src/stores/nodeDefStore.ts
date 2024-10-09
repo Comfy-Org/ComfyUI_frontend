@@ -2,7 +2,10 @@ import {
   NodeSearchService,
   type SearchAuxScore
 } from '@/services/nodeSearchService'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import {
+  type ComfyNodeDef,
+  type ComfyInputsSpec as ComfyInputsSpecSchema
+} from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
@@ -59,7 +62,7 @@ export class ComfyInputsSpec {
   optional: Record<string, BaseInputSpec>
   hidden?: Record<string, any>
 
-  constructor(obj: Record<string, any>) {
+  constructor(obj: ComfyInputsSpecSchema) {
     this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required) ?? {}
     this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional) ?? {}
     this.hidden = obj.hidden
@@ -251,8 +254,12 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
     display_name: '',
     category: folderPath.endsWith('/') ? folderPath.slice(0, -1) : folderPath,
     python_module: 'nodes',
-    description: 'Dummy Folder Node (User should never see this string)'
-  })
+    description: 'Dummy Folder Node (User should never see this string)',
+    input: {},
+    output: [],
+    output_name: [],
+    output_is_list: []
+  } as ComfyNodeDef)
 }
 
 interface State {
