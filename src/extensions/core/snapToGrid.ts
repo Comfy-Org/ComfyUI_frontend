@@ -1,3 +1,4 @@
+import type { SettingParams } from '@/types/settingTypes'
 import { app } from '../../scripts/app'
 import {
   LGraphCanvas,
@@ -37,12 +38,16 @@ app.registerExtension({
         LiteGraph.CANVAS_GRID_SIZE = +value || 10
       }
     })
+    // Keep the 'pysssss.SnapToGrid' setting id so we don't need to migrate setting values.
+    // Using a new setting id can cause existing users to lose their existing settings.
     const alwaysSnapToGrid = app.ui.settings.addSetting({
-      id: 'Comfy.Graph.AlwaysSnapToGrid',
+      id: 'pysssss.SnapToGrid',
+      category: ['Comfy', 'Graph', 'AlwaysSnapToGrid'],
       name: 'Always snap to grid',
       type: 'boolean',
-      defaultValue: false
-    })
+      defaultValue: false,
+      versionAdded: '1.3.13'
+    } as SettingParams)
 
     const shouldSnapToGrid = () => app.shiftDown || alwaysSnapToGrid.value
 
