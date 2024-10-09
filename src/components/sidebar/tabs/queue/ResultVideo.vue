@@ -1,6 +1,6 @@
 <template>
   <video controls width="100%" height="100%">
-    <source :src="url" :type="result.htmlVideoType" />
+    <source :src="url" :type="htmlVideoType" />
     {{ $t('videoFailedToLoad') }}
   </video>
 </template>
@@ -15,10 +15,16 @@ const props = defineProps<{
 }>()
 
 const settingStore = useSettingStore()
-const url = computed(() => {
-  if (settingStore.get('VHS.AdvancedPreviews')) {
-    return props.result.vhsAdvancedPreviewUrl
-  }
-  return props.result.url
-})
+const vhsAdvancedPreviews = computed(() =>
+  settingStore.get('VHS.AdvancedPreviews')
+)
+
+const url = computed(() =>
+  vhsAdvancedPreviews.value
+    ? props.result.vhsAdvancedPreviewUrl
+    : props.result.url
+)
+const htmlVideoType = computed(() =>
+  vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
+)
 </script>

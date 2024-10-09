@@ -67,6 +67,8 @@ export class ResultItemImpl {
 
   /**
    * VHS advanced preview URL. `/viewvideo` endpoint is provided by VHS node.
+   *
+   * `/viewvideo` always returns a webm file.
    */
   get vhsAdvancedPreviewUrl(): string {
     return api.apiURL('/viewvideo?' + this.urlParams)
