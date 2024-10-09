@@ -110,8 +110,12 @@ export class ResultItemImpl {
     return this.filename.endsWith('.gif')
   }
 
+  get isWebp(): boolean {
+    return this.filename.endsWith('.webp')
+  }
+
   get isImage(): boolean {
-    return this.mediaType === 'images' || this.isGif
+    return this.mediaType === 'images' || this.isGif || this.isWebp
   }
 
   get supportsPreview(): boolean {
