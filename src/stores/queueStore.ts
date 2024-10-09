@@ -50,17 +50,58 @@ export class ResultItemImpl {
     this.frame_rate = obj.frame_rate
   }
 
+  private get urlParams(): URLSearchParams {
+    const params = new URLSearchParams()
+    params.set('filename', this.filename)
+    params.set('type', this.type)
+    params.set('subfolder', this.subfolder || '')
+
+    if (this.format) {
+      params.set('format', this.format)
+    }
+    if (this.frame_rate) {
+      params.set('frame_rate', this.frame_rate.toString())
+    }
+    return params
+  }
+
+  /**
+   * VHS advanced preview URL. `/viewvideo` endpoint is provided by VHS node.
+   */
+  get vhsAdvancedPreviewUrl(): string {
+    return api.apiURL('/viewvideo?' + this.urlParams)
+  }
+
   get url(): string {
-    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
-					subfolder=${encodeURIComponent(this.subfolder || '')}`)
+    return api.apiURL('/view?' + this.urlParams)
   }
 
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isVhsFormat(): boolean {
+    return !!this.format && !!this.frame_rate
+  }
+
+  get htmlVideoType(): string | undefined {
+    const defaultType = undefined
+
+    if (!this.isVhsFormat) {
+      return defaultType
+    }
+
+    if (this.format.endsWith('webm')) {
+      return 'video/webm'
+    }
+    if (this.format.endsWith('mp4')) {
+      return 'video/mp4'
+    }
+    return defaultType
+  }
+
   get isVideo(): boolean {
-    return this.format && this.format.startsWith('video/')
+    return !this.isImage && this.format && this.format.startsWith('video/')
   }
 
   get isGif(): boolean {

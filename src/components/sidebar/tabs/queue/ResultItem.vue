@@ -6,12 +6,7 @@
       class="task-output-image"
       :contain="imageFit === 'contain'"
     />
-    <template v-else-if="result.isVideo">
-      <video controls width="100%" height="100%">
-        <source :src="result.url" :type="result.format" />
-        {{ $t('videoFailedToLoad') }}
-      </video>
-    </template>
+    <ResultVideo v-else-if="result.isVideo" :result="result" />
     <div v-else class="task-result-preview">
       <i class="pi pi-file"></i>
       <span>{{ result.mediaType }}</span>
@@ -34,6 +29,7 @@ import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
+import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{
   result: ResultItemImpl
