@@ -83,6 +83,7 @@ const setInitialPosition = () => {
   if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
     x.value = storedPosition.value.x
     y.value = storedPosition.value.y
+    captureLastDragState()
     return
   }
   if (panelRef.value) {
@@ -97,6 +98,7 @@ const setInitialPosition = () => {
 
     x.value = (screenWidth - menuWidth) / 2
     y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
+    captureLastDragState()
   }
 }
 onMounted(setInitialPosition)
@@ -112,17 +114,24 @@ const lastDragState = ref({
   windowWidth: window.innerWidth,
   windowHeight: window.innerHeight
 })
-watch(isDragging, (newIsDragging) => {
-  if (!newIsDragging) {
-    // Stop dragging
-    lastDragState.value = {
-      x: x.value,
-      y: y.value,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight
-    }
+const captureLastDragState = () => {
+  lastDragState.value = {
+    x: x.value,
+    y: y.value,
+    windowWidth: window.innerWidth,
+    windowHeight: window.innerHeight
   }
-})
+}
+watch(
+  isDragging,
+  (newIsDragging) => {
+    if (!newIsDragging) {
+      // Stop dragging
+      captureLastDragState()
+    }
+  },
+  { immediate: true }
+)
 
 const adjustMenuPosition = () => {
   if (panelRef.value) {
