@@ -155,8 +155,7 @@ const adjustMenuPosition = () => {
       x.value =
         screenWidth - (lastDragState.value.windowWidth - lastDragState.value.x)
     } else {
-      x.value =
-        (lastDragState.value.x / lastDragState.value.windowWidth) * screenWidth
+      x.value = lastDragState.value.x
     }
 
     if (anchorBottom) {
@@ -164,9 +163,7 @@ const adjustMenuPosition = () => {
         screenHeight -
         (lastDragState.value.windowHeight - lastDragState.value.y)
     } else {
-      y.value =
-        (lastDragState.value.y / lastDragState.value.windowHeight) *
-        screenHeight
+      y.value = lastDragState.value.y
     }
 
     // Ensure the menu stays within the screen bounds
