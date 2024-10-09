@@ -1,6 +1,5 @@
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { plainToClass } from 'class-transformer'
 
 const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
   {
@@ -52,7 +51,7 @@ const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = [
     output_node: false
   }
 ].map((nodeDef) => {
-  const def = plainToClass(ComfyNodeDefImpl, nodeDef)
+  const def = new ComfyNodeDefImpl(nodeDef)
   def['postProcessSearchScores'] = (s) => s
   return def
 })
