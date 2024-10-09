@@ -8,6 +8,8 @@ export const zNodeId = z.union([z.number().int(), z.string()])
 export type NodeId = z.infer<typeof zNodeId>
 export const zSlotIndex = z.union([
   z.number().int(),
+  // Convert string slot index to number.
+  // This conversion should not affect the overall validness of the data.
   z
     .string()
     .transform((val) => parseInt(val))
@@ -74,6 +76,8 @@ const zProperties = z
   .passthrough()
 
 const zVector2 = z.union([
+  // Convert object to array, and strip out extra fields.
+  // This conversion should not affect the overall validness of the data.
   z
     .object({ 0: z.number(), 1: z.number() })
     .passthrough()
