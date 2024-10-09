@@ -16,7 +16,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
 
   const migrateLegacyBookmarks = () => {
     const legacyBookmarks = settingStore.get('Comfy.NodeLibrary.Bookmarks')
-    if (!legacyBookmarks) {
+    if (!legacyBookmarks.length) {
       return
     }
 
