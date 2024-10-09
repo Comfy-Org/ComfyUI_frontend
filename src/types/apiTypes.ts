@@ -229,20 +229,11 @@ export function validateTaskItem(taskItem: unknown) {
 }
 
 function inputSpec<TType extends ZodType, TSpec extends ZodType>(
-  spec: [TType, TSpec],
-  allowUpcast: boolean = true
+  spec: [TType, TSpec]
 ) {
   const [inputType, inputSpec] = spec
-  // e.g. "INT" => ["INT", {}]
-  const upcastTypes = allowUpcast
-    ? [inputType.transform((type) => [type, {}])]
-    : []
 
-  return z.union([
-    z.tuple([inputType, inputSpec]),
-    z.tuple([inputType]).transform(([type]) => [type, {}]),
-    ...upcastTypes
-  ])
+  return z.union([z.tuple([inputType, inputSpec]), z.tuple([inputType])])
 }
 
 const zBaseInputSpecValue = z
@@ -304,16 +295,13 @@ const zStringInputSpec = inputSpec([
 ])
 
 // Dropdown Selection.
-const zComboInputSpec = inputSpec(
-  [
-    z.array(z.any()),
-    zBaseInputSpecValue.extend({
-      control_after_generate: z.boolean().optional(),
-      image_upload: z.boolean().optional()
-    })
-  ],
-  /* allowUpcast=*/ false
-)
+const zComboInputSpec = inputSpec([
+  z.array(z.any()),
+  zBaseInputSpecValue.extend({
+    control_after_generate: z.boolean().optional(),
+    image_upload: z.boolean().optional()
+  })
+])
 
 const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
 
