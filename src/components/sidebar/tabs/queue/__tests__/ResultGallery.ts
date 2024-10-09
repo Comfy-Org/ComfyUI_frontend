@@ -1,6 +1,6 @@
 // Disabled because of https://github.com/Comfy-Org/ComfyUI_frontend/issues/1184
 
-/* import { mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { expect, describe, it } from 'vitest'
 import ResultGallery from '../ResultGallery.vue'
 import Galleria from 'primevue/galleria'
@@ -78,4 +78,3 @@ describe('ResultGallery', () => {
     expect(wrapper.vm.galleryVisible).toBe(true)
   })
 })
- */
