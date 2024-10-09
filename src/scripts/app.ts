@@ -1968,7 +1968,9 @@ export class ComfyApp {
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await api.getNodeDefs()
+    const defs = await api.getNodeDefs({
+      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
+    })
     await this.registerNodesFromDefs(defs)
     await this.#invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
@@ -2911,7 +2913,9 @@ export class ComfyApp {
       useModelStore().clearCache()
     }
 
-    const defs = await api.getNodeDefs()
+    const defs = await api.getNodeDefs({
+      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
+    })
 
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
