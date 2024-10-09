@@ -9,7 +9,6 @@ import Aura from '@primevue/themes/aura'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
-import 'reflect-metadata'
 
 import '@comfyorg/litegraph/style.css'
 import '@/assets/css/style.css'

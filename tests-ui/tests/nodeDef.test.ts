@@ -1,12 +1,9 @@
-import { plainToClass } from 'class-transformer'
 import {
   ComfyInputsSpec,
   IntInputSpec,
   StringInputSpec,
   BooleanInputSpec,
   FloatInputSpec,
-  CustomInputSpec,
-  ComboInputSpec,
   ComfyNodeDefImpl
 } from '@/stores/nodeDefStore' // Adjust the import path as needed
 
@@ -29,7 +26,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
+    const result = new ComfyInputsSpec(plainObject)
 
     expect(result).toBeInstanceOf(ComfyInputsSpec)
     expect(result.required).toBeDefined()
@@ -45,10 +42,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
-
-    expect(result.required.intInput).toBeInstanceOf(IntInputSpec)
-    expect(result.required.stringInput).toBeInstanceOf(StringInputSpec)
+    const result = new ComfyInputsSpec(plainObject)
 
     const intInput = result.required.intInput as IntInputSpec
     const stringInput = result.required.stringInput as StringInputSpec
@@ -73,10 +67,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
-
-    expect(result.optional.booleanInput).toBeInstanceOf(BooleanInputSpec)
-    expect(result.optional.floatInput).toBeInstanceOf(FloatInputSpec)
+    const result = new ComfyInputsSpec(plainObject)
 
     const booleanInput = result.optional.booleanInput as BooleanInputSpec
     const floatInput = result.optional.floatInput as FloatInputSpec
@@ -96,9 +87,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
-
-    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
+    const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.comboInput.type).toBe('COMBO')
     expect(result.optional.comboInput.default).toBe(2)
   })
@@ -110,9 +99,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
-
-    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
+    const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.comboInput.type).toBe('COMBO')
     // Should pick the first choice as default
     expect(result.optional.comboInput.default).toBe(1)
@@ -125,9 +112,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
-
-    expect(result.optional.customInput).toBeInstanceOf(CustomInputSpec)
+    const result = new ComfyInputsSpec(plainObject)
     expect(result.optional.customInput.type).toBe('CUSTOM_TYPE')
     expect(result.optional.customInput.default).toBe('custom value')
   })
@@ -140,7 +125,7 @@ describe('ComfyInputsSpec', () => {
       }
     }
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
+    const result = new ComfyInputsSpec(plainObject)
 
     expect(result.hidden).toEqual(plainObject.hidden)
     expect(result.hidden?.someHiddenValue).toBe(42)
@@ -150,7 +135,7 @@ describe('ComfyInputsSpec', () => {
   it('should handle empty or undefined fields', () => {
     const plainObject = {}
 
-    const result = plainToClass(ComfyInputsSpec, plainObject)
+    const result = new ComfyInputsSpec(plainObject)
 
     expect(result).toBeInstanceOf(ComfyInputsSpec)
     expect(result.required).toEqual({})
@@ -177,7 +162,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['intOutput']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
 
     expect(result).toBeInstanceOf(ComfyNodeDefImpl)
     expect(result.name).toBe('TestNode')
@@ -215,7 +200,7 @@ describe('ComfyNodeDefImpl', () => {
       deprecated: true
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
     expect(result.deprecated).toBe(true)
   })
 
@@ -238,7 +223,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['intOutput']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
     expect(result.deprecated).toBe(true)
   })
 
@@ -255,7 +240,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['stringOutput', 'comboOutput', 'floatOutput']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
 
     expect(result.output.all).toEqual([
       {
@@ -293,7 +278,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['INT', 'FLOAT', 'FLOAT']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
 
     expect(result.output.all).toEqual([
       {
@@ -330,7 +315,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['output', 'output', 'uniqueOutput']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
     expect(result.output.all).toEqual([
       {
         index: 0,
@@ -366,7 +351,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: []
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
 
     expect(result.output.all).toEqual([])
   })
@@ -393,7 +378,7 @@ describe('ComfyNodeDefImpl', () => {
       output_name: ['result']
     }
 
-    const result = plainToClass(ComfyNodeDefImpl, plainObject)
+    const result = new ComfyNodeDefImpl(plainObject)
 
     expect(result.input).toBeInstanceOf(ComfyInputsSpec)
     expect(result.input.required).toBeDefined()
