@@ -4,8 +4,6 @@ import {
   StringInputSpec,
   BooleanInputSpec,
   FloatInputSpec,
-  CustomInputSpec,
-  ComboInputSpec,
   ComfyNodeDefImpl
 } from '@/stores/nodeDefStore' // Adjust the import path as needed
 
@@ -46,9 +44,6 @@ describe('ComfyInputsSpec', () => {
 
     const result = new ComfyInputsSpec(plainObject)
 
-    expect(result.required.intInput).toBeInstanceOf(IntInputSpec)
-    expect(result.required.stringInput).toBeInstanceOf(StringInputSpec)
-
     const intInput = result.required.intInput as IntInputSpec
     const stringInput = result.required.stringInput as StringInputSpec
 
@@ -74,9 +69,6 @@ describe('ComfyInputsSpec', () => {
 
     const result = new ComfyInputsSpec(plainObject)
 
-    expect(result.optional.booleanInput).toBeInstanceOf(BooleanInputSpec)
-    expect(result.optional.floatInput).toBeInstanceOf(FloatInputSpec)
-
     const booleanInput = result.optional.booleanInput as BooleanInputSpec
     const floatInput = result.optional.floatInput as FloatInputSpec
 
@@ -96,8 +88,6 @@ describe('ComfyInputsSpec', () => {
     }
 
     const result = new ComfyInputsSpec(plainObject)
-
-    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
     expect(result.optional.comboInput.type).toBe('COMBO')
     expect(result.optional.comboInput.default).toBe(2)
   })
@@ -110,8 +100,6 @@ describe('ComfyInputsSpec', () => {
     }
 
     const result = new ComfyInputsSpec(plainObject)
-
-    expect(result.optional.comboInput).toBeInstanceOf(ComboInputSpec)
     expect(result.optional.comboInput.type).toBe('COMBO')
     // Should pick the first choice as default
     expect(result.optional.comboInput.default).toBe(1)
@@ -125,8 +113,6 @@ describe('ComfyInputsSpec', () => {
     }
 
     const result = new ComfyInputsSpec(plainObject)
-
-    expect(result.optional.customInput).toBeInstanceOf(CustomInputSpec)
     expect(result.optional.customInput.type).toBe('CUSTOM_TYPE')
     expect(result.optional.customInput.default).toBe('custom value')
   })

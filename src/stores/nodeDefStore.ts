@@ -60,8 +60,8 @@ export class ComfyInputsSpec {
   hidden?: Record<string, any>
 
   constructor(obj: Record<string, any>) {
-    this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required)
-    this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional)
+    this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required) ?? {}
+    this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional) ?? {}
     this.hidden = obj.hidden
   }
 
