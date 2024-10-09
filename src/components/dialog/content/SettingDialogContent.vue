@@ -55,10 +55,20 @@
             <AboutPanel />
           </TabPanel>
           <TabPanel key="keybinding" value="Keybinding">
-            <KeybindingPanel />
+            <Suspense>
+              <KeybindingPanel />
+              <template #fallback>
+                <div>Loading keybinding panel...</div>
+              </template>
+            </Suspense>
           </TabPanel>
           <TabPanel key="extension" value="Extension">
-            <ExtensionPanel />
+            <Suspense>
+              <ExtensionPanel />
+              <template #fallback>
+                <div>Loading extension panel...</div>
+              </template>
+            </Suspense>
           </TabPanel>
         </TabPanels>
       </Tabs>
@@ -67,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
@@ -80,8 +90,13 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
-import KeybindingPanel from './setting/KeybindingPanel.vue'
-import ExtensionPanel from './setting/ExtensionPanel.vue'
+
+const KeybindingPanel = defineAsyncComponent(
+  () => import('./setting/KeybindingPanel.vue')
+)
+const ExtensionPanel = defineAsyncComponent(
+  () => import('./setting/ExtensionPanel.vue')
+)
 
 interface ISettingGroup {
   label: string
