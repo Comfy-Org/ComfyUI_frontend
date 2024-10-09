@@ -8,7 +8,7 @@
     />
     <template v-else-if="result.isVideo">
       <video controls width="100%" height="100%">
-        <source :src="result.url" :type="result.format" />
+        <source :src="result.url" :type="result.HTML5VideoType" />
         {{ $t('videoFailedToLoad') }}
       </video>
     </template>

@@ -59,8 +59,28 @@ export class ResultItemImpl {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isVHSFormat(): boolean {
+    return !!this.format && !!this.frame_rate
+  }
+
+  get HTML5VideoType(): string {
+    const defaultType = 'video/mp4'
+
+    if (!this.isVHSFormat) {
+      return defaultType
+    }
+
+    if (this.format.endsWith('webm')) {
+      return 'video/webm'
+    }
+    if (this.format.endsWith('mp4')) {
+      return 'video/mp4'
+    }
+    return defaultType
+  }
+
   get isVideo(): boolean {
-    return this.format && this.format.startsWith('video/')
+    return !this.isImage && this.format && this.format.startsWith('video/')
   }
 
   get isGif(): boolean {
