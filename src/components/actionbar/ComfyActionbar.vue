@@ -83,6 +83,7 @@ const setInitialPosition = () => {
   if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
     x.value = storedPosition.value.x
     y.value = storedPosition.value.y
+    captureLastDragState()
     return
   }
   if (panelRef.value) {
@@ -97,6 +98,7 @@ const setInitialPosition = () => {
 
     x.value = (screenWidth - menuWidth) / 2
     y.value = screenHeight - menuHeight - 10 // 10px margin from bottom
+    captureLastDragState()
   }
 }
 onMounted(setInitialPosition)
@@ -106,6 +108,31 @@ watch(visible, (newVisible) => {
   }
 })
 
+const lastDragState = ref({
+  x: x.value,
+  y: y.value,
+  windowWidth: window.innerWidth,
+  windowHeight: window.innerHeight
+})
+const captureLastDragState = () => {
+  lastDragState.value = {
+    x: x.value,
+    y: y.value,
+    windowWidth: window.innerWidth,
+    windowHeight: window.innerHeight
+  }
+}
+watch(
+  isDragging,
+  (newIsDragging) => {
+    if (!newIsDragging) {
+      // Stop dragging
+      captureLastDragState()
+    }
+  },
+  { immediate: true }
+)
+
 const adjustMenuPosition = () => {
   if (panelRef.value) {
     const screenWidth = window.innerWidth
@@ -113,10 +140,34 @@ const adjustMenuPosition = () => {
     const menuWidth = panelRef.value.offsetWidth
     const menuHeight = panelRef.value.offsetHeight
 
-    // Adjust x position if menu is off-screen horizontally
-    x.value = clamp(x.value, 0, screenWidth - menuWidth)
+    // Calculate the distance from each edge
+    const distanceRight =
+      lastDragState.value.windowWidth - (lastDragState.value.x + menuWidth)
+    const distanceBottom =
+      lastDragState.value.windowHeight - (lastDragState.value.y + menuHeight)
 
-    // Adjust y position if menu is off-screen vertically
+    // Determine if the menu is closer to right/bottom or left/top
+    const anchorRight = distanceRight < lastDragState.value.x
+    const anchorBottom = distanceBottom < lastDragState.value.y
+
+    // Calculate new position
+    if (anchorRight) {
+      x.value =
+        screenWidth - (lastDragState.value.windowWidth - lastDragState.value.x)
+    } else {
+      x.value = lastDragState.value.x
+    }
+
+    if (anchorBottom) {
+      y.value =
+        screenHeight -
+        (lastDragState.value.windowHeight - lastDragState.value.y)
+    } else {
+      y.value = lastDragState.value.y
+    }
+
+    // Ensure the menu stays within the screen bounds
+    x.value = clamp(x.value, 0, screenWidth - menuWidth)
     y.value = clamp(y.value, 0, screenHeight - menuHeight)
   }
 }
