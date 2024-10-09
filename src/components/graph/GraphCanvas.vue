@@ -26,11 +26,7 @@ import { ref, computed, onUnmounted, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import {
   LiteGraph,
@@ -44,7 +40,6 @@ import {
   LGraphBadge
 } from '@comfyorg/litegraph'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
 import {
@@ -52,7 +47,6 @@ import {
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import { useKeybindingStore } from '@/stores/keybindingStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -202,18 +196,6 @@ onMounted(async () => {
     }
   })
 
-  // Load keybindings. This must be done after comfyApp loads settings.
-  useKeybindingStore().loadUserKeybindings()
-
-  // Migrate legacy bookmarks
-  useNodeBookmarkStore().migrateLegacyBookmarks()
-
-  // Explicitly initialize nodeSearchService to avoid indexing delay when
-  // node search is triggered
-  useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
-
-  // Non-blocking load of node frequencies
-  useNodeFrequencyStore().loadNodeFrequencies()
   emit('ready')
 })
 

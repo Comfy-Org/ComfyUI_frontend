@@ -2,7 +2,7 @@
   <!-- Top menu bar needs to load before the GraphCanvas as it needs to host
   the menu buttons added by legacy extension scripts.-->
   <TopMenubar />
-  <GraphCanvas />
+  <GraphCanvas @ready="onGraphReady" />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
@@ -34,6 +34,8 @@ import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 
 setupAutoQueueHandler()
 
@@ -147,4 +149,26 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
 })
+
+const onGraphReady = () => {
+  requestIdleCallback(
+    () => {
+      // Setting values now available after comfyApp.setup.
+      // Load keybindings.
+      useKeybindingStore().loadUserKeybindings()
+
+      // Migrate legacy bookmarks
+      useNodeBookmarkStore().migrateLegacyBookmarks()
+
+      // Node defs now available after comfyApp.setup.
+      // Explicitly initialize nodeSearchService to avoid indexing delay when
+      // node search is triggered
+      useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
+
+      // Non-blocking load of node frequencies
+      useNodeFrequencyStore().loadNodeFrequencies()
+    },
+    { timeout: 1000 }
+  )
+}
 </script>
