@@ -21,8 +21,8 @@
         <slot name="after-label" :node="props.node"></slot>
       </span>
       <Badge
-        v-if="!props.node.leaf"
-        :value="props.node.badgeText ?? props.node.totalLeaves"
+        v-if="showNodeBadgeText"
+        :value="nodeBadgeText"
         severity="secondary"
         class="leaf-count-badge"
       />
@@ -61,6 +61,17 @@ const emit = defineEmits<{
   (e: 'dragStart', node: RenderedTreeExplorerNode): void
   (e: 'dragEnd', node: RenderedTreeExplorerNode): void
 }>()
+
+const nodeBadgeText = computed<string>(() => {
+  if (props.node.leaf) {
+    return ''
+  }
+  if (props.node.badgeText !== undefined && props.node.badgeText !== null) {
+    return props.node.badgeText
+  }
+  return props.node.totalLeaves.toString()
+})
+const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
 const labelEditable = computed<boolean>(() => !!props.node.handleRename)
 const renameEditingNode =
