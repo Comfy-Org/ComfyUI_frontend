@@ -991,18 +991,12 @@ export class GroupNodeHandler {
         {
           content: 'Convert to nodes',
           callback: () => {
-            app.extensionManager.command.execute(
-              'Comfy.GroupNode.UngroupSelectedGroupNodes'
-            )
+            return this.convertToNodes()
           }
         },
         {
           content: 'Manage Group Node',
-          callback: () => {
-            app.extensionManager.command.execute(
-              'Comfy.GroupNode.ManageGroupNodes'
-            )
-          }
+          callback: manageGroupNodes
         }
       )
     }
@@ -1409,11 +1403,7 @@ function addConvertToGroupOptions() {
     options.splice(index + 1, null, {
       content: `Convert to Group Node`,
       disabled,
-      callback: () => {
-        app.extensionManager.command.execute(
-          'Comfy.GroupNode.ConvertSelectedNodesToGroupNode'
-        )
-      }
+      callback: convertSelectedNodesToGroupNode
     })
   }
 
@@ -1423,9 +1413,7 @@ function addConvertToGroupOptions() {
     options.splice(index + 1, null, {
       content: `Manage Group Nodes`,
       disabled,
-      callback: () => {
-        app.extensionManager.command.execute('Comfy.GroupNode.ManageGroupNodes')
-      }
+      callback: manageGroupNodes
     })
   }
 
@@ -1462,6 +1450,37 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
+function convertSelectedNodesToGroupNode() {
+  if (
+    !app.canvas.selected_nodes ||
+    Object.keys(app.canvas.selected_nodes).length === 0
+  ) {
+    useToastStore().add({
+      severity: 'error',
+      summary: 'No nodes selected',
+      detail: 'Please select nodes to convert to group node',
+      life: 3000
+    })
+    return
+  }
+
+  const nodes = Object.values(app.canvas.selected_nodes)
+  return GroupNodeHandler.fromNodes(nodes)
+}
+
+function ungroupSelectedGroupNodes() {
+  const nodes = Object.values(app.canvas.selected_nodes ?? {})
+  for (const node of nodes) {
+    if (GroupNodeHandler.isGroupNode(node)) {
+      node['convertToNodes']?.()
+    }
+  }
+}
+
+function manageGroupNodes() {
+  new ManageGroupDialog(app).show()
+}
+
 const id = 'Comfy.GroupNode'
 let globalDefs
 const ext: ComfyExtension = {
@@ -1472,46 +1491,21 @@ const ext: ComfyExtension = {
       label: 'Convert selected nodes to group node',
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
-      function: async () => {
-        if (
-          !app.canvas.selected_nodes ||
-          Object.keys(app.canvas.selected_nodes).length === 0
-        ) {
-          useToastStore().add({
-            severity: 'error',
-            summary: 'No nodes selected',
-            detail: 'Please select nodes to convert to group node',
-            life: 3000
-          })
-          return
-        }
-
-        const nodes = Object.values(app.canvas.selected_nodes)
-        await GroupNodeHandler.fromNodes(nodes)
-      }
+      function: convertSelectedNodesToGroupNode
     },
     {
       id: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
       label: 'Ungroup selected group nodes',
       icon: 'pi pi-sitemap',
       versionAdded: '1.3.17',
-      function: async () => {
-        const nodes = Object.values(app.canvas.selected_nodes ?? {})
-        for (const node of nodes) {
-          if (GroupNodeHandler.isGroupNode(node)) {
-            node['convertToNodes']?.()
-          }
-        }
-      }
+      function: ungroupSelectedGroupNodes
     },
     {
       id: 'Comfy.GroupNode.ManageGroupNodes',
       label: 'Manage group nodes',
       icon: 'pi pi-cog',
       versionAdded: '1.3.17',
-      function: () => {
-        new ManageGroupDialog(app).show()
-      }
+      function: manageGroupNodes
     }
   ],
   keybindings: [
