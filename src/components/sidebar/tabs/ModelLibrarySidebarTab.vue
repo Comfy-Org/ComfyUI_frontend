@@ -154,7 +154,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
             if (onlyChild.data.file_name === '(No Content)') {
               return '0'
             } else if (onlyChild.data.file_name === 'Loading') {
-              return '?'
+              return ''
             }
           }
         }
