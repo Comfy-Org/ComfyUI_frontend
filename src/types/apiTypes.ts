@@ -346,10 +346,10 @@ const zComfyOutputTypesSpec = z.array(
 )
 
 const zComfyNodeDef = z.object({
-  input: zComfyInputsSpec,
-  output: zComfyOutputTypesSpec,
-  output_is_list: z.array(z.boolean()),
-  output_name: z.array(z.string()),
+  input: zComfyInputsSpec.optional(),
+  output: zComfyOutputTypesSpec.optional(),
+  output_is_list: z.array(z.boolean()).optional(),
+  output_name: z.array(z.string()).optional(),
   output_tooltips: z.array(z.string()).optional(),
   name: z.string(),
   display_name: z.string(),

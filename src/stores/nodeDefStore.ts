@@ -169,21 +169,21 @@ export class ComfyNodeDefImpl {
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
-    this.input = new ComfyInputsSpec(obj.input)
+    this.input = new ComfyInputsSpec(obj.input ?? {})
     this.output = ComfyNodeDefImpl.transformOutputSpec(obj)
     this.nodeSource = getNodeSource(obj.python_module)
   }
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name, output_tooltips } = obj
-    const result = output.map((type: string | any[], index: number) => {
+    const result = (output ?? []).map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
 
       return new ComfyOutputSpec(
         index,
-        output_name[index],
+        output_name?.[index],
         typeString,
-        output_is_list[index],
+        output_is_list?.[index],
         Array.isArray(type) ? type : undefined,
         output_tooltips?.[index]
       )

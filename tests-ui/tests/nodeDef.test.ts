@@ -356,6 +356,20 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.output.all).toEqual([])
   })
 
+  it('should handle undefined fields', () => {
+    const plainObject = {
+      name: 'EmptyOutputNode',
+      display_name: 'Empty Output Node',
+      category: 'Test',
+      python_module: 'test_module',
+      description: 'A node with no outputs'
+    }
+
+    const result = new ComfyNodeDefImpl(plainObject)
+    expect(result.output.all).toEqual([])
+    expect(result.input.all).toEqual([])
+  })
+
   it('should handle complex input specifications', () => {
     const plainObject = {
       name: 'ComplexInputNode',
