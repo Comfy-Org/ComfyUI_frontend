@@ -2174,7 +2174,7 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
+  #showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({
         missingNodeTypes,
@@ -2187,7 +2187,7 @@ export class ComfyApp {
     })
   }
 
-  showMissingModelsError(missingModels, paths) {
+  #showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
@@ -2416,11 +2416,11 @@ export class ComfyApp {
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.showMissingNodesError(missingNodeTypes)
+      this.#showMissingNodesError(missingNodeTypes)
     }
     if (missingModels.length && showMissingModelsDialog) {
       const paths = await api.getFolderPaths()
-      this.showMissingModelsError(missingModels, paths)
+      this.#showMissingModelsError(missingModels, paths)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
     requestAnimationFrame(() => {
@@ -2798,7 +2798,7 @@ export class ComfyApp {
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
-      this.showMissingNodesError(
+      this.#showMissingNodesError(
         // @ts-expect-error
         missingNodeTypes.map((t) => t.class_type),
         false
