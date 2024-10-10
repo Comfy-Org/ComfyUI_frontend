@@ -17,11 +17,11 @@ test.describe('Documentation Sidebar', () => {
 
   test('Sidebar registered', async ({ comfyPage }) => {
     await expect(
-      comfyPage.page.locator('.documentationSidebar-tab-button')
+      comfyPage.page.locator('.documentation-tab-button')
     ).toBeVisible()
   })
   test('Parses help for basic node', async ({ comfyPage }) => {
-    await comfyPage.page.locator('.documentationSidebar-tab-button').click()
+    await comfyPage.page.locator('.documentation-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     //Check that each independently parsed element exists
     await expect(docPane).toContainText('Load Checkpoint')
@@ -30,20 +30,18 @@ test.describe('Documentation Sidebar', () => {
     await expect(docPane).toContainText('The VAE model used')
   })
   test('Responds to hovering over node', async ({ comfyPage }) => {
-    await comfyPage.page.locator('.documentationSidebar-tab-button').click()
+    await comfyPage.page.locator('.documentation-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     await comfyPage.page.mouse.move(321, 593)
     const tooltipTimeout = 500
     await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
     await expect(comfyPage.page.locator('.node-tooltip')).not.toBeVisible()
     await expect(
-      comfyPage.page.locator(
-        '.side-bar-panel > div > div > div > div:nth-child(4)'
-      )
+      comfyPage.page.locator('.sidebar-content-container>div>div:nth-child(4)')
     ).toBeFocused()
   })
   test('Updates when a new node is selected', async ({ comfyPage }) => {
-    await comfyPage.page.locator('.documentationSidebar-tab-button').click()
+    await comfyPage.page.locator('.documentation-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     await comfyPage.page.mouse.click(557, 440)
     await expect(docPane).not.toContainText('Load Checkpoint')
@@ -54,7 +52,7 @@ test.describe('Documentation Sidebar', () => {
     )
   })
   test('Responds to a change in theme', async ({ comfyPage }) => {
-    await comfyPage.page.locator('.documentationSidebar-tab-button').click()
+    await comfyPage.page.locator('.documentation-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
     comfyPage.menu.toggleTheme()
     await expect(docPane).toHaveScreenshot(

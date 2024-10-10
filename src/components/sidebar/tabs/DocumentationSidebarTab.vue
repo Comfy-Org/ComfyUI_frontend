@@ -3,6 +3,7 @@
   <div v-else-if="rawDoc" ref="docElement" v-html="rawDoc"></div>
   <div v-else ref="docElement">
     <div class="doc-node">{{ title }}</div>
+    <div>{{ description }}</div>
     <div v-if="inputs.length" class="doc-section">Inputs</div>
     <div
       v-if="inputs.length"
@@ -33,6 +34,7 @@ var docElement = ref(null)
 
 let def
 const rawDoc = ref(null)
+const description = ref(null)
 const title = ref(null)
 const inputs = ref([])
 const outputs = ref([])
@@ -142,6 +144,7 @@ function updateNode(node?) {
   } else {
     rawDoc.value = null
   }
+  description.value = def.description
   let input_temp = []
   for (let k in def?.input?.required) {
     if (def.input.required[k][1]?.tooltip) {
@@ -173,7 +176,15 @@ export default {
     const canvasStore = useCanvasStore()
     watch(() => canvasStore?.canvas?.current_node, updateNode)
     updateNode()
-    return { hasAnyDoc, inputs, outputs, def, docElement, title, rawDoc }
+    return {
+      hasAnyDoc,
+      inputs,
+      outputs,
+      docElement,
+      title,
+      rawDoc,
+      description
+    }
   }
 }
 </script>
