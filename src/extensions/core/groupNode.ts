@@ -1450,22 +1450,27 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
-function convertSelectedNodesToGroupNode() {
-  if (
-    !app.canvas.selected_nodes ||
-    Object.keys(app.canvas.selected_nodes).length === 0
-  ) {
-    useToastStore().add({
-      severity: 'error',
-      summary: 'No nodes selected',
-      detail: 'Please select nodes to convert to group node',
-      life: 3000
-    })
-    return
+/**
+ * Convert selected nodes to a group node
+ * @throws {Error} if no nodes are selected
+ * @throws {Error} if a group node is already selected
+ * @throws {Error} if a group node is selected
+ *
+ * The context menu item should not be available if any of the above conditions are met.
+ * The error is automatically handled by the commandStore when the command is executed.
+ */
+async function convertSelectedNodesToGroupNode() {
+  const nodes = Object.values(app.canvas.selected_nodes ?? {})
+  if (nodes.length === 0) {
+    throw new Error('No nodes selected')
   }
-
-  const nodes = Object.values(app.canvas.selected_nodes)
-  return GroupNodeHandler.fromNodes(nodes)
+  if (nodes.length === 1) {
+    throw new Error('Please select multiple nodes to convert to group node')
+  }
+  if (nodes.some((n) => GroupNodeHandler.isGroupNode(n))) {
+    throw new Error('Selected nodes contain a group node')
+  }
+  return await GroupNodeHandler.fromNodes(nodes)
 }
 
 function ungroupSelectedGroupNodes() {
