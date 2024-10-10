@@ -9,7 +9,12 @@
     }"
   >
     <template #item="{ item, props }">
-      <a class="p-menubar-item-link" v-bind="props.action">
+      <a
+        class="p-menubar-item-link"
+        v-bind="props.action"
+        :href="item.url"
+        target="_blank"
+      >
         <span v-if="item.icon" class="p-menubar-item-icon" :class="item.icon" />
         <span class="p-menubar-item-label">{{ item.label }}</span>
         <span
