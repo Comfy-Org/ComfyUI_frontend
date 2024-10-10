@@ -1470,7 +1470,7 @@ async function convertSelectedNodesToGroupNode() {
   if (nodes.some((n) => GroupNodeHandler.isGroupNode(n))) {
     throw new Error('Selected nodes contain a group node')
   }
-  await GroupNodeHandler.fromNodes(nodes)
+  return await GroupNodeHandler.fromNodes(nodes)
 }
 
 function ungroupSelectedGroupNodes() {
