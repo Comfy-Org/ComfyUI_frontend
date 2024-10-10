@@ -252,4 +252,6 @@ test.describe('Group Node', () => {
       })
     })
   })
+
+  test.describe('Keybindings', () => {})
 })
