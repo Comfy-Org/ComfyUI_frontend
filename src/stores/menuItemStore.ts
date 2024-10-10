@@ -103,7 +103,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     [
       {
         icon: 'pi pi-github',
-        label: 'ComfyUI issues',
+        label: 'ComfyUI Issues',
         url: 'https://github.com/comfyanonymous/ComfyUI/issues'
       },
       {
