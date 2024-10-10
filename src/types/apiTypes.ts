@@ -346,8 +346,8 @@ const zComfyOutputTypesSpec = z.array(
 )
 
 const zComfyNodeDef = z.object({
-  input: zComfyInputsSpec,
-  output: zComfyOutputTypesSpec,
+  input: zComfyInputsSpec.optional(),
+  output: zComfyOutputTypesSpec.optional(),
   output_is_list: z.array(z.boolean()),
   output_name: z.array(z.string()),
   output_tooltips: z.array(z.string()).optional(),
