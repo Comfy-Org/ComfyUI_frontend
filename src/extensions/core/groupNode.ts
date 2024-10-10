@@ -7,6 +7,7 @@ import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { useToastStore } from '@/stores/toastStore'
+import { ComfyExtension } from '@/types/comfy'
 
 type GroupNodeWorkflowData = {
   external: ComfyLink[]
@@ -52,7 +53,7 @@ class GroupNodeBuilder {
   nodes: LGraphNode[]
   nodeData: any
 
-  constructor(nodes) {
+  constructor(nodes: LGraphNode[]) {
     this.nodes = nodes
   }
 
@@ -990,13 +991,17 @@ export class GroupNodeHandler {
         {
           content: 'Convert to nodes',
           callback: () => {
-            return this.convertToNodes()
+            app.extensionManager.command.execute(
+              'Comfy.GroupNode.UngroupSelectedGroupNodes'
+            )
           }
         },
         {
           content: 'Manage Group Node',
           callback: () => {
-            new ManageGroupDialog(app).show(this.type)
+            app.extensionManager.command.execute(
+              'Comfy.GroupNode.ManageGroupNodes'
+            )
           }
         }
       )
@@ -1367,11 +1372,11 @@ export class GroupNodeHandler {
     return (node.nodeData ?? node.constructor?.nodeData)?.[GROUP]
   }
 
-  static isGroupNode(node) {
+  static isGroupNode(node: LGraphNode) {
     return !!node.constructor?.nodeData?.[GROUP]
   }
 
-  static async fromNodes(nodes) {
+  static async fromNodes(nodes: LGraphNode[]) {
     // Process the nodes into the stored workflow group node data
     const builder = new GroupNodeBuilder(nodes)
     const res = builder.build()
@@ -1404,8 +1409,10 @@ function addConvertToGroupOptions() {
     options.splice(index + 1, null, {
       content: `Convert to Group Node`,
       disabled,
-      callback: async () => {
-        return await GroupNodeHandler.fromNodes(selected)
+      callback: () => {
+        app.extensionManager.command.execute(
+          'Comfy.GroupNode.ConvertSelectedNodesToGroupNode'
+        )
       }
     })
   }
@@ -1417,7 +1424,7 @@ function addConvertToGroupOptions() {
       content: `Manage Group Nodes`,
       disabled,
       callback: () => {
-        new ManageGroupDialog(app).show()
+        app.extensionManager.command.execute('Comfy.GroupNode.ManageGroupNodes')
       }
     })
   }
@@ -1457,8 +1464,73 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
 
 const id = 'Comfy.GroupNode'
 let globalDefs
-const ext = {
+const ext: ComfyExtension = {
   name: id,
+  commands: [
+    {
+      id: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
+      label: 'Convert selected nodes to group node',
+      icon: 'pi pi-sitemap',
+      versionAdded: '1.3.17',
+      function: async () => {
+        if (
+          !app.canvas.selected_nodes ||
+          Object.keys(app.canvas.selected_nodes).length === 0
+        ) {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'No nodes selected',
+            detail: 'Please select nodes to convert to group node',
+            life: 3000
+          })
+          return
+        }
+
+        const nodes = Object.values(app.canvas.selected_nodes)
+        await GroupNodeHandler.fromNodes(nodes)
+      }
+    },
+    {
+      id: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
+      label: 'Ungroup selected group nodes',
+      icon: 'pi pi-sitemap',
+      versionAdded: '1.3.17',
+      function: async () => {
+        const nodes = Object.values(app.canvas.selected_nodes ?? {})
+        for (const node of nodes) {
+          if (GroupNodeHandler.isGroupNode(node)) {
+            node['convertToNodes']?.()
+          }
+        }
+      }
+    },
+    {
+      id: 'Comfy.GroupNode.ManageGroupNodes',
+      label: 'Manage group nodes',
+      icon: 'pi pi-cog',
+      versionAdded: '1.3.17',
+      function: () => {
+        new ManageGroupDialog(app).show()
+      }
+    }
+  ],
+  keybindings: [
+    {
+      commandId: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
+      combo: {
+        alt: true,
+        key: 'g'
+      }
+    },
+    {
+      commandId: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
+      combo: {
+        alt: true,
+        shift: true,
+        key: 'G'
+      }
+    }
+  ],
   setup() {
     addConvertToGroupOptions()
   },
