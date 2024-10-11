@@ -20,7 +20,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="node-lib-search-box mx-4 mt-4"
+        class="node-lib-search-box p-4 bg-[var(--p-tree-background)]"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"
@@ -30,7 +30,7 @@
         :filters
       />
 
-      <Popover ref="searchFilter" class="node-lib-filter-popup">
+      <Popover ref="searchFilter" class="ml-[-13px]">
         <NodeSearchFilter @addFilter="onAddFilter" />
       </Popover>
     </template>
@@ -39,9 +39,13 @@
         ref="nodeBookmarkTreeExplorerRef"
         :filtered-node-defs="filteredNodeDefs"
       />
-      <Divider v-if="nodeBookmarkStore.bookmarks.length > 0" type="dashed" />
+      <Divider
+        v-show="nodeBookmarkStore.bookmarks.length > 0"
+        type="dashed"
+        class="p-2 m-0 bg-[var(--p-tree-background)]"
+      />
       <TreeExplorer
-        class="node-lib-tree-explorer mt-1"
+        class="node-lib-tree-explorer py-0"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
       >
@@ -186,23 +190,3 @@ const onRemoveFilter = (filterAndValue) => {
   handleSearch(searchQuery.value)
 }
 </script>
-
-<style>
-.node-lib-filter-popup {
-  margin-left: -13px;
-}
-</style>
-
-<style scoped>
-:deep(.comfy-vue-side-bar-body) {
-  background: var(--p-tree-background);
-}
-
-:deep(.node-lib-bookmark-tree-explorer) {
-  padding-bottom: 2px;
-}
-
-:deep(.p-divider) {
-  margin: var(--comfy-tree-explorer-item-padding) 0px;
-}
-</style>
