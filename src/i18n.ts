@@ -325,7 +325,7 @@ const messages = {
     },
     graphCanvasMenu: {
       zoomIn: 'Увеличить',
-      zoomOut: 'Уменьщить',
+      zoomOut: 'Уменьшить',
       resetView: 'Сбросить вид',
       selectMode: 'Выбрать режим',
       panMode: 'Режим панорамирования',
