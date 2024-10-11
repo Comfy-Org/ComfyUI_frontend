@@ -49,36 +49,40 @@
       </template>
     </template>
     <template #body>
-      <div
-        v-if="visibleTasks.length > 0"
-        ref="scrollContainer"
-        class="scroll-container"
-      >
-        <div class="queue-grid">
-          <TaskItem
-            v-for="task in visibleTasks"
-            :key="task.key"
-            :task="task"
-            :isFlatTask="isExpanded || isInFolderView"
-            @contextmenu="handleContextMenu"
-            @preview="handlePreview"
-            @taskOutputLengthClicked="enterFolderView($event)"
+      <div v-if="queueStore.isLoading">
+        <ProgressSpinner class="w-[50px] left-1/2 -translate-x-1/2" />
+      </div>
+
+      <DataView v-else :value="visibleTasks" layout="grid">
+        <template #empty>
+          <NoResultsPlaceholder
+            icon="pi pi-info-circle"
+            :title="$t('noTasksFound')"
+            :message="$t('noTasksFoundMessage')"
           />
-        </div>
-        <div ref="loadMoreTrigger" style="height: 1px" />
-      </div>
-      <div v-else-if="queueStore.isLoading">
-        <ProgressSpinner
-          style="width: 50px; left: 50%; transform: translateX(-50%)"
-        />
-      </div>
-      <div v-else>
-        <NoResultsPlaceholder
-          icon="pi pi-info-circle"
-          :title="$t('noTasksFound')"
-          :message="$t('noTasksFoundMessage')"
-        />
-      </div>
+        </template>
+        <template #grid="{ items }">
+          <div
+            ref="scrollContainer"
+            class="h-full overflow-y-auto scrollbar-none"
+          >
+            <div
+              class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] p-2 gap-2"
+            >
+              <TaskItem
+                v-for="task in items"
+                :key="task.key"
+                :task="task"
+                :isFlatTask="isExpanded || isInFolderView"
+                @contextmenu="handleContextMenu"
+                @preview="handlePreview"
+                @taskOutputLengthClicked="enterFolderView($event)"
+              />
+            </div>
+            <div ref="loadMoreTrigger" style="height: 1px" />
+          </div>
+        </template>
+      </DataView>
     </template>
   </SidebarTabTemplate>
   <ConfirmPopup />
@@ -95,6 +99,7 @@ import { useInfiniteScroll, useResizeObserver } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
+import DataView from 'primevue/dataview'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
@@ -321,25 +326,3 @@ watch(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.scroll-container {
-  height: 100%;
-  overflow-y: auto;
-}
-
-.scroll-container::-webkit-scrollbar {
-  width: 1px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-  background-color: transparent;
-}
-
-.queue-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  padding: 0.5rem;
-  gap: 0.5rem;
-}
-</style>
