@@ -8,7 +8,7 @@ import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge";
 import { LiteGraph } from "./litegraph";
-import { isInsideRectangle } from "./LiteGraphGlobal";
+import { isInsideRectangle } from "./measure";
 import { LLink } from "./LLink";
 
 export type NodeId = number | string
@@ -145,7 +145,7 @@ export class LGraphNode {
     _shape?: RenderShape
     subgraph?: LGraph
     skip_subgraph_button?: boolean
-    mouseOver?: IMouseOverData
+    mouseOver?: boolean
     is_selected?: boolean
     redraw_on_mouse?: boolean
     // Appears unused
@@ -228,6 +228,7 @@ export class LGraphNode {
     onMouseMove?(this: LGraphNode, e: MouseEvent, pos: Point, arg2: LGraphCanvas): void
     onPropertyChange?(this: LGraphNode): void
     updateOutputData?(this: LGraphNode, origin_slot: number): void
+    isValidWidgetLink?(slot_index: number, node: LGraphNode, overWidget: IWidget): boolean | undefined
 
     constructor(title: string) {
         this._ctor(title);
@@ -2705,7 +2706,7 @@ export class LGraphNode {
          * Forces the node to do not move or realign on Z or resize
          * @method pin
          **/
-    pin(v) {
+    pin(v?) {
         this.graph._version++;
         if (v === undefined) {
             this.flags.pinned = !this.flags.pinned;

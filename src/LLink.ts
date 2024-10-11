@@ -22,6 +22,7 @@ export class LLink {
     _data?: unknown
     _pos: Float32Array
     _last_time?: number
+    path?: Path2D
 
     #color?: CanvasColour
     /** Custom colour for this link only */

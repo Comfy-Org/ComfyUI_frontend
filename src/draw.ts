@@ -1,24 +1,27 @@
 import type { Vector2 } from "./litegraph";
 import type { INodeSlot } from "./interfaces"
+import { LinkDirection, RenderShape } from "./types/globalEnums"
 
 export enum SlotType {
   Array = "array",
   Event = -1,
 }
 
+/** @see RenderShape */
 export enum SlotShape {
-  Box = 1,
-  Arrow = 5,
-  Grid = 6,
-  Circle = 3,
-  HollowCircle = 7,
+  Box = RenderShape.BOX,
+  Arrow = RenderShape.ARROW,
+  Grid = RenderShape.GRID,
+  Circle = RenderShape.CIRCLE,
+  HollowCircle = RenderShape.HollowCircle,
 }
 
+/** @see LinkDirection */
 export enum SlotDirection {
-  Up = 1,
-  Right = 2,
-  Down = 3,
-  Left = 4,
+  Up = LinkDirection.UP,
+  Right = LinkDirection.RIGHT,
+  Down = LinkDirection.DOWN,
+  Left = LinkDirection.LEFT,
 }
 
 export enum LabelPosition {
@@ -28,7 +31,7 @@ export enum LabelPosition {
 
 export function drawSlot(
   ctx: CanvasRenderingContext2D,
-  slot: INodeSlot,
+  slot: Partial<INodeSlot>,
   pos: Vector2,
   {
     label_color = "#AAA",
@@ -117,13 +120,13 @@ export function drawSlot(
       ctx.fillStyle = label_color;
 
       if (label_position === LabelPosition.Right) {
-        if (horizontal || slot.dir == SlotDirection.Up) {
+        if (horizontal || slot.dir == LinkDirection.UP) {
           ctx.fillText(text, pos[0], pos[1] - 10);
         } else {
           ctx.fillText(text, pos[0] + 10, pos[1] + 5);
         }
       } else {
-        if (horizontal || slot.dir == SlotDirection.Down) {
+        if (horizontal || slot.dir == LinkDirection.DOWN) {
           ctx.fillText(text, pos[0], pos[1] - 8);
         } else {
           ctx.fillText(text, pos[0] - 10, pos[1] + 5);

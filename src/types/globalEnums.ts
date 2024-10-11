@@ -13,6 +13,7 @@ export enum RenderShape {
     ARROW = 5,
     /** intended for slot arrays */
     GRID = 6,
+    HollowCircle = 7,
 }
 
 /** The direction that a link point will flow towards - e.g. horizontal outputs are right by default */

@@ -2,7 +2,6 @@ import type { ContextMenu } from "./ContextMenu"
 import type { LGraphNode } from "./LGraphNode"
 import type { LinkDirection, RenderShape } from "./types/globalEnums"
 import type { LinkId } from "./LLink"
-import type { SlotDirection } from "./draw"
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -67,7 +66,7 @@ export type ISlotType = number | string
 export interface INodeSlot {
     name: string
     type: ISlotType
-    dir?: LinkDirection & SlotDirection
+    dir?: LinkDirection
     removable?: boolean
     shape?: RenderShape
     not_subgraph_input?: boolean
@@ -126,6 +125,7 @@ export interface IContextMenuOptions {
 
 export interface IContextMenuValue {
     title?: string
+    value?: string
     content: string
     has_submenu?: boolean
     disabled?: boolean

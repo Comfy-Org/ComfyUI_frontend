@@ -3,7 +3,7 @@ import type { Point, Size } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import { LiteGraph } from "./litegraph";
 import { LGraphCanvas } from "./LGraphCanvas";
-import { overlapBounding } from "./LiteGraphGlobal";
+import { overlapBounding } from "./measure";
 import { LGraphNode } from "./LGraphNode";
 
 export interface IGraphGroup {
