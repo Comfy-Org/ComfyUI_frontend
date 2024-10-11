@@ -21,7 +21,6 @@ describe("LegacyLGraph Compatibility Layer", () => {
   });
 
   test("LegacyLGraph is correctly assigned to LiteGraph", () => {
-    // @ts-expect-error Fixed later in the TS conversion process.
     expect(LiteGraph.LGraph).toBe(LGraph);
   });
 });
