@@ -25,7 +25,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="workflows-search-box mx-4 my-4"
+        class="workflows-search-box p-4 bg-[var(--p-tree-background)]"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"

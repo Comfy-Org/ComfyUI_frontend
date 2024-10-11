@@ -2,14 +2,14 @@
   <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
     <template #header>
       <SearchBox
-        class="model-lib-search-box mx-4 mt-4"
+        class="model-lib-search-box p-4 bg-[var(--p-tree-background)]"
         v-model:modelValue="searchQuery"
         :placeholder="$t('searchModels') + '...'"
       />
     </template>
     <template #body>
       <TreeExplorer
-        class="model-lib-tree-explorer mt-1"
+        class="model-lib-tree-explorer py-0"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
         @nodeClick="handleNodeClick"
@@ -209,15 +209,9 @@ watch(
 )
 </script>
 
-<style>
-.pi-fake-spacer {
+<style scoped>
+:deep(.pi-fake-spacer) {
   height: 1px;
   width: 16px;
-}
-</style>
-
-<style scoped>
-:deep(.comfy-vue-side-bar-body) {
-  background: var(--p-tree-background);
 }
 </style>
