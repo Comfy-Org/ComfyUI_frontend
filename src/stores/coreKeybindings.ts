@@ -160,5 +160,20 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
     targetSelector: '#graph-canvas'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true
+    },
+    commandId: 'Comfy.Undo'
+  },
+  {
+    combo: {
+      key: 'Z',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Comfy.Redo'
   }
 ]

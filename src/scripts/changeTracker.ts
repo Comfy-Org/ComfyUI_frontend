@@ -89,18 +89,6 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e) {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'y' || e.key == 'Z') {
-        await this.redo()
-        return true
-      } else if (e.key === 'z') {
-        await this.undo()
-        return true
-      }
-    }
-  }
-
   beforeChange() {
     this.changeCount++
   }
@@ -157,9 +145,6 @@ export class ChangeTracker {
             e.key === 'Alt' ||
             e.key === 'Meta'
           if (keyIgnored) return
-
-          // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker().undoRedo(e)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(app, bindInputEl)) return
