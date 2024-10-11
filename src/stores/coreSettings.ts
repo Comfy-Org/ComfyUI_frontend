@@ -263,7 +263,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',
-    options: ['en', 'zh'],
+    options: ['en', 'zh', 'ru'],
     defaultValue: navigator.language.split('-')[0] || 'en'
   },
   {
