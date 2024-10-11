@@ -1,5 +1,8 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.nodeLibrary')"
+    class="bg-[var(--p-tree-background)]"
+  >
     <template #tool-buttons>
       <Button
         class="new-folder-button"
@@ -20,7 +23,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="node-lib-search-box p-4 bg-[var(--p-tree-background)]"
+        class="node-lib-search-box p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"
@@ -42,7 +45,7 @@
       <Divider
         v-show="nodeBookmarkStore.bookmarks.length > 0"
         type="dashed"
-        class="p-2 m-0 bg-[var(--p-tree-background)]"
+        class="m-2"
       />
       <TreeExplorer
         class="node-lib-tree-explorer py-0"

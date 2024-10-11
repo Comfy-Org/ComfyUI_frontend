@@ -1,8 +1,11 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.modelLibrary')"
+    class="bg-[var(--p-tree-background)]"
+  >
     <template #header>
       <SearchBox
-        class="model-lib-search-box p-4 bg-[var(--p-tree-background)]"
+        class="model-lib-search-box p-4"
         v-model:modelValue="searchQuery"
         :placeholder="$t('searchModels') + '...'"
       />
