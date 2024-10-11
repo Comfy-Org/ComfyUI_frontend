@@ -2,7 +2,7 @@
   <div class="comfy-vue-side-bar-container flex flex-col h-full">
     <div class="comfy-vue-side-bar-header">
       <Toolbar
-        class="flex-shrink-0 border-l-none border-r-none border-t-none border-r-0 px-2 py-1 min-h-10"
+        class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-10"
       >
         <template #start>
           <span class="text-sm">{{ props.title.toUpperCase() }}</span>
