@@ -23,13 +23,15 @@
         text
       />
     </template>
-    <template #body>
+    <template #header>
       <SearchBox
         class="workflows-search-box mx-4 my-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"
       />
+    </template>
+    <template #body>
       <div class="comfyui-workflows-panel" v-if="!isSearching">
         <div
           class="comfyui-workflows-open"
