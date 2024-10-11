@@ -166,7 +166,8 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'z',
       ctrl: true
     },
-    commandId: 'Comfy.Undo'
+    commandId: 'Comfy.Undo',
+    targetSelector: '#graph-canvas'
   },
   {
     combo: {
@@ -174,6 +175,15 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true,
       shift: true
     },
-    commandId: 'Comfy.Redo'
+    commandId: 'Comfy.Redo',
+    targetSelector: '#graph-canvas'
+  },
+  {
+    combo: {
+      key: 'y',
+      ctrl: true
+    },
+    commandId: 'Comfy.Redo',
+    targetSelector: '#graph-canvas'
   }
 ]

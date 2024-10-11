@@ -499,7 +499,7 @@ test.describe('Menu', () => {
       const workflowMenuItem =
         await comfyPage.menu.topbar.getMenuItem('Workflow')
       await workflowMenuItem.click()
-      const exportTag = comfyPage.page.locator('.keybinding-tag', {
+      const exportTag = comfyPage.page.locator('.keybinding-tag:visible', {
         hasText: 'Ctrl + s'
       })
       expect(await exportTag.count()).toBe(1)

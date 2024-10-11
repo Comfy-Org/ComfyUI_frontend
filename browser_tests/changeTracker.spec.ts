@@ -87,12 +87,12 @@ test.describe('Change Tracker', () => {
 
     await multipleChanges()
 
-    await comfyPage.ctrlZ()
+    await comfyPage.executeCommand('Comfy.Undo')
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBePinned()
     await expect(node).not.toBeCollapsed()
 
-    await comfyPage.ctrlY()
+    await comfyPage.executeCommand('Comfy.Redo')
     await expect(node).toBeBypassed()
     await expect(node).toBePinned()
     await expect(node).toBeCollapsed()
