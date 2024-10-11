@@ -328,6 +328,14 @@ watch(
   overflow-y: auto;
 }
 
+.scroll-container::-webkit-scrollbar {
+  width: 1px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background-color: transparent;
+}
+
 .queue-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
