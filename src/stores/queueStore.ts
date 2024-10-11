@@ -9,7 +9,7 @@ import type {
   TaskOutput,
   ResultItem
 } from '@/types/apiTypes'
-import type { NodeId } from '@/types/comfyWorkflow'
+import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -213,8 +213,8 @@ export class TaskItemImpl {
     return this.extraData.client_id
   }
 
-  get workflow() {
-    return this.extraPngInfo.workflow
+  get workflow(): ComfyWorkflowJSON | undefined {
+    return this.extraPngInfo?.workflow
   }
 
   get messages() {
@@ -289,6 +289,9 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
+    if (!this.workflow) {
+      return
+    }
     await app.loadGraphData(toRaw(this.workflow))
     if (this.outputs) {
       app.nodeOutputs = toRaw(this.outputs)

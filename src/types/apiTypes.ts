@@ -116,7 +116,8 @@ const zExtraPngInfo = z
   .passthrough()
 
 const zExtraData = z.object({
-  extra_pnginfo: zExtraPngInfo,
+  /** extra_pnginfo can be missing is backend execution gets a validation error. */
+  extra_pnginfo: zExtraPngInfo.optional(),
   client_id: z.string()
 })
 const zOutputsToExecute = z.array(zNodeId)
