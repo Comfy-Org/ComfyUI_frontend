@@ -1,5 +1,8 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.workflows')">
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.workflows')"
+    class="bg-[var(--p-tree-background)]"
+  >
     <template #tool-buttons>
       <Button
         class="browse-templates-button"
@@ -25,7 +28,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="workflows-search-box mx-4 my-4"
+        class="workflows-search-box p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"
@@ -216,9 +219,3 @@ const selectionKeys = computed(() => ({
   [`root/${workflowStore.activeWorkflow?.name}.json`]: true
 }))
 </script>
-
-<style scoped>
-:deep(.comfy-vue-side-bar-body) {
-  background: var(--p-tree-background);
-}
-</style>

@@ -1,5 +1,8 @@
 <template>
-  <div class="comfy-vue-side-bar-container flex flex-col h-full">
+  <div
+    class="comfy-vue-side-bar-container flex flex-col h-full"
+    :class="props.class"
+  >
     <div class="comfy-vue-side-bar-header">
       <Toolbar
         class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-10"
@@ -26,10 +29,8 @@
 import Toolbar from 'primevue/toolbar'
 import ScrollPanel from 'primevue/scrollpanel'
 
-const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  }
-})
+const props = defineProps<{
+  title: string
+  class?: string
+}>()
 </script>
