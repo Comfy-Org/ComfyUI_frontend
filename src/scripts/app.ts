@@ -38,7 +38,7 @@ import {
   SYSTEM_NODE_DEFS,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { Vector2 } from '@comfyorg/litegraph'
+import { INodeInputSlot, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import {
   showExecutionErrorDialog,
@@ -2093,6 +2093,11 @@ export class ComfyApp {
           incoming: Record<string, any>
         ) => {
           const result = { ...incoming }
+          if (current.widget === undefined && incoming.widget !== undefined) {
+            // Field must be input as only inputs can be converted
+            this.inputs.push(current as INodeInputSlot)
+            return incoming
+          }
           for (const key of ['name', 'type', 'shape']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
