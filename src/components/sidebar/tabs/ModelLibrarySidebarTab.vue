@@ -15,7 +15,6 @@
         class="model-lib-tree-explorer py-0"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
-        @nodeClick="handleNodeClick"
       >
         <template #node="{ node }">
           <ModelTreeLeaf :node="node" />
@@ -162,23 +161,14 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
               widget.value = model.file_name
             }
           }
+        } else {
+          toggleNodeOnEvent(e, node)
         }
       }
     }
   }
   return fillNodeInfo(root.value)
 })
-
-const handleNodeClick = (
-  node: RenderedTreeExplorerNode<ComfyModelDef>,
-  e: MouseEvent
-) => {
-  if (node.leaf) {
-    // TODO
-  } else {
-    toggleNodeOnEvent(e, node)
-  }
-}
 
 watch(
   toRef(expandedKeys, 'value'),
