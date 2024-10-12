@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { api } from './api'
 import type { ComfyApp } from './app'
 import { $el } from './ui'

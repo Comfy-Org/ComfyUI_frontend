@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSettingStore } from './settingStore'

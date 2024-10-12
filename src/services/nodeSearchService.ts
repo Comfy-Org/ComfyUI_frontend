@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import Fuse, { IFuseOptions, FuseSearchOptions } from 'fuse.js'
 import _ from 'lodash'

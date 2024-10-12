@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ComfyWorkflow } from '@/scripts/workflows'

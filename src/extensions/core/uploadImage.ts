@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyNodeDef } from '@/types/apiTypes'
 

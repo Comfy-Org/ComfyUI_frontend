@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'

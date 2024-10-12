@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyDialog } from '../dialog'
 import { $el } from '../../ui'
 

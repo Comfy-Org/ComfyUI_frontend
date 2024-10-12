@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { ComfyApp } from './app'
 import { api } from './api'
 import { ChangeTracker } from './changeTracker'

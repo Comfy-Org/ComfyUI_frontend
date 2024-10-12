@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { SettingParams } from '@/types/settingTypes'
 import { app } from '../../scripts/app'
 import {

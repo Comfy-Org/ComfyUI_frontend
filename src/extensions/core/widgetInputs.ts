@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'

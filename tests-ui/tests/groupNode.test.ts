@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { createPinia, setActivePinia } from 'pinia'
 import {
   start,

@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { TreeNode } from 'primevue/treenode'
 
 export function buildTree<T>(

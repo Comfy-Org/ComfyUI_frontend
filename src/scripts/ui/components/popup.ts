@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { prop } from '../../utils'
 import { $el } from '../../ui'
 import { applyClasses, ClassList } from '../utils'
