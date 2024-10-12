@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app, ANIM_PREVIEW_WIDGET } from './app'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'

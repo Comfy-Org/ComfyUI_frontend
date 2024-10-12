@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { api } from '../api'
 import { $el } from '../ui'
 import { createSpinner } from './spinner'

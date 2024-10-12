@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '../../scripts/app'
 
 // Allows you to edit the attention weight by holding ctrl (or cmd) and using the up/down arrow keys

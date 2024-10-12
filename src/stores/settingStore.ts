@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 /**
  * TODO: Migrate scripts/ui/settings.ts here
  *

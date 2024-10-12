@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 module.exports = async function () {
   global.ResizeObserver = class ResizeObserver {
     observe() {}

@@ -1,3 +1,5 @@
+// @ts-strict-ignore
+// @ts-strict: true
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'

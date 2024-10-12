@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 /*
   Original implementation:
     https://github.com/TahaSh/drag-to-reorder

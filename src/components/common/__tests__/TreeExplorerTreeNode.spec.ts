@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'

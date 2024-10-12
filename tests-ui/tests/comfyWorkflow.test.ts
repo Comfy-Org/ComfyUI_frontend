@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { validateComfyWorkflow } from '../../src/types/comfyWorkflow'
 import { defaultGraph } from '../../src/scripts/defaultGraph'
 import fs from 'fs'

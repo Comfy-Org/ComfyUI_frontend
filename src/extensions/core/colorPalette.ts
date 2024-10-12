@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { useToastStore } from '@/stores/toastStore'
 import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'

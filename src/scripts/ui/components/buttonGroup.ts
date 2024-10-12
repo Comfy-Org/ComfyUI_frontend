@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { $el } from '../../ui'
 import { ComfyButton } from './button'
 import { prop } from '../../utils'

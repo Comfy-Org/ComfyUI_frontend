@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 export type ClassList = string | string[] | Record<string, boolean>
 
 export function applyClasses(

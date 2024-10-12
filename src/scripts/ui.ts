@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { api } from './api'
 import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { toggleSwitch } from './ui/toggleSwitch'

@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyLogging } from './logging'
 import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
 import { ComfyUI, $el } from './ui'

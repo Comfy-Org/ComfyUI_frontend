@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
   DownloadModelStatus,

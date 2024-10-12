@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { APIConfig, mockApi, mockSettingStore, mockNodeDefStore } from './setup'
 import { Ez, EzGraph, EzNameSpace } from './ezgraph'
 import lg from './litegraph'

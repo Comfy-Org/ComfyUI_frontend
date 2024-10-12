@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { LiteGraph } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 

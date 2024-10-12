@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type {
