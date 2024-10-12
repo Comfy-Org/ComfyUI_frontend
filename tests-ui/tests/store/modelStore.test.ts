@@ -46,12 +46,15 @@ describe('useModelStore', () => {
     enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
     expect(folderStore).not.toBeNull()
-    expect(Object.keys(folderStore.models)).toHaveLength(3)
+    if (!folderStore) return
+    expect(Object.keys(folderStore.models).length).toBe(3)
   })
 
   it('should load model metadata', async () => {
     enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
+    expect(folderStore).not.toBeNull()
+    if (!folderStore) return
     const model = folderStore.models['sdxl.safetensors']
     await model.load()
     expect(model.title).toBe('Title of sdxl.safetensors')
@@ -67,6 +70,8 @@ describe('useModelStore', () => {
   it('should handle no metadata', async () => {
     enableMocks()
     const folderStore = await store.getModelsInFolderCached('checkpoints')
+    expect(folderStore).not.toBeNull()
+    if (!folderStore) return
     const model = folderStore.models['noinfo.safetensors']
     await model.load()
     expect(model.file_name).toBe('noinfo.safetensors')

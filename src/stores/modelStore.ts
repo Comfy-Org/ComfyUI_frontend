@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
 
@@ -54,7 +53,8 @@ export class ComfyModelDef {
 
   constructor(name: string, directory: string) {
     this.file_name = name
-    this.simplified_file_name = name.replaceAll('\\', '/').split('/').pop()
+    this.simplified_file_name =
+      name.replaceAll('\\', '/').split('/').pop() ?? ''
     if (this.simplified_file_name.endsWith('.safetensors')) {
       this.simplified_file_name = this.simplified_file_name.slice(
         0,
@@ -156,12 +156,12 @@ const folderBlacklist = ['configs', 'custom_nodes']
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelStoreMap: {} as Record<string, ModelStore>,
-    isLoading: {} as Record<string, Promise<ModelStore>>,
+    modelStoreMap: {} as Record<string, ModelStore | null>,
+    isLoading: {} as Record<string, Promise<ModelStore | null> | null>,
     modelFolders: [] as string[]
   }),
   actions: {
-    async getModelsInFolderCached(folder: string): Promise<ModelStore> {
+    async getModelsInFolderCached(folder: string): Promise<ModelStore | null> {
       if (folder in this.modelStoreMap) {
         return this.modelStoreMap[folder]
       }
@@ -174,7 +174,7 @@ export const useModelStore = defineStore('modelStore', {
         }
         const store = new ModelStore(folder, models)
         this.modelStoreMap[folder] = store
-        this.isLoading[folder] = false
+        this.isLoading[folder] = null
         return store
       })
       this.isLoading[folder] = promise
