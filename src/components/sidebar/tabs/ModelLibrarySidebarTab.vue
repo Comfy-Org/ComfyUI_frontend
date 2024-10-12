@@ -68,7 +68,8 @@ const root: ComputedRef<TreeNode> = computed(() => {
       if (Object.values(models.models).length) {
         modelList.push(...Object.values(models.models))
       } else {
-        const fakeModel = new ComfyModelDef('(No Content)', folder)
+        // ModelDef with key 'folder/a/b/c/' is treated as empty folder
+        const fakeModel = new ComfyModelDef('', folder)
         fakeModel.is_fake_object = true
         modelList.push(fakeModel)
       }
@@ -100,18 +101,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
     if (model?.is_fake_object) {
-      if (model.file_name === '(No Content)') {
-        return {
-          key: node.key,
-          label: t('noContent'),
-          leaf: true,
-          data: node.data,
-          getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
-            return 'pi pi-file'
-          },
-          children: []
-        }
-      } else {
+      if (model.file_name === 'Loading') {
         return {
           key: node.key,
           label: t('loading') + '...',
@@ -149,9 +139,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         if (node.children?.length === 1) {
           const onlyChild = node.children[0]
           if (onlyChild.data?.is_fake_object) {
-            if (onlyChild.data.file_name === '(No Content)') {
-              return '0'
-            } else if (onlyChild.data.file_name === 'Loading') {
+            if (onlyChild.data.file_name === 'Loading') {
               return ''
             }
           }

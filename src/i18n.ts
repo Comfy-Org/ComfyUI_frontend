@@ -49,7 +49,6 @@ const messages = {
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
-    noContent: '(No Content)',
     noTasksFound: 'No Tasks Found',
     noTasksFoundMessage: 'There are no tasks in the queue.',
     newFolder: 'New Folder',
