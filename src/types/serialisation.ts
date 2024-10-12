@@ -5,6 +5,7 @@ import type { LGraphNode, NodeId } from "@/LGraphNode"
 import type { LiteGraph } from "@/litegraph"
 import type { LinkId, LLink } from "@/LLink"
 import type { TWidgetValue } from "@/types/widgets"
+import { RenderShape } from "./globalEnums"
 
 /** Serialised LGraphNode */
 export interface ISerialisedNode {
@@ -19,7 +20,7 @@ export interface ISerialisedNode {
     outputs?: INodeOutputSlot[]
     inputs?: INodeInputSlot[]
     properties?: Dictionary<unknown>
-    shape?: Rect
+    shape?: RenderShape
     boxcolor?: CanvasColour
     color?: CanvasColour
     bgcolor?: string

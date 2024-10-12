@@ -99,6 +99,13 @@ export interface LiteGraphCanvasGroupEvent extends CustomEvent<{
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
+    title?: string
+    type?: string
+    size?: Size
+    min_height?: number
+    slot_start_y?: number
+    widgets_info?: any
+    collapsable?: boolean
     nodeData: any
     new(): T
 }

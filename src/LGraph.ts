@@ -94,6 +94,7 @@ export class LGraph {
     onSerialize?(data: ISerialisedGraph): void
     onConfigure?(data: ISerialisedGraph): void
     onGetNodeMenuOptions?(options: IContextMenuValue[], node: LGraphNode): void
+    onNodeConnectionChange?(nodeSlotType: ISlotType, targetNode: LGraphNode, slotIndex: number, sourceNode?: LGraphNode, sourceSlotIndex?: number): void
 
     private _input_nodes?: LGraphNode[]
 
