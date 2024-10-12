@@ -106,12 +106,16 @@ export interface ConnectingLink extends IInputOrOutput {
     direction?: LinkDirection
 }
 
-/** ContextMenu */
-export interface IContextMenuOptions {
-    ignore_item_callbacks?: boolean
+interface IContextMenuBase {
     title?: string
-    parentMenu?: ContextMenu
     className?: string
+    callback?(value?: unknown, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu, node?: LGraphNode): void
+}
+
+/** ContextMenu */
+export interface IContextMenuOptions extends IContextMenuBase {
+    ignore_item_callbacks?: boolean
+    parentMenu?: ContextMenu
     event?: MouseEvent
     extra?: unknown
     scroll_speed?: number
@@ -120,19 +124,19 @@ export interface IContextMenuOptions {
     scale?: string
     node?: LGraphNode
     autoopen?: boolean
-    callback?(value?: unknown, options?: unknown, event?: MouseEvent, previous_menu?: ContextMenu, node?: LGraphNode): void
 }
 
-export interface IContextMenuValue {
-    title?: string
+export interface IContextMenuValue extends IContextMenuBase {
     value?: string
     content: string
     has_submenu?: boolean
     disabled?: boolean
-    className?: any
-    submenu?: unknown
+    submenu?: IContextMenuSubmenu
     property?: string
     type?: string
     slot?: IFoundSlot
-    callback?: IContextMenuOptions["callback"]
+}
+
+export interface IContextMenuSubmenu extends IContextMenuOptions {
+    options: ConstructorParameters<typeof ContextMenu>[0]
 }
