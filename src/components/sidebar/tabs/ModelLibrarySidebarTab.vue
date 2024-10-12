@@ -85,12 +85,9 @@ const root: ComputedRef<TreeNode> = computed(() => {
       return model.searchable.includes(search)
     })
   }
-  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
-    return [
-      model.directory,
-      ...model.file_name.replaceAll('\\', '/').split('/')
-    ]
-  })
+  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) =>
+    model.key.split('/')
+  )
   return tree
 })
 
