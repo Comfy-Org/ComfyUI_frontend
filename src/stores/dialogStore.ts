@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 // We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
 // Currently we need to bridge between legacy app code and Vue app with a Pinia store.
 
@@ -41,7 +40,7 @@ export const useDialogStore = defineStore('dialog', {
     }) {
       this.isVisible = true
       nextTick(() => {
-        this.title = options.title
+        this.title = options.title ?? ''
         this.headerComponent = options.headerComponent
           ? markRaw(options.headerComponent)
           : null
