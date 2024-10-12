@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { memoize } from 'lodash'
 
 type RGB = { r: number; g: number; b: number }
@@ -35,6 +34,8 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
       case b:
         h = (r - g) / d + 4
         break
+      default:
+        throw new Error('NOT_REACHED')
     }
     h /= 6
   }
