@@ -26,10 +26,10 @@ export class ComfyModelDef {
   readonly directory: string
   /** Simplified copy of name, used as a default title. Excludes the directory and the '.safetensors' file extension */
   readonly simplified_file_name: string
-  /** Title / display name of the model, sometimes same as the name but not always */
-  readonly title: string
   /** Key for the model, used to uniquely identify the model. */
   readonly key: string
+  /** Title / display name of the model, sometimes same as the name but not always */
+  title: string
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
   architecture_id: string = ''
   /** Metadata: author of the model */
