@@ -146,7 +146,7 @@ const messages = {
     delete: '删除',
     rename: '重命名',
     customize: '定制',
-    experimental: '测试',
+    experimental: 'BETA',
     deprecated: '弃用',
     loadWorkflow: '加载工作流',
     goToNode: '前往节点',
