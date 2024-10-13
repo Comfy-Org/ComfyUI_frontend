@@ -120,6 +120,7 @@ export class ComfyApp {
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null
   canvasEl: HTMLCanvasElement
+  tooltipCallback?: (node: LGraphNode, name: string, value?: string) => boolean
   // x, y, scale
   zoom_drag_start: [number, number, number] | null
   lastNodeErrors: any[] | null

@@ -345,6 +345,11 @@ const zComfyComboOutput = z.array(z.any())
 const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
+const zDescriptionSpec = z.union([
+  z.string(),
+  z.tuple([z.string(), z.string()]),
+  z.tuple([z.string(), z.string(), z.record(z.string(), z.any())])
+])
 
 const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
@@ -354,7 +359,7 @@ const zComfyNodeDef = z.object({
   output_tooltips: z.array(z.string()).optional(),
   name: z.string(),
   display_name: z.string(),
-  description: z.string(),
+  description: zDescriptionSpec,
   category: z.string(),
   output_node: z.boolean(),
   python_module: z.string(),
