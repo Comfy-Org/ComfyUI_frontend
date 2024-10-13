@@ -21,8 +21,8 @@
         <slot name="after-label" :node="props.node"></slot>
       </span>
       <Badge
-        v-if="!props.node.leaf"
-        :value="props.node.badgeText ?? props.node.totalLeaves"
+        v-if="showNodeBadgeText"
+        :value="nodeBadgeText"
         severity="secondary"
         class="leaf-count-badge"
       />
@@ -34,12 +34,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, inject, Ref, computed } from 'vue'
+import { ref, inject, Ref, computed } from 'vue'
 import Badge from 'primevue/badge'
-import {
-  dropTargetForElements,
-  draggable
-} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import type {
   TreeExplorerDragAndDropData,
   RenderedTreeExplorerNode,
@@ -47,6 +43,7 @@ import type {
 } from '@/types/treeExplorerTypes'
 import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/hooks/errorHooks'
+import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode
@@ -61,6 +58,17 @@ const emit = defineEmits<{
   (e: 'dragStart', node: RenderedTreeExplorerNode): void
   (e: 'dragEnd', node: RenderedTreeExplorerNode): void
 }>()
+
+const nodeBadgeText = computed<string>(() => {
+  if (props.node.leaf) {
+    return ''
+  }
+  if (props.node.badgeText !== undefined && props.node.badgeText !== null) {
+    return props.node.badgeText
+  }
+  return props.node.totalLeaves.toString()
+})
+const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 
 const labelEditable = computed<boolean>(() => !!props.node.handleRename)
 const renameEditingNode =
@@ -78,54 +86,44 @@ const handleRename = errorHandling.wrapWithErrorHandlingAsync(
 )
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)
-const treeNodeElement = ref<HTMLElement | null>(null)
-let dropTargetCleanup = () => {}
-let draggableCleanup = () => {}
-onMounted(() => {
-  treeNodeElement.value = container.value?.closest(
-    '.p-tree-node-content'
-  ) as HTMLElement
-  if (props.node.droppable) {
-    dropTargetCleanup = dropTargetForElements({
-      element: treeNodeElement.value,
-      onDrop: async (event) => {
-        const dndData = event.source.data as TreeExplorerDragAndDropData
-        if (dndData.type === 'tree-explorer-node') {
-          await props.node.handleDrop?.(props.node, dndData)
-          canDrop.value = false
-          emit('itemDropped', props.node, dndData.data)
-        }
-      },
-      onDragEnter: (event) => {
-        const dndData = event.source.data as TreeExplorerDragAndDropData
-        if (dndData.type === 'tree-explorer-node') {
-          canDrop.value = true
-        }
-      },
-      onDragLeave: () => {
-        canDrop.value = false
-      }
-    })
-  }
 
-  if (props.node.draggable) {
-    draggableCleanup = draggable({
-      element: treeNodeElement.value,
-      getInitialData() {
-        return {
-          type: 'tree-explorer-node',
-          data: props.node
-        }
-      },
-      onDragStart: () => emit('dragStart', props.node),
-      onDrop: () => emit('dragEnd', props.node)
-    })
-  }
-})
-onUnmounted(() => {
-  dropTargetCleanup()
-  draggableCleanup()
-})
+const treeNodeElementGetter = () =>
+  container.value?.closest('.p-tree-node-content') as HTMLElement
+
+if (props.node.draggable) {
+  usePragmaticDraggable(treeNodeElementGetter, {
+    getInitialData: () => {
+      return {
+        type: 'tree-explorer-node',
+        data: props.node
+      }
+    },
+    onDragStart: () => emit('dragStart', props.node),
+    onDrop: () => emit('dragEnd', props.node)
+  })
+}
+
+if (props.node.droppable) {
+  usePragmaticDroppable(treeNodeElementGetter, {
+    onDrop: async (event) => {
+      const dndData = event.source.data as TreeExplorerDragAndDropData
+      if (dndData.type === 'tree-explorer-node') {
+        await props.node.handleDrop?.(props.node, dndData)
+        canDrop.value = false
+        emit('itemDropped', props.node, dndData.data)
+      }
+    },
+    onDragEnter: (event) => {
+      const dndData = event.source.data as TreeExplorerDragAndDropData
+      if (dndData.type === 'tree-explorer-node') {
+        canDrop.value = true
+      }
+    },
+    onDragLeave: () => {
+      canDrop.value = false
+    }
+  })
+}
 </script>
 
 <style scoped>

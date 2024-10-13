@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { api } from './api'
 import './domWidget'
 import type { ComfyApp } from './app'

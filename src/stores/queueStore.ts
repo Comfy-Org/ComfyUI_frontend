@@ -1,5 +1,6 @@
+// @ts-strict-ignore
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 import type {
   TaskItem,
   TaskType,
@@ -9,8 +10,7 @@ import type {
   TaskOutput,
   ResultItem
 } from '@/types/apiTypes'
-import type { NodeId } from '@/types/comfyWorkflow'
-import { plainToClass } from 'class-transformer'
+import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
@@ -35,17 +35,92 @@ export class ResultItemImpl {
   // 'audio' | 'images' | ...
   mediaType: string
 
+  // VHS output specific fields
+  format?: string
+  frame_rate?: number
+
+  constructor(obj: Record<string, any>) {
+    this.filename = obj.filename
+    this.subfolder = obj.subfolder
+    this.type = obj.type
+
+    this.nodeId = obj.nodeId
+    this.mediaType = obj.mediaType
+
+    this.format = obj.format
+    this.frame_rate = obj.frame_rate
+  }
+
+  private get urlParams(): URLSearchParams {
+    const params = new URLSearchParams()
+    params.set('filename', this.filename)
+    params.set('type', this.type)
+    params.set('subfolder', this.subfolder || '')
+
+    if (this.format) {
+      params.set('format', this.format)
+    }
+    if (this.frame_rate) {
+      params.set('frame_rate', this.frame_rate.toString())
+    }
+    return params
+  }
+
+  /**
+   * VHS advanced preview URL. `/viewvideo` endpoint is provided by VHS node.
+   *
+   * `/viewvideo` always returns a webm file.
+   */
+  get vhsAdvancedPreviewUrl(): string {
+    return api.apiURL('/viewvideo?' + this.urlParams)
+  }
+
   get url(): string {
-    return api.apiURL(`/view?filename=${encodeURIComponent(this.filename)}&type=${this.type}&
-					subfolder=${encodeURIComponent(this.subfolder || '')}`)
+    return api.apiURL('/view?' + this.urlParams)
   }
 
   get urlWithTimestamp(): string {
     return `${this.url}&t=${+new Date()}`
   }
 
+  get isVhsFormat(): boolean {
+    return !!this.format && !!this.frame_rate
+  }
+
+  get htmlVideoType(): string | undefined {
+    const defaultType = undefined
+
+    if (!this.isVhsFormat) {
+      return defaultType
+    }
+
+    if (this.format.endsWith('webm')) {
+      return 'video/webm'
+    }
+    if (this.format.endsWith('mp4')) {
+      return 'video/mp4'
+    }
+    return defaultType
+  }
+
+  get isVideo(): boolean {
+    return !this.isImage && this.format && this.format.startsWith('video/')
+  }
+
+  get isGif(): boolean {
+    return this.filename.endsWith('.gif')
+  }
+
+  get isWebp(): boolean {
+    return this.filename.endsWith('.webp')
+  }
+
+  get isImage(): boolean {
+    return this.mediaType === 'images' || this.isGif || this.isWebp
+  }
+
   get supportsPreview(): boolean {
-    return ['images', 'gifs'].includes(this.mediaType)
+    return this.isImage || this.isVideo
   }
 }
 
@@ -76,12 +151,13 @@ export class TaskItemImpl {
     }
     return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-        (items as ResultItem[]).map((item: ResultItem) =>
-          plainToClass(ResultItemImpl, {
-            ...item,
-            nodeId,
-            mediaType
-          })
+        (items as ResultItem[]).map(
+          (item: ResultItem) =>
+            new ResultItemImpl({
+              ...item,
+              nodeId,
+              mediaType
+            })
         )
       )
     )
@@ -138,8 +214,8 @@ export class TaskItemImpl {
     return this.extraData.client_id
   }
 
-  get workflow() {
-    return this.extraPngInfo.workflow
+  get workflow(): ComfyWorkflowJSON | undefined {
+    return this.extraPngInfo?.workflow
   }
 
   get messages() {
@@ -213,7 +289,10 @@ export class TaskItemImpl {
       : undefined
   }
 
-  public async loadWorkflow() {
+  public async loadWorkflow(app: ComfyApp) {
+    if (!this.workflow) {
+      return
+    }
     await app.loadGraphData(toRaw(this.workflow))
     if (this.outputs) {
       app.nodeOutputs = toRaw(this.outputs)

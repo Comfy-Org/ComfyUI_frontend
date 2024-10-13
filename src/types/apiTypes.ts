@@ -116,7 +116,8 @@ const zExtraPngInfo = z
   .passthrough()
 
 const zExtraData = z.object({
-  extra_pnginfo: zExtraPngInfo,
+  /** extra_pnginfo can be missing is backend execution gets a validation error. */
+  extra_pnginfo: zExtraPngInfo.optional(),
   client_id: z.string()
 })
 const zOutputsToExecute = z.array(zNodeId)
@@ -346,10 +347,10 @@ const zComfyOutputTypesSpec = z.array(
 )
 
 const zComfyNodeDef = z.object({
-  input: zComfyInputsSpec,
-  output: zComfyOutputTypesSpec,
-  output_is_list: z.array(z.boolean()),
-  output_name: z.array(z.string()),
+  input: zComfyInputsSpec.optional(),
+  output: zComfyOutputTypesSpec.optional(),
+  output_is_list: z.array(z.boolean()).optional(),
+  output_name: z.array(z.string()).optional(),
   output_tooltips: z.array(z.string()).optional(),
   name: z.string(),
   display_name: z.string(),

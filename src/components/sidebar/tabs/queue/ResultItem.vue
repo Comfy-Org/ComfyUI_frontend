@@ -1,26 +1,24 @@
 <template>
   <div class="result-container" ref="resultContainer">
-    <template
-      v-if="result.mediaType === 'images' || result.mediaType === 'gifs'"
-    >
-      <ComfyImage
-        :src="result.url"
-        class="task-output-image"
-        :contain="imageFit === 'contain'"
-      />
-      <div class="image-preview-mask">
-        <Button
-          icon="pi pi-eye"
-          severity="secondary"
-          @click="emit('preview', result)"
-          rounded
-        />
-      </div>
-    </template>
-    <!-- TODO: handle more media types -->
+    <ComfyImage
+      v-if="result.isImage"
+      :src="result.url"
+      class="task-output-image"
+      :contain="imageFit === 'contain'"
+    />
+    <ResultVideo v-else-if="result.isVideo" :result="result" />
     <div v-else class="task-result-preview">
       <i class="pi pi-file"></i>
       <span>{{ result.mediaType }}</span>
+    </div>
+
+    <div v-if="result.supportsPreview" class="preview-mask">
+      <Button
+        icon="pi pi-eye"
+        severity="secondary"
+        @click="emit('preview', result)"
+        rounded
+      />
     </div>
   </div>
 </template>
@@ -31,6 +29,7 @@ import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
+import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{
   result: ResultItemImpl
@@ -67,7 +66,7 @@ onMounted(() => {
   align-items: center;
 }
 
-.image-preview-mask {
+.preview-mask {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -80,7 +79,7 @@ onMounted(() => {
   z-index: 1;
 }
 
-.result-container:hover .image-preview-mask {
+.result-container:hover .preview-mask {
   opacity: 1;
 }
 </style>

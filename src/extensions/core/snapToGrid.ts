@@ -1,3 +1,5 @@
+// @ts-strict-ignore
+import type { SettingParams } from '@/types/settingTypes'
 import { app } from '../../scripts/app'
 import {
   LGraphCanvas,
@@ -37,13 +39,25 @@ app.registerExtension({
         LiteGraph.CANVAS_GRID_SIZE = +value || 10
       }
     })
+    // Keep the 'pysssss.SnapToGrid' setting id so we don't need to migrate setting values.
+    // Using a new setting id can cause existing users to lose their existing settings.
+    const alwaysSnapToGrid = app.ui.settings.addSetting({
+      id: 'pysssss.SnapToGrid',
+      category: ['Comfy', 'Graph', 'AlwaysSnapToGrid'],
+      name: 'Always snap to grid',
+      type: 'boolean',
+      defaultValue: false,
+      versionAdded: '1.3.13'
+    } as SettingParams)
+
+    const shouldSnapToGrid = () => app.shiftDown || alwaysSnapToGrid.value
 
     // After moving a node, if the shift key is down align it to grid
     const onNodeMoved = app.canvas.onNodeMoved
     app.canvas.onNodeMoved = function (node) {
       const r = onNodeMoved?.apply(this, arguments)
 
-      if (app.shiftDown) {
+      if (shouldSnapToGrid()) {
         // Ensure all selected nodes are realigned
         for (const id in this.selected_nodes) {
           this.selected_nodes[id].alignToGrid()
@@ -58,7 +72,7 @@ app.registerExtension({
     app.graph.onNodeAdded = function (node) {
       const onResize = node.onResize
       node.onResize = function () {
-        if (app.shiftDown) {
+        if (shouldSnapToGrid()) {
           roundVectorToGrid(node.size)
         }
         return onResize?.apply(this, arguments)
@@ -70,7 +84,7 @@ app.registerExtension({
     const origDrawNode = LGraphCanvas.prototype.drawNode
     LGraphCanvas.prototype.drawNode = function (node, ctx) {
       if (
-        app.shiftDown &&
+        shouldSnapToGrid() &&
         this.node_dragged &&
         node.id in this.selected_nodes
       ) {
@@ -132,8 +146,8 @@ app.registerExtension({
       // to snap on a mouse-up which we can determine by checking if `app.canvas.last_mouse_dragging`
       // has been set to `false`. Essentially, this check here is the equivalent to calling an
       // `LGraphGroup.prototype.onNodeMoved` if it had existed.
-      if (app.canvas.last_mouse_dragging === false && app.shiftDown) {
-        // After moving a group (while app.shiftDown), snap all the child nodes and, finally,
+      if (app.canvas.last_mouse_dragging === false && shouldSnapToGrid()) {
+        // After moving a group (while shouldSnapToGrid()), snap all the child nodes and, finally,
         //  align the group itself.
         this.recomputeInsideNodes()
         for (const node of this.nodes) {
@@ -151,7 +165,7 @@ app.registerExtension({
      */
     const drawGroups = LGraphCanvas.prototype.drawGroups
     LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
-      if (this.selected_group && app.shiftDown) {
+      if (this.selected_group && shouldSnapToGrid()) {
         if (this.selected_group_resizing) {
           roundVectorToGrid(this.selected_group.size)
         } else if (selectedAndMovingGroup) {
@@ -176,7 +190,7 @@ app.registerExtension({
     const onGroupAdd = LGraphCanvas.onGroupAdd
     LGraphCanvas.onGroupAdd = function () {
       const v = onGroupAdd.apply(app.canvas, arguments)
-      if (app.shiftDown) {
+      if (shouldSnapToGrid()) {
         const lastGroup = app.graph.groups[app.graph.groups.length - 1]
         if (lastGroup) {
           roundVectorToGrid(lastGroup.pos)

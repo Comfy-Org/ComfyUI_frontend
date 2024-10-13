@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
@@ -17,6 +18,7 @@ import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
 import { useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import { LGraphNode } from '@comfyorg/litegraph'
 
 export interface ComfyCommand {
   id: string
@@ -74,6 +76,28 @@ export class ComfyCommandImpl implements ComfyCommand {
 
 const getTracker = () =>
   app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+
+const getSelectedNodes = (): LGraphNode[] => {
+  const selectedNodes = app.canvas.selected_nodes
+  const result: LGraphNode[] = []
+  if (selectedNodes) {
+    for (const i in selectedNodes) {
+      const node = selectedNodes[i]
+      result.push(node)
+    }
+  }
+  return result
+}
+
+const toggleSelectedNodesMode = (mode: number) => {
+  getSelectedNodes().forEach((node) => {
+    if (node.mode === mode) {
+      node.mode = 0 // always
+    } else {
+      node.mode = mode
+    }
+  })
+}
 
 export const useCommandStore = defineStore('command', () => {
   const settingStore = useSettingStore()
@@ -248,7 +272,11 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-plus',
       label: 'Zoom In',
       function: () => {
-        app.canvas.ds.changeScale(app.canvas.ds.scale + 0.1)
+        const ds = app.canvas.ds
+        ds.changeScale(ds.scale * 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -257,7 +285,11 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-minus',
       label: 'Zoom Out',
       function: () => {
-        app.canvas.ds.changeScale(app.canvas.ds.scale - 0.1)
+        const ds = app.canvas.ds
+        ds.changeScale(ds.scale / 1.1, [
+          ds.element.width / 2,
+          ds.element.height / 2
+        ])
         app.canvas.setDirty(true, true)
       }
     },
@@ -365,6 +397,67 @@ export const useCommandStore = defineStore('command', () => {
       function: () => {
         useWorkflowStore().loadPreviousOpenedWorkflow()
       }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
+      icon: 'pi pi-volume-off',
+      label: 'Mute/Unmute Selected Nodes',
+      versionAdded: '1.3.11',
+      function: () => {
+        toggleSelectedNodesMode(2) // muted
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
+      icon: 'pi pi-shield',
+      label: 'Bypass/Unbypass Selected Nodes',
+      versionAdded: '1.3.11',
+      function: () => {
+        toggleSelectedNodesMode(4) // bypassed
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+      icon: 'pi pi-pin',
+      label: 'Pin/Unpin Selected Nodes',
+      versionAdded: '1.3.11',
+      function: () => {
+        getSelectedNodes().forEach((node) => {
+          node.pin(!node.pinned)
+        })
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
+      icon: 'pi pi-minus',
+      label: 'Collapse/Expand Selected Nodes',
+      versionAdded: '1.3.11',
+      function: () => {
+        getSelectedNodes().forEach((node) => {
+          node.collapse()
+        })
+      }
+    },
+    {
+      id: 'Comfy.ToggleTheme',
+      icon: 'pi pi-moon',
+      label: 'Toggle Theme',
+      versionAdded: '1.3.12',
+      function: (() => {
+        let previousDarkTheme: string = 'dark'
+
+        // Official light theme is the only light theme supported now.
+        const isDarkMode = (themeId: string) => themeId !== 'light'
+        return () => {
+          const currentTheme = settingStore.get('Comfy.ColorPalette')
+          if (isDarkMode(currentTheme)) {
+            previousDarkTheme = currentTheme
+            settingStore.set('Comfy.ColorPalette', 'light')
+          } else {
+            settingStore.set('Comfy.ColorPalette', previousDarkTheme)
+          }
+        }
+      })()
     }
   ]
 

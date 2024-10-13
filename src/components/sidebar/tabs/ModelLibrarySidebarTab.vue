@@ -1,28 +1,26 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.modelLibrary')">
-    <template #tool-buttons> </template>
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.modelLibrary')"
+    class="bg-[var(--p-tree-background)]"
+  >
+    <template #header>
+      <SearchBox
+        class="model-lib-search-box p-4"
+        v-model:modelValue="searchQuery"
+        :placeholder="$t('searchModels') + '...'"
+      />
+    </template>
     <template #body>
-      <div class="flex flex-col h-full">
-        <div class="flex-shrink-0">
-          <SearchBox
-            class="model-lib-search-box mx-4 mt-4"
-            v-model:modelValue="searchQuery"
-            :placeholder="$t('searchModels') + '...'"
-          />
-        </div>
-        <div class="flex-grow overflow-y-auto">
-          <TreeExplorer
-            class="model-lib-tree-explorer mt-1"
-            :roots="renderedRoot.children"
-            v-model:expandedKeys="expandedKeys"
-            @nodeClick="handleNodeClick"
-          >
-            <template #node="{ node }">
-              <ModelTreeLeaf :node="node" />
-            </template>
-          </TreeExplorer>
-        </div>
-      </div>
+      <TreeExplorer
+        class="model-lib-tree-explorer py-0"
+        :roots="renderedRoot.children"
+        v-model:expandedKeys="expandedKeys"
+        @nodeClick="handleNodeClick"
+      >
+        <template #node="{ node }">
+          <ModelTreeLeaf :node="node" />
+        </template>
+      </TreeExplorer>
     </template>
   </SidebarTabTemplate>
   <div id="model-library-model-preview-container" />
@@ -70,7 +68,8 @@ const root: ComputedRef<TreeNode> = computed(() => {
       if (Object.values(models.models).length) {
         modelList.push(...Object.values(models.models))
       } else {
-        const fakeModel = new ComfyModelDef('(No Content)', folder)
+        // ModelDef with key 'folder/a/b/c/' is treated as empty folder
+        const fakeModel = new ComfyModelDef('', folder)
         fakeModel.is_fake_object = true
         modelList.push(fakeModel)
       }
@@ -83,15 +82,12 @@ const root: ComputedRef<TreeNode> = computed(() => {
   if (searchQuery.value) {
     const search = searchQuery.value.toLocaleLowerCase()
     modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.file_name.toLocaleLowerCase().includes(search)
+      return model.searchable.includes(search)
     })
   }
-  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) => {
-    return [
-      model.directory,
-      ...model.file_name.replaceAll('\\', '/').split('/')
-    ]
-  })
+  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) =>
+    model.key.split('/')
+  )
   return tree
 })
 
@@ -102,18 +98,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
     if (model?.is_fake_object) {
-      if (model.file_name === '(No Content)') {
-        return {
-          key: node.key,
-          label: t('noContent'),
-          leaf: true,
-          data: node.data,
-          getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
-            return 'pi pi-file'
-          },
-          children: []
-        }
-      } else {
+      if (model.file_name === 'Loading') {
         return {
           key: node.key,
           label: t('loading') + '...',
@@ -151,10 +136,8 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         if (node.children?.length === 1) {
           const onlyChild = node.children[0]
           if (onlyChild.data?.is_fake_object) {
-            if (onlyChild.data.file_name === '(No Content)') {
-              return '0'
-            } else if (onlyChild.data.file_name === 'Loading') {
-              return '?'
+            if (onlyChild.data.file_name === 'Loading') {
+              return ''
             }
           }
         }
@@ -214,15 +197,9 @@ watch(
 )
 </script>
 
-<style>
-.pi-fake-spacer {
+<style scoped>
+:deep(.pi-fake-spacer) {
   height: 1px;
   width: 16px;
-}
-</style>
-
-<style scoped>
-:deep(.comfy-vue-side-bar-body) {
-  background: var(--p-tree-background);
 }
 </style>

@@ -1,5 +1,8 @@
 <template>
-  <SidebarTabTemplate :title="$t('sideToolbar.nodeLibrary')">
+  <SidebarTabTemplate
+    :title="$t('sideToolbar.nodeLibrary')"
+    class="bg-[var(--p-tree-background)]"
+  >
     <template #tool-buttons>
       <Button
         class="new-folder-button"
@@ -18,44 +21,41 @@
         v-tooltip="$t('sideToolbar.nodeLibraryTab.sortOrder')"
       />
     </template>
-    <template #body>
-      <div class="flex flex-col h-full">
-        <div class="flex-shrink-0">
-          <SearchBox
-            class="node-lib-search-box mx-4 mt-4"
-            v-model:modelValue="searchQuery"
-            @search="handleSearch"
-            @show-filter="($event) => searchFilter.toggle($event)"
-            @remove-filter="onRemoveFilter"
-            :placeholder="$t('searchNodes') + '...'"
-            filter-icon="pi pi-filter"
-            :filters
-          />
+    <template #header>
+      <SearchBox
+        class="node-lib-search-box p-4"
+        v-model:modelValue="searchQuery"
+        @search="handleSearch"
+        @show-filter="($event) => searchFilter.toggle($event)"
+        @remove-filter="onRemoveFilter"
+        :placeholder="$t('searchNodes') + '...'"
+        filter-icon="pi pi-filter"
+        :filters
+      />
 
-          <Popover ref="searchFilter" class="node-lib-filter-popup">
-            <NodeSearchFilter @addFilter="onAddFilter" />
-          </Popover>
-        </div>
-        <div class="flex-grow overflow-y-auto">
-          <NodeBookmarkTreeExplorer
-            ref="nodeBookmarkTreeExplorerRef"
-            :filtered-node-defs="filteredNodeDefs"
-          />
-          <Divider
-            v-if="nodeBookmarkStore.bookmarks.length > 0"
-            type="dashed"
-          />
-          <TreeExplorer
-            class="node-lib-tree-explorer mt-1"
-            :roots="renderedRoot.children"
-            v-model:expandedKeys="expandedKeys"
-          >
-            <template #node="{ node }">
-              <NodeTreeLeaf :node="node" />
-            </template>
-          </TreeExplorer>
-        </div>
-      </div>
+      <Popover ref="searchFilter" class="ml-[-13px]">
+        <NodeSearchFilter @addFilter="onAddFilter" />
+      </Popover>
+    </template>
+    <template #body>
+      <NodeBookmarkTreeExplorer
+        ref="nodeBookmarkTreeExplorerRef"
+        :filtered-node-defs="filteredNodeDefs"
+      />
+      <Divider
+        v-show="nodeBookmarkStore.bookmarks.length > 0"
+        type="dashed"
+        class="m-2"
+      />
+      <TreeExplorer
+        class="node-lib-tree-explorer py-0"
+        :roots="renderedRoot.children"
+        v-model:expandedKeys="expandedKeys"
+      >
+        <template #node="{ node }">
+          <NodeTreeLeaf :node="node" />
+        </template>
+      </TreeExplorer>
     </template>
   </SidebarTabTemplate>
   <div id="node-library-node-preview-container" />
@@ -193,23 +193,3 @@ const onRemoveFilter = (filterAndValue) => {
   handleSearch(searchQuery.value)
 }
 </script>
-
-<style>
-.node-lib-filter-popup {
-  margin-left: -13px;
-}
-</style>
-
-<style scoped>
-:deep(.comfy-vue-side-bar-body) {
-  background: var(--p-tree-background);
-}
-
-:deep(.node-lib-bookmark-tree-explorer) {
-  padding-bottom: 2px;
-}
-
-:deep(.p-divider) {
-  margin: var(--comfy-tree-explorer-item-padding) 0px;
-}
-</style>

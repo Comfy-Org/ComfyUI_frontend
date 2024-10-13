@@ -263,7 +263,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',
-    options: ['en', 'zh'],
+    options: ['en', 'zh', 'ru'],
     defaultValue: navigator.language.split('-')[0] || 'en'
   },
   {
@@ -435,5 +435,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     experimental: true,
     versionAdded: '1.3.11'
+  },
+  {
+    id: 'Comfy.Validation.NodeDefs',
+    name: 'Validate node definitions (slow)',
+    type: 'boolean',
+    tooltip:
+      'Recommended for node developers. This will validate all node definitions on startup.',
+    defaultValue: false,
+    versionAdded: '1.3.14'
   }
 ]

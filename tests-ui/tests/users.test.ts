@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { start } from '../utils'
 import lg from '../utils/litegraph'
 

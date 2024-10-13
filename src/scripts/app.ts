@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyLogging } from './logging'
 import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
 import { ComfyUI, $el } from './ui'
@@ -38,7 +39,7 @@ import {
   SYSTEM_NODE_DEFS,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { Vector2 } from '@comfyorg/litegraph'
+import { INodeInputSlot, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import {
   showExecutionErrorDialog,
@@ -53,6 +54,9 @@ import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { shallowReactive } from 'vue'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -111,7 +115,6 @@ export class ComfyApp {
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, typeof Image>
-  shiftDown: boolean
   graph: LGraph
   enableWorkflowViewRestore: any
   canvas: LGraphCanvas
@@ -137,10 +140,18 @@ export class ComfyApp {
   menu: ComfyAppMenu
   bypassBgColor: string
 
-  // @deprecated
-  // Use useExecutionStore().executingNodeId instead
+  /**
+   * @deprecated Use useExecutionStore().executingNodeId instead
+   */
   get runningNodeId(): string | null {
     return useExecutionStore().executingNodeId
+  }
+
+  /**
+   * @deprecated Use useWorkspaceStore().shiftDown instead
+   */
+  get shiftDown(): boolean {
+    return useWorkspaceStore().shiftDown
   }
 
   constructor() {
@@ -175,12 +186,6 @@ export class ComfyApp {
      * @type {Record<string, Image>}
      */
     this.nodePreviewImages = {}
-
-    /**
-     * If the shift key on the keyboard is pressed
-     * @type {boolean}
-     */
-    this.shiftDown = false
   }
 
   get nodeOutputs() {
@@ -1278,13 +1283,10 @@ export class ComfyApp {
 
   /**
    * Handle keypress
-   *
-   * Ctrl + M mute/unmute selected nodes
    */
   #addProcessKeyHandler() {
-    const self = this
     const origProcessKey = LGraphCanvas.prototype.processKey
-    LGraphCanvas.prototype.processKey = function (e) {
+    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
       if (!this.graph) {
         return
       }
@@ -1296,54 +1298,11 @@ export class ComfyApp {
       }
 
       if (e.type == 'keydown' && !e.repeat) {
-        // Ctrl + M mute/unmute
-        if (e.key === 'm' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 2) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 2 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // Ctrl + B bypass
-        if (e.key === 'b' && (e.metaKey || e.ctrlKey)) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              if (this.selected_nodes[i].mode === 4) {
-                // never
-                this.selected_nodes[i].mode = 0 // always
-              } else {
-                this.selected_nodes[i].mode = 4 // never
-              }
-            }
-          }
-          block_default = true
-        }
-
-        // p pin/unpin
-        if (e.key === 'p') {
-          if (this.selected_nodes) {
-            for (const i in this.selected_nodes) {
-              const node = this.selected_nodes[i]
-              node.pin()
-            }
-          }
-          block_default = true
-        }
-
-        // Alt + C collapse/uncollapse
-        if (e.key === 'c' && e.altKey) {
-          if (this.selected_nodes) {
-            for (var i in this.selected_nodes) {
-              this.selected_nodes[i].collapse()
-            }
-          }
+        const keyCombo = KeyComboImpl.fromEvent(e)
+        const keybindingStore = useKeybindingStore()
+        const keybinding = keybindingStore.getKeybinding(keyCombo)
+        if (keybinding && keybinding.targetSelector === '#graph-canvas') {
+          useCommandStore().execute(keybinding.commandId)
           block_default = true
         }
 
@@ -1361,26 +1320,6 @@ export class ComfyApp {
         ) {
           // Trigger onPaste
           return true
-        }
-
-        if (e.key === '+' && e.altKey) {
-          block_default = true
-          let scale = this.ds.scale * 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
-        }
-
-        if (e.key === '-' && e.altKey) {
-          block_default = true
-          let scale = (this.ds.scale * 1) / 1.1
-          this.ds.changeScale(scale, [
-            this.ds.element.width / 2,
-            this.ds.element.height / 2
-          ])
-          this.graph.change()
         }
       }
 
@@ -1681,15 +1620,6 @@ export class ComfyApp {
     api.init()
   }
 
-  #addKeyboardHandler() {
-    window.addEventListener('keydown', (e) => {
-      this.shiftDown = e.shiftKey
-    })
-    window.addEventListener('keyup', (e) => {
-      this.shiftDown = e.shiftKey
-    })
-  }
-
   #addConfigureHandler() {
     const app = this
     const configure = LGraph.prototype.configure
@@ -1908,7 +1838,20 @@ export class ComfyApp {
 
     this.#addAfterConfigureHandler()
 
-    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    // Make LGraphCanvas shallow reactive so that any change on the root object
+    // triggers reactivity.
+    this.canvas = shallowReactive(
+      new LGraphCanvas(canvasEl, this.graph, {
+        skip_events: true,
+        skip_render: true
+      })
+    )
+    // Bind event/ start rendering later, so that event handlers get reactive canvas reference.
+    this.canvas.options.skip_events = false
+    this.canvas.options.skip_render = false
+    this.canvas.bindEvents()
+    this.canvas.startRendering()
+
     this.ctx = canvasEl.getContext('2d')
 
     LiteGraph.alt_drag_do_clone_nodes = true
@@ -1970,7 +1913,6 @@ export class ComfyApp {
     this.#addDropHandler()
     this.#addCopyHandler()
     this.#addPasteHandler()
-    this.#addKeyboardHandler()
     this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
@@ -2027,7 +1969,9 @@ export class ComfyApp {
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await api.getNodeDefs()
+    const defs = await api.getNodeDefs({
+      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
+    })
     await this.registerNodesFromDefs(defs)
     await this.#invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
@@ -2150,6 +2094,11 @@ export class ComfyApp {
           incoming: Record<string, any>
         ) => {
           const result = { ...incoming }
+          if (current.widget === undefined && incoming.widget !== undefined) {
+            // Field must be input as only inputs can be converted
+            this.inputs.push(current as INodeInputSlot)
+            return incoming
+          }
           for (const key of ['name', 'type', 'shape']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
@@ -2231,7 +2180,7 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
+  #showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({
         missingNodeTypes,
@@ -2244,7 +2193,7 @@ export class ComfyApp {
     })
   }
 
-  showMissingModelsError(missingModels, paths) {
+  #showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       showMissingModelsWarning({
         missingModels,
@@ -2483,11 +2432,11 @@ export class ComfyApp {
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
     if (missingNodeTypes.length && showMissingNodesDialog) {
-      this.showMissingNodesError(missingNodeTypes)
+      this.#showMissingNodesError(missingNodeTypes)
     }
     if (missingModels.length && showMissingModelsDialog) {
       const paths = await api.getFolderPaths()
-      this.showMissingModelsError(missingModels, paths)
+      this.#showMissingModelsError(missingModels, paths)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
     requestAnimationFrame(() => {
@@ -2874,7 +2823,7 @@ export class ComfyApp {
       (n) => !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
-      this.showMissingNodesError(
+      this.#showMissingNodesError(
         // @ts-expect-error
         missingNodeTypes.map((t) => t.class_type),
         false
@@ -2989,7 +2938,9 @@ export class ComfyApp {
       useModelStore().clearCache()
     }
 
-    const defs = await api.getNodeDefs()
+    const defs = await api.getNodeDefs({
+      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
+    })
 
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])

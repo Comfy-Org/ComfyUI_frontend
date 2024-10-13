@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { adjustColor } from '@/utils/colorUtil'
 
 interface ColorTestCase {

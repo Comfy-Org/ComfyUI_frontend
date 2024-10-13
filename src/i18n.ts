@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    videoFailedToLoad: 'Video failed to load',
     extensionName: 'Extension Name',
     reloadToApplyChanges: 'Reload to apply changes',
     insert: 'Insert',
@@ -48,7 +49,6 @@ const messages = {
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
-    noContent: '(No Content)',
     noTasksFound: 'No Tasks Found',
     noTasksFoundMessage: 'There are no tasks in the queue.',
     newFolder: 'New Folder',
@@ -85,6 +85,7 @@ const messages = {
       change: 'On Change',
       changeTooltip: 'The workflow will be queued once a change is made',
       queueWorkflow: 'Queue workflow',
+      queueWorkflowFront: 'Queue workflow (Insert at Front)',
       queue: 'Queue',
       interrupt: 'Cancel current run',
       refresh: 'Refresh node definitions',
@@ -111,6 +112,7 @@ const messages = {
     }
   },
   zh: {
+    videoFailedToLoad: '视频加载失败',
     extensionName: '扩展名称',
     reloadToApplyChanges: '重新加载以应用更改',
     insert: '插入',
@@ -144,7 +146,7 @@ const messages = {
     delete: '删除',
     rename: '重命名',
     customize: '定制',
-    experimental: '测试',
+    experimental: 'BETA',
     deprecated: '弃用',
     loadWorkflow: '加载工作流',
     goToNode: '前往节点',
@@ -192,6 +194,7 @@ const messages = {
       change: '变动',
       changeTooltip: '工作流将会在改变后执行',
       queueWorkflow: '执行工作流',
+      queueWorkflowFront: '执行工作流 (队列首)',
       queue: '队列',
       interrupt: '取消当前任务',
       refresh: '刷新节点',
@@ -215,6 +218,119 @@ const messages = {
       selectMode: '选择模式',
       panMode: '平移模式',
       toggleLinkVisibility: '切换链接可见性'
+    }
+  },
+  ru: {
+    videoFailedToLoad: 'Видео не удалось загрузить',
+    extensionName: 'Название расширения',
+    reloadToApplyChanges: 'Перезагрузите, чтобы применить изменения',
+    insert: 'Вставить',
+    systemInfo: 'Информация о системе',
+    devices: 'Устройства',
+    about: 'О',
+    add: 'Добавить',
+    confirm: 'Подтвердить',
+    reset: 'Сбросить',
+    resetKeybindingsTooltip: 'Сбросить сочетания клавиш по умолчанию',
+    customizeFolder: 'Настроить папку',
+    icon: 'Иконка',
+    color: 'Цвет',
+    bookmark: 'Закладка',
+    folder: 'Папка',
+    star: 'Звёздочка',
+    heart: 'Сердце',
+    file: 'Файл',
+    inbox: 'Входящие',
+    box: 'Ящик',
+    briefcase: 'Чемодан',
+    error: 'Ошибка',
+    loading: 'Загрузка',
+    findIssues: 'Найти Issue',
+    copyToClipboard: 'Копировать в буфер обмена',
+    openNewIssue: 'Открыть новый Issue',
+    showReport: 'Показать отчёт',
+    imageFailedToLoad: 'Изображение не удалось загрузить',
+    reconnecting: 'Переподключение',
+    reconnected: 'Переподключено',
+    delete: 'Удалить',
+    rename: 'Переименовать',
+    customize: 'Настроить',
+    experimental: 'БЕТА',
+    deprecated: 'УСТАР',
+    loadWorkflow: 'Загрузить рабочий процесс',
+    goToNode: 'Перейти к узлу',
+    settings: 'Настройки',
+    searchWorkflows: 'Поиск рабочих процессов',
+    searchSettings: 'Поиск настроек',
+    searchNodes: 'Поиск узлов',
+    searchModels: 'Поиск моделей',
+    searchKeybindings: 'Поиск сочетаний клавиш',
+    noResultsFound: 'Ничего не найдено',
+    searchFailedMessage:
+      'Не удалось найти ни одной настройки, соответствующей вашему запросу. Попробуйте скорректировать поисковый запрос.',
+    noContent: '(Нет контента)',
+    noTasksFound: 'Задачи не найдены',
+    noTasksFoundMessage: 'В очереди нет задач.',
+    newFolder: 'Новая папка',
+    sideToolbar: {
+      themeToggle: 'Переключить тему',
+      queue: 'Очередь',
+      nodeLibrary: 'Библиотека узлов',
+      workflows: 'Рабочие процессы',
+      browseTemplates: 'Просмотреть примеры шаблонов',
+      openWorkflow: 'Открыть рабочий процесс в локальной файловой системе',
+      newBlankWorkflow: 'Создайте новый пустой рабочий процесс',
+      nodeLibraryTab: {
+        sortOrder: 'Порядок сортировки'
+      },
+      modelLibrary: 'Библиотека моделей',
+      queueTab: {
+        showFlatList: 'Показать плоский список',
+        backToAllTasks: 'Вернуться ко всем задачам',
+        containImagePreview: 'Предпросмотр заливающего изображения',
+        coverImagePreview: 'Предпросмотр подходящего изображения',
+        clearPendingTasks: 'Очистить отложенные задачи'
+      }
+    },
+    menu: {
+      batchCount: 'Количество пакетов',
+      batchCountTooltip:
+        'Количество раз, когда генерация рабочего процесса должна быть помещена в очередь',
+      autoQueue: 'Автоочередь',
+      disabled: 'Отключено',
+      disabledTooltip:
+        'Рабочий процесс не будет автоматически помещён в очередь',
+      instant: 'Мгновенно',
+      instantTooltip:
+        'Рабочий процесс будет помещён в очередь сразу же после завершения генерации',
+      change: 'При изменении',
+      changeTooltip:
+        'Рабочий процесс будет поставлен в очередь после внесения изменений',
+      queueWorkflow: 'Очередь рабочего процесса',
+      queueWorkflowFront: 'Очередь рабочего процесса (Вставка спереди)',
+      queue: 'Очередь',
+      interrupt: 'Отменить текущее выполнение',
+      refresh: 'Обновить определения узлов',
+      clipspace: 'Открыть Clipspace',
+      resetView: 'Сбросить вид холста',
+      clear: 'Очистить рабочий процесс'
+    },
+    templateWorkflows: {
+      title: 'Начните работу с шаблона',
+      template: {
+        default: 'Image Generation',
+        image2image: 'Image to Image',
+        upscale: '2 Pass Upscale',
+        flux_schnell: 'Flux Schnell'
+      }
+    },
+    graphCanvasMenu: {
+      zoomIn: 'Увеличить',
+      zoomOut: 'Уменьшить',
+      resetView: 'Сбросить вид',
+      selectMode: 'Выбрать режим',
+      panMode: 'Режим панорамирования',
+      toggleLinkVisibility: 'Переключить видимость ссылок'
     }
   }
   // TODO: Add more languages

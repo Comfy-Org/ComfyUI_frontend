@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
   DownloadModelStatus,
@@ -273,9 +274,15 @@ class ComfyApi extends EventTarget {
    * Loads node object definitions for the graph
    * @returns The node definitions
    */
-  async getNodeDefs(): Promise<Record<string, ComfyNodeDef>> {
+  async getNodeDefs({ validate = false }: { validate?: boolean } = {}): Promise<
+    Record<string, ComfyNodeDef>
+  > {
     const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
     const objectInfoUnsafe = await resp.json()
+    if (!validate) {
+      return objectInfoUnsafe
+    }
+    // Validate node definitions against zod schema. (slow)
     const objectInfo: Record<string, ComfyNodeDef> = {}
     for (const key in objectInfoUnsafe) {
       const validatedDef = validateComfyNodeDef(

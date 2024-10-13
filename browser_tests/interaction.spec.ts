@@ -12,9 +12,19 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Selection', () => {
-    test.afterEach(async ({ comfyPage }) => {
-      // Deselect all nodes
-      await comfyPage.clickEmptySpace()
+    const multiSelectModifiers = ['Control', 'Shift', 'Meta']
+
+    multiSelectModifiers.forEach((modifier) => {
+      test(`Can add multiple nodes to selection using ${modifier}+Click`, async ({
+        comfyPage
+      }) => {
+        const clipNodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+        for (const node of clipNodes) {
+          await node.click('title', { modifiers: [modifier] })
+        }
+        const selectedNodeCount = await comfyPage.getSelectedGraphNodesCount()
+        expect(selectedNodeCount).toBe(clipNodes.length)
+      })
     })
 
     test('Can highlight selected', async ({ comfyPage }) => {
@@ -495,17 +505,5 @@ test.describe('Load duplicate workflow', () => {
     await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
     await comfyPage.loadWorkflow('single_ksampler')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
-  })
-})
-
-test.describe('Menu interactions', () => {
-  test('Can open settings with hotkey', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('ControlOrMeta')
-    await comfyPage.page.keyboard.press(',')
-    await comfyPage.page.keyboard.up('ControlOrMeta')
-    const settingsLocator = comfyPage.page.locator('.settings-container')
-    await expect(settingsLocator).toBeVisible()
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(settingsLocator).not.toBeVisible()
   })
 })

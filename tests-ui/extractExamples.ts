@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 /* 
     Script to generate test API json from the ComfyUI_examples repo. 
     Requires the repo to be cloned to the tests-ui directory or specified via the EXAMPLE_REPO_PATH env var.

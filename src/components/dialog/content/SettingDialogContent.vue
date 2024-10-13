@@ -1,8 +1,8 @@
 <template>
   <div class="settings-container">
-    <div class="settings-sidebar">
+    <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-64">
       <SearchBox
-        class="settings-search-box"
+        class="settings-search-box w-full mb-2"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchSettings') + '...'"
@@ -13,11 +13,11 @@
         optionLabel="label"
         scrollHeight="100%"
         :disabled="inSearch"
-        :pt="{ root: { class: 'border-none' } }"
+        class="border-none w-full"
       />
-    </div>
+    </ScrollPanel>
     <Divider layout="vertical" />
-    <div class="settings-content">
+    <ScrollPanel class="settings-content flex-grow">
       <Tabs :value="tabValue">
         <TabPanels class="settings-tab-panels">
           <TabPanel key="search-results" value="Search Results">
@@ -55,24 +55,35 @@
             <AboutPanel />
           </TabPanel>
           <TabPanel key="keybinding" value="Keybinding">
-            <KeybindingPanel />
+            <Suspense>
+              <KeybindingPanel />
+              <template #fallback>
+                <div>Loading keybinding panel...</div>
+              </template>
+            </Suspense>
           </TabPanel>
           <TabPanel key="extension" value="Extension">
-            <ExtensionPanel />
+            <Suspense>
+              <ExtensionPanel />
+              <template #fallback>
+                <div>Loading extension panel...</div>
+              </template>
+            </Suspense>
           </TabPanel>
         </TabPanels>
       </Tabs>
-    </div>
+    </ScrollPanel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
+import ScrollPanel from 'primevue/scrollpanel'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import SettingGroup from './setting/SettingGroup.vue'
@@ -80,8 +91,13 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
-import KeybindingPanel from './setting/KeybindingPanel.vue'
-import ExtensionPanel from './setting/ExtensionPanel.vue'
+
+const KeybindingPanel = defineAsyncComponent(
+  () => import('./setting/KeybindingPanel.vue')
+)
+const ExtensionPanel = defineAsyncComponent(
+  () => import('./setting/ExtensionPanel.vue')
+)
 
 interface ISettingGroup {
   label: string
@@ -193,44 +209,8 @@ const tabValue = computed(() =>
   display: flex;
   height: 70vh;
   width: 60vw;
-  max-width: 1000px;
+  max-width: 1024px;
   overflow: hidden;
-  /* Prevents container from scrolling */
-}
-
-.settings-sidebar {
-  width: 250px;
-  flex-shrink: 0;
-  /* Prevents sidebar from shrinking */
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.settings-search-box {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.settings-content {
-  flex-grow: 1;
-  overflow-y: auto;
-  /* Allows vertical scrolling */
-}
-
-/* Ensure the Listbox takes full width of the sidebar */
-.settings-sidebar :deep(.p-listbox) {
-  width: 100%;
-}
-
-/* Optional: Style scrollbars for webkit browsers */
-.settings-sidebar::-webkit-scrollbar,
-.settings-content::-webkit-scrollbar {
-  width: 1px;
-}
-
-.settings-sidebar::-webkit-scrollbar-thumb,
-.settings-content::-webkit-scrollbar-thumb {
-  background-color: transparent;
 }
 
 @media (max-width: 768px) {

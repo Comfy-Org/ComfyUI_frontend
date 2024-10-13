@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'

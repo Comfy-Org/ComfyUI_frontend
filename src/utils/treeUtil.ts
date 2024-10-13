@@ -1,9 +1,6 @@
 import type { TreeNode } from 'primevue/treenode'
 
-export function buildTree<T>(
-  items: T[],
-  key: string | ((item: T) => string[])
-): TreeNode {
+export function buildTree<T>(items: T[], key: (item: T) => string[]): TreeNode {
   const root: TreeNode = {
     key: 'root',
     label: 'root',
@@ -15,7 +12,7 @@ export function buildTree<T>(
   }
 
   for (const item of items) {
-    const keys = typeof key === 'string' ? item[key] : key(item)
+    const keys = key(item)
     let parent = root
     for (let i = 0; i < keys.length; i++) {
       const k = keys[i]
@@ -32,7 +29,7 @@ export function buildTree<T>(
           children: []
         }
         map[id] = node
-        parent.children.push(node)
+        parent.children?.push(node)
       }
       parent = map[id]
     }
@@ -62,7 +59,7 @@ export function sortedTree(node: TreeNode): TreeNode {
   if (node.children) {
     // Sort the children of the current node
     const sortedChildren = [...node.children].sort((a, b) =>
-      a.label.localeCompare(b.label)
+      (a.label ?? '').localeCompare(b.label ?? '')
     )
     // Recursively sort the children and add them to the new node
     newNode.children = []

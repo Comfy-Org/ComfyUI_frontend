@@ -12,13 +12,15 @@
     @maximize="onMaximize"
     @unmaximize="onUnmaximize"
     :pt="{ header: 'pb-0' }"
+    :aria-labelledby="headerId"
   >
     <template #header>
       <component
         v-if="dialogStore.headerComponent"
         :is="dialogStore.headerComponent"
+        :id="headerId"
       />
-      <h3 v-else>{{ dialogStore.title || ' ' }}</h3>
+      <h3 v-else :id="headerId">{{ dialogStore.title || ' ' }}</h3>
     </template>
 
     <component :is="dialogStore.component" v-bind="contentProps" />
@@ -48,4 +50,6 @@ const contentProps = computed(() => ({
   ...dialogStore.props,
   maximized: maximized.value
 }))
+
+const headerId = `dialog-${Math.random().toString(36).substr(2, 9)}`
 </script>

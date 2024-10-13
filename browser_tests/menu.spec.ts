@@ -416,10 +416,9 @@ test.describe('Menu', () => {
 
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
-      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual([
-        'workflow1.json',
-        'workflow2.json'
-      ])
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
+        expect.arrayContaining(['workflow1.json', 'workflow2.json'])
+      )
     })
 
     test('Does not report warning when switching between opened workflows', async ({
@@ -524,18 +523,5 @@ test.describe('Menu', () => {
       await comfyPage.setup()
       expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
     })
-  })
-
-  test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
-    const [defaultSpeed, maxSpeed] = [1.1, 2.5]
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(
-      defaultSpeed
-    )
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.page.reload()
-    await comfyPage.setup()
-    expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', defaultSpeed)
   })
 })

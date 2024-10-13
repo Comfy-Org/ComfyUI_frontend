@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 module.exports = async function () {
   global.ResizeObserver = class ResizeObserver {
     observe() {}
@@ -5,7 +6,6 @@ module.exports = async function () {
     disconnect() {}
   }
 
-  require('reflect-metadata')
   const { nop } = require('./utils/nopProxy')
   global.enableWebGLCanvas = nop
 
@@ -41,6 +41,15 @@ module.exports = async function () {
       useExtensionStore: () => ({
         registerExtension: jest.fn(),
         loadDisabledExtensionNames: jest.fn()
+      })
+    }
+  })
+
+  jest.mock('@/stores/workspaceStateStore', () => {
+    return {
+      useWorkspaceStore: () => ({
+        shiftDown: false,
+        spinner: false
       })
     }
   })

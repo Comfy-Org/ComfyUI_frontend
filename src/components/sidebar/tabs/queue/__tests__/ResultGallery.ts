@@ -1,3 +1,6 @@
+// @ts-strict-ignore
+// Disabled because of https://github.com/Comfy-Org/ComfyUI_frontend/issues/1184
+
 import { mount } from '@vue/test-utils'
 import { expect, describe, it } from 'vitest'
 import ResultGallery from '../ResultGallery.vue'
@@ -12,15 +15,12 @@ describe('ResultGallery', () => {
   let mockResultItem: ResultItemImpl
 
   beforeEach(() => {
-    mockResultItem = {
+    mockResultItem = new ResultItemImpl({
       filename: 'test.jpg',
       type: 'images',
-      nodeId: 'test',
-      mediaType: 'images',
-      url: 'https://picsum.photos/200/300',
-      urlWithTimestamp: 'https://picsum.photos/200/300?t=123456',
-      supportsPreview: true
-    }
+      nodeId: 1,
+      mediaType: 'images'
+    })
   })
 
   const mountResultGallery = (props: ResultGalleryProps, options = {}) => {

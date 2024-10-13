@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ComfyNodeDef, validateComfyNodeDef } from '@/types/apiTypes'
 const fs = require('fs')
 const path = require('path')

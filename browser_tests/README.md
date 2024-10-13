@@ -5,7 +5,7 @@ This document outlines the setup and usage of Playwright for testing the ComfyUI
 ## WARNING
 
 The browser tests will change the ComfyUI backend state, such as user settings and saved workflows.
-Please backup your ComfyUI data before running the tests locally.
+If `TEST_COMFYUI_DIR` in `.env` isn't set to your `(Comfy Path)/ComfyUI` directory, these changes won't be automatically restored.
 
 ## Setup
 

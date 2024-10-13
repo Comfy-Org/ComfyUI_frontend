@@ -6,7 +6,7 @@
         :key="tab.id"
         :icon="tab.icon"
         :iconBadge="tab.iconBadge"
-        :tooltip="tab.tooltip"
+        :tooltip="tab.tooltip + getTabTooltipSuffix(tab)"
         :selected="tab.id === selectedTab?.id"
         :class="tab.id + '-tab-button'"
         @click="onTabClick(tab)"
@@ -45,6 +45,7 @@ import {
   CustomSidebarTabExtension,
   SidebarTabExtension
 } from '@/types/extensionTypes'
+import { useKeybindingStore } from '@/stores/keybindingStore'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -74,6 +75,14 @@ onBeforeUnmount(() => {
     }
   })
 })
+
+const keybindingStore = useKeybindingStore()
+const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
+  const keybinding = keybindingStore.getKeybindingByCommandId(
+    `Workspace.ToggleSidebarTab.${tab.id}`
+  )
+  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+}
 </script>
 
 <style>

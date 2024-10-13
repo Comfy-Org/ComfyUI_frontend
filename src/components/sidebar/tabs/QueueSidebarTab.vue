@@ -249,7 +249,8 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('loadWorkflow'),
     icon: 'pi pi-file-export',
-    command: () => menuTargetTask.value?.loadWorkflow()
+    command: () => menuTargetTask.value?.loadWorkflow(app),
+    disabled: !menuTargetTask.value?.workflow
   },
   {
     label: t('goToNode'),
@@ -325,6 +326,14 @@ watch(
 .scroll-container {
   height: 100%;
   overflow-y: auto;
+}
+
+.scroll-container::-webkit-scrollbar {
+  width: 1px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background-color: transparent;
 }
 
 .queue-grid {

@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { ComfyApp } from '../../scripts/app'

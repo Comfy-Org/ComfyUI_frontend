@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app, type ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import type { LGraphNode } from '@comfyorg/litegraph'

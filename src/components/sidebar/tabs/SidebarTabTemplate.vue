@@ -1,66 +1,36 @@
 <template>
-  <div class="comfy-vue-side-bar-container">
-    <Toolbar class="comfy-vue-side-bar-header">
-      <template #start>
-        <span class="comfy-vue-side-bar-header-span">{{
-          props.title.toUpperCase()
-        }}</span>
-      </template>
-      <template #end>
-        <slot name="tool-buttons"></slot>
-      </template>
-    </Toolbar>
-    <div class="comfy-vue-side-bar-body">
-      <slot name="body"></slot>
+  <div
+    class="comfy-vue-side-bar-container flex flex-col h-full"
+    :class="props.class"
+  >
+    <div class="comfy-vue-side-bar-header">
+      <Toolbar
+        class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-10"
+      >
+        <template #start>
+          <span class="text-sm">{{ props.title.toUpperCase() }}</span>
+        </template>
+        <template #end>
+          <slot name="tool-buttons"></slot>
+        </template>
+      </Toolbar>
+      <slot name="header"></slot>
     </div>
+    <!-- h-0 to force scrollpanel to flex-grow -->
+    <ScrollPanel class="comfy-vue-side-bar-body flex-grow h-0">
+      <div class="h-full">
+        <slot name="body"></slot>
+      </div>
+    </ScrollPanel>
   </div>
 </template>
 
 <script setup lang="ts">
 import Toolbar from 'primevue/toolbar'
+import ScrollPanel from 'primevue/scrollpanel'
 
-const props = defineProps({
-  title: {
-    type: String,
-    required: true
-  }
-})
+const props = defineProps<{
+  title: string
+  class?: string
+}>()
 </script>
-
-<style scoped>
-.comfy-vue-side-bar-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.comfy-vue-side-bar-header {
-  flex-shrink: 0;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  border-radius: 0;
-  padding: 0.25rem 1rem;
-  min-height: 2.5rem;
-}
-
-.comfy-vue-side-bar-header-span {
-  font-size: small;
-}
-
-.comfy-vue-side-bar-body {
-  flex-grow: 1;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.comfy-vue-side-bar-body::-webkit-scrollbar {
-  width: 1px;
-}
-
-.comfy-vue-side-bar-body::-webkit-scrollbar-thumb {
-  background-color: transparent;
-}
-</style>

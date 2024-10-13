@@ -252,4 +252,20 @@ test.describe('Group Node', () => {
       })
     })
   })
+
+  test.describe('Keybindings', () => {
+    test('Convert to group node, no selection', async ({ comfyPage }) => {
+      expect(await comfyPage.getVisibleToastCount()).toBe(0)
+      await comfyPage.page.keyboard.press('Alt+g')
+      await comfyPage.page.waitForTimeout(300)
+      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+    })
+    test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
+      expect(await comfyPage.getVisibleToastCount()).toBe(0)
+      await comfyPage.clickTextEncodeNode1()
+      await comfyPage.page.keyboard.press('Alt+g')
+      await comfyPage.page.waitForTimeout(300)
+      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+    })
+  })
 })

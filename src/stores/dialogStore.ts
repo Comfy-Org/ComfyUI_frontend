@@ -40,8 +40,10 @@ export const useDialogStore = defineStore('dialog', {
     }) {
       this.isVisible = true
       nextTick(() => {
-        this.title = options.title
-        this.headerComponent = markRaw(options.headerComponent)
+        this.title = options.title ?? ''
+        this.headerComponent = options.headerComponent
+          ? markRaw(options.headerComponent)
+          : null
         this.component = markRaw(options.component)
         this.props = options.props || {}
         this.dialogComponentProps = options.dialogComponentProps || {}

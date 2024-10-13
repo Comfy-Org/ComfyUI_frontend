@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { ComfyApp } from './app'
 import { api } from './api'
 import { clone } from './utils'
@@ -131,7 +132,11 @@ export class ChangeTracker {
     let keyIgnored = false
     window.addEventListener(
       'keydown',
-      (e) => {
+      (e: KeyboardEvent) => {
+        // Do not trigger on repeat events (Holding down a key)
+        // This can happen when user is holding down "Space" to pan the canvas.
+        if (e.repeat) return
+
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
           let bindInputEl

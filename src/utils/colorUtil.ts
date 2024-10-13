@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { memoize } from 'lodash'
 
 type RGB = { r: number; g: number; b: number }

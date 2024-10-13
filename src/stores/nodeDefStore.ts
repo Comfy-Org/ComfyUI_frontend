@@ -1,10 +1,13 @@
+// @ts-strict-ignore
 import {
   NodeSearchService,
   type SearchAuxScore
 } from '@/services/nodeSearchService'
-import { ComfyNodeDef } from '@/types/apiTypes'
+import {
+  type ComfyNodeDef,
+  type ComfyInputsSpec as ComfyInputsSpecSchema
+} from '@/types/apiTypes'
 import { defineStore } from 'pinia'
-import { Type, Transform, plainToClass, Expose } from 'class-transformer'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
@@ -12,86 +15,59 @@ import { computed, ref } from 'vue'
 import axios from 'axios'
 import { type NodeSource, getNodeSource } from '@/types/nodeSource'
 
-export class BaseInputSpec<T = any> {
+export interface BaseInputSpec<T = any> {
   name: string
   type: string
   tooltip?: string
   default?: T
 
-  @Type(() => Boolean)
   forceInput?: boolean
-
-  static isInputSpec(obj: any): boolean {
-    return (
-      Array.isArray(obj) &&
-      obj.length >= 1 &&
-      (typeof obj[0] === 'string' || Array.isArray(obj[0]))
-    )
-  }
 }
 
-export class NumericInputSpec extends BaseInputSpec<number> {
-  @Type(() => Number)
+export interface NumericInputSpec extends BaseInputSpec<number> {
   min?: number
-
-  @Type(() => Number)
   max?: number
-
-  @Type(() => Number)
   step?: number
 }
 
-export class IntInputSpec extends NumericInputSpec {
-  type: 'INT' = 'INT'
+export interface IntInputSpec extends NumericInputSpec {
+  type: 'INT'
 }
 
-export class FloatInputSpec extends NumericInputSpec {
-  type: 'FLOAT' = 'FLOAT'
-
-  @Type(() => Number)
+export interface FloatInputSpec extends NumericInputSpec {
+  type: 'FLOAT'
   round?: number
 }
 
-export class BooleanInputSpec extends BaseInputSpec<boolean> {
-  type: 'BOOLEAN' = 'BOOLEAN'
-
+export interface BooleanInputSpec extends BaseInputSpec<boolean> {
+  type: 'BOOLEAN'
   labelOn?: string
   labelOff?: string
 }
 
-export class StringInputSpec extends BaseInputSpec<string> {
-  type: 'STRING' = 'STRING'
-
-  @Type(() => Boolean)
+export interface StringInputSpec extends BaseInputSpec<string> {
+  type: 'STRING'
   multiline?: boolean
-
-  @Type(() => Boolean)
   dynamicPrompts?: boolean
 }
 
-export class ComboInputSpec extends BaseInputSpec<any> {
-  type: string = 'COMBO'
-
-  @Transform(({ value }) => value[0])
+export interface ComboInputSpec extends BaseInputSpec<any> {
+  type: 'COMBO'
   comboOptions: any[]
-
-  @Type(() => Boolean)
   controlAfterGenerate?: boolean
-
-  @Type(() => Boolean)
   imageUpload?: boolean
 }
 
-export class CustomInputSpec extends BaseInputSpec {}
-
 export class ComfyInputsSpec {
-  @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
-  required: Record<string, BaseInputSpec> = {}
-
-  @Transform(({ value }) => ComfyInputsSpec.transformInputSpecRecord(value))
-  optional: Record<string, BaseInputSpec> = {}
-
+  required: Record<string, BaseInputSpec>
+  optional: Record<string, BaseInputSpec>
   hidden?: Record<string, any>
+
+  constructor(obj: ComfyInputsSpecSchema) {
+    this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required) ?? {}
+    this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional) ?? {}
+    this.hidden = obj.hidden
+  }
 
   private static transformInputSpecRecord(
     record: Record<string, any>
@@ -104,35 +80,39 @@ export class ComfyInputsSpec {
     return result
   }
 
+  private static isInputSpec(obj: any): boolean {
+    return (
+      Array.isArray(obj) &&
+      obj.length >= 1 &&
+      (typeof obj[0] === 'string' || Array.isArray(obj[0]))
+    )
+  }
+
   private static transformSingleInputSpec(
     name: string,
     value: any
   ): BaseInputSpec {
-    if (!BaseInputSpec.isInputSpec(value)) return value
+    if (!ComfyInputsSpec.isInputSpec(value)) return value
 
     const [typeRaw, _spec] = value
     const spec = _spec ?? {}
     const type = Array.isArray(typeRaw) ? 'COMBO' : value[0]
 
     switch (type) {
-      case 'INT':
-        return plainToClass(IntInputSpec, { name, type, ...spec })
-      case 'FLOAT':
-        return plainToClass(FloatInputSpec, { name, type, ...spec })
-      case 'BOOLEAN':
-        return plainToClass(BooleanInputSpec, { name, type, ...spec })
-      case 'STRING':
-        return plainToClass(StringInputSpec, { name, type, ...spec })
       case 'COMBO':
-        return plainToClass(ComboInputSpec, {
+        return {
           name,
           type,
           ...spec,
           comboOptions: typeRaw,
           default: spec.default ?? typeRaw[0]
-        })
+        } as ComboInputSpec
+      case 'INT':
+      case 'FLOAT':
+      case 'BOOLEAN':
+      case 'STRING':
       default:
-        return plainToClass(CustomInputSpec, { name, type, ...spec })
+        return { name, type, ...spec } as BaseInputSpec
     }
   }
 
@@ -165,52 +145,46 @@ export class ComfyOutputsSpec {
   }
 }
 
+/**
+ * Note: This class does not implement the ComfyNodeDef interface, as we are
+ * using a custom output spec for output definitions.
+ */
 export class ComfyNodeDefImpl {
   name: string
   display_name: string
   category: string
   python_module: string
   description: string
-
-  @Transform(({ value, obj }) => value ?? obj.category === '', {
-    toClassOnly: true
-  })
-  @Type(() => Boolean)
-  @Expose()
   deprecated: boolean
-
-  @Transform(
-    ({ value, obj }) => value ?? obj.category.startsWith('_for_testing'),
-    {
-      toClassOnly: true
-    }
-  )
-  @Type(() => Boolean)
-  @Expose()
   experimental: boolean
-
-  @Type(() => ComfyInputsSpec)
   input: ComfyInputsSpec
-
-  @Transform(({ obj }) => ComfyNodeDefImpl.transformOutputSpec(obj))
   output: ComfyOutputsSpec
-
-  @Transform(({ obj }) => getNodeSource(obj.python_module), {
-    toClassOnly: true
-  })
-  @Expose()
   nodeSource: NodeSource
+
+  constructor(obj: ComfyNodeDef) {
+    this.name = obj.name
+    this.display_name = obj.display_name
+    this.category = obj.category
+    this.python_module = obj.python_module
+    this.description = obj.description
+    this.deprecated = obj.deprecated ?? obj.category === ''
+    this.experimental =
+      obj.experimental ?? obj.category.startsWith('_for_testing')
+    this.input = new ComfyInputsSpec(obj.input ?? {})
+    this.output = ComfyNodeDefImpl.transformOutputSpec(obj)
+    this.nodeSource = getNodeSource(obj.python_module)
+  }
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name, output_tooltips } = obj
-    const result = output.map((type: string | any[], index: number) => {
+    const result = (output ?? []).map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
 
       return new ComfyOutputSpec(
         index,
-        output_name[index],
+        output_name?.[index],
         typeString,
-        output_is_list[index],
+        output_is_list?.[index],
         Array.isArray(type) ? type : undefined,
         output_tooltips?.[index]
       )
@@ -276,13 +250,17 @@ export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
 }
 
 export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
-  return plainToClass(ComfyNodeDefImpl, {
+  return new ComfyNodeDefImpl({
     name: '',
     display_name: '',
     category: folderPath.endsWith('/') ? folderPath.slice(0, -1) : folderPath,
     python_module: 'nodes',
-    description: 'Dummy Folder Node (User should never see this string)'
-  })
+    description: 'Dummy Folder Node (User should never see this string)',
+    input: {},
+    output: [],
+    output_name: [],
+    output_is_list: []
+  } as ComfyNodeDef)
 }
 
 interface State {
@@ -325,7 +303,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
       const newNodeDefsByName: { [key: string]: ComfyNodeDefImpl } = {}
       const nodeDefsByDisplayName: { [key: string]: ComfyNodeDefImpl } = {}
       for (const nodeDef of nodeDefs) {
-        const nodeDefImpl = plainToClass(ComfyNodeDefImpl, nodeDef)
+        const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
         newNodeDefsByName[nodeDef.name] = nodeDefImpl
         nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
       }
@@ -333,7 +311,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
       this.nodeDefsByDisplayName = nodeDefsByDisplayName
     },
     addNodeDef(nodeDef: ComfyNodeDef) {
-      const nodeDefImpl = plainToClass(ComfyNodeDefImpl, nodeDef)
+      const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
       this.nodeDefsByName[nodeDef.name] = nodeDefImpl
       this.nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
     },

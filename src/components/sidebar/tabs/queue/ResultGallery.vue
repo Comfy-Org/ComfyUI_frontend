@@ -25,7 +25,9 @@
         :src="item.url"
         :contain="false"
         class="galleria-image"
+        v-if="item.isImage"
       />
+      <ResultVideo v-else-if="item.isVideo" :result="item" />
     </template>
   </Galleria>
 </template>
@@ -35,6 +37,7 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import Galleria from 'primevue/galleria'
 import { ResultItemImpl } from '@/stores/queueStore'
 import ComfyImage from '@/components/common/ComfyImage.vue'
+import ResultVideo from './ResultVideo.vue'
 
 const galleryVisible = ref(false)
 

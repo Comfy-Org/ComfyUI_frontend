@@ -575,6 +575,10 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async getVisibleToastCount() {
+    return await this.page.locator('.p-toast:visible').count()
+  }
+
   async clickTextEncodeNode1() {
     await this.canvas.click({
       position: {

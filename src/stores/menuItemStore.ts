@@ -98,6 +98,27 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   registerCommands(['Edit'], ['Comfy.ClearWorkflow'])
   registerCommands(['Edit'], ['Comfy.OpenClipspace'])
 
+  registerMenuGroup(
+    ['Help'],
+    [
+      {
+        icon: 'pi pi-github',
+        label: 'ComfyUI Issues',
+        url: 'https://github.com/comfyanonymous/ComfyUI/issues'
+      },
+      {
+        icon: 'pi pi-info-circle',
+        label: 'ComfyUI Docs',
+        url: 'https://docs.comfy.org/'
+      },
+      {
+        icon: 'pi pi-discord',
+        label: 'Comfy-Org',
+        url: 'https://www.comfy.org/discord'
+      }
+    ]
+  )
+
   return {
     menuItems,
     registerMenuGroup,

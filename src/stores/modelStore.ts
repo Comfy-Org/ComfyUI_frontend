@@ -19,13 +19,17 @@ function _findInMetadata(metadata: any, ...keys: string[]): string | null {
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Proper filename of the model */
-  file_name: string = ''
+  readonly file_name: string
+  /** Normalized filename of the model, with all backslashes replaced with forward slashes */
+  readonly normalized_file_name: string
   /** Directory containing the model, eg 'checkpoints' */
-  directory: string = ''
+  readonly directory: string
   /** Simplified copy of name, used as a default title. Excludes the directory and the '.safetensors' file extension */
-  simplified_file_name: string = ''
+  readonly simplified_file_name: string
+  /** Key for the model, used to uniquely identify the model. */
+  readonly key: string
   /** Title / display name of the model, sometimes same as the name but not always */
-  title: string = ''
+  title: string
   /** Metadata: architecture ID for the model, such as 'stable-diffusion-xl-v1-base' */
   architecture_id: string = ''
   /** Metadata: author of the model */
@@ -48,10 +52,13 @@ export class ComfyModelDef {
   is_load_requested: boolean = false
   /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
   is_fake_object: boolean = false
+  /** A string full of auto-computed lowercase-only searchable text for this model */
+  searchable: string = ''
 
   constructor(name: string, directory: string) {
     this.file_name = name
-    this.simplified_file_name = name.replaceAll('\\', '/').split('/').pop()
+    this.normalized_file_name = name.replaceAll('\\', '/')
+    this.simplified_file_name = this.normalized_file_name.split('/').pop() ?? ''
     if (this.simplified_file_name.endsWith('.safetensors')) {
       this.simplified_file_name = this.simplified_file_name.slice(
         0,
@@ -60,6 +67,21 @@ export class ComfyModelDef {
     }
     this.title = this.simplified_file_name
     this.directory = directory
+    this.key = `${directory}/${this.normalized_file_name}`
+    this.updateSearchable()
+  }
+
+  updateSearchable() {
+    this.searchable = [
+      this.file_name,
+      this.title,
+      this.author,
+      this.description,
+      this.trigger_phrase,
+      this.tags.join(', ')
+    ]
+      .join('\n')
+      .toLowerCase()
   }
 
   /** Loads the model metadata from the server, filling in this object if data is available */
@@ -110,6 +132,7 @@ export class ComfyModelDef {
         _findInMetadata(metadata, 'modelspec.tags', 'tags') || ''
       this.tags = tagsCommaSeparated.split(',').map((tag) => tag.trim())
       this.has_loaded_metadata = true
+      this.updateSearchable()
     } catch (error) {
       console.error('Error loading model metadata', this.file_name, this, error)
     }
@@ -138,12 +161,12 @@ const folderBlacklist = ['configs', 'custom_nodes']
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelStoreMap: {} as Record<string, ModelStore>,
-    isLoading: {} as Record<string, Promise<ModelStore>>,
+    modelStoreMap: {} as Record<string, ModelStore | null>,
+    isLoading: {} as Record<string, Promise<ModelStore | null> | null>,
     modelFolders: [] as string[]
   }),
   actions: {
-    async getModelsInFolderCached(folder: string): Promise<ModelStore> {
+    async getModelsInFolderCached(folder: string): Promise<ModelStore | null> {
       if (folder in this.modelStoreMap) {
         return this.modelStoreMap[folder]
       }
@@ -156,7 +179,7 @@ export const useModelStore = defineStore('modelStore', {
         }
         const store = new ModelStore(folder, models)
         this.modelStoreMap[folder] = store
-        this.isLoading[folder] = false
+        this.isLoading[folder] = null
         return store
       })
       this.isLoading[folder] = promise

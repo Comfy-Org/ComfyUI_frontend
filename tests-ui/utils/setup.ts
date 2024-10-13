@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { ComfySettingsDialog } from '@/scripts/ui/settings'
 import type { ComfyApp } from '@/scripts/app'
 import '../../src/scripts/api'

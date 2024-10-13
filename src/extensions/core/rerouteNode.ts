@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { IContextMenuValue } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 import { mergeIfValid, getWidgetConfig, setWidgetConfig } from './widgetInputs'
@@ -159,7 +160,6 @@ app.registerExtension({
             for (const l of node.outputs[0].links || []) {
               const link = app.graph.links[l]
               if (link) {
-                // @ts-expect-error Fix litegraph types
                 link.color = color
 
                 if (app.configuringGraph) continue
@@ -205,7 +205,6 @@ app.registerExtension({
           if (inputNode) {
             const link = app.graph.links[inputNode.inputs[0].link]
             if (link) {
-              // @ts-expect-error Fix litegraph types
               link.color = color
             }
           }
