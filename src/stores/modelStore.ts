@@ -139,8 +139,7 @@ export class ComfyModelDef {
   }
 }
 
-/** Model store for a folder */
-export class ModelStore {
+export class ModelFolder {
   models: Record<string, ComfyModelDef> = {}
 
   constructor(directory: string, models: string[]) {
@@ -161,12 +160,12 @@ const folderBlacklist = ['configs', 'custom_nodes']
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', {
   state: () => ({
-    modelStoreMap: {} as Record<string, ModelStore | null>,
-    isLoading: {} as Record<string, Promise<ModelStore | null> | null>,
+    modelStoreMap: {} as Record<string, ModelFolder | null>,
+    isLoading: {} as Record<string, Promise<ModelFolder | null> | null>,
     modelFolders: [] as string[]
   }),
   actions: {
-    async getModelsInFolderCached(folder: string): Promise<ModelStore | null> {
+    async getModelsInFolderCached(folder: string): Promise<ModelFolder | null> {
       if (folder in this.modelStoreMap) {
         return this.modelStoreMap[folder]
       }
@@ -177,7 +176,7 @@ export const useModelStore = defineStore('modelStore', {
         if (!models) {
           return null
         }
-        const store = new ModelStore(folder, models)
+        const store = new ModelFolder(folder, models)
         this.modelStoreMap[folder] = store
         this.isLoading[folder] = null
         return store
