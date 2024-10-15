@@ -1,6 +1,6 @@
 import { LGraphNode, IWidget } from './litegraph'
 import { ComfyApp } from '../scripts/app'
-import type { ComfyNodeDef } from '@/types/apiTypes'
+import type { ComfyNodeDef, DescriptionSpec } from '@/types/apiTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
 
@@ -117,7 +117,7 @@ export interface ComfyExtension {
 export type ComfyObjectInfo = {
   name: string
   display_name?: string
-  description?: [string | string, string | string, string, Record<string, any>]
+  description?: DescriptionSpec
   category: string
   input?: {
     required?: Record<string, ComfyObjectInfoConfig>

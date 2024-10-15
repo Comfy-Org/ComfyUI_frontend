@@ -372,6 +372,7 @@ export type InputSpec = z.infer<typeof zInputSpec>
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
 export type ComfyNodeDef = z.infer<typeof zComfyNodeDef>
+export type DescriptionSpec = z.infer<typeof zDescriptionSpec>
 
 export function validateComfyNodeDef(
   data: any,

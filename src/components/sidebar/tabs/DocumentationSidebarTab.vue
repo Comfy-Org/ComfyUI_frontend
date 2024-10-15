@@ -84,7 +84,6 @@ function collapseOnClick() {
 }
 function selectHelp(name: string, value?: string) {
   if (!docElement.value) {
-    console.log("doc element doesn't exist")
     return null
   }
   if (def[2]?.select) {
