@@ -12,10 +12,10 @@ const ext = {
       typeof LiteGraph.ContextMenu
     >
     // @ts-expect-error TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
-    LiteGraph.ContextMenu = (
+    LiteGraph.ContextMenu = function (
       values: CtxMenuConstructorArgs[0],
       options: CtxMenuConstructorArgs[1]
-    ) => {
+    ) {
       const ctx = new ctxMenu(values, options)
 
       // If we are a dark menu (only used for combo boxes) then add a filter input
