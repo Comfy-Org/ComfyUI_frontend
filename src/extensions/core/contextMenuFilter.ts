@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 
@@ -9,8 +8,14 @@ const ext = {
   init() {
     const ctxMenu = LiteGraph.ContextMenu
 
+    type CtxMenuConstructorArgs = ConstructorParameters<
+      typeof LiteGraph.ContextMenu
+    >
     // @ts-expect-error TODO Very hacky way to modify Litegraph behaviour. Fix ctx later.
-    LiteGraph.ContextMenu = function (values, options) {
+    LiteGraph.ContextMenu = (
+      values: CtxMenuConstructorArgs[0],
+      options: CtxMenuConstructorArgs[1]
+    ) => {
       const ctx = new ctxMenu(values, options)
 
       // If we are a dark menu (only used for combo boxes) then add a filter input
@@ -33,10 +38,10 @@ const ext = {
           const clickedComboValue = currentNode.widgets
             ?.filter(
               (w) =>
-                w.type === 'combo' && w.options.values.length === values.length
+                w.type === 'combo' && w.options.values?.length === values.length
             )
             .find((w) =>
-              w.options.values.every((v, i) => v === values[i])
+              w.options.values?.every((v, i) => v === values[i])
             )?.value
 
           let selectedIndex = clickedComboValue
@@ -122,7 +127,7 @@ const ext = {
             // When filtering, recompute which items are visible for arrow up/down and maintain selection.
             displayedItems = items.filter((item) => {
               const isVisible =
-                !term || item.textContent.toLocaleLowerCase().includes(term)
+                !term || item.textContent?.toLocaleLowerCase().includes(term)
               item.style.display = isVisible ? 'block' : 'none'
               return isVisible
             })
