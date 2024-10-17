@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 
 // Allows you to edit the attention weight by holding ctrl (or cmd) and using the up/down arrow keys
@@ -18,14 +17,22 @@ app.registerExtension({
       defaultValue: 0.05
     })
 
-    function incrementWeight(weight, delta) {
+    function incrementWeight(weight: string, delta: number): string {
       const floatWeight = parseFloat(weight)
       if (isNaN(floatWeight)) return weight
       const newWeight = floatWeight + delta
       return String(Number(newWeight.toFixed(10)))
     }
 
-    function findNearestEnclosure(text, cursorPos) {
+    type Enclosure = {
+      start: number
+      end: number
+    }
+
+    function findNearestEnclosure(
+      text: string,
+      cursorPos: number
+    ): Enclosure | null {
       let start = cursorPos,
         end = cursorPos
       let openCount = 0,
@@ -38,7 +45,7 @@ app.registerExtension({
         if (text[start] === '(') openCount++
         if (text[start] === ')') closeCount++
       }
-      if (start < 0) return false
+      if (start < 0) return null
 
       openCount = 0
       closeCount = 0
@@ -50,12 +57,12 @@ app.registerExtension({
         if (text[end] === ')') closeCount++
         end++
       }
-      if (end === text.length) return false
+      if (end === text.length) return null
 
       return { start: start + 1, end: end }
     }
 
-    function addWeightToParentheses(text) {
+    function addWeightToParentheses(text: string): string {
       const parenRegex = /^\((.*)\)$/
       const parenMatch = text.match(parenRegex)
 
