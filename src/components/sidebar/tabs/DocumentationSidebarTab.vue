@@ -26,11 +26,17 @@
     </div>
   </div>
 </template>
-<script lang="ts">
+<script setup lang="ts">
 import { ref, watch } from 'vue'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
-var docElement = ref(null)
+import { useHoveredItemStore } from '@/stores/graphStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+const nodeDefStore = useNodeDefStore()
+const hoveredItemStore = useHoveredItemStore()
+const canvasStore = useCanvasStore()
+
+const docElement = ref(null)
 
 let def
 const rawDoc = ref(null)
@@ -39,13 +45,6 @@ const title = ref(null)
 const inputs = ref([])
 const outputs = ref([])
 
-export function selectDocItem(node, name, value) {
-  if (node != app?.canvas?.current_node || name == 'DESCRIPTION') {
-    return false
-  }
-  selectHelp(name, value)
-  return true
-}
 function setCollapse(el, doCollapse) {
   if (doCollapse) {
     el.children[0].children[0].innerHTML = '+'
@@ -83,7 +82,7 @@ function collapseOnClick() {
   setCollapse(this.parentElement, doCollapse)
 }
 function selectHelp(name: string, value?: string) {
-  if (!docElement.value) {
+  if (!docElement.value || !name) {
     return null
   }
   if (def[2]?.select) {
@@ -170,22 +169,31 @@ function updateNode(node?) {
 function hasAnyDoc() {
   return def?.description || inputs.value.length || outputs.value.length
 }
-export default {
-  setup() {
-    const canvasStore = useCanvasStore()
-    watch(() => canvasStore?.canvas?.current_node, updateNode)
-    updateNode()
-    return {
-      hasAnyDoc,
-      inputs,
-      outputs,
-      docElement,
-      title,
-      rawDoc,
-      description
-    }
+watch(hoveredItemStore, (hoveredItem) => {
+  if (!hoveredItem.value) {
+    return
   }
-}
+  const item = hoveredItem.value
+  if (item.node.id != app?.canvas?.current_node.id) {
+    return
+  }
+  const nodeDef = nodeDefStore.nodeDefsByName[item.node.type]
+  if (item.type == 'DESCRIPTION') {
+    return
+  } else if (item.type == 'Input') {
+    selectHelp(item.inputName)
+    hoveredItem.value = null
+  } else if (item.type == 'Output') {
+    selectHelp(nodeDef?.output?.all?.[item.outputSlot]?.name)
+    hoveredItem.value = null
+  } else if (item.type == 'Widget') {
+    selectHelp(item.widget.name, item.widget.value)
+    hoveredItem.value = null
+  }
+})
+
+watch(() => canvasStore?.canvas?.current_node, updateNode)
+updateNode()
 </script>
 
 <style scoped>

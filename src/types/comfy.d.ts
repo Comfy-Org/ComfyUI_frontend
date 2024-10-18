@@ -114,6 +114,12 @@ export interface ComfyExtension {
   [key: string]: any
 }
 
+export type ComfyNodeItem =
+  | { node: ComfyObjectInfo; type: 'Title' }
+  | { node: ComfyObjectInfo; type: 'Output'; outputSlot: number }
+  | { node: ComfyObjectInfo; type: 'Input'; inputName: string }
+  | { node: comfyObjectInfo; type: 'Widget'; widget: IWidget }
+
 export type ComfyObjectInfo = {
   name: string
   display_name?: string
