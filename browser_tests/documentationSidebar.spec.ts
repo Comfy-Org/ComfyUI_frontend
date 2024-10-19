@@ -54,7 +54,7 @@ test.describe('Documentation Sidebar', () => {
   test('Responds to a change in theme', async ({ comfyPage }) => {
     await comfyPage.page.locator('.documentation-tab-button').click()
     const docPane = comfyPage.page.locator('.sidebar-content-container')
-    comfyPage.menu.toggleTheme()
+    await comfyPage.menu.toggleTheme()
     await expect(docPane).toHaveScreenshot(
       'documentation-sidebar-light-theme.png'
     )
