@@ -16,7 +16,6 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useEventListener } from '@vueuse/core'
-import { useDialogStore } from './stores/dialogStore'
 import { showTemplateWorkflowsDialog } from './services/dialogService'
 
 const workspaceStore = useWorkspaceStore()
@@ -30,6 +29,7 @@ useEventListener(window, 'keyup', handleKey)
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
+  console.log('showTemplateWorkflowsDialog')
   showTemplateWorkflowsDialog()
 })
 </script>
