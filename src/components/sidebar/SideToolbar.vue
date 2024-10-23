@@ -17,7 +17,10 @@
       </div>
     </nav>
   </teleport>
-  <div v-if="selectedTab" class="sidebar-content-container">
+  <div
+    v-if="selectedTab"
+    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
+  >
     <component v-if="selectedTab.type === 'vue'" :is="selectedTab.component" />
     <div
       v-else
@@ -114,10 +117,5 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 .side-tool-bar-end {
   align-self: flex-end;
   margin-top: auto;
-}
-
-.sidebar-content-container {
-  height: 100%;
-  overflow-y: auto;
 }
 </style>
