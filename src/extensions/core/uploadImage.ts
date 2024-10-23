@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyNodeDef } from '@/types/apiTypes'
 
@@ -6,7 +5,7 @@ import { ComfyNodeDef } from '@/types/apiTypes'
 
 app.registerExtension({
   name: 'Comfy.UploadImage',
-  async beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef, app) {
+  beforeRegisterNodeDef(nodeType, nodeData: ComfyNodeDef) {
     if (nodeData?.input?.required?.image?.[1]?.image_upload === true) {
       nodeData.input.required.upload = ['IMAGEUPLOAD']
     }

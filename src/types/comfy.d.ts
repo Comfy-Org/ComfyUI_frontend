@@ -59,7 +59,7 @@ export interface ComfyExtension {
    * @param app The ComfyUI app instance
    */
   addCustomNodeDefs?(
-    defs: Record<string, ComfyObjectInfo>,
+    defs: Record<string, ComfyNodeDef>,
     app: ComfyApp
   ): Promise<void> | void
   /**
@@ -76,7 +76,7 @@ export interface ComfyExtension {
    */
   beforeRegisterNodeDef?(
     nodeType: typeof LGraphNode,
-    nodeData: ComfyObjectInfo,
+    nodeData: ComfyNodeDef,
     app: ComfyApp
   ): Promise<void> | void
 
@@ -114,6 +114,9 @@ export interface ComfyExtension {
   [key: string]: any
 }
 
+/**
+ * @deprecated Use ComfyNodeDef instead
+ */
 export type ComfyObjectInfo = {
   name: string
   display_name?: string
