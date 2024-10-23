@@ -1128,7 +1128,7 @@ export class ComfyApp {
 
       // No image found. Look for node data
       data = data.getData('text/plain')
-      let workflow: ComfyWorkflowJSON
+      let workflow: ComfyWorkflowJSON | null = null
       try {
         data = data.slice(data.indexOf('{'))
         workflow = JSON.parse(data)
@@ -1138,7 +1138,7 @@ export class ComfyApp {
           data = data.slice(data.indexOf('{'))
           workflow = JSON.parse(data)
         } catch (error) {
-          console.error(error)
+          workflow = null
         }
       }
 
