@@ -18,9 +18,7 @@
     </div>
     <!-- h-0 to force scrollpanel to flex-grow -->
     <ScrollPanel class="comfy-vue-side-bar-body flex-grow h-0">
-      <div class="h-full">
-        <slot name="body"></slot>
-      </div>
+      <slot name="body"></slot>
     </ScrollPanel>
   </div>
 </template>
