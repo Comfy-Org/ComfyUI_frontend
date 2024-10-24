@@ -47,6 +47,7 @@ export const useExtensionStore = defineStore('extension', () => {
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)
+    useSettingStore().loadExtensionSettings(extension)
 
     /*
      * Extensions are currently stored in both extensionStore and app.extensions.

@@ -4,6 +4,7 @@ import { useToastStore } from './toastStore'
 import { useQueueSettingsStore } from './queueStore'
 import { useCommandStore } from './commandStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
+import { useSettingStore } from './settingStore'
 
 interface WorkspaceState {
   spinner: boolean
@@ -30,6 +31,12 @@ export const useWorkspaceStore = defineStore('workspace', {
     },
     sidebarTab() {
       return useSidebarTabStore()
+    },
+    setting() {
+      return {
+        get: useSettingStore().get,
+        set: useSettingStore().set
+      }
     }
   },
   actions: {
