@@ -1,5 +1,8 @@
 <template>
-  <Splitter class="splitter-overlay" :pt:gutter="gutterClass">
+  <Splitter
+    class="splitter-overlay-root splitter-overlay"
+    :pt:gutter="gutterClass"
+  >
     <SplitterPanel
       class="side-bar-panel"
       :minSize="10"
@@ -9,9 +12,20 @@
     >
       <slot name="side-bar-panel"></slot>
     </SplitterPanel>
-    <SplitterPanel class="graph-canvas-panel relative" :size="100">
-      <slot name="graph-canvas-panel"></slot>
+
+    <SplitterPanel :size="100">
+      <Splitter class="splitter-overlay" layout="vertical">
+        <SplitterPanel class="graph-canvas-panel relative">
+          <slot name="graph-canvas-panel"></slot>
+        </SplitterPanel>
+        <SplitterPanel class="bottom-panel">
+          <div class="bottom-panel-content">
+            <slot name="bottom-panel"></slot>
+          </div>
+        </SplitterPanel>
+      </Splitter>
     </SplitterPanel>
+
     <SplitterPanel
       class="side-bar-panel"
       :minSize="10"
@@ -44,35 +58,36 @@ const gutterClass = computed(() => {
 })
 </script>
 
-<style>
-.p-splitter-gutter {
+<style scoped>
+:deep(.p-splitter-gutter) {
   pointer-events: auto;
 }
 
-.gutter-hidden {
+:deep(.gutter-hidden) {
   display: none !important;
 }
-</style>
 
-<style scoped>
 .side-bar-panel {
   background-color: var(--bg-color);
   pointer-events: auto;
 }
 
+.bottom-panel {
+  background-color: var(--bg-color);
+  pointer-events: auto;
+}
+
 .splitter-overlay {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  background-color: transparent;
-  pointer-events: none;
+  @apply bg-transparent pointer-events-none border-none;
+}
+
+.splitter-overlay-root {
+  @apply w-full h-full absolute top-0 left-0;
+
   /* Set it the same as the ComfyUI menu */
   /* Note: Lite-graph DOM widgets have the same z-index as the node id, so
   999 should be sufficient to make sure splitter overlays on node's DOM
   widgets */
   z-index: 999;
-  border: none;
 }
 </style>
