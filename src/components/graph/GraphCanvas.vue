@@ -4,6 +4,9 @@
       <template #side-bar-panel>
         <SideToolbar />
       </template>
+      <template #bottom-panel>
+        <BottomPanel />
+      </template>
       <template #graph-canvas-panel>
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
       </template>
@@ -19,6 +22,7 @@
 <script setup lang="ts">
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'

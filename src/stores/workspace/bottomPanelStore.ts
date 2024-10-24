@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
-  const bottomPanelVisible = ref(false)
+  const bottomPanelVisible = ref(true)
   const toggleBottomPanel = () => {
     // If there are no tabs, don't show the bottom panel
     if (bottomPanelTabs.value.length === 0) {
@@ -22,6 +22,9 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
       ) ?? null
     )
   })
+  const setActiveTab = (tabId: string) => {
+    activeBottomPanelTabId.value = tabId
+  }
   const toggleBottomPanelTab = (tabId: string) => {
     if (activeBottomPanelTabId.value === tabId) {
       bottomPanelVisible.value = false
@@ -48,6 +51,8 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     toggleBottomPanel,
     bottomPanelTabs,
     activeBottomPanelTab,
+    activeBottomPanelTabId,
+    setActiveTab,
     toggleBottomPanelTab,
     registerBottomPanelTab
   }

@@ -15,11 +15,13 @@ export interface BaseBottomPanelExtension {
 }
 
 export interface VueExtension {
+  id: string
   type: 'vue'
   component: Component
 }
 
 export interface CustomExtension {
+  id: string
   type: 'custom'
   render: (container: HTMLElement) => void
   destroy?: () => void
