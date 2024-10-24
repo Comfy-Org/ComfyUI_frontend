@@ -83,4 +83,23 @@ test.describe('Topbar commands', () => {
       true
     )
   })
+
+  test('Should allow adding settings', async ({ comfyPage }) => {
+    await comfyPage.page.evaluate(() => {
+      window['app'].registerExtension({
+        name: 'TestExtension1',
+        settings: [
+          {
+            id: 'TestSetting',
+            name: 'Test Setting',
+            type: 'text',
+            defaultValue: 'Hello, world!'
+          }
+        ]
+      })
+    })
+    expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, world!')
+    await comfyPage.setSetting('TestSetting', 'Hello, universe!')
+    expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
+  })
 })
