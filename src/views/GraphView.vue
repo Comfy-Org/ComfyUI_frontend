@@ -36,6 +36,7 @@ import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 setupAutoQueueHandler()
 
@@ -97,6 +98,7 @@ const init = () => {
   settingStore.addSettings(app.ui.settings)
   useKeybindingStore().loadCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
+  useBottomPanelStore().registerCoreBottomPanelTabs()
   app.extensionManager = useWorkspaceStore()
 }
 
