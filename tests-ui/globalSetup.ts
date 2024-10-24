@@ -54,6 +54,12 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/workspace/bottomPanelStore', () => {
+    return {
+      toggleBottomPanel: jest.fn()
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()

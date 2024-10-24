@@ -2,6 +2,7 @@ import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
+import { useIntegratedTerminalTab } from '@/hooks/bottomPanelTabs/integratedTerminalTab'
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
   const bottomPanelVisible = ref(false)
@@ -26,7 +27,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     activeBottomPanelTabId.value = tabId
   }
   const toggleBottomPanelTab = (tabId: string) => {
-    if (activeBottomPanelTabId.value === tabId) {
+    if (activeBottomPanelTabId.value === tabId && bottomPanelVisible.value) {
       bottomPanelVisible.value = false
     } else {
       activeBottomPanelTabId.value = tabId
@@ -46,6 +47,10 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     })
   }
 
+  const registerCoreBottomPanelTabs = () => {
+    registerBottomPanelTab(useIntegratedTerminalTab())
+  }
+
   return {
     bottomPanelVisible,
     toggleBottomPanel,
@@ -54,6 +59,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     activeBottomPanelTabId,
     setActiveTab,
     toggleBottomPanelTab,
-    registerBottomPanelTab
+    registerBottomPanelTab,
+    registerCoreBottomPanelTabs
   }
 })
