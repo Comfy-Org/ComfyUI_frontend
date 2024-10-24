@@ -1,13 +1,20 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { ComfyApp } from '../../scripts/app'
 
 export class ClipspaceDialog extends ComfyDialog {
-  static items = []
-  static instance = null
+  static items: Array<
+    HTMLButtonElement & {
+      contextPredicate?: () => boolean
+    }
+  > = []
+  static instance: ClipspaceDialog | null = null
 
-  static registerButton(name, contextPredicate, callback) {
+  static registerButton(
+    name: string,
+    contextPredicate: () => boolean,
+    callback: () => void
+  ) {
     const item = $el('button', {
       type: 'button',
       textContent: name,
@@ -47,7 +54,9 @@ export class ClipspaceDialog extends ComfyDialog {
 
       if (self.element) {
         // update
-        self.element.removeChild(self.element.firstChild)
+        if (self.element.firstChild) {
+          self.element.removeChild(self.element.firstChild)
+        }
         self.element.appendChild(children)
       } else {
         // new
@@ -95,7 +104,7 @@ export class ClipspaceDialog extends ComfyDialog {
   }
 
   createImgSettings() {
-    if (ComfyApp.clipspace.imgs) {
+    if (ComfyApp.clipspace?.imgs) {
       const combo_items = []
       const imgs = ComfyApp.clipspace.imgs
 
@@ -107,9 +116,13 @@ export class ClipspaceDialog extends ComfyDialog {
         'select',
         {
           id: 'clipspace_img_selector',
-          onchange: (event) => {
-            ComfyApp.clipspace['selectedIndex'] = event.target.selectedIndex
-            ClipspaceDialog.invalidatePreview()
+          onchange: (event: Event) => {
+            if (event.target && ComfyApp.clipspace) {
+              ComfyApp.clipspace['selectedIndex'] = (
+                event.target as HTMLSelectElement
+              ).selectedIndex
+              ClipspaceDialog.invalidatePreview()
+            }
           }
         },
         combo_items
@@ -124,8 +137,12 @@ export class ClipspaceDialog extends ComfyDialog {
         'select',
         {
           id: 'clipspace_img_paste_mode',
-          onchange: (event) => {
-            ComfyApp.clipspace['img_paste_mode'] = event.target.value
+          onchange: (event: Event) => {
+            if (event.target && ComfyApp.clipspace) {
+              ComfyApp.clipspace['img_paste_mode'] = (
+                event.target as HTMLSelectElement
+              ).value
+            }
           }
         },
         [
@@ -155,7 +172,7 @@ export class ClipspaceDialog extends ComfyDialog {
   }
 
   createImgPreview() {
-    if (ComfyApp.clipspace.imgs) {
+    if (ComfyApp.clipspace?.imgs) {
       return $el('img', { id: 'clipspace_preview', ondragstart: () => false })
     } else return []
   }
