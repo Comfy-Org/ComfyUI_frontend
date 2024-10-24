@@ -1,10 +1,14 @@
 <template>
-  <Terminal class="h-full w-full border-none" :welcomeMessage="log" />
+  <div class="p-terminal rounded-none h-full w-full">
+    <ScrollPanel class="h-full w-full">
+      <pre class="px-4 whitespace-pre-wrap">{{ log }}</pre>
+    </ScrollPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
+import ScrollPanel from 'primevue/scrollpanel'
 import { api } from '@/scripts/api'
-import Terminal from 'primevue/terminal'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 const log = ref<string>('')
