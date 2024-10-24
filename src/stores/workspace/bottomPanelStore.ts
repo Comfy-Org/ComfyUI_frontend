@@ -27,7 +27,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     activeBottomPanelTabId.value = tabId
   }
   const toggleBottomPanelTab = (tabId: string) => {
-    if (activeBottomPanelTabId.value === tabId) {
+    if (activeBottomPanelTabId.value === tabId && bottomPanelVisible.value) {
       bottomPanelVisible.value = false
     } else {
       activeBottomPanelTabId.value = tabId
