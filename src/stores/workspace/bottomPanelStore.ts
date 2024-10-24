@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useIntegratedTerminalTab } from '@/hooks/bottomPanelTabs/integratedTerminalTab'
+import { ComfyExtension } from '@/types/comfy'
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
   const bottomPanelVisible = ref(false)
@@ -51,6 +52,12 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     registerBottomPanelTab(useIntegratedTerminalTab())
   }
 
+  const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
+    if (extension.bottomPanelTabs) {
+      extension.bottomPanelTabs.forEach(registerBottomPanelTab)
+    }
+  }
+
   return {
     bottomPanelVisible,
     toggleBottomPanel,
@@ -60,6 +67,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     setActiveTab,
     toggleBottomPanelTab,
     registerBottomPanelTab,
-    registerCoreBottomPanelTabs
+    registerCoreBottomPanelTabs,
+    registerExtensionBottomPanelTabs
   }
 })

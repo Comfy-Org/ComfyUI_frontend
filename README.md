@@ -196,6 +196,29 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Developer APIs
 
 <details>
+  <summary>v1.3.22: Register bottom panel tabs</summary>
+
+```js
+app.registerExtension({
+  name: 'TestExtension',
+  bottomPanelTabs: [
+    {
+      id: 'TestTab',
+      title: 'Test Tab',
+      type: 'custom',
+      render: (el) => {
+        el.innerHTML = '<div>Custom tab</div>'
+      }
+    }
+  ]
+})
+```
+
+![image](https://github.com/user-attachments/assets/2114f8b8-2f55-414b-b027-78e61c870b64)
+
+</details>
+
+<details>
   <summary>v1.3.22: New settings API</summary>
 
 Legacy settings API.
