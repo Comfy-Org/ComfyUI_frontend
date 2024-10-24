@@ -26,7 +26,10 @@
     </TabList>
   </Tabs>
   <ExtensionSlot
-    v-if="bottomPanelStore.activeBottomPanelTab"
+    v-if="
+      bottomPanelStore.bottomPanelVisible &&
+      bottomPanelStore.activeBottomPanelTab
+    "
     :extension="bottomPanelStore.activeBottomPanelTab"
   />
 </template>
