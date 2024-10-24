@@ -75,6 +75,15 @@ function sanitizeNodeName(string) {
   })
 }
 
+type Clipspace = {
+  widgets?: { type?: string; name?: string; value?: any }[] | null
+  imgs?: HTMLImageElement[] | null
+  original_imgs?: HTMLImageElement[] | null
+  images?: any[] | null
+  selectedIndex: number
+  img_paste_mode: string
+}
+
 /**
  * @typedef {import("types/comfy").ComfyExtension} ComfyExtension
  */
@@ -95,8 +104,8 @@ export class ComfyApp {
    * Content Clipboard
    * @type {serialized node object}
    */
-  static clipspace = null
-  static clipspace_invalidate_handler = null
+  static clipspace: Clipspace | null = null
+  static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor = null
   static clipspace_return_node = null
 
