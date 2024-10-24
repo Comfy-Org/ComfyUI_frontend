@@ -16,6 +16,7 @@ import { buildTree } from '@/utils/treeUtil'
 import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
 import { CORE_SETTINGS } from '@/stores/coreSettings'
+import { ComfyExtension } from '@/types/comfy'
 
 export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
@@ -65,6 +66,12 @@ export const useSettingStore = defineStore('setting', {
 
       CORE_SETTINGS.forEach((setting: SettingParams) => {
         settings.addSetting(setting)
+      })
+    },
+
+    loadExtensionSettings(extension: ComfyExtension) {
+      extension.settings?.forEach((setting: SettingParams) => {
+        app.ui.settings.addSetting(setting)
       })
     },
 

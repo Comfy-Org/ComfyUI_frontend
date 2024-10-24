@@ -528,7 +528,7 @@ export class ComfyPage {
   async setSetting(settingId: string, settingValue: any) {
     return await this.page.evaluate(
       async ({ id, value }) => {
-        await window['app'].ui.settings.setSettingValueAsync(id, value)
+        await window['app'].extensionManager.setting.set(id, value)
       },
       { id: settingId, value: settingValue }
     )
@@ -536,7 +536,7 @@ export class ComfyPage {
 
   async getSetting(settingId: string) {
     return await this.page.evaluate(async (id) => {
-      return await window['app'].ui.settings.getSettingValue(id)
+      return await window['app'].extensionManager.setting.get(id)
     }, settingId)
   }
 

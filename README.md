@@ -193,7 +193,53 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
   https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
 </details>
 
-### Node developers API
+### Developer APIs
+
+<details>
+  <summary>v1.3.22: New settings API</summary>
+
+Legacy settings API.
+
+```js
+// Register a new setting
+app.ui.settings.addSetting({
+  id: 'TestSetting',
+  name: 'Test Setting',
+  type: 'text',
+  defaultValue: 'Hello, world!'
+})
+
+// Get the value of a setting
+const value = app.ui.settings.getSettingValue('TestSetting')
+
+// Set the value of a setting
+app.ui.settings.setSettingValue('TestSetting', 'Hello, universe!')
+```
+
+New settings API.
+
+```js
+// Register a new setting
+app.registerExtension({
+  name: 'TestExtension1',
+  settings: [
+    {
+      id: 'TestSetting',
+      name: 'Test Setting',
+      type: 'text',
+      defaultValue: 'Hello, world!'
+    }
+  ]
+})
+
+// Get the value of a setting
+const value = app.extensionManager.setting.get('TestSetting')
+
+// Set the value of a setting
+app.extensionManager.setting.set('TestSetting', 'Hello, universe!')
+```
+
+</details>
 
 <details>
   <summary>v1.3.7: Register commands and keybindings</summary>

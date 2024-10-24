@@ -37,9 +37,12 @@ export interface ExtensionManager {
   unregisterSidebarTab(id: string): void
   getSidebarTabs(): SidebarTabExtension[]
 
-  // Toast
   toast: ToastManager
   command: CommandManager
+  setting: {
+    get: (id: string) => any
+    set: (id: string, value: any) => void
+  }
 }
 
 export interface CommandManager {

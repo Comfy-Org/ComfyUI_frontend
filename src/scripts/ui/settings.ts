@@ -169,6 +169,23 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     this.#dispatchChange(id, value)
   }
 
+  /**
+   * Deprecated for external callers/extensions. Use `ComfyExtension.settings` field instead.
+   * Example:
+   * ```ts
+   * app.registerExtension({
+   *   name: 'My Extension',
+   *   settings: [
+   *     {
+   *       id: 'My.Setting',
+   *       name: 'My Setting',
+   *       type: 'text',
+   *       defaultValue: 'Hello, world!'
+   *     }
+   *   ]
+   * })
+   * ```
+   */
   addSetting(params: SettingParams) {
     const {
       id,
