@@ -1,5 +1,10 @@
 <template>
-  <Button severity="secondary" text @click="bottomPanelStore.toggleBottomPanel">
+  <Button
+    v-show="bottomPanelStore.bottomPanelTabs.length > 0"
+    severity="secondary"
+    text
+    @click="bottomPanelStore.toggleBottomPanel"
+  >
     <template #icon>
       <i-material-symbols:dock-to-bottom
         v-if="bottomPanelStore.bottomPanelVisible"

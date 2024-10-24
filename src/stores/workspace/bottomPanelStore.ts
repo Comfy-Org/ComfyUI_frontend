@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {
-  const bottomPanelVisible = ref(true)
+  const bottomPanelVisible = ref(false)
   const toggleBottomPanel = () => {
     // If there are no tabs, don't show the bottom panel
     if (bottomPanelTabs.value.length === 0) {

@@ -25,7 +25,10 @@
       </div>
     </TabList>
   </Tabs>
-  <ExtensionSlot :extension="bottomPanelStore.activeBottomPanelTab" />
+  <ExtensionSlot
+    v-if="bottomPanelStore.activeBottomPanelTab"
+    :extension="bottomPanelStore.activeBottomPanelTab"
+  />
 </template>
 
 <script setup lang="ts">
