@@ -4,6 +4,7 @@
     severity="secondary"
     text
     @click="bottomPanelStore.toggleBottomPanel"
+    v-tooltip="{ value: $t('menu.toggleBottomPanel'), showDelay: 300 }"
   >
     <template #icon>
       <i-material-symbols:dock-to-bottom

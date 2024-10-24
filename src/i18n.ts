@@ -91,7 +91,8 @@ const messages = {
       refresh: 'Refresh node definitions',
       clipspace: 'Open Clipspace',
       resetView: 'Reset canvas view',
-      clear: 'Clear workflow'
+      clear: 'Clear workflow',
+      toggleBottomPanel: 'Toggle Bottom Panel'
     },
     templateWorkflows: {
       title: 'Get Started with a Template',
@@ -200,7 +201,8 @@ const messages = {
       refresh: '刷新节点',
       clipspace: '打开剪贴板',
       resetView: '重置画布视图',
-      clear: '清空工作流'
+      clear: '清空工作流',
+      toggleBottomPanel: '底部面板'
     },
     templateWorkflows: {
       title: '从模板开始',
