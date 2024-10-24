@@ -1,7 +1,7 @@
 <template>
   <Splitter
     class="splitter-overlay-root splitter-overlay"
-    :pt:gutter="gutterClass"
+    :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
   >
     <SplitterPanel
       class="side-bar-panel"
@@ -14,14 +14,16 @@
     </SplitterPanel>
 
     <SplitterPanel :size="100">
-      <Splitter class="splitter-overlay" layout="vertical">
+      <Splitter
+        class="splitter-overlay"
+        layout="vertical"
+        :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
+      >
         <SplitterPanel class="graph-canvas-panel relative">
           <slot name="graph-canvas-panel"></slot>
         </SplitterPanel>
-        <SplitterPanel class="bottom-panel">
-          <div class="bottom-panel-content">
-            <slot name="bottom-panel"></slot>
-          </div>
+        <SplitterPanel class="bottom-panel" v-show="bottomPanelVisible">
+          <slot name="bottom-panel"></slot>
         </SplitterPanel>
       </Splitter>
     </SplitterPanel>
@@ -40,7 +42,8 @@
 
 <script setup lang="ts">
 import { useSettingStore } from '@/stores/settingStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
@@ -51,20 +54,16 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 )
 
 const sidebarPanelVisible = computed(
-  () => useWorkspaceStore().sidebarTab.activeSidebarTab !== null
+  () => useSidebarTabStore().activeSidebarTab !== null
 )
-const gutterClass = computed(() => {
-  return sidebarPanelVisible.value ? '' : 'gutter-hidden'
-})
+const bottomPanelVisible = computed(
+  () => useBottomPanelStore().bottomPanelVisible
+)
 </script>
 
 <style scoped>
 :deep(.p-splitter-gutter) {
   pointer-events: auto;
-}
-
-:deep(.gutter-hidden) {
-  display: none !important;
 }
 
 .side-bar-panel {
