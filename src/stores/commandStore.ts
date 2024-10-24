@@ -18,6 +18,7 @@ import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
 import { useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 
 export interface ComfyCommand {
@@ -458,6 +459,15 @@ export const useCommandStore = defineStore('command', () => {
           }
         }
       })()
+    },
+    {
+      id: 'Workspace.ToggleBottomPanel',
+      icon: 'pi pi-list',
+      label: 'Toggle Bottom Panel',
+      versionAdded: '1.3.22',
+      function: () => {
+        useBottomPanelStore().toggleBottomPanel()
+      }
     }
   ]
 
