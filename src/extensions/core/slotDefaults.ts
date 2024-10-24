@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
 import { LiteGraph } from '@comfyorg/litegraph'
@@ -31,7 +30,7 @@ app.registerExtension({
   slot_types_default_in: {},
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     var nodeId = nodeData.name
-    const inputs = nodeData['input']['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
+    const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {
       var input = inputs[inputKey]
       if (typeof input[0] !== 'string') continue
@@ -59,9 +58,9 @@ app.registerExtension({
       )
     }
 
-    var outputs = nodeData['output']
-    for (const key in outputs) {
-      var type = outputs[key] as string
+    var outputs = nodeData['output'] ?? []
+    for (const el of outputs) {
+      const type = el as string
       if (!(type in this.slot_types_default_in)) {
         this.slot_types_default_in[type] = ['Reroute'] // ["Reroute", "Primitive"];  primitive doesn't always work :'()
       }
@@ -78,10 +77,11 @@ app.registerExtension({
         LiteGraph.slot_types_out.push(type)
       }
     }
+
     var maxNum = this.suggestionsNumber.value
     this.setDefaults(maxNum)
   },
-  setDefaults(maxNum) {
+  setDefaults(maxNum?: number | null) {
     LiteGraph.slot_types_default_out = {}
     LiteGraph.slot_types_default_in = {}
 
