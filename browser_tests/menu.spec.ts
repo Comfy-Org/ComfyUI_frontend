@@ -6,14 +6,6 @@ test.describe('Menu', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    const currentThemeId = await comfyPage.menu.getThemeId()
-    if (currentThemeId !== 'dark') {
-      await comfyPage.menu.toggleTheme()
-    }
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   // Skip reason: Flaky.
   test.skip('Toggle theme', async ({ comfyPage }) => {
     test.setTimeout(30000)

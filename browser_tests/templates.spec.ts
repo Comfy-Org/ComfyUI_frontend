@@ -6,10 +6,6 @@ test.describe('Templates', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   test('Can load template workflows', async ({ comfyPage }) => {
     // This test will need expanding on once the templates are decided
 

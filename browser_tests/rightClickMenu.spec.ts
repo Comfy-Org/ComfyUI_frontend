@@ -96,11 +96,6 @@ test.describe('Node Right Click Menu', () => {
   test.describe('Widget conversion', () => {
     const convertibleWidgetTypes = ['text', 'string', 'number', 'toggle']
 
-    test.afterEach(async ({ comfyPage }) => {
-      // Restore default setting value
-      await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', true)
-    })
-
     test('Can convert widget to input', async ({ comfyPage }) => {
       await comfyPage.rightClickEmptyLatentNode()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')

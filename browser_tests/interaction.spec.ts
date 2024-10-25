@@ -493,10 +493,6 @@ test.describe('Load duplicate workflow', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   test('A workflow can be loaded multiple times in a row', async ({
     comfyPage
   }) => {

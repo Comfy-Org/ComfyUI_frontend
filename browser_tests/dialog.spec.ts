@@ -97,11 +97,6 @@ test.describe('Missing models warning', () => {
 })
 
 test.describe('Settings', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    // Restore default setting value
-    await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', 1.1)
-  })
-
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
     const searchBox = comfyPage.page.locator('.settings-content')

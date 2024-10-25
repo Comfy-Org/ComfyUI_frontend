@@ -11,10 +11,6 @@ test.describe('Actionbar', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   /**
    * This test ensures that the autoqueue change mode can only queue one change at a time
    */
