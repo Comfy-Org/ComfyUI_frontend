@@ -155,6 +155,21 @@ export class ComfyPage {
     }
   }
 
+  async setupSettings(settings: Record<string, any>) {
+    const resp = await this.request.post(
+      `${this.url}/api/devtools/set_settings`,
+      {
+        data: settings
+      }
+    )
+
+    if (resp.status() !== 200) {
+      throw new Error(
+        `Failed to setup workflows directory: ${await resp.text()}`
+      )
+    }
+  }
+
   async setup() {
     await this.goto()
     await this.page.evaluate(() => {
@@ -178,20 +193,6 @@ export class ComfyPage {
     await this.page.waitForFunction(
       () => window['app'] !== undefined && window['app'].vueAppReady
     )
-    await this.page.evaluate(() => {
-      window['app']['canvas'].show_info = false
-      window['app']['canvas'].setDirty(true, true)
-    })
-    await this.nextFrame()
-
-    // Hide all badges by default.
-    await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
-    await this.setSetting(
-      'Comfy.NodeBadge.NodeSourceBadgeMode',
-      NodeBadgeMode.None
-    )
-    // Hide canvas menu by default.
-    await this.setSetting('Comfy.Graph.CanvasMenu', false)
   }
 
   public assetPath(fileName: string) {
@@ -718,6 +719,14 @@ export class ComfyPage {
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+    await comfyPage.setupSettings({
+      // Hide canvas menu/info by default.
+      'Comfy.Graph.CanvasInfo': false,
+      'Comfy.Graph.CanvasMenu': false,
+      // Hide all badges by default.
+      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None
+    })
     await comfyPage.setup()
     await use(comfyPage)
   }
