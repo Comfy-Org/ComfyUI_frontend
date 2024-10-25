@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { memoize } from 'lodash'
 
 type RGB = { r: number; g: number; b: number }
@@ -17,12 +16,11 @@ function rgbToHsl({ r, g, b }: RGB): HSL {
   b /= 255
   const max = Math.max(r, g, b),
     min = Math.min(r, g, b)
-  let h: number, s: number
+  let h = 0,
+    s = 0
   const l: number = (max + min) / 2
 
-  if (max === min) {
-    h = s = 0 // achromatic
-  } else {
+  if (max !== min) {
     const d = max - min
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
     switch (max) {
