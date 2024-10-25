@@ -1,7 +1,7 @@
 // @ts-strict-ignore
 import { memoize } from 'lodash'
 
-type RGB = { r: number; g: number; b: number }
+export type RGB = { r: number; g: number; b: number }
 type HSL = { h: number; s: number; l: number }
 type HSLA = { h: number; s: number; l: number; a: number }
 type ColorFormat = 'hex' | 'rgb' | 'rgba' | 'hsl' | 'hsla'

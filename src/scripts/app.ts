@@ -75,7 +75,7 @@ function sanitizeNodeName(string) {
   })
 }
 
-type Clipspace = {
+export type Clipspace = {
   widgets?: { type?: string; name?: string; value?: any }[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
