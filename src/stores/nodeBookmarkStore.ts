@@ -115,6 +115,10 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
       throw new Error('Cannot rename non-folder node')
     }
 
+    if (newName.includes('/')) {
+      throw new Error('Folder name cannot contain "/"')
+    }
+
     const newNodePath =
       folderNode.category.split('/').slice(0, -1).concat(newName).join('/') +
       '/'
