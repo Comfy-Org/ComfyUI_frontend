@@ -191,6 +191,7 @@ export class ComfyPage {
     await this.page.waitForFunction(
       () => window['app'] !== undefined && window['app'].vueAppReady
     )
+    await this.nextFrame()
   }
 
   public assetPath(fileName: string) {
