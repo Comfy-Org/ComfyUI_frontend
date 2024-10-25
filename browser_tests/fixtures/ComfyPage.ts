@@ -194,6 +194,7 @@ export class ComfyPage {
         // window['app'].extensionManager => GraphView ready
         window['app'] && window['app'].extensionManager
     )
+    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
     await this.nextFrame()
   }
 
