@@ -1,15 +1,15 @@
 import type { Page, Locator, APIRequestContext } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
-import { ComfyActionbar } from './helpers/actionbar'
+import { ComfyActionbar } from '../helpers/actionbar'
 import dotenv from 'dotenv'
 dotenv.config()
 import * as fs from 'fs'
-import { NodeBadgeMode } from '../src/types/nodeSource'
-import type { NodeId } from '../src/types/comfyWorkflow'
-import type { KeyCombo } from '../src/types/keyBindingTypes'
-import { ManageGroupNode } from './helpers/manageGroupNode'
-import { ComfyTemplates } from './helpers/templates'
+import { NodeBadgeMode } from '../../src/types/nodeSource'
+import type { NodeId } from '../../src/types/comfyWorkflow'
+import type { KeyCombo } from '../../src/types/keyBindingTypes'
+import { ManageGroupNode } from '../helpers/manageGroupNode'
+import { ComfyTemplates } from '../helpers/templates'
 
 interface Position {
   x: number

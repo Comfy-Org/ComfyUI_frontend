@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 import { NodeBadgeMode } from '../src/types/nodeSource'
 
 test.describe('Canvas Right Click Menu', () => {

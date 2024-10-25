@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 import type { ComfyApp } from '../src/scripts/app'
 import { NodeBadgeMode } from '../src/types/nodeSource'
 
