@@ -1,5 +1,9 @@
 import { expect } from '@playwright/test'
-import { ComfyPage, NodeReference, comfyPageFixture as test } from './ComfyPage'
+import {
+  ComfyPage,
+  NodeReference,
+  comfyPageFixture as test
+} from './fixtures/ComfyPage'
 
 test.describe('Group Node', () => {
   test.afterEach(async ({ comfyPage }) => {

@@ -1,5 +1,5 @@
 import { expect, Locator } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
   test.beforeEach(async ({ comfyPage }) => {

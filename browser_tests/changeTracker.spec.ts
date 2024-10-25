@@ -2,7 +2,7 @@ import {
   ComfyPage,
   comfyPageFixture as test,
   comfyExpect as expect
-} from './ComfyPage'
+} from './fixtures/ComfyPage'
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
