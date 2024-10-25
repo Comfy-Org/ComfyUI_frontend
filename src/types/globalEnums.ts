@@ -28,6 +28,7 @@ export enum LinkDirection {
 
 /** The path calculation that links follow */
 export enum LinkRenderType {
+    HIDDEN_LINK = -1,
     /** Juts out from the input & output a little @see LinkDirection, then a straight line between them */
     STRAIGHT_LINK = 0,
     /** 90° angles, clean and box-like */
