@@ -25,8 +25,7 @@ test.describe('Menu', () => {
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     // Theme id should persist after reload.
-    await comfyPage.page.reload()
-    await comfyPage.setup()
+    await comfyPage.reload()
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     await comfyPage.menu.toggleTheme()
@@ -368,8 +367,7 @@ test.describe('Menu', () => {
         'KSampler'
       ])
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
-      await comfyPage.page.reload()
-      await comfyPage.setup()
+      await comfyPage.reload()
       expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
         []
       )
@@ -412,7 +410,7 @@ test.describe('Menu', () => {
         'workflow2.json': 'default.json'
       })
       // Avoid reset view as the button is not visible in BetaMenu UI.
-      await comfyPage.setup({ resetView: false })
+      await comfyPage.setup()
 
       const tab = comfyPage.menu.workflowsTab
       await tab.open()

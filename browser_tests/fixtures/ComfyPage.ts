@@ -155,7 +155,7 @@ export class ComfyPage {
     }
   }
 
-  async setup({ resetView = true } = {}) {
+  async setup() {
     await this.goto()
     await this.page.evaluate(() => {
       localStorage.clear()
@@ -180,13 +180,9 @@ export class ComfyPage {
     )
     await this.page.evaluate(() => {
       window['app']['canvas'].show_info = false
+      window['app']['canvas'].setDirty(true, true)
     })
     await this.nextFrame()
-    if (resetView) {
-      // Reset view to force re-rendering of canvas. So that info fields like fps
-      // become hidden.
-      await this.resetView()
-    }
 
     // Hide all badges by default.
     await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
