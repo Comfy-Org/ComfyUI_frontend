@@ -15,7 +15,7 @@ import {
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
-import type { NodeReference } from './utils/litegraphUtils'
+import { NodeReference } from './utils/litegraphUtils'
 import type { Position, Size } from './types'
 
 class ComfyMenu {
