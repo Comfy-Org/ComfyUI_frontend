@@ -130,7 +130,7 @@ export interface ComfyExtension {
 export type ComfyObjectInfo = {
   name: string
   display_name?: string
-  description?: string
+  description?: [string | string, string | string, string, Record<string, any>]
   category: string
   input?: {
     required?: Record<string, ComfyObjectInfoConfig>
