@@ -155,7 +155,20 @@ export class ComfyPage {
     }
   }
 
-  async setup({ resetView = true } = {}) {
+  async setupSettings(settings: Record<string, any>) {
+    const resp = await this.request.post(
+      `${this.url}/api/devtools/set_settings`,
+      {
+        data: settings
+      }
+    )
+
+    if (resp.status() !== 200) {
+      throw new Error(`Failed to setup settings: ${await resp.text()}`)
+    }
+  }
+
+  async setup() {
     await this.goto()
     await this.page.evaluate(() => {
       localStorage.clear()
@@ -176,26 +189,13 @@ export class ComfyPage {
     })
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(
-      () => window['app'] !== undefined && window['app'].vueAppReady
+      () =>
+        // window['app'] => GraphCanvas ready
+        // window['app'].extensionManager => GraphView ready
+        window['app'] && window['app'].extensionManager
     )
-    await this.page.evaluate(() => {
-      window['app']['canvas'].show_info = false
-    })
+    await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
     await this.nextFrame()
-    if (resetView) {
-      // Reset view to force re-rendering of canvas. So that info fields like fps
-      // become hidden.
-      await this.resetView()
-    }
-
-    // Hide all badges by default.
-    await this.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', NodeBadgeMode.None)
-    await this.setSetting(
-      'Comfy.NodeBadge.NodeSourceBadgeMode',
-      NodeBadgeMode.None
-    )
-    // Hide canvas menu by default.
-    await this.setSetting('Comfy.Graph.CanvasMenu', false)
   }
 
   public assetPath(fileName: string) {
@@ -722,6 +722,14 @@ export class ComfyPage {
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+    await comfyPage.setupSettings({
+      // Hide canvas menu/info by default.
+      'Comfy.Graph.CanvasInfo': false,
+      'Comfy.Graph.CanvasMenu': false,
+      // Hide all badges by default.
+      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None
+    })
     await comfyPage.setup()
     await use(comfyPage)
   }

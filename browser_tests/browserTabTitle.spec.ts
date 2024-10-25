@@ -7,10 +7,6 @@ test.describe('Browser tab title', () => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].workflowManager.activeWorkflow.name

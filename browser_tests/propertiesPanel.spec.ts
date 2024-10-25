@@ -6,10 +6,6 @@ test.describe('Properties Panel', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   // TODO: Update expectation after new menu dropdown is added.
   test.skip('Can change property value', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()

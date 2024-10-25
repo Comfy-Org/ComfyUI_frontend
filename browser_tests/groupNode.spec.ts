@@ -3,10 +3,6 @@ import { ComfyPage, comfyPageFixture as test } from './fixtures/ComfyPage'
 import type { NodeReference } from './fixtures/utils/litegraphUtils'
 
 test.describe('Group Node', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
@@ -18,11 +14,6 @@ test.describe('Group Node', () => {
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
-      await libraryTab.close()
     })
 
     test('Is added to node library sidebar', async ({ comfyPage }) => {
@@ -191,13 +182,6 @@ test.describe('Group Node', () => {
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
       await groupNode.copy()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.page.evaluate((groupNodeName) => {
-        window['LiteGraph'].unregisterNodeType(groupNodeName)
-      }, GROUP_NODE_TYPE)
     })
 
     test('Copies and pastes group node within the same workflow', async ({
