@@ -94,6 +94,7 @@ test.describe('Topbar commands', () => {
         ]
       })
     })
+    expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, world!')
     await comfyPage.setSetting('TestSetting', 'Hello, universe!')
     expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
   })
