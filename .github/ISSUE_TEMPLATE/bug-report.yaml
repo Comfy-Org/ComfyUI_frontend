@@ -50,6 +50,12 @@ body:
       description: 'Please copy the output from your browser logs here. You can access this by pressing F12 to toggle the developer tools, then navigating to the Console tab.'
     validations:
       required: true
+  - type: textarea
+    attributes:
+      label: Setting JSON
+      description: 'Please upload the setting file here. The setting file is located at `user/default/comfy.settings.json`'
+    validations:
+      required: true
   - type: dropdown
     id: browsers
     attributes:
