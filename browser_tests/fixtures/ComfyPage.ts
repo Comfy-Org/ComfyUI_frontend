@@ -164,9 +164,7 @@ export class ComfyPage {
     )
 
     if (resp.status() !== 200) {
-      throw new Error(
-        `Failed to setup workflows directory: ${await resp.text()}`
-      )
+      throw new Error(`Failed to setup settings: ${await resp.text()}`)
     }
   }
 
