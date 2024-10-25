@@ -144,7 +144,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
             return 'pi pi-circle-fill'
           }
           const customization =
-            nodeBookmarkStore.bookmarksCustomization[node.data.nodePath]
+            nodeBookmarkStore.bookmarksCustomization[node.data?.nodePath]
           return customization?.icon
             ? 'pi ' + customization.icon
             : 'pi pi-bookmark-fill'
