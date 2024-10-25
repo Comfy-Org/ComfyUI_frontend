@@ -2235,7 +2235,9 @@ export class ComfyApp {
     clean: boolean = true,
     restore_view: boolean = true,
     workflow: string | null | ComfyWorkflow = null,
-    { showMissingNodesDialog = true, showMissingModelsDialog = true } = {}
+    { showMissingNodesDialog = true, showMissingModelsDialog = true } = {},
+    droppedImageBlobUrl: string | undefined = undefined,
+    output_node_id = undefined
   ) {
     if (clean !== false) {
       this.clean()
@@ -2424,6 +2426,12 @@ export class ComfyApp {
             }
           }
         }
+      }
+
+      // Show dropped image on its original output node
+      if (droppedImageBlobUrl && String(node.id) === output_node_id) {
+        // @ts-expect-error
+        this.nodePreviewImages[output_node_id] = [droppedImageBlobUrl]
       }
 
       this.#invokeExtensions('loadedGraphNode', node)
@@ -2717,7 +2725,10 @@ export class ComfyApp {
           JSON.parse(pngInfo.workflow),
           true,
           true,
-          fileName
+          fileName,
+          undefined,
+          URL.createObjectURL(file),
+          pngInfo.output_node_id
         )
       } else if (pngInfo?.prompt) {
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
@@ -2735,7 +2746,15 @@ export class ComfyApp {
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
       if (workflow) {
-        this.loadGraphData(JSON.parse(workflow), true, true, fileName)
+        this.loadGraphData(
+          JSON.parse(workflow),
+          true,
+          true,
+          fileName,
+          undefined,
+          URL.createObjectURL(file),
+          pngInfo.output_node_id
+        )
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
