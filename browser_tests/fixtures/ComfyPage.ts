@@ -189,7 +189,10 @@ export class ComfyPage {
     })
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(
-      () => window['app'] !== undefined && window['app'].vueAppReady
+      () =>
+        // window['app'] => GraphCanvas ready
+        // window['app'].extensionManager => GraphView ready
+        window['app'] && window['app'].extensionManager
     )
     await this.nextFrame()
   }
