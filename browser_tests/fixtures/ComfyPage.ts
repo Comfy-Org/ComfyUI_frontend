@@ -15,17 +15,8 @@ import {
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
-import { NodeReference } from './utils/litegraphUtils'
-
-interface Position {
-  x: number
-  y: number
-}
-
-interface Size {
-  width: number
-  height: number
-}
+import type { NodeReference } from './utils/litegraphUtils'
+import type { Position, Size } from './types'
 
 class ComfyMenu {
   public readonly sideToolbar: Locator
