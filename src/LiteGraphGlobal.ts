@@ -164,7 +164,7 @@ export class LiteGraphGlobal {
     use_uuids = false
 
     // Whether to highlight the bounding box of selected groups
-    highlight_selected_group = false
+    highlight_selected_group = true
 
     // TODO: Remove legacy accessors
     LGraph = LGraph

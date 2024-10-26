@@ -27,6 +27,7 @@ export class LGraphGroup {
     _nodes: LGraphNode[]
     graph?: LGraph
     flags: IGraphGroupFlags
+    selected?: boolean
 
     constructor(title?: string) {
         this._ctor(title)
@@ -74,10 +75,6 @@ export class LGraphGroup {
 
     get titleHeight() {
         return this.font_size * 1.4
-    }
-
-    get selected() {
-        return !!this.graph?.list_of_graphcanvas?.some(c => c.selected_group === this)
     }
 
     get pinned() {
