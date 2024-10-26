@@ -304,7 +304,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     for (const nodeDef of nodeDefs) {
       const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
       newNodeDefsByName[nodeDef.name] = nodeDefImpl
-      nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
+      newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
     }
     nodeDefsByName.value = newNodeDefsByName
     nodeDefsByDisplayName.value = newNodeDefsByDisplayName
@@ -330,7 +330,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
-    return nodeDefsByName.value[node.constructor.nodeData?.name] ?? null
+    return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
   }
 
   return {
