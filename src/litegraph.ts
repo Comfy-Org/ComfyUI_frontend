@@ -23,16 +23,6 @@ export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
 
-// TODO: Remove legacy accessors
-LiteGraph.LGraph = LGraph
-LiteGraph.LLink = LLink
-LiteGraph.LGraphNode = LGraphNode
-LiteGraph.LGraphGroup = LGraphGroup
-LiteGraph.DragAndScale = DragAndScale
-LiteGraph.LGraphCanvas = LGraphCanvas
-LiteGraph.ContextMenu = ContextMenu
-LiteGraph.CurveEditor = CurveEditor
-
 export function clamp(v: number, a: number, b: number): number {
     return a > v ? a : b < v ? b : v
 };

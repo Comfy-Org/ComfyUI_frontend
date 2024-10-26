@@ -8,7 +8,6 @@ import type { LLink } from "./LLink"
 import type { LGraphGroup } from "./LGraphGroup"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
-import { LiteGraphGlobal } from "./LiteGraphGlobal"
 import { isInsideRectangle, distance, overlapBounding, isPointInRectangle } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
@@ -106,12 +105,8 @@ export class LGraphCanvas {
 
     static DEFAULT_BACKGROUND_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII="
 
-    // TODO: Remove workaround - this should be instance-based, regardless.  "-1" formerly pointed to LiteGraph.EVENT_LINK_COLOR.
-    static link_type_colors: Record<string, string> = {
-        "-1": LiteGraphGlobal.DEFAULT_EVENT_LINK_COLOR,
-        number: "#AAA",
-        node: "#DCA"
-    }
+    /** Initialised from LiteGraphGlobal static block to avoid circular dependency. */
+    static link_type_colors: Record<string, string>
     static gradients = {} //cache of gradients
 
     static search_limit = -1
@@ -5060,8 +5055,6 @@ export class LGraphCanvas {
 
         //choose color
         if (!color && link) {
-            // TODO: Remove ts-ignore when typescript LLink PR goes in.
-            // @ts-ignore Already resolved in parallel PR.
             color = link.color || LGraphCanvas.link_type_colors[link.type]
         }
         color ||= this.default_link_color

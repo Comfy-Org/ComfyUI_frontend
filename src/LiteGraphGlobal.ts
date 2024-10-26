@@ -1,10 +1,10 @@
-import type { LGraph } from "./LGraph"
-import type { LLink } from "./LLink"
-import type { LGraphGroup } from "./LGraphGroup"
-import type { DragAndScale } from "./DragAndScale"
-import type { LGraphCanvas } from "./LGraphCanvas"
-import type { ContextMenu } from "./ContextMenu"
-import type { CurveEditor } from "./CurveEditor"
+import { LGraph } from "./LGraph"
+import { LLink } from "./LLink"
+import { LGraphGroup } from "./LGraphGroup"
+import { DragAndScale } from "./DragAndScale"
+import { LGraphCanvas } from "./LGraphCanvas"
+import { ContextMenu } from "./ContextMenu"
+import { CurveEditor } from "./CurveEditor"
 import { LGraphEventMode, LinkDirection, LinkRenderType, NodeSlotType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LiteGraph } from "./litegraph"
 import { LGraphNode } from "./LGraphNode"
@@ -166,17 +166,27 @@ export class LiteGraphGlobal {
     // Whether to highlight the bounding box of selected groups
     highlight_selected_group = false
 
-    LGraph: typeof LGraph
-    LLink: typeof LLink
-    LGraphNode: typeof LGraphNode
-    LGraphGroup: typeof LGraphGroup
-    DragAndScale: typeof DragAndScale
-    LGraphCanvas: typeof LGraphCanvas
-    ContextMenu: typeof ContextMenu
-    CurveEditor: typeof CurveEditor
+    // TODO: Remove legacy accessors
+    LGraph = LGraph
+    LLink = LLink
+    LGraphNode = LGraphNode
+    LGraphGroup = LGraphGroup
+    DragAndScale = DragAndScale
+    LGraphCanvas = LGraphCanvas
+    ContextMenu = ContextMenu
+    CurveEditor = CurveEditor
 
     onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
     onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void
+
+    // Avoid circular dependency from original single-module
+    static {
+        LGraphCanvas.link_type_colors = {
+            "-1": LiteGraphGlobal.DEFAULT_EVENT_LINK_COLOR,
+            number: "#AAA",
+            node: "#DCA"
+        }
+    }
 
     constructor() {
         //timer that works everywhere
