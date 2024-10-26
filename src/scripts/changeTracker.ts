@@ -4,13 +4,14 @@ import { api } from './api'
 import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { ComfyWorkflow } from './workflows'
+import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
   #app: ComfyApp
   undoQueue = []
   redoQueue = []
-  activeState = null
+  activeState: ComfyWorkflowJSON | null = null
   isOurLoad = false
   workflow: ComfyWorkflow | null
   changeCount = 0
