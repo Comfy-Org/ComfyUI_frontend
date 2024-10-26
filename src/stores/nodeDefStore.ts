@@ -278,79 +278,78 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
   } as ComfyNodeDef)
 }
 
-interface State {
-  nodeDefsByName: Record<string, ComfyNodeDefImpl>
-  nodeDefsByDisplayName: Record<string, ComfyNodeDefImpl>
-  widgets: Record<string, ComfyWidgetConstructor>
-  showDeprecated: boolean
-  showExperimental: boolean
-}
+export const useNodeDefStore = defineStore('nodeDef', () => {
+  const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
+  const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
+  const widgets = ref<Record<string, ComfyWidgetConstructor>>({})
+  const showDeprecated = ref(false)
+  const showExperimental = ref(false)
 
-export const useNodeDefStore = defineStore('nodeDef', {
-  state: (): State => ({
-    nodeDefsByName: {},
-    nodeDefsByDisplayName: {},
-    widgets: {},
-    showDeprecated: false,
-    showExperimental: false
-  }),
-  getters: {
-    nodeDefs(state) {
-      return Object.values(state.nodeDefsByName)
-    },
-    // Node defs that are not deprecated
-    visibleNodeDefs(state): ComfyNodeDefImpl[] {
-      return this.nodeDefs.filter(
-        (nodeDef: ComfyNodeDefImpl) =>
-          (state.showDeprecated || !nodeDef.deprecated) &&
-          (state.showExperimental || !nodeDef.experimental)
-      )
-    },
-    nodeSearchService() {
-      return new NodeSearchService(this.visibleNodeDefs)
-    },
-    nodeTree(): TreeNode {
-      return buildNodeDefTree(this.visibleNodeDefs)
-    }
-  },
-  actions: {
-    updateNodeDefs(nodeDefs: ComfyNodeDef[]) {
-      const newNodeDefsByName: { [key: string]: ComfyNodeDefImpl } = {}
-      const nodeDefsByDisplayName: { [key: string]: ComfyNodeDefImpl } = {}
-      for (const nodeDef of nodeDefs) {
-        const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-        newNodeDefsByName[nodeDef.name] = nodeDefImpl
-        nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
-      }
-      this.nodeDefsByName = newNodeDefsByName
-      this.nodeDefsByDisplayName = nodeDefsByDisplayName
-    },
-    addNodeDef(nodeDef: ComfyNodeDef) {
+  const nodeDefs = computed(() => Object.values(nodeDefsByName.value))
+  const visibleNodeDefs = computed(() =>
+    nodeDefs.value.filter(
+      (nodeDef: ComfyNodeDefImpl) =>
+        (showDeprecated.value || !nodeDef.deprecated) &&
+        (showExperimental.value || !nodeDef.experimental)
+    )
+  )
+  const nodeSearchService = computed(
+    () => new NodeSearchService(visibleNodeDefs.value)
+  )
+  const nodeTree = computed(() => buildNodeDefTree(visibleNodeDefs.value))
+
+  function updateNodeDefs(nodeDefs: ComfyNodeDef[]) {
+    const newNodeDefsByName: { [key: string]: ComfyNodeDefImpl } = {}
+    const newNodeDefsByDisplayName: { [key: string]: ComfyNodeDefImpl } = {}
+    for (const nodeDef of nodeDefs) {
       const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
-      this.nodeDefsByName[nodeDef.name] = nodeDefImpl
-      this.nodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
-    },
-    updateWidgets(widgets: Record<string, ComfyWidgetConstructor>) {
-      this.widgets = widgets
-    },
-    getWidgetType(type: string, inputName: string) {
-      if (type === 'COMBO') {
-        return 'COMBO'
-      } else if (`${type}:${inputName}` in this.widgets) {
-        return `${type}:${inputName}`
-      } else if (type in this.widgets) {
-        return type
-      } else {
-        return null
-      }
-    },
-    inputIsWidget(spec: BaseInputSpec) {
-      return this.getWidgetType(spec.type, spec.name) !== null
-    },
-    fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-      // Frontend-only nodes don't have nodeDef
-      return this.nodeDefsByName[node.constructor.nodeData?.name] ?? null
+      newNodeDefsByName[nodeDef.name] = nodeDefImpl
+      newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
     }
+    nodeDefsByName.value = newNodeDefsByName
+    nodeDefsByDisplayName.value = newNodeDefsByDisplayName
+  }
+  function addNodeDef(nodeDef: ComfyNodeDef) {
+    const nodeDefImpl = new ComfyNodeDefImpl(nodeDef)
+    nodeDefsByName.value[nodeDef.name] = nodeDefImpl
+    nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
+  }
+  function getWidgetType(type: string, inputName: string) {
+    if (type === 'COMBO') {
+      return 'COMBO'
+    } else if (`${type}:${inputName}` in widgets.value) {
+      return `${type}:${inputName}`
+    } else if (type in widgets.value) {
+      return type
+    } else {
+      return null
+    }
+  }
+  function inputIsWidget(spec: BaseInputSpec) {
+    return getWidgetType(spec.type, spec.name) !== null
+  }
+  function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
+    // Frontend-only nodes don't have nodeDef
+    return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
+  }
+
+  return {
+    nodeDefsByName,
+    nodeDefsByDisplayName,
+    widgets,
+    showDeprecated,
+    showExperimental,
+
+    nodeDefs,
+    visibleNodeDefs,
+    nodeSearchService,
+    nodeTree,
+
+    updateNodeDefs,
+    addNodeDef,
+    getWidgetType,
+    inputIsWidget,
+    fromLGraphNode
   }
 })
 
