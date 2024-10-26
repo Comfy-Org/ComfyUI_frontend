@@ -1,19 +1,18 @@
-// @ts-strict-ignore
-import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
-  DownloadModelStatus,
-  HistoryTaskItem,
-  PendingTaskItem,
-  RunningTaskItem,
-  ComfyNodeDef,
-  validateComfyNodeDef,
-  EmbeddingsResponse,
-  ExtensionsResponse,
-  PromptResponse,
-  SystemStats,
-  User,
-  Settings,
-  UserDataFullInfo
+  type DownloadModelStatus,
+  type HistoryTaskItem,
+  type PendingTaskItem,
+  type RunningTaskItem,
+  type ComfyNodeDef,
+  type EmbeddingsResponse,
+  type ExtensionsResponse,
+  type PromptResponse,
+  type SystemStats,
+  type User,
+  type Settings,
+  type UserDataFullInfo,
+  validateComfyNodeDef
 } from '@/types/apiTypes'
 import axios from 'axios'
 
@@ -35,15 +34,23 @@ class ComfyApi extends EventTarget {
   #registered = new Set()
   api_host: string
   api_base: string
-  initialClientId: string
-  user: string
-  socket?: WebSocket
+  /**
+   * The client id from the initial session storage.
+   */
+  initialClientId: string | null
+  /**
+   * The current client id from websocket status updates.
+   */
   clientId?: string
+  user: string
+  socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
 
   constructor() {
     super()
+    // api.user is set by ComfyApp.setup()
+    this.user = ''
     this.api_host = location.host
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
@@ -72,7 +79,14 @@ class ComfyApi extends EventTarget {
     if (!options.cache) {
       options.cache = 'no-cache'
     }
-    options.headers['Comfy-User'] = this.user
+
+    if (Array.isArray(options.headers)) {
+      options.headers.push(['Comfy-User', this.user])
+    } else if (options.headers instanceof Headers) {
+      options.headers.set('Comfy-User', this.user)
+    } else {
+      options.headers['Comfy-User'] = this.user
+    }
     return fetch(this.apiURL(route), options)
   }
 
@@ -180,9 +194,10 @@ class ComfyApi extends EventTarget {
           switch (msg.type) {
             case 'status':
               if (msg.data.sid) {
-                this.clientId = msg.data.sid
-                window.name = this.clientId // use window name so it isnt reused when duplicating tabs
-                sessionStorage.setItem('clientId', this.clientId) // store in session storage so duplicate tab can load correct workflow
+                const clientId = msg.data.sid
+                this.clientId = clientId
+                window.name = clientId // use window name so it isnt reused when duplicating tabs
+                sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchEvent(
                 new CustomEvent('status', { detail: msg.data.status })
@@ -308,10 +323,13 @@ class ComfyApi extends EventTarget {
    */
   async queuePrompt(
     number: number,
-    { output, workflow }
+    {
+      output,
+      workflow
+    }: { output: Record<number, any>; workflow: ComfyWorkflowJSON }
   ): Promise<PromptResponse> {
     const body: QueuePromptRequestBody = {
-      client_id: this.clientId,
+      client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt: output,
       extra_data: { extra_pnginfo: { workflow } }
     }
@@ -346,7 +364,7 @@ class ComfyApi extends EventTarget {
   async getModelFolders(): Promise<string[]> {
     const res = await this.fetchApi(`/models`)
     if (res.status === 404) {
-      return null
+      return []
     }
     return await res.json()
   }
@@ -447,12 +465,12 @@ class ComfyApi extends EventTarget {
       const data = await res.json()
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt) => ({
+        Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
           remove: { name: 'Cancel', cb: () => api.interrupt() }
         })),
-        Pending: data.queue_pending.map((prompt) => ({
+        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
           prompt
         }))
@@ -692,12 +710,15 @@ class ComfyApi extends EventTarget {
     recurse: boolean,
     split?: false
   ): Promise<string[]>
-  async listUserData(dir, recurse, split) {
+  /**
+   * @deprecated Use `listUserDataFullInfo` instead.
+   */
+  async listUserData(dir: string, recurse: boolean, split?: boolean) {
     const resp = await this.fetchApi(
       `/userdata?${new URLSearchParams({
-        recurse,
+        recurse: recurse ? 'true' : 'false',
         dir,
-        split
+        split: split ? 'true' : 'false'
       })}`
     )
     if (resp.status === 404) return []
