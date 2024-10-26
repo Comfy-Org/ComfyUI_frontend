@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 /**
  * TODO: Migrate scripts/ui/settings.ts here
  *
@@ -42,9 +41,9 @@ export const useSettingStore = defineStore('setting', {
         (setting: SettingParams) => setting.category || setting.id.split('.')
       )
 
-      const floatingSettings = root.children.filter((node) => node.leaf)
+      const floatingSettings = (root.children ?? []).filter((node) => node.leaf)
       if (floatingSettings.length) {
-        root.children = root.children.filter((node) => !node.leaf)
+        root.children = (root.children ?? []).filter((node) => !node.leaf)
         root.children.push({
           key: 'Other',
           label: 'Other',
