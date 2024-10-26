@@ -1,18 +1,19 @@
-// @ts-strict-ignore
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../scripts/api'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type {
+  ExecutedWsMessage,
+  ExecutingWsMessage,
+  ExecutionCachedWsMessage,
+  ExecutionStartWsMessage,
+  ProgressWsMessage
+} from '@/types/apiTypes'
 
 export interface QueuedPrompt {
   nodes: Record<string, boolean>
   workflow?: ComfyWorkflow
-}
-
-interface NodeProgress {
-  value: number
-  max: number
 }
 
 export const useExecutionStore = defineStore('execution', () => {
@@ -26,7 +27,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!workflow) return null
 
     const canvasState: ComfyWorkflowJSON | null =
-      workflow.changeTracker?.activeState
+      workflow.changeTracker?.activeState ?? null
     if (!canvasState) return null
 
     return (
@@ -36,7 +37,7 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // This is the progress of the currently executing node, if any
-  const _executingNodeProgress = ref<NodeProgress | null>(null)
+  const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
       ? Math.round(
@@ -69,39 +70,51 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   function bindExecutionEvents() {
-    api.addEventListener('execution_start', handleExecutionStart)
-    api.addEventListener('execution_cached', handleExecutionCached)
-    api.addEventListener('executed', handleExecuted)
-    api.addEventListener('executing', handleExecuting)
-    api.addEventListener('progress', handleProgress)
+    api.addEventListener(
+      'execution_start',
+      handleExecutionStart as EventListener
+    )
+    api.addEventListener(
+      'execution_cached',
+      handleExecutionCached as EventListener
+    )
+    api.addEventListener('executed', handleExecuted as EventListener)
+    api.addEventListener('executing', handleExecuting as EventListener)
+    api.addEventListener('progress', handleProgress as EventListener)
   }
 
   function unbindExecutionEvents() {
-    api.removeEventListener('execution_start', handleExecutionStart)
-    api.removeEventListener('execution_cached', handleExecutionCached)
-    api.removeEventListener('executed', handleExecuted)
-    api.removeEventListener('executing', handleExecuting)
-    api.removeEventListener('progress', handleProgress)
+    api.removeEventListener(
+      'execution_start',
+      handleExecutionStart as EventListener
+    )
+    api.removeEventListener(
+      'execution_cached',
+      handleExecutionCached as EventListener
+    )
+    api.removeEventListener('executed', handleExecuted as EventListener)
+    api.removeEventListener('executing', handleExecuting as EventListener)
+    api.removeEventListener('progress', handleProgress as EventListener)
   }
 
-  function handleExecutionStart(e: CustomEvent) {
+  function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     activePromptId.value = e.detail.prompt_id
     queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
   }
 
-  function handleExecutionCached(e: CustomEvent) {
+  function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activePrompt.value) return
     for (const n of e.detail.nodes) {
       activePrompt.value.nodes[n] = true
     }
   }
 
-  function handleExecuted(e: CustomEvent) {
+  function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activePrompt.value) return
     activePrompt.value.nodes[e.detail.node] = true
   }
 
-  function handleExecuting(e: CustomEvent) {
+  function handleExecuting(e: CustomEvent<ExecutingWsMessage>) {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -118,7 +131,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function handleProgress(e: CustomEvent) {
+  function handleProgress(e: CustomEvent<ProgressWsMessage>) {
     _executingNodeProgress.value = e.detail
   }
 
