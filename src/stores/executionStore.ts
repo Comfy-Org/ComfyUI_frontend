@@ -23,7 +23,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const executingNode = computed<ComfyNode | null>(() => {
     if (!executingNodeId.value) return null
 
-    const workflow: ComfyWorkflow | null = activePrompt.value?.workflow
+    const workflow: ComfyWorkflow | undefined = activePrompt.value?.workflow
     if (!workflow) return null
 
     const canvasState: ComfyWorkflowJSON | null =
@@ -31,8 +31,9 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!canvasState) return null
 
     return (
-      canvasState.nodes.find((n) => String(n.id) === executingNodeId.value) ??
-      null
+      canvasState.nodes.find(
+        (n: ComfyNode) => String(n.id) === executingNodeId.value
+      ) ?? null
     )
   })
 
@@ -48,21 +49,23 @@ export const useExecutionStore = defineStore('execution', () => {
       : null
   )
 
-  const activePrompt = computed(() => queuedPrompts.value[activePromptId.value])
+  const activePrompt = computed<QueuedPrompt | undefined>(
+    () => queuedPrompts.value[activePromptId.value ?? '']
+  )
 
-  const totalNodesToExecute = computed(() => {
+  const totalNodesToExecute = computed<number>(() => {
     if (!activePrompt.value) return 0
     return Object.values(activePrompt.value.nodes).length
   })
 
-  const isIdle = computed(() => !activePromptId.value)
+  const isIdle = computed<boolean>(() => !activePromptId.value)
 
-  const nodesExecuted = computed(() => {
+  const nodesExecuted = computed<number>(() => {
     if (!activePrompt.value) return 0
     return Object.values(activePrompt.value.nodes).filter(Boolean).length
   })
 
-  const executionProgress = computed(() => {
+  const executionProgress = computed<number>(() => {
     if (!activePrompt.value) return 0
     const total = totalNodesToExecute.value
     const done = nodesExecuted.value
@@ -120,13 +123,15 @@ export const useExecutionStore = defineStore('execution', () => {
 
     if (!activePrompt.value) return
 
-    if (executingNodeId.value) {
+    if (executingNodeId.value && activePrompt.value) {
       // Seems sometimes nodes that are cached fire executing but not executed
       activePrompt.value.nodes[executingNodeId.value] = true
     }
     executingNodeId.value = e.detail ? String(e.detail) : null
     if (!executingNodeId.value) {
-      delete queuedPrompts.value[activePromptId.value]
+      if (activePromptId.value) {
+        delete queuedPrompts.value[activePromptId.value]
+      }
       activePromptId.value = null
     }
   }
@@ -142,12 +147,12 @@ export const useExecutionStore = defineStore('execution', () => {
   }: {
     nodes: string[]
     id: string
-    workflow: any
+    workflow: ComfyWorkflow
   }) {
     queuedPrompts.value[id] ??= { nodes: {} }
     const queuedPrompt = queuedPrompts.value[id]
     queuedPrompt.nodes = {
-      ...nodes.reduce((p, n) => {
+      ...nodes.reduce((p: Record<string, boolean>, n) => {
         p[n] = false
         return p
       }, {}),
