@@ -1,11 +1,11 @@
-// @ts-strict-ignore
 import {
   NodeSearchService,
   type SearchAuxScore
 } from '@/services/nodeSearchService'
 import {
   type ComfyNodeDef,
-  type ComfyInputsSpec as ComfyInputsSpecSchema
+  type ComfyInputsSpec as ComfyInputsSpecSchema,
+  type InputSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -69,15 +69,14 @@ export class ComfyInputsSpec {
   hidden?: Record<string, any>
 
   constructor(obj: ComfyInputsSpecSchema) {
-    this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required) ?? {}
-    this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional) ?? {}
+    this.required = ComfyInputsSpec.transformInputSpecRecord(obj.required ?? {})
+    this.optional = ComfyInputsSpec.transformInputSpecRecord(obj.optional ?? {})
     this.hidden = obj.hidden
   }
 
   private static transformInputSpecRecord(
-    record: Record<string, any>
+    record: Record<string, InputSpec>
   ): Record<string, BaseInputSpec> {
-    if (!record) return record
     const result: Record<string, BaseInputSpec> = {}
     for (const [key, value] of Object.entries(record)) {
       result[key] = ComfyInputsSpec.transformSingleInputSpec(key, value)
@@ -231,6 +230,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     output: ['*'],
     output_name: ['connect to widget input'],
     output_is_list: [false],
+    output_node: false,
     python_module: 'nodes',
     description: 'Primitive values like numbers, strings, and booleans.'
   },
@@ -242,6 +242,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     output: ['*'],
     output_name: [''],
     output_is_list: [false],
+    output_node: false,
     python_module: 'nodes',
     description: 'Reroute the connection to another node.'
   },
@@ -253,6 +254,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     output: [],
     output_name: [],
     output_is_list: [],
+    output_node: false,
     python_module: 'nodes',
     description: 'Node that add notes to your project'
   }
@@ -274,7 +276,8 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
     input: {},
     output: [],
     output_name: [],
-    output_is_list: []
+    output_is_list: [],
+    output_node: false
   } as ComfyNodeDef)
 }
 
