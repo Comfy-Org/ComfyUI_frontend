@@ -106,7 +106,6 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     const [x, y] = group.pos
 
     const e = event.detail.originalEvent
-    // @ts-expect-error LiteGraphCanvasEvent is not typed
     const relativeY = e.canvasY - y
     // Only allow editing if the click is on the title bar
     if (relativeY > group.titleHeight) {

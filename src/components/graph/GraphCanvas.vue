@@ -17,6 +17,7 @@
   </teleport>
   <NodeSearchboxPopover />
   <NodeTooltip v-if="tooltipEnabled" />
+  <NodeBadge />
 </template>
 
 <script setup lang="ts">
@@ -26,6 +27,7 @@ import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import NodeBadge from '@/components/graph/NodeBadge.vue'
 import { ref, computed, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
