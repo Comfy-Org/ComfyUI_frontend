@@ -41,12 +41,12 @@ const colorPalette = computed(() =>
 
 const nodeDefStore = useNodeDefStore()
 function badgeTextVisible(
-  nodeDef: ComfyNodeDefImpl,
+  nodeDef: ComfyNodeDefImpl | null,
   badgeMode: NodeBadgeMode
 ): boolean {
   return !(
     badgeMode === NodeBadgeMode.None ||
-    (nodeDef.isCoreNode && badgeMode === NodeBadgeMode.HideBuiltIn)
+    (nodeDef?.isCoreNode && badgeMode === NodeBadgeMode.HideBuiltIn)
   )
 }
 

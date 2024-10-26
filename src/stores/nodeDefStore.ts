@@ -348,6 +348,7 @@ export const useNodeDefStore = defineStore('nodeDef', {
       return this.getWidgetType(spec.type, spec.name) !== null
     },
     fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
+      // Frontend-only nodes don't have nodeDef
       return this.nodeDefsByName[node.constructor.nodeData?.name] ?? null
     }
   }
