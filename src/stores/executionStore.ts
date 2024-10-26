@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { api } from '../scripts/api'
+import { api } from '@/scripts/api'
 import { ComfyWorkflow } from '@/scripts/workflows'
 import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type {
