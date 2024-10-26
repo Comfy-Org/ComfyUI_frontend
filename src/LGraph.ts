@@ -830,7 +830,6 @@ export class LGraph {
         const nRet = null
         for (let i = nodes_list.length - 1; i >= 0; i--) {
             const n = nodes_list[i]
-            // @ts-expect-error ctor props
             const skip_title = n.constructor.title_mode == LiteGraph.NO_TITLE
             if (n.isPointInside(x, y, margin, skip_title)) {
                 // check for lesser interest nodes (TODO check for overlapping, use the top)
