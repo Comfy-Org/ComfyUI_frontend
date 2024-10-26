@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
@@ -123,7 +122,7 @@ export const useCommandStore = defineStore('command', () => {
         app.workflowManager.setWorkflow(null)
         app.clean()
         app.graph.clear()
-        app.workflowManager.activeWorkflow.track()
+        app.workflowManager.activeWorkflow?.track()
       }
     },
     {
@@ -149,7 +148,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow',
       menubarLabel: 'Save',
       function: () => {
-        app.workflowManager.activeWorkflow.save()
+        app.workflowManager.activeWorkflow?.save()
       }
     },
     {
@@ -158,7 +157,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
       function: () => {
-        app.workflowManager.activeWorkflow.save(true)
+        app.workflowManager.activeWorkflow?.save(true)
       }
     },
     {
@@ -223,7 +222,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-clipboard',
       label: 'Clipspace',
       function: () => {
-        app['openClipspace']?.()
+        app.openClipspace()
       }
     },
     {
@@ -274,10 +273,10 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Zoom In',
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(ds.scale * 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(
+          ds.scale * 1.1,
+          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
+        )
         app.canvas.setDirty(true, true)
       }
     },
@@ -287,10 +286,10 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Zoom Out',
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(ds.scale / 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(
+          ds.scale / 1.1,
+          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
+        )
         app.canvas.setDirty(true, true)
       }
     },

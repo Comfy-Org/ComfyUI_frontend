@@ -148,6 +148,8 @@ export class ComfyApp {
   canvasContainer: HTMLElement
   menu: ComfyAppMenu
   bypassBgColor: string
+  // Set by Comfy.Clipspace extension
+  openClipspace: () => void = () => {}
 
   /**
    * @deprecated Use useExecutionStore().executingNodeId instead
