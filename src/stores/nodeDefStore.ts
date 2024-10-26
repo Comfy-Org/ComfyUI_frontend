@@ -13,7 +13,12 @@ import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import axios from 'axios'
-import { type NodeSource, getNodeSource } from '@/types/nodeSource'
+import {
+  type NodeSource,
+  NodeSourceType,
+  getNodeSource
+} from '@/types/nodeSource'
+import type { LGraphNode } from '@comfyorg/litegraph'
 
 export interface BaseInputSpec<T = any> {
   name: string
@@ -205,6 +210,16 @@ export class ComfyNodeDefImpl {
     const nodeFrequency = nodeFrequencyStore.getNodeFrequencyByName(this.name)
     return [scores[0], -nodeFrequency, ...scores.slice(1)]
   }
+
+  get isCoreNode(): boolean {
+    return this.nodeSource.type === NodeSourceType.Core
+  }
+
+  get nodeLifeCycleBadgeText(): string {
+    if (this.deprecated) return '[DEPR]'
+    if (this.experimental) return '[BETA]'
+    return ''
+  }
 }
 
 export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
@@ -331,6 +346,9 @@ export const useNodeDefStore = defineStore('nodeDef', {
     },
     inputIsWidget(spec: BaseInputSpec) {
       return this.getWidgetType(spec.type, spec.name) !== null
+    },
+    fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
+      return this.nodeDefsByName[node.constructor.nodeData?.name] ?? null
     }
   }
 })
