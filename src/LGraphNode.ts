@@ -2,7 +2,7 @@ import type { Dictionary, IContextMenuValue, IFoundSlot, INodeFlags, INodeInputS
 import type { LGraph } from "./LGraph"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
-import type { RenderShape } from "./types/globalEnums"
+import { RenderShape } from "./types/globalEnums"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
 import type { DragAndScale } from "./DragAndScale"
@@ -124,7 +124,6 @@ export class LGraphNode {
     color: string
     bgcolor: string
     boxcolor: string
-    shape?: RenderShape
     exec_version: number
     action_call?: string
     execute_triggered: number
@@ -160,6 +159,31 @@ export class LGraphNode {
     has_errors?: boolean
     removable?: boolean
     block_delete?: boolean
+
+    get shape(): RenderShape {
+        return this._shape
+    }
+    set shape(v: RenderShape | "default" | "box" | "round" | "circle" | "card") {
+        switch (v) {
+            case "default":
+                delete this._shape
+                break
+            case "box":
+                this._shape = RenderShape.BOX
+                break
+            case "round":
+                this._shape = RenderShape.ROUND
+                break
+            case "circle":
+                this._shape = RenderShape.CIRCLE
+                break
+            case "card":
+                this._shape = RenderShape.CARD
+                break
+            default:
+                this._shape = v
+        }
+    }
 
     // Used in group node
     setInnerNodes?(this: LGraphNode, nodes: LGraphNode[]): void
