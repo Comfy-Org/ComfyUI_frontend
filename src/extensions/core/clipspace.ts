@@ -188,7 +188,6 @@ export class ClipspaceDialog extends ComfyDialog {
 app.registerExtension({
   name: 'Comfy.Clipspace',
   init(app) {
-    // @ts-expect-error Move to ComfyApp
     app.openClipspace = function () {
       if (!ClipspaceDialog.instance) {
         ClipspaceDialog.instance = new ClipspaceDialog()

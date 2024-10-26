@@ -611,7 +611,6 @@ export class ComfyUI {
       $el('button', {
         id: 'comfy-clipspace-button',
         textContent: 'Clipspace',
-        // @ts-expect-error Move to ComfyApp
         onclick: () => app.openClipspace()
       }),
       $el('button', {
