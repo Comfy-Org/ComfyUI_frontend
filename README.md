@@ -367,6 +367,14 @@ We will support custom icons later.
 
 ## Development
 
+### Tech Stack
+
+- [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
+- [Pinia](https://pinia.vuejs.org/) for state management
+- [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
+- [Litegraph](https://github.com/Comfy-Org/litegraph.js) for node editor
+- [zod](https://zod.dev/) for schema validation
+
 ### Git pre-commit hooks
 
 Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
@@ -381,13 +389,23 @@ core extensions will be loaded.
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
 
-### Test
+### Unit Test
 
 - `git clone https://github.com/comfyanonymous/ComfyUI_examples.git` to `tests-ui/ComfyUI_examples` or the EXAMPLE_REPO_PATH location specified in .env
 - `npm i` to install all dependencies
 - `npm run test:generate` to fetch `tests-ui/data/object_info.json`
 - `npm run test:generate:examples` to extract the example workflows
 - `npm run test` to execute all unit tests.
+
+### Component Test
+
+Component test verifies Vue components in `src/components/`.
+
+- `npm run test:component` to execute all component tests.
+
+### Playwright Test
+
+Playwright test verifies the whole app. See <https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/browser_tests/README.md> for details.
 
 ### LiteGraph
 
@@ -396,7 +414,6 @@ This repo is using litegraph package hosted on <https://github.com/Comfy-Org/lit
 ### Test litegraph changes
 
 - Run `npm link` in the local litegraph repo.
-- Run `npm uninstall @comfyorg/litegraph` in this repo.
 - Run `npm link @comfyorg/litegraph` in this repo.
 
 This will replace the litegraph package in this repo with the local litegraph repo.
