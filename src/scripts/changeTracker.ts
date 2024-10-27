@@ -120,7 +120,7 @@ export class ChangeTracker {
     globalTracker.#setApp(app)
 
     const loadGraphData = app.loadGraphData
-    app.loadGraphData = async function (this: ComfyApp, ...args: any[]) {
+    app.loadGraphData = async function (...args) {
       const v = await loadGraphData.apply(this, args)
       const ct = changeTracker()
       if (ct.isOurLoad) {
@@ -146,7 +146,7 @@ export class ChangeTracker {
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
             if (
               activeEl?.tagName === 'INPUT' ||
-              activeEl?.['type'] === 'textarea'
+              (activeEl && 'type' in activeEl && activeEl.type === 'textarea')
             ) {
               // Ignore events on inputs, they have their native history
               return
@@ -244,10 +244,11 @@ export class ChangeTracker {
     }
 
     // Handle multiple commands as a single transaction
-    document.addEventListener('litegraph:canvas', (e: CustomEvent) => {
-      if (e.detail.subType === 'before-change') {
+    document.addEventListener('litegraph:canvas', (e: Event) => {
+      const detail = (e as CustomEvent).detail
+      if (detail.subType === 'before-change') {
         changeTracker().beforeChange()
-      } else if (e.detail.subType === 'after-change') {
+      } else if (detail.subType === 'after-change') {
         changeTracker().afterChange()
       }
     })
