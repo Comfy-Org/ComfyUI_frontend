@@ -8,11 +8,11 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 export class ChangeTracker {
   static MAX_HISTORY = 50
   #app?: ComfyApp
-  undoQueue = []
-  redoQueue = []
+  undoQueue: ComfyWorkflowJSON[] = []
+  redoQueue: ComfyWorkflowJSON[] = []
   activeState: ComfyWorkflowJSON | null = null
-  isOurLoad = false
-  changeCount = 0
+  isOurLoad: boolean = false
+  changeCount: number = 0
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs: any
@@ -88,7 +88,7 @@ export class ChangeTracker {
     await this.updateState(this.redoQueue, this.undoQueue)
   }
 
-  async undoRedo(e) {
+  async undoRedo(e: KeyboardEvent) {
     if (e.ctrlKey || e.metaKey) {
       if (e.key === 'y' || e.key == 'Z') {
         await this.redo()
@@ -137,7 +137,7 @@ export class ChangeTracker {
 
         const activeEl = document.activeElement
         requestAnimationFrame(async () => {
-          let bindInputEl
+          let bindInputEl: Element | null = null
           // If we are auto queue in change mode then we do want to trigger on inputs
           if (!app.ui.autoQueueEnabled || app.ui.autoQueueMode === 'instant') {
             if (
@@ -265,7 +265,7 @@ export class ChangeTracker {
     })
   }
 
-  static bindInput(app, activeEl) {
+  static bindInput(app: ComfyApp, activeEl: Element) {
     if (
       activeEl &&
       activeEl.tagName !== 'CANVAS' &&
@@ -284,7 +284,7 @@ export class ChangeTracker {
     }
   }
 
-  static graphEqual(a, b, path = '') {
+  static graphEqual(a: any, b: any, path = '') {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {
