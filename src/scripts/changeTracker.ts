@@ -4,6 +4,9 @@ import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { ComfyWorkflow } from './workflows'
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
+import { LGraphNode } from '@comfyorg/litegraph'
+import { ExecutedWsMessage } from '@/types/apiTypes'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -67,10 +70,10 @@ export class ChangeTracker {
     }
   }
 
-  async updateState(source, target) {
+  async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {
-      target.push(this.activeState)
+      target.push(this.activeState!)
       this.isOurLoad = true
       await this.app.loadGraphData(prevState, false, false, this.workflow, {
         showMissingModelsDialog: false,
@@ -116,8 +119,8 @@ export class ChangeTracker {
     globalTracker.#setApp(app)
 
     const loadGraphData = app.loadGraphData
-    app.loadGraphData = async function () {
-      const v = await loadGraphData.apply(this, arguments)
+    app.loadGraphData = async function (this: ComfyApp, ...args: any[]) {
+      const v = await loadGraphData.apply(this, args)
       const ct = changeTracker()
       if (ct.isOurLoad) {
         ct.isOurLoad = false
@@ -191,22 +194,27 @@ export class ChangeTracker {
 
     // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
-    LGraphCanvas.prototype.processMouseUp = function (e) {
-      const v = processMouseUp.apply(this, arguments)
+    LGraphCanvas.prototype.processMouseUp = function (e: CanvasPointerEvent) {
+      const v = processMouseUp.apply(this, [e])
       changeTracker().checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
-    LGraphCanvas.prototype.processMouseDown = function (e) {
-      const v = processMouseDown.apply(this, arguments)
+    LGraphCanvas.prototype.processMouseDown = function (e: CanvasPointerEvent) {
+      const v = processMouseDown.apply(this, [e])
       changeTracker().checkState()
       return v
     }
 
     // Handle litegraph dialog popup for number/string widgets
     const prompt = LGraphCanvas.prototype.prompt
-    LGraphCanvas.prototype.prompt = function (title, value, callback, event) {
-      const extendedCallback = (v) => {
+    LGraphCanvas.prototype.prompt = function (
+      title: string,
+      value: any,
+      callback: (v: any) => void,
+      event: any
+    ) {
+      const extendedCallback = (v: any) => {
         callback(v)
         changeTracker().checkState()
       }
@@ -215,16 +223,16 @@ export class ChangeTracker {
 
     // Handle litegraph context menu for COMBO widgets
     const close = LiteGraph.ContextMenu.prototype.close
-    LiteGraph.ContextMenu.prototype.close = function (e) {
-      const v = close.apply(this, arguments)
+    LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
+      const v = close.apply(this, [e])
       changeTracker().checkState()
       return v
     }
 
     // Detects nodes being added via the node search dialog
     const onNodeAdded = LiteGraph.LGraph.prototype.onNodeAdded
-    LiteGraph.LGraph.prototype.onNodeAdded = function () {
-      const v = onNodeAdded?.apply(this, arguments)
+    LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
+      const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
         const ct = changeTracker()
         if (!ct.isOurLoad) {
@@ -244,7 +252,8 @@ export class ChangeTracker {
     })
 
     // Store node outputs
-    api.addEventListener('executed', ({ detail }) => {
+    api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
+      const detail = e.detail
       const prompt =
         app.workflowManager.executionStore.queuedPrompts[detail.prompt_id]
       if (!prompt?.workflow) return
@@ -265,23 +274,27 @@ export class ChangeTracker {
     })
   }
 
-  static bindInput(app: ComfyApp, activeEl: Element) {
+  static bindInput(app: ComfyApp, activeEl: Element | null): boolean {
     if (
-      activeEl &&
-      activeEl.tagName !== 'CANVAS' &&
-      activeEl.tagName !== 'BODY'
+      !activeEl ||
+      activeEl.tagName === 'CANVAS' ||
+      activeEl.tagName === 'BODY'
     ) {
-      for (const evt of ['change', 'input', 'blur']) {
-        if (`on${evt}` in activeEl) {
-          const listener = () => {
-            app.workflowManager.activeWorkflow.changeTracker.checkState()
-            activeEl.removeEventListener(evt, listener)
-          }
-          activeEl.addEventListener(evt, listener)
-          return true
+      return false
+    }
+
+    for (const evt of ['change', 'input', 'blur']) {
+      const htmlElement = activeEl as HTMLElement
+      if (`on${evt}` in htmlElement) {
+        const listener = () => {
+          app.workflowManager.activeWorkflow?.changeTracker?.checkState()
+          htmlElement.removeEventListener(evt, listener)
         }
+        htmlElement.addEventListener(evt, listener)
+        return true
       }
     }
+    return false
   }
 
   static graphEqual(a: any, b: any, path = '') {

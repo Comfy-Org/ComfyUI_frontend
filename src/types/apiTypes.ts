@@ -47,7 +47,8 @@ const zExecutingWsMessage = z.object({
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
-  outputs: zOutputs
+  output: zOutputs,
+  merge: z.boolean().optional()
 })
 
 const zExecutionWsMessageBase = z.object({
