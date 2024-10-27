@@ -4,7 +4,6 @@ import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 import { ComfyWorkflow } from './workflows'
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -195,13 +194,13 @@ export class ChangeTracker {
 
     // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
-    LGraphCanvas.prototype.processMouseUp = function (e: CanvasPointerEvent) {
+    LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
       changeTracker().checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
-    LGraphCanvas.prototype.processMouseDown = function (e: CanvasPointerEvent) {
+    LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, [e])
       changeTracker().checkState()
       return v
