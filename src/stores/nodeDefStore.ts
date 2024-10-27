@@ -311,6 +311,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
         newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
       } catch (e) {
         // Avoid breaking the app for invalid nodeDefs
+        // NodeDef validation is now optional for performance reasons
         console.error('Error adding nodeDef:', e)
       }
     }
