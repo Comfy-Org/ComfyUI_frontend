@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { ComfyApp } from './app'
 import { api } from './api'
 import { clone } from './utils'
@@ -8,26 +7,24 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
-  #app: ComfyApp
+  #app?: ComfyApp
   undoQueue = []
   redoQueue = []
   activeState: ComfyWorkflowJSON | null = null
   isOurLoad = false
-  workflow: ComfyWorkflow | null
   changeCount = 0
 
-  ds: { scale: number; offset: [number, number] }
+  ds?: { scale: number; offset: [number, number] }
   nodeOutputs: any
 
-  get app() {
+  get app(): ComfyApp {
+    // Global tracker has #app set, while other trackers have workflow bounded
     return this.#app ?? this.workflow.manager.app
   }
 
-  constructor(workflow: ComfyWorkflow) {
-    this.workflow = workflow
-  }
+  constructor(public workflow: ComfyWorkflow) {}
 
-  #setApp(app) {
+  #setApp(app: ComfyApp) {
     this.#app = app
   }
 
