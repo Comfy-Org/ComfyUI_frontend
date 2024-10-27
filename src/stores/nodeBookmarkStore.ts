@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSettingStore } from './settingStore'
@@ -28,7 +27,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         return
       }
       const category = bookmark.split('/').slice(0, -1).join('/')
-      const displayName = bookmark.split('/').pop()
+      const displayName = bookmark.split('/').pop() ?? ''
       const nodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
 
       if (!nodeDef) return
@@ -70,7 +69,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         if (bookmark.endsWith('/')) return createDummyFolderNodeDef(bookmark)
 
         const parts = bookmark.split('/')
-        const name = parts.pop()
+        const name = parts.pop() ?? ''
         const category = parts.join('/')
         const srcNodeDef = nodeDefStore.nodeDefsByName[name]
         if (!srcNodeDef) {
@@ -190,7 +189,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     settingStore.set('Comfy.NodeLibrary.BookmarksCustomization', {
       ...bookmarksCustomization.value,
       [nodePath]: undefined
-    })
+    } as Record<string, BookmarkCustomization>)
   }
 
   const renameBookmarkCustomization = (
