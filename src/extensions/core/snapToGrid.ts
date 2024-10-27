@@ -31,7 +31,6 @@ app.registerExtension({
       type: 'boolean',
       defaultValue: false,
       versionAdded: '1.3.13',
-      versionModified: '1.3.42',
       onChange(value) {
         app.graph.config.alwaysSnapToGrid = !!value
       }

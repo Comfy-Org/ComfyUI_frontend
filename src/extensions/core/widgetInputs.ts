@@ -894,7 +894,7 @@ app.registerExtension({
         // Not a widget input or already handled input
         if (
           !(input.type in ComfyWidgets) &&
-          !(input.widget[GET_CONFIG]?.()?.[0] instanceof Array)
+          !(input.widget?.[GET_CONFIG]?.()?.[0] instanceof Array)
         ) {
           return r //also Not a ComfyWidgets input or combo (do nothing)
         }

@@ -47,7 +47,8 @@ import {
   DragAndScale,
   LGraphCanvas,
   ContextMenu,
-  LGraphBadge
+  LGraphBadge,
+  CanvasPointer
 } from '@comfyorg/litegraph'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { useCanvasStore } from '@/stores/graphStore'
@@ -160,6 +161,20 @@ watchEffect(() => {
     canvas.reroutesEnabled = reroutesEnabled
     canvas.setDirty(false, true)
   }
+})
+
+watchEffect(() => {
+  CanvasPointer.doubleClickTime = settingStore.get(
+    'Comfy.Pointer.DoubleClickTime'
+  )
+})
+
+watchEffect(() => {
+  CanvasPointer.bufferTime = settingStore.get('Comfy.Pointer.ClickBufferTime')
+})
+
+watchEffect(() => {
+  CanvasPointer.maxClickDrift = settingStore.get('Comfy.Pointer.ClickDrift')
 })
 
 watchEffect(() => {

@@ -535,5 +535,52 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.4.0'
+  },
+  {
+    id: 'Comfy.Pointer.ClickDrift',
+    category: ['LiteGraph', 'Pointer', 'ClickDrift'],
+    name: 'Pointer click drift (maximum distance)',
+    tooltip:
+      'If the pointer moves more than this distance while holding a button down, it is considered dragging (rather than clicking).\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.',
+    experimental: true,
+    type: 'slider',
+    attrs: {
+      min: 0,
+      max: 20,
+      step: 1
+    },
+    defaultValue: 6,
+    versionAdded: '1.4.3'
+  },
+  {
+    id: 'Comfy.Pointer.ClickBufferTime',
+    category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
+    name: 'Pointer click drift delay',
+    tooltip:
+      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.',
+    experimental: true,
+    type: 'slider',
+    attrs: {
+      min: 0,
+      max: 1000,
+      step: 25
+    },
+    defaultValue: 150,
+    versionAdded: '1.4.3'
+  },
+  {
+    id: 'Comfy.Pointer.DoubleClickTime',
+    category: ['LiteGraph', 'Pointer', 'DoubleClickTime'],
+    name: 'Double click interval (maximum)',
+    tooltip:
+      'The maximum time in milliseconds between the two clicks of a double-click.  Increasing this value may assist if double-clicks are sometimes not registered.',
+    type: 'slider',
+    attrs: {
+      min: 100,
+      max: 1000,
+      step: 50
+    },
+    defaultValue: 300,
+    versionAdded: '1.4.3'
   }
 ]

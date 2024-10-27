@@ -1089,7 +1089,6 @@ export class ComfyApp {
       'dragover',
       (e) => {
         this.canvas.adjustMouseEvent(e)
-        // @ts-expect-error: canvasX and canvasY are added by adjustMouseEvent in litegraph
         const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY)
         if (node) {
           // @ts-expect-error This is not a standard event. TODO fix it.
