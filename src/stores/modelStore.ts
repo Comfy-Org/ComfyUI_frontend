@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
