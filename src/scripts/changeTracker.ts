@@ -7,6 +7,7 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { CanvasPointerEvent } from '@comfyorg/litegraph/dist/types/events'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ExecutedWsMessage } from '@/types/apiTypes'
+import { useExecutionStore } from '@/stores/executionStore'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -18,7 +19,7 @@ export class ChangeTracker {
   changeCount: number = 0
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs: any
+  nodeOutputs?: Record<string, any>
 
   get app(): ComfyApp {
     // Global tracker has #app set, while other trackers have workflow bounded
@@ -254,10 +255,12 @@ export class ChangeTracker {
     // Store node outputs
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
-      const prompt =
-        app.workflowManager.executionStore.queuedPrompts[detail.prompt_id]
-      if (!prompt?.workflow) return
-      const nodeOutputs = (prompt.workflow.changeTracker.nodeOutputs ??= {})
+      const workflow =
+        useExecutionStore().queuedPrompts[detail.prompt_id]?.workflow
+      const changeTracker = workflow?.changeTracker
+      if (!changeTracker) return
+      changeTracker.nodeOutputs ??= {}
+      const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
       if (detail.merge && output) {
         for (const k in detail.output ?? {}) {
