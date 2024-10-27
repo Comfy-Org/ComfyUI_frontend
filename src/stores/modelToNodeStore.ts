@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -18,7 +18,7 @@ export class ModelNodeProvider {
 
 /** Service for mapping model types (by folder name) to nodes. */
 export const useModelToNodeStore = defineStore('modelToNode', () => {
-  const modelToNodeMap = reactive<Record<string, ModelNodeProvider[]>>({})
+  const modelToNodeMap = ref<Record<string, ModelNodeProvider[]>>({})
   const nodeDefStore = useNodeDefStore()
   const haveDefaultsLoaded = ref(false)
   /**
@@ -28,7 +28,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function getNodeProvider(modelType: string): ModelNodeProvider | undefined {
     registerDefaults()
-    return modelToNodeMap[modelType]?.[0]
+    return modelToNodeMap.value[modelType]?.[0]
   }
   /**
    * Get the list of all valid node providers for the given model type name.
@@ -37,7 +37,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function getAllNodeProviders(modelType: string): ModelNodeProvider[] {
     registerDefaults()
-    return modelToNodeMap[modelType] ?? []
+    return modelToNodeMap.value[modelType] ?? []
   }
   /**
    * Register a node provider for the given model type name.
@@ -49,10 +49,10 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     nodeProvider: ModelNodeProvider
   ) {
     registerDefaults()
-    if (!modelToNodeMap[modelType]) {
-      modelToNodeMap[modelType] = []
+    if (!modelToNodeMap.value[modelType]) {
+      modelToNodeMap.value[modelType] = []
     }
-    modelToNodeMap[modelType].push(nodeProvider)
+    modelToNodeMap.value[modelType].push(nodeProvider)
   }
   /**
    * Register a node provider for the given simple names.

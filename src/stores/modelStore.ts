@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
 
@@ -160,28 +160,26 @@ const folderBlacklist = ['configs', 'custom_nodes']
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', () => {
-  const modelStoreMap = reactive<Record<string, ModelFolder | null>>({})
-  const isLoading = reactive<
-    Record<string, Promise<ModelFolder | null> | null>
-  >({})
+  const modelStoreMap = ref<Record<string, ModelFolder | null>>({})
+  const isLoading = ref<Record<string, Promise<ModelFolder | null> | null>>({})
   const modelFolders = ref<string[]>([])
 
   async function getModelsInFolderCached(
     folder: string
   ): Promise<ModelFolder | null> {
-    if (folder in modelStoreMap) {
-      return modelStoreMap[folder]
+    if (folder in modelStoreMap.value) {
+      return modelStoreMap.value[folder]
     }
-    if (isLoading[folder]) {
-      return isLoading[folder]
+    if (isLoading.value[folder]) {
+      return isLoading.value[folder]
     }
     const promise = api.getModels(folder).then((models) => {
       if (!models) {
         return null
       }
       const store = new ModelFolder(folder, models)
-      modelStoreMap[folder] = store
-      isLoading[folder] = null
+      modelStoreMap.value[folder] = store
+      isLoading.value[folder] = null
       return store
     })
     isLoading[folder] = promise
