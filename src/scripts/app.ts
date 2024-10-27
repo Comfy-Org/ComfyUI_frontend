@@ -1910,8 +1910,7 @@ export class ComfyApp {
 
     // Save current workflow automatically
     setInterval(() => {
-      const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-      const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
+      const workflow = JSON.stringify(this.serializeGraph())
       localStorage.setItem('workflow', workflow)
       if (api.clientId) {
         sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
@@ -2445,7 +2444,18 @@ export class ComfyApp {
   }
 
   /**
-   * Converts the current graph workflow for sending to the API
+   * Serializes a graph using preferred user settings.
+   * @param graph The litegraph to serialize.
+   * @returns A serialized graph (aka workflow) with preferred user settings.
+   */
+  serializeGraph(graph: LGraph = this.graph) {
+    const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    return graph.serialize({ sortNodes })
+  }
+
+  /**
+   * Converts the current graph workflow for sending to the API.
+   * Note: Node widgets are updated before serialization to prepare queueing.
    * @returns The workflow and node links
    */
   async graphToPrompt(graph = this.graph, clean = true) {
@@ -2471,9 +2481,7 @@ export class ComfyApp {
       }
     }
 
-    const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-
-    const workflow = graph.serialize({ sortNodes })
+    const workflow = this.serializeGraph(graph)
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
