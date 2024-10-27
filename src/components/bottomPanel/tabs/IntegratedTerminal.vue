@@ -1,61 +1,90 @@
 <template>
-  <div class="p-terminal rounded-none h-full w-full">
-    <ScrollPanel class="h-full w-full" ref="scrollPanelRef">
-      <pre class="px-4 whitespace-pre-wrap">{{ log }}</pre>
-    </ScrollPanel>
+  <div class="relative h-full w-full">
+    <ProgressSpinner
+      v-if="!loaded"
+      class="absolute inset-0 flex justify-center items-center h-full"
+    />
+    <div v-show="loaded" class="p-terminal rounded-none h-full w-full">
+      <div class="h-full" ref="terminalEl"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import ScrollPanel from 'primevue/scrollpanel'
-import { api } from '@/scripts/api'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import '@xterm/xterm/css/xterm.css'
+import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
+import { api, LogEntry, TerminalSize } from '@/scripts/api'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { debounce } from 'lodash'
+import ProgressSpinner from 'primevue/progressspinner'
 
-const log = ref<string>('')
-const scrollPanelRef = ref<InstanceType<typeof ScrollPanel> | null>(null)
-/**
- * Whether the user has scrolled to the bottom of the terminal.
- * This is used to prevent the terminal from scrolling to the bottom
- * when new logs are fetched.
- */
-const scrolledToBottom = ref(false)
+const loaded = ref(false)
+const terminalEl = ref<HTMLDivElement>()
+const fitAddon = new FitAddon()
+const terminal = new Terminal({
+  convertEol: true
+})
+terminal.loadAddon(fitAddon)
 
-let intervalId: number = 0
+const resizeTerminal = () =>
+  terminal.resize(terminal.cols, fitAddon.proposeDimensions().rows)
+
+const resizeObserver = new ResizeObserver(debounce(resizeTerminal, 50))
+
+const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
+  if (size) {
+    terminal.resize(size.cols, fitAddon.proposeDimensions().rows)
+  }
+  terminal.write(entries.map((e) => e.m).join(''))
+}
+
+const logReceived = (
+  e: CustomEvent<{
+    entries: Array<{ t: string; m: string }>
+    size: {
+      rows: number
+      cols: number
+    } | null
+  }>
+) => {
+  update(e.detail.entries, e.detail.size)
+}
+
+const loadLogs = async () => {
+  const logs = await api.getRawLogs()
+  update(logs.entries, logs.size)
+}
 
 onMounted(async () => {
-  const element = scrollPanelRef.value?.$el
-  const scrollContainer = element?.querySelector('.p-scrollpanel-content')
+  terminal.open(terminalEl.value)
+  await loadLogs()
+  loaded.value = true
+  await api.waitForClientId()
+  api.subscribeLogs(true)
+  api.addEventListener('logs', logReceived)
+  resizeObserver.observe(terminalEl.value)
 
-  if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', () => {
-      scrolledToBottom.value =
-        scrollContainer.scrollTop + scrollContainer.clientHeight ===
-        scrollContainer.scrollHeight
-    })
-  }
-
-  const scrollToBottom = () => {
-    if (scrollContainer) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight
-    }
-  }
-
-  watch(log, () => {
-    if (scrolledToBottom.value) {
-      scrollToBottom()
-    }
-  })
-
-  const fetchLogs = async () => {
-    log.value = await api.getLogs()
-  }
-
-  await fetchLogs()
-  scrollToBottom()
-  intervalId = window.setInterval(fetchLogs, 500)
+  // Wait for the component to render again and resize it
+  await nextTick()
+  resizeTerminal()
 })
 
-onBeforeUnmount(() => {
-  window.clearInterval(intervalId)
+onUnmounted(() => {
+  if (api.clientId) {
+    api.subscribeLogs(false)
+  }
+  api.removeEventListener('logs', logReceived)
+  resizeObserver.disconnect()
 })
 </script>
+
+<style>
+.xterm {
+  overflow-x: auto;
+}
+
+.xterm-screen {
+  background-color: black;
+}
+</style>

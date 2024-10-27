@@ -15,7 +15,7 @@
 
     <SplitterPanel :size="100">
       <Splitter
-        class="splitter-overlay"
+        class="splitter-overlay max-w-full"
         layout="vertical"
         :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
       >

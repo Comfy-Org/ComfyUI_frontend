@@ -30,7 +30,19 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
+export interface LogEntry {
+  t: string
+  m: string
+}
+
+export interface TerminalSize {
+  cols: number
+  rows: number
+}
+
 class ComfyApi extends EventTarget {
+  #clientIdBlock: Promise<void>
+  #clientIdResolve: Function
   #registered = new Set()
   api_host: string
   api_base: string
@@ -55,6 +67,17 @@ class ComfyApi extends EventTarget {
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
+  }
+
+  async waitForClientId() {
+    if (this.clientId) {
+      return this.clientId
+    }
+    if (!this.#clientIdBlock) {
+      this.#clientIdBlock = new Promise((res) => (this.#clientIdResolve = res))
+    }
+    await this.#clientIdBlock
+    return this.clientId
   }
 
   internalURL(route: string): string {
@@ -198,14 +221,10 @@ class ComfyApi extends EventTarget {
                 this.clientId = clientId
                 window.name = clientId // use window name so it isnt reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                this.#clientIdResolve?.()
               }
               this.dispatchEvent(
                 new CustomEvent('status', { detail: msg.data.status })
-              )
-              break
-            case 'progress':
-              this.dispatchEvent(
-                new CustomEvent('progress', { detail: msg.data })
               )
               break
             case 'executing':
@@ -215,34 +234,16 @@ class ComfyApi extends EventTarget {
                 })
               )
               break
+            case 'progress':
             case 'executed':
-              this.dispatchEvent(
-                new CustomEvent('executed', { detail: msg.data })
-              )
-              break
             case 'execution_start':
-              this.dispatchEvent(
-                new CustomEvent('execution_start', { detail: msg.data })
-              )
-              break
             case 'execution_success':
-              this.dispatchEvent(
-                new CustomEvent('execution_success', { detail: msg.data })
-              )
-              break
             case 'execution_error':
-              this.dispatchEvent(
-                new CustomEvent('execution_error', { detail: msg.data })
-              )
-              break
             case 'execution_cached':
-              this.dispatchEvent(
-                new CustomEvent('execution_cached', { detail: msg.data })
-              )
-              break
             case 'download_progress':
+            case 'logs':
               this.dispatchEvent(
-                new CustomEvent('download_progress', { detail: msg.data })
+                new CustomEvent(msg.type, { detail: msg.data })
               )
               break
             default:
@@ -745,6 +746,20 @@ class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     return (await axios.get(this.internalURL('/logs'))).data
+  }
+
+  async getRawLogs(): Promise<{
+    size: TerminalSize
+    entries: Array<LogEntry>
+  }> {
+    return (await axios.get(this.internalURL('/logs/raw'))).data
+  }
+
+  async subscribeLogs(enabled: boolean): Promise<void> {
+    return await axios.patch(this.internalURL('/logs/subscribe'), {
+      enabled,
+      clientId: this.clientId
+    })
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
