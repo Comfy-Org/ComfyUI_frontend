@@ -1530,12 +1530,14 @@ export class LGraphCanvas {
         // why mousemove and mouseup were not binded here?
         this._mousemove_callback = this.processMouseMove.bind(this)
         this._mouseup_callback = this.processMouseUp.bind(this)
+        this._mouseout_callback = this.processMouseOut.bind(this)
 
         LiteGraph.pointerListenerAdd(canvas, "down", this._mousedown_callback, true) //down do not need to store the binded
         canvas.addEventListener("mousewheel", this._mousewheel_callback, false)
 
         LiteGraph.pointerListenerAdd(canvas, "up", this._mouseup_callback, true) // CHECK: ??? binded or not
         LiteGraph.pointerListenerAdd(canvas, "move", this._mousemove_callback)
+        canvas.addEventListener("pointerout", this._mouseout_callback)
 
         canvas.addEventListener("contextmenu", this._doNothing)
         canvas.addEventListener(
@@ -1573,6 +1575,7 @@ export class LGraphCanvas {
         const ref_window = this.getCanvasWindow()
         const document = ref_window.document
 
+        this.canvas.removeEventListener("pointerout", this._mouseout_callback)
         LiteGraph.pointerListenerRemove(this.canvas, "move", this._mousemove_callback)
         LiteGraph.pointerListenerRemove(this.canvas, "up", this._mouseup_callback)
         LiteGraph.pointerListenerRemove(this.canvas, "down", this._mousedown_callback)
@@ -1728,6 +1731,34 @@ export class LGraphCanvas {
         }
 
         return null
+    }
+
+    /**
+     * Clears highlight and mouse-over information from nodes that should not have it.
+     * 
+     * Intended to be called when the pointer moves away from a node.
+     * @param {LGraphNode} node The node that the mouse is now over
+     * @param {MouseEvent} e MouseEvent that is triggering this
+     */
+    updateMouseOverNodes(node: LGraphNode, e: CanvasMouseEvent): void {
+        const nodes = this.graph._nodes
+        const l = nodes.length
+        for (let i = 0; i < l; ++i) {
+            if (nodes[i].mouseOver && node != nodes[i]) {
+                //mouse leave
+                nodes[i].mouseOver = null
+                this._highlight_input = null
+                this._highlight_pos = null
+
+                // Hover transitions
+                // TODO: Implement single lerp ease factor for current progress on hover in/out.  In drawNode, multiply by ease factor and differential value (e.g. bg alpha +0.5).
+                nodes[i].lostFocusAt = LiteGraph.getTime()
+
+                this.node_over?.onMouseLeave?.(e)
+                this.node_over = null
+                this.dirty_canvas = true
+            }
+        }
     }
 
     processMouseDown(e: CanvasPointerEvent): boolean {
@@ -2351,17 +2382,7 @@ export class LGraphCanvas {
             }
 
             //remove mouseover flag
-            for (let i = 0, l = this.graph._nodes.length; i < l; ++i) {
-                if (this.graph._nodes[i].mouseOver && node != this.graph._nodes[i]) {
-                    //mouse leave
-                    this.graph._nodes[i].mouseOver = false
-                    if (this.node_over && this.node_over.onMouseLeave) {
-                        this.node_over.onMouseLeave(e)
-                    }
-                    this.node_over = null
-                    this.dirty_canvas = true
-                }
-            }
+            this.updateMouseOverNodes(node, e)
 
             //mouse over a node
             if (node) {
@@ -2369,14 +2390,28 @@ export class LGraphCanvas {
                 if (node.redraw_on_mouse)
                     this.dirty_canvas = true
 
-                //this.canvas.style.cursor = "move";
+                // For input/output hovering
+                const pos: Point = [0, 0] //to store the output of isOverNodeInput
+                const inputId = this.isOverNodeInput(node, e.canvasX, e.canvasY, pos)
+                const outputId = this.isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
+
                 if (!node.mouseOver) {
                     //mouse enter
-                    node.mouseOver = true
+                    node.mouseOver = {
+                        inputId: inputId,
+                        outputId: outputId
+                    }
                     this.node_over = node
                     this.dirty_canvas = true
 
                     node.onMouseEnter?.(e)
+                }
+
+                // The input the mouse is over has changed
+                if (node.mouseOver.inputId !== inputId || node.mouseOver.outputId !== outputId) {
+                    node.mouseOver.inputId = inputId
+                    node.mouseOver.outputId = outputId
+                    this.dirty_canvas = true
                 }
 
                 //in case the node wants to do something
@@ -2388,17 +2423,14 @@ export class LGraphCanvas {
 
                     if (firstLink.output) {
 
-                        const pos = this._highlight_input || [0, 0] //to store the output of isOverNodeInput
-
                         //on top of input
                         if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
                             //mouse on top of the corner box, don't know what to do
                         } else {
                             //check if I have a slot below de mouse
-                            const slot = this.isOverNodeInput(node, e.canvasX, e.canvasY, pos)
-                            if (slot != -1 && node.inputs[slot] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[slot].type)) {
+                            if (inputId != -1 && node.inputs[inputId] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)) {
                                 this._highlight_input = pos
-                                this._highlight_input_slot = node.inputs[slot] // XXX CHECK THIS
+                                this._highlight_input_slot = node.inputs[inputId] // XXX CHECK THIS
                             } else {
                                 // Allow support for linking to widgets, handled externally to LiteGraph
                                 if (this.getWidgetLinkType) {
@@ -2421,18 +2453,12 @@ export class LGraphCanvas {
                         }
 
                     } else if (firstLink.input) {
-
-                        const pos = this._highlight_output || [0, 0] //to store the output of isOverNodeOutput
-
-
-
                         //on top of output
                         if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
                             //mouse on top of the corner box, don't know what to do
                         } else {
                             //check if I have a slot below de mouse
-                            const slot = this.isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
-                            if (slot != -1 && node.outputs[slot] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[slot].type)) {
+                            if (outputId != -1 && node.outputs[outputId] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[outputId].type)) {
                                 this._highlight_output = pos
                             } else {
                                 this._highlight_output = null
@@ -2835,6 +2861,16 @@ export class LGraphCanvas {
         e.preventDefault()
         return false
     }
+
+    /**
+     * Called when the mouse moves off the canvas.  Clears all node hover states.
+     * @param e
+     */
+    processMouseOut(e: CanvasMouseEvent): void {
+        // TODO: Check if document.contains(e.relatedTarget) - handle mouseover node textarea etc.
+        this.updateMouseOverNodes(null, e)
+    }
+
     /**
      * Called when a mouse wheel event has to be processed
      **/
@@ -4330,8 +4366,7 @@ export class LGraphCanvas {
             size,
             color,
             bgcolor,
-            node.is_selected,
-            node.mouseOver
+            node.is_selected
         )
 
         if (!low_quality) {
@@ -4348,6 +4383,7 @@ export class LGraphCanvas {
         ctx.font = this.inner_text_font
 
         const render_text = !low_quality
+        const highlightColour = LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
 
         const out_slot = this.connecting_links ? this.connecting_links[0].output : null
         const in_slot = this.connecting_links ? this.connecting_links[0].input : null
@@ -4365,11 +4401,11 @@ export class LGraphCanvas {
 
                     const slot_type = slot.type
 
-                    ctx.globalAlpha = editor_alpha
                     //change opacity of incompatible slots when dragging a connection
-                    if (out_slot && !LiteGraph.isValidConnection(slot.type, out_slot.type)) {
-                        ctx.globalAlpha = 0.4 * editor_alpha
-                    }
+                    const isValid = !this.connecting_links || (out_slot && LiteGraph.isValidConnection(slot.type, out_slot.type))
+                    const highlight = isValid && node.mouseOver?.inputId === i
+                    const label_color = highlight ? highlightColour : LiteGraph.NODE_TEXT_COLOR
+                    ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
                     ctx.fillStyle =
                         slot.link != null
@@ -4392,10 +4428,11 @@ export class LGraphCanvas {
                         horizontal,
                         low_quality,
                         render_text,
-                        label_color: LiteGraph.NODE_TEXT_COLOR,
+                        label_color,
                         label_position: LabelPosition.Right,
                         // Input slot is not stroked.
                         do_stroke: false,
+                        highlight,
                     })
                 }
             }
@@ -4410,9 +4447,10 @@ export class LGraphCanvas {
                     const slot_type = slot.type
 
                     //change opacity of incompatible slots when dragging a connection
-                    if (in_slot && !LiteGraph.isValidConnection(slot_type, in_slot.type)) {
-                        ctx.globalAlpha = 0.4 * editor_alpha
-                    }
+                    const isValid = !this.connecting_links || (in_slot && LiteGraph.isValidConnection(slot_type, in_slot.type))
+                    const highlight = isValid && node.mouseOver?.outputId === i
+                    const label_color = highlight ? highlightColour : LiteGraph.NODE_TEXT_COLOR
+                    ctx.globalAlpha = isValid ? editor_alpha : 0.4 * editor_alpha
 
                     const pos = node.getConnectionPos(false, i, slot_pos)
                     pos[0] -= node.pos[0]
@@ -4435,9 +4473,10 @@ export class LGraphCanvas {
                         horizontal,
                         low_quality,
                         render_text,
-                        label_color: LiteGraph.NODE_TEXT_COLOR,
+                        label_color,
                         label_position: LabelPosition.Left,
                         do_stroke: true,
+                        highlight,
                     })
                 }
             }
@@ -4598,16 +4637,22 @@ export class LGraphCanvas {
         ctx.fillText(text, pos[0], pos[1] - 15 - h * 0.3)
     }
     /**
-     * draws the shape of the given node in the canvas
-     **/
+     * Draws the shape of the given node on the canvas
+     * @param node The node to draw
+     * @param ctx 2D canvas rendering context used to draw
+     * @param size Size of the background to draw, in graph units.  Differs from node size if collapsed, etc.
+     * @param fgcolor Foreground colour - used for text
+     * @param bgcolor Background colour of the node
+     * @param selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the is_selected property of the node.
+     * @param mouse_over Deprecated
+     */
     drawNodeShape(
         node: LGraphNode,
         ctx: CanvasRenderingContext2D,
         size: Size,
         fgcolor: CanvasColour,
         bgcolor: CanvasColour,
-        selected: boolean,
-        mouse_over: boolean
+        selected: boolean
     ): void {
         //bg rect
         ctx.strokeStyle = fgcolor

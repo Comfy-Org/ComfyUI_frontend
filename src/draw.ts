@@ -40,6 +40,7 @@ export function drawSlot(
     low_quality = false,
     render_text = true,
     do_stroke = false,
+    highlight = false,
   }: {
     label_color?: string;
     label_position?: LabelPosition;
@@ -47,6 +48,7 @@ export function drawSlot(
     low_quality?: boolean;
     render_text?: boolean;
     do_stroke?: boolean;
+    highlight?: boolean;
   } = {}
 ) {
   // Save the current fillStyle and strokeStyle
@@ -101,10 +103,10 @@ export function drawSlot(
         doStroke = true;
         ctx.lineWidth = 3;
         ctx.strokeStyle = ctx.fillStyle;
-        radius = 3;
+        radius = highlight ? 4 : 3;
       } else {
         // Normal circle
-        radius = 4;
+        radius = highlight ? 5 : 4;
       }
       ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2);
     }
@@ -117,6 +119,7 @@ export function drawSlot(
   if (render_text) {
     const text = slot.label != null ? slot.label : slot.name;
     if (text) {
+      // TODO: Finish impl.  Highlight text on mouseover unless we're connecting links.
       ctx.fillStyle = label_color;
 
       if (label_position === LabelPosition.Right) {
