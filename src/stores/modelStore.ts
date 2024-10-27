@@ -1,5 +1,6 @@
-import { api } from '@/scripts/api'
+import { ref, reactive } from 'vue'
 import { defineStore } from 'pinia'
+import { api } from '@/scripts/api'
 
 /** (Internal helper) finds a value in a metadata object from any of a list of keys. */
 function _findInMetadata(metadata: any, ...keys: string[]): string | null {
@@ -158,39 +159,53 @@ export class ModelFolder {
 const folderBlacklist = ['configs', 'custom_nodes']
 
 /** Model store handler, wraps individual per-folder model stores */
-export const useModelStore = defineStore('modelStore', {
-  state: () => ({
-    modelStoreMap: {} as Record<string, ModelFolder | null>,
-    isLoading: {} as Record<string, Promise<ModelFolder | null> | null>,
-    modelFolders: [] as string[]
-  }),
-  actions: {
-    async getModelsInFolderCached(folder: string): Promise<ModelFolder | null> {
-      if (folder in this.modelStoreMap) {
-        return this.modelStoreMap[folder]
-      }
-      if (this.isLoading[folder]) {
-        return this.isLoading[folder]
-      }
-      const promise = api.getModels(folder).then((models) => {
-        if (!models) {
-          return null
-        }
-        const store = new ModelFolder(folder, models)
-        this.modelStoreMap[folder] = store
-        this.isLoading[folder] = null
-        return store
-      })
-      this.isLoading[folder] = promise
-      return promise
-    },
-    clearCache() {
-      this.modelStoreMap = {}
-    },
-    async getModelFolders() {
-      this.modelFolders = (await api.getModelFolders()).filter(
-        (folder) => !folderBlacklist.includes(folder)
-      )
+export const useModelStore = defineStore('modelStore', () => {
+  const modelStoreMap = reactive<Record<string, ModelFolder | null>>({})
+  const isLoading = reactive<
+    Record<string, Promise<ModelFolder | null> | null>
+  >({})
+  const modelFolders = ref<string[]>([])
+
+  async function getModelsInFolderCached(
+    folder: string
+  ): Promise<ModelFolder | null> {
+    if (folder in modelStoreMap) {
+      return modelStoreMap[folder]
     }
+    if (isLoading[folder]) {
+      return isLoading[folder]
+    }
+    const promise = api.getModels(folder).then((models) => {
+      if (!models) {
+        return null
+      }
+      const store = new ModelFolder(folder, models)
+      modelStoreMap[folder] = store
+      isLoading[folder] = null
+      return store
+    })
+    isLoading[folder] = promise
+    return promise
+  }
+
+  function clearCache() {
+    Object.keys(modelStoreMap).forEach((key) => {
+      delete modelStoreMap[key]
+    })
+  }
+
+  async function getModelFolders() {
+    modelFolders.value = (await api.getModelFolders()).filter(
+      (folder) => !folderBlacklist.includes(folder)
+    )
+  }
+
+  return {
+    modelStoreMap,
+    isLoading,
+    modelFolders,
+    getModelsInFolderCached,
+    clearCache,
+    getModelFolders
   }
 })
