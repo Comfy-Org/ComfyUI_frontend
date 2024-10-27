@@ -1847,19 +1847,10 @@ export class ComfyApp {
 
     this.#addAfterConfigureHandler()
 
-    // Make LGraphCanvas shallow reactive so that any change on the root object
-    // triggers reactivity.
-    this.canvas = shallowReactive(
-      new LGraphCanvas(canvasEl, this.graph, {
-        skip_events: true,
-        skip_render: true
-      })
-    )
-    // Bind event/ start rendering later, so that event handlers get reactive canvas reference.
-    this.canvas.options.skip_events = false
-    this.canvas.options.skip_render = false
-    this.canvas.bindEvents()
-    this.canvas.startRendering()
+    // Make LGraphCanvas.state shallow reactive so that any change on the root
+    // object triggers reactivity.
+    this.canvas = new LGraphCanvas(canvasEl, this.graph)
+    this.canvas.state = shallowReactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')
 
