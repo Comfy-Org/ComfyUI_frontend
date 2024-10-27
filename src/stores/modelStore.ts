@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
@@ -183,13 +182,13 @@ export const useModelStore = defineStore('modelStore', () => {
       isLoading.value[folder] = null
       return store
     })
-    isLoading[folder] = promise
+    isLoading.value[folder] = promise
     return promise
   }
 
   function clearCache() {
-    Object.keys(modelStoreMap).forEach((key) => {
-      delete modelStoreMap[key]
+    Object.keys(modelStoreMap.value).forEach((key) => {
+      delete modelStoreMap.value[key]
     })
   }
 
