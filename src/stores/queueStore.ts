@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type {
@@ -95,17 +94,17 @@ export class ResultItemImpl {
       return defaultType
     }
 
-    if (this.format.endsWith('webm')) {
+    if (this.format?.endsWith('webm')) {
       return 'video/webm'
     }
-    if (this.format.endsWith('mp4')) {
+    if (this.format?.endsWith('mp4')) {
       return 'video/mp4'
     }
     return defaultType
   }
 
   get isVideo(): boolean {
-    return !this.isImage && this.format && this.format.startsWith('video/')
+    return !this.isImage && !!this.format?.startsWith('video/')
   }
 
   get isGif(): boolean {
@@ -135,14 +134,14 @@ export class TaskItemImpl {
   constructor(
     taskType: TaskType,
     prompt: TaskPrompt,
-    status: TaskStatus | undefined,
-    outputs: TaskOutput,
+    status?: TaskStatus,
+    outputs?: TaskOutput,
     flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
     this.taskType = taskType
     this.prompt = prompt
     this.status = status
-    this.outputs = outputs
+    this.outputs = outputs ?? {}
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
@@ -335,21 +334,24 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
-  const tasks = computed(() => [
-    ...pendingTasks.value,
-    ...runningTasks.value,
-    ...historyTasks.value
-  ])
+  const tasks = computed<TaskItemImpl[]>(
+    () =>
+      [
+        ...pendingTasks.value,
+        ...runningTasks.value,
+        ...historyTasks.value
+      ] as TaskItemImpl[]
+  )
 
-  const flatTasks = computed(() =>
+  const flatTasks = computed<TaskItemImpl[]>(() =>
     tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
   )
 
-  const lastHistoryQueueIndex = computed(() =>
+  const lastHistoryQueueIndex = computed<number>(() =>
     historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
   )
 
-  const hasPendingTasks = computed(() => pendingTasks.value.length > 0)
+  const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
 
   const update = async () => {
     isLoading.value = true
@@ -366,8 +368,9 @@ export const useQueueStore = defineStore('queue', () => {
               new TaskItemImpl(
                 task.taskType,
                 task.prompt,
-                task['status'],
-                task['outputs'] || {}
+                // status and outputs only exist on history tasks
+                'status' in task ? task.status : undefined,
+                'outputs' in task ? task.outputs : undefined
               )
           )
           .sort((a, b) => b.queueIndex - a.queueIndex)
@@ -375,7 +378,7 @@ export const useQueueStore = defineStore('queue', () => {
       runningTasks.value = toClassAll(queue.Running)
       pendingTasks.value = toClassAll(queue.Pending)
 
-      const allIndex = new Set(
+      const allIndex = new Set<number>(
         history.History.map((item: TaskItem) => item.prompt[0])
       )
       const newHistoryItems = toClassAll(
@@ -383,8 +386,8 @@ export const useQueueStore = defineStore('queue', () => {
           (item) => item.prompt[0] > lastHistoryQueueIndex.value
         )
       )
-      const existingHistoryItems = historyTasks.value.filter(
-        (item: TaskItemImpl) => allIndex.has(item.queueIndex)
+      const existingHistoryItems = historyTasks.value.filter((item) =>
+        allIndex.has(item.queueIndex)
       )
       historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
         .slice(0, maxHistoryItems.value)
