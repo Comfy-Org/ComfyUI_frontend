@@ -7,82 +7,83 @@
  * settings directly updates the settingStore.settingValues.
  */
 
+import { ref, computed } from 'vue'
+import { defineStore } from 'pinia'
 import { app } from '@/scripts/app'
 import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import type { Settings } from '@/types/apiTypes'
 import type { SettingParams } from '@/types/settingTypes'
-import { buildTree } from '@/utils/treeUtil'
-import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
+import type { ComfyExtension } from '@/types/comfy'
+import { buildTree } from '@/utils/treeUtil'
 import { CORE_SETTINGS } from '@/stores/coreSettings'
-import { ComfyExtension } from '@/types/comfy'
 
 export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
 
-interface State {
-  settingValues: Record<string, any>
-  settings: Record<string, SettingParams>
-}
+export const useSettingStore = defineStore('setting', () => {
+  const settingValues = ref<Record<string, any>>({})
+  const settings = ref<Record<string, SettingParams>>({})
 
-export const useSettingStore = defineStore('setting', {
-  state: (): State => ({
-    settingValues: {},
-    settings: {}
-  }),
-  getters: {
-    // Setting tree structure used for the settings dialog display.
-    settingTree(): SettingTreeNode {
-      const root = buildTree(
-        Object.values(this.settings).filter(
-          (setting: SettingParams) => setting.type !== 'hidden'
-        ),
-        (setting: SettingParams) => setting.category || setting.id.split('.')
-      )
+  const settingTree = computed<SettingTreeNode>(() => {
+    const root = buildTree(
+      Object.values(settings.value).filter(
+        (setting: SettingParams) => setting.type !== 'hidden'
+      ),
+      (setting: SettingParams) => setting.category || setting.id.split('.')
+    )
 
-      const floatingSettings = (root.children ?? []).filter((node) => node.leaf)
-      if (floatingSettings.length) {
-        root.children = (root.children ?? []).filter((node) => !node.leaf)
-        root.children.push({
-          key: 'Other',
-          label: 'Other',
-          leaf: false,
-          children: floatingSettings
-        })
-      }
-
-      return root
-    }
-  },
-  actions: {
-    addSettings(settings: ComfySettingsDialog) {
-      for (const id in settings.settingsLookup) {
-        const value = settings.getSettingValue(id)
-        this.settingValues[id] = value
-      }
-      this.settings = settings.settingsParamLookup
-
-      CORE_SETTINGS.forEach((setting: SettingParams) => {
-        settings.addSetting(setting)
+    const floatingSettings = (root.children ?? []).filter((node) => node.leaf)
+    if (floatingSettings.length) {
+      root.children = (root.children ?? []).filter((node) => !node.leaf)
+      root.children.push({
+        key: 'Other',
+        label: 'Other',
+        leaf: false,
+        children: floatingSettings
       })
-    },
-
-    loadExtensionSettings(extension: ComfyExtension) {
-      extension.settings?.forEach((setting: SettingParams) => {
-        app.ui.settings.addSetting(setting)
-      })
-    },
-
-    async set<K extends keyof Settings>(key: K, value: Settings[K]) {
-      this.settingValues[key] = value
-      await app.ui.settings.setSettingValueAsync(key, value)
-    },
-
-    get<K extends keyof Settings>(key: K): Settings[K] {
-      return (
-        this.settingValues[key] ?? app.ui.settings.getSettingDefaultValue(key)
-      )
     }
+
+    return root
+  })
+
+  function addSettings(settingsDialog: ComfySettingsDialog) {
+    for (const id in settingsDialog.settingsLookup) {
+      const value = settingsDialog.getSettingValue(id)
+      settingValues.value[id] = value
+    }
+    settings.value = settingsDialog.settingsParamLookup
+
+    CORE_SETTINGS.forEach((setting: SettingParams) => {
+      settingsDialog.addSetting(setting)
+    })
+  }
+
+  function loadExtensionSettings(extension: ComfyExtension) {
+    extension.settings?.forEach((setting: SettingParams) => {
+      app.ui.settings.addSetting(setting)
+    })
+  }
+
+  async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
+    settingValues.value[key] = value
+    await app.ui.settings.setSettingValueAsync(key, value)
+  }
+
+  function get<K extends keyof Settings>(key: K): Settings[K] {
+    return (
+      settingValues.value[key] ?? app.ui.settings.getSettingDefaultValue(key)
+    )
+  }
+
+  return {
+    settingValues,
+    settings,
+    settingTree,
+    addSettings,
+    loadExtensionSettings,
+    set,
+    get
   }
 })

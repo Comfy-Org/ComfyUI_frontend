@@ -1,6 +1,6 @@
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 /** Helper class that defines how to construct a node from a model. */
 export class ModelNodeProvider {
@@ -17,75 +17,79 @@ export class ModelNodeProvider {
 }
 
 /** Service for mapping model types (by folder name) to nodes. */
-export const useModelToNodeStore = defineStore('modelToNode', {
-  state: () => ({
-    modelToNodeMap: {} as Record<string, ModelNodeProvider[]>,
-    nodeDefStore: useNodeDefStore(),
-    haveDefaultsLoaded: false
-  }),
-  actions: {
-    /**
-     * Get the node provider for the given model type name.
-     * @param modelType The name of the model type to get the node provider for.
-     * @returns The node provider for the given model type name.
-     */
-    getNodeProvider(modelType: string): ModelNodeProvider {
-      this.registerDefaults()
-      return this.modelToNodeMap[modelType]?.[0]
-    },
-
-    /**
-     * Get the list of all valid node providers for the given model type name.
-     * @param modelType The name of the model type to get the node providers for.
-     * @returns The list of all valid node providers for the given model type name.
-     */
-    getAllNodeProviders(modelType: string): ModelNodeProvider[] {
-      this.registerDefaults()
-      return this.modelToNodeMap[modelType] ?? []
-    },
-
-    /**
-     * Register a node provider for the given model type name.
-     * @param modelType The name of the model type to register the node provider for.
-     * @param nodeProvider The node provider to register.
-     */
-    registerNodeProvider(modelType: string, nodeProvider: ModelNodeProvider) {
-      this.registerDefaults()
-      this.modelToNodeMap[modelType] ??= []
-      this.modelToNodeMap[modelType].push(nodeProvider)
-    },
-
-    /**
-     * Register a node provider for the given simple names.
-     * @param modelType The name of the model type to register the node provider for.
-     * @param nodeClass The node class name to register.
-     * @param key The key to use for the node input.
-     */
-    quickRegister(modelType: string, nodeClass: string, key: string) {
-      this.registerNodeProvider(
-        modelType,
-        new ModelNodeProvider(this.nodeDefStore.nodeDefsByName[nodeClass], key)
-      )
-    },
-
-    registerDefaults() {
-      if (this.haveDefaultsLoaded) {
-        return
-      }
-      if (Object.keys(this.nodeDefStore.nodeDefsByName).length === 0) {
-        return
-      }
-      this.haveDefaultsLoaded = true
-      this.quickRegister('checkpoints', 'CheckpointLoaderSimple', 'ckpt_name')
-      this.quickRegister(
-        'checkpoints',
-        'ImageOnlyCheckpointLoader',
-        'ckpt_name'
-      )
-      this.quickRegister('loras', 'LoraLoader', 'lora_name')
-      this.quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
-      this.quickRegister('vae', 'VAELoader', 'vae_name')
-      this.quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
+export const useModelToNodeStore = defineStore('modelToNode', () => {
+  const modelToNodeMap = ref<Record<string, ModelNodeProvider[]>>({})
+  const nodeDefStore = useNodeDefStore()
+  const haveDefaultsLoaded = ref(false)
+  /**
+   * Get the node provider for the given model type name.
+   * @param modelType The name of the model type to get the node provider for.
+   * @returns The node provider for the given model type name.
+   */
+  function getNodeProvider(modelType: string): ModelNodeProvider | undefined {
+    registerDefaults()
+    return modelToNodeMap.value[modelType]?.[0]
+  }
+  /**
+   * Get the list of all valid node providers for the given model type name.
+   * @param modelType The name of the model type to get the node providers for.
+   * @returns The list of all valid node providers for the given model type name.
+   */
+  function getAllNodeProviders(modelType: string): ModelNodeProvider[] {
+    registerDefaults()
+    return modelToNodeMap.value[modelType] ?? []
+  }
+  /**
+   * Register a node provider for the given model type name.
+   * @param modelType The name of the model type to register the node provider for.
+   * @param nodeProvider The node provider to register.
+   */
+  function registerNodeProvider(
+    modelType: string,
+    nodeProvider: ModelNodeProvider
+  ) {
+    registerDefaults()
+    if (!modelToNodeMap.value[modelType]) {
+      modelToNodeMap.value[modelType] = []
     }
+    modelToNodeMap.value[modelType].push(nodeProvider)
+  }
+  /**
+   * Register a node provider for the given simple names.
+   * @param modelType The name of the model type to register the node provider for.
+   * @param nodeClass The node class name to register.
+   * @param key The key to use for the node input.
+   */
+  function quickRegister(modelType: string, nodeClass: string, key: string) {
+    registerNodeProvider(
+      modelType,
+      new ModelNodeProvider(nodeDefStore.nodeDefsByName[nodeClass], key)
+    )
+  }
+
+  function registerDefaults() {
+    if (haveDefaultsLoaded.value) {
+      return
+    }
+    if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
+      return
+    }
+    haveDefaultsLoaded.value = true
+
+    quickRegister('checkpoints', 'CheckpointLoaderSimple', 'ckpt_name')
+    quickRegister('checkpoints', 'ImageOnlyCheckpointLoader', 'ckpt_name')
+    quickRegister('loras', 'LoraLoader', 'lora_name')
+    quickRegister('loras', 'LoraLoaderModelOnly', 'lora_name')
+    quickRegister('vae', 'VAELoader', 'vae_name')
+    quickRegister('controlnet', 'ControlNetLoader', 'control_net_name')
+  }
+
+  return {
+    modelToNodeMap,
+    getNodeProvider,
+    getAllNodeProviders,
+    registerNodeProvider,
+    quickRegister,
+    registerDefaults
   }
 })
