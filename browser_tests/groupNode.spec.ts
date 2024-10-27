@@ -90,6 +90,7 @@ test.describe('Group Node', () => {
   })
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
     const tooltipTimeout = 500
