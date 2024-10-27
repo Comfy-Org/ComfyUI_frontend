@@ -1401,8 +1401,7 @@ export class ComfyApp {
       size,
       fgcolor,
       bgcolor,
-      selected,
-      mouse_over
+      selected
     ) {
       const res = origDrawNodeShape.apply(this, arguments)
 
