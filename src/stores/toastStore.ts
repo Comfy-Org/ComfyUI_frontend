@@ -2,27 +2,38 @@
 // instead of going through the store.
 // The store is useful when you need to call it from outside the Vue component context.
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 import type { ToastMessageOptions } from 'primevue/toast'
 
-export const useToastStore = defineStore('toast', {
-  state: () => ({
-    messagesToAdd: [] as ToastMessageOptions[],
-    messagesToRemove: [] as ToastMessageOptions[],
-    removeAllRequested: false
-  }),
+export const useToastStore = defineStore('toast', () => {
+  const messagesToAdd = ref<ToastMessageOptions[]>([])
+  const messagesToRemove = ref<ToastMessageOptions[]>([])
+  const removeAllRequested = ref(false)
 
-  actions: {
-    add(message: ToastMessageOptions) {
-      this.messagesToAdd = [...this.messagesToAdd, message]
-    },
-    remove(message: ToastMessageOptions) {
-      this.messagesToRemove = [...this.messagesToRemove, message]
-    },
-    removeAll() {
-      this.removeAllRequested = true
-    },
-    addAlert(message: string) {
-      this.add({ severity: 'warn', summary: 'Alert', detail: message })
-    }
+  function add(message: ToastMessageOptions) {
+    messagesToAdd.value = [...messagesToAdd.value, message]
+  }
+
+  function remove(message: ToastMessageOptions) {
+    messagesToRemove.value = [...messagesToRemove.value, message]
+  }
+
+  function removeAll() {
+    removeAllRequested.value = true
+  }
+
+  function addAlert(message: string) {
+    add({ severity: 'warn', summary: 'Alert', detail: message })
+  }
+
+  return {
+    messagesToAdd,
+    messagesToRemove,
+    removeAllRequested,
+
+    add,
+    remove,
+    removeAll,
+    addAlert
   }
 })
