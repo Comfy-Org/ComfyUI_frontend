@@ -380,8 +380,8 @@ export class ComfyWorkflow {
 
     path = appendJsonExt(path)
 
-    const p = await this.manager.app.graphToPrompt()
-    const json = JSON.stringify(p.workflow, null, 2)
+    const workflow = this.manager.app.serializeGraph()
+    const json = JSON.stringify(workflow, null, 2)
     let resp = await api.storeUserData('workflows/' + path, json, {
       stringify: false,
       throwOnError: false,
