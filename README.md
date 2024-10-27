@@ -367,6 +367,14 @@ We will support custom icons later.
 
 ## Development
 
+### Tech Stack
+
+- [Vue 3](https://vuejs.org/) with [TypeScript](https://www.typescriptlang.org/)
+- [Pinia](https://pinia.vuejs.org/) for state management
+- [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
+- [Litegraph](https://github.com/Comfy-Org/litegraph.js) for node editor
+- [zod](https://zod.dev/) for schema validation
+
 ### Git pre-commit hooks
 
 Run `npm run prepare` to install Git pre-commit hooks. Currently, the pre-commit
