@@ -73,6 +73,8 @@ test.describe('Node Interaction', () => {
       await comfyPage.disconnectEdge()
       await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
       await comfyPage.connectEdge()
+      // Move mouse to empty area to avoid slot highlight.
+      await comfyPage.moveMouseToEmptyArea()
       // Litegraph renders edge with a slight offset.
       await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
         maxDiffPixels: 50
