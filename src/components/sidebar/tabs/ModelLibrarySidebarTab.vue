@@ -30,7 +30,12 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
-import { ComfyModelDef, ModelFolder, useModelStore } from '@/stores/modelStore'
+import {
+  ComfyModelDef,
+  ModelFolder,
+  ResourceState,
+  useModelStore
+} from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
@@ -59,22 +64,26 @@ const filteredModels = computed<ComfyModelDef[]>(() => {
   return modelStore.models
 })
 
+type ModelOrFolder = ComfyModelDef | ModelFolder
+
 const root = computed<TreeNode>(() => {
-  const allNodes: (ComfyModelDef | ModelFolder)[] = [
+  const allNodes: ModelOrFolder[] = [
     ...filteredModels.value,
     ...modelStore.modelFolders
   ]
-  return buildTree(allNodes, (modelOrFolder: ComfyModelDef | ModelFolder) =>
+  return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
 })
 
-const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
+const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
-  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ComfyModelDef> => {
+  const fillNodeInfo = (node: TreeNode): TreeExplorerNode<ModelOrFolder> => {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
+    const folder: ModelFolder | null =
+      !node.leaf && node.data ? node.data : null
 
     return {
       key: node.key,
@@ -85,31 +94,24 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         : node.label,
       leaf: node.leaf,
       data: node.data,
-      getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
+      getIcon: (node: TreeExplorerNode<ModelOrFolder>) => {
         if (node.leaf) {
-          if (node.data && node.data.image) {
-            return 'pi pi-fake-spacer'
-          }
-          return 'pi pi-file'
+          return model.image ? 'pi pi-image' : 'pi pi-file'
         }
+        return 'pi pi-folder'
       },
-      getBadgeText: (node: TreeExplorerNode<ComfyModelDef>) => {
-        if (node.leaf) {
+      getBadgeText: () => {
+        // Return null to apply default badge text
+        // Return empty string to hide badge
+        if (!folder) {
           return null
         }
-        // TODO: Fix this
-        function isUninitialized(model: ComfyModelDef | null) {
-          return true
-        }
-        if (isUninitialized(node.data)) {
-          return ''
-        }
-        return null
+        return folder.state === ResourceState.Loaded ? null : ''
       },
       children,
       draggable: node.leaf,
       handleClick: (
-        node: RenderedTreeExplorerNode<ComfyModelDef>,
+        node: RenderedTreeExplorerNode<ModelOrFolder>,
         e: MouseEvent
       ) => {
         if (node.leaf) {
