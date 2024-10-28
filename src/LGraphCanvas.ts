@@ -2820,7 +2820,7 @@ export class LGraphCanvas {
                     this.visible_nodes
                 )
 
-                if (!node && e.click_time < 300) {
+                if (!node && e.click_time < 300 && !this.graph.groups.some(x => x.isPointInTitlebar(e.canvasX, e.canvasY))) {
                     this.deselectAllNodes()
                 }
 

@@ -3,7 +3,7 @@ import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { overlapBounding } from "./measure"
+import { isInsideRectangle, overlapBounding } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 
 export interface IGraphGroup {
@@ -257,6 +257,11 @@ export class LGraphGroup {
             null,
             { content: "Remove", callback: LGraphCanvas.onMenuNodeRemove }
         ]
+    }
+
+    isPointInTitlebar(x: number, y: number): boolean {
+        const b = this._bounding
+        return isInsideRectangle(x, y, b[0], b[1], b[2], this.titleHeight)
     }
 
     isPointInside = LGraphNode.prototype.isPointInside
