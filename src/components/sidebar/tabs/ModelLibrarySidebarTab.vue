@@ -27,15 +27,10 @@
 
 <script setup lang="ts">
 import SearchBox from '@/components/common/SearchBox.vue'
-import { useI18n } from 'vue-i18n'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
-import {
-  ComfyModelDef,
-  ResourceState,
-  useModelStore
-} from '@/stores/modelStore'
+import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
@@ -43,11 +38,10 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, type ComputedRef, watch, toRef } from 'vue'
+import { computed, ref, type ComputedRef, watch, toRef, onMounted } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
-const { t } = useI18n()
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
@@ -56,33 +50,14 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const root: ComputedRef<TreeNode> = computed(() => {
-  let modelList: ComfyModelDef[] = []
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
-    for (let folder of modelStore.modelFolderNames) {
-      modelStore.getLoadedModelFolder(folder)
-    }
-  }
-  for (let folder of modelStore.modelFolderNames) {
-    const models = modelStore.modelFolderByName[folder]
-    if (models.state === ResourceState.Loaded) {
-      if (Object.values(models.models).length) {
-        modelList.push(...Object.values(models.models))
-      } else {
-        // ModelDef with key 'folder/a/b/c/' is treated as empty folder
-        modelList.push(new ComfyModelDef('', folder))
-      }
-    }
-  }
-  if (searchQuery.value) {
-    const search = searchQuery.value.toLocaleLowerCase()
-    modelList = modelList.filter((model: ComfyModelDef) => {
-      return model.searchable.includes(search)
-    })
-  }
-  const tree: TreeNode = buildTree(modelList, (model: ComfyModelDef) =>
-    model.key.split('/')
-  )
-  return tree
+  const models: ComfyModelDef[] = modelStore.models
+  // if (searchQuery.value) {
+  //   const search = searchQuery.value.toLocaleLowerCase()
+  //   modelList = modelList.filter((model: ComfyModelDef) => {
+  //     return model.searchable.includes(search)
+  //   })
+  // }
+  return buildTree(models, (model: ComfyModelDef) => model.key.split('/'))
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
@@ -165,6 +140,12 @@ watch(
   },
   { deep: true }
 )
+
+onMounted(async () => {
+  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+    await modelStore.loadModels()
+  }
+})
 </script>
 
 <style scoped>

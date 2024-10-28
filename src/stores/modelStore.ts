@@ -170,9 +170,20 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
-  const modelFolderByName = ref<Record<string, ModelFolder | null>>({})
-  const modelFolderNames = computed(() => Object.keys(modelFolderByName.value))
+  const modelFolderByName = ref<Record<string, ModelFolder>>({})
+  const modelFolderNames = computed<string[]>(() =>
+    Object.keys(modelFolderByName.value)
+  )
+  const modelFolders = computed<ModelFolder[]>(() =>
+    Object.values(modelFolderByName.value)
+  )
+  const models = computed<ComfyModelDef[]>(() =>
+    modelFolders.value.flatMap((folder) => Object.values(folder.models))
+  )
 
+  /**
+   * Loads the model folders from the server
+   */
   async function loadModelFolders() {
     const folders = await api.getModelFolders()
     modelFolderByName.value = {}
@@ -188,10 +199,19 @@ export const useModelStore = defineStore('models', () => {
     return folder ? await folder.load() : null
   }
 
+  /**
+   * Loads all model folders' contents from the server
+   */
+  async function loadModels() {
+    return Promise.all(modelFolders.value.map((folder) => folder.load()))
+  }
+
   return {
+    models,
     modelFolderByName,
     modelFolderNames,
     loadModelFolders,
+    loadModels,
     getLoadedModelFolder
   }
 })
