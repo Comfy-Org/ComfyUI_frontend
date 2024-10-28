@@ -11,9 +11,10 @@ import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionEr
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { i18n } from '@/i18n'
+import type { MissingNodeType } from '@/types/comfy'
 
 export function showLoadWorkflowWarning(props: {
-  missingNodeTypes: any[]
+  missingNodeTypes: MissingNodeType[]
   [key: string]: any
 }) {
   const dialogStore = useDialogStore()

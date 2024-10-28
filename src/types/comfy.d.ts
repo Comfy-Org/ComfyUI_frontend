@@ -28,6 +28,17 @@ export type MenuCommandGroup = {
   commands: string[]
 }
 
+export type MissingNodeType =
+  | string
+  | {
+      type: string
+      hint?: string
+      action?: {
+        text: string
+        callback: () => void
+      }
+    }
+
 export interface ComfyExtension {
   /**
    * The name of the extension
@@ -120,6 +131,22 @@ export interface ComfyExtension {
    * @param app The ComfyUI app instance
    */
   nodeCreated?(node: LGraphNode, app: ComfyApp): void
+
+  /**
+   * Allows the extension to modify the graph data before it is configured.
+   * @param graphData The graph data
+   * @param missingNodeTypes The missing node types
+   */
+  beforeConfigureGraph?(
+    graphData: ComfyWorkflowJSON,
+    missingNodeTypes: MissingNodeType[]
+  ): void
+
+  /**
+   * Allows the extension to run code after the graph is configured.
+   * @param missingNodeTypes The missing node types
+   */
+  afterConfigureGraph?(missingNodeTypes: MissingNodeType[]): void
 
   [key: string]: any
 }

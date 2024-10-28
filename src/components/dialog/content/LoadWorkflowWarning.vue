@@ -37,18 +37,10 @@ import { computed } from 'vue'
 import ListBox from 'primevue/listbox'
 import Button from 'primevue/button'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-
-interface NodeType {
-  type: string
-  hint?: string
-  action?: {
-    text: string
-    callback: () => void
-  }
-}
+import type { MissingNodeType } from '@/types/comfy'
 
 const props = defineProps<{
-  missingNodeTypes: (string | NodeType)[]
+  missingNodeTypes: MissingNodeType[]
 }>()
 
 const uniqueNodes = computed(() => {

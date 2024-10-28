@@ -15,7 +15,7 @@ import { addDomClippingSetting } from './domWidget'
 import { createImageHost, calculateImageGrid } from './ui/imagePreview'
 import { DraggableList } from './ui/draggableList'
 import { applyTextReplacements, addStylesheet } from './utils'
-import type { ComfyExtension } from '@/types/comfy'
+import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
@@ -2188,7 +2188,7 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  #showMissingNodesError(missingNodeTypes) {
+  #showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({ missingNodeTypes })
     }
@@ -2268,7 +2268,7 @@ export class ComfyApp {
       graphData = validatedGraphData ?? graphData
     }
 
-    const missingNodeTypes = []
+    const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
     await this.#invokeExtensionsAsync(
       'beforeConfigureGraph',
