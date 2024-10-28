@@ -159,7 +159,7 @@ export class ModelFolder {
 const folderBlacklist = ['configs', 'custom_nodes']
 
 /** Model store handler, wraps individual per-folder model stores */
-export const useModelStore = defineStore('modelStore', () => {
+export const useModelStore = defineStore('models', () => {
   const modelFolderByName = ref<Record<string, ModelFolder | null>>({})
   const isLoading = ref<Record<string, Promise<ModelFolder | null> | null>>({})
   const modelFolders = ref<string[]>([])
