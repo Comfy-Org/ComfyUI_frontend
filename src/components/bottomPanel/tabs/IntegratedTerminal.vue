@@ -4,7 +4,7 @@
       v-if="loading"
       class="absolute inset-0 flex justify-center items-center h-full z-10"
     />
-    <div class="p-terminal rounded-none h-full w-full">
+    <div class="p-terminal rounded-none h-full w-full p-2">
       <div class="h-full" ref="terminalEl"></div>
     </div>
   </div>
@@ -19,6 +19,8 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { debounce } from 'lodash'
 import ProgressSpinner from 'primevue/progressspinner'
 
+let intervalId: number
+let useFallbackPolling: boolean = false
 const loading = ref(true)
 const terminalEl = ref<HTMLDivElement>()
 const fitAddon = new FitAddon()
@@ -51,28 +53,57 @@ const logReceived = (
   update(e.detail.entries, e.detail.size)
 }
 
-const loadLogs = async () => {
+const loadLogText = async () => {
+  // Fallback to using string logs
+  const logs = await api.getLogs()
+  terminal.clear()
+  terminal.write(logs)
+  fitAddon.fit()
+}
+
+const loadLogEntries = async () => {
   const logs = await api.getRawLogs()
   update(logs.entries, logs.size)
 }
 
+const watchLogs = async () => {
+  if (useFallbackPolling) {
+    intervalId = window.setInterval(loadLogText, 500)
+  } else {
+    // It is possible for a user to open the terminal before a clientid is assigned
+    // subscribe requires this so wait for it
+    await api.waitForClientId()
+    api.subscribeLogs(true)
+    api.addEventListener('logs', logReceived)
+  }
+}
+
 onMounted(async () => {
   terminal.open(terminalEl.value)
-  await loadLogs()
-  loading.value = false
 
-  // It is possible for a user to open the terminal before a clientid is assigned
-  await api.waitForClientId()
-  api.subscribeLogs(true)
-  api.addEventListener('logs', logReceived)
+  try {
+    await loadLogEntries()
+  } catch {
+    useFallbackPolling = true
+    await loadLogText()
+  }
+
+  loading.value = false
   resizeObserver.observe(terminalEl.value)
+
+  await watchLogs()
 })
 
 onUnmounted(() => {
-  if (api.clientId) {
-    api.subscribeLogs(false)
+  if (useFallbackPolling) {
+    window.clearInterval(intervalId)
+  } else {
+    if (api.clientId) {
+      api.subscribeLogs(false)
+    }
+    api.removeEventListener('logs', logReceived)
   }
-  api.removeEventListener('logs', logReceived)
+
   resizeObserver.disconnect()
 })
 </script>
