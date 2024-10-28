@@ -37,6 +37,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useModelStore } from '@/stores/modelStore'
 
 setupAutoQueueHandler()
 
@@ -158,6 +159,9 @@ const onGraphReady = () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
       useKeybindingStore().loadUserKeybindings()
+
+      // Load model folders
+      useModelStore().loadModelFolders()
 
       // Migrate legacy bookmarks
       useNodeBookmarkStore().migrateLegacyBookmarks()

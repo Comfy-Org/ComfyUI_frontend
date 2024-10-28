@@ -53,9 +53,6 @@ const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const root: ComputedRef<TreeNode> = computed(() => {
   let modelList: ComfyModelDef[] = []
-  if (!modelStore.modelFolders.length) {
-    modelStore.getModelFolders()
-  }
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     for (let folder of modelStore.modelFolders) {
       modelStore.getModelsInFolderCached(folder)

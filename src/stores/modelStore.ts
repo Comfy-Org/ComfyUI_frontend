@@ -192,7 +192,7 @@ export const useModelStore = defineStore('models', () => {
     })
   }
 
-  async function getModelFolders() {
+  async function loadModelFolders() {
     modelFolders.value = (await api.getModelFolders()).filter(
       (folder) => !folderBlacklist.includes(folder)
     )
@@ -204,6 +204,6 @@ export const useModelStore = defineStore('models', () => {
     modelFolders,
     getModelsInFolderCached,
     clearCache,
-    getModelFolders
+    loadModelFolders
   }
 })
