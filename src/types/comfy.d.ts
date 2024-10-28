@@ -30,6 +30,7 @@ export type MenuCommandGroup = {
 
 export type MissingNodeType =
   | string
+  // Primarily used by group nodes.
   | {
       type: string
       hint?: string
