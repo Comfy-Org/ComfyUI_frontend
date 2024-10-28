@@ -9,7 +9,7 @@
     :options="uniqueNodes"
     optionLabel="label"
     scrollHeight="100%"
-    class="missing-nodes-list"
+    class="missing-nodes-list comfy-missing-nodes"
     :pt="{
       list: { class: 'border-none' }
     }"
