@@ -303,8 +303,4 @@ const missingModels = computed(() => {
   justify-content: flex-end;
   z-index: 1;
 }
-
-:deep(.download-button-container) {
-  min-width: 80px;
-}
 </style>

@@ -53,6 +53,7 @@ const triggerDownload = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 80px;
 }
 
 .pi.pi-times {
