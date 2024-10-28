@@ -14,16 +14,12 @@ import { i18n } from '@/i18n'
 
 export function showLoadWorkflowWarning(props: {
   missingNodeTypes: any[]
-  hasAddedNodes: boolean
   [key: string]: any
 }) {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: LoadWorkflowWarning,
-    props,
-    dialogComponentProps: {
-      maximizable: true
-    }
+    props
   })
 }
 

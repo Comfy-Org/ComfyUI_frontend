@@ -1,5 +1,5 @@
 <template>
-  <div class="no-results-placeholder">
+  <div class="no-results-placeholder p-8 h-full" :class="props.class">
     <Card>
       <template #content>
         <div class="flex flex-col items-center">
@@ -22,7 +22,8 @@
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 
-defineProps<{
+const props = defineProps<{
+  class?: string
   icon?: string
   title: string
   message: string
@@ -33,11 +34,6 @@ defineEmits(['action'])
 </script>
 
 <style scoped>
-.no-results-placeholder {
-  height: 100%;
-  padding: 2rem;
-}
-
 .no-results-placeholder :deep(.p-card) {
   background-color: var(--surface-ground);
   text-align: center;
