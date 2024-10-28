@@ -2,11 +2,11 @@ import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuO
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
-import type { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
 import type { IClipboardContents } from "./types/serialisation"
 import type { LLink } from "./LLink"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
+import { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
 import { isInsideRectangle, distance, overlapBounding, isPointInRectangle } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
@@ -1894,6 +1894,7 @@ export class LGraphCanvas {
                                                     input: input,
                                                     output: null,
                                                     pos: pos,
+                                                    direction: node.horizontal !== true ? LinkDirection.RIGHT : LinkDirection.CENTER,
                                                 })
                                             }
 
@@ -3766,7 +3767,7 @@ export class LGraphCanvas {
                         null,
                         link_color,
                         connDir,
-                        LiteGraph.CENTER
+                        link.direction ?? LinkDirection.CENTER
                     )
 
                     ctx.beginPath()
