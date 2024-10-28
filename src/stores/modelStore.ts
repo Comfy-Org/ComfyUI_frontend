@@ -171,9 +171,6 @@ export class ModelFolder {
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
-  const modelFolderNames = computed<string[]>(() =>
-    Object.keys(modelFolderByName.value)
-  )
   const modelFolders = computed<ModelFolder[]>(() =>
     Object.values(modelFolderByName.value)
   )
@@ -208,8 +205,7 @@ export const useModelStore = defineStore('models', () => {
 
   return {
     models,
-    modelFolderByName,
-    modelFolderNames,
+    modelFolders,
     loadModelFolders,
     loadModels,
     getLoadedModelFolder
