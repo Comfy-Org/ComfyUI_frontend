@@ -9,7 +9,7 @@
     :options="uniqueNodes"
     optionLabel="label"
     scrollHeight="100%"
-    class="missing-nodes-list comfy-missing-nodes"
+    class="comfy-missing-nodes"
     :pt="{
       list: { class: 'border-none' }
     }"
@@ -74,23 +74,9 @@ const uniqueNodes = computed(() => {
 </script>
 
 <style scoped>
-.warning-title {
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-.warning-description {
-  margin-bottom: 1rem;
-}
-
-.missing-nodes-list {
+.comfy-missing-nodes {
   max-height: 300px;
   overflow-y: auto;
-}
-
-.node-type {
-  font-weight: 600;
-  color: var(--text-color);
 }
 
 .node-hint {
