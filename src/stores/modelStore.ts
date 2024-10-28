@@ -166,12 +166,6 @@ export class ModelFolder {
     this.state = ResourceState.Loaded
     return this
   }
-
-  async loadModelMetadata(modelName: string) {
-    if (this.models[modelName]) {
-      await this.models[modelName].load()
-    }
-  }
 }
 
 /** Model store handler, wraps individual per-folder model stores */
