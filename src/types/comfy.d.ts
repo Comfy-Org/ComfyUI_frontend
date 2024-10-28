@@ -141,13 +141,15 @@ export interface ComfyExtension {
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[]
-  ): void
+  ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
    */
-  afterConfigureGraph?(missingNodeTypes: MissingNodeType[]): void
+  afterConfigureGraph?(
+    missingNodeTypes: MissingNodeType[]
+  ): Promise<void> | void
 
   [key: string]: any
 }
