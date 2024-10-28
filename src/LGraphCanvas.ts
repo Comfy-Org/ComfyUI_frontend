@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalInputsData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
@@ -230,7 +230,7 @@ export class LGraphCanvas {
     viewport?: Rect
     autoresize: boolean
     static active_canvas: LGraphCanvas
-    static onMenuNodeOutputs?(entries: IOptionalInputsData[]): IOptionalInputsData[]
+    static onMenuNodeOutputs?(entries: IOptionalSlotData<INodeOutputSlot>[]): IOptionalSlotData<INodeOutputSlot>[]
     frame: number
     last_draw_time: number
     render_time: number
@@ -721,7 +721,7 @@ export class LGraphCanvas {
             ? node.onGetInputs()
             : node.optional_inputs
 
-        let entries: IOptionalInputsData[] = []
+        let entries: IOptionalSlotData<INodeInputSlot>[] = []
         if (options) {
             for (let i = 0; i < options.length; i++) {
                 const entry = options[i]
@@ -737,7 +737,7 @@ export class LGraphCanvas {
                 }
 
                 entry[2].removable = true
-                const data: IOptionalInputsData = { content: label, value: entry }
+                const data: IOptionalSlotData<INodeInputSlot> = { content: label, value: entry }
                 if (entry[1] == LiteGraph.ACTION) {
                     data.className = "event"
                 }
@@ -798,7 +798,7 @@ export class LGraphCanvas {
             ? node.onGetOutputs()
             : node.optional_outputs
 
-        let entries: IOptionalInputsData[] = []
+        let entries: IOptionalSlotData<INodeOutputSlot>[] = []
         if (options) {
             for (let i = 0; i < options.length; i++) {
                 const entry = options[i]
@@ -819,7 +819,7 @@ export class LGraphCanvas {
                     label = entry[2].label
                 }
                 entry[2].removable = true
-                const data: IOptionalInputsData = { content: label, value: entry }
+                const data: IOptionalSlotData<INodeOutputSlot> = { content: label, value: entry }
                 if (entry[1] == LiteGraph.EVENT) {
                     data.className = "event"
                 }
@@ -830,6 +830,7 @@ export class LGraphCanvas {
         if (this.onMenuNodeOutputs) entries = this.onMenuNodeOutputs(entries)
         if (LiteGraph.do_add_triggers_slots) { //canvas.allow_addOutSlot_onExecuted
             if (node.findOutputSlot("onExecuted") == -1) {
+                // @ts-expect-error Events
                 entries.push({ content: "On Executed", value: ["onExecuted", LiteGraph.EVENT, { nameLocked: true }], className: "event" }) //, opts: {}
             }
         }

@@ -1,5 +1,5 @@
 import type { Point, ConnectingLink } from "./interfaces"
-import type { INodeSlot, INodeInputSlot, INodeOutputSlot, CanvasColour, Direction, IBoundaryNodes, IContextMenuOptions, IContextMenuValue, IFoundSlot, IInputOrOutput, INodeFlags, IOptionalInputsData, ISlotType, KeysOfType, MethodNames, PickByType, Rect, Rect32, Size } from "./interfaces"
+import type { INodeSlot, INodeInputSlot, INodeOutputSlot, CanvasColour, Direction, IBoundaryNodes, IContextMenuOptions, IContextMenuValue, IFoundSlot, IInputOrOutput, INodeFlags, IOptionalSlotData, ISlotType, KeysOfType, MethodNames, PickByType, Rect, Rect32, Size } from "./interfaces"
 import type { SlotShape, LabelPosition, SlotDirection, SlotType } from "./draw"
 import type { IWidget } from "./types/widgets"
 import type { RenderShape, TitleMode } from "./types/globalEnums"
@@ -19,7 +19,7 @@ import { LGraphBadge, BadgePosition } from "./LGraphBadge"
 
 export const LiteGraph = new LiteGraphGlobal()
 export { LGraph, LGraphCanvas, DragAndScale, LGraphNode, LGraphGroup, LLink, ContextMenu, CurveEditor }
-export { INodeSlot, INodeInputSlot, INodeOutputSlot, ConnectingLink, CanvasColour, Direction, IBoundaryNodes, IContextMenuOptions, IContextMenuValue, IFoundSlot, IInputOrOutput, INodeFlags, IOptionalInputsData, ISlotType, KeysOfType, MethodNames, PickByType, Rect, Rect32, Size }
+export { INodeSlot, INodeInputSlot, INodeOutputSlot, ConnectingLink, CanvasColour, Direction, IBoundaryNodes, IContextMenuOptions, IContextMenuValue, IFoundSlot, IInputOrOutput, INodeFlags, IOptionalSlotData, ISlotType, KeysOfType, MethodNames, PickByType, Rect, Rect32, Size }
 export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
