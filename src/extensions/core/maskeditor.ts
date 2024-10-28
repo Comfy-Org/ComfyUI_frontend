@@ -1,8 +1,22 @@
+// @ts-strict-ignore
+
 import { app } from '../../scripts/app'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { ComfyApp } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { ClipspaceDialog } from './clipspace'
+
+/*
+Fixes needed:
+- undo message comes and undo is still exdecuted ?
+- when drawing lines, take into account potential new pan and zoom
+- undo states get grouped together when drawing lines
+- previous image is sometimes loaded when mask is saved
+- fill is in wrong color if color changed before fill
+- repair drawing and line drawing
+- hide brush when closing
+- add keyboard shortcuts
+*/
 
 var styles = `
 #maskEditorContainer {
@@ -22,12 +36,9 @@ var styles = `
   user-select: none;
 }
 #maskEditor_sidePanelContainer {
-  position: absolute;
-  right: 0;
   height: 100%;
   width: 220px;
   z-index: 8888;
-  top: 0;
   display: flex;
   flex-direction: column;
 }
@@ -244,9 +255,6 @@ var styles = `
   border: none;
 }
 #maskEditor_toolPanel {
-  position: absolute;
-  left: 0;
-  top: 0;
   height: 100%;
   width: var(--sidebar-width);
   z-index: 8888;
@@ -312,6 +320,19 @@ var styles = `
   margin-top: 5px;
   margin-bottom: 5px;
 }
+
+#maskEditor_pointerZone {
+  width: calc(100% - var(--sidebar-width) - 220px);
+  height: 100%;
+}
+
+#maskEditor_uiContainer {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  z-index: 8888;
+  display: flex;
+}
 `
 
 var styleSheet = document.createElement('style')
@@ -332,19 +353,23 @@ function dataURLToBlob(dataURL: string) {
   return new Blob([arrayBuffer], { type: contentType })
 }
 
-function loadImage(imagePath: URL) {
+function loadImage(imagePath: URL): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const image = new Image()
-
+    const image = new Image() as HTMLImageElement
     image.onload = function () {
       resolve(image)
     }
-
+    image.onerror = function (error) {
+      reject(error)
+    }
     image.src = imagePath.href
   })
 }
 
-async function uploadMask(filepath: string, formData: FormData) {
+async function uploadMask(
+  filepath: { filename: string; subfolder: string; type: string },
+  formData: FormData
+) {
   await api
     .fetchApi('/upload/mask', {
       method: 'POST',
@@ -415,6 +440,11 @@ enum CompositionOperation {
   DestinationOut = 'destination-out'
 }
 
+interface Point {
+  x: number
+  y: number
+}
+
 class MaskEditorDialog extends ComfyDialog {
   static instance: MaskEditorDialog | null = null
   static mousedown_x: number = 0
@@ -448,18 +478,24 @@ class MaskEditorDialog extends ComfyDialog {
   lastTouchY: number = 0
   lastTouchMidX: number = 0
   lastTouchMidY: number = 0
+  brush_opacity: number = 1.0
+  brush_size: number = 10
+  brush_hardness: number = 1.0
+  brush_color_mode: string = 'black'
+  drawing_mode: boolean = false
+  smoothingCoords: Point | null = null
+  smoothingCordsArray: Point[] = []
+  smoothingLastDrawTime: Date | null = null
 
   isDrawing: boolean = false
   canvasHistory: any
 
   mouseOverSidePanel: boolean = false
-  mouseOverCanvas: boolean = false
+  mouseOverCanvas: boolean = true
 
   isAdjustingBrush: boolean = false
   brushPreviewGradient!: HTMLDivElement
   brush_hardness_slider!: HTMLInputElement
-
-  grabbing: boolean = false
 
   initialX: number = 0
   initialY: number = 0
@@ -486,6 +522,7 @@ class MaskEditorDialog extends ComfyDialog {
   canvasBackground!: HTMLDivElement
 
   isSpacePressed: boolean = false
+  pointerZone!: HTMLDivElement
 
   static getInstance() {
     if (!MaskEditorDialog.instance) {
@@ -1103,6 +1140,9 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
+
+      this.pointerZone.style.cursor = 'none'
+      this.brush.style.opacity = '1'
     })
 
     var toolPanel_brushToolIndicator = document.createElement('div')
@@ -1136,6 +1176,9 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
+
+      this.pointerZone.style.cursor = 'none'
+      this.brush.style.opacity = '1'
     })
 
     var toolPanel_eraserToolIndicator = document.createElement('div')
@@ -1169,6 +1212,9 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'flex'
         }
       }
+
+      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+      this.brush.style.opacity = '0'
     })
 
     var toolPanel_paintBucketToolIndicator = document.createElement('div')
@@ -1192,13 +1238,120 @@ class MaskEditorDialog extends ComfyDialog {
     return pen_tool_panel
   }
 
+  createPointerZone() {
+    const self = this
+
+    const pointer_zone = document.createElement('div')
+    pointer_zone.id = 'maskEditor_pointerZone'
+
+    this.pointerZone = pointer_zone
+
+    pointer_zone.addEventListener('pointerdown', (event: PointerEvent) => {
+      this.handlePointerDown(self, event)
+    })
+
+    pointer_zone.addEventListener('pointermove', (event: PointerEvent) => {
+      this.handlePointerMove(self, event)
+    })
+
+    pointer_zone.addEventListener('pointerup', (event: PointerEvent) => {
+      this.handlePointerUp(self, event)
+    })
+
+    pointer_zone.addEventListener('pointerleave', (event: PointerEvent) => {
+      this.brush.style.opacity = '0'
+      this.pointerZone.style.cursor = ''
+    })
+
+    pointer_zone.addEventListener('pointerenter', (event: PointerEvent) => {
+      if (this.currentTool == Tools.PaintBucket) {
+        this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+        this.brush.style.opacity = '0'
+      } else {
+        this.pointerZone.style.cursor = 'none'
+        this.brush.style.opacity = '1'
+      }
+    })
+
+    return pointer_zone
+  }
+
+  screenToCanvas(
+    clientX: number,
+    clientY: number
+  ): { x: number; x_unscaled: number; y: number; y_unscaled: number } {
+    // Get the bounding rectangles for both elements
+    const canvasRect = this.maskCanvas.getBoundingClientRect()
+    const pointerZoneRect = this.pointerZone.getBoundingClientRect()
+
+    // Calculate the offset between pointer zone and canvas
+    const offsetX = pointerZoneRect.left - canvasRect.left
+    const offsetY = pointerZoneRect.top - canvasRect.top
+
+    const x_unscaled = clientX + offsetX
+    const y_unscaled = clientY + offsetY
+
+    const x = x_unscaled / this.zoom_ratio
+    const y = y_unscaled / this.zoom_ratio
+
+    return { x: x, x_unscaled: x_unscaled, y: y, y_unscaled: y_unscaled }
+  }
+
+  setEventHandler(maskCanvas: HTMLCanvasElement) {
+    const self = this
+
+    if (!this.handler_registered) {
+      maskCanvas.addEventListener('contextmenu', (event: Event) => {
+        event.preventDefault()
+      })
+
+      this.element.addEventListener('contextmenu', (event: Event) => {
+        event.preventDefault()
+      })
+
+      this.element.addEventListener('wheel', (event) =>
+        this.handleWheelEvent(self, event)
+      )
+
+      maskCanvas.addEventListener(
+        'touchstart',
+        this.handleTouchStart.bind(this)
+      )
+      maskCanvas.addEventListener('touchmove', this.handleTouchMove.bind(this))
+      maskCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this))
+
+      this.element.addEventListener('dragstart', (event) => {
+        if (event.ctrlKey) {
+          event.preventDefault()
+        }
+      })
+
+      this.handler_registered = true
+    }
+  }
+
+  createUI() {
+    var ui_container = document.createElement('div')
+    ui_container.id = 'maskEditor_uiContainer'
+
+    var side_panel_container = this.createSidePanel()
+
+    var pointer_zone = this.createPointerZone()
+
+    var tool_panel = this.createToolPanel()
+
+    ui_container.appendChild(tool_panel)
+    ui_container.appendChild(pointer_zone)
+    ui_container.appendChild(side_panel_container)
+
+    return ui_container
+  }
+
   setlayout(imgCanvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement) {
     const self = this
     self.pointer_type = PointerType.Arc
 
-    var side_panel_container = this.createSidePanel()
-
-    var pen_tool_panel = this.createToolPanel()
+    var user_ui = this.createUI()
 
     var brush = document.createElement('div')
     brush.id = 'brush'
@@ -1231,8 +1384,7 @@ class MaskEditorDialog extends ComfyDialog {
     this.element.appendChild(imgCanvas)
     this.element.appendChild(maskCanvas)
     this.element.appendChild(canvas_background)
-    this.element.appendChild(side_panel_container)
-    this.element.appendChild(pen_tool_panel)
+    this.element.appendChild(user_ui)
     document.body.appendChild(brush)
 
     this.element.appendChild(imgCanvas)
@@ -1322,7 +1474,7 @@ class MaskEditorDialog extends ComfyDialog {
     this.saveButton.disabled = false
 
     this.element.id = 'maskEditor'
-    this.element.style.display = 'block'
+    this.element.style.display = 'flex'
     await this.setImages(this.imgCanvas)
     this.canvasHistory.clearStates()
     await new Promise((resolve) => setTimeout(resolve, 50))
@@ -1381,7 +1533,7 @@ class MaskEditorDialog extends ComfyDialog {
     alpha_url.searchParams.delete('channel')
     alpha_url.searchParams.delete('preview')
     alpha_url.searchParams.set('channel', 'a')
-    let mask_image = await loadImage(alpha_url)
+    let mask_image: HTMLImageElement = await loadImage(alpha_url)
 
     // original image load
     const rgb_url = new URL(
@@ -1460,85 +1612,6 @@ class MaskEditorDialog extends ComfyDialog {
     this.canvasBackground.style.top = top
   }
 
-  setEventHandler(maskCanvas: HTMLCanvasElement) {
-    const self = this
-
-    if (!this.handler_registered) {
-      maskCanvas.addEventListener('contextmenu', (event: Event) => {
-        event.preventDefault()
-      })
-
-      this.element.addEventListener('contextmenu', (event: Event) => {
-        event.preventDefault()
-      })
-
-      this.element.addEventListener('wheel', (event) =>
-        this.handleWheelEvent(self, event)
-      )
-
-      maskCanvas.addEventListener(
-        'touchstart',
-        this.handleTouchStart.bind(this)
-      )
-      maskCanvas.addEventListener('touchmove', this.handleTouchMove.bind(this))
-      maskCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this))
-
-      this.element.addEventListener('dragstart', (event) => {
-        if (event.ctrlKey) {
-          event.preventDefault()
-        }
-      })
-
-      maskCanvas.addEventListener('pointerdown', (event: PointerEvent) => {
-        this.handlePointerDown(self, event)
-      })
-
-      maskCanvas.addEventListener('pointermove', (event: PointerEvent) => {
-        this.handlePointerMove(self, event)
-      })
-
-      maskCanvas.addEventListener(
-        'pointerover',
-        async (event: PointerEvent) => {
-          this.mouseOverCanvas = true
-          if (this.mouseOverSidePanel) return
-          //this.updateBrushPreview(this)
-          this.brush.style.opacity = '1'
-          maskCanvas.style.cursor = 'none'
-        }
-      )
-      maskCanvas.addEventListener('pointerleave', (event: PointerEvent) => {
-        this.mouseOverCanvas = false
-        this.brush.style.opacity = '0'
-        maskCanvas.style.cursor = ''
-      })
-
-      document.addEventListener('pointerup', (event: PointerEvent) => {
-        this.isAdjustingBrush = false
-        this.brushPreviewGradient.style.display = 'none'
-        if (this.grabbing) {
-          this.grabbing = false
-        }
-        if (this.mouseOverCanvas && !this.mouseOverSidePanel) {
-          this.brush.style.opacity = '1'
-          this.maskCanvas.style.cursor = 'none'
-        }
-        if (event.pointerType === 'touch') return
-        MaskEditorDialog.handlePointerUp(event)
-        if (this.isDrawing) {
-          this.isDrawing = false
-          this.canvasHistory.saveState()
-        }
-
-        const x = event.offsetX / self.zoom_ratio
-        const y = event.offsetY / self.zoom_ratio
-        this.lineStartPoint = { x: x, y: y }
-      })
-
-      this.handler_registered = true
-    }
-  }
-
   getMaskCanvasStyle() {
     if (this.brush_color_mode === 'negative') {
       return {
@@ -1608,15 +1681,6 @@ class MaskEditorDialog extends ComfyDialog {
     }
     this.maskCtx.putImageData(maskData, 0, 0)
   }
-
-  brush_opacity = 1.0
-  brush_size = 10
-  brush_hardness = 1.0
-  brush_color_mode = 'black'
-  drawing_mode = false
-  lastx = -1
-  lasty = -1
-  lasttime = 0
 
   static handleKeyDown(self: MaskEditorDialog, event: KeyboardEvent) {
     if (event.key === ']') {
@@ -1874,132 +1938,294 @@ class MaskEditorDialog extends ComfyDialog {
     if (event.pointerType == 'touch') return
     self.updateCursorPosition(self, event.clientX, event.clientY)
 
+    //move the canvas
     if (event.buttons === 4 || (event.buttons === 1 && this.isSpacePressed)) {
-      self.updateBrushPreview(self)
       self.pan_move(self, event)
       return
-    } else {
-      if (this.currentTool === Tools.PaintBucket) {
-        this.maskCanvas.style.cursor = "url('/cursor/paintBucket.png'), auto"
-        this.brush.style.opacity = '0'
-      } else {
-        this.maskCanvas.style.cursor = 'none'
-        this.brush.style.opacity = '1'
-      }
     }
+
+    //prevent drawing with paint bucket tool
+    if (this.currentTool === Tools.PaintBucket) return
+
     self.updateBrushPreview(self)
 
-    // Handle brush adjustment
+    // alt + right mouse button hold brush adjustment
     if (
       self.isAdjustingBrush &&
       (this.currentTool === Tools.Pen || this.currentTool === Tools.Eraser) &&
       event.altKey &&
-      (event.buttons === 2 || event.buttons === 3) //maybe remove button 3 ?
+      event.buttons === 2
     ) {
-      const delta_x = event.clientX - self.initialX!
-      const delta_y = event.clientY - self.initialY!
-
-      // Adjust brush size (horizontal movement)
-      const newSize = Math.max(
-        1,
-        Math.min(100, self.initialBrushSize! + delta_x / 5)
-      )
-      self.brush_size = newSize
-      self.brush_size_slider.value = newSize.toString()
-
-      // Adjust brush hardness (vertical movement)
-      const newHardness = Math.max(
-        0,
-        Math.min(1, self.initialBrushHardness! - delta_y / 200)
-      )
-      self.brush_hardness = newHardness
-      self.brush_hardness_slider.value = newHardness.toString()
-
-      self.updateBrushPreview(self)
+      this.handleBrushAdjustment(self, event)
       return
     }
-    let left_button_down =
-      (window.TouchEvent && event instanceof TouchEvent) || event.buttons == 1
-    let right_button_down = [2, 5, 32].includes(event.buttons)
 
-    if (right_button_down || left_button_down) {
-      var diff = performance.now() - self.lasttime
+    //draw with pen or eraser
+    if (event.buttons == 1 || event.buttons == 2) {
+      var diff = performance.now() - self.smoothingLastDrawTime.getTime()
 
-      const maskRect = self.maskCanvas.getBoundingClientRect()
+      let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
 
-      var x = event.offsetX
-      var y = event.offsetY
-
-      if (event.offsetX == null) {
-        x = event.targetTouches[0].clientX - maskRect.left
-      }
-
-      if (event.offsetY == null) {
-        y = event.targetTouches[0].clientY - maskRect.top
-      }
-
-      x /= self.zoom_ratio
-      y /= self.zoom_ratio
+      console.log(coords_canvas)
 
       var brush_size = this.brush_size
       var brush_hardness = this.brush_hardness
       var brush_opacity = this.brush_opacity
+
       if (event instanceof PointerEvent && event.pointerType == 'pen') {
         brush_size *= event.pressure
         this.last_pressure = event.pressure
-      } else if (
-        window.TouchEvent &&
-        event instanceof TouchEvent &&
-        diff < 20
-      ) {
-        // The firing interval of PointerEvents in Pen is unreliable, so it is supplemented by TouchEvents.
-        brush_size *= this.last_pressure
       } else {
-        brush_size = this.brush_size
+        brush_size = this.brush_size //this is the problem with pen pressure
       }
 
+      //not sure what this does
       if (diff > 20 && !this.drawing_mode)
         requestAnimationFrame(() => {
           self.init_shape(self, CompositionOperation.SourceOver)
-          self.draw_shape(self, x, y, brush_size, brush_hardness, brush_opacity)
-          self.lastx = x
-          self.lasty = y
+          self.draw_shape(
+            self,
+            coords_canvas.x,
+            coords_canvas.y,
+            brush_size,
+            brush_hardness,
+            brush_opacity
+          )
+          this.smoothingCoords = { x: coords_canvas.x, y: coords_canvas.y }
+          this.smoothingCordsArray = [
+            { x: coords_canvas.x, y: coords_canvas.y }
+          ]
         })
       else
         requestAnimationFrame(() => {
           if (this.currentTool === Tools.Eraser) {
             self.init_shape(self, CompositionOperation.DestinationOut)
-          } else if (right_button_down) {
+          } else if (event.buttons == 2) {
             self.init_shape(self, CompositionOperation.DestinationOut)
           } else {
             self.init_shape(self, CompositionOperation.SourceOver)
           }
 
-          var dx = x - self.lastx
-          var dy = y - self.lasty
-
-          var distance = Math.sqrt(dx * dx + dy * dy)
-          var directionX = dx / distance
-          var directionY = dy / distance
-
-          for (var i = 0; i < distance; i += 5) {
-            var px = self.lastx + directionX * i
-            var py = self.lasty + directionY * i
-            self.draw_shape(
-              self,
-              px,
-              py,
-              brush_size,
-              brush_hardness,
-              brush_opacity
-            )
-          }
-          self.lastx = x
-          self.lasty = y
+          //use drawWithSmoothing for better performance or change step in drawWithBetterSmoothing
+          this.drawWithBetterSmoothing(
+            self,
+            coords_canvas.x,
+            coords_canvas.y,
+            brush_size,
+            brush_hardness,
+            brush_opacity
+          )
         })
 
-      self.lasttime = performance.now()
+      this.smoothingLastDrawTime = new Date()
     }
+  }
+
+  handleBrushAdjustment(self: MaskEditorDialog, event: PointerEvent) {
+    const delta_x = event.clientX - self.initialX!
+    const delta_y = event.clientY - self.initialY!
+
+    // Adjust brush size (horizontal movement)
+    const newSize = Math.max(
+      1,
+      Math.min(100, self.initialBrushSize! + delta_x / 5)
+    )
+    self.brush_size = newSize
+    self.brush_size_slider.value = newSize.toString()
+
+    // Adjust brush hardness (vertical movement)
+    const newHardness = Math.max(
+      0,
+      Math.min(1, self.initialBrushHardness! - delta_y / 200)
+    )
+    self.brush_hardness = newHardness
+    self.brush_hardness_slider.value = newHardness.toString()
+
+    self.updateBrushPreview(self)
+    return
+  }
+
+  //maybe remove this function
+  drawWithSmoothing(
+    self: MaskEditorDialog,
+    clientX: number,
+    clientY: number,
+    brush_size: number,
+    brush_hardness: number,
+    brush_opacity: number
+  ) {
+    // Get current canvas coordinates
+    if (this.smoothingCoords) {
+      // Calculate distance in screen coordinates
+      const dx = clientX - this.smoothingCoords.x
+      const dy = clientY - this.smoothingCoords.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+
+      console.log(distance)
+
+      if (distance > 0) {
+        const step = 0.1
+        const steps = Math.ceil(distance / step)
+        const stepSize = distance / steps
+
+        for (let i = 0; i < steps; i++) {
+          const x = this.smoothingCoords.x + dx * (i / steps)
+          const y = this.smoothingCoords.y + dy * (i / steps)
+          self.draw_shape(self, x, y, brush_size, brush_hardness, brush_opacity)
+        }
+      }
+    }
+
+    // Store current screen coordinates for next time
+    this.smoothingCoords = { x: clientX, y: clientY }
+
+    // Draw the final point
+    self.draw_shape(
+      self,
+      clientX,
+      clientY,
+      brush_size,
+      brush_hardness,
+      brush_opacity
+    )
+  }
+
+  drawWithBetterSmoothing(
+    self: MaskEditorDialog,
+    clientX: number,
+    clientY: number,
+    brush_size: number,
+    brush_hardness: number,
+    brush_opacity: number
+  ) {
+    // Add current point to the smoothing array
+    if (!this.smoothingCordsArray) {
+      this.smoothingCordsArray = []
+    }
+
+    this.smoothingCordsArray.push({ x: clientX, y: clientY })
+
+    // Keep a moving window of points for the spline
+    const MAX_POINTS = 5
+    if (this.smoothingCordsArray.length > MAX_POINTS) {
+      this.smoothingCordsArray.shift()
+    }
+
+    // Need at least 3 points for cubic spline interpolation
+    if (this.smoothingCordsArray.length >= 3) {
+      const dx = clientX - this.smoothingCordsArray[0].x
+      const dy = clientY - this.smoothingCordsArray[0].y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const step = 2
+      const steps = Math.ceil(distance / step)
+
+      // Generate interpolated points
+      const interpolatedPoints = this.calculateCubicSplinePoints(
+        this.smoothingCordsArray,
+        steps // number of segments between each pair of control points
+      )
+
+      // Draw all interpolated points
+      for (const point of interpolatedPoints) {
+        self.draw_shape(
+          self,
+          point.x,
+          point.y,
+          brush_size,
+          brush_hardness,
+          brush_opacity
+        )
+      }
+    } else {
+      // If we don't have enough points yet, just draw the current point
+      self.draw_shape(
+        self,
+        clientX,
+        clientY,
+        brush_size,
+        brush_hardness,
+        brush_opacity
+      )
+    }
+  }
+
+  calculateCubicSplinePoints(
+    points: Point[],
+    numSegments: number = 10
+  ): Point[] {
+    const result: Point[] = []
+
+    const xCoords = points.map((p) => p.x)
+    const yCoords = points.map((p) => p.y)
+
+    const xDerivatives = this.calculateSplineCoefficients(xCoords)
+    const yDerivatives = this.calculateSplineCoefficients(yCoords)
+
+    // Generate points along the spline
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i]
+      const p1 = points[i + 1]
+      const d0x = xDerivatives[i]
+      const d1x = xDerivatives[i + 1]
+      const d0y = yDerivatives[i]
+      const d1y = yDerivatives[i + 1]
+
+      for (let t = 0; t <= numSegments; t++) {
+        const t_normalized = t / numSegments
+
+        // Hermite basis functions
+        const h00 = 2 * t_normalized ** 3 - 3 * t_normalized ** 2 + 1
+        const h10 = t_normalized ** 3 - 2 * t_normalized ** 2 + t_normalized
+        const h01 = -2 * t_normalized ** 3 + 3 * t_normalized ** 2
+        const h11 = t_normalized ** 3 - t_normalized ** 2
+
+        const x = h00 * p0.x + h10 * d0x + h01 * p1.x + h11 * d1x
+        const y = h00 * p0.y + h10 * d0y + h01 * p1.y + h11 * d1y
+
+        result.push({ x, y })
+      }
+    }
+
+    return result
+  }
+
+  calculateSplineCoefficients(values: number[]): number[] {
+    const n = values.length - 1
+    const matrix: number[][] = new Array(n + 1)
+      .fill(0)
+      .map(() => new Array(n + 1).fill(0))
+    const rhs: number[] = new Array(n + 1).fill(0)
+
+    // Set up tridiagonal matrix
+    for (let i = 1; i < n; i++) {
+      matrix[i][i - 1] = 1
+      matrix[i][i] = 4
+      matrix[i][i + 1] = 1
+      rhs[i] = 3 * (values[i + 1] - values[i - 1])
+    }
+
+    // Set boundary conditions (natural spline)
+    matrix[0][0] = 2
+    matrix[0][1] = 1
+    matrix[n][n - 1] = 1
+    matrix[n][n] = 2
+    rhs[0] = 3 * (values[1] - values[0])
+    rhs[n] = 3 * (values[n] - values[n - 1])
+
+    // Solve tridiagonal system using Thomas algorithm
+    for (let i = 1; i <= n; i++) {
+      const m = matrix[i][i - 1] / matrix[i - 1][i - 1]
+      matrix[i][i] -= m * matrix[i - 1][i]
+      rhs[i] -= m * rhs[i - 1]
+    }
+
+    const solution: number[] = new Array(n + 1)
+    solution[n] = rhs[n] / matrix[n][n]
+    for (let i = n - 1; i >= 0; i--) {
+      solution[i] = (rhs[i] - matrix[i][i + 1] * solution[i + 1]) / matrix[i][i]
+    }
+
+    return solution
   }
 
   updateCursorPosition(
@@ -2022,13 +2248,20 @@ class MaskEditorDialog extends ComfyDialog {
 
     // Pan canvas
     if (event.buttons === 4 || (event.buttons === 1 && this.isSpacePressed)) {
-      this.grabbing = true
       MaskEditorDialog.mousedown_x = event.clientX
       MaskEditorDialog.mousedown_y = event.clientY
       this.brush.style.opacity = '0'
-      this.maskCanvas.style.cursor = 'grabbing'
+      this.pointerZone.style.cursor = 'grabbing'
       self.mousedown_pan_x = self.pan_x
       self.mousedown_pan_y = self.pan_y
+      return
+    }
+
+    //paint bucket
+    if (this.currentTool === Tools.PaintBucket && event.button === 0) {
+      console.log('paint bucket')
+      let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
+      this.handlePaintBucket(coords_canvas)
       return
     }
 
@@ -2037,6 +2270,7 @@ class MaskEditorDialog extends ComfyDialog {
     var brush_size = this.brush_size
     var brush_hardness = this.brush_hardness
     var brush_opacity = this.brush_opacity
+    let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
     if (event.pointerType == 'pen') {
       brush_size *= event.pressure
       this.last_pressure = event.pressure
@@ -2056,32 +2290,24 @@ class MaskEditorDialog extends ComfyDialog {
       return
     }
 
-    if (this.currentTool === Tools.PaintBucket) {
-      this.handlePaintBucket(event)
-      return
-    }
-
-    if ([0, 2, 5].includes(event.button)) {
+    //drawing
+    if ([0, 2].includes(event.button)) {
       self.drawing_mode = true
-      event.preventDefault()
-      const maskRect = self.maskCanvas.getBoundingClientRect()
-      const x =
-        (event.offsetX || event.targetTouches[0].clientX - maskRect.left) /
-        self.zoom_ratio
-      const y =
-        (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
-        self.zoom_ratio
-      let compositionOp
+      let compositionOp: CompositionOperation
+
+      //set drawing mode
       if (this.currentTool === Tools.Eraser) {
-        compositionOp = CompositionOperation.DestinationOut
+        compositionOp = CompositionOperation.DestinationOut //eraser
       } else if (event.button === 2) {
-        compositionOp = CompositionOperation.DestinationOut
+        compositionOp = CompositionOperation.DestinationOut //eraser
       } else {
-        compositionOp = CompositionOperation.SourceOver
+        compositionOp = CompositionOperation.SourceOver //pen
       }
+
+      //check if user wants to draw line or free draw
       if (event.shiftKey && this.lineStartPoint) {
         this.isDrawingLine = true
-        const p2 = { x: x, y: y }
+        const p2 = { x: coords_canvas.x, y: coords_canvas.y }
         this.drawLine(
           self,
           this.lineStartPoint,
@@ -2091,32 +2317,27 @@ class MaskEditorDialog extends ComfyDialog {
           brush_opacity,
           compositionOp
         )
-        this.lineStartPoint = { x: x, y: y }
       } else {
-        this.lineStartPoint = { x: x, y: y }
         self.init_shape(self, compositionOp)
-        self.draw_shape(self, x, y, brush_size, brush_hardness, brush_opacity)
+        self.draw_shape(
+          self,
+          coords_canvas.x,
+          coords_canvas.y,
+          brush_size,
+          brush_hardness,
+          brush_opacity
+        )
       }
-      self.lastx = x
-      self.lasty = y
-      self.lasttime = performance.now()
+      this.lineStartPoint = { x: coords_canvas.x, y: coords_canvas.y }
+      this.smoothingCoords = { x: coords_canvas.x, y: coords_canvas.y } //maybe remove this
+      this.smoothingCordsArray = [{ x: coords_canvas.x, y: coords_canvas.y }] //used to smooth the drawing line
+      this.smoothingLastDrawTime = new Date()
     }
   }
 
-  handlePaintBucket(event: PointerEvent) {
-    if (event.type !== 'pointerdown') return
-
-    const maskRect = this.maskCanvas.getBoundingClientRect()
-    const x = Math.floor(
-      (event.offsetX || event.targetTouches[0].clientX - maskRect.left) /
-        this.zoom_ratio
-    )
-    const y = Math.floor(
-      (event.offsetY || event.targetTouches[0].clientY - maskRect.top) /
-        this.zoom_ratio
-    )
-
-    this.paintBucketTool.floodFill(x, y, this.paintBucketTolerance)
+  handlePaintBucket(point: Point) {
+    console.log(point)
+    this.paintBucketTool.floodFill(point.x, point.y, this.paintBucketTolerance)
   }
 
   init_shape(self: MaskEditorDialog, compositionOperation) {
@@ -2140,7 +2361,6 @@ class MaskEditorDialog extends ComfyDialog {
     compositionOp: CompositionOperation
   ) {
     const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x)
     const steps = Math.ceil(distance / (brush_size / 4)) // Adjust for smoother lines
 
     self.init_shape(self, compositionOp)
@@ -2236,6 +2456,30 @@ class MaskEditorDialog extends ComfyDialog {
       self.maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
     }
     self.maskCtx.fill()
+  }
+
+  handlePointerUp(self: MaskEditorDialog, event: PointerEvent) {
+    if (event.pointerType === 'touch') return
+    if (this.currentTool === Tools.PaintBucket) {
+      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+      this.brush.style.opacity = '0'
+    } else {
+      this.pointerZone.style.cursor = 'none'
+      this.brush.style.opacity = '1'
+      this.updateBrushPreview(this)
+    }
+
+    this.isAdjustingBrush = false
+    this.brushPreviewGradient.style.display = 'none'
+
+    MaskEditorDialog.handlePointerUp(event)
+    if (this.isDrawing) {
+      this.isDrawing = false
+      this.canvasHistory.saveState()
+      const coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
+      this.lineStartPoint = coords_canvas
+      console.log(coords_canvas)
+    }
   }
 
   async save() {
@@ -2404,7 +2648,7 @@ class CanvasHistory {
   }
 
   undo() {
-    if (this.currentStateIndex > 0) {
+    if (this.currentStateIndex >= 0) {
       this.currentStateIndex--
       this.restoreState(this.states[this.currentStateIndex])
     } else {
