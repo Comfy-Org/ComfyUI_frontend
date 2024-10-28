@@ -160,15 +160,15 @@ const folderBlacklist = ['configs', 'custom_nodes']
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('modelStore', () => {
-  const modelStoreMap = ref<Record<string, ModelFolder | null>>({})
+  const modelFolderByName = ref<Record<string, ModelFolder | null>>({})
   const isLoading = ref<Record<string, Promise<ModelFolder | null> | null>>({})
   const modelFolders = ref<string[]>([])
 
   async function getModelsInFolderCached(
     folder: string
   ): Promise<ModelFolder | null> {
-    if (folder in modelStoreMap.value) {
-      return modelStoreMap.value[folder]
+    if (folder in modelFolderByName.value) {
+      return modelFolderByName.value[folder]
     }
     if (isLoading.value[folder]) {
       return isLoading.value[folder]
@@ -178,7 +178,7 @@ export const useModelStore = defineStore('modelStore', () => {
         return null
       }
       const store = new ModelFolder(folder, models)
-      modelStoreMap.value[folder] = store
+      modelFolderByName.value[folder] = store
       isLoading.value[folder] = null
       return store
     })
@@ -187,8 +187,8 @@ export const useModelStore = defineStore('modelStore', () => {
   }
 
   function clearCache() {
-    Object.keys(modelStoreMap.value).forEach((key) => {
-      delete modelStoreMap.value[key]
+    Object.keys(modelFolderByName.value).forEach((key) => {
+      delete modelFolderByName.value[key]
     })
   }
 
@@ -199,7 +199,7 @@ export const useModelStore = defineStore('modelStore', () => {
   }
 
   return {
-    modelStoreMap,
+    modelFolderByName,
     isLoading,
     modelFolders,
     getModelsInFolderCached,

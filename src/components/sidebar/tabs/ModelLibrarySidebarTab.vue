@@ -62,7 +62,7 @@ const root: ComputedRef<TreeNode> = computed(() => {
     }
   }
   for (let folder of modelStore.modelFolders) {
-    const models = modelStore.modelStoreMap[folder]
+    const models = modelStore.modelFolderByName[folder]
     if (models) {
       if (Object.values(models.models).length) {
         modelList.push(...Object.values(models.models))
