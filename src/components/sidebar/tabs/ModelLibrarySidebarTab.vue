@@ -30,7 +30,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
-import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
+import { ComfyModelDef, ModelFolder, useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
@@ -51,13 +51,18 @@ const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const root = computed<TreeNode>(() => {
   const models: ComfyModelDef[] = modelStore.models
+  const modelFolders: ModelFolder[] = modelStore.modelFolders
+  const allNodes: (ComfyModelDef | ModelFolder)[] = [...models, ...modelFolders]
+
   // if (searchQuery.value) {
   //   const search = searchQuery.value.toLocaleLowerCase()
   //   modelList = modelList.filter((model: ComfyModelDef) => {
   //     return model.searchable.includes(search)
   //   })
   // }
-  return buildTree(models, (model: ComfyModelDef) => model.key.split('/'))
+  return buildTree(allNodes, (modelOrFolder: ComfyModelDef | ModelFolder) =>
+    modelOrFolder.key.split('/')
+  )
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {

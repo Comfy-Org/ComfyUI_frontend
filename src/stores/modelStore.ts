@@ -151,6 +151,10 @@ export class ModelFolder {
 
   constructor(public directory: string) {}
 
+  get key(): string {
+    return this.directory + '/'
+  }
+
   /**
    * Loads the models in this folder from the server
    */
