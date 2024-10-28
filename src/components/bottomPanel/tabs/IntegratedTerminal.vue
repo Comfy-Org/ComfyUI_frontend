@@ -80,11 +80,12 @@ onUnmounted(() => {
 </script>
 
 <style>
-.xterm {
+.p-terminal .xterm {
   overflow-x: auto;
 }
 
-.xterm-screen {
+.p-terminal .xterm-screen {
   background-color: black;
+  overflow-y: hidden;
 }
 </style>
