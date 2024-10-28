@@ -76,16 +76,10 @@ const uniqueNodes = computed(() => {
 })
 </script>
 
-<style>
-:root {
-  --red-600: #dc3545;
-}
-</style>
-
 <style scoped>
 .comfy-missing-nodes {
   font-family: monospace;
-  color: var(--red-600);
+  color: var(--p-red-600);
   padding: 1.5rem;
   background-color: var(--surface-ground);
   border-radius: var(--border-radius);
