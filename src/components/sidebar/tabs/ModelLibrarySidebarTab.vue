@@ -94,9 +94,14 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         : node.label,
       leaf: node.leaf,
       data: node.data,
-      getIcon: (node: TreeExplorerNode<ModelOrFolder>) => {
-        if (node.leaf) {
+      getIcon: () => {
+        if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
+        }
+        if (folder) {
+          return folder.state === ResourceState.Loading
+            ? 'pi pi-spin pi-spinner'
+            : 'pi pi-folder'
         }
         return 'pi pi-folder'
       },
