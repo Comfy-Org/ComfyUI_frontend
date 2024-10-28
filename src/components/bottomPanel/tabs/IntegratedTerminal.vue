@@ -84,6 +84,7 @@ onMounted(async () => {
   try {
     await loadLogEntries()
   } catch {
+    // On older backends the endpoints wont exist, fallback to poll
     useFallbackPolling = true
     await loadLogText()
   }
