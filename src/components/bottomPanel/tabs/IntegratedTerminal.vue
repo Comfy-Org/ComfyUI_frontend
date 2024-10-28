@@ -1,10 +1,10 @@
 <template>
-  <div class="relative h-full w-full">
+  <div class="relative h-full w-full bg-black">
     <ProgressSpinner
-      v-if="!loaded"
-      class="absolute inset-0 flex justify-center items-center h-full"
+      v-if="loading"
+      class="absolute inset-0 flex justify-center items-center h-full z-10"
     />
-    <div v-show="loaded" class="p-terminal rounded-none h-full w-full">
+    <div class="p-terminal rounded-none h-full w-full">
       <div class="h-full" ref="terminalEl"></div>
     </div>
   </div>
@@ -15,11 +15,11 @@ import '@xterm/xterm/css/xterm.css'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { api, LogEntry, TerminalSize } from '@/scripts/api'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { debounce } from 'lodash'
 import ProgressSpinner from 'primevue/progressspinner'
 
-const loaded = ref(false)
+const loading = ref(true)
 const terminalEl = ref<HTMLDivElement>()
 const fitAddon = new FitAddon()
 const terminal = new Terminal({
@@ -59,15 +59,13 @@ const loadLogs = async () => {
 onMounted(async () => {
   terminal.open(terminalEl.value)
   await loadLogs()
-  loaded.value = true
+  loading.value = false
+
+  // It is possible for a user to open the terminal before a clientid is assigned
   await api.waitForClientId()
   api.subscribeLogs(true)
   api.addEventListener('logs', logReceived)
   resizeObserver.observe(terminalEl.value)
-
-  // Wait for the component to render again and resize it
-  await nextTick()
-  resizeTerminal()
 })
 
 onUnmounted(() => {
