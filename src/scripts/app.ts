@@ -2293,7 +2293,7 @@ export class ComfyApp {
       graphData.models &&
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
-      for (let m of graphData.models) {
+      for (const m of graphData.models) {
         const models_available = await useModelStore().getModelsInFolderCached(
           m.directory
         )
