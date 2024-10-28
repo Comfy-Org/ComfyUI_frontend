@@ -49,17 +49,21 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const root = computed<TreeNode>(() => {
-  const models: ComfyModelDef[] = modelStore.models
-  const modelFolders: ModelFolder[] = modelStore.modelFolders
-  const allNodes: (ComfyModelDef | ModelFolder)[] = [...models, ...modelFolders]
+const filteredModels = computed<ComfyModelDef[]>(() => {
+  if (searchQuery.value) {
+    const search = searchQuery.value.toLocaleLowerCase()
+    return modelStore.models.filter((model: ComfyModelDef) => {
+      return model.searchable.includes(search)
+    })
+  }
+  return modelStore.models
+})
 
-  // if (searchQuery.value) {
-  //   const search = searchQuery.value.toLocaleLowerCase()
-  //   modelList = modelList.filter((model: ComfyModelDef) => {
-  //     return model.searchable.includes(search)
-  //   })
-  // }
+const root = computed<TreeNode>(() => {
+  const allNodes: (ComfyModelDef | ModelFolder)[] = [
+    ...filteredModels.value,
+    ...modelStore.modelFolders
+  ]
   return buildTree(allNodes, (modelOrFolder: ComfyModelDef | ModelFolder) =>
     modelOrFolder.key.split('/')
   )
