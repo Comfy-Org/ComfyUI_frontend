@@ -2188,12 +2188,9 @@ export class ComfyApp {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  #showMissingNodesError(missingNodeTypes, hasAddedNodes = true) {
+  #showMissingNodesError(missingNodeTypes) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      showLoadWorkflowWarning({
-        missingNodeTypes,
-        hasAddedNodes
-      })
+      showLoadWorkflowWarning({ missingNodeTypes })
     }
 
     this.logging.addEntry('Comfy.App', 'warn', {
@@ -2823,8 +2820,7 @@ export class ComfyApp {
     if (missingNodeTypes.length) {
       this.#showMissingNodesError(
         // @ts-expect-error
-        missingNodeTypes.map((t) => t.class_type),
-        false
+        missingNodeTypes.map((t) => t.class_type)
       )
       return
     }
