@@ -38,7 +38,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, type ComputedRef, watch, toRef, onMounted } from 'vue'
+import { computed, ref, watch, toRef, onMounted } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
@@ -49,7 +49,7 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const root: ComputedRef<TreeNode> = computed(() => {
+const root = computed<TreeNode>(() => {
   const models: ComfyModelDef[] = modelStore.models
   // if (searchQuery.value) {
   //   const search = searchQuery.value.toLocaleLowerCase()
