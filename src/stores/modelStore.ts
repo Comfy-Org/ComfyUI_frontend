@@ -185,10 +185,7 @@ export const useModelStore = defineStore('models', () => {
     folderName: string
   ): Promise<ModelFolder | null> {
     const folder = modelFolderByName.value[folderName]
-    if (!folder) {
-      return null
-    }
-    return await folder.load()
+    return folder ? await folder.load() : null
   }
 
   return {
