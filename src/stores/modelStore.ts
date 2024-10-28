@@ -160,7 +160,7 @@ export class ModelFolder {
    */
   async load() {
     if (this.state !== ResourceState.Uninitialized) {
-      return
+      return this
     }
     this.state = ResourceState.Loading
     const models = await api.getModels(this.directory)
