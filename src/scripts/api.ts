@@ -366,7 +366,10 @@ class ComfyApi extends EventTarget {
     if (res.status === 404) {
       return []
     }
-    return await res.json()
+    const folderBlacklist = ['configs', 'custom_nodes']
+    return (await res.json()).filter(
+      (folder: string) => !folderBlacklist.includes(folder)
+    )
   }
 
   /**
@@ -374,10 +377,10 @@ class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(folder: string) {
+  async getModels(folder: string): Promise<string[]> {
     const res = await this.fetchApi(`/models/${folder}`)
     if (res.status === 404) {
-      return null
+      return []
     }
     return await res.json()
   }

@@ -44,7 +44,7 @@ describe('useModelStore', () => {
 
   it('should load models', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     expect(Object.keys(folderStore.models).length).toBe(3)
@@ -52,7 +52,7 @@ describe('useModelStore', () => {
 
   it('should load model metadata', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     const model = folderStore.models['sdxl.safetensors']
@@ -69,7 +69,7 @@ describe('useModelStore', () => {
 
   it('should handle no metadata', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     const model = folderStore.models['noinfo.safetensors']
@@ -84,8 +84,8 @@ describe('useModelStore', () => {
 
   it('should cache model information', async () => {
     enableMocks()
-    const folderStore1 = await store.getModelsInFolderCached('checkpoints')
-    const folderStore2 = await store.getModelsInFolderCached('checkpoints')
+    const folderStore1 = await store.getLoadedModelFolder('checkpoints')
+    const folderStore2 = await store.getLoadedModelFolder('checkpoints')
     expect(api.getModels).toHaveBeenCalledTimes(1)
   })
 })

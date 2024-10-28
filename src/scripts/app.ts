@@ -2294,7 +2294,7 @@ export class ComfyApp {
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
       for (const m of graphData.models) {
-        const models_available = await useModelStore().getModelsInFolderCached(
+        const models_available = await useModelStore().getLoadedModelFolder(
           m.directory
         )
         if (models_available === null) {
@@ -2929,7 +2929,6 @@ export class ComfyApp {
     }
     if (this.vueAppReady) {
       useToastStore().add(requestToastMessage)
-      useModelStore().clearCache()
     }
 
     const defs = await api.getNodeDefs({

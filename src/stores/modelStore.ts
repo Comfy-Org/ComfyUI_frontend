@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '@/scripts/api'
 
@@ -51,8 +51,6 @@ export class ComfyModelDef {
   has_loaded_metadata: boolean = false
   /** If true, a metadata load request has been triggered, but may or may not yet have finished loading */
   is_load_requested: boolean = false
-  /** If true, this is a fake model object used as a placeholder for something (eg a loading icon) */
-  is_fake_object: boolean = false
   /** A string full of auto-computed lowercase-only searchable text for this model */
   searchable: string = ''
 
@@ -140,13 +138,33 @@ export class ComfyModelDef {
   }
 }
 
-export class ModelFolder {
-  models: Record<string, ComfyModelDef> = {}
+export enum ResourceState {
+  Uninitialized,
+  Loading,
+  Loaded
+}
 
-  constructor(directory: string, models: string[]) {
-    for (const model of models) {
-      this.models[model] = new ComfyModelDef(model, directory)
+export class ModelFolder {
+  /** Models in this folder */
+  models: Record<string, ComfyModelDef> = {}
+  state: ResourceState = ResourceState.Uninitialized
+
+  constructor(public directory: string) {}
+
+  /**
+   * Loads the models in this folder from the server
+   */
+  async load() {
+    if (this.state !== ResourceState.Uninitialized) {
+      return
     }
+    this.state = ResourceState.Loading
+    const models = await api.getModels(this.directory)
+    for (const model of models) {
+      this.models[model] = new ComfyModelDef(model, this.directory)
+    }
+    this.state = ResourceState.Loaded
+    return this
   }
 
   async loadModelMetadata(modelName: string) {
@@ -156,54 +174,33 @@ export class ModelFolder {
   }
 }
 
-const folderBlacklist = ['configs', 'custom_nodes']
-
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
   const modelFolderByName = ref<Record<string, ModelFolder | null>>({})
-  const isLoading = ref<Record<string, Promise<ModelFolder | null> | null>>({})
-  const modelFolders = ref<string[]>([])
-
-  async function getModelsInFolderCached(
-    folder: string
-  ): Promise<ModelFolder | null> {
-    if (folder in modelFolderByName.value) {
-      return modelFolderByName.value[folder]
-    }
-    if (isLoading.value[folder]) {
-      return isLoading.value[folder]
-    }
-    const promise = api.getModels(folder).then((models) => {
-      if (!models) {
-        return null
-      }
-      const store = new ModelFolder(folder, models)
-      modelFolderByName.value[folder] = store
-      isLoading.value[folder] = null
-      return store
-    })
-    isLoading.value[folder] = promise
-    return promise
-  }
-
-  function clearCache() {
-    Object.keys(modelFolderByName.value).forEach((key) => {
-      delete modelFolderByName.value[key]
-    })
-  }
+  const modelFolderNames = computed(() => Object.keys(modelFolderByName.value))
 
   async function loadModelFolders() {
-    modelFolders.value = (await api.getModelFolders()).filter(
-      (folder) => !folderBlacklist.includes(folder)
-    )
+    const folders = await api.getModelFolders()
+    modelFolderByName.value = {}
+    for (const folder of folders) {
+      modelFolderByName.value[folder] = new ModelFolder(folder)
+    }
+  }
+
+  async function getLoadedModelFolder(
+    folderName: string
+  ): Promise<ModelFolder | null> {
+    const folder = modelFolderByName.value[folderName]
+    if (!folder) {
+      return null
+    }
+    return await folder.load()
   }
 
   return {
     modelFolderByName,
-    isLoading,
-    modelFolders,
-    getModelsInFolderCached,
-    clearCache,
-    loadModelFolders
+    modelFolderNames,
+    loadModelFolders,
+    getLoadedModelFolder
   }
 })

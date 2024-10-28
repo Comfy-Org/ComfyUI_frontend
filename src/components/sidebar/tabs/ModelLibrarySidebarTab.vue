@@ -31,7 +31,11 @@ import { useI18n } from 'vue-i18n'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
-import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
+import {
+  ComfyModelDef,
+  ResourceState,
+  useModelStore
+} from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useTreeExpansion } from '@/hooks/treeHooks'
@@ -54,25 +58,19 @@ const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const root: ComputedRef<TreeNode> = computed(() => {
   let modelList: ComfyModelDef[] = []
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
-    for (let folder of modelStore.modelFolders) {
-      modelStore.getModelsInFolderCached(folder)
+    for (let folder of modelStore.modelFolderNames) {
+      modelStore.getLoadedModelFolder(folder)
     }
   }
-  for (let folder of modelStore.modelFolders) {
+  for (let folder of modelStore.modelFolderNames) {
     const models = modelStore.modelFolderByName[folder]
-    if (models) {
+    if (models.state === ResourceState.Loaded) {
       if (Object.values(models.models).length) {
         modelList.push(...Object.values(models.models))
       } else {
         // ModelDef with key 'folder/a/b/c/' is treated as empty folder
-        const fakeModel = new ComfyModelDef('', folder)
-        fakeModel.is_fake_object = true
-        modelList.push(fakeModel)
+        modelList.push(new ComfyModelDef('', folder))
       }
-    } else {
-      const fakeModel = new ComfyModelDef('Loading', folder)
-      fakeModel.is_fake_object = true
-      modelList.push(fakeModel)
     }
   }
   if (searchQuery.value) {
@@ -93,20 +91,6 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
     const children = node.children?.map(fillNodeInfo)
     const model: ComfyModelDef | null =
       node.leaf && node.data ? node.data : null
-    if (model?.is_fake_object) {
-      if (model.file_name === 'Loading') {
-        return {
-          key: node.key,
-          label: t('loading') + '...',
-          leaf: true,
-          data: node.data,
-          getIcon: (node: TreeExplorerNode<ComfyModelDef>) => {
-            return 'pi pi-spin pi-spinner'
-          },
-          children: []
-        }
-      }
-    }
 
     return {
       key: node.key,
@@ -129,13 +113,12 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
         if (node.leaf) {
           return null
         }
-        if (node.children?.length === 1) {
-          const onlyChild = node.children[0]
-          if (onlyChild.data?.is_fake_object) {
-            if (onlyChild.data.file_name === 'Loading') {
-              return ''
-            }
-          }
+        // TODO: Fix this
+        function isUninitialized(model: ComfyModelDef | null) {
+          return true
+        }
+        if (isUninitialized(node.data)) {
+          return ''
         }
         return null
       },
@@ -175,7 +158,7 @@ watch(
         const folderPath = key.split('/').slice(1).join('/')
         if (folderPath && !folderPath.includes('/')) {
           // Trigger (async) load of model data for this folder
-          modelStore.getModelsInFolderCached(folderPath)
+          modelStore.getLoadedModelFolder(folderPath)
         }
       }
     })
