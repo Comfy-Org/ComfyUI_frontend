@@ -1,6 +1,6 @@
 <!-- A file download button with a label and a size hint -->
 <template>
-  <div class="flex flex-row items-center">
+  <div class="flex flex-row items-center gap-2">
     <div class="file-info">
       <div class="file-details">
         <span class="file-type" :title="hint">{{ label }}</span>
@@ -16,6 +16,7 @@
         size="small"
         outlined
         :disabled="props.error"
+        @click="download.triggerBrowserDownload"
       />
     </div>
   </div>

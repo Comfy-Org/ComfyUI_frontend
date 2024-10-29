@@ -5,12 +5,7 @@
     title="Missing Models"
     message="When loading the graph, the following models were not found"
   />
-  <ListBox
-    :options="missingModels"
-    optionLabel="label"
-    scrollHeight="100%"
-    class="comfy-missing-models"
-  >
+  <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
       <FileDownload
         :url="option.url"
