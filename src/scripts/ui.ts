@@ -8,6 +8,7 @@ import { TaskItem } from '@/types/apiTypes'
 import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -350,7 +351,6 @@ export class ComfyUI {
   autoQueueMode: string
   graphHasChanged: boolean
   autoQueueEnabled: boolean
-  menuHamburger: HTMLDivElement
   menuContainer: HTMLDivElement
   queueSize: Element
   restoreMenuPosition: () => void
@@ -421,18 +421,6 @@ export class ComfyUI {
       }
     })
 
-    this.menuHamburger = $el(
-      'div.comfy-menu-hamburger',
-      {
-        parent: containerElement,
-        onclick: () => {
-          this.menuContainer.style.display = 'block'
-          this.menuHamburger.style.display = 'none'
-        }
-      },
-      [$el('div'), $el('div'), $el('div')]
-    ) as HTMLDivElement
-
     this.menuContainer = $el('div.comfy-menu', { parent: containerElement }, [
       $el(
         'div.drag-handle.comfy-menu-header',
@@ -455,8 +443,7 @@ export class ComfyUI {
             $el('button.comfy-close-menu-btn', {
               textContent: '\u00d7',
               onclick: () => {
-                this.menuContainer.style.display = 'none'
-                this.menuHamburger.style.display = 'flex'
+                useWorkspaceStore().focusMode = true
               }
             })
           ])
