@@ -2,6 +2,8 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    loadAllFolders: 'Load All Folders',
+    refresh: 'Refresh',
     terminal: 'Terminal',
     videoFailedToLoad: 'Video failed to load',
     extensionName: 'Extension Name',
@@ -114,6 +116,8 @@ const messages = {
     }
   },
   zh: {
+    loadAllFolders: '加载所有文件夹',
+    refresh: '刷新',
     terminal: '终端',
     videoFailedToLoad: '视频加载失败',
     extensionName: '扩展名称',
@@ -225,6 +229,8 @@ const messages = {
     }
   },
   ru: {
+    refresh: 'Обновить',
+    loadAllFolders: 'Загрузить все папки',
     terminal: 'Терминал',
     videoFailedToLoad: 'Видео не удалось загрузить',
     extensionName: 'Название расширения',

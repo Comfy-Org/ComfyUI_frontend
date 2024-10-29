@@ -57,9 +57,6 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 )
 
 const handleModelHover = async () => {
-  if (modelDef.value.is_fake_object) {
-    return
-  }
   const hoverTarget = modelContentElement.value
   const targetRect = hoverTarget.getBoundingClientRect()
 
@@ -87,7 +84,6 @@ const showPreview = computed(() => {
   return (
     isHovered.value &&
     modelDef.value &&
-    !modelDef.value.is_fake_object &&
     modelDef.value.has_loaded_metadata &&
     (modelDef.value.author ||
       modelDef.value.simplified_file_name != modelDef.value.title ||
@@ -99,9 +95,6 @@ const showPreview = computed(() => {
 })
 
 const handleMouseEnter = async () => {
-  if (modelDef.value.is_fake_object) {
-    return
-  }
   isHovered.value = true
   await nextTick()
   handleModelHover()
@@ -113,9 +106,7 @@ onMounted(() => {
   modelContentElement.value = container.value?.closest('.p-tree-node-content')
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
-  if (!modelDef.value.is_fake_object) {
-    modelDef.value.load()
-  }
+  modelDef.value.load()
 })
 
 onUnmounted(() => {
