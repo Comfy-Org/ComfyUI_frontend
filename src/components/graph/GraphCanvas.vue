@@ -106,6 +106,14 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const linkRenderMode = settingStore.get('Comfy.LinkRenderMode')
+  if (canvasStore.canvas) {
+    canvasStore.canvas.links_render_mode = linkRenderMode
+    canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
+  }
+})
+
+watchEffect(() => {
   if (!canvasStore.canvas) return
 
   if (canvasStore.canvas.dragging_canvas) {
