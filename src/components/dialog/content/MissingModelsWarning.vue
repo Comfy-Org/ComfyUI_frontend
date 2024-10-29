@@ -13,7 +13,7 @@
   >
     <template #option="slotProps">
       <div
-        class="flex flex-row items-center"
+        class="missing-model-item flex flex-row items-center"
         :style="{ '--progress': `${slotProps.option.progress}%` }"
       >
         <div class="model-info">
