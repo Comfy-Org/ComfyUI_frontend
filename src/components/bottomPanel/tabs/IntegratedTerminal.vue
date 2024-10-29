@@ -14,10 +14,14 @@
 import '@xterm/xterm/css/xterm.css'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { api, LogEntry, TerminalSize } from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { onMounted, onUnmounted, ref } from 'vue'
 import { debounce } from 'lodash'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useExecutionStore } from '@/stores/executionStore'
+import { storeToRefs } from 'pinia'
+import { until } from '@vueuse/core'
+import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 
 let intervalId: number
 let useFallbackPolling: boolean = false
@@ -41,15 +45,7 @@ const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
   terminal.write(entries.map((e) => e.m).join(''))
 }
 
-const logReceived = (
-  e: CustomEvent<{
-    entries: Array<{ t: string; m: string }>
-    size: {
-      rows: number
-      cols: number
-    } | null
-  }>
-) => {
+const logReceived = (e: CustomEvent<LogsWsMessage>) => {
   update(e.detail.entries, e.detail.size)
 }
 
@@ -70,9 +66,12 @@ const watchLogs = async () => {
   if (useFallbackPolling) {
     intervalId = window.setInterval(loadLogText, 500)
   } else {
-    // It is possible for a user to open the terminal before a clientid is assigned
-    // subscribe requires this so wait for it
-    await api.waitForClientId()
+    const { clientId } = storeToRefs(useExecutionStore())
+    if (!clientId.value) {
+      console.log('waiting')
+      await until(clientId).not.toBeNull()
+      console.log('waited', clientId.value)
+    }
     api.subscribeLogs(true)
     api.addEventListener('logs', logReceived)
   }

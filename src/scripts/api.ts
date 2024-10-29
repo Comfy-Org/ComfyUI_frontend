@@ -12,7 +12,8 @@ import {
   type User,
   type Settings,
   type UserDataFullInfo,
-  validateComfyNodeDef
+  validateComfyNodeDef,
+  LogsRawResponse
 } from '@/types/apiTypes'
 import axios from 'axios'
 
@@ -30,19 +31,7 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
-export interface LogEntry {
-  t: string
-  m: string
-}
-
-export interface TerminalSize {
-  cols: number
-  rows: number
-}
-
 class ComfyApi extends EventTarget {
-  #clientIdBlock: Promise<void>
-  #clientIdResolve: Function
   #registered = new Set()
   api_host: string
   api_base: string
@@ -67,17 +56,6 @@ class ComfyApi extends EventTarget {
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
-  }
-
-  async waitForClientId() {
-    if (this.clientId) {
-      return this.clientId
-    }
-    if (!this.#clientIdBlock) {
-      this.#clientIdBlock = new Promise((res) => (this.#clientIdResolve = res))
-    }
-    await this.#clientIdBlock
-    return this.clientId
   }
 
   internalURL(route: string): string {
@@ -221,7 +199,6 @@ class ComfyApi extends EventTarget {
                 this.clientId = clientId
                 window.name = clientId // use window name so it isnt reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
-                this.#clientIdResolve?.()
               }
               this.dispatchEvent(
                 new CustomEvent('status', { detail: msg.data.status })
@@ -748,10 +725,7 @@ class ComfyApi extends EventTarget {
     return (await axios.get(this.internalURL('/logs'))).data
   }
 
-  async getRawLogs(): Promise<{
-    size: TerminalSize
-    entries: Array<LogEntry>
-  }> {
+  async getRawLogs(): Promise<LogsRawResponse> {
     return (await axios.get(this.internalURL('/logs/raw'))).data
   }
 

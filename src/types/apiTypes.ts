@@ -84,6 +84,23 @@ const zDownloadModelStatus = z.object({
   already_existed: z.boolean()
 })
 
+const zTerminalSize = z.object({
+  cols: z.number(),
+  row: z.number()
+})
+const zLogEntry = z.object({
+  t: z.string(),
+  m: z.string()
+})
+const zLogsWsMessage = z.object({
+  size: zTerminalSize.optional(),
+  entries: z.array(zLogEntry)
+})
+const zLogRawResponse = z.object({
+  size: zTerminalSize,
+  entries: z.array(zLogEntry)
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -100,6 +117,7 @@ export type ExecutionInterruptedWsMessage = z.infer<
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
 
 export type DownloadModelStatus = z.infer<typeof zDownloadModelStatus>
+export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
 // End of ws messages
 
 const zPromptInputItem = z.object({
@@ -524,3 +542,6 @@ export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>
 export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
+export type TerminalSize = z.infer<typeof zTerminalSize>
+export type LogEntry = z.infer<typeof zLogEntry>
+export type LogsRawResponse = z.infer<typeof zLogRawResponse>
