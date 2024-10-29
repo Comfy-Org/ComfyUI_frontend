@@ -1,83 +1,83 @@
 <template>
-  <div class="comfy-missing-models">
-    <h4 class="warning-title">Warning: Missing Models</h4>
-    <p class="warning-description">
-      When loading the graph, the following models were not found:
-    </p>
-    <p class="warning-options">
-      <Checkbox
-        class="model-path-select-checkbox"
-        v-model="showFolderSelect"
-        label="Show folder selector"
-        :binary="true"
-      />
-      Show folder selector
-    </p>
-    <ListBox
-      :options="missingModels"
-      optionLabel="label"
-      scrollHeight="100%"
-      :class="'missing-models-list' + (props.maximized ? ' maximized' : '')"
-      :pt="{
-        list: { class: 'border-none' }
-      }"
-    >
-      <template #option="slotProps">
-        <div
-          class="missing-model-item"
-          :style="{ '--progress': `${slotProps.option.progress}%` }"
-        >
-          <div class="model-info">
-            <div class="model-details">
-              <span class="model-type" :title="slotProps.option.hint">{{
-                slotProps.option.label
-              }}</span>
-            </div>
-            <div v-if="slotProps.option.error" class="model-error">
-              {{ slotProps.option.error }}
-            </div>
+  <NoResultsPlaceholder
+    class="pb-0"
+    icon="pi pi-exclamation-circle"
+    title="Missing Models"
+    message="When loading the graph, the following models were not found"
+  />
+  <p class="warning-options">
+    <Checkbox
+      class="model-path-select-checkbox"
+      v-model="showFolderSelect"
+      label="Show folder selector"
+      :binary="true"
+    />
+    Show folder selector
+  </p>
+  <ListBox
+    :options="missingModels"
+    optionLabel="label"
+    scrollHeight="100%"
+    class="comfy-missing-models"
+    :pt="{
+      list: { class: 'border-none' }
+    }"
+  >
+    <template #option="slotProps">
+      <div
+        class="missing-model-item"
+        :style="{ '--progress': `${slotProps.option.progress}%` }"
+      >
+        <div class="model-info">
+          <div class="model-details">
+            <span class="model-type" :title="slotProps.option.hint">{{
+              slotProps.option.label
+            }}</span>
           </div>
-          <div class="model-action">
-            <Select
-              class="model-path-select"
-              v-if="
-                slotProps.option.action &&
-                !slotProps.option.downloading &&
-                !slotProps.option.completed &&
-                !slotProps.option.error &&
-                showFolderSelect
-              "
-              v-model="slotProps.option.folderPath"
-              :options="slotProps.option.paths"
-              @change="updateFolderPath(slotProps.option, $event)"
-            />
-            <Button
-              v-if="
-                slotProps.option.action &&
-                !slotProps.option.downloading &&
-                !slotProps.option.completed &&
-                !slotProps.option.error
-              "
-              @click="slotProps.option.action.callback"
-              :label="slotProps.option.action.text"
-              class="p-button-sm p-button-outlined model-action-button"
-            />
-            <div v-if="slotProps.option.downloading" class="download-progress">
-              <span class="progress-text"
-                >{{ slotProps.option.progress.toFixed(2) }}%</span
-              >
-            </div>
-            <div v-if="slotProps.option.completed" class="download-complete">
-              <i class="pi pi-check" style="color: var(--green-500)"></i>
-            </div>
-            <div v-if="slotProps.option.error" class="download-error">
-              <i class="pi pi-times" style="color: var(--red-600)"></i>
-            </div>
+          <div v-if="slotProps.option.error" class="model-error">
+            {{ slotProps.option.error }}
           </div>
         </div>
-      </template>
-    </ListBox>
-  </div>
+        <div class="model-action">
+          <Select
+            class="model-path-select"
+            v-if="
+              slotProps.option.action &&
+              !slotProps.option.downloading &&
+              !slotProps.option.completed &&
+              !slotProps.option.error &&
+              showFolderSelect
+            "
+            v-model="slotProps.option.folderPath"
+            :options="slotProps.option.paths"
+            @change="updateFolderPath(slotProps.option, $event)"
+          />
+          <Button
+            v-if="
+              slotProps.option.action &&
+              !slotProps.option.downloading &&
+              !slotProps.option.completed &&
+              !slotProps.option.error
+            "
+            @click="slotProps.option.action.callback"
+            :label="slotProps.option.action.text"
+            class="p-button-sm p-button-outlined model-action-button"
+          />
+          <div v-if="slotProps.option.downloading" class="download-progress">
+            <span class="progress-text"
+              >{{ slotProps.option.progress.toFixed(2) }}%</span
+            >
+          </div>
+          <div v-if="slotProps.option.completed" class="download-complete">
+            <i class="pi pi-check" style="color: var(--green-500)"></i>
+          </div>
+          <div v-if="slotProps.option.error" class="download-error">
+            <i class="pi pi-times" style="color: var(--red-600)"></i>
+          </div>
+        </div>
+      </div>
+    </template>
+  </ListBox>
 </template>
 
 <script setup lang="ts">
@@ -85,6 +85,7 @@ import { ref, computed } from 'vue'
 import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import Select from 'primevue/select'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
@@ -116,7 +117,6 @@ interface ModelInfo {
 const props = defineProps<{
   missingModels: ModelInfo[]
   paths: Record<string, string[]>
-  maximized: boolean
 }>()
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
@@ -261,35 +261,13 @@ const missingModels = computed(() => {
 </style>
 
 <style scoped>
-.comfy-missing-models {
-  font-family: monospace;
-  color: var(--red-600);
-  padding: 1.5rem;
-  background-color: var(--surface-ground);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-}
-
-.warning-title {
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
-.warning-description {
-  margin-bottom: 1rem;
-}
-
 .warning-options {
   color: var(--fg-color);
 }
 
-.missing-models-list {
+.comfy-missing-models {
   max-height: 300px;
   overflow-y: auto;
-}
-
-.missing-models-list.maximized {
-  max-height: unset;
 }
 
 .missing-model-item {
