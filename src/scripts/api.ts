@@ -1,6 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
-  type DownloadModelStatus,
   type HistoryTaskItem,
   type PendingTaskItem,
   type RunningTaskItem,
@@ -240,11 +239,6 @@ class ComfyApi extends EventTarget {
                 new CustomEvent('execution_cached', { detail: msg.data })
               )
               break
-            case 'download_progress':
-              this.dispatchEvent(
-                new CustomEvent('download_progress', { detail: msg.data })
-              )
-              break
             default:
               if (this.#registered.has(msg.type)) {
                 this.dispatchEvent(
@@ -411,36 +405,6 @@ class ComfyApi extends EventTarget {
       )
       return null
     }
-  }
-
-  /**
-   * Tells the server to download a model from the specified URL to the specified directory and filename
-   * @param {string} url The URL to download the model from
-   * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
-   * @param {string} model_filename The filename to save the model as
-   * @param {number} progress_interval The interval in seconds at which to report download progress (via 'download_progress' event)
-   */
-  async internalDownloadModel(
-    url: string,
-    model_directory: string,
-    model_filename: string,
-    progress_interval: number,
-    folder_path: string
-  ): Promise<DownloadModelStatus> {
-    const res = await this.fetchApi('/internal/models/download', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        model_directory,
-        model_filename,
-        progress_interval,
-        folder_path
-      })
-    })
-    return await res.json()
   }
 
   /**
