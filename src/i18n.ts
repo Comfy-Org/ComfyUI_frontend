@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    download: 'Download',
     loadAllFolders: 'Load All Folders',
     refresh: 'Refresh',
     terminal: 'Terminal',
@@ -116,6 +117,7 @@ const messages = {
     }
   },
   zh: {
+    download: '下载',
     loadAllFolders: '加载所有文件夹',
     refresh: '刷新',
     terminal: '终端',
@@ -229,6 +231,7 @@ const messages = {
     }
   },
   ru: {
+    download: 'Скачать',
     refresh: 'Обновить',
     loadAllFolders: 'Загрузить все папки',
     terminal: 'Терминал',

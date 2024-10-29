@@ -11,32 +11,12 @@
     scrollHeight="100%"
     class="comfy-missing-models"
   >
-    <template #option="slotProps">
-      <div
-        class="missing-model-item flex flex-row items-center"
-        :style="{ '--progress': `${slotProps.option.progress}%` }"
-      >
-        <div class="model-info">
-          <div class="model-details">
-            <span class="model-type" :title="slotProps.option.hint">{{
-              slotProps.option.label
-            }}</span>
-          </div>
-          <div v-if="slotProps.option.error" class="model-error">
-            {{ slotProps.option.error }}
-          </div>
-        </div>
-        <div class="model-action">
-          <Button
-            class="model-action-button"
-            :label="$t('Download')"
-            size="small"
-            outlined
-            :disabled="slotProps.option.error"
-            @click="slotProps.option.action"
-          />
-        </div>
-      </div>
+    <template #option="{ option }">
+      <FileDownload
+        :url="option.url"
+        :label="option.label"
+        :error="option.error"
+      />
     </template>
   </ListBox>
 </template>
@@ -45,7 +25,7 @@
 import { ref, computed } from 'vue'
 import ListBox from 'primevue/listbox'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import Button from 'primevue/button'
+import FileDownload from '@/components/common/FileDownload.vue'
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources
@@ -80,7 +60,7 @@ const missingModels = computed(() => {
     if (model.directory_invalid || !paths) {
       return {
         label: `${model.directory} / ${model.name}`,
-        hint: model.url,
+        url: model.url,
         error: 'Invalid directory specified (does this require custom nodes?)'
       }
     }
@@ -98,28 +78,27 @@ const missingModels = computed(() => {
     if (!allowedSources.some((source) => model.url.startsWith(source))) {
       return {
         label: `${model.directory} / ${model.name}`,
-        hint: model.url,
+        url: model.url,
         error: `Download not allowed from source '${model.url}', only allowed from '${allowedSources.join("', '")}'`
       }
     }
     if (!allowedSuffixes.some((suffix) => model.name.endsWith(suffix))) {
       return {
         label: `${model.directory} / ${model.name}`,
-        hint: model.url,
+        url: model.url,
         error: `Only allowed suffixes are: '${allowedSuffixes.join("', '")}'`
       }
     }
     return {
+      url: model.url,
       label: `${model.directory} / ${model.name}`,
-      hint: model.url,
       downloading: downloadInfo.downloading,
       completed: downloadInfo.completed,
       progress: downloadInfo.progress,
       error: downloadInfo.error,
       name: model.name,
       paths: paths,
-      folderPath: downloadInfo.folder_path,
-      action: () => console.log('download!')
+      folderPath: downloadInfo.folder_path
     }
   })
 })
@@ -129,49 +108,5 @@ const missingModels = computed(() => {
 .comfy-missing-models {
   max-height: 300px;
   overflow-y: auto;
-}
-
-.missing-model-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: var(--progress);
-  background-color: var(--p-green-500);
-  opacity: 0.2;
-  transition: width 0.3s ease;
-}
-
-.model-info {
-  flex: 1;
-  min-width: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  margin-right: 1rem;
-  overflow: hidden;
-}
-
-.model-details {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.model-type {
-  font-weight: 600;
-  color: var(--text-color);
-  margin-right: 0.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.model-action {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  z-index: 1;
 }
 </style>
