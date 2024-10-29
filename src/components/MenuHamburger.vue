@@ -15,13 +15,18 @@ import Button from 'primevue/button'
 import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 import { watchEffect } from 'vue'
 import { app } from '@/scripts/app'
+import { useSettingStore } from '@/stores/settingStore'
 
 const workspaceState = useWorkspaceStore()
+const settingStore = useSettingStore()
 const exitFocusMode = () => {
   workspaceState.focusMode = false
 }
 
 watchEffect(() => {
+  if (settingStore.get('Comfy.UseNewMenu') !== 'Disabled') {
+    return
+  }
   if (workspaceState.focusMode) {
     app.ui.menuContainer.style.display = 'none'
   } else {
