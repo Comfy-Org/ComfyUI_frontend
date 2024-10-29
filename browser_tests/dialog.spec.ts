@@ -63,10 +63,11 @@ test.describe('Missing models warning', () => {
 
     const downloadButton = comfyPage.page.getByLabel('Download')
     await expect(downloadButton).toBeVisible()
+    const downloadPromise = comfyPage.page.waitForEvent('download')
     await downloadButton.click()
 
-    const downloadComplete = comfyPage.page.locator('.download-complete')
-    await expect(downloadComplete).toBeVisible()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toBe('fake_model.safetensors')
   })
 })
 
