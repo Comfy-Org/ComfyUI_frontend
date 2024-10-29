@@ -84,10 +84,7 @@
     "zod-validation-error": "^3.3.0"
   },
   "lint-staged": {
-    "./**/*.{js,ts,tsx,vue}": [
-      "prettier --write",
-      "git add"
-    ],
+    "./**/*.{js,ts,tsx,vue}": "prettier --write",
     "**/*.ts": "tsc-files --noEmit"
   }
 }
