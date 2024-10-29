@@ -11,6 +11,13 @@
         text
         v-tooltip="$t('refresh')"
       />
+      <Button
+        icon="pi pi-cloud-download"
+        @click="modelStore.loadModels"
+        severity="secondary"
+        text
+        v-tooltip="$t('loadAllFolders')"
+      />
     </template>
     <template #header>
       <SearchBox
