@@ -46,10 +46,14 @@ const onUnmaximize = () => {
   maximized.value = false
 }
 
-const contentProps = computed(() => ({
-  ...dialogStore.props,
-  maximized: maximized.value
-}))
+const contentProps = computed(() =>
+  maximizable.value
+    ? {
+        ...dialogStore.props,
+        maximized: maximized.value
+      }
+    : dialogStore.props
+)
 
 const headerId = `dialog-${Math.random().toString(36).substr(2, 9)}`
 </script>
