@@ -19,7 +19,7 @@ export type SettingCustomRenderer = (
 
 export interface SettingOption {
   text: string
-  value?: string
+  value?: any
 }
 
 export interface Setting {

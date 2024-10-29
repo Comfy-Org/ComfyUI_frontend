@@ -511,7 +511,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
       'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
       'Comfy.Extension.Disabled': z.array(z.string()),
-      'Comfy.Settings.ExtensionPanel': z.boolean()
+      'Comfy.Settings.ExtensionPanel': z.boolean(),
+      'Comfy.LinkRenderMode': z.number()
     })
     .optional()
 )

@@ -5,6 +5,7 @@ import {
   LinkReleaseTriggerMode
 } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
+import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
   {
@@ -444,5 +445,18 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Recommended for node developers. This will validate all node definitions on startup.',
     defaultValue: false,
     versionAdded: '1.3.14'
+  },
+  {
+    id: 'Comfy.LinkRenderMode',
+    category: ['Comfy', 'Graph', 'LinkRenderMode'],
+    name: 'Link Render Mode',
+    defaultValue: 2,
+    type: 'combo',
+    options: [
+      { value: LiteGraph.STRAIGHT_LINK, text: 'Straight' },
+      { value: LiteGraph.LINEAR_LINK, text: 'Linear' },
+      { value: LiteGraph.SPLINE_LINK, text: 'Spline' },
+      { value: LiteGraph.HIDDEN_LINK, text: 'Hidden' }
+    ]
   }
 ]
