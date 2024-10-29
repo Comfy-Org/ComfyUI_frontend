@@ -1,2 +1,7 @@
-npx lint-staged
-npm run typecheck
+if [[ "$OS" == "Windows_NT" ]]; then
+  npx.cmd lint-staged
+  npm.cmd run typecheck
+else
+  npx lint-staged
+  npm run typecheck
+fi
