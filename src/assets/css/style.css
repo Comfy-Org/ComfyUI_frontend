@@ -181,25 +181,6 @@ body {
   margin: 3px 3px 3px 4px;
 }
 
-.comfy-menu-hamburger {
-  position: fixed;
-  top: 10px;
-  z-index: 9999;
-  right: 10px;
-  width: 30px;
-  display: none;
-  gap: 8px;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.comfy-menu-hamburger div {
-  height: 3px;
-  width: 100%;
-  border-radius: 20px;
-  background-color: white;
-}
-
 .comfy-menu {
   font-size: 15px;
   position: absolute;

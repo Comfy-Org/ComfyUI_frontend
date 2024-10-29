@@ -6,11 +6,12 @@
   <GlobalToast />
   <UnloadWindowConfirmDialog />
   <BrowserTabTitle />
+  <MenuHamburger />
 </template>
 
 <script setup lang="ts">
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
-
+import MenuHamburger from '@/components/MenuHamburger.vue'
 import { computed, onMounted, onBeforeUnmount, watch, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'

@@ -10,6 +10,11 @@ import { useSettingStore } from './settingStore'
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
   const shiftDown = ref(false)
+  /**
+   * Whether the workspace is in focus mode.
+   * When in focus mode, only the graph editor is visible.
+   */
+  const focusMode = ref(false)
 
   const toast = computed<ToastManager>(() => useToastStore())
   const queueSettings = computed(() => useQueueSettingsStore())
@@ -52,6 +57,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   return {
     spinner,
     shiftDown,
+    focusMode,
+    toggleFocusMode: () => {
+      focusMode.value = !focusMode.value
+    },
     toast,
     queueSettings,
     command,

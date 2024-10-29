@@ -167,5 +167,11 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Workspace.ToggleBottomPanelTab.integrated-terminal'
+  },
+  {
+    combo: {
+      key: 'f'
+    },
+    commandId: 'Workspace.ToggleFocusMode'
   }
 ]
