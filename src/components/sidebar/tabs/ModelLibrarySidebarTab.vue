@@ -6,7 +6,6 @@
     <template #tool-buttons>
       <Button
         icon="pi pi-refresh"
-        size="small"
         @click="modelStore.loadModelFolders"
         severity="secondary"
         text
