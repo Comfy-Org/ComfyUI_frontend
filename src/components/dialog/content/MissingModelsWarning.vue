@@ -10,13 +10,10 @@
     optionLabel="label"
     scrollHeight="100%"
     class="comfy-missing-models"
-    :pt="{
-      list: { class: 'border-none' }
-    }"
   >
     <template #option="slotProps">
       <div
-        class="missing-model-item"
+        class="flex flex-row items-center"
         :style="{ '--progress': `${slotProps.option.progress}%` }"
       >
         <div class="model-info">
@@ -31,7 +28,7 @@
         </div>
         <div class="model-action">
           <Select
-            class="model-path-select"
+            class="model-path-select mr-2"
             v-if="
               slotProps.option.action &&
               !slotProps.option.downloading &&
@@ -52,7 +49,9 @@
             "
             @click="slotProps.option.action.callback"
             :label="slotProps.option.action.text"
-            class="p-button-sm p-button-outlined model-action-button"
+            size="small"
+            outlined
+            class="model-action-button"
           />
           <div v-if="slotProps.option.downloading" class="download-progress">
             <span class="progress-text"
@@ -245,15 +244,6 @@ const missingModels = computed(() => {
 .comfy-missing-models {
   max-height: 300px;
   overflow-y: auto;
-}
-
-.missing-model-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 0.5rem;
-  position: relative;
-  overflow: hidden;
-  width: 100%;
 }
 
 .missing-model-item::before {
