@@ -728,7 +728,9 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
       'Comfy.Graph.CanvasMenu': false,
       // Hide all badges by default.
       'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None
+      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+      // Disable tooltips by default to avoid flakiness.
+      'Comfy.EnableTooltips': false
     })
     await comfyPage.setup()
     await use(comfyPage)

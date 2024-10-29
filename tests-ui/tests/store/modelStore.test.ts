@@ -6,6 +6,7 @@ import { api } from '@/scripts/api'
 jest.mock('@/scripts/api', () => ({
   api: {
     getModels: jest.fn(),
+    getModelFolders: jest.fn(),
     viewMetadata: jest.fn()
   }
 }))
@@ -16,6 +17,7 @@ function enableMocks() {
     'sdv15.safetensors',
     'noinfo.safetensors'
   ])
+  ;(api.getModelFolders as jest.Mock).mockResolvedValue(['checkpoints', 'vae'])
   ;(api.viewMetadata as jest.Mock).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
       return Promise.resolve({})
@@ -37,14 +39,15 @@ function enableMocks() {
 describe('useModelStore', () => {
   let store: ReturnType<typeof useModelStore>
 
-  beforeEach(() => {
+  beforeEach(async () => {
     setActivePinia(createPinia())
     store = useModelStore()
   })
 
   it('should load models', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     expect(Object.keys(folderStore.models).length).toBe(3)
@@ -52,7 +55,8 @@ describe('useModelStore', () => {
 
   it('should load model metadata', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     const model = folderStore.models['sdxl.safetensors']
@@ -69,7 +73,8 @@ describe('useModelStore', () => {
 
   it('should handle no metadata', async () => {
     enableMocks()
-    const folderStore = await store.getModelsInFolderCached('checkpoints')
+    await store.loadModelFolders()
+    const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
     const model = folderStore.models['noinfo.safetensors']
@@ -84,8 +89,9 @@ describe('useModelStore', () => {
 
   it('should cache model information', async () => {
     enableMocks()
-    const folderStore1 = await store.getModelsInFolderCached('checkpoints')
-    const folderStore2 = await store.getModelsInFolderCached('checkpoints')
+    await store.loadModelFolders()
+    await store.getLoadedModelFolder('checkpoints')
+    await store.getLoadedModelFolder('checkpoints')
     expect(api.getModels).toHaveBeenCalledTimes(1)
   })
 })

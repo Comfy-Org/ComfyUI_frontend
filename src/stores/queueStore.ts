@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import type {
@@ -14,6 +13,7 @@ import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
+import { ref, computed } from 'vue'
 
 // Task type used in the API.
 export type APITaskType = 'queue' | 'history'
@@ -94,17 +94,17 @@ export class ResultItemImpl {
       return defaultType
     }
 
-    if (this.format.endsWith('webm')) {
+    if (this.format?.endsWith('webm')) {
       return 'video/webm'
     }
-    if (this.format.endsWith('mp4')) {
+    if (this.format?.endsWith('mp4')) {
       return 'video/mp4'
     }
     return defaultType
   }
 
   get isVideo(): boolean {
-    return !this.isImage && this.format && this.format.startsWith('video/')
+    return !this.isImage && !!this.format?.startsWith('video/')
   }
 
   get isGif(): boolean {
@@ -134,14 +134,14 @@ export class TaskItemImpl {
   constructor(
     taskType: TaskType,
     prompt: TaskPrompt,
-    status: TaskStatus | undefined,
-    outputs: TaskOutput,
+    status?: TaskStatus,
+    outputs?: TaskOutput,
     flatOutputs?: ReadonlyArray<ResultItemImpl>
   ) {
     this.taskType = taskType
     this.prompt = prompt
     this.status = status
-    this.outputs = outputs
+    this.outputs = outputs ?? {}
     this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
 
@@ -327,97 +327,106 @@ export class TaskItemImpl {
   }
 }
 
-interface State {
-  runningTasks: TaskItemImpl[]
-  pendingTasks: TaskItemImpl[]
-  historyTasks: TaskItemImpl[]
-  maxHistoryItems: number
-  isLoading: boolean
-}
+export const useQueueStore = defineStore('queue', () => {
+  const runningTasks = ref<TaskItemImpl[]>([])
+  const pendingTasks = ref<TaskItemImpl[]>([])
+  const historyTasks = ref<TaskItemImpl[]>([])
+  const maxHistoryItems = ref(64)
+  const isLoading = ref(false)
 
-export const useQueueStore = defineStore('queue', {
-  state: (): State => ({
-    runningTasks: [],
-    pendingTasks: [],
-    historyTasks: [],
-    maxHistoryItems: 64,
-    isLoading: false
-  }),
-  getters: {
-    tasks(state) {
-      return [
-        ...state.pendingTasks,
-        ...state.runningTasks,
-        ...state.historyTasks
-      ]
-    },
-    flatTasks(): TaskItemImpl[] {
-      return this.tasks.flatMap((task: TaskItemImpl) => task.flatten())
-    },
-    lastHistoryQueueIndex(state) {
-      return state.historyTasks.length ? state.historyTasks[0].queueIndex : -1
-    },
-    hasPendingTasks(state) {
-      return state.pendingTasks.length > 0
-    }
-  },
-  actions: {
-    // Fetch the queue data from the API
-    async update() {
-      this.isLoading = true
-      try {
-        const [queue, history] = await Promise.all([
-          api.getQueue(),
-          api.getHistory(this.maxHistoryItems)
-        ])
+  const tasks = computed<TaskItemImpl[]>(
+    () =>
+      [
+        ...pendingTasks.value,
+        ...runningTasks.value,
+        ...historyTasks.value
+      ] as TaskItemImpl[]
+  )
 
-        const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-          tasks
-            .map(
-              (task: TaskItem) =>
-                new TaskItemImpl(
-                  task.taskType,
-                  task.prompt,
-                  task['status'],
-                  task['outputs'] || {}
-                )
-            )
-            // Desc order to show the latest tasks first
-            .sort((a, b) => b.queueIndex - a.queueIndex)
+  const flatTasks = computed<TaskItemImpl[]>(() =>
+    tasks.value.flatMap((task: TaskItemImpl) => task.flatten())
+  )
 
-        this.runningTasks = toClassAll(queue.Running)
-        this.pendingTasks = toClassAll(queue.Pending)
+  const lastHistoryQueueIndex = computed<number>(() =>
+    historyTasks.value.length ? historyTasks.value[0].queueIndex : -1
+  )
 
-        // Process history items
-        const allIndex = new Set(
-          history.History.map((item: TaskItem) => item.prompt[0])
-        )
-        const newHistoryItems = toClassAll(
-          history.History.filter(
-            (item) => item.prompt[0] > this.lastHistoryQueueIndex
+  const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
+
+  const update = async () => {
+    isLoading.value = true
+    try {
+      const [queue, history] = await Promise.all([
+        api.getQueue(),
+        api.getHistory(maxHistoryItems.value)
+      ])
+
+      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
+        tasks
+          .map(
+            (task: TaskItem) =>
+              new TaskItemImpl(
+                task.taskType,
+                task.prompt,
+                // status and outputs only exist on history tasks
+                'status' in task ? task.status : undefined,
+                'outputs' in task ? task.outputs : undefined
+              )
           )
-        )
-        const existingHistoryItems = this.historyTasks.filter(
-          (item: TaskItemImpl) => allIndex.has(item.queueIndex)
-        )
-        this.historyTasks = [...newHistoryItems, ...existingHistoryItems]
-          .slice(0, this.maxHistoryItems)
           .sort((a, b) => b.queueIndex - a.queueIndex)
-      } finally {
-        this.isLoading = false
-      }
-    },
-    async clear(targets: ('queue' | 'history')[] = ['queue', 'history']) {
-      if (targets.length === 0) {
-        return
-      }
-      await Promise.all(targets.map((type) => api.clearItems(type)))
-      await this.update()
-    },
-    async delete(task: TaskItemImpl) {
-      await api.deleteItem(task.apiTaskType, task.promptId)
-      await this.update()
+
+      runningTasks.value = toClassAll(queue.Running)
+      pendingTasks.value = toClassAll(queue.Pending)
+
+      const allIndex = new Set<number>(
+        history.History.map((item: TaskItem) => item.prompt[0])
+      )
+      const newHistoryItems = toClassAll(
+        history.History.filter(
+          (item) => item.prompt[0] > lastHistoryQueueIndex.value
+        )
+      )
+      const existingHistoryItems = historyTasks.value.filter((item) =>
+        allIndex.has(item.queueIndex)
+      )
+      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
+        .slice(0, maxHistoryItems.value)
+        .sort((a, b) => b.queueIndex - a.queueIndex)
+    } finally {
+      isLoading.value = false
     }
+  }
+
+  const clear = async (
+    targets: ('queue' | 'history')[] = ['queue', 'history']
+  ) => {
+    if (targets.length === 0) {
+      return
+    }
+    await Promise.all(targets.map((type) => api.clearItems(type)))
+    await update()
+  }
+
+  const deleteTask = async (task: TaskItemImpl) => {
+    await api.deleteItem(task.apiTaskType, task.promptId)
+    await update()
+  }
+
+  return {
+    runningTasks,
+    pendingTasks,
+    historyTasks,
+    maxHistoryItems,
+    isLoading,
+
+    tasks,
+    flatTasks,
+    lastHistoryQueueIndex,
+    hasPendingTasks,
+
+    update,
+    clear,
+    delete: deleteTask
   }
 })
 

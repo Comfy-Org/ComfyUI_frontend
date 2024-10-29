@@ -1,6 +1,5 @@
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
-  type DownloadModelStatus,
   type HistoryTaskItem,
   type PendingTaskItem,
   type RunningTaskItem,
@@ -217,7 +216,6 @@ class ComfyApi extends EventTarget {
             case 'execution_success':
             case 'execution_error':
             case 'execution_cached':
-            case 'download_progress':
             case 'logs':
               this.dispatchEvent(
                 new CustomEvent(msg.type, { detail: msg.data })
@@ -344,7 +342,10 @@ class ComfyApi extends EventTarget {
     if (res.status === 404) {
       return []
     }
-    return await res.json()
+    const folderBlacklist = ['configs', 'custom_nodes']
+    return (await res.json()).filter(
+      (folder: string) => !folderBlacklist.includes(folder)
+    )
   }
 
   /**
@@ -352,10 +353,10 @@ class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(folder: string) {
+  async getModels(folder: string): Promise<string[]> {
     const res = await this.fetchApi(`/models/${folder}`)
     if (res.status === 404) {
-      return null
+      return []
     }
     return await res.json()
   }
@@ -386,36 +387,6 @@ class ComfyApi extends EventTarget {
       )
       return null
     }
-  }
-
-  /**
-   * Tells the server to download a model from the specified URL to the specified directory and filename
-   * @param {string} url The URL to download the model from
-   * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
-   * @param {string} model_filename The filename to save the model as
-   * @param {number} progress_interval The interval in seconds at which to report download progress (via 'download_progress' event)
-   */
-  async internalDownloadModel(
-    url: string,
-    model_directory: string,
-    model_filename: string,
-    progress_interval: number,
-    folder_path: string
-  ): Promise<DownloadModelStatus> {
-    const res = await this.fetchApi('/internal/models/download', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        model_directory,
-        model_filename,
-        progress_interval,
-        folder_path
-      })
-    })
-    return await res.json()
   }
 
   /**

@@ -47,7 +47,8 @@ const zExecutingWsMessage = z.object({
 })
 
 const zExecutedWsMessage = zExecutingWsMessage.extend({
-  outputs: zOutputs
+  output: zOutputs,
+  merge: z.boolean().optional()
 })
 
 const zExecutionWsMessageBase = z.object({
@@ -74,14 +75,6 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   traceback: z.array(z.string()),
   current_inputs: z.any(),
   current_outputs: z.any()
-})
-
-const zDownloadModelStatus = z.object({
-  status: z.string(),
-  progress_percentage: z.number(),
-  message: z.string(),
-  download_path: z.string(),
-  already_existed: z.boolean()
 })
 
 const zTerminalSize = z.object({
@@ -115,8 +108,6 @@ export type ExecutionInterruptedWsMessage = z.infer<
   typeof zExecutionInterruptedWsMessage
 >
 export type ExecutionErrorWsMessage = z.infer<typeof zExecutionErrorWsMessage>
-
-export type DownloadModelStatus = z.infer<typeof zDownloadModelStatus>
 export type LogsWsMessage = z.infer<typeof zLogsWsMessage>
 // End of ws messages
 
@@ -528,7 +519,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
       'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
       'Comfy.Extension.Disabled': z.array(z.string()),
-      'Comfy.Settings.ExtensionPanel': z.boolean()
+      'Comfy.Settings.ExtensionPanel': z.boolean(),
+      'Comfy.LinkRenderMode': z.number()
     })
     .optional()
 )

@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import type { DeviceStats } from '@/types/apiTypes'
-import { formatMemory } from '@/utils/formatUtil'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   device: DeviceStats
@@ -30,7 +30,7 @@ const formatValue = (value: any, field: string) => {
       field
     )
   ) {
-    return formatMemory(value)
+    return formatSize(value)
   }
   return value
 }
