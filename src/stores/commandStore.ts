@@ -19,6 +19,7 @@ import { useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
+import { useWorkspaceStore } from './workspaceStateStore'
 
 export interface ComfyCommand {
   id: string
@@ -466,6 +467,15 @@ export const useCommandStore = defineStore('command', () => {
       versionAdded: '1.3.22',
       function: () => {
         useBottomPanelStore().toggleBottomPanel()
+      }
+    },
+    {
+      id: 'Workspace.ToggleFocusMode',
+      icon: 'pi pi-eye',
+      label: 'Toggle Focus Mode',
+      versionAdded: '1.3.27',
+      function: () => {
+        useWorkspaceStore().toggleFocusMode()
       }
     }
   ]

@@ -62,7 +62,9 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
-  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+  () =>
+    settingStore.get('Comfy.UseNewMenu') !== 'Disabled' &&
+    !workspaceStore.focusMode
 )
 const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')

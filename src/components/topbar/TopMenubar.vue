@@ -29,13 +29,17 @@ import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus } from '@vueuse/core'
+import { useWorkspaceStore } from '@/stores/workspaceStateStore'
 
+const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
 const betaMenuEnabled = computed(
-  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+  () =>
+    settingStore.get('Comfy.UseNewMenu') !== 'Disabled' &&
+    !workspaceState.focusMode
 )
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.UseNewMenu') === 'Top'

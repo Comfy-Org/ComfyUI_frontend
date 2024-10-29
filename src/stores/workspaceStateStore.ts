@@ -58,6 +58,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     spinner,
     shiftDown,
     focusMode,
+    toggleFocusMode: () => {
+      focusMode.value = !focusMode.value
+    },
     toast,
     queueSettings,
     command,
