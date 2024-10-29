@@ -5,15 +5,6 @@
     title="Missing Models"
     message="When loading the graph, the following models were not found"
   />
-  <div class="flex flex-row">
-    <Checkbox
-      class="model-path-select-checkbox"
-      v-model="showFolderSelect"
-      label="Show folder selector"
-      :binary="true"
-    />
-    <p class="ml-2">Show folder selector</p>
-  </div>
   <ListBox
     :options="missingModels"
     optionLabel="label"
@@ -45,9 +36,9 @@
               slotProps.option.action &&
               !slotProps.option.downloading &&
               !slotProps.option.completed &&
-              !slotProps.option.error &&
-              showFolderSelect
+              !slotProps.option.error
             "
+            v-show="slotProps.option.paths.length > 1"
             v-model="slotProps.option.folderPath"
             :options="slotProps.option.paths"
             @change="updateFolderPath(slotProps.option, $event)"
@@ -82,7 +73,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import Select from 'primevue/select'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -90,8 +80,6 @@ import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
-
-const showFolderSelect = ref(false)
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources
