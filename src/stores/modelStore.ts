@@ -174,9 +174,12 @@ export class ModelFolder {
 
 /** Model store handler, wraps individual per-folder model stores */
 export const useModelStore = defineStore('models', () => {
+  const modelFolderNames = ref<string[]>([])
   const modelFolderByName = ref<Record<string, ModelFolder>>({})
   const modelFolders = computed<ModelFolder[]>(() =>
-    Object.values(modelFolderByName.value)
+    modelFolderNames.value.map(
+      (folderName) => modelFolderByName.value[folderName]
+    )
   )
   const models = computed<ComfyModelDef[]>(() =>
     modelFolders.value.flatMap((folder) => Object.values(folder.models))
@@ -186,10 +189,10 @@ export const useModelStore = defineStore('models', () => {
    * Loads the model folders from the server
    */
   async function loadModelFolders() {
-    const folders = await api.getModelFolders()
+    modelFolderNames.value = await api.getModelFolders()
     modelFolderByName.value = {}
-    for (const folder of folders) {
-      modelFolderByName.value[folder] = new ModelFolder(folder)
+    for (const folderName of modelFolderNames.value) {
+      modelFolderByName.value[folderName] = new ModelFolder(folderName)
     }
   }
 
