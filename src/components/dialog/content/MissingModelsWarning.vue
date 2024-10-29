@@ -5,27 +5,15 @@
     title="Missing Models"
     message="When loading the graph, the following models were not found"
   />
-  <div class="flex flex-row">
-    <Checkbox
-      class="model-path-select-checkbox"
-      v-model="showFolderSelect"
-      label="Show folder selector"
-      :binary="true"
-    />
-    <p class="ml-2">Show folder selector</p>
-  </div>
   <ListBox
     :options="missingModels"
     optionLabel="label"
     scrollHeight="100%"
     class="comfy-missing-models"
-    :pt="{
-      list: { class: 'border-none' }
-    }"
   >
     <template #option="slotProps">
       <div
-        class="missing-model-item"
+        class="missing-model-item flex flex-row items-center"
         :style="{ '--progress': `${slotProps.option.progress}%` }"
       >
         <div class="model-info">
@@ -40,14 +28,14 @@
         </div>
         <div class="model-action">
           <Select
-            class="model-path-select"
+            class="model-path-select mr-2"
             v-if="
               slotProps.option.action &&
               !slotProps.option.downloading &&
               !slotProps.option.completed &&
-              !slotProps.option.error &&
-              showFolderSelect
+              !slotProps.option.error
             "
+            v-show="slotProps.option.paths.length > 1"
             v-model="slotProps.option.folderPath"
             :options="slotProps.option.paths"
             @change="updateFolderPath(slotProps.option, $event)"
@@ -61,7 +49,9 @@
             "
             @click="slotProps.option.action.callback"
             :label="slotProps.option.action.text"
-            class="p-button-sm p-button-outlined model-action-button"
+            size="small"
+            outlined
+            class="model-action-button"
           />
           <div v-if="slotProps.option.downloading" class="download-progress">
             <span class="progress-text"
@@ -82,7 +72,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
 import Select from 'primevue/select'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -90,8 +79,6 @@ import { SelectChangeEvent } from 'primevue/select'
 import Button from 'primevue/button'
 import { api } from '@/scripts/api'
 import { DownloadModelStatus } from '@/types/apiTypes'
-
-const showFolderSelect = ref(false)
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources
@@ -257,15 +244,6 @@ const missingModels = computed(() => {
 .comfy-missing-models {
   max-height: 300px;
   overflow-y: auto;
-}
-
-.missing-model-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 0.5rem;
-  position: relative;
-  overflow: hidden;
-  width: 100%;
 }
 
 .missing-model-item::before {
