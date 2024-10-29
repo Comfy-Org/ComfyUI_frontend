@@ -7,6 +7,7 @@
   />
   <div class="flex flex-row">
     <Checkbox
+      class="model-path-select-checkbox"
       v-model="showFolderSelect"
       label="Show folder selector"
       :binary="true"
