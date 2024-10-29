@@ -68,10 +68,10 @@
             >
           </div>
           <div v-if="slotProps.option.completed" class="download-complete">
-            <i class="pi pi-check" style="color: var(--green-500)"></i>
+            <i class="pi pi-check" style="color: var(--p-green-500)"></i>
           </div>
           <div v-if="slotProps.option.error" class="download-error">
-            <i class="pi pi-times" style="color: var(--red-600)"></i>
+            <i class="pi pi-times" style="color: var(--p-red-600)"></i>
           </div>
         </div>
       </div>
@@ -252,13 +252,6 @@ const missingModels = computed(() => {
 })
 </script>
 
-<style>
-:root {
-  --red-600: #dc3545;
-  --green-500: #28a745;
-}
-</style>
-
 <style scoped>
 .comfy-missing-models {
   max-height: 300px;
@@ -281,7 +274,7 @@ const missingModels = computed(() => {
   left: 0;
   height: 100%;
   width: var(--progress);
-  background-color: var(--green-500);
+  background-color: var(--p-green-500);
   opacity: 0.2;
   transition: width 0.3s ease;
 }
@@ -320,7 +313,7 @@ const missingModels = computed(() => {
 }
 
 .model-error {
-  color: var(--red-600);
+  color: var(--p-red-600);
   font-size: 0.8rem;
   margin-top: 0.25rem;
 }
