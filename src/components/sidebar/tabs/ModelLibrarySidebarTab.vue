@@ -3,6 +3,16 @@
     :title="$t('sideToolbar.modelLibrary')"
     class="bg-[var(--p-tree-background)]"
   >
+    <template #tool-buttons>
+      <Button
+        icon="pi pi-refresh"
+        size="small"
+        @click="modelStore.loadModelFolders"
+        severity="secondary"
+        text
+        v-tooltip="$t('refresh')"
+      />
+    </template>
     <template #header>
       <SearchBox
         class="model-lib-search-box p-4"
@@ -26,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
