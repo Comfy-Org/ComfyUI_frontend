@@ -85,8 +85,8 @@ type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
   const allNodes: ModelOrFolder[] = [
-    ...filteredModels.value,
-    ...modelStore.modelFolders
+    ...modelStore.modelFolders,
+    ...filteredModels.value
   ]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
