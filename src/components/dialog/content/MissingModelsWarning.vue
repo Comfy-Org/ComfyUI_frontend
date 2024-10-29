@@ -5,15 +5,14 @@
     title="Missing Models"
     message="When loading the graph, the following models were not found"
   />
-  <p class="warning-options">
+  <div class="flex flex-row">
     <Checkbox
-      class="model-path-select-checkbox"
       v-model="showFolderSelect"
       label="Show folder selector"
       :binary="true"
     />
-    Show folder selector
-  </p>
+    <p class="ml-2">Show folder selector</p>
+  </div>
   <ListBox
     :options="missingModels"
     optionLabel="label"
@@ -261,10 +260,6 @@ const missingModels = computed(() => {
 </style>
 
 <style scoped>
-.warning-options {
-  color: var(--fg-color);
-}
-
 .comfy-missing-models {
   max-height: 300px;
   overflow-y: auto;
