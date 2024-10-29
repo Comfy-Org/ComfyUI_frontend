@@ -32,10 +32,7 @@ export function showMissingModelsWarning(props: {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: MissingModelsWarning,
-    props,
-    dialogComponentProps: {
-      maximizable: true
-    }
+    props
   })
 }
 
