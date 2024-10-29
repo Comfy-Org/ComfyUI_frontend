@@ -60,14 +60,15 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatMemory(value?: number) {
+export function formatSize(value?: number) {
   if (value === null || value === undefined) {
     return '-'
   }
 
-  const mb = Math.round(value / (1024 * 1024))
-  if (mb >= 1024) {
-    return `${(mb / 1024).toFixed(2)} GB`
-  }
-  return `${mb} MB`
+  const bytes = value
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
