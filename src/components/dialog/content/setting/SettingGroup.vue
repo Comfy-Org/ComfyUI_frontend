@@ -86,7 +86,6 @@ function getSettingAttrs(setting: SettingParams) {
 }
 
 const updateSetting = (setting: SettingParams, value: any) => {
-  if (setting.onChange) setting.onChange(value, settingStore.get(setting.id))
   settingStore.set(setting.id, value)
 }
 

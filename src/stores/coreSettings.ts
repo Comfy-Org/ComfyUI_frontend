@@ -475,6 +475,9 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When dragging a link over a node with viable input slot, highlight the node',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.3.29'
+    versionAdded: '1.3.29',
+    onChange: (value, oldValue) => {
+      console.log('snap_highlights_node', value, oldValue)
+    }
   }
 ]
