@@ -41,11 +41,11 @@ app.registerExtension({
         if (!customProperties?.forceInput) continue //ignore widgets that don't force input
       }
 
-      if (!(type in this.slot_types_default_out)) {
-        this.slot_types_default_out[type] = ['Reroute']
+      if (!(type in this.slot_types_default_in)) {
+        this.slot_types_default_in[type] = ['Reroute']
       }
-      if (this.slot_types_default_out[type].includes(nodeId)) continue
-      this.slot_types_default_out[type].push(nodeId)
+      if (this.slot_types_default_in[type].includes(nodeId)) continue
+      this.slot_types_default_in[type].push(nodeId)
 
       // Input types have to be stored as lower case
       // Store each node that can handle this input type
@@ -61,11 +61,11 @@ app.registerExtension({
     var outputs = nodeData['output'] ?? []
     for (const el of outputs) {
       const type = el as string
-      if (!(type in this.slot_types_default_in)) {
-        this.slot_types_default_in[type] = ['Reroute'] // ["Reroute", "Primitive"];  primitive doesn't always work :'()
+      if (!(type in this.slot_types_default_out)) {
+        this.slot_types_default_out[type] = ['Reroute'] // ["Reroute", "Primitive"];  primitive doesn't always work :'()
       }
 
-      this.slot_types_default_in[type].push(nodeId)
+      this.slot_types_default_out[type].push(nodeId)
 
       // Store each node that can handle this output type
       if (!(type in LiteGraph.registered_slot_out_types)) {
