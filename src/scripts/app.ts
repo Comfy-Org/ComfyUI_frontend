@@ -2299,6 +2299,7 @@ export class ComfyApp {
     }
 
     try {
+      // @ts-expect-error Discrepancies between zod and litegraph - in progress
       this.graph.configure(graphData)
       if (
         restore_view &&
@@ -2636,6 +2637,7 @@ export class ComfyApp {
           const p = await this.graphToPrompt()
 
           try {
+            // @ts-expect-error Discrepancies between zod and litegraph - in progress
             const res = await api.queuePrompt(number, p)
             this.lastNodeErrors = res.node_errors
             if (this.lastNodeErrors.length > 0) {
