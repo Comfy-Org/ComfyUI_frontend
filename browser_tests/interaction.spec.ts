@@ -116,6 +116,24 @@ test.describe('Node Interaction', () => {
       await comfyPage.page.keyboard.up('Shift')
       await expect(comfyPage.canvas).toHaveScreenshot('copied-link.png')
     })
+
+    test('Auto snap&highlight when dragging link over node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
+      await comfyPage.setSetting('Comfy.Node.SnapHighlightsNode', true)
+
+      await comfyPage.page.mouse.move(
+        comfyPage.clipTextEncodeNode1InputSlot.x,
+        comfyPage.clipTextEncodeNode1InputSlot.y
+      )
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(
+        comfyPage.clipTextEncodeNode2InputSlot.x,
+        comfyPage.clipTextEncodeNode2InputSlot.y
+      )
+      await expect(comfyPage.canvas).toHaveScreenshot('snapped-highlighted.png')
+    })
   })
 
   test('Can adjust widget value', async ({ comfyPage }) => {

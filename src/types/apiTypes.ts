@@ -502,7 +502,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
       'Comfy.Extension.Disabled': z.array(z.string()),
       'Comfy.Settings.ExtensionPanel': z.boolean(),
-      'Comfy.LinkRenderMode': z.number()
+      'Comfy.LinkRenderMode': z.number(),
+      'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
+      'Comfy.Node.SnapHighlightsNode': z.boolean()
     })
     .optional()
 )
