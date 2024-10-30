@@ -106,5 +106,32 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
     })
+
+    test('Should allow setting boolean settings', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          settings: [
+            {
+              id: 'Comfy.TestSetting',
+              name: 'Test Setting',
+              type: 'boolean',
+              defaultValue: false,
+              onChange: () => {
+                window['changeCount'] = (window['changeCount'] ?? 0) + 1
+              }
+            }
+          ]
+        })
+      })
+
+      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(false)
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(1)
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')
+      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(true)
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
+    })
   })
 })
