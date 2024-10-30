@@ -716,6 +716,9 @@ app.registerExtension({
     })
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    nodeType.prototype.isValidWidgetLink ??=
+      PrimitiveNode.prototype.isValidWidgetLink
+
     // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
     nodeType.prototype.convertWidgetToInput = function (widget) {
