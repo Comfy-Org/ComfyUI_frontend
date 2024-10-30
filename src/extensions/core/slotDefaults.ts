@@ -59,6 +59,13 @@ app.registerExtension({
       )
     }
 
+    for (const input of Object.values(nodeData.input?.optional ?? {})) {
+      const type = input[0]
+      if (!(type in this.slot_types_default_in)) {
+        this.slot_types_default_in[type] = ['Reroute']
+      }
+    }
+
     var outputs = nodeData['output'] ?? []
     for (const el of outputs) {
       const type = el as string
