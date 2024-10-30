@@ -86,6 +86,17 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  // Wait for canvas to be ready
+  LiteGraph.snaps_for_comfy = settingStore.get('Comfy.Node.AutoSnapLinkToSlot')
+})
+
+watchEffect(() => {
+  LiteGraph.snap_highlights_node = settingStore.get(
+    'Comfy.Node.SnapHighlightsNode'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
