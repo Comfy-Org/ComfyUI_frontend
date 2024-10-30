@@ -1,10 +1,11 @@
 <template>
   <div class="relative h-full w-full bg-black">
+    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
     <ProgressSpinner
-      v-if="loading"
+      v-else-if="loading"
       class="absolute inset-0 flex justify-center items-center h-full z-10"
     />
-    <div class="p-terminal rounded-none h-full w-full p-2">
+    <div v-show="!loading" class="p-terminal rounded-none h-full w-full p-2">
       <div class="h-full" ref="terminalEl"></div>
     </div>
   </div>
@@ -23,8 +24,7 @@ import { storeToRefs } from 'pinia'
 import { until } from '@vueuse/core'
 import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 
-let intervalId: number
-let useFallbackPolling: boolean = false
+const errorMessage = ref('')
 const loading = ref(true)
 const terminalEl = ref<HTMLDivElement>()
 const fitAddon = new FitAddon()
@@ -49,32 +49,18 @@ const logReceived = (e: CustomEvent<LogsWsMessage>) => {
   update(e.detail.entries, e.detail.size)
 }
 
-const loadLogText = async () => {
-  // Fallback to using string logs
-  const logs = await api.getLogs()
-  terminal.clear()
-  terminal.write(logs)
-  fitAddon.fit()
-}
-
 const loadLogEntries = async () => {
   const logs = await api.getRawLogs()
   update(logs.entries, logs.size)
 }
 
 const watchLogs = async () => {
-  if (useFallbackPolling) {
-    intervalId = window.setInterval(loadLogText, 500)
-  } else {
-    const { clientId } = storeToRefs(useExecutionStore())
-    if (!clientId.value) {
-      console.log('waiting')
-      await until(clientId).not.toBeNull()
-      console.log('waited', clientId.value)
-    }
-    api.subscribeLogs(true)
-    api.addEventListener('logs', logReceived)
+  const { clientId } = storeToRefs(useExecutionStore())
+  if (!clientId.value) {
+    await until(clientId).not.toBeNull()
   }
+  api.subscribeLogs(true)
+  api.addEventListener('logs', logReceived)
 }
 
 onMounted(async () => {
@@ -82,10 +68,12 @@ onMounted(async () => {
 
   try {
     await loadLogEntries()
-  } catch {
-    // On older backends the endpoints wont exist, fallback to poll
-    useFallbackPolling = true
-    await loadLogText()
+  } catch (err) {
+    console.error('Error loading logs', err)
+    // On older backends the endpoints wont exist
+    errorMessage.value =
+      'Unable to load logs, please ensure you have updated your ComfyUI backend.'
+    return
   }
 
   loading.value = false
@@ -95,25 +83,21 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (useFallbackPolling) {
-    window.clearInterval(intervalId)
-  } else {
-    if (api.clientId) {
-      api.subscribeLogs(false)
-    }
-    api.removeEventListener('logs', logReceived)
+  if (api.clientId) {
+    api.subscribeLogs(false)
   }
+  api.removeEventListener('logs', logReceived)
 
   resizeObserver.disconnect()
 })
 </script>
 
-<style>
-.p-terminal .xterm {
+<style scoped>
+:deep(.p-terminal) .xterm {
   overflow-x: auto;
 }
 
-.p-terminal .xterm-screen {
+:deep(.p-terminal) .xterm-screen {
   background-color: black;
   overflow-y: hidden;
 }
