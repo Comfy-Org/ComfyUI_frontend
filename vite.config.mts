@@ -23,6 +23,7 @@ export default defineConfig({
       insertTypesEntry: true,
       include: ['src/**/*.ts'],
       outDir: 'dist',
+      aliasesExclude: ['@'],
     }),
   ],
   resolve: {
