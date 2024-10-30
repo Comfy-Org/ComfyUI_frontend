@@ -86,7 +86,6 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
-  // Wait for canvas to be ready
   LiteGraph.snaps_for_comfy = settingStore.get('Comfy.Node.AutoSnapLinkToSlot')
 })
 
