@@ -848,8 +848,8 @@ export class LGraph {
      * @param y The y coordinate in canvas space
      * @return The group or null
      */
-    getGroupOnPos(x: number, y: number, { margin = 2 } = {}) {
-        return this._groups.reverse().find(g => g.isPointInside(x, y, margin, /* skip_title */ true))
+    getGroupOnPos(x: number, y: number, { margin = 2 } = {}): LGraphGroup | undefined {
+        return this._groups.toReversed().find(g => g.isPointInside(x, y, margin, true))
     }
 
     /**
