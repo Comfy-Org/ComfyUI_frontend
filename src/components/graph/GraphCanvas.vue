@@ -32,7 +32,7 @@ import { ref, computed, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   LiteGraph,
   LGraph,

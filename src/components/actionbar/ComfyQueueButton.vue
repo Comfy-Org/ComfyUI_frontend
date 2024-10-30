@@ -65,7 +65,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())

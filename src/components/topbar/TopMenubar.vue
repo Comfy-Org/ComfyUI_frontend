@@ -29,7 +29,7 @@ import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus } from '@vueuse/core'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()

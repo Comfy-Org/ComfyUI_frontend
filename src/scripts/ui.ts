@@ -8,7 +8,7 @@ import { TaskItem } from '@/types/apiTypes'
 import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 export const ComfyDialog = _ComfyDialog
 

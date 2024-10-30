@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'

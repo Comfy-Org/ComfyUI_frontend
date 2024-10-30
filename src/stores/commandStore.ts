@@ -19,7 +19,7 @@ import { useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
-import { useWorkspaceStore } from './workspaceStateStore'
+import { useWorkspaceStore } from './workspaceStore'
 
 export interface ComfyCommand {
   id: string
