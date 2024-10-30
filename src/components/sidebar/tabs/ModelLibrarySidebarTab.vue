@@ -75,7 +75,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
   if (!query) {
-    filteredModels.value = modelStore.models
+    filteredModels.value = []
     expandedKeys.value = {}
     return
   }
@@ -96,7 +96,7 @@ type ModelOrFolder = ComfyModelDef | ModelFolder
 const root = computed<TreeNode>(() => {
   const allNodes: ModelOrFolder[] = [
     ...modelStore.modelFolders,
-    ...filteredModels.value
+    ...(searchQuery.value ? filteredModels.value : modelStore.models)
   ]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
