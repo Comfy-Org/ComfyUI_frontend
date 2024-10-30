@@ -36,14 +36,15 @@ app.registerExtension({
       if (typeof input[0] !== 'string') continue
 
       var type = input[0]
+      if (!(type in this.slot_types_default_in)) {
+        this.slot_types_default_in[type] = ['Reroute']
+      }
+
       if (type in ComfyWidgets) {
         var customProperties = input[1]
         if (!customProperties?.forceInput) continue //ignore widgets that don't force input
       }
 
-      if (!(type in this.slot_types_default_in)) {
-        this.slot_types_default_in[type] = ['Reroute']
-      }
       if (this.slot_types_default_in[type].includes(nodeId)) continue
       this.slot_types_default_in[type].push(nodeId)
 
