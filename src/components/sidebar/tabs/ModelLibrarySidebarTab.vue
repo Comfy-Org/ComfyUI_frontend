@@ -94,10 +94,9 @@ const handleSearch = async (query: string) => {
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = [
-    ...modelStore.modelFolders,
-    ...(searchQuery.value ? filteredModels.value : modelStore.models)
-  ]
+  const allNodes: ModelOrFolder[] = searchQuery.value
+    ? filteredModels.value
+    : [...modelStore.modelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )
