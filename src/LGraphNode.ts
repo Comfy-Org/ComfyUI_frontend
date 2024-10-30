@@ -1750,8 +1750,6 @@ export class LGraphNode {
             const nonEventSlot = find({ typesNotAccepted: [LiteGraph.EVENT] })
             if (nonEventSlot >= 0) return nonEventSlot
         }
-
-        console.debug("no way to connect type: ", slotType, " to node: ", node)
         return null
     }
 
@@ -1765,6 +1763,8 @@ export class LGraphNode {
     connectByType(slot: number | string, target_node: LGraphNode, target_slotType: ISlotType, optsIn?: ConnectByTypeOptions): LLink | null {
         const slotIndex = this.findConnectByTypeSlot(true, target_node, target_slotType, optsIn)
         if (slotIndex !== null) return this.connect(slot, target_node, slotIndex)
+
+        console.debug("[connectByType]: no way to connect type: ", target_slotType, " to node: ", target_node)
         return null
     }
 
@@ -1784,6 +1784,8 @@ export class LGraphNode {
         }
         const slotIndex = this.findConnectByTypeSlot(false, source_node, source_slotType, optsIn)
         if (slotIndex !== null) return source_node.connect(slotIndex, this, slot)
+
+        console.debug("[connectByType]: no way to connect type: ", source_slotType, " to node: ", source_node)
         return null
     }
 
