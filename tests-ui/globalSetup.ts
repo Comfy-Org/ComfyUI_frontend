@@ -45,7 +45,7 @@ module.exports = async function () {
     }
   })
 
-  jest.mock('@/stores/workspaceStateStore', () => {
+  jest.mock('@/stores/workspaceStore', () => {
     return {
       useWorkspaceStore: () => ({
         shiftDown: false,
