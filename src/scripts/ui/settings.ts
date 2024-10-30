@@ -160,7 +160,6 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       throw new Error(`Setting ${id} of type ${type} must have a unique ID.`)
     }
 
-    let skipOnChange = false
     let value = this.getSettingValue(id)
     if (value == null) {
       if (this.app.isNewUserSession) {
@@ -177,10 +176,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     }
 
     // Trigger initial setting of value
-    if (!skipOnChange) {
-      onChange?.(value, undefined)
-      this.#dispatchChange(id, value)
-    }
+    onChange?.(value, undefined)
+    this.#dispatchChange(id, value)
 
     this.settingsParamLookup[id] = params
     if (this.app.vueAppReady) {

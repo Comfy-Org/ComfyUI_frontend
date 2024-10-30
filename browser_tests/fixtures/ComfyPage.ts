@@ -17,6 +17,7 @@ import {
 import { Topbar } from './components/Topbar'
 import { NodeReference } from './utils/litegraphUtils'
 import type { Position, Size } from './types'
+import { SettingDialog } from './components/SettingDialog'
 
 class ComfyMenu {
   public readonly sideToolbar: Locator
@@ -89,6 +90,7 @@ export class ComfyPage {
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
+  public readonly settingDialog: SettingDialog
 
   constructor(
     public readonly page: Page,
@@ -104,6 +106,7 @@ export class ComfyPage {
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
+    this.settingDialog = new SettingDialog(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
