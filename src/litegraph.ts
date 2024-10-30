@@ -8,7 +8,7 @@ import { LiteGraphGlobal } from "./LiteGraphGlobal"
 import { loadPolyfills } from "./polyfills"
 
 import { LGraph } from "./LGraph"
-import { LGraphCanvas } from "./LGraphCanvas"
+import { LGraphCanvas, type LGraphCanvasState } from "./LGraphCanvas"
 import { DragAndScale } from "./DragAndScale"
 import { LGraphNode } from "./LGraphNode"
 import { LGraphGroup } from "./LGraphGroup"
@@ -18,7 +18,7 @@ import { CurveEditor } from "./CurveEditor"
 import { LGraphBadge, BadgePosition } from "./LGraphBadge"
 
 export const LiteGraph = new LiteGraphGlobal()
-export { LGraph, LGraphCanvas, DragAndScale, LGraphNode, LGraphGroup, LLink, ContextMenu, CurveEditor }
+export { LGraph, LGraphCanvas, LGraphCanvasState, DragAndScale, LGraphNode, LGraphGroup, LLink, ContextMenu, CurveEditor }
 export { INodeSlot, INodeInputSlot, INodeOutputSlot, ConnectingLink, CanvasColour, Direction, IBoundaryNodes, IContextMenuOptions, IContextMenuValue, IFoundSlot, IInputOrOutput, INodeFlags, IOptionalSlotData, ISlotType, KeysOfType, MethodNames, PickByType, Rect, Rect32, Size }
 export { IWidget }
 export { LGraphBadge, BadgePosition }

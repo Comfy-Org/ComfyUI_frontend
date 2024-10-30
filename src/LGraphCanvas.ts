@@ -87,12 +87,20 @@ interface IDrawSelectionBoundingOptions {
     collapsed?: boolean
 }
 
+/** @inheritdoc {@link LGraphCanvas.state} */
+export interface LGraphCanvasState {
+    /** {@link Positionable} items are being dragged on the canvas. */
+    draggingItems: boolean
+    /** The canvas itself is being dragged. */
+    draggingCanvas: boolean
+    /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
+    readOnly: boolean
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
  *
- * @class LGraphCanvas
- * @constructor
  * @param {HTMLCanvas} canvas the canvas where you want to render (it accepts a selector in string format or the canvas element itself)
  * @param {LGraph} graph [optional]
  * @param {Object} options [optional] { skip_rendering, autoresize, viewport }
@@ -131,37 +139,42 @@ export class LGraphCanvas {
         black: { color: "#222", bgcolor: "#000", groupcolor: "#444" }
     }
 
-    private _dragging_canvas: boolean = false
+    /**
+     * The state of this canvas, e.g. whether it is being dragged, or read-only.
+     * 
+     * Implemented as a POCO that can be proxied without side-effects.
+     */
+    state: LGraphCanvasState = {
+        draggingItems: false,
+        draggingCanvas: false,
+        readOnly: false,
+    }
+
+    /** @inheritdoc {@link LGraphCanvasState.draggingCanvas} */
     get dragging_canvas(): boolean {
-        return this._dragging_canvas
+        return this.state.draggingCanvas
     }
     set dragging_canvas(value: boolean) {
-        if (value !== this._dragging_canvas) {
-            this._dragging_canvas = value
-            this.emitEvent({
-                subType: "dragging-canvas",
-                draggingCanvas: value
-            })
-        }
+        this.state.draggingCanvas = value
     }
 
     // Whether the canvas was previously being dragged prior to pressing space key.
     // null if space key is not pressed.
     private _previously_dragging_canvas: boolean | null = null
 
-    // if set to true users cannot modify the graph
-    private _read_only: boolean = false
+    /** @inheritdoc {@link LGraphCanvasState.readOnly} */
     get read_only(): boolean {
-        return this._read_only
+        return this.state.readOnly
     }
     set read_only(value: boolean) {
-        if (value !== this._read_only) {
-            this._read_only = value
-            this.emitEvent({
-                subType: "read-only",
-                readOnly: value
-            })
-        }
+        this.state.readOnly = value
+    }
+
+    get isDragging(): boolean {
+        return this.state.draggingItems
+    }
+    set isDragging(value: boolean) {
+        this.state.draggingItems = value
     }
     options: { skip_events?: any; viewport?: any; skip_render?: any; autoresize?: any }
     background_image: string
@@ -238,7 +251,6 @@ export class LGraphCanvas {
     selected_nodes: Dictionary<LGraphNode>
     /** @deprecated Temporary implementation only - will be replaced with `selectedItems: Set<Positionable>`. */
     selectedGroups: Set<LGraphGroup>
-    isDragging?: boolean
     selected_group: LGraphGroup
     visible_nodes: LGraphNode[]
     node_dragged?: LGraphNode
