@@ -6,7 +6,6 @@ import { LGraphCanvas } from "./LGraphCanvas"
 import { ContextMenu } from "./ContextMenu"
 import { CurveEditor } from "./CurveEditor"
 import { LGraphEventMode, LinkDirection, LinkRenderType, NodeSlotType, RenderShape, TitleMode } from "./types/globalEnums"
-import { LiteGraph } from "./litegraph"
 import { LGraphNode } from "./LGraphNode"
 import { SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw"
 import type { Dictionary, ISlotType, Rect } from "./interfaces"
@@ -709,7 +708,7 @@ export class LiteGraphGlobal {
     pointerListenerAdd(oDOM: Node, sEvIn: string, fCall: (e: Event) => boolean | void, capture = false): void {
         if (!oDOM || !oDOM.addEventListener || !sEvIn || typeof fCall !== "function") return
 
-        let sMethod = LiteGraph.pointerevents_method
+        let sMethod = this.pointerevents_method
         let sEvent = sEvIn
 
         // UNDER CONSTRUCTION
@@ -777,16 +776,16 @@ export class LiteGraphGlobal {
             //both pointer and move events
             case "down": case "up": case "move": case "over": case "out": case "enter":
                 {
-                    if (LiteGraph.pointerevents_method == "pointer" || LiteGraph.pointerevents_method == "mouse") {
-                        oDOM.removeEventListener(LiteGraph.pointerevents_method + sEvent, fCall, capture)
+                    if (this.pointerevents_method == "pointer" || this.pointerevents_method == "mouse") {
+                        oDOM.removeEventListener(this.pointerevents_method + sEvent, fCall, capture)
                     }
                 }
             // @ts-expect-error
             // only pointerevents
             case "leave": case "cancel": case "gotpointercapture": case "lostpointercapture":
                 {
-                    if (LiteGraph.pointerevents_method == "pointer") {
-                        return oDOM.removeEventListener(LiteGraph.pointerevents_method + sEvent, fCall, capture)
+                    if (this.pointerevents_method == "pointer") {
+                        return oDOM.removeEventListener(this.pointerevents_method + sEvent, fCall, capture)
                     }
                 }
             // not "pointer" || "mouse"

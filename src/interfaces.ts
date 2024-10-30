@@ -5,6 +5,11 @@ import type { LinkId } from "./LLink"
 
 export type Dictionary<T> = { [key: string]: T }
 
+/** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */
+export type NullableProperties<T> = {
+    [P in keyof T]: T[P] | null
+}
+
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
 export interface IInputOrOutput {

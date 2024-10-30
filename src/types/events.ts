@@ -58,7 +58,7 @@ export interface GenericEventDetail {
 }
 
 export interface OriginalEvent {
-    originalEvent: CanvasMouseEvent,
+    originalEvent: CanvasPointerEvent,
 }
 
 export interface EmptyReleaseEventDetail extends OriginalEvent {

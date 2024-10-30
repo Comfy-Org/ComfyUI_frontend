@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { LGraphNode, NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
@@ -13,7 +13,7 @@ import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
-import { distributeNodes } from "./utils/arrange"
+import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
 
 interface IShowSearchOptions {
     node_to?: LGraphNode
@@ -208,8 +208,8 @@ export class LGraphCanvas {
     allow_reconnect_links: boolean
     align_to_grid: boolean
     drag_mode: boolean
-    dragging_rectangle?: Rect
-    filter?: string
+    dragging_rectangle: Rect | null
+    filter?: string | null
     set_canvas_dirty_on_mouse_event: boolean
     always_render_background: boolean
     render_shadows: boolean
@@ -223,56 +223,63 @@ export class LGraphCanvas {
     render_title_colored: boolean
     render_link_tooltip: boolean
     links_render_mode: number
+    /** mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle */
     mouse: Point
+    /** mouse in graph coordinates, where 0,0 is the top-left corner of the blue rectangle */
     graph_mouse: Point
+    /** @deprecated LEGACY: REMOVE THIS, USE {@link graph_mouse} INSTEAD */
     canvas_mouse: Point
+    /** to personalize the search box */
     onSearchBox?: (helper: Element, str: string, canvas: LGraphCanvas) => any
     onSearchBoxSelection?: (name: any, event: any, canvas: LGraphCanvas) => void
     onMouse?: (e: CanvasMouseEvent) => boolean
+    /** to render background objects (behind nodes and connections) in the canvas affected by transform */
     onDrawBackground?: (ctx: CanvasRenderingContext2D, visible_area: any) => void
+    /** to render foreground objects (above nodes and connections) in the canvas affected by transform */
     onDrawForeground?: (arg0: CanvasRenderingContext2D, arg1: any) => void
     connections_width: number
     round_radius: number
-    current_node: LGraphNode
-    node_widget?: [LGraphNode, IWidget]
-    over_link_center: LLink
+    current_node: LGraphNode | null
+    /** used for widgets */
+    node_widget?: [LGraphNode, IWidget] | null
+    over_link_center: LLink | null
     last_mouse_position: Point
     visible_area?: Rect32
     visible_links?: LLink[]
-    connecting_links: ConnectingLink[]
+    connecting_links: ConnectingLink[] | null
     viewport?: Rect
     autoresize: boolean
     static active_canvas: LGraphCanvas
     static onMenuNodeOutputs?(entries: IOptionalSlotData<INodeOutputSlot>[]): IOptionalSlotData<INodeOutputSlot>[]
-    frame: number
-    last_draw_time: number
-    render_time: number
-    fps: number
-    selected_nodes: Dictionary<LGraphNode>
+    frame = 0
+    last_draw_time = 0
+    render_time = 0
+    fps = 0
+    selected_nodes: Dictionary<LGraphNode> = {}
     /** @deprecated Temporary implementation only - will be replaced with `selectedItems: Set<Positionable>`. */
-    selectedGroups: Set<LGraphGroup>
-    selected_group: LGraphGroup
-    visible_nodes: LGraphNode[]
+    selectedGroups: Set<LGraphGroup> = new Set()
+    selected_group: LGraphGroup | null = null
+    visible_nodes: LGraphNode[] = []
     node_dragged?: LGraphNode
     node_over?: LGraphNode
     node_capturing_input?: LGraphNode
-    highlighted_links: Dictionary<boolean>
+    highlighted_links: Dictionary<boolean> = {}
     link_over_widget?: IWidget
     link_over_widget_type?: string
 
-    dirty_canvas: boolean
-    dirty_bgcanvas: boolean
+    dirty_canvas: boolean = true
+    dirty_bgcanvas: boolean = true
     /** A map of nodes that require selective-redraw */
     dirty_nodes = new Map<NodeId, LGraphNode>()
     dirty_area?: Rect
     // Unused
     node_in_panel?: LGraphNode
-    last_mouse: Point
-    last_mouseclick: number
-    pointer_is_down: boolean
-    pointer_is_double: boolean
-    graph: LGraph
-    _graph_stack: LGraph[]
+    last_mouse: Point = [0, 0]
+    last_mouseclick: number = 0
+    pointer_is_down: boolean = false
+    pointer_is_double: boolean = false
+    graph!: LGraph
+    _graph_stack: LGraph[] | null = null
     canvas: HTMLCanvasElement
     bgcanvas: HTMLCanvasElement
     ctx?: CanvasRenderingContext2D
@@ -310,12 +317,18 @@ export class LGraphCanvas {
     getMenuOptions?(): IContextMenuValue[]
     getExtraMenuOptions?(canvas: LGraphCanvas, options: IContextMenuValue[]): IContextMenuValue[]
     static active_node: LGraphNode
+    /** called before modifying the graph */
     onBeforeChange?(graph: LGraph): void
+    /** called after modifying the graph */
     onAfterChange?(graph: LGraph): void
     onClear?: () => void
+    /** called after moving a node */
     onNodeMoved?: (node_dragged: LGraphNode) => void
+    /** called if the selection changes */
     onSelectionChange?: (selected_nodes: Dictionary<LGraphNode>) => void
+    /** called when rendering a tooltip */
     onDrawLinkTooltip?: (ctx: CanvasRenderingContext2D, link: LLink, canvas?: LGraphCanvas) => boolean
+    /** to render foreground objects not affected by transform (for GUIs) */
     onDrawOverlay?: (ctx: CanvasRenderingContext2D) => void
     onRenderBackground?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => boolean
     onNodeDblClicked?: (n: LGraphNode) => void
@@ -329,16 +342,19 @@ export class LGraphCanvas {
     // FIXME: Has never worked - undefined
     visible_rect?: Rect
 
-    constructor(canvas: HTMLCanvasElement, graph: LGraph, options?: { viewport?: any; skip_events?: any; skip_render?: any; autoresize?: any }) {
-        this.options = options = options || {}
+    /**
+     * Creates a new instance of LGraphCanvas.
+     * @param canvas The canvas HTML element (or its id) to use, or null / undefined to leave blank.
+     * @param graph The graph that owns this canvas.
+     * @param options 
+     */
+    constructor(canvas: HTMLCanvasElement, graph: LGraph, options?: LGraphCanvas["options"]) {
+        options ||= {}
+        this.options = options
 
         //if(graph === undefined)
         //	throw ("No graph assigned");
         this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
-
-        if (canvas && typeof canvas === "string") {
-            canvas = document.querySelector(canvas)
-        }
 
         this.ds = new DragAndScale()
         this.zoom_modify_alpha = true //otherwise it generates ugly patterns when scaling down too much
@@ -404,9 +420,9 @@ export class LGraphCanvas {
 
         this.links_render_mode = LiteGraph.SPLINE_LINK
 
-        this.mouse = [0, 0] //mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle
-        this.graph_mouse = [0, 0] //mouse in graph coordinates, where 0,0 is the top-left corner of the blue rectangle
-        this.canvas_mouse = this.graph_mouse //LEGACY: REMOVE THIS, USE GRAPH_MOUSE INSTEAD
+        this.mouse = [0, 0]
+        this.graph_mouse = [0, 0]
+        this.canvas_mouse = this.graph_mouse
 
         //to personalize the search box
         this.onSearchBox = null
@@ -414,23 +430,24 @@ export class LGraphCanvas {
 
         //callbacks
         this.onMouse = null
-        this.onDrawBackground = null //to render background objects (behind nodes and connections) in the canvas affected by transform
-        this.onDrawForeground = null //to render foreground objects (above nodes and connections) in the canvas affected by transform
-        this.onDrawOverlay = null //to render foreground objects not affected by transform (for GUIs)
-        this.onDrawLinkTooltip = null //called when rendering a tooltip
-        this.onNodeMoved = null //called after moving a node
-        this.onSelectionChange = null //called if the selection changes
+        this.onDrawBackground = null
+        this.onDrawForeground = null
+        this.onDrawOverlay = null
+        this.onDrawLinkTooltip = null
+        this.onNodeMoved = null
+        this.onSelectionChange = null
         // FIXME: Typo, does nothing
+        //called before any link changes
         // @ts-expect-error
-        this.onConnectingChange = null //called before any link changes
-        this.onBeforeChange = null //called before modifying the graph
-        this.onAfterChange = null //called after modifying the graph
+        this.onConnectingChange = null
+        this.onBeforeChange = null
+        this.onAfterChange = null
 
         this.connections_width = 3
         this.round_radius = 8
 
         this.current_node = null
-        this.node_widget = null //used for widgets
+        this.node_widget = null
         this.over_link_center = null
         this.last_mouse_position = [0, 0]
         this.visible_area = this.ds.visible_area
@@ -527,84 +544,29 @@ export class LGraphCanvas {
         canvas.graph.add(group)
     }
     /**
+     * @deprecated Functionality moved to {@link getBoundaryNodes}.  The new function returns null on failure, instead of an object with all null properties.
      * Determines the furthest nodes in each direction
      * @param {Dictionary<LGraphNode>} nodes the nodes to from which boundary nodes will be extracted
      * @return {{left: LGraphNode, top: LGraphNode, right: LGraphNode, bottom: LGraphNode}}
      */
-    static getBoundaryNodes(nodes: LGraphNode[] | Dictionary<LGraphNode>): IBoundaryNodes {
-        let top = null
-        let right = null
-        let bottom = null
-        let left = null
-        for (const nID in nodes) {
-            const node = nodes[nID]
-            const [x, y] = node.pos
-            const [width, height] = node.size
-
-            if (top === null || y < top.pos[1]) {
-                top = node
-            }
-            if (right === null || x + width > right.pos[0] + right.size[0]) {
-                right = node
-            }
-            if (bottom === null || y + height > bottom.pos[1] + bottom.size[1]) {
-                bottom = node
-            }
-            if (left === null || x < left.pos[0]) {
-                left = node
-            }
-        }
-
-        return {
-            "top": top,
-            "right": right,
-            "bottom": bottom,
-            "left": left
+    static getBoundaryNodes(nodes: LGraphNode[] | Dictionary<LGraphNode>): NullableProperties<IBoundaryNodes> {
+        const _nodes = Array.isArray(nodes) ? nodes : Object.values(nodes)
+        return getBoundaryNodes(_nodes) ?? {
+            top: null,
+            right: null,
+            bottom: null,
+            left: null
         }
     }
     /**
-     *
+     * @deprecated Functionality moved to {@link alignNodes}.  The new function does not set dirty canvas.
      * @param {Dictionary<LGraphNode>} nodes a list of nodes
      * @param {"top"|"bottom"|"left"|"right"} direction Direction to align the nodes
      * @param {LGraphNode?} align_to Node to align to (if null, align to the furthest node in the given direction)
      */
     static alignNodes(nodes: Dictionary<LGraphNode>, direction: Direction, align_to?: LGraphNode): void {
-        if (!nodes) {
-            return
-        }
-
-        const canvas = LGraphCanvas.active_canvas
-        let boundaryNodes: IBoundaryNodes
-        if (align_to === undefined) {
-            boundaryNodes = LGraphCanvas.getBoundaryNodes(nodes)
-        } else {
-            boundaryNodes = {
-                "top": align_to,
-                "right": align_to,
-                "bottom": align_to,
-                "left": align_to
-            }
-        }
-
-        for (const node of Object.values(canvas.selected_nodes)) {
-            switch (direction) {
-                case "right":
-                    node.pos[0] = boundaryNodes["right"].pos[0] + boundaryNodes["right"].size[0] - node.size[0]
-                    break
-                case "left":
-                    node.pos[0] = boundaryNodes["left"].pos[0]
-                    break
-                case "top":
-                    node.pos[1] = boundaryNodes["top"].pos[1]
-                    break
-                case "bottom":
-                    node.pos[1] = boundaryNodes["bottom"].pos[1] + boundaryNodes["bottom"].size[1] - node.size[1]
-                    break
-            }
-        }
-
-        canvas.dirty_canvas = true
-        canvas.dirty_bgcanvas = true
+        alignNodes(Object.values(nodes), direction, align_to)
+        LGraphCanvas.active_canvas.setDirty(true, true)
     }
     static onNodeAlign(value: IContextMenuValue, options: IContextMenuOptions, event: MouseEvent, prev_menu: ContextMenu, node: LGraphNode): void {
         new LiteGraph.ContextMenu(["Top", "Bottom", "Left", "Right"], {
@@ -614,7 +576,8 @@ export class LGraphCanvas {
         })
 
         function inner_clicked(value: string) {
-            LGraphCanvas.alignNodes(LGraphCanvas.active_canvas.selected_nodes, (value.toLowerCase() as Direction), node)
+            alignNodes(Object.values(LGraphCanvas.active_canvas.selected_nodes), (value.toLowerCase() as Direction), node)
+            LGraphCanvas.active_canvas.setDirty(true, true)
         }
     }
     static onGroupAlign(value: IContextMenuValue, options: IContextMenuOptions, event: MouseEvent, prev_menu: ContextMenu): void {
@@ -624,8 +587,9 @@ export class LGraphCanvas {
             parentMenu: prev_menu,
         })
 
-        function inner_clicked(value) {
-            LGraphCanvas.alignNodes(LGraphCanvas.active_canvas.selected_nodes, value.toLowerCase())
+        function inner_clicked(value: string) {
+            alignNodes(Object.values(LGraphCanvas.active_canvas.selected_nodes), (value.toLowerCase() as Direction))
+            LGraphCanvas.active_canvas.setDirty(true, true)
         }
     }
     static createDistributeMenu(value: IContextMenuValue, options: IContextMenuOptions, event: MouseEvent, prev_menu: ContextMenu, node: LGraphNode): void {
@@ -1452,22 +1416,28 @@ export class LGraphCanvas {
         return this.graph
     }
     /**
+     * Finds the canvas if required, throwing on failure.
+     * @param canvas Canvas element, or its element ID
+     * @returns The canvas element
+     * @throws If {@link canvas} is an element ID that does not belong to a valid HTML canvas element
+     */
+    #validateCanvas(canvas: string | HTMLCanvasElement): HTMLCanvasElement & { data?: LGraphCanvas } {
+        if (typeof canvas === "string") {
+            const el = document.getElementById(canvas)
+            if (!(el instanceof HTMLCanvasElement)) throw "Error validating LiteGraph canvas: Canvas element not found"
+            return el
+        }
+        return canvas
+    }
+    /**
      * Sets the current HTML canvas element.
      * Calls bindEvents to add input event listeners, and (re)creates the background canvas.
      *
      * @param canvas The canvas element to assign, or its HTML element ID.  If null or undefined, the current reference is cleared.
      * @param skip_events If true, events on the previous canvas will not be removed.  Has no effect on the first invocation.
      */
-    setCanvas(canvas: string | HTMLCanvasElement & { data?: LGraphCanvas }, skip_events?: boolean) {
-        let element: HTMLCanvasElement & { data?: LGraphCanvas }
-        if (typeof canvas === "string") {
-            const el = document.getElementById(canvas)
-            if (!(el instanceof HTMLCanvasElement)) throw "Error creating LiteGraph canvas: Canvas not found"
-            element = el
-        } else {
-            element = canvas
-        }
-
+    setCanvas(canvas: string | HTMLCanvasElement, skip_events?: boolean) {
+        const element = this.#validateCanvas(canvas)
         if (element === this.canvas) return
         //maybe detach events from old_canvas
         if (!element && this.canvas && !skip_events) this.unbindEvents()
@@ -6111,8 +6081,8 @@ export class LGraphCanvas {
      * Determines the furthest nodes in each direction for the currently selected nodes
      * @return {{left: LGraphNode, top: LGraphNode, right: LGraphNode, bottom: LGraphNode}}
      */
-    boundaryNodesForSelection(): IBoundaryNodes {
-        return LGraphCanvas.getBoundaryNodes(Object.values(this.selected_nodes))
+    boundaryNodesForSelection(): NullableProperties<IBoundaryNodes> {
+        return LGraphCanvas.getBoundaryNodes(this.selected_nodes)
     }
     showLinkMenu(link: LLink, e: CanvasMouseEvent): boolean {
         const graph = this.graph
