@@ -294,9 +294,7 @@ export class LGraphCanvas {
     last_mouse_dragging: boolean
     onMouseDown: (arg0: CanvasMouseEvent) => void
     _highlight_pos?: Point
-    _highlight_input?: Point
-    _highlight_input_slot?: INodeInputSlot
-    _highlight_output?: Point
+    _highlight_input?: INodeInputSlot
     // TODO: Check if panels are used
     node_panel
     options_panel
@@ -1762,6 +1760,7 @@ export class LGraphCanvas {
                 nodes[i].mouseOver = null
                 this._highlight_input = null
                 this._highlight_pos = null
+                this.link_over_widget = null
 
                 // Hover transitions
                 // TODO: Implement single lerp ease factor for current progress on hover in/out.  In drawNode, multiply by ease factor and differential value (e.g. bg alpha +0.5).
@@ -2328,8 +2327,6 @@ export class LGraphCanvas {
      * Called when a mouse move event has to be processed
      **/
     processMouseMove(e: CanvasMouseEvent): boolean {
-        this.link_over_widget = null
-
         if (this.autoresize) this.resize()
 
         if (this.set_canvas_dirty_on_mouse_event)
@@ -2405,15 +2402,18 @@ export class LGraphCanvas {
                     this.dirty_canvas = true
 
                 // For input/output hovering
-                const pos: Point = [0, 0] //to store the output of isOverNodeInput
+                //to store the output of isOverNodeInput
+                const pos: Point = [0, 0]
                 const inputId = this.isOverNodeInput(node, e.canvasX, e.canvasY, pos)
                 const outputId = this.isOverNodeOutput(node, e.canvasX, e.canvasY, pos)
+                const overWidget = this.getWidgetAtCursor(node)
 
                 if (!node.mouseOver) {
                     //mouse enter
                     node.mouseOver = {
-                        inputId: inputId,
-                        outputId: outputId
+                        inputId: null,
+                        outputId: null,
+                        overWidget: null,
                     }
                     this.node_over = node
                     this.dirty_canvas = true
@@ -2421,64 +2421,84 @@ export class LGraphCanvas {
                     node.onMouseEnter?.(e)
                 }
 
-                // The input the mouse is over has changed
-                if (node.mouseOver.inputId !== inputId || node.mouseOver.outputId !== outputId) {
-                    node.mouseOver.inputId = inputId
-                    node.mouseOver.outputId = outputId
-                    this.dirty_canvas = true
-                }
-
                 //in case the node wants to do something
                 node.onMouseMove?.(e, [e.canvasX - node.pos[0], e.canvasY - node.pos[1]], this)
 
-                //if dragging a link
-                if (this.connecting_links) {
-                    const firstLink = this.connecting_links[0]
+                // The input the mouse is over has changed
+                if (node.mouseOver.inputId !== inputId || node.mouseOver.outputId !== outputId || node.mouseOver.overWidget !== overWidget) {
+                    node.mouseOver.inputId = inputId
+                    node.mouseOver.outputId = outputId
+                    node.mouseOver.overWidget = overWidget
 
-                    if (firstLink.output) {
+                    // Check if link is over anything it could connect to - record position of valid target for snap / highlight
+                    if (this.connecting_links) {
+                        const firstLink = this.connecting_links[0]
 
-                        //on top of input
-                        if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                            //mouse on top of the corner box, don't know what to do
-                        } else {
-                            //check if I have a slot below de mouse
-                            if (inputId != -1 && node.inputs[inputId] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)) {
-                                this._highlight_input = pos
-                                this._highlight_input_slot = node.inputs[inputId] // XXX CHECK THIS
-                            } else {
+                        // Default: nothing highlighted
+                        let highlightPos: Point = null
+                        let highlightInput: INodeInputSlot = null
+                        let linkOverWidget: IWidget = null
+
+                        if (firstLink.node === node) {
+                            // Cannot connect link from a node to itself
+                        } else if (firstLink.output) {
+
+                            // Connecting from an output to an input
+
+                            if (inputId === -1 && outputId === -1) {
                                 // Allow support for linking to widgets, handled externally to LiteGraph
-                                if (this.getWidgetLinkType) {
-                                    const overWidget = this.getWidgetAtCursor(node)
-
-                                    if (overWidget) {
-                                        const widgetLinkType = this.getWidgetLinkType(overWidget, node)
-                                        if (widgetLinkType && LiteGraph.isValidConnection(firstLink.output.type, widgetLinkType)) {
-                                            if (firstLink.node.isValidWidgetLink?.(firstLink.output.slot_index, node, overWidget) !== false) {
-                                                this.link_over_widget = overWidget
-                                                this.link_over_widget_type = widgetLinkType
-                                            }
+                                if (this.getWidgetLinkType && overWidget) {
+                                    const widgetLinkType = this.getWidgetLinkType(overWidget, node)
+                                    if (widgetLinkType && LiteGraph.isValidConnection(firstLink.output.type, widgetLinkType)) {
+                                        if (firstLink.node.isValidWidgetLink?.(firstLink.output.slot_index, node, overWidget) !== false) {
+                                            linkOverWidget = overWidget
+                                            this.link_over_widget_type = widgetLinkType
                                         }
                                     }
                                 }
-
-                                this._highlight_input = null
-                                this._highlight_input_slot = null // XXX CHECK THIS
-                            }
-                        }
-
-                    } else if (firstLink.input) {
-                        //on top of output
-                        if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                            //mouse on top of the corner box, don't know what to do
-                        } else {
-                            //check if I have a slot below de mouse
-                            if (outputId != -1 && node.outputs[outputId] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[outputId].type)) {
-                                this._highlight_output = pos
+                                // Node background / title under the pointer
+                                if (!linkOverWidget) {
+                                    const targetSlotId = firstLink.node.findConnectByTypeSlot(true, node, firstLink.output.type)
+                                    if (targetSlotId !== null && targetSlotId >= 0) {
+                                        node.getConnectionPos(true, targetSlotId, pos)
+                                        highlightPos = pos
+                                        highlightInput = node.inputs[targetSlotId]
+                                    }
+                                }
+                            } else if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
+                                //mouse on top of the corner box, don't know what to do
                             } else {
-                                this._highlight_output = null
+                                //check if I have a slot below de mouse
+                                if (inputId != -1 && node.inputs[inputId] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)) {
+                                    highlightPos = pos
+                                    highlightInput = node.inputs[inputId] // XXX CHECK THIS
+                                }
+                            }
+
+                        } else if (firstLink.input) {
+
+                            // Connecting from an input to an output
+                            if (inputId === -1 && outputId === -1) {
+                                const targetSlotId = firstLink.node.findConnectByTypeSlot(false, node, firstLink.input.type)
+                                if (targetSlotId !== null && targetSlotId >= 0) {
+                                    node.getConnectionPos(false, targetSlotId, pos)
+                                    highlightPos = pos
+                                }
+                            } else if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
+                                //mouse on top of the corner box, don't know what to do
+                            } else {
+                                //check if I have a slot below de mouse
+                                if (outputId != -1 && node.outputs[outputId] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[outputId].type)) {
+                                    highlightPos = pos
+                                }
                             }
                         }
+                        this._highlight_pos = highlightPos
+                        this._highlight_input = highlightInput
+                        this.link_over_widget = linkOverWidget
                     }
+
+                    this.dirty_canvas = true
                 }
 
                 //Search for corner
@@ -3769,11 +3789,12 @@ export class LGraphCanvas {
                             link_color = LiteGraph.CONNECTING_LINK_COLOR
                     }
 
+                    const highlightPos: Point = this.#getHighlightPosition()
                     //the connection being dragged by the mouse
                     this.renderLink(
                         ctx,
                         link.pos,
-                        [this.graph_mouse[0], this.graph_mouse[1]],
+                        highlightPos,
                         null,
                         false,
                         null,
@@ -3825,43 +3846,8 @@ export class LGraphCanvas {
                     }
                     ctx.fill()
 
-                    ctx.fillStyle = "#ffcc00"
-                    if (this._highlight_input) {
-                        ctx.beginPath()
-                        if (this._highlight_input_slot?.shape === LiteGraph.ARROW_SHAPE) {
-                            ctx.moveTo(this._highlight_input[0] + 8, this._highlight_input[1] + 0.5)
-                            ctx.lineTo(this._highlight_input[0] - 4, this._highlight_input[1] + 6 + 0.5)
-                            ctx.lineTo(this._highlight_input[0] - 4, this._highlight_input[1] - 6 + 0.5)
-                            ctx.closePath()
-                        } else {
-                            ctx.arc(
-                                this._highlight_input[0],
-                                this._highlight_input[1],
-                                6,
-                                0,
-                                Math.PI * 2
-                            )
-                        }
-                        ctx.fill()
-                    }
-                    if (this._highlight_output) {
-                        ctx.beginPath()
-                        if (this._highlight_input_slot?.shape === LiteGraph.ARROW_SHAPE) {
-                            ctx.moveTo(this._highlight_output[0] + 8, this._highlight_output[1] + 0.5)
-                            ctx.lineTo(this._highlight_output[0] - 4, this._highlight_output[1] + 6 + 0.5)
-                            ctx.lineTo(this._highlight_output[0] - 4, this._highlight_output[1] - 6 + 0.5)
-                            ctx.closePath()
-                        } else {
-                            ctx.arc(
-                                this._highlight_output[0],
-                                this._highlight_output[1],
-                                6,
-                                0,
-                                Math.PI * 2
-                            )
-                        }
-                        ctx.fill()
-                    }
+                    // Gradient half-border over target node
+                    this.#renderSnapHighlight(ctx, highlightPos)
                 }
             }
 
@@ -3905,6 +3891,104 @@ export class LGraphCanvas {
         // @ts-expect-error
         if (ctx.finish2D) ctx.finish2D()
     }
+
+    /** Get the target snap / highlight point in graph space */
+    #getHighlightPosition(): Point {
+        return LiteGraph.snaps_for_comfy
+            ? this._highlight_pos ?? this.graph_mouse
+            : this.graph_mouse
+    }
+
+    /**
+     * Renders indicators showing where a link will connect if released.
+     * Partial border over target node and a highlight over the slot itself.
+     * @param ctx Canvas 2D context
+     */
+    #renderSnapHighlight(ctx: CanvasRenderingContext2D, highlightPos: Point): void {
+        if (!this._highlight_pos) return
+
+        ctx.fillStyle = "#ffcc00"
+        ctx.beginPath()
+        const shape = this._highlight_input?.shape
+
+        if (shape === RenderShape.ARROW) {
+            ctx.moveTo(highlightPos[0] + 8, highlightPos[1] + 0.5)
+            ctx.lineTo(highlightPos[0] - 4, highlightPos[1] + 6 + 0.5)
+            ctx.lineTo(highlightPos[0] - 4, highlightPos[1] - 6 + 0.5)
+            ctx.closePath()
+        } else {
+            ctx.arc(
+                highlightPos[0],
+                highlightPos[1],
+                6,
+                0,
+                Math.PI * 2
+            )
+        }
+        ctx.fill()
+
+        if (!LiteGraph.snap_highlights_node) return
+
+        // Ensure we're mousing over a node and connecting a link
+        const node = this.node_over
+        if (!(node && this.connecting_links?.[0])) return
+
+        const { strokeStyle, lineWidth } = ctx
+
+        const area = LGraphCanvas.#tmp_area
+        node.measure(area)
+        node.onBounding?.(area)
+        const gap = 3
+        const radius = this.round_radius + gap
+
+        const x = area[0] - gap
+        const y = area[1] - gap
+        const width = area[2] + (gap * 2)
+        const height = area[3] + (gap * 2)
+
+        ctx.beginPath()
+        ctx.roundRect(x, y, width, height, radius)
+
+        // TODO: Currently works on LTR slots only.  Add support for other directions.
+        const start = this.connecting_links[0].output === null ? 0 : 1
+        const inverter = start ? -1 : 1
+
+        // Radial highlight centred on highlight pos
+        const hx = highlightPos[0]
+        const hy = highlightPos[1]
+        const gRadius = width < height
+            ? width
+            : width * Math.max(height / width, 0.5)
+
+        const gradient = ctx.createRadialGradient(hx, hy, 0, hx, hy, gRadius)
+        gradient.addColorStop(1, "#00000000")
+        gradient.addColorStop(0, "#ffcc00aa")
+
+        // Linear gradient over half the node.
+        const linearGradient = ctx.createLinearGradient(x, y, x + width, y)
+        linearGradient.addColorStop(0.5, "#00000000")
+        linearGradient.addColorStop(start + (0.67 * inverter), "#ddeeff33")
+        linearGradient.addColorStop(start + inverter, "#ffcc0055")
+
+        /**
+         * Workaround for a canvas render issue.
+         * In Chromium 129 (2024-10-15), rounded corners can be rendered with the wrong part of a gradient colour.
+         * Occurs only at certain thicknesses / arc sizes.
+         */
+        ctx.setLineDash([radius, radius * 0.001])
+
+        ctx.lineWidth = 1
+        ctx.strokeStyle = linearGradient
+        ctx.stroke()
+
+        ctx.strokeStyle = gradient
+        ctx.stroke()
+
+        ctx.setLineDash([])
+        ctx.lineWidth = lineWidth
+        ctx.strokeStyle = strokeStyle
+    }
+
     /**
      * draws the panel in the corner that shows subgraph properties
      **/
@@ -4683,11 +4767,12 @@ export class LGraphCanvas {
             ? false
             : true
 
+        // Normalised node dimensions
         const area = LGraphCanvas.#tmp_area
-        area[0] = 0 //x
-        area[1] = render_title ? -title_height : 0 //y
-        area[2] = size[0] + 1 //w
-        area[3] = render_title ? size[1] + title_height : size[1] //h
+        node.measure(area)
+        area[0] -= node.pos[0]
+        area[1] -= node.pos[1]
+        area[2]++
 
         const old_alpha = ctx.globalAlpha
 

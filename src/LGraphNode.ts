@@ -24,8 +24,9 @@ export type INodeProperties = Dictionary<unknown> & {
 }
 
 interface IMouseOverData {
-    inputId: number
-    outputId: number
+    inputId: number | null
+    outputId: number | null
+    overWidget: IWidget | null
 }
 
 interface ConnectByTypeOptions {
@@ -1422,6 +1423,27 @@ export class LGraphNode {
     }
 
     /**
+     * Measures the node for rendering, populating {@link out} with the results in graph space.
+     * @param out Results (x, y, width, height) are inserted into this array.
+     * @param pad Expands the area by this amount on each side.  Default: 0
+     */
+    measure(out: Rect, pad = 0): void {
+        const titleMode = this.constructor.title_mode
+        const renderTitle = titleMode != LiteGraph.TRANSPARENT_TITLE && titleMode != LiteGraph.NO_TITLE
+        const titleHeight = renderTitle ? LiteGraph.NODE_TITLE_HEIGHT : 0
+
+        out[0] = this.pos[0] - pad
+        out[1] = this.pos[1] + -titleHeight - pad
+        if (!this.flags?.collapsed) {
+            out[2] = this.size[0] + (2 * pad)
+            out[3] = this.size[1] + titleHeight + (2 * pad)
+        } else {
+            out[2] = (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH) + (2 * pad)
+            out[3] = LiteGraph.NODE_TITLE_HEIGHT + (2 * pad)
+        }
+    }
+
+    /**
      * returns the bounding of the object, used for rendering purposes
      * @param out {Float32Array[4]?} [optional] a place to store the output, to free garbage
      * @param compute_outer {boolean?} [optional] set to true to include the shadow and connection points in the bounding calculation
@@ -1429,36 +1451,16 @@ export class LGraphNode {
      */
     getBounding(out?: Float32Array, compute_outer?: boolean): Float32Array {
         out = out || new Float32Array(4)
-        const nodePos = this.pos
-        const isCollapsed = this.flags.collapsed
-        const nodeSize = this.size
-
-        let left_offset = 0
-        // 1 offset due to how nodes are rendered
-        let right_offset = 1
-        let top_offset = 0
-        let bottom_offset = 0
-
+        this.measure(out)
         if (compute_outer) {
             // 4 offset for collapsed node connection points
-            left_offset = 4
-            // 6 offset for right shadow and collapsed node connection points
-            right_offset = 6 + left_offset
-            // 4 offset for collapsed nodes top connection points
-            top_offset = 4
-            // 5 offset for bottom shadow and collapsed node connection points
-            bottom_offset = 5 + top_offset
+            out[0] -= 4
+            out[1] -= 4
+            // Add shadow & left offset
+            out[2] += 6 + 4
+            // Add shadow & top offsets
+            out[3] += 5 + 4
         }
-
-        out[0] = nodePos[0] - left_offset
-        out[1] = nodePos[1] - LiteGraph.NODE_TITLE_HEIGHT - top_offset
-        out[2] = isCollapsed
-            ? (this._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH) + right_offset
-            : nodeSize[0] + right_offset
-        out[3] = isCollapsed
-            ? LiteGraph.NODE_TITLE_HEIGHT + bottom_offset
-            : nodeSize[1] + LiteGraph.NODE_TITLE_HEIGHT + bottom_offset
-
         this.onBounding?.(out)
         return out
     }
@@ -1746,8 +1748,10 @@ export class LGraphNode {
         }
         // connect to the first free input slot if not found a specific type and this output is general
         if (opts.wildcardToTyped && (slotType == 0 || slotType == "*" || slotType == "")) {
-            const find = findInputs ? node.findInputSlotFree : node.findOutputSlotFree
-            const nonEventSlot = find({ typesNotAccepted: [LiteGraph.EVENT] })
+            const opt = { typesNotAccepted: [LiteGraph.EVENT] }
+            const nonEventSlot = findInputs
+                ? node.findInputSlotFree(opt)
+                : node.findOutputSlotFree(opt)
             if (nonEventSlot >= 0) return nonEventSlot
         }
         return null
