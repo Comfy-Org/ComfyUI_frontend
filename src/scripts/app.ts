@@ -52,11 +52,12 @@ import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
+import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { PickByType } from '@/types/utils'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2013,7 +2014,11 @@ export class ComfyApp {
             nodeData['input']['optional']
           )
         }
-        const config = { minWidth: 1, minHeight: 1 }
+        const config: {
+          minWidth: number
+          minHeight: number
+          widget?: IBaseWidget
+        } = { minWidth: 1, minHeight: 1 }
         for (const inputName in inputs) {
           const inputData = inputs[inputName]
           const type = inputData[0]
@@ -2042,28 +2047,28 @@ export class ComfyApp {
             widgetCreated = false
           }
 
-          // @ts-expect-error
-          if (widgetCreated && !inputIsRequired && config?.widget) {
-            // @ts-expect-error
-            if (!config.widget.options) config.widget.options = {}
-            // @ts-expect-error
-            config.widget.options.inputIsOptional = true
+          const setWidgetFlag = <
+            T extends keyof PickByType<IBaseWidget, boolean>
+          >(
+            key: T,
+            value: boolean
+          ) => {
+            if (value && widgetCreated && config?.widget) {
+              config.widget.options ??= {}
+              config.widget[key] = true
+            }
           }
 
           // @ts-expect-error
-          if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
-            // @ts-expect-error
-            if (!config.widget.options) config.widget.options = {}
-            // @ts-expect-error
-            config.widget.options.forceInput = inputData[1].forceInput
-          }
+          setWidgetFlag('inputIsOptional', !inputIsRequired)
           // @ts-expect-error
-          if (widgetCreated && inputData[1]?.defaultInput && config?.widget) {
-            // @ts-expect-error
-            if (!config.widget.options) config.widget.options = {}
-            // @ts-expect-error
-            config.widget.options.defaultInput = inputData[1].defaultInput
-          }
+          setWidgetFlag('forceInput', inputData[1]?.forceInput)
+          // @ts-expect-error
+          setWidgetFlag('defaultInput', inputData[1]?.defaultInput)
+          // @ts-expect-error
+          setWidgetFlag('advanced', inputData[1]?.advanced)
+          // @ts-expect-error
+          setWidgetFlag('hidden', inputData[1]?.hidden)
         }
 
         for (const o in nodeData['output']) {
