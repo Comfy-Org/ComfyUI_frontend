@@ -28,7 +28,7 @@ export enum TaskItemDisplayStatus {
 
 export class ResultItemImpl {
   filename: string
-  subfolder?: string
+  subfolder: string
   type: string
 
   nodeId: NodeId
@@ -40,9 +40,9 @@ export class ResultItemImpl {
   frame_rate?: number
 
   constructor(obj: Record<string, any>) {
-    this.filename = obj.filename
-    this.subfolder = obj.subfolder
-    this.type = obj.type
+    this.filename = obj.filename ?? ''
+    this.subfolder = obj.subfolder ?? ''
+    this.type = obj.type ?? ''
 
     this.nodeId = obj.nodeId
     this.mediaType = obj.mediaType
@@ -55,7 +55,7 @@ export class ResultItemImpl {
     const params = new URLSearchParams()
     params.set('filename', this.filename)
     params.set('type', this.type)
-    params.set('subfolder', this.subfolder || '')
+    params.set('subfolder', this.subfolder)
 
     if (this.format) {
       params.set('format', this.format)
