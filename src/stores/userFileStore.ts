@@ -63,6 +63,9 @@ export class UserFile {
       throwOnError: true,
       full_info: true
     })
+
+    // Note: Backend supports full_info=true feature after
+    // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
     if (typeof updatedFile === 'object') {
       this.lastModified = updatedFile.modified
