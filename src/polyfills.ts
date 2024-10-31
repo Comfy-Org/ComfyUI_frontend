@@ -12,10 +12,10 @@ if (typeof (window) != "undefined" && window.CanvasRenderingContext2D && !window
         radius,
         radius_low
     ) {
-        var top_left_radius = 0;
-        var top_right_radius = 0;
-        var bottom_left_radius = 0;
-        var bottom_right_radius = 0;
+        let top_left_radius = 0;
+        let top_right_radius = 0;
+        let bottom_left_radius = 0;
+        let bottom_right_radius = 0;
 
         if (radius === 0) {
             this.rect(x, y, w, h);

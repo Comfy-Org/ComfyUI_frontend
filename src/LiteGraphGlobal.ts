@@ -458,7 +458,7 @@ export class LiteGraphGlobal {
         //call onresize?
         node.size ||= node.computeSize()
         node.pos ||= this.DEFAULT_POSITION.concat()
-        node.mode ||= this.ALWAYS
+        node.mode ||= LGraphEventMode.ALWAYS
 
         //extra options
         if (options) {

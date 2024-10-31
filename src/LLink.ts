@@ -20,8 +20,11 @@ export class LLink {
     target_slot?: number
     data?: number | string | boolean | { toToolTip?(): string }
     _data?: unknown
+    /** Centre point of the link, calculated during render only - can be inaccurate */
     _pos: Float32Array
+    /** @todo Clean up - never implemented in comfy. */
     _last_time?: number
+    /** The last canvas 2D path that was used to render this link */
     path?: Path2D
 
     #color?: CanvasColour

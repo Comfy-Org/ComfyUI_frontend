@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "@/interfaces"
+import type { Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "@/interfaces"
 import type { LGraph } from "@/LGraph"
 import type { IGraphGroupFlags, LGraphGroup } from "@/LGraphGroup"
 import type { LGraphNode, NodeId } from "@/LGraphNode"
@@ -21,8 +21,8 @@ export interface ISerialisedNode {
     inputs?: INodeInputSlot[]
     properties?: Dictionary<unknown>
     shape?: RenderShape
-    boxcolor?: CanvasColour
-    color?: CanvasColour
+    boxcolor?: string
+    color?: string
     bgcolor?: string
     widgets_values?: TWidgetValue[]
 }

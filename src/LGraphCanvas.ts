@@ -6,7 +6,7 @@ import type { IClipboardContents } from "./types/serialisation"
 import type { LLink } from "./LLink"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
-import { LinkDirection, RenderShape, TitleMode } from "./types/globalEnums"
+import { LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
 import { isInsideRectangle, distance, overlapBounding, isPointInRectangle } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
@@ -20,7 +20,7 @@ interface IShowSearchOptions {
     node_from?: LGraphNode
     slot_from: number | INodeOutputSlot | INodeInputSlot
     type_filter_in?: ISlotType
-    type_filter_out?: ISlotType
+    type_filter_out?: ISlotType | false
 
     // TODO check for registered_slot_[in/out]_types not empty // this will be checked for functionality enabled : filter on slot type, in and out
     do_type_filter?: boolean
@@ -32,32 +32,32 @@ interface IShowSearchOptions {
 }
 
 interface INodeFromTo {
-    // input
+    /** input */
     nodeFrom?: LGraphNode
-    // input
+    /** input */
     slotFrom?: number | INodeOutputSlot | INodeInputSlot
-    // output
+    /** output */
     nodeTo?: LGraphNode
-    // output
+    /** output */
     slotTo?: number | INodeOutputSlot | INodeInputSlot
-    // pass the event coords
+    /** pass the event coords */
 }
 
 interface ICreateNodeOptions extends INodeFromTo {
     // FIXME: Should not be optional
-    position?: Point //,e: e
+    /** Position of new node */
+    position?: Point
 
     // FIXME: Should not be optional
-    // choose a nodetype to add, AUTO to set at first good
+    /** choose a nodetype to add, AUTO to set at first good */
     nodeType?: string //nodeNewType
-    // adjust x,y
+    /** adjust x,y */
     posAdd?: Point //-alphaPosY*30]
-    // alpha, adjust the position x,y based on the new node size w,h
+    /** alpha, adjust the position x,y based on the new node size w,h */
     posSizeFix?: Point //-alphaPosY*2*/
     e?: CanvasMouseEvent
     allow_searchbox?: boolean
     showSearchBox?: LGraphCanvas["showSearchBox"]
-    createDefaultNodeForSlot?: LGraphCanvas["createDefaultNodeForSlot"]
 }
 
 interface ICloseableDiv extends HTMLDivElement {
@@ -415,7 +415,7 @@ export class LGraphCanvas {
         this.render_title_colored = true
         this.render_link_tooltip = true
 
-        this.links_render_mode = LiteGraph.SPLINE_LINK
+        this.links_render_mode = LinkRenderType.SPLINE_LINK
 
         this.mouse = [0, 0]
         this.graph_mouse = [0, 0]
@@ -465,74 +465,17 @@ export class LGraphCanvas {
 
         this.autoresize = options.autoresize
     }
+
     static getFileExtension(url: string): string {
         const question = url.indexOf("?")
-        if (question != -1) {
-            url = url.substr(0, question)
-        }
+        if (question !== -1) url = url.substring(0, question)
+
         const point = url.lastIndexOf(".")
-        if (point == -1) {
-            return ""
-        }
-        return url.substr(point + 1).toLowerCase()
+        return point === -1
+            ? ""
+            : url.substring(point + 1).toLowerCase()
     }
-    /* this is an implementation for touch not in production and not ready
-         */
-    /*LGraphCanvas.prototype.touchHandler = function(event) {
-            //alert("foo");
-            var touches = event.changedTouches,
-                first = touches[0],
-                type = "";
-    
-            switch (event.type) {
-                case "touchstart":
-                    type = "mousedown";
-                    break;
-                case "touchmove":
-                    type = "mousemove";
-                    break;
-                case "touchend":
-                    type = "mouseup";
-                    break;
-                default:
-                    return;
-            }
-    
-            //initMouseEvent(type, canBubble, cancelable, view, clickCount,
-            //           screenX, screenY, clientX, clientY, ctrlKey,
-            //           altKey, shiftKey, metaKey, button, relatedTarget);
-    
-            // this is eventually a Dom object, get the LGraphCanvas back
-            if(typeof this.getCanvasWindow == "undefined"){
-                var window = this.lgraphcanvas.getCanvasWindow();
-            }else{
-                var window = this.getCanvasWindow();
-            }
-            
-            var document = window.document;
-    
-            var simulatedEvent = document.createEvent("MouseEvent");
-            simulatedEvent.initMouseEvent(
-                type,
-                true,
-                true,
-                window,
-                1,
-                first.screenX,
-                first.screenY,
-                first.clientX,
-                first.clientY,
-                false,
-                false,
-                false,
-                false,
-                0, //left
-                null
-            );
-            first.target.dispatchEvent(simulatedEvent);
-            event.preventDefault();
-        };*/
-    /* CONTEXT MENU ********************/
+
     static onGroupAdd(info: unknown, entry: unknown, mouse_event: MouseEvent): void {
         const canvas = LGraphCanvas.active_canvas
 
@@ -737,21 +680,18 @@ export class LGraphCanvas {
         )
 
         function inner_clicked(v, e, prev) {
-            if (!node) {
-                return
-            }
+            if (!node) return
 
             v.callback?.call(that, node, v, e, prev)
 
-            if (v.value) {
-                node.graph.beforeChange()
-                node.addInput(v.value[0], v.value[1], v.value[2])
+            if (!v.value) return
+            node.graph.beforeChange()
+            node.addInput(v.value[0], v.value[1], v.value[2])
 
-                // callback to the node when adding a slot
-                node.onNodeInputAdd?.(v.value)
-                node.setDirtyCanvas(true, true)
-                node.graph.afterChange()
-            }
+            // callback to the node when adding a slot
+            node.onNodeInputAdd?.(v.value)
+            canvas.setDirty(true, true)
+            node.graph.afterChange()
         }
 
         return false
@@ -809,9 +749,7 @@ export class LGraphCanvas {
         const retEntries = node.onMenuNodeOutputs?.(entries)
         if (retEntries) entries = retEntries
 
-        if (!entries.length) {
-            return
-        }
+        if (!entries.length) return
 
         new LiteGraph.ContextMenu(
             entries,
@@ -826,18 +764,12 @@ export class LGraphCanvas {
         )
 
         function inner_clicked(v, e, prev) {
-            if (!node) {
-                return
-            }
+            if (!node) return
 
-            if (v.callback) {
-                // TODO: This is a static method, so the below "that" appears broken.
-                v.callback.call(that, node, v, e, prev)
-            }
+            // TODO: This is a static method, so the below "that" appears broken.
+            if (v.callback) v.callback.call(that, node, v, e, prev)
 
-            if (!v.value) {
-                return
-            }
+            if (!v.value) return
 
             const value = v.value[1]
 
@@ -855,15 +787,16 @@ export class LGraphCanvas {
                     node: node
                 })
                 return false
-            } else {
-                node.graph.beforeChange()
-                node.addOutput(v.value[0], v.value[1], v.value[2])
-
-                // a callback to the node when adding a slot
-                node.onNodeOutputAdd?.(v.value)
-                node.setDirtyCanvas(true, true)
-                node.graph.afterChange()
             }
+
+            const graph = node.graph
+            graph.beforeChange()
+            node.addOutput(v.value[0], v.value[1], v.value[2])
+
+            // a callback to the node when adding a slot
+            node.onNodeOutputAdd?.(v.value)
+            canvas.setDirty(true, true)
+            graph.afterChange()
         }
 
         return false
@@ -938,16 +871,16 @@ export class LGraphCanvas {
             node.onResize?.(node.size)
         }
 
-        const graphcanvas = LGraphCanvas.active_canvas
-        if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+        const canvas = LGraphCanvas.active_canvas
+        if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
             fApplyMultiNode(node)
         } else {
-            for (const i in graphcanvas.selected_nodes) {
-                fApplyMultiNode(graphcanvas.selected_nodes[i])
+            for (const i in canvas.selected_nodes) {
+                fApplyMultiNode(canvas.selected_nodes[i])
             }
         }
 
-        node.setDirtyCanvas(true, true)
+        canvas.setDirty(true, true)
     }
     // TODO refactor :: this is used fot title but not for properties!
     static onShowPropertyEditor(item: { property: string; type: string }, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
@@ -988,10 +921,10 @@ export class LGraphCanvas {
             })
         }
 
-        const graphcanvas = LGraphCanvas.active_canvas
-        const canvas = graphcanvas.canvas
+        const canvas = LGraphCanvas.active_canvas
+        const canvasEl = canvas.canvas
 
-        const rect = canvas.getBoundingClientRect()
+        const rect = canvasEl.getBoundingClientRect()
         let offsetx = -20
         let offsety = -20
         if (rect) {
@@ -1003,13 +936,13 @@ export class LGraphCanvas {
             dialog.style.left = e.clientX + offsetx + "px"
             dialog.style.top = e.clientY + offsety + "px"
         } else {
-            dialog.style.left = canvas.width * 0.5 + offsetx + "px"
-            dialog.style.top = canvas.height * 0.5 + offsety + "px"
+            dialog.style.left = canvasEl.width * 0.5 + offsetx + "px"
+            dialog.style.top = canvasEl.height * 0.5 + offsety + "px"
         }
 
         const button = dialog.querySelector("button")
         button.addEventListener("click", inner)
-        canvas.parentNode.appendChild(dialog)
+        canvasEl.parentNode.appendChild(dialog)
 
         input?.focus()
 
@@ -1036,7 +969,7 @@ export class LGraphCanvas {
             }
             node[property] = value
             dialog.parentNode?.removeChild(dialog)
-            node.setDirtyCanvas(true, true)
+            canvas.setDirty(true, true)
         }
     }
     static getPropertyPrintableValue(value: unknown, values: unknown[] | object): string {
@@ -1094,7 +1027,7 @@ export class LGraphCanvas {
                     node.changeMode(kV)
                 else {
                     console.warn("unexpected mode: " + v)
-                    node.changeMode(LiteGraph.ALWAYS)
+                    node.changeMode(LGraphEventMode.ALWAYS)
                 }
             }
 
@@ -1161,15 +1094,15 @@ export class LGraphCanvas {
                 }
             }
 
-            const graphcanvas = LGraphCanvas.active_canvas
-            if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+            const canvas = LGraphCanvas.active_canvas
+            if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
                 fApplyColor(node)
             } else {
-                for (const i in graphcanvas.selected_nodes) {
-                    fApplyColor(graphcanvas.selected_nodes[i])
+                for (const i in canvas.selected_nodes) {
+                    fApplyColor(canvas.selected_nodes[i])
                 }
             }
-            node.setDirtyCanvas(true, true)
+            canvas.setDirty(true, true)
         }
 
         return false
@@ -1193,17 +1126,17 @@ export class LGraphCanvas {
                 node.shape = v
             }
 
-            const graphcanvas = LGraphCanvas.active_canvas
-            if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+            const canvas = LGraphCanvas.active_canvas
+            if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
                 fApplyMultiNode(node)
             } else {
-                for (const i in graphcanvas.selected_nodes) {
-                    fApplyMultiNode(graphcanvas.selected_nodes[i])
+                for (const i in canvas.selected_nodes) {
+                    fApplyMultiNode(canvas.selected_nodes[i])
                 }
             }
 
             node.graph.afterChange( /*?*/) //node
-            node.setDirtyCanvas(true)
+            canvas.setDirty(true)
         }
 
         return false
@@ -1220,24 +1153,24 @@ export class LGraphCanvas {
             graph.remove(node)
         }
 
-        const graphcanvas = LGraphCanvas.active_canvas
-        if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+        const canvas = LGraphCanvas.active_canvas
+        if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
             fApplyMultiNode(node)
         } else {
-            for (const i in graphcanvas.selected_nodes) {
-                fApplyMultiNode(graphcanvas.selected_nodes[i])
+            for (const i in canvas.selected_nodes) {
+                fApplyMultiNode(canvas.selected_nodes[i])
             }
         }
 
         graph.afterChange()
-        node.setDirtyCanvas(true, true)
+        canvas.setDirty(true, true)
     }
     static onMenuNodeToSubgraph(value: IContextMenuValue, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
         const graph = node.graph
-        const graphcanvas = LGraphCanvas.active_canvas
-        if (!graphcanvas) return
+        const canvas = LGraphCanvas.active_canvas
+        if (!canvas) return
 
-        let nodes_list = Object.values(graphcanvas.selected_nodes || {})
+        let nodes_list = Object.values(canvas.selected_nodes || {})
         if (!nodes_list.length)
             nodes_list = [node]
 
@@ -1249,12 +1182,13 @@ export class LGraphCanvas {
         // @ts-expect-error Doesn't exist anywhere...
         subgraph_node.buildFromNodes(nodes_list)
 
-        graphcanvas.deselectAllNodes()
-        node.setDirtyCanvas(true, true)
+        canvas.deselectAllNodes()
+        canvas.setDirty(true, true)
     }
     static onMenuNodeClone(value: IContextMenuValue, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
 
-        node.graph.beforeChange()
+        const graph = node.graph
+        graph.beforeChange()
 
         const newSelected: Dictionary<LGraphNode> = {}
 
@@ -1269,22 +1203,22 @@ export class LGraphCanvas {
             newSelected[newnode.id] = newnode
         }
 
-        const graphcanvas = LGraphCanvas.active_canvas
-        if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+        const canvas = LGraphCanvas.active_canvas
+        if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
             fApplyMultiNode(node)
         } else {
-            for (const i in graphcanvas.selected_nodes) {
-                fApplyMultiNode(graphcanvas.selected_nodes[i])
+            for (const i in canvas.selected_nodes) {
+                fApplyMultiNode(canvas.selected_nodes[i])
             }
         }
 
         if (Object.keys(newSelected).length) {
-            graphcanvas.selectNodes(newSelected)
+            canvas.selectNodes(newSelected)
         }
 
-        node.graph.afterChange()
+        graph.afterChange()
 
-        node.setDirtyCanvas(true, true)
+        canvas.setDirty(true, true)
     }
     /**
      * clears all the data inside
@@ -1754,15 +1688,14 @@ export class LGraphCanvas {
 
         const x = e.clientX
         const y = e.clientY
-        //console.log(y,this.viewport);
-        //console.log("pointerevents: processMouseDown pointerId:"+e.pointerId+" which:"+e.which+" isPrimary:"+e.isPrimary+" :: x y "+x+" "+y);
         this.ds.viewport = this.viewport
         const is_inside = !this.viewport || (this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]))
 
         //move mouse move event to the window in case it drags outside of the canvas
         if (!this.options.skip_events) {
             LiteGraph.pointerListenerRemove(this.canvas, "move", this._mousemove_callback)
-            LiteGraph.pointerListenerAdd(ref_window.document, "move", this._mousemove_callback, true) //catch for the entire window
+            //catch for the entire window
+            LiteGraph.pointerListenerAdd(ref_window.document, "move", this._mousemove_callback, true)
             LiteGraph.pointerListenerAdd(ref_window.document, "up", this._mouseup_callback, true)
         }
 
@@ -1827,9 +1760,10 @@ export class LGraphCanvas {
             //when clicked on top of a node
             //and it is not interactive
             if (node && (this.allow_interaction || node.flags.allow_interaction) && !skip_action && !this.read_only) {
+                //if it wasn't selected?
                 if (!this.live_mode && !node.flags.pinned) {
                     this.bringToFront(node)
-                } //if it wasn't selected?
+                }
 
                 //not dragging mouse to connect two slots
                 if (this.allow_interaction && !this.connecting_links && !node.flags.collapsed && !this.live_mode) {
@@ -1934,7 +1868,8 @@ export class LGraphCanvas {
                                     }
 
                                     if (input.link !== null) {
-                                        const link_info = this.graph.links[input.link] //before disconnecting
+                                        //before disconnecting
+                                        const link_info = this.graph.links[input.link]
                                         const slot = link_info.origin_slot
                                         const linked_node = this.graph._nodes_by_id[link_info.origin_id]
                                         if (LiteGraph.click_do_break_link_to || (LiteGraph.ctrl_alt_click_do_break_link && e.ctrlKey && e.altKey && !e.shiftKey)) {
@@ -1993,7 +1928,7 @@ export class LGraphCanvas {
                                 }
                             }
                         }
-                    } //not resizing
+                    }
                 }
 
                 //it wasn't clicked on the links boxes
@@ -2073,7 +2008,7 @@ export class LGraphCanvas {
                         for (let i = 0; i < this.visible_links.length; ++i) {
                             const link = this.visible_links[i]
                             const center = link._pos
-                            let overLink = null
+                            let overLink: LLink = null
                             if (!center ||
                                 e.canvasX < center[0] - 4 ||
                                 e.canvasX > center[0] + 4 ||
@@ -2162,7 +2097,6 @@ export class LGraphCanvas {
             }
 
             if (!skip_action && clicking_canvas_bg && this.allow_dragcanvas) {
-                //console.log("pointerevents: dragging_canvas start");
                 this.dragging_canvas = true
             }
 
@@ -2204,16 +2138,15 @@ export class LGraphCanvas {
                                 }
                             }
                         }
-                        //console.log("middleClickSlots? "+mClikSlot+" & "+(mClikSlot_index!==false));
+                        // Middle clicked a slot
                         if (mClikSlot && mClikSlot_index !== false) {
 
                             const alphaPosY = 0.5 - ((mClikSlot_index + 1) / ((mClikSlot_isOut ? node.outputs.length : node.inputs.length)))
                             const node_bounding = node.getBounding()
                             // estimate a position: this is a bad semi-bad-working mess .. REFACTOR with a correct autoplacement that knows about the others slots and nodes
-                            const posRef: Point = [(!mClikSlot_isOut ? node_bounding[0] : node_bounding[0] + node_bounding[2]) // + node_bounding[0]/this.canvas.width*150
-                                ,
-
-                            e.canvasY - 80 // + node_bounding[0]/this.canvas.width*66 // vertical "derive"
+                            const posRef: Point = [
+                                (!mClikSlot_isOut ? node_bounding[0] : node_bounding[0] + node_bounding[2]),
+                                e.canvasY - 80
                             ]
                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
                             const nodeCreated = this.createDefaultNodeForSlot({
@@ -2221,13 +2154,9 @@ export class LGraphCanvas {
                                 slotFrom: !mClikSlot_isOut ? null : mClikSlot_index,
                                 nodeTo: !mClikSlot_isOut ? node : null,
                                 slotTo: !mClikSlot_isOut ? mClikSlot_index : null,
-                                //,e: e
                                 position: posRef,
-                                //nodeNewType
                                 nodeType: "AUTO",
-                                //-alphaPosY*30]
                                 posAdd: [!mClikSlot_isOut ? -30 : 30, -alphaPosY * 130],
-                                //-alphaPosY*2*/
                                 posSizeFix: [!mClikSlot_isOut ? -1 : 0, 0]
                             })
                             skip_action = true
@@ -2236,8 +2165,8 @@ export class LGraphCanvas {
                 }
             }
 
+            // Drag canvas using middle mouse button
             if (!skip_action && this.allow_dragcanvas) {
-                //console.log("pointerevents: dragging_canvas start from middle button");
                 this.dragging_canvas = true
             }
 
@@ -2264,18 +2193,11 @@ export class LGraphCanvas {
 
         }
 
-        //TODO
-        //if(this.node_selected != prev_selected)
-        //	this.onNodeSelectionChange(this.node_selected);
         this.last_mouse[0] = e.clientX
         this.last_mouse[1] = e.clientY
         this.last_mouseclick = LiteGraph.getTime()
         this.last_mouse_dragging = true
 
-        /*
-    if( (this.dirty_canvas || this.dirty_bgcanvas) && this.rendering_timer_id == null)
-        this.draw();
-    */
         this.graph.change()
 
         //this is to ensure to defocus(blur) if a text input element is on focus
@@ -2314,9 +2236,7 @@ export class LGraphCanvas {
         this.graph_mouse[0] = e.canvasX
         this.graph_mouse[1] = e.canvasY
 
-        //console.log("pointerevents: processMouseMove "+e.pointerId+" "+e.isPrimary);
         if (this.block_click) {
-            //console.log("pointerevents: processMouseMove block_click");
             e.preventDefault()
             return false
         }
@@ -2349,15 +2269,12 @@ export class LGraphCanvas {
             )
             this.dirty_bgcanvas = true
         } else if (this.dragging_canvas) {
-            ////console.log("pointerevents: processMouseMove is dragging_canvas");
             this.ds.offset[0] += delta[0] / this.ds.scale
             this.ds.offset[1] += delta[1] / this.ds.scale
             this.dirty_canvas = true
             this.dirty_bgcanvas = true
         } else if ((this.allow_interaction || (node && node.flags.allow_interaction)) && !this.read_only) {
-            if (this.connecting_links) {
-                this.dirty_canvas = true
-            }
+            if (this.connecting_links) this.dirty_canvas = true
 
             //remove mouseover flag
             this.updateMouseOverNodes(node, e)
@@ -2563,13 +2480,8 @@ export class LGraphCanvas {
      * Called when a mouse up event has to be processed
      **/
     processMouseUp(e: CanvasPointerEvent): boolean {
-
-        const is_primary = (e.isPrimary === undefined || e.isPrimary)
-
         //early exit for extra pointer
-        if (!is_primary) return false
-
-        //console.log("pointerevents: processMouseUp "+e.pointerId+" "+e.isPrimary+" :: "+e.clientX+" "+e.clientY);
+        if (e.isPrimary === false) return false
         if (!this.graph) return
 
         const window = this.getCanvasWindow()
@@ -2578,7 +2490,6 @@ export class LGraphCanvas {
 
         //restore the mousemove event back to the canvas
         if (!this.options.skip_events) {
-            //console.log("pointerevents: processMouseUp adjustEventListener");
             LiteGraph.pointerListenerRemove(document, "move", this._mousemove_callback, true)
             LiteGraph.pointerListenerAdd(this.canvas, "move", this._mousemove_callback, true)
             LiteGraph.pointerListenerRemove(document, "up", this._mouseup_callback, true)
@@ -2593,7 +2504,6 @@ export class LGraphCanvas {
         //used to avoid sending twice a click in an immediate button
         this.block_click &&= false
 
-        //console.log("pointerevents: processMouseUp which: "+e.which);
         if (e.which == 1) {
 
             if (this.node_widget) {
@@ -2698,19 +2608,6 @@ export class LGraphCanvas {
                         this.dirty_canvas = true
                         this.dirty_bgcanvas = true
 
-                        /* no need to condition on event type.. just another type
-                        if (
-                            connType == LiteGraph.EVENT &&
-                            this.isOverNodeBox(node, e.canvasX, e.canvasY)
-                        ) {
-                            
-                            this.connecting_node.connect(
-                                this.connecting_slot,
-                                node,
-                                LiteGraph.EVENT
-                            );
-                            
-                        } else {*/
                         //slot below mouse? connect
                         if (link.output) {
 
@@ -2837,24 +2734,16 @@ export class LGraphCanvas {
             }
         } else if (e.which == 2) {
             //middle button
-            //trace("middle");
             this.dirty_canvas = true
             this.dragging_canvas = false
         } else if (e.which == 3) {
             //right button
-            //trace("right");
             this.dirty_canvas = true
             this.dragging_canvas = false
         }
 
-        /*
-        if((this.dirty_canvas || this.dirty_bgcanvas) && this.rendering_timer_id == null)
-            this.draw();
-        */
-        if (is_primary) {
-            this.pointer_is_down = false
-            this.pointer_is_double = false
-        }
+        this.pointer_is_down = false
+        this.pointer_is_double = false
 
         this.graph.change()
 
@@ -3512,25 +3401,6 @@ export class LGraphCanvas {
      **/
     setZoom(value: number, zooming_center: Point) {
         this.ds.changeScale(value, zooming_center)
-        /*
-    if(!zooming_center && this.canvas)
-        zooming_center = [this.canvas.width * 0.5,this.canvas.height * 0.5];
-
-    var center = this.convertOffsetToCanvas( zooming_center );
-
-    this.ds.scale = value;
-
-    if(this.scale > this.max_zoom)
-        this.scale = this.max_zoom;
-    else if(this.scale < this.min_zoom)
-        this.scale = this.min_zoom;
-
-    var new_center = this.convertOffsetToCanvas( zooming_center );
-    var delta_offset = [new_center[0] - center[0], new_center[1] - center[1]];
-
-    this.offset[0] += delta_offset[0];
-    this.offset[1] += delta_offset[1];
-    */
         this.dirty_canvas = true
         this.dirty_bgcanvas = true
     }
@@ -3577,7 +3447,6 @@ export class LGraphCanvas {
         this.graph._nodes.unshift(node)
     }
 
-    /* LGraphCanvas render */
     /**
      * Determines which nodes are visible and populates {@link out} with the results.
      * @param nodes The list of nodes to check - if falsy, all nodes in the graph will be checked
@@ -3587,18 +3456,14 @@ export class LGraphCanvas {
     computeVisibleNodes(nodes?: LGraphNode[], out?: LGraphNode[]): LGraphNode[] {
         const visible_nodes = out || []
         visible_nodes.length = 0
-        nodes = nodes || this.graph._nodes
+        nodes ||= this.graph._nodes
         for (let i = 0, l = nodes.length; i < l; ++i) {
             const n = nodes[i]
 
             //skip rendering nodes in live mode
-            if (this.live_mode && !n.onDrawBackground && !n.onDrawForeground) {
-                continue
-            }
-
-            if (!overlapBounding(this.visible_area, n.getBounding(LGraphCanvas.#temp, true))) {
-                continue
-            } //out of the visible area
+            if (this.live_mode && !n.onDrawBackground && !n.onDrawForeground) continue
+            // Not in visible area
+            if (!overlapBounding(this.visible_area, n.getBounding(LGraphCanvas.#temp, true))) continue
 
             visible_nodes.push(n)
         }
@@ -3741,10 +3606,10 @@ export class LGraphCanvas {
                     let connDir = connInOrOut.dir
                     if (connDir == null) {
                         if (link.output)
-                            connDir = link.node.horizontal ? LiteGraph.DOWN : LiteGraph.RIGHT
+                            connDir = link.node.horizontal ? LinkDirection.DOWN : LinkDirection.RIGHT
 
                         else
-                            connDir = link.node.horizontal ? LiteGraph.UP : LiteGraph.LEFT
+                            connDir = link.node.horizontal ? LinkDirection.UP : LinkDirection.LEFT
                     }
                     const connShape = connInOrOut.shape
 
@@ -3772,7 +3637,7 @@ export class LGraphCanvas {
 
                     ctx.beginPath()
                     if (connType === LiteGraph.EVENT ||
-                        connShape === LiteGraph.BOX_SHAPE) {
+                        connShape === RenderShape.BOX) {
                         ctx.rect(
                             link.pos[0] - 6 + 0.5,
                             link.pos[1] - 5 + 0.5,
@@ -3787,7 +3652,7 @@ export class LGraphCanvas {
                             14,
                             10
                         )
-                    } else if (connShape === LiteGraph.ARROW_SHAPE) {
+                    } else if (connShape === RenderShape.ARROW) {
                         ctx.moveTo(link.pos[0] + 8, link.pos[1] + 0.5)
                         ctx.lineTo(link.pos[0] - 4, link.pos[1] + 6 + 0.5)
                         ctx.lineTo(link.pos[0] - 4, link.pos[1] - 6 + 0.5)
@@ -4381,7 +4246,7 @@ export class LGraphCanvas {
             return
 
         //clip if required (mask)
-        const shape = node._shape || LiteGraph.BOX_SHAPE
+        const shape = node._shape || RenderShape.BOX
         const size = LGraphCanvas.#temp_vec2
         LGraphCanvas.#temp_vec2.set(node.size)
         const horizontal = node.horizontal // || node.flags.horizontal;
@@ -4404,11 +4269,11 @@ export class LGraphCanvas {
             //Start clipping
             ctx.save()
             ctx.beginPath()
-            if (shape == LiteGraph.BOX_SHAPE) {
+            if (shape == RenderShape.BOX) {
                 ctx.rect(0, 0, size[0], size[1])
-            } else if (shape == LiteGraph.ROUND_SHAPE) {
+            } else if (shape == RenderShape.ROUND) {
                 ctx.roundRect(0, 0, size[0], size[1], [10])
-            } else if (shape == LiteGraph.CIRCLE_SHAPE) {
+            } else if (shape == RenderShape.CIRCLE) {
                 ctx.arc(
                     size[0] * 0.5,
                     size[1] * 0.5,
@@ -4601,9 +4466,9 @@ export class LGraphCanvas {
                 ctx.fillStyle = "#686"
                 ctx.beginPath()
                 if (slot.type === LiteGraph.EVENT ||
-                    slot.shape === LiteGraph.BOX_SHAPE) {
+                    slot.shape === RenderShape.BOX) {
                     ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
-                } else if (slot.shape === LiteGraph.ARROW_SHAPE) {
+                } else if (slot.shape === RenderShape.ARROW) {
                     ctx.moveTo(x + 8, y)
                     ctx.lineTo(x + -4, y - 4)
                     ctx.lineTo(x + -4, y + 4)
@@ -4625,9 +4490,9 @@ export class LGraphCanvas {
                 ctx.strokeStyle = "black"
                 ctx.beginPath()
                 if (slot.type === LiteGraph.EVENT ||
-                    slot.shape === LiteGraph.BOX_SHAPE) {
+                    slot.shape === RenderShape.BOX) {
                     ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
-                } else if (slot.shape === LiteGraph.ARROW_SHAPE) {
+                } else if (slot.shape === RenderShape.ARROW) {
                     ctx.moveTo(x + 6, y)
                     ctx.lineTo(x - 6, y - 4)
                     ctx.lineTo(x - 6, y + 4)
@@ -4726,10 +4591,10 @@ export class LGraphCanvas {
         const low_quality = this.ds.scale < 0.5
 
         //render node area depending on shape
-        const shape = node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE
+        const shape = node._shape || node.constructor.shape || RenderShape.ROUND
         const title_mode = node.constructor.title_mode
 
-        const render_title = title_mode == LiteGraph.TRANSPARENT_TITLE || title_mode == LiteGraph.NO_TITLE
+        const render_title = title_mode == TitleMode.TRANSPARENT_TITLE || title_mode == TitleMode.NO_TITLE
             ? false
             : true
 
@@ -4746,18 +4611,18 @@ export class LGraphCanvas {
         //if(node.flags.collapsed)
         {
             ctx.beginPath()
-            if (shape == LiteGraph.BOX_SHAPE || low_quality) {
+            if (shape == RenderShape.BOX || low_quality) {
                 ctx.fillRect(area[0], area[1], area[2], area[3])
-            } else if (shape == LiteGraph.ROUND_SHAPE ||
-                shape == LiteGraph.CARD_SHAPE) {
+            } else if (shape == RenderShape.ROUND ||
+                shape == RenderShape.CARD) {
                 ctx.roundRect(
                     area[0],
                     area[1],
                     area[2],
                     area[3],
-                    shape == LiteGraph.CARD_SHAPE ? [this.round_radius, this.round_radius, 0, 0] : [this.round_radius]
+                    shape == RenderShape.CARD ? [this.round_radius, this.round_radius, 0, 0] : [this.round_radius]
                 )
-            } else if (shape == LiteGraph.CIRCLE_SHAPE) {
+            } else if (shape == RenderShape.CIRCLE) {
                 ctx.arc(
                     size[0] * 0.5,
                     size[1] * 0.5,
@@ -4780,12 +4645,12 @@ export class LGraphCanvas {
         node.onDrawBackground?.(ctx, this, this.canvas, this.graph_mouse)
 
         //title bg (remember, it is rendered ABOVE the node)
-        if (render_title || title_mode == LiteGraph.TRANSPARENT_TITLE) {
+        if (render_title || title_mode == TitleMode.TRANSPARENT_TITLE) {
             //title bar
             if (node.onDrawTitleBar) {
                 node.onDrawTitleBar(ctx, title_height, size, this.ds.scale, fgcolor)
             } else if (
-                title_mode != LiteGraph.TRANSPARENT_TITLE &&
+                title_mode != TitleMode.TRANSPARENT_TITLE &&
                 (node.constructor.title_color || this.render_title_colored)
             ) {
                 const title_color = node.constructor.title_color || fgcolor
@@ -4813,9 +4678,9 @@ export class LGraphCanvas {
 
                 //ctx.globalAlpha = 0.5 * old_alpha;
                 ctx.beginPath()
-                if (shape == LiteGraph.BOX_SHAPE || low_quality) {
+                if (shape == RenderShape.BOX || low_quality) {
                     ctx.rect(0, -title_height, size[0] + 1, title_height)
-                } else if (shape == LiteGraph.ROUND_SHAPE || shape == LiteGraph.CARD_SHAPE) {
+                } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
                     ctx.roundRect(
                         0,
                         -title_height,
@@ -4842,9 +4707,9 @@ export class LGraphCanvas {
             const box_size = 10
             if (node.onDrawTitleBox) {
                 node.onDrawTitleBox(ctx, title_height, size, this.ds.scale)
-            } else if (shape == LiteGraph.ROUND_SHAPE ||
-                shape == LiteGraph.CIRCLE_SHAPE ||
-                shape == LiteGraph.CARD_SHAPE) {
+            } else if (shape == RenderShape.ROUND ||
+                shape == RenderShape.CIRCLE ||
+                shape == RenderShape.CARD) {
                 if (low_quality) {
                     ctx.fillStyle = "black"
                     ctx.beginPath()
@@ -4940,7 +4805,7 @@ export class LGraphCanvas {
                 const x = node.size[0] - w
                 const over = LiteGraph.isInsideRectangle(this.graph_mouse[0] - node.pos[0], this.graph_mouse[1] - node.pos[1], x + 2, -w + 2, w - 4, w - 4)
                 ctx.fillStyle = over ? "#888" : "#555"
-                if (shape == LiteGraph.BOX_SHAPE || low_quality) {
+                if (shape == RenderShape.BOX || low_quality) {
                     ctx.fillRect(x + 2, -w + 2, w - 4, w - 4)
                 }
                 else {
@@ -4998,16 +4863,16 @@ export class LGraphCanvas {
         ctx: CanvasRenderingContext2D,
         area: Rect,
         {
-            shape = LiteGraph.BOX_SHAPE,
+            shape = RenderShape.BOX,
             title_height = LiteGraph.NODE_TITLE_HEIGHT,
-            title_mode = LiteGraph.NORMAL_TITLE,
+            title_mode = TitleMode.NORMAL_TITLE,
             fgcolor = LiteGraph.NODE_BOX_OUTLINE_COLOR,
             padding = 6,
             collapsed = false,
         }: IDrawSelectionBoundingOptions = {}
     ) {
         // Adjust area if title is transparent
-        if (title_mode === LiteGraph.TRANSPARENT_TITLE) {
+        if (title_mode === TitleMode.TRANSPARENT_TITLE) {
             area[1] -= title_height
             area[3] += title_height
         }
@@ -5020,19 +4885,19 @@ export class LGraphCanvas {
         // Draw shape based on type
         const [x, y, width, height] = area
         switch (shape) {
-            case LiteGraph.BOX_SHAPE: {
+            case RenderShape.BOX: {
                 ctx.rect(x - padding, y - padding, width + 2 * padding, height + 2 * padding)
                 break
             }
-            case LiteGraph.ROUND_SHAPE:
-            case LiteGraph.CARD_SHAPE: {
+            case RenderShape.ROUND:
+            case RenderShape.CARD: {
                 const radius = this.round_radius * 2
-                const isCollapsed = shape === LiteGraph.CARD_SHAPE && collapsed
-                const cornerRadii = isCollapsed || shape === LiteGraph.ROUND_SHAPE ? [radius] : [radius, 2, radius, 2]
+                const isCollapsed = shape === RenderShape.CARD && collapsed
+                const cornerRadii = isCollapsed || shape === RenderShape.ROUND ? [radius] : [radius, 2, radius, 2]
                 ctx.roundRect(x - padding, y - padding, width + 2 * padding, height + 2 * padding, cornerRadii)
                 break
             }
-            case LiteGraph.CIRCLE_SHAPE: {
+            case RenderShape.CIRCLE: {
                 const centerX = x + width / 2
                 const centerY = y + height / 2
                 const radius = Math.max(width, height) / 2 + padding
@@ -5122,9 +4987,9 @@ export class LGraphCanvas {
                 if (!start_slot || !end_slot)
                     continue
                 const start_dir = start_slot.dir ||
-                    (start_node.horizontal ? LiteGraph.DOWN : LiteGraph.RIGHT)
+                    (start_node.horizontal ? LinkDirection.DOWN : LinkDirection.RIGHT)
                 const end_dir = end_slot.dir ||
-                    (node.horizontal ? LiteGraph.UP : LiteGraph.LEFT)
+                    (node.horizontal ? LinkDirection.UP : LinkDirection.LEFT)
 
                 this.renderLink(
                     ctx,
@@ -5197,8 +5062,8 @@ export class LGraphCanvas {
             color = "#FFF"
         }
 
-        start_dir = start_dir || LiteGraph.RIGHT
-        end_dir = end_dir || LiteGraph.LEFT
+        start_dir = start_dir || LinkDirection.RIGHT
+        end_dir = end_dir || LinkDirection.LEFT
 
         const dist = distance(a, b)
 
@@ -5221,37 +5086,37 @@ export class LGraphCanvas {
         for (let i = 0; i < num_sublines; i += 1) {
             const offsety = (i - (num_sublines - 1) * 0.5) * 5
 
-            if (this.links_render_mode == LiteGraph.SPLINE_LINK) {
+            if (this.links_render_mode == LinkRenderType.SPLINE_LINK) {
                 path.moveTo(a[0], a[1] + offsety)
                 let start_offset_x = 0
                 let start_offset_y = 0
                 let end_offset_x = 0
                 let end_offset_y = 0
                 switch (start_dir) {
-                    case LiteGraph.LEFT:
+                    case LinkDirection.LEFT:
                         start_offset_x = dist * -0.25
                         break
-                    case LiteGraph.RIGHT:
+                    case LinkDirection.RIGHT:
                         start_offset_x = dist * 0.25
                         break
-                    case LiteGraph.UP:
+                    case LinkDirection.UP:
                         start_offset_y = dist * -0.25
                         break
-                    case LiteGraph.DOWN:
+                    case LinkDirection.DOWN:
                         start_offset_y = dist * 0.25
                         break
                 }
                 switch (end_dir) {
-                    case LiteGraph.LEFT:
+                    case LinkDirection.LEFT:
                         end_offset_x = dist * -0.25
                         break
-                    case LiteGraph.RIGHT:
+                    case LinkDirection.RIGHT:
                         end_offset_x = dist * 0.25
                         break
-                    case LiteGraph.UP:
+                    case LinkDirection.UP:
                         end_offset_y = dist * -0.25
                         break
-                    case LiteGraph.DOWN:
+                    case LinkDirection.DOWN:
                         end_offset_y = dist * 0.25
                         break
                 }
@@ -5263,37 +5128,37 @@ export class LGraphCanvas {
                     b[0],
                     b[1] + offsety
                 )
-            } else if (this.links_render_mode == LiteGraph.LINEAR_LINK) {
+            } else if (this.links_render_mode == LinkRenderType.LINEAR_LINK) {
                 path.moveTo(a[0], a[1] + offsety)
                 let start_offset_x = 0
                 let start_offset_y = 0
                 let end_offset_x = 0
                 let end_offset_y = 0
                 switch (start_dir) {
-                    case LiteGraph.LEFT:
+                    case LinkDirection.LEFT:
                         start_offset_x = -1
                         break
-                    case LiteGraph.RIGHT:
+                    case LinkDirection.RIGHT:
                         start_offset_x = 1
                         break
-                    case LiteGraph.UP:
+                    case LinkDirection.UP:
                         start_offset_y = -1
                         break
-                    case LiteGraph.DOWN:
+                    case LinkDirection.DOWN:
                         start_offset_y = 1
                         break
                 }
                 switch (end_dir) {
-                    case LiteGraph.LEFT:
+                    case LinkDirection.LEFT:
                         end_offset_x = -1
                         break
-                    case LiteGraph.RIGHT:
+                    case LinkDirection.RIGHT:
                         end_offset_x = 1
                         break
-                    case LiteGraph.UP:
+                    case LinkDirection.UP:
                         end_offset_y = -1
                         break
-                    case LiteGraph.DOWN:
+                    case LinkDirection.DOWN:
                         end_offset_y = 1
                         break
                 }
@@ -5307,18 +5172,18 @@ export class LGraphCanvas {
                     b[1] + end_offset_y * l + offsety
                 )
                 path.lineTo(b[0], b[1] + offsety)
-            } else if (this.links_render_mode == LiteGraph.STRAIGHT_LINK) {
+            } else if (this.links_render_mode == LinkRenderType.STRAIGHT_LINK) {
                 path.moveTo(a[0], a[1])
                 let start_x = a[0]
                 let start_y = a[1]
                 let end_x = b[0]
                 let end_y = b[1]
-                if (start_dir == LiteGraph.RIGHT) {
+                if (start_dir == LinkDirection.RIGHT) {
                     start_x += 10
                 } else {
                     start_y += 10
                 }
-                if (end_dir == LiteGraph.LEFT) {
+                if (end_dir == LinkDirection.LEFT) {
                     end_x -= 10
                 } else {
                     end_y -= 10
@@ -5354,7 +5219,7 @@ export class LGraphCanvas {
         //render arrow in the middle
         if (this.ds.scale >= 0.6 &&
             this.highquality_render &&
-            end_dir != LiteGraph.CENTER) {
+            end_dir != LinkDirection.CENTER) {
             //render arrow
             if (this.render_connection_arrows) {
                 //compute two points in the connection
@@ -5448,8 +5313,8 @@ export class LGraphCanvas {
         t: number,
         start_dir: number,
         end_dir: number): number[] {
-        start_dir ||= LiteGraph.RIGHT
-        end_dir ||= LiteGraph.LEFT
+        start_dir ||= LinkDirection.RIGHT
+        end_dir ||= LinkDirection.LEFT
 
         const dist = distance(a, b)
         const p0 = a
@@ -5458,30 +5323,30 @@ export class LGraphCanvas {
         const p3 = b
 
         switch (start_dir) {
-            case LiteGraph.LEFT:
+            case LinkDirection.LEFT:
                 p1[0] += dist * -0.25
                 break
-            case LiteGraph.RIGHT:
+            case LinkDirection.RIGHT:
                 p1[0] += dist * 0.25
                 break
-            case LiteGraph.UP:
+            case LinkDirection.UP:
                 p1[1] += dist * -0.25
                 break
-            case LiteGraph.DOWN:
+            case LinkDirection.DOWN:
                 p1[1] += dist * 0.25
                 break
         }
         switch (end_dir) {
-            case LiteGraph.LEFT:
+            case LinkDirection.LEFT:
                 p2[0] += dist * -0.25
                 break
-            case LiteGraph.RIGHT:
+            case LinkDirection.RIGHT:
                 p2[0] += dist * 0.25
                 break
-            case LiteGraph.UP:
+            case LinkDirection.UP:
                 p2[1] += dist * -0.25
                 break
-            case LiteGraph.DOWN:
+            case LinkDirection.DOWN:
                 p2[1] += dist * 0.25
                 break
         }
@@ -6124,34 +5989,16 @@ export class LGraphCanvas {
         return false
     }
     createDefaultNodeForSlot(optPass: ICreateNodeOptions): boolean {
-        optPass = optPass || {}
-        const opts = Object.assign({
-            nodeFrom: null // input
-            ,
-
-            slotFrom: null // input
-            ,
-
-            nodeTo: null // output
-            ,
-
-            slotTo: null // output
-            ,
-
-            position: [] // pass the event coords
-            ,
-
-            nodeType: null // choose a nodetype to add, AUTO to set at first good
-            ,
-
-            posAdd: [0, 0] // adjust x,y
-            ,
-
-            posSizeFix: [0, 0] // alpha, adjust the position x,y based on the new node size w,h
-        },
-            optPass
-        )
-        const that = this
+        const opts = Object.assign<ICreateNodeOptions, ICreateNodeOptions>({
+            nodeFrom: null,
+            slotFrom: null,
+            nodeTo: null,
+            slotTo: null,
+            position: [0, 0],
+            nodeType: null,
+            posAdd: [0, 0],
+            posSizeFix: [0, 0]
+        }, optPass || {})
 
         const isFrom = opts.nodeFrom && opts.slotFrom !== null
         const isTo = !isFrom && opts.nodeTo && opts.slotTo !== null
@@ -6184,14 +6031,8 @@ export class LGraphCanvas {
                 break
             case "undefined":
             default:
-                // bad ?
-                //iSlotConn = 0;
                 console.warn("Cant get slot information " + slotX)
                 return false
-        }
-
-        if (slotX === false || iSlotConn === false) {
-            console.warn("createDefaultNodeForSlot bad slotX " + slotX + " " + iSlotConn)
         }
 
         // check for defaults nodes for this slottype
@@ -6204,12 +6045,11 @@ export class LGraphCanvas {
                 for (const typeX in slotTypesDefault[fromSlotType]) {
                     if (opts.nodeType == slotTypesDefault[fromSlotType][typeX] || opts.nodeType == "AUTO") {
                         nodeNewType = slotTypesDefault[fromSlotType][typeX]
-                        // console.log("opts.nodeType == slotTypesDefault[fromSlotType][typeX] :: "+opts.nodeType);
-                        break // --------
+                        break
                     }
                 }
-            } else {
-                if (opts.nodeType == slotTypesDefault[fromSlotType] || opts.nodeType == "AUTO") nodeNewType = slotTypesDefault[fromSlotType]
+            } else if (opts.nodeType == slotTypesDefault[fromSlotType] || opts.nodeType == "AUTO") {
+                nodeNewType = slotTypesDefault[fromSlotType]
             }
             if (nodeNewType) {
                 // TODO: Remove "any" kludge
@@ -6257,11 +6097,12 @@ export class LGraphCanvas {
                     }
 
                     // add the node
-                    that.graph.add(newNode)
-                    newNode.pos = [opts.position[0] + opts.posAdd[0] + (opts.posSizeFix[0] ? opts.posSizeFix[0] * newNode.size[0] : 0),
-                    opts.position[1] + opts.posAdd[1] + (opts.posSizeFix[1] ? opts.posSizeFix[1] * newNode.size[1] : 0)] //that.last_click_position; //[e.canvasX+30, e.canvasX+5];*/
+                    this.graph.add(newNode)
+                    newNode.pos = [
+                        opts.position[0] + opts.posAdd[0] + (opts.posSizeFix[0] ? opts.posSizeFix[0] * newNode.size[0] : 0),
+                        opts.position[1] + opts.posAdd[1] + (opts.posSizeFix[1] ? opts.posSizeFix[1] * newNode.size[1] : 0)
+                    ]
 
-                    //that.graph.afterChange();
                     // connect the two!
                     if (isFrom) {
                         opts.nodeFrom.connectByType(iSlotConn, newNode, fromSlotType)
@@ -6275,7 +6116,6 @@ export class LGraphCanvas {
                     }
 
                     return true
-
                 }
                 console.log("failed creating " + nodeNewType)
             }
@@ -6283,26 +6123,15 @@ export class LGraphCanvas {
         return false
     }
     showConnectionMenu(optPass: Partial<ICreateNodeOptions & { e: MouseEvent }>): void {
-        optPass ||= {}
-        const opts = Object.assign({
-            nodeFrom: null // input
-            ,
-
-            slotFrom: null // input
-            ,
-
-            nodeTo: null // output
-            ,
-
-            slotTo: null // output
-            ,
-
+        const opts = Object.assign<ICreateNodeOptions, ICreateNodeOptions>({
+            nodeFrom: null,
+            slotFrom: null,
+            nodeTo: null,
+            slotTo: null,
             e: null,
             allow_searchbox: this.allow_searchbox,
             showSearchBox: this.showSearchBox,
-        },
-            optPass
-        )
+        }, optPass || {})
         const that = this
 
         const isFrom = opts.nodeFrom && opts.slotFrom
@@ -6316,8 +6145,7 @@ export class LGraphCanvas {
         const nodeX = isFrom ? opts.nodeFrom : opts.nodeTo
         let slotX = isFrom ? opts.slotFrom : opts.slotTo
 
-        // TODO: Remove "any" kludge
-        let iSlotConn: any = false
+        let iSlotConn: number
         switch (typeof slotX) {
             case "string":
                 iSlotConn = isFrom ? nodeX.findOutputSlot(slotX, false) : nodeX.findInputSlot(slotX, false)
@@ -6332,8 +6160,6 @@ export class LGraphCanvas {
                 slotX = isFrom ? nodeX.outputs[slotX] : nodeX.inputs[slotX]
                 break
             default:
-                // bad ?
-                //iSlotConn = 0;
                 console.warn("Cant get slot information " + slotX)
                 return
         }
@@ -6366,7 +6192,7 @@ export class LGraphCanvas {
         })
 
         // callback
-        function inner_clicked(v, options, e) {
+        function inner_clicked(v: string, options: unknown, e: MouseEvent) {
             //console.log("Process showConnectionMenu selection");
             switch (v) {
                 case "Add Node":
@@ -6388,7 +6214,7 @@ export class LGraphCanvas {
                 default: {
                     // check for defaults nodes for this slottype
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    const nodeCreated = that.createDefaultNodeForSlot(Object.assign(opts, {
+                    const nodeCreated = that.createDefaultNodeForSlot(Object.assign<ICreateNodeOptions, ICreateNodeOptions>(opts, {
                         position: [opts.e.canvasX, opts.e.canvasY],
                         nodeType: v
                     }))
@@ -6496,7 +6322,7 @@ export class LGraphCanvas {
         setTimeout(function () {
             input.focus()
             const clickTime = Date.now()
-            function handleOutsideClick(e) {
+            function handleOutsideClick(e: MouseEvent) {
                 if (e.target === canvas && Date.now() - clickTime > 256) {
                     dialog.close()
                     canvas.parentNode.removeEventListener("click", handleOutsideClick)
@@ -6522,7 +6348,6 @@ export class LGraphCanvas {
             type_filter_in: false // these are default: pass to set initially set values
             ,
 
-            // @ts-expect-error
             type_filter_out: false,
             show_general_if_none_on_typefilter: true,
             show_general_after_typefiltered: true,
@@ -6713,7 +6538,6 @@ export class LGraphCanvas {
                     opt.value = aSlots[iK]
                     opt.innerHTML = aSlots[iK]
                     selOut.appendChild(opt)
-                    // @ts-expect-error
                     if (options.type_filter_out !== false && (options.type_filter_out + "").toLowerCase() == (aSlots[iK] + "").toLowerCase())
                         opt.selected = true
                 }
@@ -6736,23 +6560,6 @@ export class LGraphCanvas {
             // @ts-expect-error
             helper.style.maxHeight = (rect.height - event.layerY - 20) + "px"
 
-        /*
-        var offsetx = -20;
-        var offsety = -20;
-        if (rect) {
-            offsetx -= rect.left;
-            offsety -= rect.top;
-        }
-
-        if (event) {
-            dialog.style.left = event.clientX + offsetx + "px";
-            dialog.style.top = event.clientY + offsety + "px";
-        } else {
-            dialog.style.left = canvas.width * 0.5 + offsetx + "px";
-            dialog.style.top = canvas.height * 0.5 + offsety + "px";
-        }
-        canvas.parentNode.appendChild(dialog);
-        */
         requestAnimationFrame(function () {
             input.focus()
         })
@@ -7017,38 +6824,18 @@ export class LGraphCanvas {
                         let sV = opts.inTypeOverride !== false
                             ? opts.inTypeOverride
                             : sIn.value
-                        //if (sV.toLowerCase() == "_event_") sV = LiteGraph.EVENT; // -1
-                        if (sIn && sV) {
-                            //console.log("will check filter against "+sV);
-                            if (LiteGraph.registered_slot_in_types[sV]?.nodes) { // type is stored
-                                //console.debug("check "+sType+" in "+LiteGraph.registered_slot_in_types[sV].nodes);
-                                const doesInc = LiteGraph.registered_slot_in_types[sV].nodes.includes(sType)
-                                if (doesInc !== false) {
-                                    //console.log(sType+" HAS "+sV);
-                                } else {
-                                    /*console.debug(LiteGraph.registered_slot_in_types[sV]);
-                                    console.log(+" DONT includes "+type);*/
-                                    return false
-                                }
-                            }
+                        // type is stored
+                        if (sIn && sV && LiteGraph.registered_slot_in_types[sV]?.nodes) {
+                            const doesInc = LiteGraph.registered_slot_in_types[sV].nodes.includes(sType)
+                            if (doesInc === false) return false
                         }
 
                         sV = sOut.value
                         if (opts.outTypeOverride !== false) sV = opts.outTypeOverride
-                        //if (sV.toLowerCase() == "_event_") sV = LiteGraph.EVENT; // -1
-                        if (sOut && sV) {
-                            //console.log("search will check filter against "+sV);
-                            if (LiteGraph.registered_slot_out_types[sV]?.nodes) { // type is stored
-                                //console.debug("check "+sType+" in "+LiteGraph.registered_slot_out_types[sV].nodes);
-                                const doesInc = LiteGraph.registered_slot_out_types[sV].nodes.includes(sType)
-                                if (doesInc !== false) {
-                                    //console.log(sType+" HAS "+sV);
-                                } else {
-                                    /*console.debug(LiteGraph.registered_slot_out_types[sV]);
-                                    console.log(+" DONT includes "+type);*/
-                                    return false
-                                }
-                            }
+                        // type is stored
+                        if (sOut && sV && LiteGraph.registered_slot_out_types[sV]?.nodes) {
+                            const doesInc = LiteGraph.registered_slot_out_types[sV].nodes.includes(sType)
+                            if (doesInc === false) return false
                         }
                     }
                     return true
@@ -7204,7 +6991,7 @@ export class LGraphCanvas {
             node.onPropertyChanged?.(property, value)
             options.onclose?.()
             dialog.close()
-            node.setDirtyCanvas(true, true)
+            this.setDirty(true, true)
         }
 
         return dialog

@@ -1,11 +1,11 @@
 import type { Dictionary, IContextMenuValue, ISlotType, MethodNames, Point } from "./interfaces"
 import type { ISerialisedGraph } from "@/types/serialisation"
-import type { LGraphEventMode } from "./types/globalEnums"
+import { LGraphEventMode, TitleMode } from "./types/globalEnums"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
 import { type NodeId, LGraphNode } from "./LGraphNode"
-import { type LinkId, LLink, SerialisedLLinkArray } from "./LLink"
+import { type LinkId, LLink, type SerialisedLLinkArray } from "./LLink"
 
 interface IGraphInput {
     name: string
@@ -295,7 +295,7 @@ export class LGraph {
                 for (let j = 0; j < limit; ++j) {
                     const node = nodes[j]
                     // FIXME: Looks like copy/paste broken logic - checks for "on", executes "do"
-                    if (node.mode == LiteGraph.ALWAYS && node.onExecute) {
+                    if (node.mode == LGraphEventMode.ALWAYS && node.onExecute) {
                         //wrap node.onExecute();
                         node.doExecute?.()
                     }
@@ -312,7 +312,7 @@ export class LGraph {
                 for (let i = 0; i < num; i++) {
                     for (let j = 0; j < limit; ++j) {
                         const node = nodes[j]
-                        if (node.mode == LiteGraph.ALWAYS) {
+                        if (node.mode == LGraphEventMode.ALWAYS) {
                             node.onExecute?.()
                         }
                     }
@@ -577,7 +577,7 @@ export class LGraph {
      * @param {Array} params parameters in array format
      */
     sendEventToAllNodes(eventname: string, params?: object | object[], mode?: LGraphEventMode): void {
-        mode = mode || LiteGraph.ALWAYS
+        mode = mode || LGraphEventMode.ALWAYS
 
         const nodes = this._nodes_in_order ? this._nodes_in_order : this._nodes
         if (!nodes) return
@@ -830,7 +830,7 @@ export class LGraph {
         const nRet = null
         for (let i = nodes_list.length - 1; i >= 0; i--) {
             const n = nodes_list[i]
-            const skip_title = n.constructor.title_mode == LiteGraph.NO_TITLE
+            const skip_title = n.constructor.title_mode == TitleMode.NO_TITLE
             if (n.isPointInside(x, y, margin, skip_title)) {
                 // check for lesser interest nodes (TODO check for overlapping, use the top)
                 /*if (typeof n == "LGraphGroup"){
@@ -1076,7 +1076,7 @@ export class LGraph {
         this.onInputsOutputsChange?.()
         return true
     }
-    // TODO: Clean up - never implemented.
+    /** @todo Clean up - never implemented. */
     triggerInput(name: string, value: any): void {
         const nodes = this.findNodesByTitle(name)
         for (let i = 0; i < nodes.length; ++i) {
@@ -1084,7 +1084,7 @@ export class LGraph {
             nodes[i].onTrigger(value)
         }
     }
-    // TODO: Clean up - never implemented.
+    /** @todo Clean up - never implemented. */
     setCallback(name: string, func: any): void {
         const nodes = this.findNodesByTitle(name)
         for (let i = 0; i < nodes.length; ++i) {

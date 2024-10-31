@@ -26,6 +26,7 @@ export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent { }
 
 /** MouseEvent with canvasX/Y and deltaX/Y properties */
 export interface CanvasMouseEvent extends MouseEvent, ICanvasPosition, IDeltaPosition {
+    /** @deprecated Part of DragAndScale mouse API - incomplete / not maintained */
     dragging?: boolean
     click_time?: number
     dataTransfer?: unknown
