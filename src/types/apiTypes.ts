@@ -10,9 +10,9 @@ const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
 const zResultItem = z.object({
-  filename: z.string(),
+  filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: z.string()
+  type: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
