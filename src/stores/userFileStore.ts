@@ -4,6 +4,9 @@ import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
+/**
+ * Represents a file in the user's data directory.
+ */
 export class UserFile {
   directory: string
   filename: string
@@ -49,6 +52,19 @@ export class UserFile {
     this.content = await resp.text()
     this.originalContent = this.content
     this.isLoading = false
+    return this
+  }
+
+  async save() {
+    if (!this.isModified) return this
+
+    const resp = await api.storeUserData(this.path, this.content)
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to save file '${this.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    this.originalContent = this.content
     return this
   }
 }
