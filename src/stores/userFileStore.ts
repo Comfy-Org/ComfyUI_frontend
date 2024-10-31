@@ -49,6 +49,7 @@ export class UserFile {
     this.content = await resp.text()
     this.originalContent = this.content
     this.isLoading = false
+    return this
   }
 }
 
