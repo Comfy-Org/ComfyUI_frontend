@@ -128,18 +128,6 @@ export const useUserFileStore = defineStore('userFile', () => {
     }
   }
 
-  const saveFile = async (file: UserFile) => {
-    if (file.isModified) {
-      const resp = await api.storeUserData(file.path, file.content)
-      if (resp.status !== 200) {
-        throw new Error(
-          `Failed to save file '${file.path}': ${resp.status} ${resp.statusText}`
-        )
-      }
-    }
-    await syncFiles()
-  }
-
   const deleteFile = async (file: UserFile) => {
     const resp = await api.deleteUserData(file.path)
     if (resp.status !== 204) {
