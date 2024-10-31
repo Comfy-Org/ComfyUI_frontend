@@ -5,6 +5,9 @@ import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 
 export class UserFile {
+  directory: string
+  filename: string
+
   isLoading: boolean = false
   content: string | null = null
   originalContent: string | null = null
@@ -22,7 +25,10 @@ export class UserFile {
      * File size in bytes.
      */
     public size: number
-  ) {}
+  ) {
+    this.directory = path.split('/').slice(0, -1).join('/')
+    this.filename = path.split('/').pop() ?? path
+  }
 
   get isOpen() {
     return !!this.content
@@ -30,6 +36,19 @@ export class UserFile {
 
   get isModified() {
     return this.content !== this.originalContent
+  }
+
+  async load() {
+    this.isLoading = true
+    const resp = await api.getUserData(this.path)
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    this.content = await resp.text()
+    this.originalContent = this.content
+    this.isLoading = false
   }
 }
 
@@ -55,8 +74,8 @@ export const useUserFileStore = defineStore('userFile', () => {
    * Syncs the files in the given directory with the API.
    * @param dir The directory to sync.
    */
-  const syncFiles = async () => {
-    const files = await api.listUserDataFullInfo('')
+  const syncFiles = async (dir: string = '') => {
+    const files = await api.listUserDataFullInfo(dir)
 
     for (const file of files) {
       const existingFile = userFilesByPath.value.get(file.path)
@@ -83,19 +102,6 @@ export const useUserFileStore = defineStore('userFile', () => {
         userFilesByPath.value.delete(path)
       }
     }
-  }
-
-  const loadFile = async (file: UserFile) => {
-    file.isLoading = true
-    const resp = await api.getUserData(file.path)
-    if (resp.status !== 200) {
-      throw new Error(
-        `Failed to load file '${file.path}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    file.content = await resp.text()
-    file.originalContent = file.content
-    file.isLoading = false
   }
 
   const saveFile = async (file: UserFile) => {
@@ -139,7 +145,6 @@ export const useUserFileStore = defineStore('userFile', () => {
     openedFiles,
     fileTree,
     syncFiles,
-    loadFile,
     saveFile,
     deleteFile,
     renameFile
