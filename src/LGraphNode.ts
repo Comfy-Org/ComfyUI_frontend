@@ -134,9 +134,7 @@ export class LGraphNode {
     flags?: INodeFlags
     widgets?: IWidget[]
 
-    size: Point
-    pos: Point
-    _pos: Point
+    size: Size
     locked?: boolean
 
     // Execution order, automatically computed during run
@@ -182,6 +180,17 @@ export class LGraphNode {
     has_errors?: boolean
     removable?: boolean
     block_delete?: boolean
+
+    _pos: Point
+    public get pos() {
+        return this._pos
+    }
+    public set pos(value) {
+        if (!value || value.length < 2) return
+
+        this._pos[0] = value[0]
+        this._pos[1] = value[1]
+    }
 
     get shape(): RenderShape {
         return this._shape
@@ -288,26 +297,7 @@ export class LGraphNode {
         // Initialize _pos with a Float32Array of length 2, default value [10, 10]
         this._pos = new Float32Array([10, 10])
 
-        Object.defineProperty(this, "pos", {
-            set: function (v) {
-                if (!v || v.length < 2) {
-                    return
-                }
-                this._pos[0] = v[0]
-                this._pos[1] = v[1]
-            },
-            get: function () {
-                return this._pos
-            },
-            enumerable: true
-        })
-
-        if (LiteGraph.use_uuids) {
-            this.id = LiteGraph.uuidv4()
-        }
-        else {
-            this.id = -1 //not know till not added
-        }
+        this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
         this.type = null
 
         //inputs available: array of inputs
@@ -2301,8 +2291,8 @@ export class LGraphNode {
      * Collapse the node to make it smaller on the canvas
      **/
     collapse(force?: boolean): void {
-        this.graph._version++
         if (!this.collapsible && !force) return
+        this.graph._version++
         this.flags.collapsed = !this.flags.collapsed
         this.setDirtyCanvas(true, true)
     }
