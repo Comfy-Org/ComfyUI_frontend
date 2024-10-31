@@ -13,7 +13,7 @@ try {
   // Create the PR
   console.log('Creating PR...')
   execSync(
-    `gh pr create --title "Release ${newVersion}" --label "Release" --body "Automated version bump to ${newVersion}"`,
+    `gh pr create --title "${newVersion}" --label "Release" --body "Automated version bump to ${newVersion}"`,
     { stdio: 'inherit' }
   )
 
