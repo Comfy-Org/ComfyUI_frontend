@@ -602,10 +602,16 @@ class ComfyApi extends EventTarget {
       overwrite?: boolean
       stringify?: boolean
       throwOnError?: boolean
-    } = { overwrite: true, stringify: true, throwOnError: true }
+      full_info?: boolean
+    } = {
+      overwrite: true,
+      stringify: true,
+      throwOnError: true,
+      full_info: false
+    }
   ): Promise<Response> {
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}`,
+      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
         body: options?.stringify ? JSON.stringify(data) : data,

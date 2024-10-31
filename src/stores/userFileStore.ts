@@ -3,6 +3,7 @@ import { api } from '@/scripts/api'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import { UserDataFullInfo } from '@/types/apiTypes'
 
 /**
  * Represents a file in the user's data directory.
@@ -58,11 +59,14 @@ export class UserFile {
   async save() {
     if (!this.isModified) return this
 
-    const resp = await api.storeUserData(this.path, this.content)
-    if (resp.status !== 200) {
-      throw new Error(
-        `Failed to save file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+    const resp = await api.storeUserData(this.path, this.content, {
+      throwOnError: true,
+      full_info: true
+    })
+    const updatedFile = (await resp.json()) as string | UserDataFullInfo
+    if (typeof updatedFile === 'object') {
+      this.lastModified = updatedFile.modified
+      this.size = updatedFile.size
     }
     this.originalContent = this.content
     return this
