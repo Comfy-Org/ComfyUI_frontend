@@ -18,7 +18,8 @@
     "prepare": "husky || true",
     "preview": "vite preview",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "release": "npm version patch && gh pr create --title \"Release $(node -p \"require('./package.json').version\")\" --label \"Release\" --body \"Automated version bump to $(node -p \"require('./package.json').version\")\""
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",
