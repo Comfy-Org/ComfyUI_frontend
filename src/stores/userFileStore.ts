@@ -10,8 +10,17 @@ export class UserFile {
   originalContent: string | null = null
 
   constructor(
+    /**
+     * Path relative to ComfyUI/user/ directory.
+     */
     public path: string,
+    /**
+     * Last modified timestamp.
+     */
     public lastModified: number,
+    /**
+     * File size in bytes.
+     */
     public size: number
   ) {}
 
@@ -35,7 +44,7 @@ export const useUserFileStore = defineStore('userFile', () => {
     userFiles.value.filter((file: UserFile) => file.isOpen)
   )
 
-  const workflowsTree = computed<TreeExplorerNode<UserFile>>(
+  const fileTree = computed<TreeExplorerNode<UserFile>>(
     () =>
       buildTree<UserFile>(userFiles.value, (userFile: UserFile) =>
         userFile.path.split('/')
@@ -128,7 +137,7 @@ export const useUserFileStore = defineStore('userFile', () => {
     userFiles,
     modifiedFiles,
     openedFiles,
-    workflowsTree,
+    fileTree,
     syncFiles,
     loadFile,
     saveFile,
