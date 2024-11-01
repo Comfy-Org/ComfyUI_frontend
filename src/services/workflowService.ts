@@ -2,7 +2,6 @@ import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
-import { toRaw } from 'vue'
 
 export const workflowService = {
   /**
