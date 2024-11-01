@@ -88,7 +88,10 @@ export class ComfyWorkflowManager extends EventTarget {
   createTemporary(path?: string): ComfyWorkflow {
     const workflow = new ComfyWorkflow(
       this,
-      path ?? `Unsaved Workflow (${this.#unsavedCount++})`
+      path ??
+        `Unsaved Workflow${
+          this.#unsavedCount++ ? ` (${this.#unsavedCount})` : ''
+        }`
     )
     this.workflowLookup[workflow.key] = workflow
     return workflow
