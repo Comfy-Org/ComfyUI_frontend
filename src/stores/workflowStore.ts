@@ -37,6 +37,10 @@ export class ComfyWorkflow extends UserFile {
     return this.filename
   }
 
+  get key() {
+    return this.path.substring('workflows/'.length)
+  }
+
   /**
    * Open the workflow in the graph editor. Set the workflow as the active workflow.
    * @returns this
@@ -74,69 +78,19 @@ export class ComfyWorkflow extends UserFile {
     return this
   }
 
+  async getCurrentWorkflowState(): Promise<ComfyWorkflowJSON | null> {
+    if (!this.isLoaded) return null
+    return this.changeTracker?.activeState ?? null
+  }
+
   async save() {
+    this.content = JSON.stringify(await this.getCurrentWorkflowState())
     return await super.save()
   }
 
   async saveAs(path: string) {
+    this.content = JSON.stringify(await this.getCurrentWorkflowState())
     return await super.saveAs('workflows/' + appendJsonExt(path))
-  }
-
-  private async _save(path: string | null, overwrite: boolean) {
-    path = appendJsonExt(path)
-
-    const workflow = this.manager.app.serializeGraph()
-    const json = JSON.stringify(workflow, null, 2)
-    let resp = await api.storeUserData('workflows/' + path, json, {
-      stringify: false,
-      throwOnError: false,
-      overwrite
-    })
-    if (resp.status === 409) {
-      if (
-        !confirm(
-          `Workflow '${path}' already exists, do you want to overwrite it?`
-        )
-      )
-        return
-      resp = await api.storeUserData('workflows/' + path, json, {
-        stringify: false
-      })
-    }
-
-    if (resp.status !== 200) {
-      useToastStore().addAlert(
-        `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
-      )
-      return
-    }
-
-    path = (await resp.json()).substring('workflows/'.length)
-
-    if (!this.path) {
-      // Saved new workflow, patch this instance
-      const oldKey = this.key
-      // Update workflowLookup: change the key from the old unsaved path to the new saved path
-      delete this.manager.workflowStore.workflowLookup[oldKey]
-      this.manager.workflowStore.workflowLookup[this.key] = this
-
-      await this.manager.loadWorkflows()
-      setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
-    } else if (path !== this.path) {
-      // Saved as, open the new copy
-      await this.manager.loadWorkflows()
-      const workflow = this.manager.workflowLookup[path]
-      await workflow.load()
-    }
-    return true
-  }
-
-  track() {
-    if (this.changeTracker) {
-      this.changeTracker.restore()
-    } else {
-      this.changeTracker = markRaw(new ChangeTracker(this))
-    }
   }
 
   async setBookmarked(value: boolean) {
