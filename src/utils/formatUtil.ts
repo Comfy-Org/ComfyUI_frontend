@@ -72,3 +72,25 @@ export function formatSize(value?: number) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
 }
+
+/**
+ * Finds the common directory prefix between two paths
+ * @example
+ * findCommonPrefix('a/b/c', 'a/b/d') // returns 'a/b'
+ * findCommonPrefix('x/y/z', 'a/b/c') // returns ''
+ * findCommonPrefix('a/b/c', 'a/b/c/d') // returns 'a/b/c'
+ */
+export function findCommonPrefix(path1: string, path2: string): string {
+  const parts1 = path1.split('/')
+  const parts2 = path2.split('/')
+
+  const commonParts: string[] = []
+  for (let i = 0; i < Math.min(parts1.length, parts2.length); i++) {
+    if (parts1[i] === parts2[i]) {
+      commonParts.push(parts1[i])
+    } else {
+      break
+    }
+  }
+  return commonParts.join('/')
+}

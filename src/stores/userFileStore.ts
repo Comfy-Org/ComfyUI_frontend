@@ -41,8 +41,13 @@ export class UserFile {
      */
     public size: number
   ) {
-    this.directory = path.split('/').slice(0, -1).join('/')
-    this.fullFilename = path.split('/').pop() ?? path
+    this.updatePath(path)
+  }
+
+  private updatePath(newPath: string) {
+    this.path = newPath
+    this.directory = newPath.split('/').slice(0, -1).join('/')
+    this.fullFilename = newPath.split('/').pop() ?? newPath
     this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
     this.suffix = this.fullFilename.split('.').pop() ?? null
   }
@@ -146,7 +151,7 @@ export class UserFile {
 
   async rename(newPath: string): Promise<UserFile> {
     if (this.isTemporary) {
-      this.path = newPath
+      this.updatePath(newPath)
       return this
     }
 
@@ -156,7 +161,7 @@ export class UserFile {
         `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
       )
     }
-    this.path = newPath
+    this.updatePath(newPath)
     // Note: Backend supports full_info=true feature after
     // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
