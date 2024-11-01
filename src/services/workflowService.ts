@@ -1,7 +1,8 @@
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
-import { useWorkflowStore, type ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
+import { toRaw } from 'vue'
 
 export const workflowService = {
   /**
@@ -86,5 +87,23 @@ export const workflowService = {
     if (workflow) {
       await workflow.load()
     }
+  },
+
+  async setWorkflow(value: string | ComfyWorkflow | null) {
+    const workflowStore = useWorkflowStore()
+    if (value === null) {
+      return
+    }
+
+    if (typeof value === 'string') {
+      const workflow = workflowStore.workflowLookup['workflows/' + value]
+      if (workflow) {
+        await workflow.open()
+        return
+      }
+    }
+
+    const workflow = workflowStore.createTemporary()
+    await workflow.open()
   }
 }
