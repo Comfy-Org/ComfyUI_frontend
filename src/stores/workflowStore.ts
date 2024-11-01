@@ -50,24 +50,7 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   async open() {
-    if (this.isActive) return this
-
-    const loadFromRemote = !this.isLoaded
-    if (loadFromRemote) {
-      await this.load()
-    }
-
-    await app.loadGraphData(
-      this.changeTracker.activeState,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
-      this,
-      {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote
-      }
-    )
-
+    await useWorkflowStore().openWorkflow(this)
     return this
   }
 
@@ -135,6 +118,27 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * The active workflow currently being edited.
    */
   const activeWorkflow = ref<ComfyWorkflow | null>(null)
+  const openWorkflow = async (workflow: ComfyWorkflow) => {
+    if (workflow.isActive) return
+
+    const loadFromRemote = !workflow.isLoaded
+    if (loadFromRemote) {
+      await workflow.load()
+    }
+
+    await app.loadGraphData(
+      workflow.changeTracker!.activeState,
+      /* clean=*/ true,
+      /* restore_view=*/ true,
+      workflow,
+      {
+        showMissingModelsDialog: loadFromRemote,
+        showMissingNodesDialog: loadFromRemote
+      }
+    )
+
+    activeWorkflow.value = workflow
+  }
   /**
    * The paths of the open workflows. It is setup as a ref to allow user
    * to reorder the workflows opened.
@@ -227,13 +231,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   return {
     activeWorkflow,
     openWorkflows,
+    openWorkflowsTree,
+    openWorkflow,
+
     workflows,
     bookmarkedWorkflows,
     modifiedWorkflows,
     workflowLookup,
     workflowsTree,
     bookmarkedWorkflowsTree,
-    openWorkflowsTree,
     buildWorkflowTree,
     loadNextOpenedWorkflow,
     loadPreviousOpenedWorkflow,
