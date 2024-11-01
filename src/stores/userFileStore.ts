@@ -102,9 +102,10 @@ export class UserFile {
   }
 
   async save(): Promise<UserFile> {
-    if (!this.isTemporary && !this.isModified) return this
+    if (this.isPersisted && !this.isModified) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
+      overwrite: this.isPersisted,
       throwOnError: true,
       full_info: true
     })
