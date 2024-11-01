@@ -59,7 +59,7 @@ const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
 })
 
 const optionToWorkflow = (option: WorkflowOption): ComfyWorkflow =>
-  workflowStore.workflowLookup[option.value]
+  workflowStore.workflowLookup[option.tooltip]
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map(workflowToOption)
@@ -80,7 +80,7 @@ const onWorkflowChange = (option: WorkflowOption) => {
   }
 
   const workflow = optionToWorkflow(option)
-  workflow.load()
+  workflow.open()
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
