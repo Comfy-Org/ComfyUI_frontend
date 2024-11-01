@@ -89,6 +89,9 @@ export const workflowService = {
     }
   },
 
+  // Note: this method is used primarily for loadGraphData to create temporary
+  // workflows.
+  // TODO(huchenlei): Avoid calling loadGraphData again in this method.
   async setWorkflow(value: string | ComfyWorkflow | null) {
     const workflowStore = useWorkflowStore()
     if (value === null) {
