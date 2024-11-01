@@ -1,7 +1,6 @@
 // @ts-strict-ignore
 import type { ComfyApp } from './app'
 import { ChangeTracker } from './changeTracker'
-import { ComfyAsyncDialog } from './ui/components/asyncDialog'
 import { setStorageValue } from './utils'
 import {
   useWorkflowStore,
