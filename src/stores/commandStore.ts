@@ -120,11 +120,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
-      function: () => {
-        app.workflowManager.setWorkflow(null)
-        app.clean()
-        app.graph.clear()
-      }
+      function: () => workflowService.loadBlankWorkflow()
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -139,9 +135,7 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: async () => {
-        await app.loadGraphData()
-      }
+      function: () => workflowService.loadDefaultWorkflow()
     },
     {
       id: 'Comfy.SaveWorkflow',

@@ -50,6 +50,7 @@ export class ComfyAppMenu {
     return defaultName
   }
 
+  // TODO: Move to workflowService
   async exportWorkflow(
     filename: string,
     promptProperty: 'workflow' | 'output'

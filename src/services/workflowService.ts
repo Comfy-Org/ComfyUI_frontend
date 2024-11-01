@@ -2,6 +2,8 @@ import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
+import { app } from '@/scripts/app'
+import { downloadBlob } from '@/scripts/utils'
 
 export const workflowService = {
   /**
@@ -28,6 +30,22 @@ export const workflowService = {
     } else {
       await workflow.save()
     }
+  },
+
+  /**
+   * Load the default workflow
+   */
+  async loadDefaultWorkflow() {
+    await app.loadGraphData()
+  },
+
+  /**
+   * Load a blank workflow
+   */
+  async loadBlankWorkflow() {
+    app.workflowManager.setWorkflow(null)
+    app.clean()
+    app.graph.clear()
   },
 
   /**
