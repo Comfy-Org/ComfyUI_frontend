@@ -74,6 +74,33 @@ export class UserFile {
     this.originalContent = this.content
     return this
   }
+
+  async delete() {
+    const resp = await api.deleteUserData(this.path)
+    if (resp.status !== 204) {
+      throw new Error(
+        `Failed to delete file '${this.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+  }
+
+  async rename(newPath: string) {
+    const resp = await api.moveUserData(this.path, newPath)
+    if (resp.status !== 200) {
+      throw new Error(
+        `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
+      )
+    }
+    this.path = newPath
+    // Note: Backend supports full_info=true feature after
+    // https://github.com/comfyanonymous/ComfyUI/pull/5446
+    const updatedFile = (await resp.json()) as string | UserDataFullInfo
+    if (typeof updatedFile === 'object') {
+      this.lastModified = updatedFile.modified
+      this.size = updatedFile.size
+    }
+    return this
+  }
 }
 
 export const useUserFileStore = defineStore('userFile', () => {
@@ -128,16 +155,6 @@ export const useUserFileStore = defineStore('userFile', () => {
     }
   }
 
-  const deleteFile = async (file: UserFile) => {
-    const resp = await api.deleteUserData(file.path)
-    if (resp.status !== 204) {
-      throw new Error(
-        `Failed to delete file '${file.path}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    await syncFiles()
-  }
-
   const renameFile = async (file: UserFile, newPath: string) => {
     const resp = await api.moveUserData(file.path, newPath)
     if (resp.status !== 200) {
@@ -146,9 +163,6 @@ export const useUserFileStore = defineStore('userFile', () => {
       )
     }
     file.path = newPath
-    userFilesByPath.value.set(newPath, file)
-    userFilesByPath.value.delete(file.path)
-    await syncFiles()
   }
 
   return {
@@ -156,9 +170,6 @@ export const useUserFileStore = defineStore('userFile', () => {
     modifiedFiles,
     openedFiles,
     fileTree,
-    syncFiles,
-    saveFile,
-    deleteFile,
-    renameFile
+    syncFiles
   }
 })
