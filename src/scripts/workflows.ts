@@ -85,6 +85,18 @@ export class ComfyWorkflowManager extends EventTarget {
     }
   }
 
+  createTemporary(path?: string): ComfyWorkflow {
+    const workflow = new ComfyWorkflow(
+      this,
+      path ??
+        `Unsaved Workflow${
+          this.#unsavedCount++ ? ` (${this.#unsavedCount})` : ''
+        }`
+    )
+    this.workflowLookup[workflow.key] = workflow
+    return workflow
+  }
+
   /**
    * @param {string | ComfyWorkflow | null} workflow
    */
@@ -97,15 +109,8 @@ export class ComfyWorkflowManager extends EventTarget {
       }
     }
 
-    if (!(toRaw(workflow) instanceof ComfyWorkflow)) {
-      // Still not found, either reloading a deleted workflow or blank
-      workflow = new ComfyWorkflow(
-        this,
-        workflow ||
-          'Unsaved Workflow' +
-            (this.#unsavedCount++ ? ` (${this.#unsavedCount})` : '')
-      )
-      this.workflowLookup[workflow.key] = workflow
+    if (!workflow || typeof workflow === 'string') {
+      workflow = this.createTemporary(workflow)
     }
 
     if (!workflow.isOpen) {
