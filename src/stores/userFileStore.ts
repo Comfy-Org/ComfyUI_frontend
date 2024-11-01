@@ -155,16 +155,6 @@ export const useUserFileStore = defineStore('userFile', () => {
     }
   }
 
-  const renameFile = async (file: UserFile, newPath: string) => {
-    const resp = await api.moveUserData(file.path, newPath)
-    if (resp.status !== 200) {
-      throw new Error(
-        `Failed to rename file '${file.path}': ${resp.status} ${resp.statusText}`
-      )
-    }
-    file.path = newPath
-  }
-
   return {
     userFiles,
     modifiedFiles,
