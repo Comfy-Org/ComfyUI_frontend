@@ -55,6 +55,15 @@ export class ComfyWorkflow extends UserFile {
   }
 
   /**
+   * Close the workflow. If this is the active workflow, load the next workflow.
+   * @returns this
+   */
+  async close() {
+    await useWorkflowStore().closeWorkflow(this)
+    return this
+  }
+
+  /**
    * Load the workflow content from remote storage.
    * @returns this
    */
@@ -165,9 +174,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
-    if (workflow.isActive && workflow.isTemporary) {
+    // If this is the last workflow, create a new blank temporary workflow
+    if (openWorkflowPaths.value.length === 1) {
+      await openWorkflow(createTemporary())
+    }
+    // If this is the active workflow, load the next workflow
+    if (workflow.isActive) {
+      await loadNextOpenedWorkflow()
+    }
+    openWorkflowPaths.value = openWorkflowPaths.value.filter(
+      (path) => path !== workflow.path
+    )
+    if (workflow.isTemporary) {
       temporaryWorkflows.value.delete(workflow)
-      return
+    } else {
+      workflow.unload()
     }
   }
 
