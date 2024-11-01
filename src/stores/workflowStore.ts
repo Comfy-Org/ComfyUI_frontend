@@ -11,10 +11,15 @@ import { useToastStore } from './toastStore'
 import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
 import { showPromptDialog } from '@/services/dialogService'
 import { UserDataFullInfo } from '@/types/apiTypes'
+import { LGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas } from '@comfyorg/litegraph'
+import { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
 
 export class ComfyWorkflow extends UserFile {
   manager: ComfyWorkflowManager
   changeTracker: ChangeTracker | null = null
+
+  originalWorkflow: ComfyWorkflowJSON | null = null
 
   constructor(manager: ComfyWorkflowManager, options: UserDataFullInfo) {
     super('workflows/' + options.path, options.modified, options.size)
@@ -49,6 +54,7 @@ export class ComfyWorkflow extends UserFile {
 
     await super.load()
     const workflowData = JSON.parse(this.content) as ComfyWorkflowJSON
+    this.originalWorkflow = workflowData
     await this.manager.app.loadGraphData(
       workflowData,
       /* clean=*/ true,
@@ -187,18 +193,18 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async insert() {
-    // const data = await this.getWorkflowData()
-    // if (!data) return
-    // const old = localStorage.getItem('litegrapheditor_clipboard')
-    // const graph = new LGraph(data)
-    // const canvas = new LGraphCanvas(null, graph, {
-    //   skip_events: true,
-    //   skip_render: true
-    // })
-    // canvas.selectNodes()
-    // canvas.copyToClipboard()
-    // this.manager.app.canvas.pasteFromClipboard()
-    // localStorage.setItem('litegrapheditor_clipboard', old)
+    const data = this.originalWorkflow
+    if (!data) return
+    const old = localStorage.getItem('litegrapheditor_clipboard')
+    const graph = new LGraph(data as unknown as ISerialisedGraph)
+    const canvas = new LGraphCanvas(null, graph, {
+      skip_events: true,
+      skip_render: true
+    })
+    canvas.selectNodes()
+    canvas.copyToClipboard()
+    this.manager.app.canvas.pasteFromClipboard()
+    localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
   async delete() {
