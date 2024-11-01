@@ -3,7 +3,6 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
-import { downloadBlob } from '@/scripts/utils'
 
 export const workflowService = {
   /**
