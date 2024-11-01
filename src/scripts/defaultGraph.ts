@@ -135,3 +135,5 @@ export const defaultGraph: ComfyWorkflowJSON = {
   extra: {},
   version: 0.4
 }
+
+export const defaultGraphJSON = JSON.stringify(defaultGraph)

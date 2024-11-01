@@ -15,8 +15,7 @@
 <script setup lang="ts">
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
-import { useWorkflowBookmarkStore } from '@/stores/workflowStore'
-import { ComfyWorkflow } from '@/scripts/workflows'
+import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { computed } from 'vue'
 

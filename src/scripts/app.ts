@@ -25,7 +25,7 @@ import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
-import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import {
   LGraphCanvas,
   LGraph,
@@ -58,6 +58,7 @@ import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
+import { workflowService } from '@/services/workflowService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -141,7 +142,6 @@ export class ComfyApp {
   multiUserServer: boolean
   ctx: CanvasRenderingContext2D
   widgets: Record<string, ComfyWidgetConstructor>
-  workflowManager: ComfyWorkflowManager
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
@@ -170,7 +170,6 @@ export class ComfyApp {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
     this.logging = new ComfyLogging(this)
-    this.workflowManager = new ComfyWorkflowManager(this)
     this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
     this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
@@ -1789,8 +1788,8 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await Promise.all([
-      this.workflowManager.loadWorkflows(),
-      this.ui.settings.load()
+      useWorkspaceStore().workflow.syncWorkflows(),
+      await this.ui.settings.load()
     ])
     await this.#loadExtensions()
 
@@ -2160,19 +2159,14 @@ export class ComfyApp {
     })
   }
 
-  async changeWorkflow(callback, workflow = null) {
+  async changeWorkflow(callback: () => Promise<void> | void, workflow: string) {
     try {
-      this.workflowManager.activeWorkflow?.changeTracker?.store()
+      useWorkspaceStore().workflow.activeWorkflow?.changeTracker?.store?.()
     } catch (error) {
       console.error(error)
     }
     await callback()
-    try {
-      this.workflowManager.setWorkflow(workflow)
-      this.workflowManager.activeWorkflow?.track()
-    } catch (error) {
-      console.error(error)
-    }
+    workflowService.setWorkflow(workflow)
   }
 
   async loadGraphData(
@@ -2198,11 +2192,7 @@ export class ComfyApp {
       graphData = structuredClone(graphData)
     }
 
-    try {
-      this.workflowManager.setWorkflow(workflow)
-    } catch (error) {
-      console.error(error)
-    }
+    workflowService.setWorkflow(workflow)
 
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
       // TODO: Show validation error in a dialog.
@@ -2269,12 +2259,6 @@ export class ComfyApp {
         // https://github.com/colinhacks/zod/issues/3056
         this.canvas.ds.offset = graphData.extra.ds.offset
         this.canvas.ds.scale = graphData.extra.ds.scale
-      }
-
-      try {
-        this.workflowManager.activeWorkflow?.track()
-      } catch (error) {
-        // TODO: Do we want silently fail here?
       }
     } catch (error) {
       let errorHint = []
@@ -2602,9 +2586,11 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             } else {
               try {
-                this.workflowManager.storePrompt({
+                useExecutionStore().storePrompt({
                   id: res.prompt_id,
-                  nodes: Object.keys(p.output)
+                  nodes: Object.keys(p.output),
+                  workflow: useWorkspaceStore().workflow
+                    .activeWorkflow as ComfyWorkflow
                 })
               } catch (error) {}
             }

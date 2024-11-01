@@ -55,6 +55,7 @@ import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { setStorageValue } from '@/scripts/utils'
+import { ChangeTracker } from '@/scripts/changeTracker'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -147,7 +148,7 @@ const workflowStore = useWorkflowStore()
 watchEffect(() => {
   if (workflowStore.activeWorkflow) {
     const workflow = workflowStore.activeWorkflow
-    setStorageValue('Comfy.PreviousWorkflow', workflow.path ?? workflow.name)
+    setStorageValue('Comfy.PreviousWorkflow', workflow.key)
   }
 })
 
@@ -223,6 +224,7 @@ onMounted(async () => {
 
   workspaceStore.spinner = true
   await comfyApp.setup(canvasRef.value)
+  ChangeTracker.init(comfyApp)
   canvasStore.canvas = comfyApp.canvas
   workspaceStore.spinner = false
 

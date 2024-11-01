@@ -31,12 +31,12 @@
 </template>
 
 <script setup lang="ts">
-import { app } from '@/scripts/app'
-import { ComfyWorkflow } from '@/scripts/workflows'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed } from 'vue'
+import { workflowService } from '@/services/workflowService'
 
 const props = defineProps<{
   class?: string
@@ -51,14 +51,14 @@ interface WorkflowOption {
 }
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
-  label: workflow.name,
+  label: workflow.filename,
   tooltip: workflow.path,
-  value: workflow.key,
-  unsaved: workflow.unsaved
+  value: workflow.path,
+  unsaved: workflow.isModified
 })
 
 const optionToWorkflow = (option: WorkflowOption): ComfyWorkflow =>
-  workflowStore.workflowLookup[option.value]
+  workflowStore.getWorkflowByPath(option.value)
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map(workflowToOption)
@@ -79,12 +79,12 @@ const onWorkflowChange = (option: WorkflowOption) => {
   }
 
   const workflow = optionToWorkflow(option)
-  workflow.load()
+  workflowService.openWorkflow(workflow)
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
-  app.workflowManager.closeWorkflow(workflow)
+  workflowService.closeWorkflow(workflow)
 }
 </script>
 

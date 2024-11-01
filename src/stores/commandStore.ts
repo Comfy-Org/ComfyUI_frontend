@@ -15,7 +15,7 @@ import { ComfyExtension } from '@/types/comfy'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { useWorkflowStore } from './workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
@@ -77,7 +77,7 @@ export class ComfyCommandImpl implements ComfyCommand {
 }
 
 const getTracker = () =>
-  app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+  useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
 
 const getSelectedNodes = (): LGraphNode[] => {
   const selectedNodes = app.canvas.selected_nodes
@@ -120,12 +120,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
-      function: () => {
-        app.workflowManager.setWorkflow(null)
-        app.clean()
-        app.graph.clear()
-        app.workflowManager.activeWorkflow?.track()
-      }
+      function: () => workflowService.loadBlankWorkflow()
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -140,17 +135,18 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: async () => {
-        await app.loadGraphData()
-      }
+      function: () => workflowService.loadDefaultWorkflow()
     },
     {
       id: 'Comfy.SaveWorkflow',
       icon: 'pi pi-save',
       label: 'Save Workflow',
       menubarLabel: 'Save',
-      function: () => {
-        app.workflowManager.activeWorkflow?.save()
+      function: async () => {
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        if (!workflow) return
+
+        await workflowService.saveWorkflow(workflow)
       }
     },
     {
@@ -158,8 +154,11 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-save',
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
-      function: () => {
-        app.workflowManager.activeWorkflow?.save(true)
+      function: async () => {
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        if (!workflow) return
+
+        await workflowService.saveWorkflowAs(workflow)
       }
     },
     {

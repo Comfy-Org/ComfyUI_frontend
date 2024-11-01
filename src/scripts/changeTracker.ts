@@ -1,12 +1,12 @@
 import type { ComfyApp } from './app'
 import { api } from './api'
-import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { ComfyWorkflow } from './workflows'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
+import _ from 'lodash'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -21,8 +21,7 @@ export class ChangeTracker {
   nodeOutputs?: Record<string, any>
 
   get app(): ComfyApp {
-    // Global tracker has #app set, while other trackers have workflow bounded
-    return this.#app ?? this.workflow.manager.app
+    return globalTracker.#app!
   }
 
   constructor(public workflow: ComfyWorkflow) {}
@@ -53,7 +52,8 @@ export class ChangeTracker {
 
     const currentState = this.app.graph.serialize()
     if (!this.activeState) {
-      this.activeState = clone(currentState)
+      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+      this.activeState = _.cloneDeep(currentState)
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
@@ -61,9 +61,9 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      this.activeState = clone(currentState)
+      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+      this.activeState = _.cloneDeep(currentState)
       this.redoQueue.length = 0
-      this.workflow.unsaved = true
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )
@@ -115,7 +115,7 @@ export class ChangeTracker {
 
   static init(app: ComfyApp) {
     const changeTracker = () =>
-      app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+      useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
     globalTracker.#setApp(app)
 
     const loadGraphData = app.loadGraphData
@@ -290,7 +290,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          app.workflowManager.activeWorkflow?.changeTracker?.checkState()
+          useWorkflowStore().activeWorkflow?.changeTracker?.checkState?.()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)
