@@ -143,7 +143,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const temporaryWorkflows = ref<Set<ComfyWorkflow>>(new Set())
 
-  const openWorkflow = async (workflow: ComfyWorkflow) => {
+  /**
+   * Open the workflow in the graph editor. Set the workflow as the active
+   * workflow.
+   * @param workflow The workflow to open.
+   * @param options.skipGraphLoad Whether to skip loading the graph data.
+   * This is used to avoid circular loading as loadGraphData also calls
+   * openWorkflow internally.
+   */
+  const openWorkflow = async (
+    workflow: ComfyWorkflow,
+    { skipGraphLoad = false }: { skipGraphLoad?: boolean } = {}
+  ) => {
     if (workflow.isActive) return
 
     const loadFromRemote = !workflow.isLoaded
@@ -151,16 +162,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
       await workflow.load()
     }
 
-    await app.loadGraphData(
-      workflow.changeTracker!.activeState as ComfyWorkflowJSON,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
-      workflow,
-      {
-        showMissingModelsDialog: loadFromRemote,
-        showMissingNodesDialog: loadFromRemote
-      }
-    )
+    if (!skipGraphLoad) {
+      await app.loadGraphData(
+        workflow.changeTracker!.activeState as ComfyWorkflowJSON,
+        /* clean=*/ true,
+        /* restore_view=*/ true,
+        workflow,
+        {
+          showMissingModelsDialog: loadFromRemote,
+          showMissingNodesDialog: loadFromRemote
+        }
+      )
+    }
 
     activeWorkflow.value = workflow
   }
