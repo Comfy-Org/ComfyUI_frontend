@@ -179,16 +179,18 @@ export const useUserFileStore = defineStore('userFile', () => {
    * @param dir The directory to sync.
    */
   const syncFiles = async (dir: string = '') => {
-    const files = await api.listUserDataFullInfo(dir)
+    const files = (await api.listUserDataFullInfo(dir)).map((file) => ({
+      ...file,
+      path: dir ? `${dir}/${file.path}` : file.path
+    }))
 
     for (const file of files) {
-      const fullPath = dir ? `${dir}/${file.path}` : file.path
-      const existingFile = userFilesByPath.value[fullPath]
+      const existingFile = userFilesByPath.value[file.path]
 
       if (!existingFile) {
         // New file, add it to the map
-        userFilesByPath.value[fullPath] = new UserFile(
-          fullPath,
+        userFilesByPath.value[file.path] = new UserFile(
+          file.path,
           file.modified,
           file.size
         )

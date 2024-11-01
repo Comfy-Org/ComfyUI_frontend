@@ -6,7 +6,6 @@ import { UserFile, useUserFileStore } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { UserDataFullInfo } from '@/types/apiTypes'
 import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '@/scripts/app'
@@ -18,8 +17,12 @@ export class ComfyWorkflow extends UserFile {
 
   originalWorkflow: ComfyWorkflowJSON | null = null
 
-  constructor(options: UserDataFullInfo) {
-    super('workflows/' + options.path, options.modified, options.size)
+  /**
+   * @param options The path, modified, and size of the workflow.
+   * Note: path is the full path, including the 'workflows/' prefix.
+   */
+  constructor(options: { path: string; modified: number; size: number }) {
+    super(options.path, options.modified, options.size)
   }
 
   get isBookmarked() {
@@ -166,11 +169,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const userFileStore = useUserFileStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-  const workflows = computed(() =>
-    userFileStore.userFiles
+  const workflows = computed(() => {
+    return userFileStore.userFiles
       .filter((file) => file.path.startsWith('workflows/'))
-      .map((file) => new ComfyWorkflow(file))
-  )
+      .map(
+        (file) =>
+          new ComfyWorkflow({
+            path: file.path,
+            modified: file.lastModified,
+            size: file.size
+          })
+      )
+  })
 
   const loadWorkflowFiles = wrapWithErrorHandlingAsync(async () => {
     await userFileStore.syncFiles('workflows')
