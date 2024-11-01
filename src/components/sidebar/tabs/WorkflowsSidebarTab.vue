@@ -121,7 +121,6 @@ import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
-import { useErrorHandling } from '@/hooks/errorHooks'
 import { workflowService } from '@/services/workflowService'
 
 const settingStore = useSettingStore()
