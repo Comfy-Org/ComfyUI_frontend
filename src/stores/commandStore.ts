@@ -6,7 +6,6 @@ import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import {
-  showPromptDialog,
   showSettingsDialog,
   showTemplateWorkflowsDialog
 } from '@/services/dialogService'
@@ -21,6 +20,7 @@ import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { useWorkspaceStore } from './workspaceStore'
+import { workflowService } from '@/services/workflowService'
 
 export interface ComfyCommand {
   id: string
@@ -152,11 +152,7 @@ export const useCommandStore = defineStore('command', () => {
         const workflow = app.workflowManager.activeWorkflow
         if (!workflow) return
 
-        if (workflow.isTemporary) {
-          execute('Comfy.SaveWorkflowAs')
-        }
-
-        await workflow.save()
+        await workflowService.saveWorkflow(workflow)
       }
     },
     {
@@ -168,13 +164,7 @@ export const useCommandStore = defineStore('command', () => {
         const workflow = app.workflowManager.activeWorkflow
         if (!workflow) return
 
-        const path = await showPromptDialog({
-          title: 'Save workflow',
-          message: 'Enter the filename:',
-          defaultValue: workflow.filename
-        })
-        if (!path) return
-        await workflow.saveAs(path)
+        await workflowService.saveWorkflowAs(workflow)
       }
     },
     {
