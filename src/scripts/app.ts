@@ -2203,7 +2203,7 @@ export class ComfyApp {
     })
   }
 
-  async changeWorkflow(callback, workflow = null) {
+  async changeWorkflow(callback: () => Promise<void> | void, workflow: string) {
     try {
       this.workflowManager.activeWorkflow?.changeTracker?.store()
     } catch (error) {
