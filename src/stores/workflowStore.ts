@@ -133,7 +133,7 @@ export class ComfyWorkflow extends UserFile {
     }
   }
 
-  async favorite(value: boolean) {
+  async setBookmarked(value: boolean) {
     try {
       if (this.isBookmarked === value) return
       this.manager.workflowBookmarkStore?.setBookmarked(this.path, value)
@@ -175,13 +175,12 @@ export class ComfyWorkflow extends UserFile {
       return this
     }
 
-    const isFav = this.isBookmarked
-    if (isFav) {
-      await this.favorite(false)
+    if (this.isBookmarked) {
+      await this.setBookmarked(false)
     }
     path = (await resp.json()).substring('workflows/'.length)
-    if (isFav) {
-      await this.favorite(true)
+    if (this.isBookmarked) {
+      await this.setBookmarked(true)
     }
     setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
     return this
@@ -206,7 +205,7 @@ export class ComfyWorkflow extends UserFile {
     // TODO: fix delete of current workflow - should mark workflow as unsaved and when saving use old name by default
 
     if (this.isBookmarked) {
-      await this.favorite(false)
+      await this.setBookmarked(false)
     }
     const resp = await api.deleteUserData('workflows/' + this.path)
     if (resp.status !== 204) {
