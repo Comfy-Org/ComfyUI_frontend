@@ -69,7 +69,7 @@ export class ComfyWorkflowManager extends EventTarget {
       files.forEach((file: UserDataFullInfo) => {
         let workflow = this.workflowLookup[file.path]
         if (!workflow) {
-          workflow = new ComfyWorkflow(this, file)
+          workflow = new ComfyWorkflow(file)
           this.workflowLookup[workflow.path] = workflow
         }
       })
@@ -95,7 +95,6 @@ export class ComfyWorkflowManager extends EventTarget {
     if (!(toRaw(workflow) instanceof ComfyWorkflow)) {
       // Still not found, either reloading a deleted workflow or blank
       workflow = new ComfyWorkflow(
-        this,
         workflow ||
           'Unsaved Workflow' +
             (this.#unsavedCount++ ? ` (${this.#unsavedCount})` : '')

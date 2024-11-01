@@ -24,7 +24,7 @@ describe('useUserFileStore', () => {
   it('should initialize with empty files', () => {
     expect(store.userFiles).toHaveLength(0)
     expect(store.modifiedFiles).toHaveLength(0)
-    expect(store.openedFiles).toHaveLength(0)
+    expect(store.loadedFiles).toHaveLength(0)
   })
 
   describe('syncFiles', () => {

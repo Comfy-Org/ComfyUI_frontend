@@ -3,31 +3,26 @@ import { computed, markRaw, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
-import { ComfyWorkflowManager } from '@/scripts/workflows'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { setStorageValue } from '@/scripts/utils'
-import { useToastStore } from './toastStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { UserDataFullInfo } from '@/types/apiTypes'
 import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
-import { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
+import { app } from '@/scripts/app'
 
 export class ComfyWorkflow extends UserFile {
   isOpen: boolean = false
-  manager: ComfyWorkflowManager
   changeTracker: ChangeTracker | null = null
 
   originalWorkflow: ComfyWorkflowJSON | null = null
 
-  constructor(manager: ComfyWorkflowManager, options: UserDataFullInfo) {
+  constructor(options: UserDataFullInfo) {
     super('workflows/' + options.path, options.modified, options.size)
-    this.manager = manager
   }
 
   get isBookmarked() {
-    return this.manager.workflowBookmarkStore?.isBookmarked(this.path) ?? false
+    return useWorkflowBookmarkStore().isBookmarked(this.path)
   }
 
   /**
@@ -53,7 +48,7 @@ export class ComfyWorkflow extends UserFile {
       await this.load()
     }
 
-    await this.manager.app.loadGraphData(
+    await app.loadGraphData(
       this.changeTracker.activeState,
       /* clean=*/ true,
       /* restore_view=*/ true,
@@ -94,70 +89,28 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async setBookmarked(value: boolean) {
-    try {
-      if (this.isBookmarked === value) return
-      this.manager.workflowBookmarkStore?.setBookmarked(this.path, value)
-    } catch (error) {
-      useToastStore().addAlert(
-        'Error favoriting workflow ' +
-          this.path +
-          '\n' +
-          (error.message ?? error)
-      )
-    }
+    if (this.isBookmarked === value) return
+    useWorkflowBookmarkStore().setBookmarked(this.path, value)
   }
 
-  async rename(path: string) {
-    path = appendJsonExt(path)
-    let resp = await api.moveUserData(
-      'workflows/' + this.path,
-      'workflows/' + path
-    )
-
-    if (resp.status === 409) {
-      if (
-        !confirm(
-          `Workflow '${path}' already exists, do you want to overwrite it?`
-        )
-      )
-        return this
-      resp = await api.moveUserData(
-        'workflows/' + this.path,
-        'workflows/' + path,
-        { overwrite: true }
-      )
-    }
-
-    if (resp.status !== 200) {
-      useToastStore().addAlert(
-        `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
-      return this
-    }
-
-    if (this.isBookmarked) {
-      await this.setBookmarked(false)
-    }
-    path = (await resp.json()).substring('workflows/'.length)
-    if (this.isBookmarked) {
-      await this.setBookmarked(true)
-    }
-    setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
-    return this
+  async rename(newName: string) {
+    const newPath = this.directory + '/' + appendJsonExt(newName)
+    return await super.rename(newPath)
   }
 
   async insert() {
     const data = this.originalWorkflow
     if (!data) return
     const old = localStorage.getItem('litegrapheditor_clipboard')
-    const graph = new LGraph(data as unknown as ISerialisedGraph)
+    // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
+    const graph = new LGraph(data)
     const canvas = new LGraphCanvas(null, graph, {
       skip_events: true,
       skip_render: true
     })
     canvas.selectNodes()
     canvas.copyToClipboard()
-    this.manager.app.canvas.pasteFromClipboard()
+    app.canvas.pasteFromClipboard()
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 

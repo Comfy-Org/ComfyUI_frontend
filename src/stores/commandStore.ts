@@ -21,7 +21,6 @@ import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { useWorkspaceStore } from './workspaceStore'
-import { trimJsonExt } from '@/utils/formatUtil'
 
 export interface ComfyCommand {
   id: string

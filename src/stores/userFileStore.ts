@@ -163,8 +163,8 @@ export const useUserFileStore = defineStore('userFile', () => {
   const modifiedFiles = computed(() =>
     userFiles.value.filter((file: UserFile) => file.isModified)
   )
-  const openedFiles = computed(() =>
-    userFiles.value.filter((file: UserFile) => file.isOpen)
+  const loadedFiles = computed(() =>
+    userFiles.value.filter((file: UserFile) => file.isLoaded)
   )
 
   const fileTree = computed<TreeExplorerNode<UserFile>>(
@@ -211,7 +211,7 @@ export const useUserFileStore = defineStore('userFile', () => {
   return {
     userFiles,
     modifiedFiles,
-    openedFiles,
+    loadedFiles,
     fileTree,
     syncFiles
   }

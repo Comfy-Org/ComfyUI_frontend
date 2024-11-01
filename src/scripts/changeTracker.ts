@@ -21,8 +21,7 @@ export class ChangeTracker {
   nodeOutputs?: Record<string, any>
 
   get app(): ComfyApp {
-    // Global tracker has #app set, while other trackers have workflow bounded
-    return this.#app ?? this.workflow.manager.app
+    return this.#app
   }
 
   constructor(public workflow: ComfyWorkflow) {}
