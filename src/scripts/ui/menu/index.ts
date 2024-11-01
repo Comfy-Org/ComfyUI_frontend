@@ -5,6 +5,7 @@ import { ComfyButtonGroup } from '../components/buttonGroup'
 import { showPromptDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import './menu.css'
+import { useWorkflowStore } from '@/stores/workflowStore'
 
 // Export to make sure following components are shimmed and exported by vite
 export { ComfyButton } from '../components/button'
@@ -55,8 +56,8 @@ export class ComfyAppMenu {
     filename: string,
     promptProperty: 'workflow' | 'output'
   ): Promise<void> {
-    if (this.app.workflowManager.activeWorkflow?.path) {
-      filename = this.app.workflowManager.activeWorkflow.name
+    if (useWorkflowStore().activeWorkflow?.path) {
+      filename = useWorkflowStore().activeWorkflow.filename
     }
     const p = await this.app.graphToPrompt()
     const json = JSON.stringify(p[promptProperty], null, 2)

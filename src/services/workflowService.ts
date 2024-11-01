@@ -41,7 +41,7 @@ export const workflowService = {
    * Load a blank workflow
    */
   async loadBlankWorkflow() {
-    app.workflowManager.setWorkflow(null)
+    this.setWorkflow(null)
     app.clean()
     app.graph.clear()
   },

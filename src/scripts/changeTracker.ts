@@ -2,7 +2,7 @@ import type { ComfyApp } from './app'
 import { api } from './api'
 import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ExecutedWsMessage } from '@/types/apiTypes'
@@ -113,7 +113,7 @@ export class ChangeTracker {
 
   static init(app: ComfyApp) {
     const changeTracker = () =>
-      app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+      useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
     globalTracker.#setApp(app)
 
     const loadGraphData = app.loadGraphData
@@ -288,7 +288,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          app.workflowManager.activeWorkflow?.changeTracker?.checkState()
+          useWorkflowStore().activeWorkflow?.changeTracker?.checkState()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)

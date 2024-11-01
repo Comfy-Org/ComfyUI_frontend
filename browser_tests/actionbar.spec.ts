@@ -52,7 +52,9 @@ test.describe('Actionbar', () => {
           (n) => n.type === 'EmptyLatentImage'
         )
         node.widgets[0].value = value
-        window['app'].workflowManager.activeWorkflow.changeTracker.checkState()
+        window[
+          'app'
+        ].extensionManager.workflow.activeWorkflow.changeTracker.checkState()
       }, value)
     }
 

@@ -15,7 +15,7 @@ import { ComfyExtension } from '@/types/comfy'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { useWorkflowStore } from './workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
@@ -77,7 +77,7 @@ export class ComfyCommandImpl implements ComfyCommand {
 }
 
 const getTracker = () =>
-  app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+  useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
 
 const getSelectedNodes = (): LGraphNode[] => {
   const selectedNodes = app.canvas.selected_nodes
@@ -143,7 +143,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow',
       menubarLabel: 'Save',
       function: async () => {
-        const workflow = app.workflowManager.activeWorkflow
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
 
         await workflowService.saveWorkflow(workflow)
@@ -155,7 +155,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
       function: async () => {
-        const workflow = app.workflowManager.activeWorkflow
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
 
         await workflowService.saveWorkflowAs(workflow)

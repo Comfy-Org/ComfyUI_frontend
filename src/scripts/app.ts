@@ -25,7 +25,6 @@ import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
-import { ComfyWorkflowManager } from './workflows'
 import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import {
   LGraphCanvas,
@@ -58,6 +57,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
+import { workflowService } from '@/services/workflowService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -141,7 +141,6 @@ export class ComfyApp {
   multiUserServer: boolean
   ctx: CanvasRenderingContext2D
   widgets: Record<string, ComfyWidgetConstructor>
-  workflowManager: ComfyWorkflowManager
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
@@ -170,7 +169,6 @@ export class ComfyApp {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
     this.logging = new ComfyLogging(this)
-    this.workflowManager = new ComfyWorkflowManager(this)
     this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
     this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
@@ -2205,13 +2203,13 @@ export class ComfyApp {
 
   async changeWorkflow(callback: () => Promise<void> | void, workflow: string) {
     try {
-      this.workflowManager.activeWorkflow?.changeTracker?.store()
+      useWorkflowStore().activeWorkflow?.changeTracker?.store()
     } catch (error) {
       console.error(error)
     }
     await callback()
     try {
-      this.workflowManager.setWorkflow(workflow)
+      workflowService.setWorkflow(workflow)
     } catch (error) {
       console.error(error)
     }
@@ -2241,7 +2239,7 @@ export class ComfyApp {
     }
 
     try {
-      this.workflowManager.setWorkflow(workflow)
+      workflowService.setWorkflow(workflow)
     } catch (error) {
       console.error(error)
     }
