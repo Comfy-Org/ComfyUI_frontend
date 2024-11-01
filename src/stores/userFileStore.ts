@@ -69,6 +69,12 @@ export class UserFile {
     return this
   }
 
+  async saveAs(newPath: string): Promise<UserFile> {
+    const tempFile = new TempUserFile(newPath, this.content)
+    await tempFile.save()
+    return tempFile
+  }
+
   async save(): Promise<UserFile> {
     if (!this.isModified) return this
 
