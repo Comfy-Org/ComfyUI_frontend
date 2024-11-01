@@ -2,15 +2,15 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, toRaw } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
-import { UserFile, useUserFileStore } from './userFileStore'
+import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '@/scripts/app'
-import { useErrorHandling } from '@/hooks/errorHooks'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { syncEntities } from '@/utils/syncUtil'
 
 export class ComfyWorkflow extends UserFile {
   changeTracker: ChangeTracker | null = null
@@ -246,25 +246,27 @@ export const useWorkflowStore = defineStore('workflow', () => {
     await loadOpenedWorkflowIndexShift(-1)
   }
 
-  const userFileStore = useUserFileStore()
-  const { wrapWithErrorHandlingAsync } = useErrorHandling()
-
-  const persistedWorkflows = computed(() => {
-    return userFileStore.userFiles
-      .filter((file) => file.path.startsWith('workflows/'))
-      .map(
-        (file) =>
-          new ComfyWorkflow({
-            path: file.path,
-            modified: file.lastModified,
-            size: file.size
-          })
-      )
-  })
-
-  const loadWorkflowFiles = wrapWithErrorHandlingAsync(async () => {
-    await userFileStore.syncFiles('workflows')
-  })
+  const persistedWorkflowByPath = ref<Record<string, ComfyWorkflow>>({})
+  const persistedWorkflows = computed(() =>
+    Object.values(persistedWorkflowByPath.value)
+  )
+  const syncWorkflows = async (dir: string = '') => {
+    await syncEntities(
+      dir ? 'workflows/' + dir : 'workflows',
+      persistedWorkflowByPath.value,
+      (file) =>
+        new ComfyWorkflow({
+          path: file.path,
+          modified: file.modified,
+          size: file.size
+        }),
+      (existingWorkflow, file) => {
+        existingWorkflow.lastModified = file.modified
+        existingWorkflow.size = file.size
+        existingWorkflow.unload()
+      }
+    )
+  }
 
   const workflows = computed(() => [
     ...persistedWorkflows.value,
@@ -319,7 +321,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     buildWorkflowTree,
     loadNextOpenedWorkflow,
     loadPreviousOpenedWorkflow,
-    loadWorkflowFiles
+    syncWorkflows
   }
 })
 

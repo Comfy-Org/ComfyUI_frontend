@@ -1830,7 +1830,7 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await Promise.all([
-      useWorkflowStore().loadWorkflowFiles(),
+      useWorkflowStore().syncWorkflows(),
       await this.ui.settings.load()
     ])
     await this.#loadExtensions()

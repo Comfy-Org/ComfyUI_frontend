@@ -4,6 +4,7 @@ import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { UserDataFullInfo } from '@/types/apiTypes'
+import { syncEntities } from '@/utils/syncUtil'
 
 /**
  * Represents a file in the user's data directory.
@@ -196,37 +197,16 @@ export const useUserFileStore = defineStore('userFile', () => {
    * @param dir The directory to sync.
    */
   const syncFiles = async (dir: string = '') => {
-    const files = (await api.listUserDataFullInfo(dir)).map((file) => ({
-      ...file,
-      path: dir ? `${dir}/${file.path}` : file.path
-    }))
-
-    for (const file of files) {
-      const existingFile = userFilesByPath.value[file.path]
-
-      if (!existingFile) {
-        // New file, add it to the map
-        userFilesByPath.value[file.path] = new UserFile(
-          file.path,
-          file.modified,
-          file.size
-        )
-      } else if (existingFile.lastModified !== file.modified) {
-        // File has been modified, update its properties
+    await syncEntities(
+      dir,
+      userFilesByPath.value,
+      (file) => new UserFile(file.path, file.modified, file.size),
+      (existingFile, file) => {
         existingFile.lastModified = file.modified
         existingFile.size = file.size
-        existingFile.originalContent = null
-        existingFile.content = null
-        existingFile.isLoading = false
+        existingFile.unload()
       }
-    }
-
-    // Remove files that no longer exist
-    for (const path in userFilesByPath.value) {
-      if (!files.some((file) => file.path === path)) {
-        delete userFilesByPath.value[path]
-      }
-    }
+    )
   }
 
   return {
