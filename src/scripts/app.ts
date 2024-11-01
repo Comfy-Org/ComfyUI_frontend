@@ -2066,9 +2066,7 @@ export class ComfyApp {
           setWidgetFlag('forceInput', inputData[1]?.forceInput)
           // @ts-expect-error
           setWidgetFlag('defaultInput', inputData[1]?.defaultInput)
-          // @ts-expect-error
           setWidgetFlag('advanced', inputData[1]?.advanced)
-          // @ts-expect-error
           setWidgetFlag('hidden', inputData[1]?.hidden)
         }
 
