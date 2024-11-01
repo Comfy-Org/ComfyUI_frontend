@@ -244,7 +244,9 @@ const zBaseInputSpecValue = z
     forceInput: z.boolean().optional(),
     lazy: z.boolean().optional(),
     rawLink: z.boolean().optional(),
-    tooltip: z.string().optional()
+    tooltip: z.string().optional(),
+    hidden: z.boolean().optional(),
+    advanced: z.boolean().optional()
   })
   .passthrough()
 
