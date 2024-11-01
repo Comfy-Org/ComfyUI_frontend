@@ -220,6 +220,6 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
 }
 
 const selectionKeys = computed(() => ({
-  [`root/${workflowStore.activeWorkflow?.path}`]: true
+  [`root/${workflowStore.activeWorkflow?.key}`]: true
 }))
 </script>

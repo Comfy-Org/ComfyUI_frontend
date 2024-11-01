@@ -81,7 +81,9 @@ export const workflowService = {
   async setWorkflow(value: string | ComfyWorkflow | null) {
     const workflowStore = useWorkflowStore()
     if (typeof value === 'string') {
-      const workflow = workflowStore.workflowLookup['workflows/' + value]
+      const workflow = workflowStore.workflowLookup[
+        'workflows/' + value
+      ] as ComfyWorkflow
       if (workflow) {
         await workflowStore.openWorkflow(workflow, { skipGraphLoad: true })
         return

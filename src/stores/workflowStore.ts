@@ -10,6 +10,7 @@ import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '@/scripts/app'
 import { useErrorHandling } from '@/hooks/errorHooks'
+import { defaultGraph } from '@/scripts/defaultGraph'
 
 export class ComfyWorkflow extends UserFile {
   changeTracker: ChangeTracker | null = null
@@ -164,6 +165,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const loadFromRemote = !workflow.isLoaded
     if (loadFromRemote) {
       await workflow.load()
+      openWorkflowPaths.value.push(workflow.path)
     }
 
     if (!skipGraphLoad) {
@@ -180,7 +182,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
 
     activeWorkflow.value = workflow
-    openWorkflowPaths.value.push(workflow.path)
   }
 
   const createTemporary = (path?: string) => {
@@ -191,6 +192,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       modified: Date.now(),
       size: 0
     })
+    workflow.originalContent = JSON.stringify(defaultGraph)
+    workflow.originalWorkflow = defaultGraph
     temporaryWorkflows.value.add(workflow)
     return workflow
   }
