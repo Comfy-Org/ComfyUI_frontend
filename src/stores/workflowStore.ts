@@ -180,6 +180,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
 
     activeWorkflow.value = workflow
+    openWorkflowPaths.value.push(workflow.path)
   }
 
   const createTemporary = (path?: string) => {
