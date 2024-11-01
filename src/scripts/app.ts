@@ -26,7 +26,7 @@ import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflowManager } from './workflows'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import {
   LGraphCanvas,
   LGraph,
@@ -1832,8 +1832,8 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await Promise.all([
-      this.workflowManager.loadWorkflows(),
-      this.ui.settings.load()
+      useWorkflowStore().loadWorkflowFiles(),
+      await this.ui.settings.load()
     ])
     await this.#loadExtensions()
 

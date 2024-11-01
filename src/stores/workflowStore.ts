@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
-import { UserFile } from './userFileStore'
+import { UserFile, useUserFileStore } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -10,6 +10,7 @@ import { UserDataFullInfo } from '@/types/apiTypes'
 import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '@/scripts/app'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 export class ComfyWorkflow extends UserFile {
   isOpen: boolean = false
@@ -123,41 +124,23 @@ export class ComfyWorkflow extends UserFile {
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
+  /**
+   * The active workflow currently being edited.
+   */
   const activeWorkflow = ref<ComfyWorkflow | null>(null)
-  const workflowLookup = ref<Record<string, ComfyWorkflow>>({})
-  const workflows = computed(() => Object.values(workflowLookup.value))
-  const persistedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isPersisted)
-  )
+  /**
+   * The paths of the open workflows. It is setup as a ref to allow user
+   * to reorder the workflows opened.
+   */
+  const openWorkflowPaths = ref<string[]>([])
   const openWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isOpen)
-  )
-  const bookmarkedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isBookmarked)
-  )
-  const modifiedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.unsaved)
+    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
   )
 
-  const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
-    return buildTree(workflows, (workflow: ComfyWorkflow) =>
-      workflow.key.split('/')
-    )
-  }
-  const workflowsTree = computed(() =>
-    buildWorkflowTree(persistedWorkflows.value)
-  )
-  // Bookmarked workflows tree is flat.
-  const bookmarkedWorkflowsTree = computed(() =>
-    buildTree(bookmarkedWorkflows.value, (workflow: ComfyWorkflow) => [
-      workflow.path ?? 'temporary_workflow'
-    ])
-  )
-  // Open workflows tree is flat.
-  const openWorkflowsTree = computed(() =>
-    buildTree(openWorkflows.value, (workflow: ComfyWorkflow) => [workflow.key])
-  )
-
+  /**
+   * Load the workflow at the given index shift from the active workflow.
+   * @param shift The shift to the next workflow. Positive for next, negative for previous.
+   */
   const loadOpenedWorkflowIndexShift = async (shift: number) => {
     const index = openWorkflows.value.indexOf(
       activeWorkflow.value as ComfyWorkflow
@@ -180,10 +163,57 @@ export const useWorkflowStore = defineStore('workflow', () => {
     await loadOpenedWorkflowIndexShift(-1)
   }
 
+  const userFileStore = useUserFileStore()
+  const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
+  const workflows = computed(() =>
+    userFileStore.userFiles
+      .filter((file) => file.path.startsWith('workflows/'))
+      .map((file) => new ComfyWorkflow(file))
+  )
+
+  const loadWorkflowFiles = wrapWithErrorHandlingAsync(async () => {
+    await userFileStore.syncFiles('workflows')
+  })
+
+  const persistedWorkflows = computed(() =>
+    workflows.value.filter((workflow) => workflow.isPersisted)
+  )
+  const bookmarkedWorkflows = computed(() =>
+    workflows.value.filter((workflow) => workflow.isBookmarked)
+  )
+  const modifiedWorkflows = computed(() =>
+    workflows.value.filter((workflow) => workflow.isModified)
+  )
+  const workflowLookup = computed(() =>
+    Object.fromEntries(
+      workflows.value.map((workflow) => [workflow.path, workflow])
+    )
+  )
+
+  const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
+    return buildTree(workflows, (workflow: ComfyWorkflow) =>
+      workflow.key.split('/')
+    )
+  }
+  const workflowsTree = computed(() =>
+    buildWorkflowTree(persistedWorkflows.value)
+  )
+  // Bookmarked workflows tree is flat.
+  const bookmarkedWorkflowsTree = computed(() =>
+    buildTree(bookmarkedWorkflows.value, (workflow: ComfyWorkflow) => [
+      workflow.path ?? 'temporary_workflow'
+    ])
+  )
+  // Open workflows tree is flat.
+  const openWorkflowsTree = computed(() =>
+    buildTree(openWorkflows.value, (workflow: ComfyWorkflow) => [workflow.key])
+  )
+
   return {
     activeWorkflow,
-    workflows,
     openWorkflows,
+    workflows,
     bookmarkedWorkflows,
     modifiedWorkflows,
     workflowLookup,
@@ -192,7 +222,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openWorkflowsTree,
     buildWorkflowTree,
     loadNextOpenedWorkflow,
-    loadPreviousOpenedWorkflow
+    loadPreviousOpenedWorkflow,
+    loadWorkflowFiles
   }
 })
 

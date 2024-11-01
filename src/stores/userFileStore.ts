@@ -182,13 +182,14 @@ export const useUserFileStore = defineStore('userFile', () => {
     const files = await api.listUserDataFullInfo(dir)
 
     for (const file of files) {
-      const existingFile = userFilesByPath.value.get(file.path)
+      const fullPath = dir ? `${dir}/${file.path}` : file.path
+      const existingFile = userFilesByPath.value.get(fullPath)
 
       if (!existingFile) {
         // New file, add it to the map
         userFilesByPath.value.set(
-          file.path,
-          new UserFile(file.path, file.modified, file.size)
+          fullPath,
+          new UserFile(fullPath, file.modified, file.size)
         )
       } else if (existingFile.lastModified !== file.modified) {
         // File has been modified, update its properties

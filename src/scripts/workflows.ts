@@ -62,24 +62,6 @@ export class ComfyWorkflowManager extends EventTarget {
     ChangeTracker.init(app)
   }
 
-  async loadWorkflows() {
-    try {
-      const files = await api.listUserDataFullInfo('workflows')
-
-      files.forEach((file: UserDataFullInfo) => {
-        let workflow = this.workflowLookup[file.path]
-        if (!workflow) {
-          workflow = new ComfyWorkflow(file)
-          this.workflowLookup[workflow.path] = workflow
-        }
-      })
-    } catch (error) {
-      useToastStore().addAlert(
-        'Error loading workflows: ' + (error.message ?? error)
-      )
-    }
-  }
-
   /**
    * @param {string | ComfyWorkflow | null} workflow
    */
