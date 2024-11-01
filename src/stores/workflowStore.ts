@@ -162,19 +162,10 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async delete() {
-    // TODO: fix delete of current workflow - should mark workflow as unsaved and when saving use old name by default
-
     if (this.isBookmarked) {
       await this.setBookmarked(false)
     }
-    const resp = await api.deleteUserData('workflows/' + this.path)
-    if (resp.status !== 204) {
-      useToastStore().addAlert(
-        `Error removing user data file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
-    }
-
-    this.manager.workflows.splice(this.manager.workflows.indexOf(this), 1)
+    await super.delete()
   }
 }
 
