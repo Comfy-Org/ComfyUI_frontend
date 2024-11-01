@@ -78,6 +78,9 @@ export class UserFile {
     return this.isModified
   }
 
+  /**
+   * Loads the file content from the remote storage.
+   */
   async load(): Promise<UserFile> {
     if (this.isTemporary) return this
 
@@ -92,6 +95,15 @@ export class UserFile {
     this.originalContent = this.content
     this.isLoading = false
     return this
+  }
+
+  /**
+   * Unloads the file content from memory
+   */
+  unload(): void {
+    this.content = null
+    this.originalContent = null
+    this.isLoading = false
   }
 
   async saveAs(newPath: string): Promise<UserFile> {

@@ -118,6 +118,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * The active workflow currently being edited.
    */
   const activeWorkflow = ref<ComfyWorkflow | null>(null)
+  /**
+   * The paths of the open workflows. It is setup as a ref to allow user
+   * to reorder the workflows opened.
+   */
+  const openWorkflowPaths = ref<string[]>([])
+  const openWorkflows = computed(() =>
+    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+  )
+  /**
+   * The temporary workflows that are not saved to remote storage.
+   */
+  const temporaryWorkflows = ref<Set<ComfyWorkflow>>(new Set())
+
   const openWorkflow = async (workflow: ComfyWorkflow) => {
     if (workflow.isActive) return
 
@@ -139,14 +152,24 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     activeWorkflow.value = workflow
   }
-  /**
-   * The paths of the open workflows. It is setup as a ref to allow user
-   * to reorder the workflows opened.
-   */
-  const openWorkflowPaths = ref<string[]>([])
-  const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
-  )
+
+  const createTemporary = () => {
+    const path = 'workflows/temporary_' + Date.now() + '.json'
+    const workflow = new ComfyWorkflow({
+      path,
+      modified: Date.now(),
+      size: 0
+    })
+    temporaryWorkflows.value.add(workflow)
+    return workflow
+  }
+
+  const closeWorkflow = async (workflow: ComfyWorkflow) => {
+    if (workflow.isActive && workflow.isTemporary) {
+      temporaryWorkflows.value.delete(workflow)
+      return
+    }
+  }
 
   /**
    * Load the workflow at the given index shift from the active workflow.
@@ -233,6 +256,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openWorkflows,
     openWorkflowsTree,
     openWorkflow,
+    closeWorkflow,
+    createTemporary,
 
     workflows,
     bookmarkedWorkflows,

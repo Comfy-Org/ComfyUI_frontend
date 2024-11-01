@@ -95,7 +95,7 @@ export class ComfyWorkflowManager extends EventTarget {
   }
 
   async closeWorkflow(workflow: ComfyWorkflow, warnIfUnsaved: boolean = true) {
-    if (!workflow.isOpen) {
+    if (!workflow.isActive) {
       return true
     }
     if (workflow.unsaved && warnIfUnsaved) {
