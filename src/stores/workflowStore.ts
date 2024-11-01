@@ -178,10 +178,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     activeWorkflow.value = workflow
   }
 
-  const createTemporary = () => {
-    const path = 'workflows/temporary_' + Date.now() + '.json'
+  const createTemporary = (path?: string) => {
+    const fullPath =
+      'workflows/' + (path ?? 'temporary_' + Date.now() + '.json')
     const workflow = new ComfyWorkflow({
-      path,
+      path: fullPath,
       modified: Date.now(),
       size: 0
     })

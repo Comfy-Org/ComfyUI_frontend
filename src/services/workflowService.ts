@@ -79,9 +79,6 @@ export const workflowService = {
   // Note: this method is used primarily for loadGraphData to create temporary
   // workflows.
   async setWorkflow(value: string | ComfyWorkflow | null) {
-    if (value === null) {
-      return
-    }
     const workflowStore = useWorkflowStore()
     if (typeof value === 'string') {
       const workflow = workflowStore.workflowLookup['workflows/' + value]
@@ -89,8 +86,11 @@ export const workflowService = {
         await workflowStore.openWorkflow(workflow, { skipGraphLoad: true })
         return
       }
+    }
 
-      const tempWorkflow = workflowStore.createTemporary()
+    if (value === null || typeof value === 'string') {
+      const path = value as string | null
+      const tempWorkflow = workflowStore.createTemporary(path ?? undefined)
       await workflowStore.openWorkflow(tempWorkflow, { skipGraphLoad: true })
       return
     }
