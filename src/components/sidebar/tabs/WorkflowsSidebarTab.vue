@@ -122,6 +122,7 @@ import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
+import { workflowService } from '@/services/workflowService'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -156,15 +157,12 @@ const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
-const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const handleCloseWorkflow = wrapWithErrorHandlingAsync(
-  (workflow?: ComfyWorkflow) => {
-    if (workflow) {
-      workflowStore.closeWorkflow(workflow)
-    }
+const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
+  if (workflow) {
+    workflowService.closeWorkflow(workflow)
   }
-)
+}
 
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)

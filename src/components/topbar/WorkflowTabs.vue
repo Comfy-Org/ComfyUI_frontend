@@ -37,6 +37,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed } from 'vue'
+import { workflowService } from '@/services/workflowService'
 
 const props = defineProps<{
   class?: string
@@ -84,7 +85,7 @@ const onWorkflowChange = (option: WorkflowOption) => {
 
 const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
-  workflowStore.closeWorkflow(workflow)
+  workflowService.closeWorkflow(workflow)
 }
 </script>
 

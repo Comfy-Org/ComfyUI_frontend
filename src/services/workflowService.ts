@@ -1,5 +1,4 @@
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import type { ComfyWorkflow } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
@@ -55,42 +54,25 @@ export const workflowService = {
   async closeWorkflow(
     workflow: ComfyWorkflow,
     options: { warnIfUnsaved: boolean } = { warnIfUnsaved: true }
-  ): Promise<boolean> {
+  ): Promise<void> {
     if (!workflow.isLoaded) {
-      return true
+      return
     }
 
-    const workflowStore = useWorkflowStore()
     if (workflow.isModified && options.warnIfUnsaved) {
       const res = await ComfyAsyncDialog.prompt({
         title: 'Save Changes?',
         message: `Do you want to save changes to "${workflow.path}" before closing?`,
         actions: ['Yes', 'No', 'Cancel']
       })
-      if (res === 'Yes') {
-        const active = this.activeWorkflow
-        if (active !== workflow) {
-          // We need to switch to the workflow to save it
-          await workflow.load()
-        }
 
-        if (!(await workflow.save())) {
-          // Save was canceled, restore the previous workflow
-          if (active !== workflow) {
-            await active.load()
-          }
-          return
-        }
+      if (res === 'Yes') {
+        await this.saveWorkflow(workflow)
       } else if (res === 'Cancel') {
         return
       }
     }
-    if (this.openWorkflows.length > 0) {
-      this._activeWorkflow = this.openWorkflows[0]
-      await this._activeWorkflow.load()
-    } else {
-      // Load default
-      await this.app.loadGraphData()
-    }
+
+    await workflow.close()
   }
 }
