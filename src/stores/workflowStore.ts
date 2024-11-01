@@ -10,7 +10,7 @@ import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { app } from '@/scripts/app'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { defaultGraph } from '@/scripts/defaultGraph'
+import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 
 export class ComfyWorkflow extends UserFile {
   changeTracker: ChangeTracker | null = null
@@ -192,7 +192,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       modified: Date.now(),
       size: 0
     })
-    workflow.originalContent = JSON.stringify(defaultGraph)
+    workflow.originalContent = workflow.content = defaultGraphJSON
     workflow.originalWorkflow = defaultGraph
     temporaryWorkflows.value.add(workflow)
     return workflow
