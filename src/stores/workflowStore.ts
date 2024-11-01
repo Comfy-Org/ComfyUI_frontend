@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, toRaw } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from './userFileStore'
@@ -70,11 +70,16 @@ export class ComfyWorkflow extends UserFile {
    */
   async load() {
     await super.load()
-    this.originalWorkflow = JSON.parse(this.originalContent)
+    if (this.isTemporary) {
+      this.originalContent = defaultGraphJSON
+      this.originalWorkflow = defaultGraph
+    } else {
+      this.originalWorkflow = JSON.parse(this.originalContent)
+    }
 
-    const changeTracker = new ChangeTracker(this)
-    changeTracker.activeState = this.originalWorkflow
-    this.changeTracker = markRaw(changeTracker)
+    const changeTracker = markRaw(new ChangeTracker(this))
+    changeTracker.activeState = toRaw(this.originalWorkflow)
+    this.changeTracker = changeTracker
     return this
   }
 
@@ -192,8 +197,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
       modified: Date.now(),
       size: 0
     })
-    workflow.originalContent = workflow.content = defaultGraphJSON
-    workflow.originalWorkflow = defaultGraph
     temporaryWorkflows.value.add(workflow)
     return workflow
   }
