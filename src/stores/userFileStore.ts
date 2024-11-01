@@ -9,8 +9,19 @@ import { UserDataFullInfo } from '@/types/apiTypes'
  * Represents a file in the user's data directory.
  */
 export class UserFile {
+  /**
+   * Various path components.
+   * Example:
+   * - path: 'dir/file.txt'
+   * - directory: 'dir'
+   * - fullFilename: 'file.txt'
+   * - filename: 'file'
+   * - suffix: 'txt'
+   */
   directory: string
+  fullFilename: string
   filename: string
+  suffix: string | null
 
   isLoading: boolean = false
   content: string | null = null
@@ -31,7 +42,9 @@ export class UserFile {
     public size: number
   ) {
     this.directory = path.split('/').slice(0, -1).join('/')
-    this.filename = path.split('/').pop() ?? path
+    this.fullFilename = path.split('/').pop() ?? path
+    this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
+    this.suffix = this.fullFilename.split('.').pop() ?? null
   }
 
   get isOpen() {
