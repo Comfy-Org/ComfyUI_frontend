@@ -41,7 +41,7 @@ export class ComfyWorkflow extends UserFile {
   /**
    * Whether the workflow is the active workflow currently being edited.
    */
-  get isActive() {
+  isActive() {
     return useWorkflowStore().activeWorkflow?.path === this.path
   }
 
@@ -159,7 +159,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflow: ComfyWorkflow,
     { skipGraphLoad = false }: { skipGraphLoad?: boolean } = {}
   ) => {
-    if (workflow.isActive) return
+    if (workflow.isActive()) return
 
     const loadFromRemote = !workflow.isLoaded
     if (loadFromRemote) {
@@ -201,7 +201,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       await openWorkflow(createTemporary())
     }
     // If this is the active workflow, load the next workflow
-    if (workflow.isActive) {
+    if (workflow.isActive()) {
       await loadNextOpenedWorkflow()
     }
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
@@ -243,7 +243,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const userFileStore = useUserFileStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-  const workflows = computed(() => {
+  const persistedWorkflows = computed(() => {
     return userFileStore.userFiles
       .filter((file) => file.path.startsWith('workflows/'))
       .map(
@@ -260,9 +260,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     await userFileStore.syncFiles('workflows')
   })
 
-  const persistedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isPersisted)
-  )
+  const workflows = computed(() => [
+    ...persistedWorkflows.value,
+    ...temporaryWorkflows.value
+  ])
+
   const bookmarkedWorkflows = computed(() =>
     workflows.value.filter((workflow) => workflow.isBookmarked)
   )
