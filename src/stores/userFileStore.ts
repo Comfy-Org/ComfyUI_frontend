@@ -70,7 +70,7 @@ export class UserFile {
   }
 
   async saveAs(newPath: string): Promise<UserFile> {
-    const tempFile = new TempUserFile(newPath, this.content)
+    const tempFile = new TempUserFile(newPath, this.content ?? undefined)
     await tempFile.save()
     return tempFile
   }

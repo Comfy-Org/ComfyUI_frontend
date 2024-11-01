@@ -1,5 +1,9 @@
 import { setActivePinia, createPinia } from 'pinia'
-import { UserFile, useUserFileStore } from '@/stores/userFileStore'
+import {
+  TempUserFile,
+  UserFile,
+  useUserFileStore
+} from '@/stores/userFileStore'
 import { api } from '@/scripts/api'
 
 // Mock the api
@@ -173,6 +177,30 @@ describe('useUserFileStore', () => {
         expect(file.path).toBe('newfile.txt')
         expect(file.lastModified).toBe(456)
         expect(file.size).toBe(200)
+      })
+    })
+
+    describe('saveAs', () => {
+      it('should save file with new path', async () => {
+        const file = new UserFile('file1.txt', 123, 100)
+        file.content = 'file content'
+        ;(api.storeUserData as jest.Mock).mockResolvedValue({
+          status: 200,
+          json: () => Promise.resolve({ modified: 456, size: 200 })
+        })
+
+        const newFile = await file.saveAs('newfile.txt')
+
+        expect(api.storeUserData).toHaveBeenCalledWith(
+          'newfile.txt',
+          'file content',
+          { throwOnError: true, full_info: true }
+        )
+        expect(newFile).toBeInstanceOf(TempUserFile)
+        expect(newFile.path).toBe('newfile.txt')
+        expect(newFile.lastModified).toBe(456)
+        expect(newFile.size).toBe(200)
+        expect(newFile.content).toBe('file content')
       })
     })
   })
