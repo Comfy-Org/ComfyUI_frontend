@@ -1,5 +1,5 @@
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
-import type { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowStore, type ComfyWorkflow } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 
@@ -74,5 +74,17 @@ export const workflowService = {
     }
 
     await workflow.close()
+  },
+
+  /**
+   * Open a workflow from a file path
+   * @param path The path to the workflow file. Will be prefixed with 'workflows/'
+   */
+  async openWorkflowFromFilePath(path: string) {
+    const workflowStore = useWorkflowStore()
+    const workflow = workflowStore.workflowLookup['workflows/' + path]
+    if (workflow) {
+      await workflow.load()
+    }
   }
 }
