@@ -69,7 +69,11 @@ export class ComfyWorkflow extends UserFile {
    */
   async load() {
     await super.load()
-    this.changeTracker = markRaw(new ChangeTracker(this))
+    this.originalWorkflow = JSON.parse(this.originalContent)
+
+    const changeTracker = new ChangeTracker(this)
+    changeTracker.activeState = this.originalWorkflow
+    this.changeTracker = markRaw(changeTracker)
     return this
   }
 

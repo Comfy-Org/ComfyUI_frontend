@@ -173,8 +173,7 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
     e: MouseEvent
   ) => {
     if (node.leaf) {
-      const workflow = node.data
-      workflow.load()
+      workflow.open()
     } else {
       toggleNodeOnEvent(e, node)
     }
