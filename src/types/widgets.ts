@@ -107,6 +107,9 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
     last_y?: number
     width?: number
     disabled?: boolean
+    
+    hidden?: boolean
+    advanced?: boolean
 
     tooltip?: string
 

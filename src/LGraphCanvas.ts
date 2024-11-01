@@ -1009,6 +1009,22 @@ export class LGraphCanvas {
 
         node.graph.afterChange( /*?*/)
     }
+    static onMenuToggleAdvanced(value: IContextMenuValue, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
+        node.graph.beforeChange( /*?*/)
+        const fApplyMultiNode = function (node: LGraphNode) {
+            node.toggleAdvanced()
+        }
+
+        const graphcanvas = LGraphCanvas.active_canvas
+        if (!graphcanvas.selected_nodes || Object.keys(graphcanvas.selected_nodes).length <= 1) {
+            fApplyMultiNode(node)
+        } else {
+            for (const i in graphcanvas.selected_nodes) {
+                fApplyMultiNode(graphcanvas.selected_nodes[i])
+            }
+        }
+        node.graph.afterChange( /*?*/)
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     static onMenuNodePin(value: IContextMenuValue, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
     }
@@ -1623,6 +1639,8 @@ export class LGraphCanvas {
         const y = graphPos[1] - node.pos[1]
 
         for (const widget of node.widgets) {
+            if(widget.hidden || (widget.advanced && !node.showAdvanced)) continue;
+
             let widgetWidth, widgetHeight
             if (widget.computeSize) {
                 ([widgetWidth, widgetHeight] = widget.computeSize(node.size[0]))
@@ -5418,6 +5436,7 @@ export class LGraphCanvas {
 
         for (let i = 0; i < widgets.length; ++i) {
             const w = widgets[i]
+            if(w.hidden || (w.advanced && !node.showAdvanced)) continue;
             const y = w.y || posY
 
             if (w === this.link_over_widget) {
@@ -5671,7 +5690,7 @@ export class LGraphCanvas {
         let values_list
         for (let i = 0; i < node.widgets.length; ++i) {
             const w = node.widgets[i]
-            if (!w || w.disabled)
+            if (!w || w.disabled || w.hidden || (w.advanced && !node.showAdvanced))
                 continue
             const widget_height = w.computeSize ? w.computeSize(width)[1] : LiteGraph.NODE_WIDGET_HEIGHT
             const widget_width = w.width || width
@@ -7611,6 +7630,12 @@ export class LGraphCanvas {
                 options.push({
                     content: node.collapsed ? "Expand" : "Collapse",
                     callback: LGraphCanvas.onMenuNodeCollapse
+                })
+            }
+            if (node.widgets?.some(w => w.advanced)) {
+                options.push({
+                    content: node.showAdvanced ? "Hide Advanced" : "Show Advanced",
+                    callback: LGraphCanvas.onMenuToggleAdvanced
                 })
             }
             options.push(
