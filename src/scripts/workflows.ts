@@ -93,41 +93,4 @@ export class ComfyWorkflowManager extends EventTarget {
       workflow: this.activeWorkflow
     })
   }
-
-  async closeWorkflow(workflow: ComfyWorkflow, warnIfUnsaved: boolean = true) {
-    if (!workflow.isActive) {
-      return true
-    }
-    if (workflow.unsaved && warnIfUnsaved) {
-      const res = await ComfyAsyncDialog.prompt({
-        title: 'Save Changes?',
-        message: `Do you want to save changes to "${workflow.path ?? workflow.filename}" before closing?`,
-        actions: ['Yes', 'No', 'Cancel']
-      })
-      if (res === 'Yes') {
-        const active = this.activeWorkflow
-        if (active !== workflow) {
-          // We need to switch to the workflow to save it
-          await workflow.load()
-        }
-
-        if (!(await workflow.save())) {
-          // Save was canceled, restore the previous workflow
-          if (active !== workflow) {
-            await active.load()
-          }
-          return
-        }
-      } else if (res === 'Cancel') {
-        return
-      }
-    }
-    if (this.openWorkflows.length > 0) {
-      this._activeWorkflow = this.openWorkflows[0]
-      await this._activeWorkflow.load()
-    } else {
-      // Load default
-      await this.app.loadGraphData()
-    }
-  }
 }

@@ -56,7 +56,7 @@
                     text
                     severity="secondary"
                     size="small"
-                    @click.stop="app.workflowManager.closeWorkflow(node.data)"
+                    @click.stop="handleCloseWorkflow(node.data)"
                   />
                 </template>
               </TreeExplorerTreeNode>
@@ -112,16 +112,16 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
 import TextDivider from '@/components/common/TextDivider.vue'
-import { app } from '@/scripts/app'
 import { computed, nextTick, ref } from 'vue'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
-import { ComfyWorkflow } from '@/scripts/workflows'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -144,7 +144,7 @@ const handleSearch = (query: string) => {
   }
   const lowerQuery = query.toLocaleLowerCase()
   filteredWorkflows.value = workflowStore.workflows.filter((workflow) => {
-    return workflow.name.toLocaleLowerCase().includes(lowerQuery)
+    return workflow.path.toLocaleLowerCase().includes(lowerQuery)
   })
   nextTick(() => {
     expandNode(filteredRoot.value)
@@ -152,11 +152,19 @@ const handleSearch = (query: string) => {
 }
 
 const commandStore = useCommandStore()
-
 const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { wrapWithErrorHandlingAsync } = useErrorHandling()
+
+const handleCloseWorkflow = wrapWithErrorHandlingAsync(
+  (workflow?: ComfyWorkflow) => {
+    if (workflow) {
+      workflowStore.closeWorkflow(workflow)
+    }
+  }
+)
 
 const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const children = node.children?.map(renderTreeNode)
@@ -216,6 +224,6 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
 }
 
 const selectionKeys = computed(() => ({
-  [`root/${workflowStore.activeWorkflow?.name}.json`]: true
+  [`root/${workflowStore.activeWorkflow?.path}`]: true
 }))
 </script>

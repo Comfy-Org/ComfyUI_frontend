@@ -84,7 +84,7 @@ const onWorkflowChange = (option: WorkflowOption) => {
 
 const onCloseWorkflow = (option: WorkflowOption) => {
   const workflow = optionToWorkflow(option)
-  app.workflowManager.closeWorkflow(workflow)
+  workflowStore.closeWorkflow(workflow)
 }
 </script>
 
