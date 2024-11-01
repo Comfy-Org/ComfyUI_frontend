@@ -20,6 +20,7 @@ import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { useWorkspaceStore } from './workspaceStore'
+import { workflowService } from '@/services/workflowService'
 
 export interface ComfyCommand {
   id: string
@@ -167,7 +168,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Export Workflow',
       menubarLabel: 'Export',
       function: () => {
-        app.menu.exportWorkflow('workflow', 'workflow')
+        workflowService.exportWorkflow('workflow', 'workflow')
       }
     },
     {
@@ -176,7 +177,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Export Workflow (API Format)',
       menubarLabel: 'Export (API)',
       function: () => {
-        app.menu.exportWorkflow('workflow_api', 'output')
+        workflowService.exportWorkflow('workflow_api', 'output')
       }
     },
     {
