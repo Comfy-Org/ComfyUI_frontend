@@ -157,9 +157,9 @@ export class UserFile {
 }
 
 export const useUserFileStore = defineStore('userFile', () => {
-  const userFilesByPath = ref(new Map<string, UserFile>())
+  const userFilesByPath = ref<Record<string, UserFile>>({})
 
-  const userFiles = computed(() => Array.from(userFilesByPath.value.values()))
+  const userFiles = computed(() => Object.values(userFilesByPath.value))
   const modifiedFiles = computed(() =>
     userFiles.value.filter((file: UserFile) => file.isModified)
   )
@@ -183,13 +183,14 @@ export const useUserFileStore = defineStore('userFile', () => {
 
     for (const file of files) {
       const fullPath = dir ? `${dir}/${file.path}` : file.path
-      const existingFile = userFilesByPath.value.get(fullPath)
+      const existingFile = userFilesByPath.value[fullPath]
 
       if (!existingFile) {
         // New file, add it to the map
-        userFilesByPath.value.set(
+        userFilesByPath.value[fullPath] = new UserFile(
           fullPath,
-          new UserFile(fullPath, file.modified, file.size)
+          file.modified,
+          file.size
         )
       } else if (existingFile.lastModified !== file.modified) {
         // File has been modified, update its properties
@@ -202,9 +203,9 @@ export const useUserFileStore = defineStore('userFile', () => {
     }
 
     // Remove files that no longer exist
-    for (const [path, _] of userFilesByPath.value) {
+    for (const path in userFilesByPath.value) {
       if (!files.some((file) => file.path === path)) {
-        userFilesByPath.value.delete(path)
+        delete userFilesByPath.value[path]
       }
     }
   }
