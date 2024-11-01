@@ -37,7 +37,7 @@ export class UserFile {
      */
     public lastModified: number,
     /**
-     * File size in bytes.
+     * File size in bytes. -1 for temporary files.
      */
     public size: number
   ) {
@@ -45,6 +45,14 @@ export class UserFile {
     this.fullFilename = path.split('/').pop() ?? path
     this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
     this.suffix = this.fullFilename.split('.').pop() ?? null
+  }
+
+  static createTemporary(path: string): UserFile {
+    return new UserFile(path, Date.now(), -1)
+  }
+
+  get isTemporary() {
+    return this.size === 0
   }
 
   get isOpen() {
@@ -56,6 +64,8 @@ export class UserFile {
   }
 
   async load(): Promise<UserFile> {
+    if (this.isTemporary) return this
+
     this.isLoading = true
     const resp = await api.getUserData(this.path)
     if (resp.status !== 200) {
@@ -70,13 +80,14 @@ export class UserFile {
   }
 
   async saveAs(newPath: string): Promise<UserFile> {
-    const tempFile = new TempUserFile(newPath, this.content ?? undefined)
+    const tempFile = UserFile.createTemporary(newPath)
+    tempFile.content = this.content
     await tempFile.save()
     return tempFile
   }
 
   async save(): Promise<UserFile> {
-    if (!this.isModified) return this
+    if (!this.isTemporary && !this.isModified) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
       throwOnError: true,
@@ -95,6 +106,8 @@ export class UserFile {
   }
 
   async delete(): Promise<void> {
+    if (this.isTemporary) return
+
     const resp = await api.deleteUserData(this.path)
     if (resp.status !== 204) {
       throw new Error(
@@ -104,6 +117,11 @@ export class UserFile {
   }
 
   async rename(newPath: string): Promise<UserFile> {
+    if (this.isTemporary) {
+      this.path = newPath
+      return this
+    }
+
     const resp = await api.moveUserData(this.path, newPath)
     if (resp.status !== 200) {
       throw new Error(
@@ -118,47 +136,6 @@ export class UserFile {
       this.lastModified = updatedFile.modified
       this.size = updatedFile.size
     }
-    return this
-  }
-}
-
-export class TempUserFile extends UserFile {
-  constructor(path: string, content: string = '') {
-    // Initialize with current timestamp and 0 size since it's temporary
-    super(path, Date.now(), 0)
-    this.content = content
-    this.originalContent = content
-  }
-
-  // Override methods that interact with backend
-  async load(): Promise<TempUserFile> {
-    // No need to load as it's a temporary file
-    return this
-  }
-
-  async save(): Promise<TempUserFile> {
-    // First save should create the actual file on the backend
-    const resp = await api.storeUserData(this.path, this.content, {
-      throwOnError: true,
-      full_info: true
-    })
-
-    const updatedFile = (await resp.json()) as string | UserDataFullInfo
-    if (typeof updatedFile === 'object') {
-      this.lastModified = updatedFile.modified
-      this.size = updatedFile.size
-    }
-    this.originalContent = this.content
-    return this
-  }
-
-  async delete(): Promise<void> {
-    // No need to delete from backend as it doesn't exist there
-  }
-
-  async rename(newPath: string): Promise<TempUserFile> {
-    // Just update the path locally since it's not on backend yet
-    this.path = newPath
     return this
   }
 }

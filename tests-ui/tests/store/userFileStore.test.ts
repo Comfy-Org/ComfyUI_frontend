@@ -1,9 +1,5 @@
 import { setActivePinia, createPinia } from 'pinia'
-import {
-  TempUserFile,
-  UserFile,
-  useUserFileStore
-} from '@/stores/userFileStore'
+import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 import { api } from '@/scripts/api'
 
 // Mock the api
@@ -196,7 +192,7 @@ describe('useUserFileStore', () => {
           'file content',
           { throwOnError: true, full_info: true }
         )
-        expect(newFile).toBeInstanceOf(TempUserFile)
+        expect(newFile).toBeInstanceOf(UserFile)
         expect(newFile.path).toBe('newfile.txt')
         expect(newFile.lastModified).toBe(456)
         expect(newFile.size).toBe(200)
