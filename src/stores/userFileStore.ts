@@ -55,7 +55,7 @@ export class UserFile {
     return this.content !== this.originalContent
   }
 
-  async load() {
+  async load(): Promise<UserFile> {
     this.isLoading = true
     const resp = await api.getUserData(this.path)
     if (resp.status !== 200) {
@@ -69,7 +69,7 @@ export class UserFile {
     return this
   }
 
-  async save() {
+  async save(): Promise<UserFile> {
     if (!this.isModified) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
@@ -88,7 +88,7 @@ export class UserFile {
     return this
   }
 
-  async delete() {
+  async delete(): Promise<void> {
     const resp = await api.deleteUserData(this.path)
     if (resp.status !== 204) {
       throw new Error(
@@ -97,7 +97,7 @@ export class UserFile {
     }
   }
 
-  async rename(newPath: string) {
+  async rename(newPath: string): Promise<UserFile> {
     const resp = await api.moveUserData(this.path, newPath)
     if (resp.status !== 200) {
       throw new Error(
@@ -112,6 +112,47 @@ export class UserFile {
       this.lastModified = updatedFile.modified
       this.size = updatedFile.size
     }
+    return this
+  }
+}
+
+export class TempUserFile extends UserFile {
+  constructor(path: string, content: string = '') {
+    // Initialize with current timestamp and 0 size since it's temporary
+    super(path, Date.now(), 0)
+    this.content = content
+    this.originalContent = content
+  }
+
+  // Override methods that interact with backend
+  async load(): Promise<TempUserFile> {
+    // No need to load as it's a temporary file
+    return this
+  }
+
+  async save(): Promise<TempUserFile> {
+    // First save should create the actual file on the backend
+    const resp = await api.storeUserData(this.path, this.content, {
+      throwOnError: true,
+      full_info: true
+    })
+
+    const updatedFile = (await resp.json()) as string | UserDataFullInfo
+    if (typeof updatedFile === 'object') {
+      this.lastModified = updatedFile.modified
+      this.size = updatedFile.size
+    }
+    this.originalContent = this.content
+    return this
+  }
+
+  async delete(): Promise<void> {
+    // No need to delete from backend as it doesn't exist there
+  }
+
+  async rename(newPath: string): Promise<TempUserFile> {
+    // Just update the path locally since it's not on backend yet
+    this.path = newPath
     return this
   }
 }
