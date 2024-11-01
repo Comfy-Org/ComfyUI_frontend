@@ -1,6 +1,5 @@
 // @ts-strict-ignore
 import type { ComfyApp } from './app'
-import { api } from './api'
 import { ChangeTracker } from './changeTracker'
 import { ComfyAsyncDialog } from './ui/components/asyncDialog'
 import { setStorageValue } from './utils'
@@ -11,8 +10,6 @@ import {
 } from '@/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toRaw } from 'vue'
-import { UserDataFullInfo } from '@/types/apiTypes'
-import { useToastStore } from '@/stores/toastStore'
 
 export class ComfyWorkflowManager extends EventTarget {
   executionStore: ReturnType<typeof useExecutionStore> | null

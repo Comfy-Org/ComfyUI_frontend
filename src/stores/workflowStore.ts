@@ -12,9 +12,7 @@ import { app } from '@/scripts/app'
 import { useErrorHandling } from '@/hooks/errorHooks'
 
 export class ComfyWorkflow extends UserFile {
-  isOpen: boolean = false
   changeTracker: ChangeTracker | null = null
-
   originalWorkflow: ComfyWorkflowJSON | null = null
 
   /**
@@ -41,11 +39,18 @@ export class ComfyWorkflow extends UserFile {
   }
 
   /**
+   * Whether the workflow is the active workflow currently being edited.
+   */
+  get isActive() {
+    return useWorkflowStore().activeWorkflow?.path === this.path
+  }
+
+  /**
    * Open the workflow in the graph editor. Set the workflow as the active workflow.
    * @returns this
    */
   async open() {
-    if (this.isOpen) return this
+    if (this.isActive) return this
 
     const loadFromRemote = !this.isLoaded
     if (loadFromRemote) {
@@ -63,7 +68,6 @@ export class ComfyWorkflow extends UserFile {
       }
     )
 
-    this.isOpen = true
     return this
   }
 
