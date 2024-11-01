@@ -26,13 +26,6 @@ export class ComfyWorkflow extends UserFile {
   }
 
   /**
-   * @deprecated Use isBookmarked instead
-   */
-  get isFavorite() {
-    return this.isBookmarked
-  }
-
-  /**
    * @deprecated Use filename instead
    */
   get name() {
@@ -182,7 +175,7 @@ export class ComfyWorkflow extends UserFile {
       return this
     }
 
-    const isFav = this.isFavorite
+    const isFav = this.isBookmarked
     if (isFav) {
       await this.favorite(false)
     }
@@ -212,7 +205,7 @@ export class ComfyWorkflow extends UserFile {
   async delete() {
     // TODO: fix delete of current workflow - should mark workflow as unsaved and when saving use old name by default
 
-    if (this.isFavorite) {
+    if (this.isBookmarked) {
       await this.favorite(false)
     }
     const resp = await api.deleteUserData('workflows/' + this.path)
