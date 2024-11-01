@@ -74,7 +74,7 @@ export class ComfyWorkflow extends UserFile {
       this.originalContent = defaultGraphJSON
       this.originalWorkflow = defaultGraph
     } else {
-      this.originalWorkflow = JSON.parse(this.originalContent)
+      this.originalWorkflow = JSON.parse(this.originalContent!)
     }
 
     const changeTracker = markRaw(new ChangeTracker(this))
@@ -295,13 +295,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   )
   // Bookmarked workflows tree is flat.
   const bookmarkedWorkflowsTree = computed(() =>
-    buildTree(bookmarkedWorkflows.value, (workflow: ComfyWorkflow) => [
-      workflow.path
-    ])
+    buildTree(bookmarkedWorkflows.value, (workflow) => [workflow.path])
   )
   // Open workflows tree is flat.
   const openWorkflowsTree = computed(() =>
-    buildTree(openWorkflows.value, (workflow: ComfyWorkflow) => [workflow.key])
+    buildTree(openWorkflows.value, (workflow) => [workflow.key])
   )
 
   return {

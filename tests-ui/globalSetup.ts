@@ -62,6 +62,15 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/workflowStore', () => {
+    return {
+      useWorkflowStore: () => ({
+        syncWorkflows: jest.fn(),
+        createTemporary: jest.fn()
+      })
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()

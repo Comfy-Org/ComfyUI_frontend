@@ -42,7 +42,11 @@ export class UserFile {
      */
     public size: number
   ) {
-    this.updatePath(path)
+    this.path = path
+    this.directory = path.split('/').slice(0, -1).join('/')
+    this.fullFilename = path.split('/').pop() ?? path
+    this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
+    this.suffix = this.fullFilename.split('.').pop() ?? null
   }
 
   private updatePath(newPath: string) {
