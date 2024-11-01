@@ -42,8 +42,7 @@ export const workflowService = {
    * Load a blank workflow
    */
   async loadBlankWorkflow() {
-    this.setWorkflow(null)
-    app.clean()
+    await app.loadGraphData()
     app.graph.clear()
   },
 
@@ -75,18 +74,6 @@ export const workflowService = {
     }
 
     await workflow.close()
-  },
-
-  /**
-   * Open a workflow from a file path
-   * @param path The path to the workflow file. Will be prefixed with 'workflows/'
-   */
-  async openWorkflowFromFilePath(path: string) {
-    const workflowStore = useWorkflowStore()
-    const workflow = workflowStore.workflowLookup['workflows/' + path]
-    if (workflow) {
-      await workflow.load()
-    }
   },
 
   // Note: this method is used primarily for loadGraphData to create temporary
