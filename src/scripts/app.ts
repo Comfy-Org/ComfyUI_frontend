@@ -2208,11 +2208,7 @@ export class ComfyApp {
       console.error(error)
     }
     await callback()
-    try {
-      workflowService.setWorkflow(workflow)
-    } catch (error) {
-      console.error(error)
-    }
+    workflowService.setWorkflow(workflow)
   }
 
   async loadGraphData(
@@ -2238,11 +2234,7 @@ export class ComfyApp {
       graphData = structuredClone(graphData)
     }
 
-    try {
-      workflowService.setWorkflow(workflow)
-    } catch (error) {
-      console.error(error)
-    }
+    workflowService.setWorkflow(workflow)
 
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
       // TODO: Show validation error in a dialog.

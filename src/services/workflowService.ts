@@ -3,6 +3,7 @@ import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 
+// TODO(huchenlei): Auto Error Handling for all methods.
 export const workflowService = {
   /**
    * Save a workflow as a new file
