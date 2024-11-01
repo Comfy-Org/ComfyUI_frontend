@@ -84,12 +84,4 @@ export class ComfyWorkflowManager extends EventTarget {
 
     setStorageValue('Comfy.PreviousWorkflow', this.activeWorkflow.path ?? '')
   }
-
-  storePrompt({ nodes, id }) {
-    this.executionStore?.storePrompt({
-      nodes,
-      id,
-      workflow: this.activeWorkflow
-    })
-  }
 }

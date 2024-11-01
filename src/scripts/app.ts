@@ -2638,9 +2638,10 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             } else {
               try {
-                this.workflowManager.storePrompt({
+                useExecutionStore().storePrompt({
                   id: res.prompt_id,
-                  nodes: Object.keys(p.output)
+                  nodes: Object.keys(p.output),
+                  workflow: useWorkflowStore().activeWorkflow as ComfyWorkflow
                 })
               } catch (error) {}
             }
