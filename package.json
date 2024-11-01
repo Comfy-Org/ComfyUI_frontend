@@ -23,6 +23,7 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
+    "release": "node scripts/release.js",
     "test": "jest",
     "deprecated-test:allVersions": "./utils/test.sh",
     "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
