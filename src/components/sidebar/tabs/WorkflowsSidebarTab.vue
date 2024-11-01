@@ -43,7 +43,7 @@
           <TextDivider text="Open" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="renderTreeNode(workflowStore.openWorkflowsTree).children"
-            v-model:selectionKeys="selectionKeys"
+            :selectionKeys="selectionKeys"
           >
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
