@@ -149,7 +149,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow',
       menubarLabel: 'Save',
       function: () => {
-        app.workflowManager.activeWorkflow?.save()
+        app.workflowManager.activeWorkflow?.saveLegacy()
       }
     },
     {
@@ -158,7 +158,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
       function: () => {
-        app.workflowManager.activeWorkflow?.save(true)
+        app.workflowManager.activeWorkflow?.saveLegacy(true)
       }
     },
     {

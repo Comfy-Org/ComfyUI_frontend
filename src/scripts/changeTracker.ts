@@ -2,7 +2,7 @@ import type { ComfyApp } from './app'
 import { api } from './api'
 import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { ComfyWorkflow } from './workflows'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { ExecutedWsMessage } from '@/types/apiTypes'
@@ -63,7 +63,6 @@ export class ChangeTracker {
       }
       this.activeState = clone(currentState)
       this.redoQueue.length = 0
-      this.workflow.unsaved = true
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )

@@ -55,12 +55,27 @@ export class UserFile {
     return this.size === 0
   }
 
+  get isPersisted() {
+    return !this.isTemporary
+  }
+
+  get key(): string {
+    return this.path
+  }
+
   get isOpen() {
     return !!this.content
   }
 
   get isModified() {
     return this.content !== this.originalContent
+  }
+
+  /**
+   * @deprecated Use `isModified` instead.
+   */
+  get unsaved() {
+    return this.isModified
   }
 
   async load(): Promise<UserFile> {

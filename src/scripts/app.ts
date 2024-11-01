@@ -25,7 +25,8 @@ import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
-import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
+import { ComfyWorkflowManager } from './workflows'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
   LGraphCanvas,
   LGraph,
