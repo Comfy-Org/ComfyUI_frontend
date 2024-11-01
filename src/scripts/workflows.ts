@@ -103,15 +103,9 @@ export class ComfyWorkflowManager extends EventTarget {
       this.workflowLookup[workflow.key] = workflow
     }
 
-    if (!workflow.isOpen) {
-      // Opening a new workflow
-      workflow.track()
-    }
-
     this._activeWorkflow = workflow
 
     setStorageValue('Comfy.PreviousWorkflow', this.activeWorkflow.path ?? '')
-    this.dispatchEvent(new CustomEvent('changeWorkflow'))
   }
 
   storePrompt({ nodes, id }) {
@@ -150,7 +144,6 @@ export class ComfyWorkflowManager extends EventTarget {
         return
       }
     }
-    workflow.changeTracker = null
     if (this.openWorkflows.length > 0) {
       this._activeWorkflow = this.openWorkflows[0]
       await this._activeWorkflow.load()

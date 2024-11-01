@@ -6,6 +6,7 @@ import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import {
+  showPromptDialog,
   showSettingsDialog,
   showTemplateWorkflowsDialog
 } from '@/services/dialogService'
@@ -20,6 +21,7 @@ import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { useWorkspaceStore } from './workspaceStore'
+import { trimJsonExt } from '@/utils/formatUtil'
 
 export interface ComfyCommand {
   id: string
@@ -123,7 +125,6 @@ export const useCommandStore = defineStore('command', () => {
         app.workflowManager.setWorkflow(null)
         app.clean()
         app.graph.clear()
-        app.workflowManager.activeWorkflow?.track()
       }
     },
     {
@@ -148,8 +149,15 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-save',
       label: 'Save Workflow',
       menubarLabel: 'Save',
-      function: () => {
-        app.workflowManager.activeWorkflow?.saveLegacy()
+      function: async () => {
+        const workflow = app.workflowManager.activeWorkflow
+        if (!workflow) return
+
+        if (workflow.isTemporary) {
+          execute('Comfy.SaveWorkflowAs')
+        }
+
+        await workflow.save()
       }
     },
     {
@@ -157,8 +165,17 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-save',
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
-      function: () => {
-        app.workflowManager.activeWorkflow?.saveLegacy(true)
+      function: async () => {
+        const workflow = app.workflowManager.activeWorkflow
+        if (!workflow) return
+
+        const path = await showPromptDialog({
+          title: 'Save workflow',
+          message: 'Enter the filename:',
+          defaultValue: workflow.filename
+        })
+        if (!path) return
+        await workflow.saveAs(path)
       }
     },
     {

@@ -63,7 +63,7 @@ export class UserFile {
     return this.path
   }
 
-  get isOpen() {
+  get isLoaded() {
     return !!this.content
   }
 

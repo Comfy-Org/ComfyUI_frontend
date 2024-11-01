@@ -8,14 +8,14 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { setStorageValue } from '@/scripts/utils'
 import { useToastStore } from './toastStore'
-import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
-import { showPromptDialog } from '@/services/dialogService'
+import { appendJsonExt } from '@/utils/formatUtil'
 import { UserDataFullInfo } from '@/types/apiTypes'
 import { LGraph } from '@comfyorg/litegraph'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { ISerialisedGraph } from '@comfyorg/litegraph/dist/types/serialisation'
 
 export class ComfyWorkflow extends UserFile {
+  isOpen: boolean = false
   manager: ComfyWorkflowManager
   changeTracker: ChangeTracker | null = null
 
@@ -37,52 +37,52 @@ export class ComfyWorkflow extends UserFile {
     return this.filename
   }
 
-  async load() {
-    if (this.isOpen) {
-      await this.manager.app.loadGraphData(
-        this.changeTracker.activeState,
-        /* clean=*/ true,
-        /* restore_view=*/ true,
-        this,
-        {
-          showMissingModelsDialog: false,
-          showMissingNodesDialog: false
-        }
-      )
-      return this
+  /**
+   * Open the workflow in the graph editor. Set the workflow as the active workflow.
+   * @returns this
+   */
+  async open() {
+    if (this.isOpen) return this
+
+    const loadFromRemote = !this.isLoaded
+    if (loadFromRemote) {
+      await this.load()
     }
 
-    await super.load()
-    const workflowData = JSON.parse(this.content) as ComfyWorkflowJSON
-    this.originalWorkflow = workflowData
     await this.manager.app.loadGraphData(
-      workflowData,
+      this.changeTracker.activeState,
       /* clean=*/ true,
       /* restore_view=*/ true,
-      this
+      this,
+      {
+        showMissingModelsDialog: loadFromRemote,
+        showMissingNodesDialog: loadFromRemote
+      }
     )
+
+    this.isOpen = true
     return this
   }
 
-  // TODO: Migrate this function to call super.save()
-  async saveLegacy(saveAs = false) {
-    const createNewFile = !this.path || saveAs
-    return !!(await this._save(
-      createNewFile ? null : this.path,
-      /* overwrite */ !createNewFile
-    ))
+  /**
+   * Load the workflow content from remote storage.
+   * @returns this
+   */
+  async load() {
+    await super.load()
+    this.changeTracker = markRaw(new ChangeTracker(this))
+    return this
+  }
+
+  async save() {
+    return await super.save()
+  }
+
+  async saveAs(path: string) {
+    return await super.saveAs('workflows/' + appendJsonExt(path))
   }
 
   private async _save(path: string | null, overwrite: boolean) {
-    if (!path) {
-      path = await showPromptDialog({
-        title: 'Save workflow',
-        message: 'Enter the filename:',
-        defaultValue: trimJsonExt(this.path) ?? this.filename ?? 'workflow'
-      })
-      if (!path) return
-    }
-
     path = appendJsonExt(path)
 
     const workflow = this.manager.app.serializeGraph()

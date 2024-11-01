@@ -2212,7 +2212,6 @@ export class ComfyApp {
     await callback()
     try {
       this.workflowManager.setWorkflow(workflow)
-      this.workflowManager.activeWorkflow?.track()
     } catch (error) {
       console.error(error)
     }
@@ -2312,12 +2311,6 @@ export class ComfyApp {
         // https://github.com/colinhacks/zod/issues/3056
         this.canvas.ds.offset = graphData.extra.ds.offset
         this.canvas.ds.scale = graphData.extra.ds.scale
-      }
-
-      try {
-        this.workflowManager.activeWorkflow?.track()
-      } catch (error) {
-        // TODO: Do we want silently fail here?
       }
     } catch (error) {
       let errorHint = []
