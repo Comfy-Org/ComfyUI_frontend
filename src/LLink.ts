@@ -1,23 +1,24 @@
 import type { CanvasColour, ISlotType } from "./interfaces"
 import type { NodeId } from "./LGraphNode"
+import type { Serialisable, SerialisableLLink } from "./types/serialisation"
 
 export type LinkId = number | string
 
 export type SerialisedLLinkArray = [LinkId, NodeId, number, NodeId, number, ISlotType]
 
 //this is the class in charge of storing link information
-export class LLink {
+export class LLink implements Serialisable<SerialisableLLink> {
     /** Link ID */
-    id?: LinkId
-    type?: ISlotType
+    id: LinkId
+    type: ISlotType
     /** Output node ID */
-    origin_id?: NodeId
+    origin_id: NodeId
     /** Output slot index */
-    origin_slot?: number
+    origin_slot: number
     /** Input node ID */
-    target_id?: NodeId
+    target_id: NodeId
     /** Input slot index */
-    target_slot?: number
+    target_slot: number
     data?: number | string | boolean | { toToolTip?(): string }
     _data?: unknown
     /** Centre point of the link, calculated during render only - can be inaccurate */
@@ -46,6 +47,20 @@ export class LLink {
         this._pos = new Float32Array(2) //center
     }
 
+    /** @deprecated Use {@link LLink.create} */
+    static createFromArray(data: SerialisedLLinkArray): LLink {
+        return new LLink(data[0], data[5], data[1], data[2], data[3], data[4])
+    }
+
+    /**
+     * LLink static factory: creates a new LLink from the provided data.
+     * @param data Serialised LLink data to create the link from
+     * @returns A new LLink
+     */
+    static create(data: SerialisableLLink): LLink {
+        return new LLink(data.id, data.type, data.origin_id, data.origin_slot, data.target_id, data.target_slot)
+    }
+
     configure(o: LLink | SerialisedLLinkArray) {
         if (Array.isArray(o)) {
             this.id = o[0]
@@ -64,6 +79,10 @@ export class LLink {
         }
     }
 
+    /**
+     * @deprecated Prefer {@link LLink.asSerialisable} (returns an object, not an array)
+     * @returns An array representing this LLink
+     */
     serialize(): SerialisedLLinkArray {
         return [
             this.id,
@@ -73,5 +92,17 @@ export class LLink {
             this.target_slot,
             this.type
         ]
+    }
+
+    asSerialisable(): SerialisableLLink {
+        const copy: SerialisableLLink = {
+            id: this.id,
+            origin_id: this.origin_id,
+            origin_slot: this.origin_slot,
+            target_id: this.target_id,
+            target_slot: this.target_slot,
+            type: this.type
+        }
+        return copy
     }
 }

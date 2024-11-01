@@ -6,6 +6,7 @@ import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
 import { type NodeId, LGraphNode } from "./LGraphNode"
 import { type LinkId, LLink, type SerialisedLLinkArray } from "./LLink"
+import { MapProxyHandler } from "./MapProxyHandler"
 
 interface IGraphInput {
     name: string
@@ -34,7 +35,20 @@ export class LGraph {
     static STATUS_RUNNING = 2
 
     _version: number
-    links: Record<LinkId, LLink>
+    /** The backing store for links.  Keys are wrapped in String() */
+    _links: Map<LinkId, LLink> = new Map()
+    /**
+     * Indexed property access is deprecated.
+     * Backwards compatibility with a Proxy has been added, but will eventually be removed.
+     * 
+     * Use {@link Map} methods:
+     * ```
+     * const linkId = 123
+     * const link = graph.links.get(linkId)
+     * // Deprecated: const link = graph.links[linkId]
+     * ```
+     */
+    links: Map<LinkId, LLink> & Record<LinkId, LLink>
     list_of_graphcanvas?: LGraphCanvas[]
     status: number
     last_node_id: number
@@ -101,11 +115,18 @@ export class LGraph {
     constructor(o?: ISerialisedGraph) {
         if (LiteGraph.debug) console.log("Graph created")
 
+        /** @see MapProxyHandler */
+        const links = this._links
+        MapProxyHandler.bindAllMethods(links)
+        const handler = new MapProxyHandler<LLink>()
+        this.links = new Proxy(links, handler) as Map<LinkId, LLink> & Record<LinkId, LLink>
+
         this.list_of_graphcanvas = null
         this.clear()
 
         if (o) this.configure(o)
     }
+
     // TODO: Remove
     //used to know which types of connections support this graph (some graphs do not allow certain types)
     getSupportedTypes(): string[] {
@@ -139,9 +160,6 @@ export class LGraph {
 
         //other scene stuff
         this._groups = []
-
-        //links
-        this.links = {} //container with all the links
 
         //iterations
         this.iteration = 0
@@ -416,7 +434,7 @@ export class LGraph {
                 //for every connection
                 for (let j = 0; j < output.links.length; j++) {
                     const link_id = output.links[j]
-                    const link = this.links[link_id]
+                    const link = this._links.get(link_id)
                     if (!link) continue
 
                     //already visited link (ignore it)
@@ -1126,8 +1144,7 @@ export class LGraph {
      * clears the triggered slot animation in all links (stop visual animation)
      */
     clearTriggeredSlots(): void {
-        for (const i in this.links) {
-            const link_info = this.links[i]
+        for (const link_info of this._links.values()) {
             if (!link_info) continue
 
             if (link_info._last_time)
@@ -1150,7 +1167,7 @@ export class LGraph {
      * @param {Number} link_id
      */
     removeLink(link_id: LinkId): void {
-        const link = this.links[link_id]
+        const link = this._links.get(link_id)
         if (!link) return
 
         const node = this.getNodeById(link.target_id)
@@ -1170,22 +1187,7 @@ export class LGraph {
 
         //pack link info into a non-verbose format
         const links: SerialisedLLinkArray[] = []
-        for (const linkId in this.links) {
-            let link = this.links[linkId]
-            if (!link.serialize) {
-                //weird bug I havent solved yet
-                console.warn(
-                    "weird LLink bug, link info is not a LLink but a regular object"
-                )
-                // @ts-expect-error Refactor this shallow copy or add static factory
-                const link2 = new LLink()
-                for (const j in link) {
-                    link2[j] = link[j]
-                }
-                this.links[linkId] = link2
-                link = link2
-            }
-
+        for (const link of this._links.values()) {
             links.push(link.serialize())
         }
 
@@ -1224,25 +1226,17 @@ export class LGraph {
         // LEGACY: This was changed from constructor === Array
         //decode links info (they are very verbose)
         if (Array.isArray(data.links)) {
-            const links: LLink[] = []
+            this._links.clear()
             for (const link_data of data.links) {
-                //weird bug
-                if (!link_data) {
-                    console.warn("serialized graph link data contains errors, skipping.")
-                    continue
-                }
-                // @ts-expect-error Refactor this shallow copy or add static factory
-                const link = new LLink()
-                link.configure(link_data)
-                links[link.id] = link
+                const link = LLink.createFromArray(link_data)
+                this._links.set(link.id, link)
             }
-            data.links = links
         }
 
         //copy all stored fields
         for (const i in data) {
             //links must be accepted
-            if (i == "nodes" || i == "groups")
+            if (i == "nodes" || i == "groups" || i == "links")
                 continue
             this[i] = data[i]
         }

@@ -354,7 +354,7 @@ export class LGraphNode {
         if (this.inputs) {
             for (let i = 0; i < this.inputs.length; ++i) {
                 const input = this.inputs[i]
-                const link = this.graph ? this.graph.links[input.link] : null
+                const link = this.graph ? this.graph._links.get(input.link) : null
                 this.onConnectionsChange?.(NodeSlotType.INPUT, i, true, link, input)
                 this.onInputAdded?.(input)
             }
@@ -367,7 +367,7 @@ export class LGraphNode {
                     continue
                 }
                 for (let j = 0; j < output.links.length; ++j) {
-                    const link = this.graph ? this.graph.links[output.links[j]] : null
+                    const link = this.graph ? this.graph._links.get(output.links[j]) : null
                     this.onConnectionsChange?.(NodeSlotType.OUTPUT, i, true, link, output)
                 }
                 this.onOutputAdded?.(output)
@@ -551,7 +551,7 @@ export class LGraphNode {
         if (this.outputs[slot].links) {
             for (let i = 0; i < this.outputs[slot].links.length; i++) {
                 const link_id = this.outputs[slot].links[i]
-                const link = this.graph.links[link_id]
+                const link = this.graph._links.get(link_id)
                 if (link)
                     link.data = data
             }
@@ -575,7 +575,7 @@ export class LGraphNode {
         if (this.outputs[slot].links) {
             for (let i = 0; i < this.outputs[slot].links.length; i++) {
                 const link_id = this.outputs[slot].links[i]
-                this.graph.links[link_id].type = type
+                this.graph._links.get(link_id).type = type
             }
         }
     }
@@ -592,7 +592,7 @@ export class LGraphNode {
         if (slot >= this.inputs.length || this.inputs[slot].link == null) return
 
         const link_id = this.inputs[slot].link
-        const link: LLink = this.graph.links[link_id]
+        const link = this.graph._links.get(link_id)
         //bug: weird case but it happens sometimes
         if (!link) return null
 
@@ -621,7 +621,7 @@ export class LGraphNode {
 
         if (slot >= this.inputs.length || this.inputs[slot].link == null) return null
         const link_id = this.inputs[slot].link
-        const link = this.graph.links[link_id]
+        const link = this.graph._links.get(link_id)
         //bug: weird case but it happens sometimes
         if (!link) return null
 
@@ -677,7 +677,7 @@ export class LGraphNode {
         if (!this.inputs) return null
         if (slot < this.inputs.length) {
             const slot_info = this.inputs[slot]
-            return this.graph.links[slot_info.link]
+            return this.graph._links.get(slot_info.link)
         }
         return null
     }
@@ -694,7 +694,7 @@ export class LGraphNode {
         const input = this.inputs[slot]
         if (!input || input.link === null) return null
 
-        const link_info = this.graph.links[input.link]
+        const link_info = this.graph._links.get(input.link)
         if (!link_info) return null
 
         return this.graph.getNodeById(link_info.origin_id)
@@ -713,7 +713,7 @@ export class LGraphNode {
         for (let i = 0, l = this.inputs.length; i < l; ++i) {
             const input_info = this.inputs[i]
             if (name == input_info.name && input_info.link != null) {
-                const link = this.graph.links[input_info.link]
+                const link = this.graph._links.get(input_info.link)
                 if (link) return link.data
             }
         }
@@ -785,7 +785,7 @@ export class LGraphNode {
         const r: LGraphNode[] = []
         for (let i = 0; i < output.links.length; i++) {
             const link_id = output.links[i]
-            const link = this.graph.links[link_id]
+            const link = this.graph._links.get(link_id)
             if (link) {
                 const target_node = this.graph.getNodeById(link.target_id)
                 if (target_node) {
@@ -962,7 +962,7 @@ export class LGraphNode {
             //to skip links
             if (link_id != null && link_id != id) continue
 
-            const link_info = this.graph.links[links[k]]
+            const link_info = this.graph._links.get(id)
             //not connected
             if (!link_info) continue
 
@@ -1008,7 +1008,7 @@ export class LGraphNode {
             //to skip links
             if (link_id != null && link_id != id) continue
 
-            const link_info = this.graph.links[links[k]]
+            const link_info = this.graph._links.get(id)
             //not connected
             if (!link_info) continue
 
@@ -1112,7 +1112,7 @@ export class LGraphNode {
                 continue
             const links = this.outputs[i].links
             for (let j = 0; j < links.length; ++j) {
-                const link = this.graph.links[links[j]]
+                const link = this.graph._links.get(links[j])
                 if (!link) continue
 
                 link.origin_slot -= 1
@@ -1186,7 +1186,7 @@ export class LGraphNode {
         for (let i = slot; i < this.inputs.length; ++i) {
             if (!this.inputs[i]) continue
 
-            const link = this.graph.links[this.inputs[i].link]
+            const link = this.graph._links.get(this.inputs[i].link)
             if (!link) continue
 
             link.target_slot -= 1
@@ -1797,7 +1797,8 @@ export class LGraphNode {
         // Allow legacy API support for searching target_slot by string, without mutating the input variables
         let targetIndex: number
 
-        if (!this.graph) {
+        const graph = this.graph
+        if (!graph) {
             //could be connected before adding it to a graph
             //due to link ids being associated with graphs
             console.log("Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them.")
@@ -1817,7 +1818,7 @@ export class LGraphNode {
         }
 
         if (target_node && typeof target_node === "number") {
-            target_node = this.graph.getNodeById(target_node)
+            target_node = graph.getNodeById(target_node)
         }
         if (!target_node) throw "target node is null"
 
@@ -1869,7 +1870,7 @@ export class LGraphNode {
         if (!LiteGraph.isValidConnection(output.type, input.type)) {
             this.setDirtyCanvas(false, true)
             // @ts-expect-error Unused param
-            if (changed) this.graph.connectionChange(this, link_info)
+            if (changed) graph.connectionChange(this, link_info)
             return null
         }
 
@@ -1881,13 +1882,13 @@ export class LGraphNode {
 
         //if there is something already plugged there, disconnect
         if (target_node.inputs[targetIndex]?.link != null) {
-            this.graph.beforeChange()
+            graph.beforeChange()
             target_node.disconnectInput(targetIndex)
             changed = true
         }
         if (output.links?.length) {
             if (output.type === LiteGraph.EVENT && !LiteGraph.allow_multi_output_for_events) {
-                this.graph.beforeChange()
+                graph.beforeChange()
                 // @ts-expect-error Unused param
                 this.disconnectOutput(slot, false, { doProcessChange: false })
                 changed = true
@@ -1896,7 +1897,7 @@ export class LGraphNode {
 
         const nextId = LiteGraph.use_uuids
             ? LiteGraph.uuidv4()
-            : ++this.graph.last_link_id
+            : ++graph.last_link_id
 
         //create link class
         link_info = new LLink(
@@ -1909,14 +1910,14 @@ export class LGraphNode {
         )
 
         //add to graph links list
-        this.graph.links[link_info.id] = link_info
+        graph._links.set(link_info.id, link_info)
 
         //connect in output
         output.links ??= []
         output.links.push(link_info.id)
         //connect in input
         target_node.inputs[targetIndex].link = link_info.id
-        if (this.graph) this.graph._version++
+        graph._version++
 
         //link_info has been created now, so its updated
         this.onConnectionsChange?.(
@@ -1934,14 +1935,14 @@ export class LGraphNode {
             link_info,
             input
         )
-        this.graph?.onNodeConnectionChange?.(
+        graph.onNodeConnectionChange?.(
             NodeSlotType.INPUT,
             target_node,
             targetIndex,
             this,
             slot
         )
-        this.graph?.onNodeConnectionChange?.(
+        graph.onNodeConnectionChange?.(
             NodeSlotType.OUTPUT,
             this,
             slot,
@@ -1950,8 +1951,8 @@ export class LGraphNode {
         )
 
         this.setDirtyCanvas(false, true)
-        this.graph.afterChange()
-        this.graph.connectionChange(this)
+        graph.afterChange()
+        graph.connectionChange(this)
 
         return link_info
     }
@@ -1989,7 +1990,7 @@ export class LGraphNode {
 
             for (let i = 0, l = output.links.length; i < l; i++) {
                 const link_id = output.links[i]
-                const link_info = graph.links[link_id]
+                const link_info = graph._links.get(link_id)
 
                 //is the link we are searching for...
                 if (link_info.target_id == target_node.id) {
@@ -1997,8 +1998,9 @@ export class LGraphNode {
                     const input = target_node.inputs[link_info.target_slot]
                     input.link = null //remove there
 
-                    delete graph.links[link_id] //remove the link from the links pool //remove the link from the links pool
-                    if (graph) graph._version++
+                    //remove the link from the links pool
+                    graph._links.delete(link_id)
+                    graph._version++
 
                     //link_info hasn't been modified so its ok
                     target_node.onConnectionsChange?.(
@@ -2016,10 +2018,8 @@ export class LGraphNode {
                         output
                     )
 
-                    // FIXME: Called twice.
-                    graph?.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-                    graph?.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-                    graph?.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
+                    graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
+                    graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
                     break
                 }
             }
@@ -2027,12 +2027,12 @@ export class LGraphNode {
         else {
             for (let i = 0, l = output.links.length; i < l; i++) {
                 const link_id = output.links[i]
-                const link_info = graph.links[link_id]
+                const link_info = graph._links.get(link_id)
                 //bug: it happens sometimes
                 if (!link_info) continue
 
                 target_node = graph.getNodeById(link_info.target_id)
-                if (graph) graph._version++
+                graph._version++
 
                 if (target_node) {
                     const input = target_node.inputs[link_info.target_slot]
@@ -2047,11 +2047,9 @@ export class LGraphNode {
                         link_info,
                         input
                     )
-                    // FIXME: Called twice.
-                    graph?.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
                 }
                 //remove the link from the links pool
-                delete graph.links[link_id]
+                graph._links.delete(link_id)
 
                 this.onConnectionsChange?.(
                     NodeSlotType.OUTPUT,
@@ -2060,8 +2058,8 @@ export class LGraphNode {
                     link_info,
                     output
                 )
-                graph?.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
-                graph?.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
+                graph.onNodeConnectionChange?.(NodeSlotType.OUTPUT, this, slot)
+                graph.onNodeConnectionChange?.(NodeSlotType.INPUT, target_node, link_info.target_slot)
             }
             output.links = null
         }
@@ -2092,26 +2090,20 @@ export class LGraphNode {
         }
 
         const input = this.inputs[slot]
-        if (!input) {
-            return false
-        }
+        if (!input) return false
 
         const link_id = this.inputs[slot].link
         if (link_id != null) {
             this.inputs[slot].link = null
 
             //remove other side
-            const link_info = this.graph.links[link_id]
+            const link_info = this.graph._links.get(link_id)
             if (link_info) {
                 const target_node = this.graph.getNodeById(link_info.origin_id)
-                if (!target_node) {
-                    return false
-                }
+                if (!target_node) return false
 
                 const output = target_node.outputs[link_info.origin_slot]
-                if (!(output?.links?.length > 0)) {
-                    return false
-                }
+                if (!(output?.links?.length > 0)) return false
 
                 //search in the inputs list for this link
                 let i = 0
@@ -2122,7 +2114,7 @@ export class LGraphNode {
                     }
                 }
 
-                delete this.graph.links[link_id] //remove from the pool
+                this.graph._links.delete(link_id)
                 if (this.graph) this.graph._version++
 
                 this.onConnectionsChange?.(

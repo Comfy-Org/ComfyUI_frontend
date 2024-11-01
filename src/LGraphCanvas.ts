@@ -1812,7 +1812,7 @@ export class LGraphCanvas {
 
                                             this.connecting_links = []
                                             for (const linkId of output.links) {
-                                                const link = this.graph.links[linkId]
+                                                const link = this.graph._links.get(linkId)
                                                 const slot = link.target_slot
                                                 const linked_node = this.graph._nodes_by_id[link.target_id]
                                                 const input = linked_node.inputs[slot]
@@ -1887,7 +1887,7 @@ export class LGraphCanvas {
 
                                     if (input.link !== null) {
                                         //before disconnecting
-                                        const link_info = this.graph.links[input.link]
+                                        const link_info = this.graph._links.get(input.link)
                                         const slot = link_info.origin_slot
                                         const linked_node = this.graph._nodes_by_id[link_info.origin_id]
                                         if (LiteGraph.click_do_break_link_to || (LiteGraph.ctrl_alt_click_do_break_link && e.ctrlKey && e.altKey && !e.shiftKey)) {
@@ -3020,7 +3020,7 @@ export class LGraphCanvas {
                     const input = node.inputs[j]
                     if (!input || input.link == null) continue
 
-                    const link_info = this.graph.links[input.link]
+                    const link_info = this.graph._links.get(input.link)
                     if (!link_info) continue
 
                     const target_node = this.graph.getNodeById(link_info.origin_id)
@@ -3354,8 +3354,8 @@ export class LGraphCanvas {
 
             //autoconnect when possible (very basic, only takes into account first input-output)
             if (node.inputs?.length && node.outputs && node.outputs.length && LiteGraph.isValidConnection(node.inputs[0].type, node.outputs[0].type) && node.inputs[0].link && node.outputs[0].links && node.outputs[0].links.length) {
-                const input_link = node.graph.links[node.inputs[0].link]
-                const output_link = node.graph.links[node.outputs[0].links[0]]
+                const input_link = node.graph._links.get(node.inputs[0].link)
+                const output_link = node.graph._links.get(node.outputs[0].links[0])
                 const input_node = node.getInputNode(0)
                 const output_node = node.getOutputNodes(0)[0]
                 if (input_node && output_node)
@@ -4959,7 +4959,7 @@ export class LGraphCanvas {
                 if (!input || input.link == null) continue
 
                 const link_id = input.link
-                const link = this.graph.links[link_id]
+                const link = this.graph._links.get(link_id)
                 if (!link) continue
 
                 //find link info
