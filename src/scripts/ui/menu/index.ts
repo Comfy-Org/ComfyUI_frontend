@@ -56,8 +56,9 @@ export class ComfyAppMenu {
     filename: string,
     promptProperty: 'workflow' | 'output'
   ): Promise<void> {
-    if (useWorkflowStore().activeWorkflow?.path) {
-      filename = useWorkflowStore().activeWorkflow.filename
+    const workflow = useWorkflowStore().activeWorkflow
+    if (workflow) {
+      filename = workflow.filename
     }
     const p = await this.app.graphToPrompt()
     const json = JSON.stringify(p[promptProperty], null, 2)

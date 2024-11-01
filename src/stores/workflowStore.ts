@@ -104,14 +104,17 @@ export class ComfyWorkflow extends UserFile {
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
     const graph = new LGraph(data)
-    const canvas = new LGraphCanvas(null, graph, {
+    const canvasElement = document.createElement('canvas')
+    const canvas = new LGraphCanvas(canvasElement, graph, {
       skip_events: true,
       skip_render: true
     })
     canvas.selectNodes()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard()
-    localStorage.setItem('litegrapheditor_clipboard', old)
+    if (old !== null) {
+      localStorage.setItem('litegrapheditor_clipboard', old)
+    }
   }
 
   async delete() {
@@ -149,7 +152,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
 
     await app.loadGraphData(
-      workflow.changeTracker!.activeState,
+      workflow.changeTracker!.activeState as ComfyWorkflowJSON,
       /* clean=*/ true,
       /* restore_view=*/ true,
       workflow,

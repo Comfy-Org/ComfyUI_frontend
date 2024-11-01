@@ -60,11 +60,11 @@ export const workflowService = {
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
-      const res = await ComfyAsyncDialog.prompt({
+      const res = (await ComfyAsyncDialog.prompt({
         title: 'Save Changes?',
         message: `Do you want to save changes to "${workflow.path}" before closing?`,
         actions: ['Yes', 'No', 'Cancel']
-      })
+      })) as 'Yes' | 'No' | 'Cancel'
 
       if (res === 'Yes') {
         await this.saveWorkflow(workflow)

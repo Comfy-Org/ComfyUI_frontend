@@ -21,7 +21,7 @@ export class ChangeTracker {
   nodeOutputs?: Record<string, any>
 
   get app(): ComfyApp {
-    return this.#app
+    return this.#app!
   }
 
   constructor(public workflow: ComfyWorkflow) {}
