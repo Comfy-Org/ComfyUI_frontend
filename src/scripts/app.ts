@@ -58,7 +58,6 @@ import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { PickByType } from '@/types/utils'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2048,26 +2047,24 @@ export class ComfyApp {
             widgetCreated = false
           }
 
-          const setWidgetFlag = <
-            T extends keyof PickByType<IBaseWidget, boolean>
-          >(
-            key: T,
-            value: boolean
-          ) => {
-            if (value && widgetCreated && config?.widget) {
-              config.widget.options ??= {}
-              config.widget[key] = true
+          if (widgetCreated && config?.widget) {
+            config.widget.options ??= {}
+            if (!inputIsRequired) {
+              config.widget.options.inputIsOptional = true
+            }
+            if (inputData[1]?.forceInput) {
+              config.widget.options.forceInput = true
+            }
+            if (inputData[1]?.defaultInput) {
+              config.widget.options.defaultInput = true
+            }
+            if (inputData[1]?.advanced) {
+              config.widget.advanced = true
+            }
+            if (inputData[1]?.hidden) {
+              config.widget.hidden = true
             }
           }
-
-          // @ts-expect-error
-          setWidgetFlag('inputIsOptional', !inputIsRequired)
-          // @ts-expect-error
-          setWidgetFlag('forceInput', inputData[1]?.forceInput)
-          // @ts-expect-error
-          setWidgetFlag('defaultInput', inputData[1]?.defaultInput)
-          setWidgetFlag('advanced', inputData[1]?.advanced)
-          setWidgetFlag('hidden', inputData[1]?.hidden)
         }
 
         for (const o in nodeData['output']) {
