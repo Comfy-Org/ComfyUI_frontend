@@ -94,3 +94,36 @@ export function findCommonPrefix(path1: string, path2: string): string {
   }
   return commonParts.join('/')
 }
+
+/**
+ * Returns various filename components.
+ * Example:
+ * - fullFilename: 'file.txt'
+ * - filename: 'file'
+ * - suffix: 'txt'
+ */
+export function getFilenameDetails(fullFilename: string) {
+  if (fullFilename.includes('.')) {
+    return {
+      filename: fullFilename.split('.').slice(0, -1).join('.'),
+      suffix: fullFilename.split('.').pop() ?? null
+    }
+  } else {
+    return { filename: fullFilename, suffix: null }
+  }
+}
+
+/**
+ * Returns various path components.
+ * Example:
+ * - path: 'dir/file.txt'
+ * - directory: 'dir'
+ * - fullFilename: 'file.txt'
+ * - filename: 'file'
+ * - suffix: 'txt'
+ */
+export function getPathDetails(path: string) {
+  const directory = path.split('/').slice(0, -1).join('/')
+  const fullFilename = path.split('/').pop() ?? path
+  return { directory, fullFilename, ...getFilenameDetails(fullFilename) }
+}

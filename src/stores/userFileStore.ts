@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { UserDataFullInfo } from '@/types/apiTypes'
 import { syncEntities } from '@/utils/syncUtil'
+import { getPathDetails } from '@/utils/formatUtil'
 
 /**
  * Represents a file in the user's data directory.
@@ -42,19 +43,21 @@ export class UserFile {
      */
     public size: number
   ) {
+    const details = getPathDetails(path)
     this.path = path
-    this.directory = path.split('/').slice(0, -1).join('/')
-    this.fullFilename = path.split('/').pop() ?? path
-    this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
-    this.suffix = this.fullFilename.split('.').pop() ?? null
+    this.directory = details.directory
+    this.fullFilename = details.fullFilename
+    this.filename = details.filename
+    this.suffix = details.suffix
   }
 
   updatePath(newPath: string) {
+    const details = getPathDetails(newPath)
     this.path = newPath
-    this.directory = newPath.split('/').slice(0, -1).join('/')
-    this.fullFilename = newPath.split('/').pop() ?? newPath
-    this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
-    this.suffix = this.fullFilename.split('.').pop() ?? null
+    this.directory = details.directory
+    this.fullFilename = details.fullFilename
+    this.filename = details.filename
+    this.suffix = details.suffix
   }
 
   static createTemporary(path: string): UserFile {
