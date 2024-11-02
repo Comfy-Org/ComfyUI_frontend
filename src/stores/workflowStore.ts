@@ -21,13 +21,6 @@ export class ComfyWorkflow extends UserFile {
     super(options.path, options.modified, options.size)
   }
 
-  /**
-   * @deprecated Use filename instead
-   */
-  get name() {
-    return this.filename
-  }
-
   get key() {
     return this.path.substring('workflows/'.length)
   }
