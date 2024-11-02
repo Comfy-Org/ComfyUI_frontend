@@ -39,7 +39,6 @@ import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
-import { useErrorHandling } from '@/hooks/errorHooks'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
