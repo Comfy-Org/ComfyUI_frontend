@@ -121,17 +121,17 @@ export class LGraphNode {
     static filter?: string
     static skip_list?: boolean
 
-    title?: string
-    graph: LGraph
+    title: string
+    graph: LGraph | null = null
     id?: NodeId
-    type?: string
-    inputs: INodeInputSlot[]
-    outputs: INodeOutputSlot[]
+    type: string | null = null
+    inputs: INodeInputSlot[] = []
+    outputs: INodeOutputSlot[] = []
     // Not used
-    connections: unknown[]
-    properties: INodeProperties
-    properties_info: INodePropertyInfo[]
-    flags: INodeFlags
+    connections: unknown[] = []
+    properties: INodeProperties = {}
+    properties_info: INodePropertyInfo[] = []
+    flags: INodeFlags = {}
     widgets?: IWidget[]
 
     size: Size
@@ -153,8 +153,8 @@ export class LGraphNode {
     widgets_start_y?: number
     lostFocusAt?: number
     gotFocusAt?: number
-    badges: (LGraphBadge | (() => LGraphBadge))[]
-    badgePosition: BadgePosition
+    badges: (LGraphBadge | (() => LGraphBadge))[] = []
+    badgePosition: BadgePosition = BadgePosition.TopLeft
     onOutputRemoved?(this: LGraphNode, slot: number): void
     onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
     _collapsed_width: number
@@ -182,7 +182,7 @@ export class LGraphNode {
     block_delete?: boolean
     showAdvanced?: boolean
 
-    _pos: Point
+    _pos: Point = new Float32Array([10, 10])
     public get pos() {
         return this._pos
     }
@@ -288,31 +288,9 @@ export class LGraphNode {
     isValidWidgetLink?(slot_index: number, node: LGraphNode, overWidget: IWidget): boolean | undefined
 
     constructor(title: string) {
-        this._ctor(title)
-    }
-
-    _ctor(title: string): void {
+        this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
         this.title = title || "Unnamed"
         this.size = [LiteGraph.NODE_WIDTH, 60]
-        this.graph = null
-        // Initialize _pos with a Float32Array of length 2, default value [10, 10]
-        this._pos = new Float32Array([10, 10])
-
-        this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
-        this.type = null
-
-        //inputs available: array of inputs
-        this.inputs = []
-        this.outputs = []
-        this.connections = []
-        this.badges = []
-        this.badgePosition = BadgePosition.TopLeft
-
-        //local data
-        this.properties = {} //for the values
-        this.properties_info = [] //for the info
-
-        this.flags = {}
     }
 
     /**

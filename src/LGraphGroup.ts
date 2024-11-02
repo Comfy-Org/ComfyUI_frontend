@@ -15,31 +15,20 @@ export class LGraphGroup {
     color: string
     title: string
     font?: string
-    font_size: number
-    _bounding: Float32Array
-    _pos: Point
-    _size: Size
-    _nodes: LGraphNode[]
-    graph?: LGraph
-    flags: IGraphGroupFlags
+    font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
+    _bounding: Float32Array = new Float32Array([10, 10, 140, 80])
+    _pos: Point = this._bounding.subarray(0, 2)
+    _size: Size = this._bounding.subarray(2, 4)
+    _nodes: LGraphNode[] = []
+    graph: LGraph | null = null
+    flags: IGraphGroupFlags = {}
     selected?: boolean
 
     constructor(title?: string) {
-        this._ctor(title)
-    }
-
-    _ctor(title?: string): void {
         this.title = title || "Group"
-        this.font_size = LiteGraph.DEFAULT_GROUP_FONT || 24
         this.color = LGraphCanvas.node_colors.pale_blue
             ? LGraphCanvas.node_colors.pale_blue.groupcolor
             : "#AAA"
-        this._bounding = new Float32Array([10, 10, 140, 80])
-        this._pos = this._bounding.subarray(0, 2)
-        this._size = this._bounding.subarray(2, 4)
-        this._nodes = []
-        this.graph = null
-        this.flags = {}
     }
 
     /** Position of the group, as x,y co-ordinates in graph space */
