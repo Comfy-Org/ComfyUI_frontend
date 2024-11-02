@@ -53,6 +53,8 @@ import {
 } from '@/stores/modelToNodeStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { setStorageValue } from '@/scripts/utils'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -139,6 +141,14 @@ watchEffect(() => {
   }
 
   canvasStore.canvas.canvas.style.cursor = 'default'
+})
+
+const workflowStore = useWorkflowStore()
+watchEffect(() => {
+  if (workflowStore.activeWorkflow) {
+    const workflow = workflowStore.activeWorkflow
+    setStorageValue('Comfy.PreviousWorkflow', workflow.path ?? workflow.name)
+  }
 })
 
 usePragmaticDroppable(() => canvasRef.value, {
