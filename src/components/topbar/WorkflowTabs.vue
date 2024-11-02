@@ -52,7 +52,7 @@ interface WorkflowOption {
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   label: workflow.filename,
-  tooltip: workflow.path,
+  tooltip: workflow.key,
   value: workflow.path,
   unsaved: workflow.isModified
 })
