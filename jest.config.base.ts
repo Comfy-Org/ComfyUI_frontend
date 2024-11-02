@@ -14,15 +14,14 @@ const jestConfig: JestConfigWithTsJest = {
       }
     ]
   },
-  setupFiles: ['./tests-ui/globalSetup.ts'],
-  setupFilesAfterEnv: ['./tests-ui/afterSetup.ts'],
-  clearMocks: true,
-  resetModules: true,
-  testTimeout: 10000,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
-  }
+  },
+  clearMocks: true,
+  resetModules: true,
+  setupFiles: ['./tests-ui/tests/globalSetup.ts'],
+  setupFilesAfterEnv: ['./tests-ui/tests/afterSetup.ts']
 }
 
 export default jestConfig

@@ -1,13 +1,12 @@
 // @ts-strict-ignore
-import { createPinia, setActivePinia } from 'pinia'
 import {
   start,
   createDefaultWorkflow,
   getNodeDef,
   checkBeforeAndAfterReload
-} from '../utils'
-import { EzNode } from '../utils/ezgraph'
-import lg from '../utils/litegraph'
+} from '../../utils'
+import { EzNode } from '../../utils/ezgraph'
+import lg from '../../utils/litegraph'
 
 describe('group node', () => {
   beforeEach(() => {
@@ -567,7 +566,7 @@ describe('group node', () => {
       nodes.save
     ])
 
-    const { api } = await import('../../src/scripts/api')
+    const { api } = await import('../../../src/scripts/api')
 
     api.dispatchEvent(new CustomEvent('execution_start', {}))
     api.dispatchEvent(

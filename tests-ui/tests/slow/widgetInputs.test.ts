@@ -5,8 +5,8 @@ import {
   checkBeforeAndAfterReload,
   assertNotNullOrUndefined,
   createDefaultWorkflow
-} from '../utils'
-import lg from '../utils/litegraph'
+} from '../../utils'
+import lg from '../../utils/litegraph'
 
 /**
  * @typedef { import("../utils/ezgraph") } Ez
