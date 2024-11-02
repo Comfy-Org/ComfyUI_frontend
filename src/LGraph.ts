@@ -49,7 +49,7 @@ export class LGraph {
      * ```
      */
     links: Map<LinkId, LLink> & Record<LinkId, LLink>
-    list_of_graphcanvas?: LGraphCanvas[]
+    list_of_graphcanvas: LGraphCanvas[] | null
     status: number
     last_node_id: number
     last_link_id: number
@@ -58,7 +58,7 @@ export class LGraph {
     _nodes: LGraphNode[]
     _nodes_by_id: Record<NodeId, LGraphNode>
     _nodes_in_order: LGraphNode[]
-    _nodes_executable: LGraphNode[]
+    _nodes_executable: LGraphNode[] | null
     _groups: LGraphGroup[]
     iteration: number
     globaltime: number
@@ -69,7 +69,7 @@ export class LGraph {
     last_update_time: number
     starttime: number
     catch_errors: boolean
-    execution_timer_id: number
+    execution_timer_id: number | null
     errors_in_execution: boolean
     execution_time: number
     _last_trigger_time?: number
@@ -101,8 +101,8 @@ export class LGraph {
     onOutputRenamed?(old_name: string, name: string): void
     onOutputTypeChanged?(name: string, type: string): void
     onOutputRemoved?(name: string): void
-    onBeforeChange?(graph: LGraph, info: LGraphNode): void
-    onAfterChange?(graph: LGraph, info: LGraphNode): void
+    onBeforeChange?(graph: LGraph, info?: LGraphNode): void
+    onAfterChange?(graph: LGraph, info?: LGraphNode): void
     onConnectionChange?(node: LGraphNode): void
     on_change?(graph: LGraph): void
     onSerialize?(data: ISerialisedGraph): void
@@ -378,11 +378,11 @@ export class LGraph {
     }
     //This is more internal, it computes the executable nodes in order and returns it
     computeExecutionOrder(only_onExecute: boolean, set_level?: boolean): LGraphNode[] {
-        let L: LGraphNode[] = []
+        const L: LGraphNode[] = []
         const S: LGraphNode[] = []
         const M: Dictionary<LGraphNode> = {}
-        const visited_links: Record<number, boolean> = {} //to avoid repeating links
-        const remaining_links: Record<number, number> = {} //to a
+        const visited_links: Record<NodeId, boolean> = {} //to avoid repeating links
+        const remaining_links: Record<NodeId, number> = {} //to a
 
         //search for the nodes without inputs (starting nodes)
         for (let i = 0, l = this._nodes.length; i < l; ++i) {
@@ -414,10 +414,10 @@ export class LGraph {
         }
 
         while (true) {
-            if (S.length == 0) break
-
             //get an starting node
             const node = S.shift()
+            if (node === undefined) break
+
             L.push(node) //add to ordered list
             delete M[node.id] //remove from the pending nodes
 
@@ -471,13 +471,22 @@ export class LGraph {
 
         const l = L.length
 
-        //save order number in the node
-        for (let i = 0; i < l; ++i) {
-            L[i].order = i
+        /** Ensure type is set */
+        type OrderedLGraphNode = LGraphNode & { order: number }
+
+        /** Sets the order property of each provided node to its index in {@link nodes}. */
+        function setOrder(nodes: LGraphNode[]): asserts nodes is OrderedLGraphNode[] {
+            const l = nodes.length
+            for (let i = 0; i < l; ++i) {
+                nodes[i].order = i
+            }
         }
 
+        //save order number in the node
+        setOrder(L)
+
         //sort now by priority
-        L = L.sort(function (A, B) {
+        L.sort(function (A, B) {
             // @ts-expect-error ctor props
             const Ap = A.constructor.priority || A.priority || 0
             // @ts-expect-error ctor props
@@ -490,9 +499,7 @@ export class LGraph {
         })
 
         //save order number in the node, again...
-        for (let i = 0; i < l; ++i) {
-            L[i].order = i
-        }
+        setOrder(L)
 
         return L
     }
@@ -508,7 +515,7 @@ export class LGraph {
 
         while (pending.length) {
             const current = pending.shift()
-            if (!current.inputs) continue
+            if (!current?.inputs) continue
 
             if (!visited[current.id] && current != node) {
                 visited[current.id] = true
@@ -535,7 +542,7 @@ export class LGraph {
         margin = margin || 100
 
         const nodes = this.computeExecutionOrder(false, true)
-        const columns = []
+        const columns: LGraphNode[][] = []
         for (let i = 0; i < nodes.length; ++i) {
             const node = nodes[i]
             const col = node._level || 1
@@ -634,7 +641,7 @@ export class LGraph {
      * Adds a new node instance to this graph
      * @param {LGraphNode} node the instance of the node
      */
-    add(node: LGraphNode | LGraphGroup, skip_compute_order?: boolean): LGraphNode | null {
+    add(node: LGraphNode | LGraphGroup, skip_compute_order?: boolean): LGraphNode | null | undefined {
         if (!node) return
 
         // LEGACY: This was changed from constructor === LGraphGroup
@@ -787,7 +794,7 @@ export class LGraph {
      * @return {Array} a list with all the nodes of this type
      */
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-    findNodesByClass(classObject: Function, result: LGraphNode[]): LGraphNode[] {
+    findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
         result = result || []
         result.length = 0
         for (let i = 0, l = this._nodes.length; i < l; ++i) {
@@ -806,7 +813,7 @@ export class LGraph {
         result = result || []
         result.length = 0
         for (let i = 0, l = this._nodes.length; i < l; ++i) {
-            if (this._nodes[i].type.toLowerCase() == matchType)
+            if (this._nodes[i].type?.toLowerCase() == matchType)
                 result.push(this._nodes[i])
         }
         return result
@@ -816,7 +823,7 @@ export class LGraph {
      * @param {String} name the name of the node to search
      * @return {Node} the node or null
      */
-    findNodeByTitle(title: string): LGraphNode {
+    findNodeByTitle(title: string): LGraphNode | null {
         for (let i = 0, l = this._nodes.length; i < l; ++i) {
             if (this._nodes[i].title == title)
                 return this._nodes[i]
@@ -843,20 +850,14 @@ export class LGraph {
      * @param {Array} nodes_list a list with all the nodes to search from, by default is all the nodes in the graph
      * @return {LGraphNode} the node at this position or null
      */
-    getNodeOnPos(x: number, y: number, nodes_list?: LGraphNode[], margin?: number): LGraphNode {
+    getNodeOnPos(x: number, y: number, nodes_list?: LGraphNode[], margin?: number): LGraphNode | null {
         nodes_list = nodes_list || this._nodes
         const nRet = null
         for (let i = nodes_list.length - 1; i >= 0; i--) {
             const n = nodes_list[i]
             const skip_title = n.constructor.title_mode == TitleMode.NO_TITLE
-            if (n.isPointInside(x, y, margin, skip_title)) {
-                // check for lesser interest nodes (TODO check for overlapping, use the top)
-                /*if (typeof n == "LGraphGroup"){
-                    nRet = n;
-                }else{*/
+            if (n.isPointInside(x, y, margin, skip_title))
                 return n
-                /*}*/
-            }
         }
         return nRet
     }
@@ -956,7 +957,7 @@ export class LGraph {
      * @param {String} old_name
      * @param {String} new_name
      */
-    renameInput(old_name: string, name: string): boolean {
+    renameInput(old_name: string, name: string): boolean | undefined {
         if (name == old_name) return
 
         if (!this.inputs[old_name]) return false
@@ -978,7 +979,7 @@ export class LGraph {
      * @param {String} name
      * @param {String} type
      */
-    changeInputType(name: string, type: string): boolean {
+    changeInputType(name: string, type: string): boolean | undefined {
         if (!this.inputs[name]) return false
 
         if (this.inputs[name].type &&
@@ -1045,7 +1046,7 @@ export class LGraph {
      * @param {String} old_name
      * @param {String} new_name
      */
-    renameOutput(old_name: string, name: string): boolean {
+    renameOutput(old_name: string, name: string): boolean | undefined {
         if (!this.outputs[old_name]) return false
 
         if (this.outputs[name]) {
@@ -1066,7 +1067,7 @@ export class LGraph {
      * @param {String} name
      * @param {String} type
      */
-    changeOutputType(name: string, type: string): boolean {
+    changeOutputType(name: string, type: string): boolean | undefined {
         if (!this.outputs[name]) return false
 
         if (this.outputs[name].type &&
@@ -1215,7 +1216,7 @@ export class LGraph {
      * @param {String} str configure a graph from a JSON string
      * @param {Boolean} returns if there was any error parsing
      */
-    configure(data: ISerialisedGraph, keep_old?: boolean): boolean {
+    configure(data: ISerialisedGraph, keep_old?: boolean): boolean | undefined {
         // TODO: Finish typing configure()
         if (!data) return
 

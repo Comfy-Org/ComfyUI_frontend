@@ -123,7 +123,7 @@ export class LGraphNode {
 
     title: string
     graph: LGraph | null = null
-    id?: NodeId
+    id: NodeId
     type: string | null = null
     inputs: INodeInputSlot[] = []
     outputs: INodeOutputSlot[] = []

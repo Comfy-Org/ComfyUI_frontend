@@ -22,7 +22,7 @@ export interface Serialisable<SerialisableObject> {
 /** Serialised LGraphNode */
 export interface ISerialisedNode {
     title?: string
-    id?: NodeId
+    id: NodeId
     type?: string
     pos?: Point
     size?: Size
