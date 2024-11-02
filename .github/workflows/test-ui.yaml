@@ -15,7 +15,9 @@ jobs:
   jest-tests:
     runs-on: ubuntu-latest
     steps:
-    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v1
+    - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2
+      with:
+        extra_server_params: "--multi-user"
     - name: Run Jest tests
       run: |
         npm run test:generate
