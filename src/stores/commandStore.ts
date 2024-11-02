@@ -386,7 +386,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        useWorkflowStore().loadNextOpenedWorkflow()
+        workflowService.loadNextOpenedWorkflow()
       }
     },
     {
@@ -395,7 +395,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        useWorkflowStore().loadPreviousOpenedWorkflow()
+        workflowService.loadPreviousOpenedWorkflow()
       }
     },
     {

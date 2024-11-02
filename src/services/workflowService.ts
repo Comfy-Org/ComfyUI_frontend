@@ -195,5 +195,19 @@ export const workflowService = {
     if (old !== null) {
       localStorage.setItem('litegrapheditor_clipboard', old)
     }
+  },
+
+  async loadNextOpenedWorkflow() {
+    const nextWorkflow = useWorkflowStore().openedWorkflowIndexShift(1)
+    if (nextWorkflow) {
+      await this.openWorkflow(nextWorkflow)
+    }
+  },
+
+  async loadPreviousOpenedWorkflow() {
+    const previousWorkflow = useWorkflowStore().openedWorkflowIndexShift(-1)
+    if (previousWorkflow) {
+      await this.openWorkflow(previousWorkflow)
+    }
   }
 }

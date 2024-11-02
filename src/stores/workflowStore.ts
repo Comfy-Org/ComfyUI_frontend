@@ -145,29 +145,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Load the workflow at the given index shift from the active workflow.
+   * Get the workflow at the given index shift from the active workflow.
    * @param shift The shift to the next workflow. Positive for next, negative for previous.
+   * @returns The next workflow or null if the shift is out of bounds.
    */
-  const loadOpenedWorkflowIndexShift = async (shift: number) => {
-    const index = openWorkflows.value.indexOf(
-      activeWorkflow.value as ComfyWorkflow
+  const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
+    const index = openWorkflowPaths.value.indexOf(
+      activeWorkflow.value?.path ?? ''
     )
+
     if (index !== -1) {
       const length = openWorkflows.value.length
       const nextIndex = (index + shift + length) % length
       const nextWorkflow = openWorkflows.value[nextIndex]
-      if (nextWorkflow) {
-        await nextWorkflow.load()
-      }
+      return nextWorkflow ?? null
     }
-  }
-
-  const loadNextOpenedWorkflow = async () => {
-    await loadOpenedWorkflowIndexShift(1)
-  }
-
-  const loadPreviousOpenedWorkflow = async () => {
-    await loadOpenedWorkflowIndexShift(-1)
+    return null
   }
 
   const persistedWorkflowByPath = ref<Record<string, ComfyWorkflow>>({})
@@ -260,6 +253,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isActive,
     openWorkflows,
     openWorkflowsTree,
+    openedWorkflowIndexShift,
     openWorkflow,
     isOpen,
     closeWorkflow,
@@ -274,8 +268,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflowsTree,
     bookmarkedWorkflowsTree,
     buildWorkflowTree,
-    loadNextOpenedWorkflow,
-    loadPreviousOpenedWorkflow,
     syncWorkflows
   }
 })
