@@ -212,13 +212,11 @@ defineExpose({
   addNewBookmarkFolder
 })
 
-const handleRename = useErrorHandling().wrapWithErrorHandling(
-  (node: TreeNode, newName: string) => {
-    if (node.data && node.data.isDummyFolder) {
-      nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
-    }
+const handleRename = (node: TreeNode, newName: string) => {
+  if (node.data && node.data.isDummyFolder) {
+    nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
   }
-)
+}
 
 const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)
