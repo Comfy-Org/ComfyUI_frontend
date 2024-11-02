@@ -215,7 +215,7 @@ class PrimitiveNode extends LGraphNode {
     }
 
     // Store current size as addWidget resizes the node
-    const size = this.size
+    const size = [...this.size]
     let widget
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
