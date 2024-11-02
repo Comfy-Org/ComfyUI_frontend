@@ -3,7 +3,6 @@ import type { ComfyApp } from './app'
 import { api } from './api'
 import { ChangeTracker } from './changeTracker'
 import { ComfyAsyncDialog } from './ui/components/asyncDialog'
-import { setStorageValue } from './utils'
 import { LGraphCanvas, LGraph } from '@comfyorg/litegraph'
 import { appendJsonExt, trimJsonExt } from '@/utils/formatUtil'
 import {
@@ -120,7 +119,6 @@ export class ComfyWorkflowManager extends EventTarget {
 
     this._activeWorkflow = workflow
 
-    setStorageValue('Comfy.PreviousWorkflow', this.activeWorkflow.path ?? '')
     this.dispatchEvent(new CustomEvent('changeWorkflow'))
   }
 
@@ -317,7 +315,6 @@ export class ComfyWorkflow {
       await this.favorite(true)
     }
     this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
-    setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
   }
 
   async insert() {
@@ -417,7 +414,6 @@ export class ComfyWorkflow {
       await this.manager.loadWorkflows()
       this.unsaved = false
       this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
-      setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
     } else if (path !== this.path) {
       // Saved as, open the new copy
       await this.manager.loadWorkflows()
