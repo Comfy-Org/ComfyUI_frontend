@@ -489,7 +489,7 @@ export function convertToInput(
   const { type } = getWidgetType(config)
 
   // Add input and store widget config for creating on primitive node
-  const sz = node.size
+  const [oldWidth, oldHeight] = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
   const input = node.addInput(widget.name, type, {
     widget: { name: widget.name, [GET_CONFIG]: () => config },
@@ -501,13 +501,16 @@ export function convertToInput(
   }
 
   // Restore original size but grow if needed
-  node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+  node.setSize([
+    Math.max(oldWidth, node.size[0]),
+    Math.max(oldHeight, node.size[1])
+  ])
   return input
 }
 
 function convertToWidget(node, widget) {
   showWidget(widget)
-  const sz = node.size
+  const [oldWidth, oldHeight] = node.size
   node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
 
   for (const widget of node.widgets) {
@@ -515,7 +518,10 @@ function convertToWidget(node, widget) {
   }
 
   // Restore original size but grow if needed
-  node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+  node.setSize([
+    Math.max(oldWidth, node.size[0]),
+    Math.max(oldHeight, node.size[1])
+  ])
 }
 
 function getWidgetType(config: InputSpec) {
