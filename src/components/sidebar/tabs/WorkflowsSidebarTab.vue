@@ -177,12 +177,12 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
   const actions = node.leaf
     ? {
         handleClick,
-        handleRename: (
+        handleRename: async (
           node: TreeExplorerNode<ComfyWorkflow>,
           newName: string
         ) => {
           const workflow = node.data
-          workflow.rename(newName)
+          await workflow.rename(newName)
         },
         handleDelete: workflow.isTemporary
           ? undefined
