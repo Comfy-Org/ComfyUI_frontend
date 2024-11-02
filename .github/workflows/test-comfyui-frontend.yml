@@ -81,7 +81,7 @@ jobs:
 
     - name: Start ComfyUI server
       run: |
-        python main.py --cpu &
+        python main.py --cpu --multi-user &
         wait-for-it --service 127.0.0.1:8188 -t 600
       working-directory: ComfyUI
 
