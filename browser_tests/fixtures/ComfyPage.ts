@@ -92,6 +92,14 @@ export class ComfyPage {
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
 
+  /** Worker index to test user ID */
+  public readonly userIds: string[] = []
+
+  /** Test user ID for the current context */
+  get id() {
+    return this.userIds[comfyPageFixture.info().parallelIndex]
+  }
+
   constructor(
     public readonly page: Page,
     public readonly request: APIRequestContext
@@ -146,7 +154,7 @@ export class ComfyPage {
       {
         data: {
           tree_structure: this.convertLeafToContent(structure),
-          base_path: 'user/default/workflows'
+          base_path: `user/${this.id}/workflows`
         }
       }
     )
@@ -156,6 +164,31 @@ export class ComfyPage {
         `Failed to setup workflows directory: ${await resp.text()}`
       )
     }
+  }
+
+  async setupUser(username: string) {
+    const res = await this.request.get(`${this.url}/users`)
+    if (res.status() !== 200)
+      throw new Error(`Failed to retrieve users: ${await res.text()}`)
+
+    const apiRes = await res.json()
+    const user = Object.entries(apiRes?.users ?? {}).find(
+      ([, name]) => name === username
+    )
+    const id = user?.[0]
+
+    return id ? id : await this.createUser(username)
+  }
+
+  async createUser(username: string) {
+    const resp = await this.request.post(`${this.url}/users`, {
+      data: { username }
+    })
+
+    if (resp.status() !== 200)
+      throw new Error(`Failed to create user: ${await resp.text()}`)
+
+    return await resp.json()
   }
 
   async setupSettings(settings: Record<string, any>) {
@@ -173,10 +206,13 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
-    await this.page.evaluate(() => {
+    await this.page.evaluate((id) => {
       localStorage.clear()
       sessionStorage.clear()
-    })
+      localStorage.setItem('Comfy.userId', id)
+    }, this.id)
+    await this.goto()
+
     // Unify font for consistent screenshots.
     await this.page.addStyleTag({
       url: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'
@@ -725,6 +761,12 @@ export class ComfyPage {
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+
+    const { parallelIndex } = comfyPageFixture.info()
+    const username = `playwright-test-${parallelIndex}`
+    const userId = await comfyPage.setupUser(username)
+    comfyPage.userIds[parallelIndex] = userId
+
     await comfyPage.setupSettings({
       // Hide canvas menu/info by default.
       'Comfy.Graph.CanvasInfo': false,
@@ -733,7 +775,8 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
       'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
       'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
       // Disable tooltips by default to avoid flakiness.
-      'Comfy.EnableTooltips': false
+      'Comfy.EnableTooltips': false,
+      'Comfy.userId': userId
     })
     await comfyPage.setup()
     await use(comfyPage)
