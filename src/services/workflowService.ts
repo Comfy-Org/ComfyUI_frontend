@@ -135,7 +135,17 @@ export const workflowService = {
       }
     }
 
-    await useWorkflowStore().closeWorkflow(workflow)
+    const workflowStore = useWorkflowStore()
+    // If this is the last workflow, create a new default temporary workflow
+    if (workflowStore.openWorkflows.length === 1) {
+      await this.loadDefaultWorkflow()
+    }
+    // If this is the active workflow, load the next workflow
+    if (workflowStore.isActive(workflow)) {
+      await this.loadNextOpenedWorkflow()
+    }
+
+    await workflowStore.closeWorkflow(workflow)
   },
 
   async renameWorkflow(workflow: ComfyWorkflow, newName: string) {

@@ -168,32 +168,4 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
   })
-
-  describe('closeWorkflow', () => {
-    it('should create new temporary workflow when closing last workflow', async () => {
-      const workflow = store.createTemporary('test.json')
-      await store.openWorkflow(workflow)
-      expect(store.openWorkflows.length).toBe(1)
-      await store.closeWorkflow(workflow)
-      expect(store.openWorkflows.length).toBe(1)
-      expect(store.openWorkflows[0].isTemporary).toBe(true)
-      expect(store.openWorkflows[0].fullFilename).not.toBe('test.json')
-    })
-
-    it('should load next workflow when closing active workflow', async () => {
-      const [w1, w2, w3] = await openTemporaryWorkflows([
-        'test1.json',
-        'test2.json',
-        'test3.json'
-      ])
-      expect(store.openWorkflows.length).toBe(3)
-
-      await store.closeWorkflow(w2)
-      expect(store.openWorkflows.length).toBe(2)
-      expect(store.openWorkflows[0].fullFilename).toBe('test1.json')
-      expect(store.openWorkflows[1].fullFilename).toBe('test3.json')
-      expect(store.activeWorkflow?.fullFilename).toBe('test3.json')
-      expect(store.workflows.find((w) => w.path === w2.path)).toBeUndefined()
-    })
-  })
 })

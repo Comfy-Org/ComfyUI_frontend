@@ -126,14 +126,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
-    // If this is the last workflow, create a new blank temporary workflow
-    if (openWorkflowPaths.value.length === 1) {
-      await openWorkflow(createTemporary())
-    }
-    // If this is the active workflow, load the next workflow
-    if (isActive(workflow)) {
-      await loadNextOpenedWorkflow()
-    }
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
     )
