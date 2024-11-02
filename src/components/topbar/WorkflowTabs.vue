@@ -11,7 +11,7 @@
     <template #option="{ option }">
       <span
         class="workflow-label text-sm max-w-[150px] truncate inline-block"
-        v-tooltip="option.tooltip"
+        v-tooltip.bottom="option.tooltip"
       >
         {{ option.label }}
       </span>
