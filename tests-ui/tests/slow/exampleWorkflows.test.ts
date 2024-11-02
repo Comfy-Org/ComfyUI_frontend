@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'fs'
-import lg from '../utils/litegraph'
+import lg from '../../utils/litegraph'
 import path from 'path'
-import { start } from '../utils'
+import { start } from '../../utils'
 
 const WORKFLOW_DIR = 'tests-ui/workflows/examples'
 

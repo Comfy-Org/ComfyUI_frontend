@@ -1,6 +1,6 @@
 // @ts-strict-ignore
-import { start } from '../utils'
-import lg from '../utils/litegraph'
+import { start } from '../../utils'
+import lg from '../../utils/litegraph'
 
 describe('users', () => {
   beforeEach(() => {
@@ -21,14 +21,14 @@ describe('users', () => {
 
   describe('multi-user', () => {
     async function mockAddStylesheet() {
-      const utils = await import('../../src/scripts/utils')
+      const utils = await import('../../../src/scripts/utils')
       utils.addStylesheet = jest.fn().mockReturnValue(Promise.resolve())
     }
 
     async function waitForUserScreenShow() {
       // Wait for "show" to be called
       const { UserSelectionScreen } = await import(
-        '../../src/scripts/ui/userSelection'
+        '../../../src/scripts/ui/userSelection'
       )
       let resolve, reject
       const fn = UserSelectionScreen.prototype.show
@@ -91,7 +91,7 @@ describe('users', () => {
       expect(window.getComputedStyle(menu)?.display).not.toBe('none')
 
       // Ensure settings + templates are saved
-      const { api } = await import('../../src/scripts/api')
+      const { api } = await import('../../../src/scripts/api')
       expect(api.createUser).toHaveBeenCalledTimes(+isCreate)
       expect(api.storeSettings).toHaveBeenCalledTimes(+isCreate)
       expect(api.storeUserData).toHaveBeenCalledTimes(+isCreate)
@@ -234,7 +234,7 @@ describe('users', () => {
       expectNoUserScreen()
 
       // It should store the settings
-      const { api } = await import('../../src/scripts/api')
+      const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(1)
       expect(api.storeUserData).toHaveBeenCalledTimes(1)
       expect(api.storeUserData).toHaveBeenCalledWith(
@@ -252,7 +252,7 @@ describe('users', () => {
       expectNoUserScreen()
 
       // It should store the settings
-      const { api } = await import('../../src/scripts/api')
+      const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
       expect(app.isNewUserSession).toBeFalsy()
@@ -276,7 +276,7 @@ describe('users', () => {
       expectNoUserScreen()
 
       // It should store the settings
-      const { api } = await import('../../src/scripts/api')
+      const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
       expect(app.isNewUserSession).toBeFalsy()
@@ -289,7 +289,7 @@ describe('users', () => {
       expectNoUserScreen()
 
       // It should store the settings
-      const { api } = await import('../../src/scripts/api')
+      const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
       expect(app.isNewUserSession).toBeFalsy()

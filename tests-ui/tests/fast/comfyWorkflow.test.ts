@@ -1,6 +1,6 @@
 // @ts-strict-ignore
-import { validateComfyWorkflow } from '../../src/types/comfyWorkflow'
-import { defaultGraph } from '../../src/scripts/defaultGraph'
+import { validateComfyWorkflow } from '@/types/comfyWorkflow'
+import { defaultGraph } from '@/scripts/defaultGraph'
 import fs from 'fs'
 
 const WORKFLOW_DIR = 'tests-ui/workflows'
