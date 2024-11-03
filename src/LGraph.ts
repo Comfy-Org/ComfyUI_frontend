@@ -192,7 +192,7 @@ export class LGraph {
         //notify canvas to redraw
         this.change()
 
-        this.sendActionToCanvas("clear")
+        this.canvasAction(c => c.clear())
     }
 
     get nodes() {
@@ -630,6 +630,16 @@ export class LGraph {
             }
         }
     }
+
+    /**
+     * Runs an action on every canvas registered to this graph.
+     * @param action Action to run for every canvas
+     */
+    canvasAction(action: (canvas: LGraphCanvas) => void): void {
+        this.list_of_graphcanvas?.forEach(action)
+    }
+
+    /** @deprecated See {@link LGraph.canvasAction} */
     sendActionToCanvas<T extends MethodNames<LGraphCanvas>>(action: T, params?: ParamsArray<LGraphCanvas, T>): void {
         if (!this.list_of_graphcanvas) return
 
@@ -776,7 +786,7 @@ export class LGraph {
         this.onNodeRemoved?.(node)
 
         //close panels
-        this.sendActionToCanvas("checkPanels")
+        this.canvasAction(c => c.checkPanels())
 
         this.setDirtyCanvas(true, true)
         this.afterChange() //sure? - almost sure is wrong
@@ -1117,12 +1127,12 @@ export class LGraph {
     //used for undo, called before any change is made to the graph
     beforeChange(info?: LGraphNode): void {
         this.onBeforeChange?.(this, info)
-        this.sendActionToCanvas("onBeforeChange", this)
+        this.canvasAction(c => c.onBeforeChange?.(this))
     }
     //used to resend actions, called after any change is made to the graph
     afterChange(info?: LGraphNode): void {
         this.onAfterChange?.(this, info)
-        this.sendActionToCanvas("onAfterChange", this)
+        this.canvasAction(c => c.onAfterChange?.(this))
     }
     connectionChange(node: LGraphNode): void {
         this.updateExecutionOrder()
@@ -1130,7 +1140,7 @@ export class LGraph {
         this._version++
         // TODO: Interface never implemented - any consumers?
         // @ts-expect-error
-        this.sendActionToCanvas("onConnectionChange")
+        this.canvasAction(c => c.onConnectionChange?.())
     }
     /**
      * returns if the graph is in live mode
@@ -1160,11 +1170,11 @@ export class LGraph {
         if (LiteGraph.debug) {
             console.log("Graph changed")
         }
-        this.sendActionToCanvas("setDirty", [true, true])
+        this.canvasAction(c => c.setDirty(true, true))
         this.on_change?.(this)
     }
     setDirtyCanvas(fg: boolean, bg?: boolean): void {
-        this.sendActionToCanvas("setDirty", [fg, bg])
+        this.canvasAction(c => c.setDirty(fg, bg))
     }
     /**
      * Destroys a link

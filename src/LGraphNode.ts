@@ -2255,10 +2255,7 @@ export class LGraphNode implements Positionable {
 
     /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
     setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
-        this.graph?.sendActionToCanvas("setDirty", [
-            dirty_foreground,
-            dirty_background
-        ])
+        this.graph?.canvasAction(c => c.setDirty(dirty_foreground, dirty_background))
     }
 
     loadImage(url: string): HTMLImageElement {
