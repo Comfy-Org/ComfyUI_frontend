@@ -12,12 +12,18 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
 }
 
 export class LGraphGroup implements Positionable {
+    static minWidth = 140
+    static minHeight = 80
+    static resizeLength = 10
+    static padding = 4
+    static defaultColour = '#335'
+
     id: number
     color: string
     title: string
     font?: string
     font_size: number = LiteGraph.DEFAULT_GROUP_FONT || 24
-    _bounding: Float32Array = new Float32Array([10, 10, 140, 80])
+    _bounding: Float32Array = new Float32Array([10, 10, LGraphGroup.minWidth, LGraphGroup.minHeight])
     _pos: Point = this._bounding.subarray(0, 2)
     _size: Size = this._bounding.subarray(2, 4)
     /** @deprecated See {@link _children} */
@@ -54,9 +60,10 @@ export class LGraphGroup implements Positionable {
     set size(v) {
         if (!v || v.length < 2) return
 
-        this._size[0] = Math.max(140, v[0])
-        this._size[1] = Math.max(80, v[1])
+        this._size[0] = Math.max(LGraphGroup.minWidth, v[0])
+        this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
     }
+
 
     get boundingRect() {
         return this._bounding
@@ -113,26 +120,37 @@ export class LGraphGroup implements Positionable {
      * @param {CanvasRenderingContext2D} ctx
      */
     draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
-        const padding = 4
+        const { padding, resizeLength, defaultColour } = LGraphGroup
+        const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
 
-        ctx.fillStyle = this.color
-        ctx.strokeStyle = this.color
         const [x, y] = this._pos
         const [width, height] = this._size
+
+        // Titlebar
         ctx.globalAlpha = 0.25 * graphCanvas.editor_alpha
+        ctx.fillStyle = this.color || defaultColour
+        ctx.strokeStyle = this.color || defaultColour
+        ctx.beginPath()
+        ctx.rect(x + 0.5, y + 0.5, width, font_size * 1.4)
+        ctx.fill()
+
+        // Group background, border
+        ctx.fillStyle = this.color
+        ctx.strokeStyle = this.color
         ctx.beginPath()
         ctx.rect(x + 0.5, y + 0.5, width, height)
         ctx.fill()
         ctx.globalAlpha = graphCanvas.editor_alpha
         ctx.stroke()
 
+        // Resize marker
         ctx.beginPath()
         ctx.moveTo(x + width, y + height)
-        ctx.lineTo(x + width - 10, y + height)
-        ctx.lineTo(x + width, y + height - 10)
+        ctx.lineTo(x + width - resizeLength, y + height)
+        ctx.lineTo(x + width, y + height - resizeLength)
         ctx.fill()
 
-        const font_size = this.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
+        // Title
         ctx.font = font_size + "px Arial"
         ctx.textAlign = "left"
         ctx.fillText(this.title + (this.pinned ? "📌" : ""), x + padding, y + font_size)
@@ -148,11 +166,12 @@ export class LGraphGroup implements Positionable {
         }
     }
 
-    resize(width: number, height: number): void {
-        if (this.pinned) return
+    resize(width: number, height: number): boolean {
+        if (this.pinned) return false
 
-        this._size[0] = width
-        this._size[1] = height
+        this._size[0] = Math.max(LGraphGroup.minWidth, width)
+        this._size[1] = Math.max(LGraphGroup.minHeight, height)
+        return true
     }
 
     move(deltaX: number, deltaY: number, skipChildren: boolean = false): void {
@@ -262,6 +281,16 @@ export class LGraphGroup implements Positionable {
     isPointInTitlebar(x: number, y: number): boolean {
         const b = this._bounding
         return isInsideRectangle(x, y, b[0], b[1], b[2], this.titleHeight)
+    }
+
+    isInResize(x: number, y: number): boolean {
+        const b = this._bounding
+        const right = b[0] + b[2]
+        const bottom = b[1] + b[3]
+
+        return x < right
+            && y < bottom
+            && (x - right) + (y - bottom) > -LGraphGroup.resizeLength
     }
 
     isPointInside = LGraphNode.prototype.isPointInside
