@@ -2900,7 +2900,7 @@ export class LGraphCanvas {
             else if (e.keyCode == 46 || e.keyCode == 8) {
                 // @ts-expect-error
                 if (e.target.localName != "input" && e.target.localName != "textarea") {
-                    this.deleteSelectedItems()
+                    this.deleteSelected()
                     block_default = true
                 }
             }
@@ -3336,22 +3336,19 @@ export class LGraphCanvas {
     /**
      * Deletes all selected items from the graph.
      */
-    deleteSelectedItems(): void {
-        this.graph.beforeChange()
+    deleteSelected(): void {
+        const { graph } = this
+        graph.beforeChange()
 
         for (const item of this.selectedItems) {
             if (item instanceof LGraphNode) {
                 const node = item
                 if (node.block_delete) continue
                 node.connectInputToOutput()
-            }
-
-            if (item instanceof LGraphGroup || item instanceof LGraphNode) {
-                this.graph.remove(item)
-            }
-
-            if (item instanceof LGraphNode) {
-                this.onNodeDeselected?.(item)
+                graph.remove(node)
+                this.onNodeDeselected?.(node)
+            } else if (item instanceof LGraphGroup) {
+                graph.remove(item)
             }
         }
 
@@ -3360,15 +3357,15 @@ export class LGraphCanvas {
         this.current_node = null
         this.highlighted_links = {}
         this.setDirty(true)
-        this.graph.afterChange()
+        graph.afterChange()
     }
 
     /**
      * deletes all nodes in the current selection from the graph
-     * @deprecated See {@link LGraphCanvas.deleteSelectedItems}
+     * @deprecated See {@link LGraphCanvas.deleteSelected}
      **/
     deleteSelectedNodes(): void {
-        this.deleteSelectedItems()
+        this.deleteSelected()
     }
 
     /**
