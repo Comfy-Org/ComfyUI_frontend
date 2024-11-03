@@ -3020,7 +3020,7 @@ export class ComfyApp {
   public goToNode(nodeId: NodeId) {
     const graphNode = this.graph.getNodeById(nodeId)
     if (!graphNode) return
-    this.canvas.centerOnNode(graphNode)
+    this.canvas.animateToNode(graphNode)
   }
 }
 
