@@ -1219,29 +1219,6 @@ export class ComfyApp {
       }
 
       const res = origProcessMouseDown.apply(this, arguments)
-
-      this.selected_group_moving = false
-
-      if (this.selected_group && !this.selected_group_resizing) {
-        var font_size =
-          this.selected_group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
-        var height = font_size * 1.4
-
-        // Move group by header
-        if (
-          LiteGraph.isInsideRectangle(
-            e.canvasX,
-            e.canvasY,
-            this.selected_group.pos[0],
-            this.selected_group.pos[1],
-            this.selected_group.size[0],
-            height
-          )
-        ) {
-          this.selected_group_moving = true
-        }
-      }
-
       return res
     }
     const origProcessMouseMove = LGraphCanvas.prototype.processMouseMove
@@ -1269,27 +1246,7 @@ export class ComfyApp {
         return
       }
 
-      const orig_selected_group = this.selected_group
-
-      if (
-        this.selected_group &&
-        !this.selected_group_resizing &&
-        !this.selected_group_moving
-      ) {
-        this.selected_group = null
-      }
-
-      const res = origProcessMouseMove.apply(this, arguments)
-
-      if (
-        orig_selected_group &&
-        !this.selected_group_resizing &&
-        !this.selected_group_moving
-      ) {
-        this.selected_group = orig_selected_group
-      }
-
-      return res
+      return origProcessMouseMove.apply(this, arguments)
     }
   }
 
