@@ -1,6 +1,16 @@
 import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
+test.describe('Item Interaction', () => {
+  test('Can select/delete all items', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('mixed_graph_items')
+    await comfyPage.canvas.press('Control+a')
+    await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+    await comfyPage.canvas.press('Delete')
+    await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+  })
+})
+
 test.describe('Node Interaction', () => {
   test('Can enter prompt', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
@@ -12,7 +22,7 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Selection', () => {
-    const multiSelectModifiers = ['Control', 'Shift', 'Meta']
+    const multiSelectModifiers = ['Control', 'Shift', 'Meta'] as const
 
     multiSelectModifiers.forEach((modifier) => {
       test(`Can add multiple nodes to selection using ${modifier}+Click`, async ({

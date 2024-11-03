@@ -361,14 +361,13 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Group Selected Nodes',
       versionAdded: '1.3.7',
       function: () => {
-        if (
-          !app.canvas.selected_nodes ||
-          Object.keys(app.canvas.selected_nodes).length === 0
-        ) {
+        const { canvas } = app
+        if (!canvas.selectedItems?.size) {
           useToastStore().add({
             severity: 'error',
-            summary: 'No nodes selected',
-            detail: 'Please select nodes to group',
+            summary: 'Nothing to group',
+            detail:
+              'Please select the nodes (or other groups) to create a group for',
             life: 3000
           })
           return
@@ -377,8 +376,8 @@ export const useCommandStore = defineStore('command', () => {
         const padding = useSettingStore().get(
           'Comfy.GroupSelectedNodes.Padding'
         )
-        group.addNodes(Object.values(app.canvas.selected_nodes), padding)
-        app.canvas.graph.add(group)
+        group.resizeTo(canvas.selectedItems, padding)
+        canvas.graph.add(group)
         useTitleEditorStore().titleEditorTarget = group
       }
     },
