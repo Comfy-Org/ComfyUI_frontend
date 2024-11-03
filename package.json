@@ -23,6 +23,7 @@
     "build": "tsc && vite build",
     "dev": "vite",
     "preview": "vite preview",
+    "watch": "vite build --watch",
     "release": "node scripts/release.js",
     "test": "jest",
     "deprecated-test:allVersions": "./utils/test.sh",
