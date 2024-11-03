@@ -73,7 +73,7 @@ export class LGraph {
   last_update_time: number
   starttime: number
   catch_errors: boolean
-  execution_timer_id: number | null
+  execution_timer_id: number | ReturnType<typeof setTimeout> | null
   errors_in_execution: boolean
   execution_time: number
   _last_trigger_time?: number
