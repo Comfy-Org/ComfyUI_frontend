@@ -51,3 +51,10 @@ export enum LGraphEventMode {
     ON_TRIGGER = 3,
     BYPASS = 4,
 }
+
+export enum EaseFunction {
+    LINEAR = "linear",
+    EASE_IN_QUAD = "easeInQuad",
+    EASE_OUT_QUAD = "easeOutQuad",
+    EASE_IN_OUT_QUAD = "easeInOutQuad",
+}

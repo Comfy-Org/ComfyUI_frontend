@@ -23,6 +23,7 @@ export { INodeSlot, INodeInputSlot, INodeOutputSlot, ConnectingLink, CanvasColou
 export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
+export { EaseFunction } from "./types/globalEnums"
 
 export function clamp(v: number, a: number, b: number): number {
     return a > v ? a : b < v ? b : v

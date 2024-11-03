@@ -6,7 +6,7 @@ import type { IClipboardContents } from "./types/serialisation"
 import type { LLink } from "./LLink"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
-import { LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
+import { EaseFunction, LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
 import { isInsideRectangle, distance, overlapBounding, isPointInRectangle } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
@@ -7866,5 +7866,75 @@ export class LGraphCanvas {
             //if(v.callback)
             //	return v.callback.call(that, node, options, e, menu, that, event );
         }
+    }
+
+    /**
+     * Centers the camera on a given node (animated version)
+     * @method animateToNode
+     **/
+    animateToNode(
+        node: LGraphNode,
+        {
+            duration = 350,
+            zoom = 0.75,
+            easing = EaseFunction.EASE_IN_OUT_QUAD
+        }: {
+            duration?: number,
+            zoom?: number,
+            easing?: EaseFunction
+        } = {}
+    ) {
+        const easeFunctions = {
+            linear: (t: number) => t,
+            easeInQuad: (t: number) => t * t,
+            easeOutQuad: (t: number) => t * (2 - t),
+            easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
+        }
+        const easeFunction = easeFunctions[easing] ?? easeFunctions.linear
+
+        let animationId = null
+        const startTimestamp = performance.now()
+        const startX = this.ds.offset[0]
+        const startY = this.ds.offset[1]
+        const startScale = this.ds.scale
+        const cw = this.canvas.width / window.devicePixelRatio
+        const ch = this.canvas.height / window.devicePixelRatio
+        let targetScale = startScale
+        let targetX = startX
+        let targetY = startY
+        if (zoom > 0) {
+            const targetScaleX = (zoom * cw) / Math.max(node.size[0], 300)
+            const targetScaleY = (zoom * ch) / Math.max(node.size[1], 300)
+
+            // Choose the smaller scale to ensure the node fits into the viewport
+            // Ensure we don't go over the max scale
+            targetScale = Math.min(targetScaleX, targetScaleY, this.ds.max_scale)
+            targetX = -node.pos[0] - node.size[0] * 0.5 + (cw * 0.5) / targetScale
+            targetY = -node.pos[1] - node.size[1] * 0.5 + (ch * 0.5) / targetScale
+        } else {
+            targetX = -node.pos[0] - node.size[0] * 0.5 + (cw * 0.5) / targetScale
+            targetY = -node.pos[1] - node.size[1] * 0.5 + (ch * 0.5) / targetScale
+        }
+        const animate = (timestamp: number) => {
+            const elapsed = timestamp - startTimestamp
+            const progress = Math.min(elapsed / duration, 1)
+            const easedProgress = easeFunction(progress)
+
+            this.ds.offset[0] = startX + (targetX - startX) * easedProgress
+            this.ds.offset[1] = startY + (targetY - startY) * easedProgress
+
+            if (zoom > 0) {
+                this.ds.scale = startScale + (targetScale - startScale) * easedProgress
+            }
+
+            this.setDirty(true, true)
+
+            if (progress < 1) {
+                animationId = requestAnimationFrame(animate)
+            } else {
+                cancelAnimationFrame(animationId)
+            }
+        }
+        animationId = requestAnimationFrame(animate)
     }
 }
