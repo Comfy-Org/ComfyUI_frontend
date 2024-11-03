@@ -31,10 +31,24 @@ export function dist2(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
 export function isPointInRectangle(point: ReadOnlyPoint, rect: ReadOnlyRect): boolean {
-    return rect[0] < point[0]
+    return rect[0] <= point[0]
         && rect[0] + rect[2] > point[0]
-        && rect[1] < point[1]
+        && rect[1] <= point[1]
         && rect[1] + rect[3] > point[1]
+}
+
+/**
+ * Determines whether a point is inside a rectangle.
+ * @param x X co-ordinate of the point to check
+ * @param y Y co-ordinate of the point to check
+ * @param rect The rectangle, as `x, y, width, height`
+ * @returns `true` if the point is inside the rect, otherwise `false`
+ */
+export function isXyInRectangle(x: number, y: number, rect: ReadOnlyRect): boolean {
+    return rect[0] <= x
+        && rect[0] + rect[2] > x
+        && rect[1] <= y
+        && rect[1] + rect[3] > y
 }
 
 /**
@@ -95,7 +109,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
 export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
     const centreX = b[0] + (b[2] * 0.5)
     const centreY = b[1] + (b[3] * 0.5)
-    return isInsideRectangle(centreX, centreY, a[0], a[1], a[2], a[3])
+    return isXyInRectangle(centreX, centreY, a)
 }
 
 /**

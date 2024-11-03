@@ -1,4 +1,4 @@
-import type { IContextMenuValue, Point, Size } from "./interfaces"
+import type { IContextMenuValue, Point, Positionable, Size } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
@@ -11,7 +11,8 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
     pinned?: true
 }
 
-export class LGraphGroup {
+export class LGraphGroup implements Positionable {
+    id: number
     color: string
     title: string
     font?: string
@@ -20,11 +21,14 @@ export class LGraphGroup {
     _pos: Point = this._bounding.subarray(0, 2)
     _size: Size = this._bounding.subarray(2, 4)
     _nodes: LGraphNode[] = []
+    _children: Set<Positionable> = new Set()
     graph: LGraph | null = null
     flags: IGraphGroupFlags = {}
     selected?: boolean
 
-    constructor(title?: string) {
+    constructor(title?: string, id?: number) {
+        // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
+        this.id = id ?? -1
         this.title = title || "Group"
         this.color = LGraphCanvas.node_colors.pale_blue
             ? LGraphCanvas.node_colors.pale_blue.groupcolor
@@ -53,6 +57,10 @@ export class LGraphGroup {
         this._size[1] = Math.max(80, v[1])
     }
 
+    get boundingRect() {
+        return this._bounding
+    }
+
     get nodes() {
         return this._nodes
     }
@@ -74,6 +82,7 @@ export class LGraphGroup {
     }
 
     configure(o: ISerialisedGroup): void {
+        this.id = o.id
         this.title = o.title
         this._bounding.set(o.bounding)
         this.color = o.color
@@ -84,6 +93,7 @@ export class LGraphGroup {
     serialize(): ISerialisedGroup {
         const b = this._bounding
         return {
+            id: this.id,
             title: this.title,
             bounding: [
                 Math.round(b[0]),
@@ -145,34 +155,55 @@ export class LGraphGroup {
         this._size[1] = height
     }
 
-    move(deltax: number, deltay: number, ignore_nodes = false): void {
+    move(deltaX: number, deltaY: number, skipChildren: boolean = false): void {
         if (this.pinned) return
 
-        this._pos[0] += deltax
-        this._pos[1] += deltay
-        if (ignore_nodes) return
+        this._pos[0] += deltaX
+        this._pos[1] += deltaY
+        if (skipChildren === true) return
 
-        for (let i = 0; i < this._nodes.length; ++i) {
-            const node = this._nodes[i]
-            node.pos[0] += deltax
-            node.pos[1] += deltay
+        for (const item of this._children) {
+            item.move(deltaX, deltaY)
         }
     }
 
     recomputeInsideNodes(): void {
-        this._nodes.length = 0
-        const nodes = this.graph._nodes
+        const { nodes } = this.graph
         const node_bounding = new Float32Array(4)
+        this._nodes.length = 0
+        this._children.clear()
 
-        for (let i = 0; i < nodes.length; ++i) {
-            const node = nodes[i]
+        for (const node of nodes) {
             node.getBounding(node_bounding)
-            //out of the visible area
-            if (!overlapBounding(this._bounding, node_bounding))
-                continue
-
-            this._nodes.push(node)
+            // Node overlaps with group
+            if (overlapBounding(this._bounding, node_bounding)) {
+                this._nodes.push(node)
+                this._children.add(node)
+            }
         }
+    }
+
+    /**
+     * Resizes and moves the group to neatly fit all given {@link objects}.
+     * @param objects All objects that should be inside the group
+     * @param padding Value in graph units to add to all sides of the group.  Default: 10
+     */
+    resizeTo(objects: Iterable<Positionable>, padding: number = 10): void {
+        const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])
+
+        for (const obj of objects) {
+            const rect = obj.boundingRect
+            bounds[0] = Math.min(bounds[0], rect[0])
+            bounds[1] = Math.min(bounds[1], rect[1])
+            bounds[2] = Math.max(bounds[2], rect[0] + rect[2])
+            bounds[3] = Math.max(bounds[3], rect[1] + rect[3])
+        }
+        if (!bounds.every(x => isFinite(x))) return
+
+        this.pos[0] = bounds[0] - padding
+        this.pos[1] = bounds[1] - padding - this.titleHeight
+        this.size[0] = bounds[2] - bounds[0] + (2 * padding)
+        this.size[1] = bounds[3] - bounds[1] + (2 * padding) + this.titleHeight
     }
 
     /**
@@ -183,36 +214,7 @@ export class LGraphGroup {
      */
     addNodes(nodes: LGraphNode[], padding: number = 10): void {
         if (!this._nodes && nodes.length === 0) return
-
-        const allNodes = [...(this._nodes || []), ...nodes]
-
-        const bounds = allNodes.reduce((acc, node) => {
-            const [x, y] = node.pos
-            const [width, height] = node.size
-            const isReroute = node.type === "Reroute"
-            const isCollapsed = node.flags?.collapsed
-
-            const top = y - (isReroute ? 0 : LiteGraph.NODE_TITLE_HEIGHT)
-            const bottom = isCollapsed ? top + LiteGraph.NODE_TITLE_HEIGHT : y + height
-            const right = isCollapsed && node._collapsed_width ? x + Math.round(node._collapsed_width) : x + width
-
-            return {
-                left: Math.min(acc.left, x),
-                top: Math.min(acc.top, top),
-                right: Math.max(acc.right, right),
-                bottom: Math.max(acc.bottom, bottom)
-            }
-        }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity })
-
-        this.pos = [
-            bounds.left - padding,
-            bounds.top - padding - this.titleHeight
-        ]
-
-        this.size = [
-            bounds.right - bounds.left + padding * 2,
-            bounds.bottom - bounds.top + padding * 2 + this.titleHeight
-        ]
+        this.resizeTo([...this._nodes, ...nodes], padding)
     }
 
     getMenuOptions(): IContextMenuValue[] {

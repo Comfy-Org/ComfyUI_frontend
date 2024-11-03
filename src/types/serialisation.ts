@@ -59,6 +59,7 @@ export type ISerialisedGraph<
 
 /** Serialised LGraphGroup */
 export interface ISerialisedGroup {
+    id: number
     title: string
     bounding: number[]
     color: string

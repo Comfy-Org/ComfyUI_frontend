@@ -55,6 +55,7 @@ export class LGraph {
     last_link_id: number
     /** The largest ID created by this graph */
     last_reroute_id: number
+    lastGroupId: number = -1
     _nodes: LGraphNode[]
     _nodes_by_id: Record<NodeId, LGraphNode>
     _nodes_in_order: LGraphNode[]
@@ -647,6 +648,10 @@ export class LGraph {
         // LEGACY: This was changed from constructor === LGraphGroup
         //groups
         if (node instanceof LGraphGroup) {
+            // Assign group ID
+            if (node.id == null || node.id === -1) node.id = ++this.lastGroupId
+            if (node.id > this.lastGroupId) this.lastGroupId = node.id
+
             this._groups.push(node)
             this.setDirtyCanvas(true)
             this.change()
@@ -847,19 +852,17 @@ export class LGraph {
      * Returns the top-most node in this position of the canvas
      * @param {number} x the x coordinate in canvas space
      * @param {number} y the y coordinate in canvas space
-     * @param {Array} nodes_list a list with all the nodes to search from, by default is all the nodes in the graph
+     * @param {Array} nodeList a list with all the nodes to search from, by default is all the nodes in the graph
      * @return {LGraphNode} the node at this position or null
      */
-    getNodeOnPos(x: number, y: number, nodes_list?: LGraphNode[], margin?: number): LGraphNode | null {
-        nodes_list = nodes_list || this._nodes
-        const nRet = null
-        for (let i = nodes_list.length - 1; i >= 0; i--) {
-            const n = nodes_list[i]
-            const skip_title = n.constructor.title_mode == TitleMode.NO_TITLE
-            if (n.isPointInside(x, y, margin, skip_title))
-                return n
+    getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null {
+        const nodes = nodeList || this._nodes
+        let i = nodes.length
+        while (--i >= 0) {
+            const node = nodes[i]
+            if (node.isPointInside(x, y)) return node
         }
-        return nRet
+        return null
     }
     /**
      * Returns the top-most group in that position
@@ -867,8 +870,8 @@ export class LGraph {
      * @param y The y coordinate in canvas space
      * @return The group or null
      */
-    getGroupOnPos(x: number, y: number, { margin = 2 } = {}): LGraphGroup | undefined {
-        return this._groups.toReversed().find(g => g.isPointInside(x, y, margin, true))
+    getGroupOnPos(x: number, y: number): LGraphGroup | undefined {
+        return this._groups.toReversed().find(g => g.isPointInside(x, y))
     }
 
     /**
