@@ -66,6 +66,12 @@ const bottomPanelVisible = computed(
   pointer-events: auto;
 }
 
+:deep(.p-splitter-gutter:hover),
+:deep(.p-splitter-gutter[data-p-gutter-resizing='true']) {
+  transition: background-color 0.2s ease 300ms;
+  background-color: var(--p-primary-color);
+}
+
 .side-bar-panel {
   background-color: var(--bg-color);
   pointer-events: auto;
