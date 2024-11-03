@@ -3,7 +3,7 @@ import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { isInsideRectangle, overlapBounding } from "./measure"
+import { isInsideRectangle, containsCentre, containsRect, isPointInRectangle } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -20,6 +20,7 @@ export class LGraphGroup implements Positionable {
     _bounding: Float32Array = new Float32Array([10, 10, 140, 80])
     _pos: Point = this._bounding.subarray(0, 2)
     _size: Size = this._bounding.subarray(2, 4)
+    /** @deprecated See {@link _children} */
     _nodes: LGraphNode[] = []
     _children: Set<Positionable> = new Set()
     graph: LGraph | null = null
@@ -69,6 +70,10 @@ export class LGraphGroup implements Positionable {
         return this.font_size * 1.4
     }
 
+    get children(): ReadonlySet<Positionable> {
+        return this._children
+    }
+
     get pinned() {
         return !!this.flags.pinned
     }
@@ -95,12 +100,7 @@ export class LGraphGroup implements Positionable {
         return {
             id: this.id,
             title: this.title,
-            bounding: [
-                Math.round(b[0]),
-                Math.round(b[1]),
-                Math.round(b[2]),
-                Math.round(b[3])
-            ],
+            bounding: [...b],
             color: this.color,
             font_size: this.font_size,
             flags: this.flags,
@@ -168,19 +168,33 @@ export class LGraphGroup implements Positionable {
     }
 
     recomputeInsideNodes(): void {
-        const { nodes } = this.graph
+        const { nodes, groups } = this.graph
+        const children = this._children
         const node_bounding = new Float32Array(4)
         this._nodes.length = 0
-        this._children.clear()
+        children.clear()
 
+        // move any nodes we partially overlap
         for (const node of nodes) {
             node.getBounding(node_bounding)
-            // Node overlaps with group
-            if (overlapBounding(this._bounding, node_bounding)) {
+            if (containsCentre(this._bounding, node_bounding)) {
                 this._nodes.push(node)
-                this._children.add(node)
+                children.add(node)
             }
         }
+
+        for (const group of groups) {
+            if (containsRect(this._bounding, group._bounding))
+                children.add(group)
+        }
+
+        groups.sort((a, b) => {
+            if (a === this) {
+                return children.has(b) ? -1 : 0
+            } else if (b === this) {
+                return children.has(a) ? 1 : 0
+            }
+        })
     }
 
     /**
@@ -214,7 +228,7 @@ export class LGraphGroup implements Positionable {
      */
     addNodes(nodes: LGraphNode[], padding: number = 10): void {
         if (!this._nodes && nodes.length === 0) return
-        this.resizeTo([...this._nodes, ...nodes], padding)
+        this.resizeTo([...this.children, ...this._nodes, ...nodes], padding)
     }
 
     getMenuOptions(): IContextMenuValue[] {

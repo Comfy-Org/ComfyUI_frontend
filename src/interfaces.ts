@@ -12,6 +12,11 @@ export type NullableProperties<T> = {
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
+/** 
+ * An object that can be positioned, selected, and moved.
+ * 
+ * May contain other {@link Positionable} objects.
+ */
 export interface Positionable {
     id: NodeId | number
     /** Position in graph coordinates.  Default: 0,0 */

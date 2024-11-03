@@ -124,10 +124,16 @@ export function containsRect(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
     const bRight = b[0] + b[2]
     const bBottom = b[1] + b[3]
 
-    return a[0] < b[0]
-        && a[1] < b[1]
-        && aRight > bRight
-        && aBottom > bBottom
+    const identical = a[0] === b[0]
+        && a[1] === b[1]
+        && aRight === bRight
+        && aBottom === bBottom
+
+    return !identical
+        && a[0] <= b[0]
+        && a[1] <= b[1]
+        && aRight >= bRight
+        && aBottom >= bBottom
 }
 
 /**

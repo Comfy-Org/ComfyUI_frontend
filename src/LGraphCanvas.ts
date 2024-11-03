@@ -1,6 +1,6 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
-import type { LGraphNode, NodeId } from "./LGraphNode"
+import { LGraphNode, type NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
 import type { IClipboardContents } from "./types/serialisation"
 import type { LLink } from "./LLink"
@@ -8,7 +8,7 @@ import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
 import { EaseFunction, LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
-import { isInsideRectangle, distance, overlapBounding, isPointInRectangle } from "./measure"
+import { isInsideRectangle, distance, overlapBounding, isPointInRectangle, containsRect } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
@@ -239,6 +239,7 @@ export class LGraphCanvas {
     onDrawForeground?: (arg0: CanvasRenderingContext2D, arg1: any) => void
     connections_width: number
     round_radius: number
+    /** The current node being drawn by {@link drawNode}.  This should NOT be used to determine the currently selected node.  See {@link selectedItems} */
     current_node: LGraphNode | null
     /** used for widgets */
     node_widget?: [LGraphNode, IWidget] | null
@@ -255,9 +256,10 @@ export class LGraphCanvas {
     last_draw_time = 0
     render_time = 0
     fps = 0
+    /** @deprecated See {@link LGraphCanvas.selectedItems} */
     selected_nodes: Dictionary<LGraphNode> = {}
-    /** @deprecated Temporary implementation only - will be replaced with `selectedItems: Set<Positionable>`. */
-    selectedGroups: Set<LGraphGroup> = new Set()
+    /** All selected nodes, groups, and reroutes */
+    selectedItems: Set<Positionable> = new Set()
     selected_group: LGraphGroup | null = null
     visible_nodes: LGraphNode[] = []
     node_dragged?: LGraphNode
@@ -1198,7 +1200,7 @@ export class LGraphCanvas {
         // @ts-expect-error Doesn't exist anywhere...
         subgraph_node.buildFromNodes(nodes_list)
 
-        canvas.deselectAllNodes()
+        canvas.deselectAll()
         canvas.setDirty(true, true)
     }
     static onMenuNodeClone(value: IContextMenuValue, options: IContextMenuOptions, e: MouseEvent, menu: ContextMenu, node: LGraphNode): void {
@@ -1206,9 +1208,9 @@ export class LGraphCanvas {
         const graph = node.graph
         graph.beforeChange()
 
-        const newSelected: Dictionary<LGraphNode> = {}
+        const newSelected = new Set<LGraphNode>()
 
-        const fApplyMultiNode = function (node) {
+        const fApplyMultiNode = function (node: LGraphNode, newNodes: Set<LGraphNode>): void {
             if (node.clonable === false) return
 
             const newnode = node.clone()
@@ -1216,20 +1218,20 @@ export class LGraphCanvas {
 
             newnode.pos = [node.pos[0] + 5, node.pos[1] + 5]
             node.graph.add(newnode)
-            newSelected[newnode.id] = newnode
+            newNodes.add(newnode)
         }
 
         const canvas = LGraphCanvas.active_canvas
         if (!canvas.selected_nodes || Object.keys(canvas.selected_nodes).length <= 1) {
-            fApplyMultiNode(node)
+            fApplyMultiNode(node, newSelected)
         } else {
             for (const i in canvas.selected_nodes) {
-                fApplyMultiNode(canvas.selected_nodes[i])
+                fApplyMultiNode(canvas.selected_nodes[i], newSelected)
             }
         }
 
-        if (Object.keys(newSelected).length) {
-            canvas.selectNodes(newSelected)
+        if (newSelected.size) {
+            canvas.selectNodes([...newSelected])
         }
 
         graph.afterChange()
@@ -1251,8 +1253,6 @@ export class LGraphCanvas {
         this.dragging_rectangle = null
 
         this.selected_nodes = {}
-        /** All selected groups */
-        this.selectedGroups = null
         /** The group currently being resized */
         this.selected_group = null
 
@@ -1767,9 +1767,7 @@ export class LGraphCanvas {
                         this.node_dragged = node
                         this.isDragging = true
                     }
-                    if (!this.selected_nodes[node.id]) {
-                        this.processNodeSelected(node, e)
-                    }
+                    this.processSelect(node, e)
                 }
             }
 
@@ -1962,7 +1960,7 @@ export class LGraphCanvas {
                     }
 
                     //double clicking
-                    if (this.allow_interaction && is_double_click && this.selected_nodes[node.id]) {
+                    if (this.allow_interaction && is_double_click && this.selectedItems.has(node)) {
                         // Check if it's a double click on the title bar
                         // Note: pos[1] is the y-coordinate of the node's body
                         // If clicking on node header (title), pos[1] is negative
@@ -2003,14 +2001,10 @@ export class LGraphCanvas {
                         }
                         // Account for shift + click + drag
                         if (!(e.shiftKey && !e.ctrlKey && !e.altKey) || !node.selected) {
-                            this.processNodeSelected(node, e)
+                            this.processSelect(node, e)
                         }
-                    } else { // double-click
-                        /**
-                         * Don't call the function if the block is already selected.
-                         * Otherwise, it could cause the block to be unselected while its panel is open.
-                         */
-                        if (!node.selected) this.processNodeSelected(node, e)
+                    } else if (!node.selected) {
+                        this.processSelect(node, e)
                     }
 
                     this.dirty_canvas = true
@@ -2063,27 +2057,25 @@ export class LGraphCanvas {
                         this.ctx.lineWidth = lineWidth
                     }
 
+
                     this.selected_group = this.graph.getGroupOnPos(e.canvasX, e.canvasY)
                     this.selected_group_resizing = false
 
                     const group = this.selected_group
-                    if (this.selected_group && !this.read_only) {
+                    if (group && !this.read_only) {
                         if (e.ctrlKey) {
                             this.dragging_rectangle = null
                         }
 
-                        const dist = distance([e.canvasX, e.canvasY], [this.selected_group.pos[0] + this.selected_group.size[0], this.selected_group.pos[1] + this.selected_group.size[1]])
+                        const dist = distance([e.canvasX, e.canvasY], [group.pos[0] + group.size[0], group.pos[1] + group.size[1]])
                         if (dist * this.ds.scale < 10) {
                             this.selected_group_resizing = true
                         } else {
                             const f = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
                             const headerHeight = f * 1.4
                             if (isInsideRectangle(e.canvasX, e.canvasY, group.pos[0], group.pos[1], group.size[0], headerHeight)) {
-                                this.selected_group.recomputeInsideNodes()
-                                if (!e.shiftKey && !e.ctrlKey && !e.metaKey) this.deselectAllNodes()
-                                this.selectedGroups ??= new Set()
-                                this.selectedGroups.add(group)
-                                group.selected = true
+                                group.recomputeInsideNodes()
+                                this.processSelect(group, e, true)
 
                                 this.isDragging = true
                                 skip_action = true
@@ -2195,14 +2187,8 @@ export class LGraphCanvas {
 
                 // is it hover a node ?
                 if (node) {
-                    if (Object.keys(this.selected_nodes).length
-                        && (this.selected_nodes[node.id] || e.shiftKey || e.ctrlKey || e.metaKey)) {
-                        // is multiselected or using shift to include the now node
-                        if (!this.selected_nodes[node.id]) this.selectNodes([node], true) // add this if not present
-                    } else {
-                        // update selection
-                        this.selectNodes([node])
-                    }
+                    // add this if not present
+                    this.processSelect(node, e, true)
                 }
 
                 // Show context menu for the node or group under the pointer
@@ -2440,35 +2426,26 @@ export class LGraphCanvas {
                 this.node_capturing_input.onMouseMove?.(e, [e.canvasX - this.node_capturing_input.pos[0], e.canvasY - this.node_capturing_input.pos[1]], this)
             }
 
-            //node being dragged
+            // Items being dragged
             if (this.isDragging && !this.live_mode) {
-                //console.log("draggin!",this.selected_nodes);
-                const nodes = new Set<LGraphNode>()
-                const deltax = delta[0] / this.ds.scale
-                const deltay = delta[1] / this.ds.scale
-                for (const i in this.selected_nodes) {
-                    const n = this.selected_nodes[i]
-                    nodes.add(n)
-                    n.pos[0] += delta[0] / this.ds.scale
-                    n.pos[1] += delta[1] / this.ds.scale
-                }
+                const selected = this.selectedItems
+                const allItems = e.ctrlKey ? selected : new Set<Positionable>()
 
-                if (this.selectedGroups) {
-                    for (const group of this.selectedGroups) {
-                        group.move(deltax, deltay, true)
-                        if (!e.ctrlKey) {
-                            for (const node of group._nodes) {
-                                if (!nodes.has(node)) {
-                                    node.pos[0] += deltax
-                                    node.pos[1] += deltay
-                                }
-                            }
-                        }
-                    }
-                }
+                if (!e.ctrlKey)
+                    selected?.forEach(x => addToSetRecursively(x, allItems))
+
+                const deltaX = delta[0] / this.ds.scale
+                const deltaY = delta[1] / this.ds.scale
+                allItems.forEach(x => x.move(deltaX, deltaY, true))
 
                 this.dirty_canvas = true
                 this.dirty_bgcanvas = true
+
+                function addToSetRecursively(item: Positionable, items: Set<Positionable>): void {
+                    if (items.has(item)) return
+                    items.add(item)
+                    item.children?.forEach(x => addToSetRecursively(x, items))
+                }
             }
 
             if (this.resizing_node && !this.live_mode) {
@@ -2526,20 +2503,7 @@ export class LGraphCanvas {
             this.node_widget = null
 
             if (this.selected_group) {
-                const diffx = this.selected_group.pos[0] -
-                    Math.round(this.selected_group.pos[0])
-                const diffy = this.selected_group.pos[1] -
-                    Math.round(this.selected_group.pos[1])
-                this.selected_group.move(diffx, diffy, e.ctrlKey)
-                this.selected_group.pos[0] = Math.round(
-                    this.selected_group.pos[0]
-                )
-                this.selected_group.pos[1] = Math.round(
-                    this.selected_group.pos[1]
-                )
-                if (this.selected_group._nodes.length) {
-                    this.dirty_canvas = true
-                }
+                this.dirty_canvas = true
                 this.selected_group = null
             }
             this.selected_group_resizing = false
@@ -2574,32 +2538,21 @@ export class LGraphCanvas {
                     if (!node || (w > 10 && h > 10)) {
                         //test against all nodes (not visible because the rectangle maybe start outside
                         const to_select = []
-                        for (let i = 0; i < nodes.length; ++i) {
-                            const nodeX = nodes[i]
+                        for (const nodeX of nodes) {
                             nodeX.getBounding(node_bounding)
-                            if (!overlapBounding(
-                                this.dragging_rectangle,
-                                node_bounding
-                            )) {
-                                continue
-                            } //out of the visible area
+                            if (!overlapBounding(this.dragging_rectangle, node_bounding)) continue
+
                             to_select.push(nodeX)
                         }
-                        if (to_select.length) {
-                            this.selectNodes(to_select, e.shiftKey) // add to selection with shift
-                        }
+                        // add to selection with shift
+                        if (to_select.length) this.selectNodes(to_select, e.shiftKey)
 
                         // Select groups
-                        if (!e.shiftKey) this.deselectGroups()
-                        this.selectedGroups ??= new Set()
-
                         const groups = this.graph.groups
                         for (const group of groups) {
                             const r = this.dragging_rectangle
-                            const pos = group.pos
-                            const size = group.size
-                            if (!isInsideRectangle(pos[0], pos[1], r[0], r[1], r[2], r[3]) || !isInsideRectangle(pos[0] + size[0], pos[1] + size[1], r[0], r[1], r[2], r[3])) continue
-                            this.selectedGroups.add(group)
+                            if (!containsRect(r, group._bounding)) continue
+                            this.selectedItems.add(group)
                             group.recomputeInsideNodes()
                             group.selected = true
                         }
@@ -2731,7 +2684,7 @@ export class LGraphCanvas {
                 )
 
                 if (!node && e.click_time < 300 && !this.graph.groups.some(x => x.isPointInTitlebar(e.canvasX, e.canvasY))) {
-                    this.deselectAllNodes()
+                    this.deselectAll()
                 }
 
                 this.dirty_canvas = true
@@ -3216,122 +3169,167 @@ export class LGraphCanvas {
 
         this.setDirty(true)
     }
-    processNodeSelected(node: LGraphNode, e: CanvasMouseEvent): void {
-        this.selectNode(node, e && (e.shiftKey || e.metaKey || e.ctrlKey || this.multi_select))
-        this.onNodeSelected?.(node)
-    }
+
     /**
-     * selects a given node (or adds it to the current selection)
-     **/
+     * Determines whether to select or deselect an item that has received a pointer event.  Will deselect other nodes if 
+     * @param item Canvas item to select/deselect
+     * @param e The MouseEvent to handle
+     * @param sticky Prevents deselecting individual nodes (as used by aux/right-click)
+     * @remarks
+     * Accessibility: anyone using {@link mutli_select} always deselects when clicking empty space.
+     */
+    processSelect<TPositionable extends Positionable = LGraphNode>(item: TPositionable | null, e: CanvasMouseEvent, sticky: boolean = false): void {
+        const addModifier = e?.shiftKey
+        const subtractModifier = e != null && (e.metaKey || e.ctrlKey)
+        const eitherModifier = addModifier || subtractModifier
+        const modifySelection = eitherModifier || this.multi_select
+
+        if (!item) {
+            if (!eitherModifier || this.multi_select) this.deselectAll()
+
+        } else if (!item.selected || !this.selectedItems.has(item)) {
+            if (!modifySelection) this.deselectAll(item)
+            this.select(item)
+        } else if (modifySelection && !sticky) {
+            this.deselect(item)
+        } else if (!sticky) {
+            this.deselectAll(item)
+        } else {
+            return
+        }
+        this.onSelectionChange?.(this.selected_nodes)
+        this.setDirty(true)
+    }
+
+    /**
+     * Selects a {@link Positionable} item.
+     * @param item The canvas item to add to the selection.
+     */
+    select<TPositionable extends Positionable = LGraphNode>(item: TPositionable): void {
+        if (item.selected && this.selectedItems.has(item)) return
+
+        item.selected = true
+        this.selectedItems.add(item)
+        if (!(item instanceof LGraphNode)) return
+
+        // Node-specific handling
+        item.onSelected?.()
+        this.selected_nodes[item.id] = item
+
+        this.onNodeSelected?.(item)
+
+        // Highlight links
+        item.inputs?.forEach(input => this.highlighted_links[input.link] = true)
+        item.outputs?.flatMap(x => x.links)
+            .forEach(id => this.highlighted_links[id] = true)
+    }
+
+    /**
+     * Deselects a {@link Positionable} item.
+     * @param item The canvas item to remove from the selection.
+     */
+    deselect<TPositionable extends Positionable = LGraphNode>(item: TPositionable): void {
+        if (!item.selected && !this.selectedItems.has(item)) return
+
+        item.selected = false
+        this.selectedItems.delete(item)
+        if (!(item instanceof LGraphNode)) return
+
+        // Node-specific handling
+        item.onDeselected?.()
+        delete this.selected_nodes[item.id]
+
+        this.onNodeDeselected?.(item)
+
+        // Clear link highlight
+        item.inputs?.forEach(input => delete this.highlighted_links[input.link])
+        item.outputs?.flatMap(x => x.links)
+            .forEach(id => delete this.highlighted_links[id])
+    }
+
+    /** @deprecated See {@link LGraphCanvas.processSelect} */
+    processNodeSelected(item: LGraphNode, e: CanvasMouseEvent): void {
+        this.processSelect(item, e, e && (e.shiftKey || e.metaKey || e.ctrlKey || this.multi_select))
+    }
+
+    /** @deprecated See {@link LGraphCanvas.select} */
     selectNode(node: LGraphNode, add_to_current_selection?: boolean): void {
         if (node == null) {
-            this.deselectAllNodes()
+            this.deselectAll()
         } else {
             this.selectNodes([node], add_to_current_selection)
         }
     }
+
     /**
      * selects several nodes (or adds them to the current selection)
      **/
-    selectNodes(nodes?: LGraphNode[] | Dictionary<LGraphNode>, add_to_current_selection?: boolean): void {
-        if (!add_to_current_selection) {
-            this.deselectAllNodes()
-        }
+    selectNodes(nodes?: LGraphNode[], add_to_current_selection?: boolean): void {
+        nodes ||= this.graph._nodes
 
-        nodes = nodes || this.graph._nodes
-        if (typeof nodes == "string") nodes = [nodes]
-        for (const i in nodes) {
-            const node: LGraphNode = nodes[i]
-            if (node.selected) {
-                this.deselectNode(node)
-                continue
-            }
+        if (!add_to_current_selection) this.deselectAll()
 
-            if (!node.selected) {
-                node.onSelected?.()
-            }
-            node.selected = true
-            this.selected_nodes[node.id] = node
-
-            if (node.inputs) {
-                for (let j = 0; j < node.inputs.length; ++j) {
-                    this.highlighted_links[node.inputs[j].link] = true
-                }
-            }
-            if (node.outputs) {
-                for (let j = 0; j < node.outputs.length; ++j) {
-                    const out = node.outputs[j]
-                    if (out.links) {
-                        for (let k = 0; k < out.links.length; ++k) {
-                            this.highlighted_links[out.links[k]] = true
-                        }
-                    }
-                }
+        for (const node of nodes) {
+            if (node.selected || this.selectedItems.has(node)) {
+                this.deselect(node)
+            } else {
+                this.select(node)
             }
         }
 
         this.onSelectionChange?.(this.selected_nodes)
-
         this.setDirty(true)
     }
-    /**
-     * removes a node from the current selection
-     **/
+
+    /** @deprecated See {@link LGraphCanvas.deselect} */
     deselectNode(node: LGraphNode): void {
-        if (!node.selected) return
-        node.onDeselected?.()
-        node.selected = false
-        delete this.selected_nodes[node.id]
-
-        this.onNodeDeselected?.(node)
-
-        //remove highlighted
-        if (node.inputs) {
-            for (let i = 0; i < node.inputs.length; ++i) {
-                delete this.highlighted_links[node.inputs[i].link]
-            }
-        }
-        if (node.outputs) {
-            for (let i = 0; i < node.outputs.length; ++i) {
-                const out = node.outputs[i]
-                if (out.links) {
-                    for (let j = 0; j < out.links.length; ++j) {
-                        delete this.highlighted_links[out.links[j]]
-                    }
-                }
-            }
-        }
+        this.deselect(node)
     }
+
     /**
-     * removes all nodes from the current selection
-     **/
-    deselectAllNodes(): void {
+     * Deselects all items on the canvas.
+     * @param keepSelected If set, this item will not be removed from the selection.
+     */
+    deselectAll(keepSelected?: Positionable): void {
         if (!this.graph) return
-        const nodes = this.graph._nodes
-        for (let i = 0, l = nodes.length; i < l; ++i) {
-            const node = nodes[i]
-            if (!node.selected) {
+
+        const selected = this.selectedItems
+        let wasSelected: Positionable
+        for (const sel of selected) {
+            if (sel === keepSelected) {
+                wasSelected = sel
                 continue
             }
-            node.onDeselected?.()
-            node.selected = false
-            this.onNodeDeselected?.(node)
+            sel.onDeselected?.()
+            sel.selected = false
         }
+        selected.clear()
+        if (wasSelected) selected.add(wasSelected)
+
+        this.setDirty(true)
+
+        // Legacy code
+        const oldNode = keepSelected?.id == null ? null : this.selected_nodes[keepSelected.id]
         this.selected_nodes = {}
         this.current_node = null
         this.highlighted_links = {}
-        this.deselectGroups()
+
+        if (keepSelected instanceof LGraphNode) {
+            // Handle old object lookup
+            if (oldNode) this.selected_nodes[oldNode.id] = oldNode
+
+            // Highlight links
+            keepSelected.inputs?.forEach(input => this.highlighted_links[input.link] = true)
+            keepSelected.outputs?.flatMap(x => x.links)
+                .forEach(id => this.highlighted_links[id] = true)
+        }
 
         this.onSelectionChange?.(this.selected_nodes)
-        this.setDirty(true)
     }
 
-    deselectGroups() {
-        if (!this.selectedGroups) return
-        for (const group of this.selectedGroups) {
-            delete group.selected
-        }
-        this.selectedGroups = null
+    /** @deprecated See {@link LGraphCanvas.deselectAll} */
+    deselectAllNodes(): void {
+        this.deselectAll()
     }
 
     /**
