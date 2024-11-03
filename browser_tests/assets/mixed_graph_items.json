@@ -200,19 +200,6 @@
       "flags": {}
     },
     {
-      "id": 1,
-      "title": "Group",
-      "bounding": [
-        806.9703979492188,
-        59.079444885253906,
-        335,
-        345.6000061035156
-      ],
-      "color": "#3f789e",
-      "font_size": 24,
-      "flags": {}
-    },
-    {
       "id": 2,
       "title": "Group Child",
       "bounding": [
