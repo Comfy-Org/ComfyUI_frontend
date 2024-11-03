@@ -356,6 +356,8 @@ export class LGraphCanvas {
   onNodeSelected?: (node: LGraphNode) => void
   onNodeDeselected?: (node: LGraphNode) => void
   onNodeUpdated?: (node: LGraphNode) => void
+  onPositionChanged?: (position: { x: number, y: number }) => void
+  onZoomChanged?: (scale: number) => void
   onRender?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void
   /** Implement this function to allow conversion of widget types to input types, e.g. number -> INT or FLOAT for widget link validation checks */
   getWidgetLinkType?: (widget: IWidget, node: LGraphNode) => string | null | undefined
@@ -2248,6 +2250,13 @@ export class LGraphCanvas {
       this.ds.offset[1] += delta[1] / this.ds.scale
       this.dirty_canvas = true
       this.dirty_bgcanvas = true
+
+      if (this.onPositionChanged) {
+        this.onPositionChanged({
+          x: this.ds.offset[0],
+          y: this.ds.offset[1]
+        })
+      }
     } else if ((this.allow_interaction || (node && node.flags.allow_interaction)) && !this.read_only) {
       if (this.connecting_links) this.dirty_canvas = true
 
@@ -2724,6 +2733,17 @@ export class LGraphCanvas {
     else if (delta < 0) scale *= 1 / this.zoom_speed
 
     this.ds.changeScale(scale, [e.clientX, e.clientY])
+
+    if (this.onZoomChanged) {
+      this.onZoomChanged(scale)
+    }
+
+    if (this.onPositionChanged) {
+      this.onPositionChanged({
+        x: this.ds.offset[0],
+        y: this.ds.offset[1]
+      })
+    }
 
     this.graph.change()
 
@@ -3263,6 +3283,13 @@ export class LGraphCanvas {
     this.ds.offset[0] = -node.pos[0] - node.size[0] * 0.5 + (this.canvas.width * 0.5) / (this.ds.scale * dpi)
     this.ds.offset[1] = -node.pos[1] - node.size[1] * 0.5 + (this.canvas.height * 0.5) / (this.ds.scale * dpi)
     this.setDirty(true, true)
+
+    if (this.onPositionChanged) {
+      this.onPositionChanged({
+          x: this.ds.offset[0],
+          y: this.ds.offset[1]
+      })
+    }
   }
   /**
    * adds some useful properties to a mouse event, like the position in graph coordinates
