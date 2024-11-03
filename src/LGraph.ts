@@ -106,8 +106,8 @@ export class LGraph {
   onOutputRenamed?(old_name: string, name: string): void
   onOutputTypeChanged?(name: string, type: string): void
   onOutputRemoved?(name: string): void
-  onBeforeChange?(graph: LGraph, info?: LGraphNode): void
-  onAfterChange?(graph: LGraph, info?: LGraphNode): void
+  onBeforeChange?(graph: LGraph, node?: LGraphNode): void
+  onAfterChange?(graph: LGraph, node?: LGraphNode): void
   onConnectionChange?(node: LGraphNode): void
   on_change?(graph: LGraph): void
   onSerialize?(data: ISerialisedGraph): void
@@ -1109,15 +1109,21 @@ export class LGraph {
     }
   }
   //used for undo, called before any change is made to the graph
-  beforeChange(info?: LGraphNode): void {
-    this.onBeforeChange?.(this, info)
+  beforeChange(node?: LGraphNode): void {
+    this.onBeforeChange?.(this, node)
     this.sendActionToCanvas('onBeforeChange', this)
   }
   //used to resend actions, called after any change is made to the graph
-  afterChange(info?: LGraphNode): void {
-    this.onAfterChange?.(this, info)
+  afterChange(node?: LGraphNode): void {
+    this.onAfterChange?.(this, node)
     this.sendActionToCanvas('onAfterChange', this)
   }
+
+  nodeUpdate(node?: LGraphNode): void {
+    this.onNodeUpdated?.(node)
+    this.sendActionToCanvas('onNodeUpdated', node)
+  }
+  
   connectionChange(node: LGraphNode): void {
     this.updateExecutionOrder()
     this.onConnectionChange?.(node)

@@ -355,6 +355,7 @@ export class LGraphCanvas {
   onShowNodePanel?: (n: LGraphNode) => void
   onNodeSelected?: (node: LGraphNode) => void
   onNodeDeselected?: (node: LGraphNode) => void
+  onNodeUpdated?: (node: LGraphNode) => void
   onRender?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void
   /** Implement this function to allow conversion of widget types to input types, e.g. number -> INT or FLOAT for widget link validation checks */
   getWidgetLinkType?: (widget: IWidget, node: LGraphNode) => string | null | undefined
