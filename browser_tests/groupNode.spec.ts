@@ -139,7 +139,9 @@ test.describe('Group Node', () => {
   }) => {
     await comfyPage.loadWorkflow('legacy_group_node')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
-    expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+    await expect(
+      comfyPage.page.locator('.comfy-missing-nodes')
+    ).not.toBeVisible()
   })
 
   test.describe('Copy and paste', () => {

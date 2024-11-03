@@ -27,10 +27,14 @@ test.describe('Optional input', () => {
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('only_optional_inputs')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
-    expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+    await expect(
+      comfyPage.page.locator('.comfy-missing-nodes')
+    ).not.toBeVisible()
 
     // If the node's multiline text widget is visible, then it was loaded successfully
-    expect(comfyPage.page.locator('.comfy-multiline-input')).toHaveCount(1)
+    await expect(comfyPage.page.locator('.comfy-multiline-input')).toHaveCount(
+      1
+    )
   })
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('old_workflow_converted_input')

@@ -650,10 +650,14 @@ export class ComfyPage {
       x: nodePos.x + nodeSize.width * ratioX,
       y: nodePos.y + nodeSize.height * ratioY
     }
-    await this.dragAndDrop(bottomRight, target)
+    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
+    await this.dragAndDrop(
+      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
+      target
+    )
     await this.nextFrame()
     if (revertAfter) {
-      await this.dragAndDrop(target, bottomRight)
+      await this.dragAndDrop({ x: target.x - 2, y: target.y - 1 }, bottomRight)
       await this.nextFrame()
     }
   }
@@ -664,14 +668,20 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const ksamplerPos = {
-      x: 864,
-      y: 157
+      x: 863,
+      y: 156
     }
     const ksamplerSize = {
       width: 315,
       height: 292
     }
-    this.resizeNode(ksamplerPos, ksamplerSize, percentX, percentY, revertAfter)
+    return this.resizeNode(
+      ksamplerPos,
+      ksamplerSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
   }
 
   async resizeLoadCheckpointNode(
@@ -680,14 +690,14 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const loadCheckpointPos = {
-      x: 25,
-      y: 440
+      x: 26,
+      y: 444
     }
     const loadCheckpointSize = {
-      width: 320,
-      height: 120
+      width: 315,
+      height: 127
     }
-    this.resizeNode(
+    return this.resizeNode(
       loadCheckpointPos,
       loadCheckpointSize,
       percentX,
@@ -702,14 +712,14 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const emptyLatentPos = {
-      x: 475,
-      y: 580
+      x: 473,
+      y: 579
     }
     const emptyLatentSize = {
-      width: 303,
-      height: 132
+      width: 315,
+      height: 136
     }
-    this.resizeNode(
+    return this.resizeNode(
       emptyLatentPos,
       emptyLatentSize,
       percentX,
