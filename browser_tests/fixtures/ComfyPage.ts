@@ -675,7 +675,13 @@ export class ComfyPage {
       width: 315,
       height: 292
     }
-    this.resizeNode(ksamplerPos, ksamplerSize, percentX, percentY, revertAfter)
+    return this.resizeNode(
+      ksamplerPos,
+      ksamplerSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
   }
 
   async resizeLoadCheckpointNode(
@@ -691,7 +697,7 @@ export class ComfyPage {
       width: 315,
       height: 127
     }
-    this.resizeNode(
+    return this.resizeNode(
       loadCheckpointPos,
       loadCheckpointSize,
       percentX,
@@ -713,7 +719,7 @@ export class ComfyPage {
       width: 315,
       height: 136
     }
-    this.resizeNode(
+    return this.resizeNode(
       emptyLatentPos,
       emptyLatentSize,
       percentX,
