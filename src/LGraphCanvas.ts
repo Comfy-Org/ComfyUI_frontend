@@ -2900,7 +2900,7 @@ export class LGraphCanvas {
             else if (e.keyCode == 46 || e.keyCode == 8) {
                 // @ts-expect-error
                 if (e.target.localName != "input" && e.target.localName != "textarea") {
-                    this.deleteSelectedNodes()
+                    this.deleteSelectedItems()
                     block_default = true
                 }
             }
@@ -3334,35 +3334,43 @@ export class LGraphCanvas {
     }
 
     /**
-     * deletes all nodes in the current selection from the graph
-     **/
-    deleteSelectedNodes(): void {
-
+     * Deletes all selected items from the graph.
+     */
+    deleteSelectedItems(): void {
         this.graph.beforeChange()
 
-        for (const i in this.selected_nodes) {
-            const node = this.selected_nodes[i]
-
-            if (node.block_delete) continue
-
-            //autoconnect when possible (very basic, only takes into account first input-output)
-            if (node.inputs?.length && node.outputs && node.outputs.length && LiteGraph.isValidConnection(node.inputs[0].type, node.outputs[0].type) && node.inputs[0].link && node.outputs[0].links && node.outputs[0].links.length) {
-                const input_link = node.graph._links.get(node.inputs[0].link)
-                const output_link = node.graph._links.get(node.outputs[0].links[0])
-                const input_node = node.getInputNode(0)
-                const output_node = node.getOutputNodes(0)[0]
-                if (input_node && output_node)
-                    input_node.connect(input_link.origin_slot, output_node, output_link.target_slot)
+        for (const item of this.selectedItems) {
+            if (item instanceof LGraphNode) {
+                const node = item
+                if (node.block_delete) continue
+                node.connectInputToOutput()
             }
-            this.graph.remove(node)
-            this.onNodeDeselected?.(node)
+
+            if (item instanceof LGraphGroup || item instanceof LGraphNode) {
+                this.graph.remove(item)
+            }
+
+            if (item instanceof LGraphNode) {
+                this.onNodeDeselected?.(item)
+            }
         }
+
         this.selected_nodes = {}
+        this.selectedItems.clear()
         this.current_node = null
         this.highlighted_links = {}
         this.setDirty(true)
         this.graph.afterChange()
     }
+
+    /**
+     * deletes all nodes in the current selection from the graph
+     * @deprecated See {@link LGraphCanvas.deleteSelectedItems}
+     **/
+    deleteSelectedNodes(): void {
+        this.deleteSelectedItems()
+    }
+
     /**
      * centers the camera on a given node
      **/

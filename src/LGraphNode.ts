@@ -2373,4 +2373,32 @@ export class LGraphNode implements Positionable {
             currentX += badge.getWidth(ctx) + gap
         }
     }
+
+    /**
+     * Try auto-connect input to output without this node when possible
+     * (very basic, only takes into account first input-output)
+     *
+     * @returns true if connected, false otherwise
+     */
+    connectInputToOutput(): boolean {
+        if (
+            this.inputs?.length &&
+            this.outputs &&
+            this.outputs.length &&
+            LiteGraph.isValidConnection(this.inputs[0].type, this.outputs[0].type) &&
+            this.inputs[0].link &&
+            this.outputs[0].links &&
+            this.outputs[0].links.length
+        ) {
+            const input_link = this.graph._links.get(this.inputs[0].link)
+            const output_link = this.graph._links.get(this.outputs[0].links[0])
+            const input_node = this.getInputNode(0)
+            const output_node = this.getOutputNodes(0)[0]
+            if (input_node && output_node) {
+                input_node.connect(input_link.origin_slot, output_node, output_link.target_slot)
+                return true
+            }
+        }
+        return false
+    }
 }
