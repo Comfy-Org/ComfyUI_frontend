@@ -2879,7 +2879,7 @@ export class LGraphCanvas {
 
             //select all Control A
             else if (e.keyCode == 65 && e.ctrlKey) {
-                this.selectNodes()
+                this.selectItems()
                 block_default = true
             }
 
@@ -3262,23 +3262,24 @@ export class LGraphCanvas {
     }
 
     /**
-     * selects several nodes (or adds them to the current selection)
-     **/
-    selectNodes(nodes?: LGraphNode[], add_to_current_selection?: boolean): void {
-        nodes ||= this.graph._nodes
-
+     * Selects several items.
+     * @param items Items to select - if falsy, all items on the canvas will be selected
+     * @param add_to_current_selection If set, the items will be added to the current selection instead of replacing it
+     */
+    selectItems(items?: Positionable[], add_to_current_selection?: boolean): void {
+        const itemsToSelect = items ?? [...this.graph._nodes, ...this.graph._groups]
         if (!add_to_current_selection) this.deselectAll()
-
-        for (const node of nodes) {
-            if (node.selected || this.selectedItems.has(node)) {
-                this.deselect(node)
-            } else {
-                this.select(node)
-            }
-        }
-
+        for (const item of itemsToSelect) this.select(item)
         this.onSelectionChange?.(this.selected_nodes)
         this.setDirty(true)
+    }
+
+    /**
+     * selects several nodes (or adds them to the current selection)
+     * @deprecated See {@link LGraphCanvas.selectItems}
+     **/
+    selectNodes(nodes?: LGraphNode[], add_to_current_selection?: boolean): void {
+        this.selectItems(nodes, add_to_current_selection)
     }
 
     /** @deprecated See {@link LGraphCanvas.deselect} */
