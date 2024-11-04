@@ -134,7 +134,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       key: 'p'
     },
-    commandId: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+    commandId: 'Comfy.Canvas.ToggleSelected.Pin',
     targetSelector: '#graph-canvas'
   },
   {
