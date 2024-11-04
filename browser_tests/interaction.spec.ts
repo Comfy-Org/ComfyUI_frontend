@@ -13,9 +13,11 @@ test.describe('Item Interaction', () => {
   test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('mixed_graph_items')
     await comfyPage.canvas.press('Control+a')
-    await comfyPage.canvas.press('p')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
-    await comfyPage.canvas.press('p')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
   })
 })
