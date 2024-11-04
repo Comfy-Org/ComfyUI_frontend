@@ -2358,7 +2358,8 @@ export class ComfyApp {
       this.#showMissingModelsError(missingModels, paths)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
-    workflowService.afterLoadNewGraph(workflow, graphData)
+    // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+    workflowService.afterLoadNewGraph(workflow, this.graph.serialize())
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })

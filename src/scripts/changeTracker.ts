@@ -306,28 +306,24 @@ export class ChangeTracker {
     return false
   }
 
-  static graphEqual(a: any, b: any, path = '') {
+  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      const keys = Object.getOwnPropertyNames(a)
-
-      if (keys.length != Object.getOwnPropertyNames(b).length) {
+      // Compare nodes ignoring order
+      if (
+        !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
+          if (Array.isArray(arrA) && Array.isArray(arrB)) {
+            return _.isEqual(new Set(arrA), new Set(arrB))
+          }
+        })
+      ) {
         return false
       }
 
-      for (const key of keys) {
-        let av = a[key]
-        let bv = b[key]
-        if (!path && key === 'nodes') {
-          // Nodes need to be sorted as the order changes when selecting nodes
-          av = [...av].sort((a, b) => a.id - b.id)
-          bv = [...bv].sort((a, b) => a.id - b.id)
-        } else if (path === 'extra.ds') {
-          // Ignore view changes
-          continue
-        }
-        if (!ChangeTracker.graphEqual(av, bv, path + (path ? '.' : '') + key)) {
+      // Compare other properties normally
+      for (const key of ['links', 'groups']) {
+        if (!_.isEqual(a[key], b[key])) {
           return false
         }
       }
