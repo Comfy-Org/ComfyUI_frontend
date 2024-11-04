@@ -28,7 +28,7 @@ function formatDate(text: string, date: Date) {
   })
 }
 
-export function clone(obj) {
+export function clone(obj: any) {
   try {
     if (typeof structuredClone !== 'undefined') {
       return structuredClone(obj)

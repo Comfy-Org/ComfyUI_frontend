@@ -8,6 +8,18 @@ import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
 
+function clone(obj: any) {
+  try {
+    if (typeof structuredClone !== 'undefined') {
+      return structuredClone(obj)
+    }
+  } catch (error) {
+    // structuredClone is stricter than using JSON.parse/stringify so fallback to that
+  }
+
+  return JSON.parse(JSON.stringify(obj))
+}
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -43,6 +55,14 @@ export class ChangeTracker {
     this.activeState = initialState
   }
 
+  /**
+   * Save the current state as the initial state.
+   */
+  reset(state?: ComfyWorkflowJSON) {
+    this.activeState = state ?? this.activeState
+    this.initialState = this.activeState
+  }
+
   store() {
     this.ds = {
       scale: this.app.canvas.ds.scale,
@@ -60,12 +80,19 @@ export class ChangeTracker {
     }
   }
 
+  private updateModified() {
+    // Get the workflow from the store as ChangeTracker is raw object, i.e.
+    // `this.workflow` is not reactive.
+    useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
+      !ChangeTracker.graphEqual(this.initialState, this.activeState)
+  }
+
   checkState() {
     if (!this.app.graph || this.changeCount) return
     // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
     const currentState = this.app.graph.serialize() as ComfyWorkflowJSON
     if (!this.activeState) {
-      this.activeState = _.cloneDeep(currentState)
+      this.activeState = clone(currentState)
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
@@ -73,15 +100,12 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      this.activeState = _.cloneDeep(currentState)
+      this.activeState = clone(currentState)
       this.redoQueue.length = 0
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )
-      // Get the workflow from the store as ChangeTracker is raw object, i.e.
-      // `this.workflow` is not reactive.
-      useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
-        !ChangeTracker.graphEqual(this.initialState, this.activeState)
+      this.updateModified()
     }
   }
 
@@ -94,6 +118,7 @@ export class ChangeTracker {
         showMissingNodesDialog: false
       })
       this.activeState = prevState
+      this.updateModified()
     }
   }
 

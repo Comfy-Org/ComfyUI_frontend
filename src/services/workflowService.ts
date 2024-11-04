@@ -196,6 +196,7 @@ export const workflowService = {
       const workflow = workflowStore.getWorkflowByPath('workflows/' + value)
       if (workflow) {
         const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+        loadedWorkflow.changeTracker.reset(workflowData)
         loadedWorkflow.changeTracker.restore()
         return
       }
@@ -213,6 +214,7 @@ export const workflowService = {
 
     // value is a ComfyWorkflow.
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()
   },
 
