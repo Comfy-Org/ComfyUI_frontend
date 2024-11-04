@@ -54,13 +54,12 @@ export class ComfyWorkflow extends UserFile {
     }
 
     // Note: originalContent is populated by super.load()
-    const changeTracker = markRaw(
+    this.changeTracker = markRaw(
       new ChangeTracker(
         this,
         /* initialState= */ JSON.parse(this.originalContent)
       )
     )
-    this.changeTracker = changeTracker
     return this as LoadedComfyWorkflow
   }
 
