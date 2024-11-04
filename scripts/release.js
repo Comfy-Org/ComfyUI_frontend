@@ -2,6 +2,13 @@ import { execSync } from 'child_process'
 import { readFileSync } from 'fs'
 
 try {
+  // Create a new branch with version-bump prefix
+  console.log('Creating new branch...')
+  const date = new Date().toISOString().split('T')[0]
+  const timestamp = new Date().getTime()
+  const branchName = `version-bump-${date}-${timestamp}`
+  execSync(`git checkout -b ${branchName} -t origin/main`, { stdio: 'inherit' })
+
   // Run npm version patch and capture the output
   console.log('Bumping version...')
   execSync('npm version patch', { stdio: 'inherit' })
