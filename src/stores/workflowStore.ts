@@ -125,6 +125,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Detach the workflow from the store. lightweight helper function.
    * @param workflow The workflow to detach.
+   * @returns The index of the workflow in the openWorkflowPaths array, or -1 if the workflow was not open.
    */
   const detachWorkflow = (workflow: ComfyWorkflow) => {
     if (workflow.isPersisted) {
@@ -132,11 +133,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     } else {
       temporaryWorkflows.value.delete(workflow)
     }
-    if (isOpen(workflow)) {
+    const index = openWorkflowPaths.value.indexOf(workflow.path)
+    if (index !== -1) {
       openWorkflowPaths.value = openWorkflowPaths.value.filter(
         (path) => path !== workflow.path
       )
     }
+    return index
   }
 
   /**
@@ -144,14 +147,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to attach.
    * @param openIndex The index to open the workflow at.
    */
-  const attachWorkflow = (workflow: ComfyWorkflow, openIndex?: number) => {
+  const attachWorkflow = (workflow: ComfyWorkflow, openIndex: number = -1) => {
     if (workflow.isPersisted) {
       persistedWorkflowByPath.value[workflow.path] = workflow
     } else {
       temporaryWorkflows.value.add(workflow)
     }
 
-    if (openIndex !== undefined) {
+    if (openIndex !== -1) {
       openWorkflowPaths.value.splice(openIndex, 0, workflow.path)
     }
   }
@@ -323,9 +326,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const oldPath = workflow.path
     const newPath = workflow.directory + '/' + appendJsonExt(newName)
     const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
-    const openIndex = openWorkflowPaths.value.indexOf(oldPath)
 
-    detachWorkflow(workflow)
+    const openIndex = detachWorkflow(workflow)
     // Perform the actual rename operation first
     await workflow.rename(newName)
 
@@ -348,6 +350,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /**
+   * Save a workflow. From temporary to persisted.
+   * @param workflow The workflow to save.
+   */
+  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+    const openIndex = detachWorkflow(workflow)
+    await workflow.save()
+    attachWorkflow(workflow, openIndex)
+  }
+
   return {
     activeWorkflow,
     isActive,
@@ -360,6 +372,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createTemporary,
     renameWorkflow,
     deleteWorkflow,
+    saveWorkflow,
 
     workflows,
     bookmarkedWorkflows,

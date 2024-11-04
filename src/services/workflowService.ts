@@ -66,7 +66,7 @@ export const workflowService = {
       : useWorkflowStore().createTemporary(workflow.path)
 
     await this.renameWorkflow(tempWorkflow, newFilename)
-    await tempWorkflow.save()
+    await useWorkflowStore().saveWorkflow(tempWorkflow)
   },
 
   /**
@@ -77,7 +77,7 @@ export const workflowService = {
     if (workflow.isTemporary) {
       await this.saveWorkflowAs(workflow)
     } else {
-      await workflow.save()
+      await useWorkflowStore().saveWorkflow(workflow)
     }
   },
 
