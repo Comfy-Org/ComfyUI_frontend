@@ -429,6 +429,19 @@ export const useCommandStore = defineStore('command', () => {
       }
     },
     {
+      id: 'Comfy.Canvas.ToggleSelected.Pin',
+      icon: 'pi pi-pin',
+      label: 'Pin/Unpin Selected Items',
+      versionAdded: '1.3.33',
+      function: () => {
+        for (const item of app.canvas.selectedItems) {
+          if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+            item.pin(!item.pinned)
+          }
+        }
+      }
+    },
+    {
       id: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
       icon: 'pi pi-minus',
       label: 'Collapse/Expand Selected Nodes',
