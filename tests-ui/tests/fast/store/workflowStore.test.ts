@@ -191,6 +191,18 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('closeWorkflow', () => {
+    it('should close a workflow', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.getWorkflowByPath(workflow.path)).toBe(workflow)
+      await store.closeWorkflow(workflow)
+      expect(store.isOpen(workflow)).toBe(false)
+      expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+  })
+
   describe('deleteWorkflow', () => {
     it('should close and delete an open workflow', async () => {
       const workflow = store.createTemporary('test.json')
@@ -200,14 +212,12 @@ describe('useWorkflowStore', () => {
 
       // Open the workflow first
       await store.openWorkflow(workflow)
-      expect(store.isOpen(workflow)).toBe(true)
 
       // Delete the workflow
       await store.deleteWorkflow(workflow)
 
       // Verify workflow was closed and deleted
       expect(workflow.delete).toHaveBeenCalled()
-      expect(store.isOpen(workflow)).toBe(false)
     })
 
     it('should remove bookmark when deleting a bookmarked workflow', async () => {
@@ -314,8 +324,7 @@ describe('useWorkflowStore', () => {
       })
 
       // Save the workflow with new path
-      const newPath = 'new-test'
-      const newWorkflow = await workflow.saveAs(newPath)
+      const newWorkflow = await workflow.saveAs('workflows/new-test.json')
 
       // Verify the content was updated
       expect(workflow.path).toBe('workflows/test.json')

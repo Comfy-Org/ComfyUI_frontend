@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, nextTick, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
@@ -122,6 +122,40 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
+  /**
+   * Detach the workflow from the store. lightweight helper function.
+   * @param workflow The workflow to detach.
+   */
+  const detachWorkflow = (workflow: ComfyWorkflow) => {
+    if (workflow.isPersisted) {
+      delete persistedWorkflowByPath.value[workflow.path]
+    } else {
+      temporaryWorkflows.value.delete(workflow)
+    }
+    if (isOpen(workflow)) {
+      openWorkflowPaths.value = openWorkflowPaths.value.filter(
+        (path) => path !== workflow.path
+      )
+    }
+  }
+
+  /**
+   * Attach the workflow to the store. lightweight helper function.
+   * @param workflow The workflow to attach.
+   * @param openIndex The index to open the workflow at.
+   */
+  const attachWorkflow = (workflow: ComfyWorkflow, openIndex?: number) => {
+    if (workflow.isPersisted) {
+      persistedWorkflowByPath.value[workflow.path] = workflow
+    } else {
+      temporaryWorkflows.value.add(workflow)
+    }
+
+    if (openIndex !== undefined) {
+      openWorkflowPaths.value.splice(openIndex, 0, workflow.path)
+    }
+  }
+
   /**
    * The active workflow currently being edited.
    */
@@ -290,34 +324,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const newPath = workflow.directory + '/' + appendJsonExt(newName)
     const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
     const openIndex = openWorkflowPaths.value.indexOf(oldPath)
-    const isPersisted = workflow.isPersisted
 
+    detachWorkflow(workflow)
     // Perform the actual rename operation first
     await workflow.rename(newName)
 
-    // Batch update all reactive state changes
-    nextTick(() => {
-      // Update persisted workflows map
-      if (isPersisted) {
-        const updatedPersistedWorkflows = { ...persistedWorkflowByPath.value }
-        updatedPersistedWorkflows[newPath] = workflow
-        delete updatedPersistedWorkflows[oldPath]
-        persistedWorkflowByPath.value = updatedPersistedWorkflows
-      }
+    attachWorkflow(workflow, openIndex)
 
-      // Update open workflows array
-      if (openIndex !== -1) {
-        const updatedOpenPaths = [...openWorkflowPaths.value]
-        updatedOpenPaths[openIndex] = newPath
-        openWorkflowPaths.value = updatedOpenPaths
-      }
-
-      // Update bookmarks
-      if (wasBookmarked) {
-        bookmarkStore.setBookmarked(oldPath, false)
-        bookmarkStore.setBookmarked(newPath, true)
-      }
-    })
+    // Update bookmarks
+    if (wasBookmarked) {
+      bookmarkStore.setBookmarked(oldPath, false)
+      bookmarkStore.setBookmarked(newPath, true)
+    }
   }
 
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
