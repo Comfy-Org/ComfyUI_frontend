@@ -54,6 +54,7 @@ export class ComfyWorkflow extends UserFile {
     }
 
     // Note: originalContent is populated by super.load()
+    console.debug('load and start tracking of workflow', this.path)
     this.changeTracker = markRaw(
       new ChangeTracker(
         this,
@@ -64,6 +65,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   unload(): void {
+    console.debug('unload workflow', this.path)
     this.changeTracker = null
     super.unload()
   }
@@ -131,6 +133,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       openWorkflowPaths.value.push(workflow.path)
     }
     activeWorkflow.value = await workflow.load()
+
+    console.debug('[workflowStore] open workflow', workflow.path)
   }
 
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
@@ -159,6 +163,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     } else {
       workflow.unload()
     }
+    console.debug('[workflowStore] close workflow', workflow.path)
   }
 
   /**
