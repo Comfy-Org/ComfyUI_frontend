@@ -1,4 +1,4 @@
-import type { Dictionary, IContextMenuValue, IFoundSlot, INodeFlags, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, ISlotType, Point, Positionable, ReadOnlyRect, Rect, Size } from "./interfaces"
+import type { Dictionary, IContextMenuValue, IFoundSlot, INodeFlags, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, IPinnable, ISlotType, Point, Positionable, ReadOnlyRect, Rect, Size } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import type { ISerialisedNode } from "./types/serialisation"
@@ -111,7 +111,7 @@ export interface LGraphNode {
  * Base Class for all the node type classes
  * @param {String} name a name for the node
  */
-export class LGraphNode implements Positionable {
+export class LGraphNode implements Positionable, IPinnable {
     // Static properties used by dynamic child classes
     static title?: string
     static MAX_CONSOLE?: number
@@ -2329,6 +2329,7 @@ export class LGraphNode implements Positionable {
 
     /**
      * Prevents the node being accidentally moved or resized by mouse interaction.
+     * Toggles pinned state if no value is provided.
      **/
     pin(v?: boolean): void {
         this.graph._version++
@@ -2340,6 +2341,10 @@ export class LGraphNode implements Positionable {
         // flags.pinned = false in serialized object.
         if (!this.pinned)
             delete this.flags.pinned
+    }
+
+    unpin(): void {
+        this.pin(false)
     }
 
     localToScreen(x: number, y: number, dragAndScale: DragAndScale): Point {

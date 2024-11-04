@@ -1,9 +1,9 @@
-import type { IContextMenuValue, Point, Positionable, Size } from "./interfaces"
+import type { IContextMenuValue, IPinnable, Point, Positionable, Size } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { isInsideRectangle, containsCentre, containsRect, isPointInRectangle } from "./measure"
+import { isInsideRectangle, containsCentre, containsRect } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -11,7 +11,7 @@ export interface IGraphGroupFlags extends Record<string, unknown> {
     pinned?: true
 }
 
-export class LGraphGroup implements Positionable {
+export class LGraphGroup implements Positionable, IPinnable {
     static minWidth = 140
     static minHeight = 80
     static resizeLength = 10
@@ -85,12 +85,19 @@ export class LGraphGroup implements Positionable {
         return !!this.flags.pinned
     }
 
-    pin(): void {
-        this.flags.pinned = true
+    /**
+     * Prevents the group being accidentally moved or resized by mouse interaction.
+     * Toggles pinned state if no value is provided.
+     **/
+    pin(value?: boolean): void {
+        const newState = value === undefined ? !this.pinned : value
+
+        if (newState) this.flags.pinned = true
+        else delete this.flags.pinned
     }
 
     unpin(): void {
-        delete this.flags.pinned
+        this.pin(false)
     }
 
     configure(o: ISerialisedGroup): void {

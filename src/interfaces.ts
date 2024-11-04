@@ -12,9 +12,9 @@ export type NullableProperties<T> = {
 
 export type CanvasColour = string | CanvasGradient | CanvasPattern
 
-/** 
+/**
  * An object that can be positioned, selected, and moved.
- * 
+ *
  * May contain other {@link Positionable} objects.
  */
 export interface Positionable {
@@ -44,6 +44,17 @@ export interface Positionable {
     onSelected?(): void
     /** Called whenever the item is deselected */
     onDeselected?(): void
+}
+
+/**
+ * An object that can be pinned.
+ *
+ * Prevents the object being accidentally moved or resized by mouse interaction.
+ */
+export interface IPinnable {
+    pinned: boolean
+    pin(value?: boolean): void
+    unpin(): void
 }
 
 export interface IInputOrOutput {
