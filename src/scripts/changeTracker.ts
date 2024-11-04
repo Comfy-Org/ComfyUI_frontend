@@ -15,7 +15,6 @@ export class ChangeTracker {
   activeState: ComfyWorkflowJSON
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
-  isOurLoad: boolean = false
   changeCount: number = 0
 
   ds?: { scale: number; offset: [number, number] }
@@ -86,7 +85,6 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       target.push(this.activeState!)
-      this.isOurLoad = true
       await this.app.loadGraphData(prevState, false, false, this.workflow, {
         showMissingModelsDialog: false,
         showMissingNodesDialog: false
@@ -129,18 +127,6 @@ export class ChangeTracker {
     const changeTracker = () =>
       useWorkflowStore()?.activeWorkflow?.changeTracker ?? globalTracker
     globalTracker.#setApp(app)
-
-    const loadGraphData = app.loadGraphData
-    app.loadGraphData = async function (...args) {
-      const v = await loadGraphData.apply(this, args)
-      const ct = changeTracker()
-      if (ct.isOurLoad) {
-        ct.isOurLoad = false
-      } else {
-        ct.checkState()
-      }
-      return v
-    }
 
     let keyIgnored = false
     window.addEventListener(
