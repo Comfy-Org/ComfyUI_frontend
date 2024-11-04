@@ -94,6 +94,8 @@ export class ComfyWorkflow extends UserFile {
 
 export interface LoadedComfyWorkflow extends ComfyWorkflow {
   isLoaded: true
+  originalContent: string
+  content: string
   changeTracker: ChangeTracker
   initialState: ComfyWorkflowJSON
   activeState: ComfyWorkflowJSON
@@ -126,15 +128,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * Set the workflow as the active workflow.
    * @param workflow The workflow to open.
    */
-  const openWorkflow = async (workflow: ComfyWorkflow) => {
-    if (isActive(workflow)) return
+  const openWorkflow = async (
+    workflow: ComfyWorkflow
+  ): Promise<LoadedComfyWorkflow> => {
+    if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    activeWorkflow.value = await workflow.load()
-
+    const loadedWorkflow = await workflow.load()
+    activeWorkflow.value = loadedWorkflow
     console.debug('[workflowStore] open workflow', workflow.path)
+    return loadedWorkflow
   }
 
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {

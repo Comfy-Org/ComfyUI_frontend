@@ -7,11 +7,9 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
-import { defaultGraph } from './defaultGraph'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
-  #app?: ComfyApp
   activeState: ComfyWorkflowJSON
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
@@ -20,8 +18,9 @@ export class ChangeTracker {
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
 
+  static app?: ComfyApp
   get app(): ComfyApp {
-    return globalTracker.#app!
+    return ChangeTracker.app!
   }
 
   constructor(
@@ -35,10 +34,6 @@ export class ChangeTracker {
     public initialState: ComfyWorkflowJSON
   ) {
     this.activeState = initialState
-  }
-
-  #setApp(app: ComfyApp) {
-    this.#app = app
   }
 
   store() {
@@ -124,9 +119,11 @@ export class ChangeTracker {
   }
 
   static init(app: ComfyApp) {
-    const changeTracker = () =>
-      useWorkflowStore()?.activeWorkflow?.changeTracker ?? globalTracker
-    globalTracker.#setApp(app)
+    const getCurrentChangeTracker = () =>
+      useWorkflowStore().activeWorkflow?.changeTracker
+    const checkState = () => getCurrentChangeTracker()?.checkState()
+
+    ChangeTracker.app = app
 
     let keyIgnored = false
     window.addEventListener(
@@ -158,12 +155,15 @@ export class ChangeTracker {
             e.key === 'Meta'
           if (keyIgnored) return
 
+          const changeTracker = getCurrentChangeTracker()
+          if (!changeTracker) return
+
           // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker().undoRedo(e)) return
+          if (await changeTracker.undoRedo(e)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(app, bindInputEl)) return
-          changeTracker().checkState()
+          changeTracker.checkState()
         })
       },
       true
@@ -172,35 +172,35 @@ export class ChangeTracker {
     window.addEventListener('keyup', (e) => {
       if (keyIgnored) {
         keyIgnored = false
-        changeTracker().checkState()
+        checkState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     api.addEventListener('graphCleared', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
 
@@ -214,7 +214,7 @@ export class ChangeTracker {
     ) {
       const extendedCallback = (v: any) => {
         callback(v)
-        changeTracker().checkState()
+        checkState()
       }
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
@@ -223,7 +223,7 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
 
@@ -232,7 +232,7 @@ export class ChangeTracker {
     LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
       const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
-        changeTracker().checkState()
+        checkState()
       }
       return v
     }
@@ -241,9 +241,9 @@ export class ChangeTracker {
     document.addEventListener('litegraph:canvas', (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (detail.subType === 'before-change') {
-        changeTracker().beforeChange()
+        getCurrentChangeTracker()?.beforeChange()
       } else if (detail.subType === 'after-change') {
-        changeTracker().afterChange()
+        getCurrentChangeTracker()?.afterChange()
       }
     })
 
@@ -327,8 +327,3 @@ export class ChangeTracker {
     return false
   }
 }
-
-export const globalTracker = new ChangeTracker(
-  {} as ComfyWorkflow,
-  defaultGraph
-)

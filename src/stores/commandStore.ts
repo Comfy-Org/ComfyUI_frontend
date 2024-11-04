@@ -2,7 +2,6 @@ import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import {
@@ -76,8 +75,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   }
 }
 
-const getTracker = () =>
-  useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
+const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
 
 const getSelectedNodes = (): LGraphNode[] => {
   const selectedNodes = app.canvas.selected_nodes
@@ -184,7 +182,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-undo',
       label: 'Undo',
       function: async () => {
-        await getTracker().undo()
+        await getTracker()?.undo?.()
       }
     },
     {
@@ -192,7 +190,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-refresh',
       label: 'Redo',
       function: async () => {
-        await getTracker().redo()
+        await getTracker()?.redo?.()
       }
     },
     {

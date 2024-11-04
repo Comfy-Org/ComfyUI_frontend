@@ -1,6 +1,7 @@
 import { setActivePinia, createPinia } from 'pinia'
 import {
   ComfyWorkflow,
+  LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
@@ -53,7 +54,7 @@ describe('useWorkflowStore', () => {
       // Mock the load response
       jest.spyOn(workflow, 'load').mockImplementation(async () => {
         workflow.changeTracker = { activeState: mockWorkflowData } as any
-        return workflow
+        return workflow as LoadedComfyWorkflow
       })
 
       // Open the workflow
@@ -69,7 +70,7 @@ describe('useWorkflowStore', () => {
     })
 
     it('should not reload an already active workflow', async () => {
-      const workflow = store.createTemporary('test.json')
+      const workflow = await store.createTemporary('test.json').load()
       jest.spyOn(workflow, 'load')
 
       // Set as active workflow
