@@ -79,8 +79,13 @@ export class ChangeTracker {
   updateModified() {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
-    useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
-      !ChangeTracker.graphEqual(this.initialState, this.activeState)
+    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
+    if (workflow) {
+      workflow.isModified = !ChangeTracker.graphEqual(
+        this.initialState,
+        this.activeState
+      )
+    }
   }
 
   checkState() {

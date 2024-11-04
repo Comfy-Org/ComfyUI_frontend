@@ -39,7 +39,7 @@ describe('useWorkflowStore', () => {
         size: 1 // size !== 0 for remote workflows
       }))
     )
-    return store.syncWorkflows()
+    return await store.syncWorkflows()
   }
 
   beforeEach(() => {
@@ -95,32 +95,32 @@ describe('useWorkflowStore', () => {
 
     it('should load a remote workflow', async () => {
       await syncRemoteWorkflows(['a.json'])
-      const workflow = store.getWorkflowByPath('workflows/a.json')
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
       expect(workflow).not.toBeNull()
-      expect(workflow?.path).toBe('workflows/a.json')
-      expect(workflow?.isLoaded).toBe(false)
-      expect(workflow?.isTemporary).toBe(false)
+      expect(workflow.path).toBe('workflows/a.json')
+      expect(workflow.isLoaded).toBe(false)
+      expect(workflow.isTemporary).toBe(false)
       ;(api.getUserData as jest.Mock).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
       })
       await workflow.load()
 
-      expect(workflow?.isLoaded).toBe(true)
-      expect(workflow?.content).toEqual(defaultGraphJSON)
-      expect(workflow?.originalContent).toEqual(defaultGraphJSON)
-      expect(workflow?.activeState).toEqual(defaultGraph)
-      expect(workflow?.initialState).toEqual(defaultGraph)
-      expect(workflow?.isModified).toBe(false)
+      expect(workflow.isLoaded).toBe(true)
+      expect(workflow.content).toEqual(defaultGraphJSON)
+      expect(workflow.originalContent).toEqual(defaultGraphJSON)
+      expect(workflow.activeState).toEqual(defaultGraph)
+      expect(workflow.initialState).toEqual(defaultGraph)
+      expect(workflow.isModified).toBe(false)
     })
 
     it('should load and open a remote workflow', async () => {
       await syncRemoteWorkflows(['a.json', 'b.json'])
 
-      const workflow = store.getWorkflowByPath('workflows/a.json')
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
       expect(workflow).not.toBeNull()
-      expect(workflow?.path).toBe('workflows/a.json')
-      expect(workflow?.isLoaded).toBe(false)
+      expect(workflow.path).toBe('workflows/a.json')
+      expect(workflow.isLoaded).toBe(false)
       ;(api.getUserData as jest.Mock).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
@@ -129,15 +129,15 @@ describe('useWorkflowStore', () => {
       const loadedWorkflow = await store.openWorkflow(workflow)
 
       expect(loadedWorkflow).toBe(workflow)
-      expect(loadedWorkflow?.path).toBe('workflows/a.json')
+      expect(loadedWorkflow.path).toBe('workflows/a.json')
       expect(store.activeWorkflow?.path).toBe('workflows/a.json')
       expect(store.isOpen(loadedWorkflow)).toBe(true)
-      expect(loadedWorkflow?.content).toEqual(defaultGraphJSON)
-      expect(loadedWorkflow?.originalContent).toEqual(defaultGraphJSON)
-      expect(loadedWorkflow?.isLoaded).toBe(true)
-      expect(loadedWorkflow?.activeState).toEqual(defaultGraph)
-      expect(loadedWorkflow?.initialState).toEqual(defaultGraph)
-      expect(loadedWorkflow?.isModified).toBe(false)
+      expect(loadedWorkflow.content).toEqual(defaultGraphJSON)
+      expect(loadedWorkflow.originalContent).toEqual(defaultGraphJSON)
+      expect(loadedWorkflow.isLoaded).toBe(true)
+      expect(loadedWorkflow.activeState).toEqual(defaultGraph)
+      expect(loadedWorkflow.initialState).toEqual(defaultGraph)
+      expect(loadedWorkflow.isModified).toBe(false)
     })
   })
 
@@ -242,7 +242,7 @@ describe('useWorkflowStore', () => {
   describe('save', () => {
     it('should save workflow content and reset modification state', async () => {
       await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')
+      const workflow = store.getWorkflowByPath('workflows/test.json')!
 
       // Mock the activeState
       const mockState = { nodes: [] }
@@ -265,13 +265,13 @@ describe('useWorkflowStore', () => {
 
       // Verify the content was updated
       expect(workflow.content).toBe(JSON.stringify(mockState))
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
 
     it('should save workflow even if isModified is screwed by changeTracker', async () => {
       await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')
+      const workflow = store.getWorkflowByPath('workflows/test.json')!
       workflow.isModified = false
 
       // Mock the activeState
@@ -297,7 +297,7 @@ describe('useWorkflowStore', () => {
       expect(api.storeUserData).toHaveBeenCalled()
 
       // Verify the content was updated
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
   })
@@ -305,7 +305,7 @@ describe('useWorkflowStore', () => {
   describe('saveAs', () => {
     it('should save workflow to new path and reset modification state', async () => {
       await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')
+      const workflow = store.getWorkflowByPath('workflows/test.json')!
       workflow.isModified = true
 
       // Mock the activeState
