@@ -80,6 +80,8 @@ export class ChangeTracker {
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )
+      // Get the workflow from the store as ChangeTracker is raw object, i.e.
+      // `this.workflow` is not reactive.
       useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
         !ChangeTracker.graphEqual(this.initialState, this.activeState)
     }
