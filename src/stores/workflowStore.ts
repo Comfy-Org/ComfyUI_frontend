@@ -97,10 +97,7 @@ export class ComfyWorkflow extends UserFile {
 
   async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
-    const ret = await super.saveAs('workflows/' + appendJsonExt(path))
-    this.changeTracker?.reset()
-    this.isModified = false
-    return ret
+    return await super.saveAs('workflows/' + appendJsonExt(path))
   }
 
   async rename(newName: string) {

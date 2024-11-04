@@ -227,4 +227,103 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
   })
+
+  describe('save', () => {
+    it('should save workflow content and reset modification state', async () => {
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath('workflows/test.json')
+
+      // Mock the activeState
+      const mockState = { nodes: [] }
+      workflow.changeTracker = {
+        activeState: mockState,
+        reset: jest.fn()
+      } as any
+      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            path: 'workflows/test.json',
+            modified: Date.now(),
+            size: 2
+          })
+      })
+
+      // Save the workflow
+      await workflow.save()
+
+      // Verify the content was updated
+      expect(workflow.content).toBe(JSON.stringify(mockState))
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
+      expect(workflow.isModified).toBe(false)
+    })
+
+    it('should save workflow even if isModified is screwed by changeTracker', async () => {
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath('workflows/test.json')
+      workflow.isModified = false
+
+      // Mock the activeState
+      const mockState = { nodes: [] }
+      workflow.changeTracker = {
+        activeState: mockState,
+        reset: jest.fn()
+      } as any
+      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            path: 'workflows/test.json',
+            modified: Date.now(),
+            size: 2
+          })
+      })
+
+      // Save the workflow
+      await workflow.save()
+
+      // Verify storeUserData was called
+      expect(api.storeUserData).toHaveBeenCalled()
+
+      // Verify the content was updated
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
+      expect(workflow.isModified).toBe(false)
+    })
+  })
+
+  describe('saveAs', () => {
+    it('should save workflow to new path and reset modification state', async () => {
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath('workflows/test.json')
+      workflow.isModified = true
+
+      // Mock the activeState
+      const mockState = { nodes: [] }
+      workflow.changeTracker = {
+        activeState: mockState,
+        reset: jest.fn()
+      } as any
+      ;(api.storeUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            path: 'workflows/new-test.json',
+            modified: Date.now(),
+            size: 2
+          })
+      })
+
+      // Save the workflow with new path
+      const newPath = 'new-test'
+      const newWorkflow = await workflow.saveAs(newPath)
+
+      // Verify the content was updated
+      expect(workflow.path).toBe('workflows/test.json')
+      expect(workflow.isModified).toBe(true)
+
+      expect(newWorkflow.path).toBe('workflows/new-test.json')
+      expect(newWorkflow.content).toBe(JSON.stringify(mockState))
+      expect(newWorkflow.isModified).toBe(false)
+    })
+  })
 })
