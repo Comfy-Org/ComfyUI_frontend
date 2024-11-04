@@ -203,7 +203,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const { directory, filename, suffix } = getPathDetails(basePath)
     let counter = 2
     let newPath = basePath
-    while (openWorkflowPathSet.value.has(newPath)) {
+    while (workflowLookup.value[newPath]) {
       newPath = `${directory}/${filename} (${counter}).${suffix}`
       counter++
     }
@@ -329,9 +329,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     const openIndex = detachWorkflow(workflow)
     // Perform the actual rename operation first
-    await workflow.rename(newName)
-
-    attachWorkflow(workflow, openIndex)
+    try {
+      await workflow.rename(newName)
+    } finally {
+      attachWorkflow(workflow, openIndex)
+    }
 
     // Update bookmarks
     if (wasBookmarked) {
@@ -356,8 +358,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
     const openIndex = detachWorkflow(workflow)
-    await workflow.save()
-    attachWorkflow(workflow, openIndex)
+    try {
+      await workflow.save()
+    } finally {
+      attachWorkflow(workflow, openIndex)
+    }
   }
 
   return {

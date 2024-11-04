@@ -58,6 +58,22 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('createTemporary', () => {
+    it('should create a temporary workflow with a unique path', () => {
+      const workflow = store.createTemporary()
+      expect(workflow.path).toBe('workflows/Unsaved Workflow.json')
+
+      const workflow2 = store.createTemporary()
+      expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
+    })
+
+    it('should create a temporary workflow not clashing with persisted workflows', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.createTemporary('a.json')
+      expect(workflow.path).toBe('workflows/a (2).json')
+    })
+  })
+
   describe('openWorkflow', () => {
     it('should load and open a temporary workflow', async () => {
       // Create a test workflow
