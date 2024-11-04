@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, nextTick, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
@@ -285,24 +285,39 @@ export const useWorkflowStore = defineStore('workflow', () => {
   )
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newName: string) => {
+    // Capture all needed values upfront
     const oldPath = workflow.path
+    const newPath = workflow.directory + '/' + appendJsonExt(newName)
+    const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
+    const openIndex = openWorkflowPaths.value.indexOf(oldPath)
+    const isPersisted = workflow.isPersisted
+
+    // Perform the actual rename operation first
     await workflow.rename(newName)
-    if (bookmarkStore.isBookmarked(oldPath)) {
-      bookmarkStore.setBookmarked(oldPath, false)
-      bookmarkStore.setBookmarked(workflow.path, true)
-    }
-    if (workflow.isPersisted) {
-      persistedWorkflowByPath.value[workflow.path] = workflow
-    }
 
-    if (isOpen(workflow)) {
-      openWorkflowPaths.value[openWorkflowPaths.value.indexOf(oldPath)] =
-        workflow.path
-    }
+    // Batch update all reactive state changes
+    nextTick(() => {
+      // Update persisted workflows map
+      if (isPersisted) {
+        const updatedPersistedWorkflows = { ...persistedWorkflowByPath.value }
+        updatedPersistedWorkflows[newPath] = workflow
+        delete updatedPersistedWorkflows[oldPath]
+        persistedWorkflowByPath.value = updatedPersistedWorkflows
+      }
 
-    if (workflow.isPersisted) {
-      delete persistedWorkflowByPath.value[oldPath]
-    }
+      // Update open workflows array
+      if (openIndex !== -1) {
+        const updatedOpenPaths = [...openWorkflowPaths.value]
+        updatedOpenPaths[openIndex] = newPath
+        openWorkflowPaths.value = updatedOpenPaths
+      }
+
+      // Update bookmarks
+      if (wasBookmarked) {
+        bookmarkStore.setBookmarked(oldPath, false)
+        bookmarkStore.setBookmarked(newPath, true)
+      }
+    })
   }
 
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
