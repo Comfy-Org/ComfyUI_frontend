@@ -32,12 +32,23 @@ export class ComfyWorkflow extends UserFile {
     return this.changeTracker?.initialState ?? null
   }
 
+  get isLoaded(): boolean {
+    return this.changeTracker !== null
+  }
+
   /**
-   * Load the workflow content from remote storage.
+   * Load the workflow content from remote storage. Directly returns the loaded
+   * workflow if the content is already loaded.
+   *
+   * @param force Whether to force loading the content even if it is already loaded.
    * @returns this
    */
-  async load() {
-    await super.load()
+  async load({
+    force = false
+  }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+    await super.load({ force })
+    if (!force && this.isLoaded) return this as LoadedComfyWorkflow
+
     if (this.isTemporary) {
       this.originalContent = defaultGraphJSON
     }
@@ -54,7 +65,12 @@ export class ComfyWorkflow extends UserFile {
       )
     )
     this.changeTracker = changeTracker
-    return this
+    return this as LoadedComfyWorkflow
+  }
+
+  unload(): void {
+    this.changeTracker = null
+    super.unload()
   }
 
   async getCurrentWorkflowState(): Promise<ComfyWorkflowJSON | null> {
@@ -77,6 +93,13 @@ export class ComfyWorkflow extends UserFile {
     await super.rename(newPath)
     return this
   }
+}
+
+export interface LoadedComfyWorkflow extends ComfyWorkflow {
+  isLoaded: true
+  changeTracker: ChangeTracker
+  initialState: ComfyWorkflowJSON
+  activeState: ComfyWorkflowJSON
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {

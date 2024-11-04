@@ -186,14 +186,8 @@ export const workflowService = {
    * Insert the given workflow into the current graph editor.
    */
   async insertWorkflow(workflow: ComfyWorkflow) {
-    if (!workflow.isLoaded) {
-      await workflow.load()
-    }
-    const data = workflow.initialState
-    if (!data) {
-      throw new Error('[ASSERT] Workflow should be loaded')
-    }
-
+    const loadedWorkflow = await workflow.load()
+    const data = loadedWorkflow.initialState
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
     const graph = new LGraph(data)

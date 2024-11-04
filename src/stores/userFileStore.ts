@@ -77,7 +77,7 @@ export class UserFile {
   }
 
   get isLoaded() {
-    return !!this.content
+    return this.content !== null
   }
 
   get isModified() {
@@ -94,8 +94,11 @@ export class UserFile {
   /**
    * Loads the file content from the remote storage.
    */
-  async load(): Promise<UserFile> {
-    if (this.isTemporary) return this
+  async load({
+    force = false
+  }: { force?: boolean } = {}): Promise<LoadedUserFile> {
+    if (this.isTemporary || (!force && this.isLoaded))
+      return this as LoadedUserFile
 
     this.isLoading = true
     const resp = await api.getUserData(this.path)
@@ -107,7 +110,7 @@ export class UserFile {
     this.content = await resp.text()
     this.originalContent = this.content
     this.isLoading = false
-    return this
+    return this as LoadedUserFile
   }
 
   /**
@@ -179,6 +182,12 @@ export class UserFile {
     }
     return this
   }
+}
+
+export interface LoadedUserFile extends UserFile {
+  isLoaded: true
+  originalContent: string
+  content: string
 }
 
 export const useUserFileStore = defineStore('userFile', () => {
