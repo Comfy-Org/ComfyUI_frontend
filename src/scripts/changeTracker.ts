@@ -76,7 +76,7 @@ export class ChangeTracker {
     }
   }
 
-  private updateModified() {
+  updateModified() {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
