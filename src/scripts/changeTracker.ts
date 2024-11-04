@@ -232,10 +232,7 @@ export class ChangeTracker {
     LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
       const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
-        const ct = changeTracker()
-        if (!ct.isOurLoad) {
-          ct.checkState()
-        }
+        changeTracker().checkState()
       }
       return v
     }
