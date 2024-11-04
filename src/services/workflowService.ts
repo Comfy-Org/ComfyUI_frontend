@@ -1,7 +1,11 @@
 import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
-import { useWorkflowStore, ComfyWorkflow } from '@/stores/workflowStore'
+import {
+  useWorkflowStore,
+  ComfyWorkflow,
+  LoadedComfyWorkflow
+} from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -156,11 +160,40 @@ export const workflowService = {
     await useWorkflowStore().deleteWorkflow(workflow)
   },
 
-  // This method is used primarily for loadGraphData to create temporary
-  // workflows.
-  // The call relationship is
-  // openWorkflow -> loadGraphData -> setWorkflow
-  async setWorkflow(value: string | ComfyWorkflow | null) {
+  /**
+   * This method is called before loading a new graph.
+   * There are 3 major functions that loads a new graph to the graph editor:
+   * 1. loadGraphData
+   * 2. loadApiJson
+   * 3. importA1111
+   *
+   * This function is used to save the current workflow states before loading
+   * a new graph.
+   */
+  beforeLoadNewGraph() {
+    // Use workspaceStore here as it is patched in jest tests.
+    const workflowStore = useWorkspaceStore().workflow
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (activeWorkflow) {
+      activeWorkflow.changeTracker.store()
+    }
+  },
+
+  /**
+   * Set the active workflow after the new graph is loaded.
+   *
+   * The call relationship is
+   * workflowService.openWorkflow -> app.loadGraphData -> workflowService.afterLoadNewGraph
+   * app.loadApiJson -> workflowService.afterLoadNewGraph
+   * app.importA1111 -> workflowService.afterLoadNewGraph
+   *
+   * @param value The value to set as the active workflow.
+   * @param workflowData The initial workflow data loaded to the graph editor.
+   */
+  async afterLoadNewGraph(
+    value: string | ComfyWorkflow | null,
+    workflowData: ComfyWorkflowJSON
+  ) {
     // Use workspaceStore here as it is patched in jest tests.
     const workflowStore = useWorkspaceStore().workflow
     if (typeof value === 'string') {

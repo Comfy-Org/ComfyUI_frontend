@@ -106,7 +106,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * The active workflow currently being edited.
    */
-  const activeWorkflow = ref<ComfyWorkflow | null>(null)
+  const activeWorkflow = ref<LoadedComfyWorkflow | null>(null)
   const isActive = (workflow: ComfyWorkflow) =>
     activeWorkflow.value?.path === workflow.path
   /**
@@ -135,7 +135,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (!openWorkflowPaths.value.includes(workflow.path)) {
       openWorkflowPaths.value.push(workflow.path)
     }
-    activeWorkflow.value = workflow
+    activeWorkflow.value = await workflow.load()
   }
 
   const createTemporary = (path?: string) => {

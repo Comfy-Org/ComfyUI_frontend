@@ -2182,8 +2182,6 @@ export class ComfyApp {
       graphData = structuredClone(graphData)
     }
 
-    workflowService.setWorkflow(workflow)
-
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
       // TODO: Show validation error in a dialog.
       const validatedGraphData = await validateComfyWorkflow(
@@ -2196,6 +2194,8 @@ export class ComfyApp {
       // Ideally we should not block users from loading the workflow.
       graphData = validatedGraphData ?? graphData
     }
+
+    workflowService.beforeLoadNewGraph()
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
@@ -2358,6 +2358,7 @@ export class ComfyApp {
       this.#showMissingModelsError(missingModels, paths)
     }
     await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
+    workflowService.afterLoadNewGraph(workflow, graphData)
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })
@@ -2654,7 +2655,12 @@ export class ComfyApp {
       } else if (pngInfo?.prompt) {
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
       } else if (pngInfo?.parameters) {
+        // Note: Not putting this in `importA1111` as it is mostly not used
+        // by external callers, and `importA1111` has no access to `app`.
+        workflowService.beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
+        // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
+        workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -2738,6 +2744,8 @@ export class ComfyApp {
   }
 
   loadApiJson(apiData, fileName: string) {
+    workflowService.beforeLoadNewGraph()
+
     const missingNodeTypes = Object.values(apiData).filter(
       // @ts-expect-error
       (n) => !LiteGraph.registered_node_types[n.class_type]
@@ -2826,6 +2834,9 @@ export class ComfyApp {
     }
 
     app.graph.arrange()
+
+    // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
+    workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
   }
 
   /**
