@@ -9,6 +9,7 @@ import { LGraphCanvas } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { appendJsonExt } from '@/utils/formatUtil'
 
 async function getFilename(defaultName: string): Promise<string | null> {
   if (useSettingStore().get('Comfy.PromptFilename')) {
@@ -59,7 +60,13 @@ export const workflowService = {
       defaultValue: workflow.filename
     })
     if (!newFilename) return
-    await workflow.saveAs(workflow.directory + '/' + newFilename)
+
+    const tempWorkflow = workflow.isTemporary
+      ? workflow
+      : useWorkflowStore().createTemporary(workflow.path)
+
+    await this.renameWorkflow(tempWorkflow, newFilename)
+    await tempWorkflow.save()
   },
 
   /**

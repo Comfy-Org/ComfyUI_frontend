@@ -95,9 +95,14 @@ export class ComfyWorkflow extends UserFile {
     return ret
   }
 
+  /**
+   * Save the workflow as a new file.
+   * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
+   * @returns this
+   */
   async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
-    return await super.saveAs('workflows/' + appendJsonExt(path))
+    return await super.saveAs(path)
   }
 
   async rename(newName: string) {
@@ -286,6 +291,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
       bookmarkStore.setBookmarked(oldPath, false)
       bookmarkStore.setBookmarked(workflow.path, true)
     }
+    if (workflow.isPersisted) {
+      persistedWorkflowByPath.value[workflow.path] = workflow
+    }
+
+    if (isOpen(workflow)) {
+      openWorkflowPaths.value[openWorkflowPaths.value.indexOf(oldPath)] =
+        workflow.path
+    }
+
+    if (workflow.isPersisted) {
+      delete persistedWorkflowByPath.value[oldPath]
+    }
   }
 
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
@@ -293,12 +310,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
       await closeWorkflow(workflow)
     }
 
-    await workflow.delete()
+    if (workflow.isTemporary) {
+      return
+    }
 
+    await workflow.delete()
     if (bookmarkStore.isBookmarked(workflow.path)) {
       bookmarkStore.setBookmarked(workflow.path, false)
     }
-
     delete persistedWorkflowByPath.value[workflow.path]
   }
 

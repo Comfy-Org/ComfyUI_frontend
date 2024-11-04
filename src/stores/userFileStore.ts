@@ -116,7 +116,7 @@ export class UserFile {
   }
 
   async saveAs(newPath: string): Promise<UserFile> {
-    const tempFile = UserFile.createTemporary(newPath)
+    const tempFile = this.isTemporary ? this : UserFile.createTemporary(newPath)
     tempFile.content = this.content
     await tempFile.save()
     return tempFile
