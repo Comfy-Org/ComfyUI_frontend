@@ -8,6 +8,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 
 async function getFilename(defaultName: string): Promise<string | null> {
   if (useSettingStore().get('Comfy.PromptFilename')) {
@@ -77,15 +78,14 @@ export const workflowService = {
    * Load the default workflow
    */
   async loadDefaultWorkflow() {
-    await app.loadGraphData()
+    await app.loadGraphData(defaultGraph)
   },
 
   /**
    * Load a blank workflow
    */
   async loadBlankWorkflow() {
-    await app.loadGraphData()
-    app.graph.clear()
+    await app.loadGraphData(blankGraph)
   },
 
   async openWorkflow(workflow: ComfyWorkflow) {
@@ -197,6 +197,7 @@ export const workflowService = {
       if (workflow) {
         const loadedWorkflow = await workflowStore.openWorkflow(workflow)
         loadedWorkflow.changeTracker.restore()
+        loadedWorkflow.changeTracker.reset(workflowData)
         return
       }
     }

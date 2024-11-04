@@ -54,7 +54,9 @@
                   <Button
                     icon="pi pi-times"
                     text
-                    severity="secondary"
+                    :severity="
+                      workspaceStore.shiftDown ? 'danger' : 'secondary'
+                    "
                     size="small"
                     @click.stop="handleCloseWorkflow(node.data)"
                   />
@@ -122,6 +124,7 @@ import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
 import { workflowService } from '@/services/workflowService'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -153,13 +156,16 @@ const handleSearch = (query: string) => {
 
 const commandStore = useCommandStore()
 const workflowStore = useWorkflowStore()
+const workspaceStore = useWorkspaceStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    workflowService.closeWorkflow(workflow)
+    workflowService.closeWorkflow(workflow, {
+      warnIfUnsaved: !workspaceStore.shiftDown
+    })
   }
 }
 
