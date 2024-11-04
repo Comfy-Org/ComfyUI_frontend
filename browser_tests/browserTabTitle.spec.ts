@@ -11,22 +11,18 @@ test.describe('Browser tab title', () => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].extensionManager.workflow.activeWorkflow.filename
       })
-      // Note: unsaved workflow name is always prepended with "*".
-      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
+      expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
     })
 
-    // Broken by https://github.com/Comfy-Org/ComfyUI_frontend/pull/893
-    // Release blocker for v1.3.0
-    test.skip('Can display workflow name with unsaved changes', async ({
+    test('Can display workflow name with unsaved changes', async ({
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].extensionManager.workflow.activeWorkflow.filename
       })
-      // Note: unsaved workflow name is always prepended with "*".
-      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
+      expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
-      await comfyPage.menu.saveWorkflow('test')
+      await comfyPage.menu.topbar.saveWorkflow('test')
       expect(await comfyPage.page.title()).toBe('test - ComfyUI')
 
       const textBox = comfyPage.widgetTextBox
@@ -36,7 +32,7 @@ test.describe('Browser tab title', () => {
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {
-        window['app'].extensionManager.workflow.activeWorkflow.delete()
+        return window['app'].extensionManager.workflow.activeWorkflow.delete()
       })
     })
   })
