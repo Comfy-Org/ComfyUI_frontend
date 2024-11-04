@@ -189,8 +189,11 @@ export const workflowService = {
     if (!workflow.isLoaded) {
       await workflow.load()
     }
-    const data = toRaw(workflow.originalWorkflow)
-    if (!data) return
+    const data = workflow.initialState
+    if (!data) {
+      throw new Error('[ASSERT] Workflow should be loaded')
+    }
+
     const old = localStorage.getItem('litegrapheditor_clipboard')
     // @ts-expect-error: zod issue. Should be fixed after enable ts-strict globally
     const graph = new LGraph(data)

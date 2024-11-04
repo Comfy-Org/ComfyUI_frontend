@@ -11,9 +11,9 @@ import _ from 'lodash'
 export class ChangeTracker {
   static MAX_HISTORY = 50
   #app?: ComfyApp
+  activeState: ComfyWorkflowJSON
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
-  activeState: ComfyWorkflowJSON | null = null
   isOurLoad: boolean = false
   changeCount: number = 0
 
@@ -24,7 +24,18 @@ export class ChangeTracker {
     return globalTracker.#app!
   }
 
-  constructor(public workflow: ComfyWorkflow) {}
+  constructor(
+    /**
+     * The workflow that this change tracker is tracking
+     */
+    public workflow: ComfyWorkflow,
+    /**
+     * The initial state of the workflow
+     */
+    public initialState: ComfyWorkflowJSON
+  ) {
+    this.activeState = initialState
+  }
 
   #setApp(app: ComfyApp) {
     this.#app = app

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, markRaw, ref, toRaw } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
@@ -11,7 +11,6 @@ import { syncEntities } from '@/utils/syncUtil'
 
 export class ComfyWorkflow extends UserFile {
   changeTracker: ChangeTracker | null = null
-  originalWorkflow: ComfyWorkflowJSON | null = null
 
   /**
    * @param options The path, modified, and size of the workflow.
@@ -29,6 +28,10 @@ export class ComfyWorkflow extends UserFile {
     return this.changeTracker?.activeState ?? null
   }
 
+  get initialState(): ComfyWorkflowJSON | null {
+    return this.changeTracker?.initialState ?? null
+  }
+
   /**
    * Load the workflow content from remote storage.
    * @returns this
@@ -37,13 +40,19 @@ export class ComfyWorkflow extends UserFile {
     await super.load()
     if (this.isTemporary) {
       this.originalContent = defaultGraphJSON
-      this.originalWorkflow = defaultGraph
-    } else {
-      this.originalWorkflow = JSON.parse(this.originalContent!)
     }
 
-    const changeTracker = markRaw(new ChangeTracker(this))
-    changeTracker.activeState = toRaw(this.originalWorkflow)
+    if (!this.originalContent) {
+      throw new Error('[ASSERT] Workflow content should be loaded')
+    }
+
+    // Note: originalContent is populated by super.load()
+    const changeTracker = markRaw(
+      new ChangeTracker(
+        this /* initialState= */,
+        this.isTemporary ? defaultGraph : JSON.parse(this.originalContent)
+      )
+    )
     this.changeTracker = changeTracker
     return this
   }
