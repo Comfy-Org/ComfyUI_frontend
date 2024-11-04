@@ -426,8 +426,8 @@ export class LGraphNode implements Positionable {
         const o: ISerialisedNode = {
             id: this.id,
             type: this.type,
-            pos: this.pos,
-            size: this.size,
+            pos: [this.pos[0], this.pos[1]],
+            size: [this.size[0], this.size[1]],
             flags: LiteGraph.cloneObject(this.flags),
             order: this.order,
             mode: this.mode,
