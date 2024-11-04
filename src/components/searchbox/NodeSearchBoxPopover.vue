@@ -153,8 +153,16 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
     showSearchBox: () => showSearchBox(e)
   }
   const connectionOptions = firstLink.output
-    ? { nodeFrom: firstLink.node, slotFrom: firstLink.output }
-    : { nodeTo: firstLink.node, slotTo: firstLink.input }
+    ? {
+        nodeFrom: firstLink.node,
+        slotFrom: firstLink.output,
+        afterRerouteId: firstLink.afterRerouteId
+      }
+    : {
+        nodeTo: firstLink.node,
+        slotTo: firstLink.input,
+        afterRerouteId: firstLink.afterRerouteId
+      }
   canvasStore.canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
