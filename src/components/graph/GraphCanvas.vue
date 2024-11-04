@@ -223,8 +223,10 @@ onMounted(async () => {
   comfyApp.vueAppReady = true
 
   workspaceStore.spinner = true
-  await comfyApp.setup(canvasRef.value)
+  // ChangeTracker needs to be initialized before setup, as it will overwrite
+  // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
+  await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   workspaceStore.spinner = false
 

@@ -6,7 +6,7 @@ import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { syncEntities } from '@/utils/syncUtil'
 
 export class ComfyWorkflow extends UserFile {
@@ -49,10 +49,6 @@ export class ComfyWorkflow extends UserFile {
     await super.load({ force })
     if (!force && this.isLoaded) return this as LoadedComfyWorkflow
 
-    if (this.isTemporary) {
-      this.originalContent = defaultGraphJSON
-    }
-
     if (!this.originalContent) {
       throw new Error('[ASSERT] Workflow content should be loaded')
     }
@@ -60,8 +56,8 @@ export class ComfyWorkflow extends UserFile {
     // Note: originalContent is populated by super.load()
     const changeTracker = markRaw(
       new ChangeTracker(
-        this /* initialState= */,
-        this.isTemporary ? defaultGraph : JSON.parse(this.originalContent)
+        this,
+        /* initialState= */ JSON.parse(this.originalContent)
       )
     )
     this.changeTracker = changeTracker
@@ -138,7 +134,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     activeWorkflow.value = await workflow.load()
   }
 
-  const createTemporary = (path?: string) => {
+  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath =
       'workflows/' + (path ?? 'temporary_' + Date.now() + '.json')
     const workflow = new ComfyWorkflow({
@@ -146,6 +142,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
       modified: Date.now(),
       size: 0
     })
+
+    workflow.originalContent = workflow.content = workflowData
+      ? JSON.stringify(workflowData)
+      : defaultGraphJSON
+
     temporaryWorkflows.value.add(workflow)
     return workflow
   }

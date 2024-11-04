@@ -1,11 +1,7 @@
 import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
-import {
-  useWorkflowStore,
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/stores/workflowStore'
+import { useWorkflowStore, ComfyWorkflow } from '@/stores/workflowStore'
 import { showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -207,7 +203,10 @@ export const workflowService = {
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
-      const tempWorkflow = workflowStore.createTemporary(path ?? undefined)
+      const tempWorkflow = workflowStore.createTemporary(
+        path ?? undefined,
+        workflowData
+      )
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }

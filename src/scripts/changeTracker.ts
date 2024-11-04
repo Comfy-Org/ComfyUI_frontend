@@ -7,6 +7,7 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
+import { defaultGraph } from './defaultGraph'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -344,4 +345,7 @@ export class ChangeTracker {
   }
 }
 
-export const globalTracker = new ChangeTracker({} as ComfyWorkflow)
+export const globalTracker = new ChangeTracker(
+  {} as ComfyWorkflow,
+  defaultGraph
+)
