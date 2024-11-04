@@ -10,7 +10,14 @@ import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { syncEntities } from '@/utils/syncUtil'
 
 export class ComfyWorkflow extends UserFile {
+  /**
+   * The change tracker for the workflow. Non-reactive raw object.
+   */
   changeTracker: ChangeTracker | null = null
+  /**
+   * Whether the workflow has been modified comparing to the initial state.
+   */
+  private _isModified: boolean = false
 
   /**
    * @param options The path, modified, and size of the workflow.
@@ -34,6 +41,14 @@ export class ComfyWorkflow extends UserFile {
 
   get isLoaded(): boolean {
     return this.changeTracker !== null
+  }
+
+  get isModified(): boolean {
+    return this._isModified
+  }
+
+  set isModified(value: boolean) {
+    this._isModified = value
   }
 
   /**

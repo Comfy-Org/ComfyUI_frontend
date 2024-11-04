@@ -85,13 +85,6 @@ export class UserFile {
   }
 
   /**
-   * @deprecated Use `isModified` instead.
-   */
-  get unsaved() {
-    return this.isModified
-  }
-
-  /**
    * Loads the file content from the remote storage.
    */
   async load({

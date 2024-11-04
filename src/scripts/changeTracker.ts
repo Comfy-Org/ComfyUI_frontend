@@ -10,7 +10,14 @@ import _ from 'lodash'
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
+  /**
+   * The active state of the workflow.
+   */
   activeState: ComfyWorkflowJSON
+  /**
+   * Whether the workflow has been modified comparing to the initial state.
+   */
+  isModified: boolean = false
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
   changeCount: number = 0
@@ -72,6 +79,10 @@ export class ChangeTracker {
       this.redoQueue.length = 0
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
+      )
+      this.workflow.isModified = !ChangeTracker.graphEqual(
+        this.initialState,
+        this.activeState
       )
     }
   }
