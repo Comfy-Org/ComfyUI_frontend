@@ -26,10 +26,6 @@ export class ChangeTracker {
    * The active state of the workflow.
    */
   activeState: ComfyWorkflowJSON
-  /**
-   * Whether the workflow has been modified comparing to the initial state.
-   */
-  isModified: boolean = false
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
   changeCount: number = 0
