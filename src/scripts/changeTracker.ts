@@ -127,7 +127,7 @@ export class ChangeTracker {
 
   static init(app: ComfyApp) {
     const changeTracker = () =>
-      useWorkflowStore().activeWorkflow?.changeTracker ?? globalTracker
+      useWorkflowStore()?.activeWorkflow?.changeTracker ?? globalTracker
     globalTracker.#setApp(app)
 
     const loadGraphData = app.loadGraphData
