@@ -2159,16 +2159,6 @@ export class ComfyApp {
     })
   }
 
-  async changeWorkflow(callback: () => Promise<void> | void, workflow: string) {
-    try {
-      useWorkspaceStore().workflow.activeWorkflow?.changeTracker?.store?.()
-    } catch (error) {
-      console.error(error)
-    }
-    await callback()
-    workflowService.setWorkflow(workflow)
-  }
-
   async loadGraphData(
     graphData?: ComfyWorkflowJSON,
     clean: boolean = true,
@@ -2664,9 +2654,7 @@ export class ComfyApp {
       } else if (pngInfo?.prompt) {
         this.loadApiJson(JSON.parse(pngInfo.prompt), fileName)
       } else if (pngInfo?.parameters) {
-        this.changeWorkflow(() => {
-          importA1111(this.graph, pngInfo.parameters)
-        }, fileName)
+        importA1111(this.graph, pngInfo.parameters)
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -2772,40 +2760,38 @@ export class ComfyApp {
       app.graph.add(node)
     }
 
-    this.changeWorkflow(() => {
-      for (const id of ids) {
-        const data = apiData[id]
-        const node = app.graph.getNodeById(id)
-        for (const input in data.inputs ?? {}) {
-          const value = data.inputs[input]
-          if (value instanceof Array) {
-            const [fromId, fromSlot] = value
-            const fromNode = app.graph.getNodeById(fromId)
-            let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-            if (toSlot == null || toSlot === -1) {
-              try {
-                // Target has no matching input, most likely a converted widget
-                const widget = node.widgets?.find((w) => w.name === input)
-                // @ts-expect-error
-                if (widget && node.convertWidgetToInput?.(widget)) {
-                  toSlot = node.inputs?.length - 1
-                }
-              } catch (error) {}
-            }
-            if (toSlot != null || toSlot !== -1) {
-              fromNode.connect(fromSlot, node, toSlot)
-            }
-          } else {
-            const widget = node.widgets?.find((w) => w.name === input)
-            if (widget) {
-              widget.value = value
-              widget.callback?.(value)
-            }
+    for (const id of ids) {
+      const data = apiData[id]
+      const node = app.graph.getNodeById(id)
+      for (const input in data.inputs ?? {}) {
+        const value = data.inputs[input]
+        if (value instanceof Array) {
+          const [fromId, fromSlot] = value
+          const fromNode = app.graph.getNodeById(fromId)
+          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
+          if (toSlot == null || toSlot === -1) {
+            try {
+              // Target has no matching input, most likely a converted widget
+              const widget = node.widgets?.find((w) => w.name === input)
+              // @ts-expect-error
+              if (widget && node.convertWidgetToInput?.(widget)) {
+                toSlot = node.inputs?.length - 1
+              }
+            } catch (error) {}
+          }
+          if (toSlot != null || toSlot !== -1) {
+            fromNode.connect(fromSlot, node, toSlot)
+          }
+        } else {
+          const widget = node.widgets?.find((w) => w.name === input)
+          if (widget) {
+            widget.value = value
+            widget.callback?.(value)
           }
         }
       }
-      app.graph.arrange()
-    }, fileName)
+    }
+    app.graph.arrange()
 
     for (const id of ids) {
       const data = apiData[id]
