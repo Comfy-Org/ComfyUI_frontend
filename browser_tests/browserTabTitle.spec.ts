@@ -9,7 +9,7 @@ test.describe('Browser tab title', () => {
 
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.name
+        return window['app'].extensionManager.workflow.activeWorkflow.filename
       })
       // Note: unsaved workflow name is always prepended with "*".
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
@@ -21,7 +21,7 @@ test.describe('Browser tab title', () => {
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.name
+        return window['app'].extensionManager.workflow.activeWorkflow.filename
       })
       // Note: unsaved workflow name is always prepended with "*".
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
