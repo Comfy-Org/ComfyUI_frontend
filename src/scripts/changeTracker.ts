@@ -80,10 +80,8 @@ export class ChangeTracker {
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )
-      this.workflow.isModified = !ChangeTracker.graphEqual(
-        this.initialState,
-        this.activeState
-      )
+      useWorkflowStore().getWorkflowByPath(this.workflow.path).isModified =
+        !ChangeTracker.graphEqual(this.initialState, this.activeState)
     }
   }
 
