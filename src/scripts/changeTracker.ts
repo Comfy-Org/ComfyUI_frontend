@@ -62,10 +62,9 @@ export class ChangeTracker {
 
   checkState() {
     if (!this.app.graph || this.changeCount) return
-
-    const currentState = this.app.graph.serialize()
+    // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+    const currentState = this.app.graph.serialize() as ComfyWorkflowJSON
     if (!this.activeState) {
-      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
       this.activeState = _.cloneDeep(currentState)
       return
     }
@@ -74,7 +73,6 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
       this.activeState = _.cloneDeep(currentState)
       this.redoQueue.length = 0
       api.dispatchEvent(
