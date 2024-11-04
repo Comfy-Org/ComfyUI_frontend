@@ -5,7 +5,7 @@ import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt, getPathDetails } from '@/utils/formatUtil'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { syncEntities } from '@/utils/syncUtil'
 
@@ -142,9 +142,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return loadedWorkflow
   }
 
+  const getUnconflictedPath = (basePath: string): string => {
+    const { directory, filename, suffix } = getPathDetails(basePath)
+    let counter = 2
+    let newPath = basePath
+    while (openWorkflowPathSet.value.has(newPath)) {
+      newPath = `${directory}/${filename} (${counter}).${suffix}`
+      counter++
+    }
+    return newPath
+  }
+
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
-    const fullPath =
-      'workflows/' + (path ?? 'temporary_' + Date.now() + '.json')
+    const fullPath = getUnconflictedPath(
+      'workflows/' + (path ?? 'Unsaved Workflow.json')
+    )
     const workflow = new ComfyWorkflow({
       path: fullPath,
       modified: Date.now(),
