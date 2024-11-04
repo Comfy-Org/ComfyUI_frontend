@@ -53,7 +53,7 @@ module.exports = async function () {
         focusMode: false,
         toggleFocusMode: jest.fn(),
         workflow: {
-          activeWorkflow: {},
+          activeWorkflow: null,
           syncWorkflows: jest.fn(),
           getWorkflowByPath: jest.fn(),
           createTemporary: jest.fn(),

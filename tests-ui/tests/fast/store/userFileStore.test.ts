@@ -98,6 +98,7 @@ describe('useUserFileStore', () => {
         expect(file.content).toBe('file content')
         expect(file.originalContent).toBe('file content')
         expect(file.isLoading).toBe(false)
+        expect(file.isLoaded).toBe(true)
       })
 
       it('should throw error on failed load', async () => {

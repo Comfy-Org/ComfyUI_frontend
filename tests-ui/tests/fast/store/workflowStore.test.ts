@@ -6,12 +6,14 @@ import {
   useWorkflowStore
 } from '@/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 
 // Add mock for api at the top of the file
 jest.mock('@/scripts/api', () => ({
   api: {
     getUserData: jest.fn(),
-    storeUserData: jest.fn()
+    storeUserData: jest.fn(),
+    listUserDataFullInfo: jest.fn()
   }
 }))
 
@@ -27,6 +29,17 @@ describe('useWorkflowStore', () => {
       workflows.push(workflow)
     }
     return workflows
+  }
+
+  const syncRemoteWorkflows = async (filenames: string[]) => {
+    ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(
+      filenames.map((filename) => ({
+        path: filename,
+        modified: new Date().toISOString(),
+        size: 1 // size !== 0 for remote workflows
+      }))
+    )
+    return store.syncWorkflows()
   }
 
   beforeEach(() => {
@@ -46,7 +59,7 @@ describe('useWorkflowStore', () => {
   })
 
   describe('openWorkflow', () => {
-    it('should load and open a workflow', async () => {
+    it('should load and open a temporary workflow', async () => {
       // Create a test workflow
       const workflow = store.createTemporary('test.json')
       const mockWorkflowData = { nodes: [], links: [] }
@@ -64,9 +77,7 @@ describe('useWorkflowStore', () => {
       expect(store.activeWorkflow?.path).toBe(workflow.path)
 
       // Verify the workflow is in the open workflows list
-      expect(
-        store.openWorkflows.find((w) => w.path === workflow.path)
-      ).not.toBeUndefined()
+      expect(store.isOpen(workflow)).toBe(true)
     })
 
     it('should not reload an already active workflow', async () => {
@@ -80,6 +91,53 @@ describe('useWorkflowStore', () => {
 
       // Verify load was not called
       expect(workflow.load).not.toHaveBeenCalled()
+    })
+
+    it('should load a remote workflow', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')
+      expect(workflow).not.toBeNull()
+      expect(workflow?.path).toBe('workflows/a.json')
+      expect(workflow?.isLoaded).toBe(false)
+      expect(workflow?.isTemporary).toBe(false)
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+      await workflow.load()
+
+      expect(workflow?.isLoaded).toBe(true)
+      expect(workflow?.content).toEqual(defaultGraphJSON)
+      expect(workflow?.originalContent).toEqual(defaultGraphJSON)
+      expect(workflow?.activeState).toEqual(defaultGraph)
+      expect(workflow?.initialState).toEqual(defaultGraph)
+      expect(workflow?.isModified).toBe(false)
+    })
+
+    it('should load and open a remote workflow', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')
+      expect(workflow).not.toBeNull()
+      expect(workflow?.path).toBe('workflows/a.json')
+      expect(workflow?.isLoaded).toBe(false)
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+
+      const loadedWorkflow = await store.openWorkflow(workflow)
+
+      expect(loadedWorkflow).toBe(workflow)
+      expect(loadedWorkflow?.path).toBe('workflows/a.json')
+      expect(store.activeWorkflow?.path).toBe('workflows/a.json')
+      expect(store.isOpen(loadedWorkflow)).toBe(true)
+      expect(loadedWorkflow?.content).toEqual(defaultGraphJSON)
+      expect(loadedWorkflow?.originalContent).toEqual(defaultGraphJSON)
+      expect(loadedWorkflow?.isLoaded).toBe(true)
+      expect(loadedWorkflow?.activeState).toEqual(defaultGraph)
+      expect(loadedWorkflow?.initialState).toEqual(defaultGraph)
+      expect(loadedWorkflow?.isModified).toBe(false)
     })
   })
 
