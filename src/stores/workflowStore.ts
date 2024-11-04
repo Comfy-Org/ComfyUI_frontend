@@ -306,19 +306,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
-    if (isOpen(workflow)) {
-      await closeWorkflow(workflow)
-    }
-
-    if (workflow.isTemporary) {
-      return
-    }
-
     await workflow.delete()
     if (bookmarkStore.isBookmarked(workflow.path)) {
       bookmarkStore.setBookmarked(workflow.path, false)
     }
-    delete persistedWorkflowByPath.value[workflow.path]
+    if (workflow.isPersisted) {
+      delete persistedWorkflowByPath.value[workflow.path]
+    }
   }
 
   return {

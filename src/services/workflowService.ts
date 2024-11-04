@@ -160,7 +160,11 @@ export const workflowService = {
   },
 
   async deleteWorkflow(workflow: ComfyWorkflow) {
-    await useWorkflowStore().deleteWorkflow(workflow)
+    const workflowStore = useWorkflowStore()
+    if (workflowStore.isOpen(workflow)) {
+      await this.closeWorkflow(workflow)
+    }
+    await workflowStore.deleteWorkflow(workflow)
   },
 
   /**
