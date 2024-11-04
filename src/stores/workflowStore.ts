@@ -301,8 +301,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
         workflows.value.map((workflow) => [workflow.path, workflow])
       ) as Record<string, ComfyWorkflow>
   )
-  const getWorkflowByPath = (path: string): ComfyWorkflow =>
-    workflowLookup.value[path]
+  const getWorkflowByPath = (path: string): ComfyWorkflow | null =>
+    workflowLookup.value[path] ?? null
 
   const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
     return buildTree(workflows, (workflow: ComfyWorkflow) =>

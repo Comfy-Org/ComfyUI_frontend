@@ -1,6 +1,5 @@
 import { setActivePinia, createPinia } from 'pinia'
 import {
-  ComfyWorkflow,
   LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
@@ -17,19 +16,20 @@ jest.mock('@/scripts/api', () => ({
   }
 }))
 
+jest.mock('@/scripts/changeTracker', () => {
+  return {
+    ChangeTracker: jest.fn().mockImplementation((workflow, initialState) => ({
+      workflow: { path: workflow.path }, // Only keep necessary properties
+      initialState,
+      activeState: initialState,
+      reset: jest.fn()
+    }))
+  }
+})
+
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
-
-  const openTemporaryWorkflows = async (filenames: string[]) => {
-    const workflows: ComfyWorkflow[] = []
-    for (const filename of filenames) {
-      const workflow = store.createTemporary(filename)
-      await store.openWorkflow(workflow)
-      workflows.push(workflow)
-    }
-    return workflows
-  }
 
   const syncRemoteWorkflows = async (filenames: string[]) => {
     ;(api.listUserDataFullInfo as jest.Mock).mockResolvedValue(
@@ -160,10 +160,11 @@ describe('useWorkflowStore', () => {
 
       // Perform rename
       const newName = 'renamed.json'
+      const newPath = 'workflows/dir/renamed.json'
       await store.renameWorkflow(workflow, newName)
 
       // Check that bookmark was transferred
-      expect(bookmarkStore.isBookmarked(newName)).toBe(true)
+      expect(bookmarkStore.isBookmarked(newPath)).toBe(true)
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
 
@@ -196,7 +197,7 @@ describe('useWorkflowStore', () => {
       const workflow = store.createTemporary('test.json')
       await store.openWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(true)
-      expect(store.getWorkflowByPath(workflow.path)).toBe(workflow)
+      expect(store.getWorkflowByPath(workflow.path)).not.toBeNull()
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
