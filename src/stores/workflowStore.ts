@@ -87,7 +87,9 @@ export class ComfyWorkflow extends UserFile {
 
   async save() {
     this.content = JSON.stringify(this.activeState)
-    const ret = await super.save()
+    // Force save to ensure the content is updated in remote storage incase
+    // the isModified state is screwed by changeTracker.
+    const ret = await super.save({ force: true })
     this.changeTracker?.reset()
     this.isModified = false
     return ret
