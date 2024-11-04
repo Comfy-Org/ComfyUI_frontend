@@ -200,6 +200,7 @@ export const workflowService = {
       const workflow = workflowStore.getWorkflowByPath('workflows/' + value)
       if (workflow) {
         await workflowStore.openWorkflow(workflow)
+        workflow.changeTracker.restore()
         return
       }
     }
@@ -213,6 +214,7 @@ export const workflowService = {
 
     // value is a ComfyWorkflow.
     await workflowStore.openWorkflow(value)
+    value.changeTracker.restore()
   },
 
   /**
