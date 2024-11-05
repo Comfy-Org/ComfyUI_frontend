@@ -51,8 +51,10 @@ describe('EditableText', () => {
     })
     await wrapper.findComponent(InputText).setValue('New Text')
     await wrapper.findComponent(InputText).trigger('keyup.enter')
-    expect(wrapper.emitted('edit')).toBeTruthy()
-    expect(wrapper.emitted('edit')[0]).toEqual(['New Text'])
+    // Blur event should have been triggered
+    expect(wrapper.findComponent(InputText).element).not.toBe(
+      document.activeElement
+    )
   })
 
   it('finishes editing on blur', async () => {

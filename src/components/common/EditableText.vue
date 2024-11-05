@@ -3,6 +3,7 @@
     <span v-if="!props.isEditing">
       {{ modelValue }}
     </span>
+    <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
     <InputText
       v-else
       type="text"
@@ -10,7 +11,7 @@
       fluid
       v-model:modelValue="inputValue"
       ref="inputRef"
-      @keyup.enter="finishEditing"
+      @keyup.enter="blurInputElement"
       @click.stop
       :pt="{
         root: {
@@ -37,13 +38,12 @@ const props = withDefaults(defineProps<EditableTextProps>(), {
 
 const emit = defineEmits(['update:modelValue', 'edit'])
 const inputValue = ref<string>(props.modelValue)
-const isEditingFinished = ref<boolean>(false)
 const inputRef = ref(null)
+
+const blurInputElement = () => {
+  inputRef.value?.$el.blur()
+}
 const finishEditing = () => {
-  if (isEditingFinished.value) {
-    return
-  }
-  isEditingFinished.value = true
   emit('edit', inputValue.value)
 }
 watch(
@@ -51,7 +51,6 @@ watch(
   (newVal) => {
     if (newVal) {
       inputValue.value = props.modelValue
-      isEditingFinished.value = false
       nextTick(() => {
         if (!inputRef.value) return
         const fileName = inputValue.value.includes('.')
