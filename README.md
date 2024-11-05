@@ -216,6 +216,26 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Developer APIs
 
 <details>
+  <summary>v1.3.34: Register about panel badges</summary>
+
+```js
+app.registerExtension({
+  name: 'TestExtension1',
+  aboutPageBadges: [
+    {
+      label: 'Test Badge',
+      url: 'https://example.com',
+      icon: 'pi pi-box'
+    }
+  ]
+})
+```
+
+![image](https://github.com/user-attachments/assets/099e77ee-16ad-4141-b2fc-5e9d5075188b)
+
+</details>
+
+<details>
   <summary>v1.3.22: Register bottom panel tabs</summary>
 
 ```js
