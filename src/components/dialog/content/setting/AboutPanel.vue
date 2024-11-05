@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="about-container">
     <h2 class="text-2xl font-bold mb-2">{{ $t('about') }}</h2>
     <div class="space-y-2">
       <a
@@ -8,7 +8,7 @@
         :href="badge.url"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center no-underline"
+        class="about-badge inline-flex items-center no-underline"
         :title="badge.url"
       >
         <Tag class="mr-2">
