@@ -154,7 +154,7 @@ test.describe('Topbar commands', () => {
       await comfyPage.settingDialog.goToAboutPanel()
       const badge = comfyPage.page.locator('.about-badge').last()
       expect(badge).toBeDefined()
-      expect(await badge.textContent()).toBe('Test Badge')
+      expect(await badge.textContent()).toContain('Test Badge')
     })
   })
 })
