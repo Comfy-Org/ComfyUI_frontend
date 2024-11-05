@@ -204,8 +204,10 @@ export const workflowService = {
     // Use workspaceStore here as it is patched in jest tests.
     const workflowStore = useWorkspaceStore().workflow
     if (typeof value === 'string') {
-      const workflow = workflowStore.getWorkflowByPath('workflows/' + value)
-      if (workflow) {
+      const workflow = workflowStore.getWorkflowByPath(
+        'workflows/' + appendJsonExt(value)
+      )
+      if (workflow?.isPersisted) {
         const loadedWorkflow = await workflowStore.openWorkflow(workflow)
         loadedWorkflow.changeTracker.restore()
         loadedWorkflow.changeTracker.reset(workflowData)
@@ -216,7 +218,7 @@ export const workflowService = {
     if (value === null || typeof value === 'string') {
       const path = value as string | null
       const tempWorkflow = workflowStore.createTemporary(
-        path ?? undefined,
+        path ? appendJsonExt(path) : undefined,
         workflowData
       )
       await workflowStore.openWorkflow(tempWorkflow)
