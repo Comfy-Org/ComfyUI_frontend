@@ -5,7 +5,7 @@ import { useSystemStatsStore } from './systemStatsStore'
 import { useExtensionStore } from './extensionStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
-  const frontendVersion = window['__COMFYUI_FRONTEND_VERSION__']
+  const frontendVersion = __COMFYUI_FRONTEND_VERSION__
   const extensionStore = useExtensionStore()
   const systemStatsStore = useSystemStatsStore()
   const coreVersion = computed(
