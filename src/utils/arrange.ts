@@ -1,5 +1,5 @@
-import type { Dictionary, Direction, IBoundaryNodes } from "@/interfaces"
-import type { LGraphNode } from "@/LGraphNode"
+import type { Dictionary, Direction, IBoundaryNodes } from "../interfaces"
+import type { LGraphNode } from "../LGraphNode"
 
 /**
  * Finds the nodes that are farthest in all four directions, representing the boundary of the nodes.

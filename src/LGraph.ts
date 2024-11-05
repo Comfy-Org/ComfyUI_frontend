@@ -1,5 +1,5 @@
 import type { Dictionary, IContextMenuValue, ISlotType, MethodNames, Point } from "./interfaces"
-import type { ISerialisedGraph } from "@/types/serialisation"
+import type { ISerialisedGraph } from "./types/serialisation"
 import { LGraphEventMode, TitleMode } from "./types/globalEnums"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
@@ -22,10 +22,6 @@ type ParamsArray<T extends Record<any, any>, K extends MethodNames<T>> = Paramet
     + onNodeAdded: when a new node is added to the graph
     + onNodeRemoved: when a node inside this graph is removed
     + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
- *
- * @class LGraph
- * @constructor
- * @param {Object} o data from previous serialization [optional]
  */
 
 export class LGraph {
@@ -113,6 +109,10 @@ export class LGraph {
 
     private _input_nodes?: LGraphNode[]
 
+    /**
+     * See {@link LGraph}
+     * @param o data from previous serialization [optional]
+     */
     constructor(o?: ISerialisedGraph) {
         if (LiteGraph.debug) console.log("Graph created")
 

@@ -1,10 +1,10 @@
-import type { ISlotType, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "@/interfaces"
-import type { LGraph } from "@/LGraph"
-import type { IGraphGroupFlags, LGraphGroup } from "@/LGraphGroup"
-import type { LGraphNode, NodeId } from "@/LGraphNode"
-import type { LiteGraph } from "@/litegraph"
-import type { LinkId, LLink } from "@/LLink"
-import type { TWidgetValue } from "@/types/widgets"
+import type { ISlotType, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "../interfaces"
+import type { LGraph } from "../LGraph"
+import type { IGraphGroupFlags, LGraphGroup } from "../LGraphGroup"
+import type { LGraphNode, NodeId } from "../LGraphNode"
+import type { LiteGraph } from "../litegraph"
+import type { LinkId, LLink } from "../LLink"
+import type { TWidgetValue } from "../types/widgets"
 import { RenderShape } from "./globalEnums"
 
 /**

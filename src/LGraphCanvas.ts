@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable, ReadOnlyPoint } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
@@ -1268,8 +1268,7 @@ export class LGraphCanvas {
 
         this.dragging_canvas = false
 
-        this.dirty_canvas = true
-        this.dirty_bgcanvas = true
+        this.#dirty()
         this.dirty_area = null
 
         this.node_in_panel = null
@@ -1573,6 +1572,13 @@ export class LGraphCanvas {
         if (fgcanvas) this.dirty_canvas = true
         if (bgcanvas) this.dirty_bgcanvas = true
     }
+
+    /** Marks the entire canvas as dirty. */
+    #dirty(): void {
+        this.dirty_canvas = true
+        this.dirty_bgcanvas = true
+    }
+
     /**
      * Used to attach the canvas in a popup
      *
@@ -1643,7 +1649,7 @@ export class LGraphCanvas {
         const y = graphPos[1] - node.pos[1]
 
         for (const widget of node.widgets) {
-            if(widget.hidden || (widget.advanced && !node.showAdvanced)) continue;
+            if (widget.hidden || (widget.advanced && !node.showAdvanced)) continue
 
             let widgetWidth, widgetHeight
             if (widget.computeSize) {
@@ -1701,7 +1707,8 @@ export class LGraphCanvas {
         if (this.set_canvas_dirty_on_mouse_event)
             this.dirty_canvas = true
 
-        if (!this.graph) return
+        const { graph } = this
+        if (!graph) return
 
         this.adjustMouseEvent(e)
 
@@ -1723,7 +1730,7 @@ export class LGraphCanvas {
 
         if (!is_inside) return
 
-        let node = this.graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes)
+        let node = graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes)
         let skip_action = false
         const now = LiteGraph.getTime()
         const is_double_click = (now - this.last_mouseclick < 300)
@@ -1745,11 +1752,12 @@ export class LGraphCanvas {
         //left button mouse / single finger
         if (e.which == 1 && !this.pointer_is_double) {
             if ((e.metaKey || e.ctrlKey) && !e.altKey) {
-                this.dragging_rectangle = new Float32Array(4)
-                this.dragging_rectangle[0] = e.canvasX
-                this.dragging_rectangle[1] = e.canvasY
-                this.dragging_rectangle[2] = 1
-                this.dragging_rectangle[3] = 1
+                const dragRect = new Float32Array(4)
+                dragRect[0] = e.canvasX
+                dragRect[1] = e.canvasY
+                dragRect[2] = 1
+                dragRect[3] = 1
+                this.dragging_rectangle = dragRect
                 skip_action = true
             }
 
@@ -1762,11 +1770,11 @@ export class LGraphCanvas {
                     cloned.pos[0] += 5
                     cloned.pos[1] += 5
 
-                    this.graph.add(cloned, false)
+                    graph.add(cloned, false)
                     node = cloned
                     skip_action = true
                     if (this.allow_dragnodes) {
-                        this.graph.beforeChange()
+                        graph.beforeChange()
                         this.node_dragged = node
                         this.isDragging = true
                     }
@@ -1789,7 +1797,7 @@ export class LGraphCanvas {
                     //Search for corner for resize
                     if (!skip_action &&
                         node.resizable !== false && node.inResizeCorner(e.canvasX, e.canvasY)) {
-                        this.graph.beforeChange()
+                        graph.beforeChange()
                         this.resizing_node = node
                         this.canvas.style.cursor = "se-resize"
                         skip_action = true
@@ -1813,9 +1821,9 @@ export class LGraphCanvas {
 
                                             this.connecting_links = []
                                             for (const linkId of output.links) {
-                                                const link = this.graph._links.get(linkId)
+                                                const link = graph._links.get(linkId)
                                                 const slot = link.target_slot
-                                                const linked_node = this.graph._nodes_by_id[link.target_id]
+                                                const linked_node = graph._nodes_by_id[link.target_id]
                                                 const input = linked_node.inputs[slot]
                                                 const pos = linked_node.getConnectionPos(true, slot)
 
@@ -1888,9 +1896,9 @@ export class LGraphCanvas {
 
                                     if (input.link !== null) {
                                         //before disconnecting
-                                        const link_info = this.graph._links.get(input.link)
+                                        const link_info = graph._links.get(input.link)
                                         const slot = link_info.origin_slot
-                                        const linked_node = this.graph._nodes_by_id[link_info.origin_id]
+                                        const linked_node = graph._nodes_by_id[link_info.origin_id]
                                         if (LiteGraph.click_do_break_link_to || (LiteGraph.ctrl_alt_click_do_break_link && e.ctrlKey && e.altKey && !e.shiftKey)) {
                                             node.disconnectInput(i)
                                         } else if (e.shiftKey) {
@@ -1998,7 +2006,7 @@ export class LGraphCanvas {
 
                     if (!block_drag_node) {
                         if (this.allow_dragnodes) {
-                            this.graph.beforeChange()
+                            graph.beforeChange()
                             this.node_dragged = node
                             this.isDragging = true
                         }
@@ -2038,7 +2046,7 @@ export class LGraphCanvas {
                             }
                             if (overLink) {
                                 const slot = overLink.origin_slot
-                                const originNode = this.graph._nodes_by_id[overLink.origin_id]
+                                const originNode = graph._nodes_by_id[overLink.origin_id]
 
                                 this.connecting_links ??= []
                                 this.connecting_links.push({
@@ -2060,7 +2068,7 @@ export class LGraphCanvas {
                         this.ctx.lineWidth = lineWidth
                     }
 
-                    const group = this.graph.getGroupOnPos(e.canvasX, e.canvasY)
+                    const group = graph.getGroupOnPos(e.canvasX, e.canvasY)
                     this.selected_group = group
                     if (group && !this.read_only) {
                         if (e.ctrlKey) {
@@ -2197,12 +2205,11 @@ export class LGraphCanvas {
 
         }
 
-        this.last_mouse[0] = e.clientX
-        this.last_mouse[1] = e.clientY
+        this.last_mouse = [e.clientX, e.clientY]
         this.last_mouseclick = LiteGraph.getTime()
         this.last_mouse_dragging = true
 
-        this.graph.change()
+        graph.change()
 
         //this is to ensure to defocus(blur) if a text input element is on focus
         if (!ref_window.document.activeElement ||
@@ -2276,8 +2283,7 @@ export class LGraphCanvas {
         } else if (this.dragging_canvas) {
             this.ds.offset[0] += delta[0] / this.ds.scale
             this.ds.offset[1] += delta[1] / this.ds.scale
-            this.dirty_canvas = true
-            this.dirty_bgcanvas = true
+            this.#dirty()
         } else if ((this.allow_interaction || (node && node.flags.allow_interaction)) && !this.read_only) {
             if (this.connecting_links) this.dirty_canvas = true
 
@@ -2354,8 +2360,6 @@ export class LGraphCanvas {
                                         highlightInput = node.inputs[targetSlotId]
                                     }
                                 }
-                            } else if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                                //mouse on top of the corner box, don't know what to do
                             } else {
                                 //check if I have a slot below de mouse
                                 if (inputId != -1 && node.inputs[inputId] && LiteGraph.isValidConnection(firstLink.output.type, node.inputs[inputId].type)) {
@@ -2373,8 +2377,6 @@ export class LGraphCanvas {
                                     node.getConnectionPos(false, targetSlotId, pos)
                                     highlightPos = pos
                                 }
-                            } else if (this.isOverNodeBox(node, e.canvasX, e.canvasY)) {
-                                //mouse on top of the corner box, don't know what to do
                             } else {
                                 //check if I have a slot below de mouse
                                 if (outputId != -1 && node.outputs[outputId] && LiteGraph.isValidConnection(firstLink.input.type, node.outputs[outputId].type)) {
@@ -2439,8 +2441,7 @@ export class LGraphCanvas {
                 const deltaY = delta[1] / this.ds.scale
                 allItems.forEach(x => x.move(deltaX, deltaY, true))
 
-                this.dirty_canvas = true
-                this.dirty_bgcanvas = true
+                this.#dirty()
 
                 function addToSetRecursively(item: Positionable, items: Set<Positionable>): void {
                     if (items.has(item)) return
@@ -2458,8 +2459,7 @@ export class LGraphCanvas {
                 this.resizing_node.setSize(desired_size)
 
                 this.canvas.style.cursor = "se-resize"
-                this.dirty_canvas = true
-                this.dirty_bgcanvas = true
+                this.#dirty()
             }
         }
 
@@ -2506,30 +2506,31 @@ export class LGraphCanvas {
             this.selected_group = null
             this.isDragging = false
 
-            let node = this.graph.getNodeOnPos(
+            const node = this.graph.getNodeOnPos(
                 e.canvasX,
                 e.canvasY,
                 this.visible_nodes
             )
 
-            if (this.dragging_rectangle) {
+            const dragRect = this.dragging_rectangle
+            if (dragRect) {
                 if (this.graph) {
                     const nodes = this.graph._nodes
                     const node_bounding = new Float32Array(4)
 
                     //compute bounding and flip if left to right
-                    const w = Math.abs(this.dragging_rectangle[2])
-                    const h = Math.abs(this.dragging_rectangle[3])
-                    const startx = this.dragging_rectangle[2] < 0
-                        ? this.dragging_rectangle[0] - w
-                        : this.dragging_rectangle[0]
-                    const starty = this.dragging_rectangle[3] < 0
-                        ? this.dragging_rectangle[1] - h
-                        : this.dragging_rectangle[1]
-                    this.dragging_rectangle[0] = startx
-                    this.dragging_rectangle[1] = starty
-                    this.dragging_rectangle[2] = w
-                    this.dragging_rectangle[3] = h
+                    const w = Math.abs(dragRect[2])
+                    const h = Math.abs(dragRect[3])
+                    const startx = dragRect[2] < 0
+                        ? dragRect[0] - w
+                        : dragRect[0]
+                    const starty = dragRect[3] < 0
+                        ? dragRect[1] - h
+                        : dragRect[1]
+                    dragRect[0] = startx
+                    dragRect[1] = starty
+                    dragRect[2] = w
+                    dragRect[3] = h
 
                     // test dragging rect size, if minimun simulate a click
                     if (!node || (w > 10 && h > 10)) {
@@ -2537,7 +2538,7 @@ export class LGraphCanvas {
                         const to_select = []
                         for (const nodeX of nodes) {
                             nodeX.getBounding(node_bounding)
-                            if (!overlapBounding(this.dragging_rectangle, node_bounding)) continue
+                            if (!overlapBounding(dragRect, node_bounding)) continue
 
                             to_select.push(nodeX)
                         }
@@ -2547,8 +2548,7 @@ export class LGraphCanvas {
                         // Select groups
                         const groups = this.graph.groups
                         for (const group of groups) {
-                            const r = this.dragging_rectangle
-                            if (!containsRect(r, group._bounding)) continue
+                            if (!containsRect(dragRect, group._bounding)) continue
                             this.selectedItems.add(group)
                             group.recomputeInsideNodes()
                             group.selected = true
@@ -2567,8 +2567,7 @@ export class LGraphCanvas {
                     for (const link of this.connecting_links) {
 
                         //dragging a connection
-                        this.dirty_canvas = true
-                        this.dirty_bgcanvas = true
+                        this.#dirty()
 
                         //slot below mouse? connect
                         if (link.output) {
@@ -2648,38 +2647,27 @@ export class LGraphCanvas {
                 this.connecting_links = null
             } //not dragging connection
             else if (this.resizing_node) {
-                this.dirty_canvas = true
-                this.dirty_bgcanvas = true
+                this.#dirty()
                 this.graph.afterChange(this.resizing_node)
                 this.resizing_node = null
             } else if (this.node_dragged) {
                 //node being dragged?
-                node = this.node_dragged
-                if (node &&
-                    e.click_time < 300 &&
-                    isInsideRectangle(e.canvasX, e.canvasY, node.pos[0], node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT, LiteGraph.NODE_TITLE_HEIGHT, LiteGraph.NODE_TITLE_HEIGHT)) {
-                    node.collapse()
+                const { node_dragged } = this
+                if (e.click_time < 300 && node_dragged?.isPointInCollapse(e.canvasX, e.canvasY)) {
+                    node_dragged.collapse()
                 }
 
-                this.dirty_canvas = true
-                this.dirty_bgcanvas = true
-                this.node_dragged.pos[0] = Math.round(this.node_dragged.pos[0])
-                this.node_dragged.pos[1] = Math.round(this.node_dragged.pos[1])
+                this.#dirty()
+                node_dragged.pos[0] = Math.round(node_dragged.pos[0])
+                node_dragged.pos[1] = Math.round(node_dragged.pos[1])
                 if (this.graph.config.align_to_grid || this.align_to_grid) {
-                    this.node_dragged.alignToGrid()
+                    node_dragged.alignToGrid()
                 }
-                this.onNodeMoved?.(this.node_dragged)
-                this.graph.afterChange(this.node_dragged)
+                this.onNodeMoved?.(node_dragged)
+                this.graph.afterChange(node_dragged)
                 this.node_dragged = null
             } //no node being dragged
             else {
-                //get node over
-                node = this.graph.getNodeOnPos(
-                    e.canvasX,
-                    e.canvasY,
-                    this.visible_nodes
-                )
-
                 if (!node && e.click_time < 300 && !this.graph.groups.some(x => x.isPointInTitlebar(e.canvasX, e.canvasY))) {
                     this.deselectAll()
                 }
@@ -2750,20 +2738,7 @@ export class LGraphCanvas {
         e.preventDefault()
         return false
     }
-    /**
-     * returns true if a position (in graph space) is on top of a node little corner box
-     **/
-    isOverNodeBox(node: LGraphNode, canvasx: number, canvasy: number): boolean {
-        const title_height = LiteGraph.NODE_TITLE_HEIGHT
-        return Boolean(isInsideRectangle(
-            canvasx,
-            canvasy,
-            node.pos[0] + 2,
-            node.pos[1] + 2 - title_height,
-            title_height - 4,
-            title_height - 4
-        ))
-    }
+
     /**
      * returns the INDEX if a position (in graph space) is on top of a node input slot
      **/
@@ -3414,8 +3389,7 @@ export class LGraphCanvas {
      **/
     setZoom(value: number, zooming_center: Point) {
         this.ds.changeScale(value, zooming_center)
-        this.dirty_canvas = true
-        this.dirty_bgcanvas = true
+        this.#dirty()
     }
     /**
      * converts a coordinate from graph coordinates to canvas2D coordinates
@@ -5270,7 +5244,7 @@ export class LGraphCanvas {
                 }
 
                 //render arrow
-                ctx.save()
+                const transform = ctx.getTransform()
                 ctx.translate(posA[0], posA[1])
                 ctx.rotate(angleA)
                 ctx.beginPath()
@@ -5278,8 +5252,8 @@ export class LGraphCanvas {
                 ctx.lineTo(0, +7)
                 ctx.lineTo(+5, -3)
                 ctx.fill()
-                ctx.restore()
-                ctx.save()
+                ctx.setTransform(transform)
+
                 ctx.translate(posC[0], posC[1])
                 ctx.rotate(angleB)
                 ctx.beginPath()
@@ -5287,7 +5261,7 @@ export class LGraphCanvas {
                 ctx.lineTo(0, +7)
                 ctx.lineTo(+5, -3)
                 ctx.fill()
-                ctx.restore()
+                ctx.setTransform(transform)
             }
 
             //circle
@@ -5314,59 +5288,67 @@ export class LGraphCanvas {
             }
         }
     }
-    //returns the link center point based on curvature
-    computeConnectionPoint(a: Point,
-        b: Point,
+
+    /**
+     * Finds a point along a spline represented by a to b, with spline endpoint directions dictacted by start_dir and end_dir.
+     * @param a Start point
+     * @param b End point
+     * @param t Time: distance between points (e.g 0.25 is 25% along the line)
+     * @param start_dir Spline start direction
+     * @param end_dir Spline end direction
+     * @returns The point at {@link t} distance along the spline a-b.
+     */
+    computeConnectionPoint(
+        a: ReadOnlyPoint,
+        b: ReadOnlyPoint,
         t: number,
-        start_dir: number,
-        end_dir: number): number[] {
+        start_dir: LinkDirection,
+        end_dir: LinkDirection
+    ): Point {
         start_dir ||= LinkDirection.RIGHT
         end_dir ||= LinkDirection.LEFT
 
         const dist = distance(a, b)
-        const p0 = a
-        const p1 = [a[0], a[1]]
-        const p2 = [b[0], b[1]]
-        const p3 = b
+        const pa: Point = [a[0], a[1]]
+        const pb: Point = [b[0], b[1]]
 
-        switch (start_dir) {
-            case LinkDirection.LEFT:
-                p1[0] += dist * -0.25
-                break
-            case LinkDirection.RIGHT:
-                p1[0] += dist * 0.25
-                break
-            case LinkDirection.UP:
-                p1[1] += dist * -0.25
-                break
-            case LinkDirection.DOWN:
-                p1[1] += dist * 0.25
-                break
-        }
-        switch (end_dir) {
-            case LinkDirection.LEFT:
-                p2[0] += dist * -0.25
-                break
-            case LinkDirection.RIGHT:
-                p2[0] += dist * 0.25
-                break
-            case LinkDirection.UP:
-                p2[1] += dist * -0.25
-                break
-            case LinkDirection.DOWN:
-                p2[1] += dist * 0.25
-                break
-        }
+        this.#addSplineOffset(pa, start_dir, dist)
+        this.#addSplineOffset(pb, end_dir, dist)
 
         const c1 = (1 - t) * (1 - t) * (1 - t)
         const c2 = 3 * ((1 - t) * (1 - t)) * t
         const c3 = 3 * (1 - t) * (t * t)
         const c4 = t * t * t
 
-        const x = c1 * p0[0] + c2 * p1[0] + c3 * p2[0] + c4 * p3[0]
-        const y = c1 * p0[1] + c2 * p1[1] + c3 * p2[1] + c4 * p3[1]
+        const x = c1 * a[0] + c2 * pa[0] + c3 * pb[0] + c4 * b[0]
+        const y = c1 * a[1] + c2 * pa[1] + c3 * pb[1] + c4 * b[1]
         return [x, y]
     }
+
+    /**
+     * Modifies an existing point, adding a single-axis offset.
+     * @param point The point to add the offset to
+     * @param direction The direction to add the offset in
+     * @param dist Distance to offset
+     * @param factor Distance is mulitplied by this value.  Default: 0.25
+     */
+    #addSplineOffset(point: Point, direction: LinkDirection, dist: number, factor = 0.25): void {
+        switch (direction) {
+            case LinkDirection.LEFT:
+                point[0] += dist * -factor
+                break
+            case LinkDirection.RIGHT:
+                point[0] += dist * factor
+                break
+            case LinkDirection.UP:
+                point[1] += dist * -factor
+                break
+            case LinkDirection.DOWN:
+                point[1] += dist * factor
+                break
+        }
+    }
+
     drawExecutionOrder(ctx: CanvasRenderingContext2D): void {
         ctx.shadowColor = "transparent"
         ctx.globalAlpha = 0.25
@@ -5425,7 +5407,7 @@ export class LGraphCanvas {
 
         for (let i = 0; i < widgets.length; ++i) {
             const w = widgets[i]
-            if(w.hidden || (w.advanced && !node.showAdvanced)) continue;
+            if (w.hidden || (w.advanced && !node.showAdvanced)) continue
             const y = w.y || posY
 
             if (w === this.link_over_widget) {
@@ -5914,8 +5896,7 @@ export class LGraphCanvas {
     switchLiveMode(transition: boolean): void {
         if (!transition) {
             this.live_mode = !this.live_mode
-            this.dirty_canvas = true
-            this.dirty_bgcanvas = true
+            this.#dirty()
             return
         }
 

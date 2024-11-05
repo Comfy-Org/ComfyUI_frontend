@@ -1514,6 +1514,17 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     /**
+     * Checks if the provided point is inside this node's collapse button area.
+     * @param x X co-ordinate to check
+     * @param y Y co-ordinate to check
+     * @returns true if the x,y point is in the collapse button area, otherwise false
+     */
+    isPointInCollapse(x: number, y: number): boolean {
+        const squareLength = LiteGraph.NODE_TITLE_HEIGHT
+        return isInsideRectangle(x, y, this.pos[0], this.pos[1] - squareLength, squareLength, squareLength)
+    }
+
+    /**
      * checks if a point is inside a node slot, and returns info about which slot
      * @param x
      * @param y
@@ -1915,9 +1926,9 @@ export class LGraphNode implements Positionable, IPinnable {
             }
         }
 
-        const nextId = LiteGraph.use_uuids
-            ? LiteGraph.uuidv4()
-            : ++graph.last_link_id
+        // UUID: LinkIds
+        // const nextId = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++graph.last_link_id
+        const nextId = ++graph.last_link_id
 
         //create link class
         link_info = new LLink(
@@ -2300,7 +2311,7 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     /**
-     * Collapse the node to make it smaller on the canvas
+     * Toggle node collapse (makes it smaller on the canvas)
      **/
     collapse(force?: boolean): void {
         if (!this.collapsible && !force) return
