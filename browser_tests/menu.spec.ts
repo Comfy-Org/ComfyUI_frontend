@@ -411,6 +411,19 @@ test.describe('Menu', () => {
       )
     })
 
+    test('Can save workflow as', async ({ comfyPage }) => {
+      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json'])
+
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow4.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
+    })
+
     test('Does not report warning when switching between opened workflows', async ({
       comfyPage
     }) => {
