@@ -69,7 +69,7 @@ export const workflowService = {
         (workflow.directory + '/' + appendJsonExt(newFilename)).substring(
           'workflows/'.length
         ),
-        workflow.activeState
+        workflow.activeState as ComfyWorkflowJSON
       )
       await this.openWorkflow(tempWorkflow)
       await useWorkflowStore().saveWorkflow(tempWorkflow)
