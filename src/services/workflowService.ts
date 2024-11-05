@@ -61,12 +61,19 @@ export const workflowService = {
     })
     if (!newFilename) return
 
-    const tempWorkflow = workflow.isTemporary
-      ? workflow
-      : useWorkflowStore().createTemporary(workflow.path)
-
-    await this.renameWorkflow(tempWorkflow, newFilename)
-    await useWorkflowStore().saveWorkflow(tempWorkflow)
+    if (workflow.isTemporary) {
+      await this.renameWorkflow(workflow, newFilename)
+      await useWorkflowStore().saveWorkflow(workflow)
+    } else {
+      const tempWorkflow = useWorkflowStore().createTemporary(
+        (workflow.directory + '/' + appendJsonExt(newFilename)).substring(
+          'workflows/'.length
+        ),
+        workflow.activeState
+      )
+      await this.openWorkflow(tempWorkflow)
+      await useWorkflowStore().saveWorkflow(tempWorkflow)
+    }
   },
 
   /**

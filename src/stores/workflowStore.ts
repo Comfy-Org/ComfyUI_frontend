@@ -340,7 +340,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
-    await workflow.save()
+    // Detach the workflow and re-attach to force refresh the tree objects.
+    const openIndex = detachWorkflow(workflow)
+    try {
+      await workflow.save()
+    } finally {
+      attachWorkflow(workflow, openIndex)
+    }
   }
 
   return {
