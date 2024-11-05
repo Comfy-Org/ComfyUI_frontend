@@ -1731,6 +1731,7 @@ export class LGraphCanvas {
         if (!is_inside) return
 
         let node = graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes)
+
         let skip_action = false
         const now = LiteGraph.getTime()
         const is_double_click = (now - this.last_mouseclick < 300)
@@ -4584,7 +4585,6 @@ export class LGraphCanvas {
         node.measure(area)
         area[0] -= node.pos[0]
         area[1] -= node.pos[1]
-        area[2]++
 
         const old_alpha = ctx.globalAlpha
 
@@ -4660,12 +4660,12 @@ export class LGraphCanvas {
                 //ctx.globalAlpha = 0.5 * old_alpha;
                 ctx.beginPath()
                 if (shape == RenderShape.BOX || low_quality) {
-                    ctx.rect(0, -title_height, size[0] + 1, title_height)
+                    ctx.rect(0, -title_height, size[0], title_height)
                 } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
                     ctx.roundRect(
                         0,
                         -title_height,
-                        size[0] + 1,
+                        size[0],
                         title_height,
                         node.flags.collapsed ? [this.round_radius] : [this.round_radius, this.round_radius, 0, 0]
                     )
