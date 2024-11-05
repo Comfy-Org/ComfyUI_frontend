@@ -49,7 +49,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       .map(
         (command) =>
           ({
-            command: command.function,
+            command: () => commandStore.execute(command.id),
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
