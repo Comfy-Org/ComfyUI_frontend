@@ -494,6 +494,31 @@ test.describe('Menu', () => {
       })
       expect(await exportTag.count()).toBe(1)
     })
+
+    test('Can catch error when executing command', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          commands: [
+            {
+              id: 'foo',
+              label: 'foo-command',
+              function: () => {
+                throw new Error('foo!')
+              }
+            }
+          ],
+          menuCommands: [
+            {
+              path: ['ext'],
+              commands: ['foo']
+            }
+          ]
+        })
+      })
+      await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
+      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+    })
   })
 
   // Only test 'Top' to reduce test time.
