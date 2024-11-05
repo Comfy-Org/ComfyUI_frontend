@@ -466,7 +466,7 @@ test.describe('Menu', () => {
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow (2)'
+        'Unsaved Workflow'
       ])
     })
   })
