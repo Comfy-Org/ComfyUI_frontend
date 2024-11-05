@@ -33,7 +33,7 @@ export class SettingDialog {
   }
 
   async goToAboutPanel() {
-    const aboutButton = this.page.locator('li[aria-label="About"]:visible')
+    const aboutButton = this.page.locator('li[aria-label="About"]')
     await aboutButton.click()
     await this.page.waitForSelector('div.about-container')
   }
