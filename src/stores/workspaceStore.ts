@@ -6,6 +6,7 @@ import { useQueueSettingsStore } from './queueStore'
 import { useCommandStore } from './commandStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 import { useSettingStore } from './settingStore'
+import { useWorkflowStore } from './workflowStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
@@ -26,6 +27,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     get: useSettingStore().get,
     set: useSettingStore().set
   }))
+  const workflow = computed(() => useWorkflowStore())
 
   /**
    * Registers a sidebar tab.
@@ -66,6 +68,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     command,
     sidebarTab,
     setting,
+    workflow,
 
     registerSidebarTab,
     unregisterSidebarTab,

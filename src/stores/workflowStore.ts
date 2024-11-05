@@ -1,24 +1,292 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
-import { ComfyWorkflow } from '@/scripts/workflows'
+import { computed, markRaw, ref } from 'vue'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
+import { UserFile } from './userFileStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { appendJsonExt, getPathDetails } from '@/utils/formatUtil'
+import { defaultGraphJSON } from '@/scripts/defaultGraph'
+import { syncEntities } from '@/utils/syncUtil'
+
+export class ComfyWorkflow extends UserFile {
+  /**
+   * The change tracker for the workflow. Non-reactive raw object.
+   */
+  changeTracker: ChangeTracker | null = null
+  /**
+   * Whether the workflow has been modified comparing to the initial state.
+   */
+  private _isModified: boolean = false
+
+  /**
+   * @param options The path, modified, and size of the workflow.
+   * Note: path is the full path, including the 'workflows/' prefix.
+   */
+  constructor(options: { path: string; modified: number; size: number }) {
+    super(options.path, options.modified, options.size)
+  }
+
+  get key() {
+    return this.path.substring('workflows/'.length)
+  }
+
+  get activeState(): ComfyWorkflowJSON | null {
+    return this.changeTracker?.activeState ?? null
+  }
+
+  get initialState(): ComfyWorkflowJSON | null {
+    return this.changeTracker?.initialState ?? null
+  }
+
+  get isLoaded(): boolean {
+    return this.changeTracker !== null
+  }
+
+  get isModified(): boolean {
+    return this._isModified
+  }
+
+  set isModified(value: boolean) {
+    this._isModified = value
+  }
+
+  /**
+   * Load the workflow content from remote storage. Directly returns the loaded
+   * workflow if the content is already loaded.
+   *
+   * @param force Whether to force loading the content even if it is already loaded.
+   * @returns this
+   */
+  async load({
+    force = false
+  }: { force?: boolean } = {}): Promise<LoadedComfyWorkflow> {
+    await super.load({ force })
+    if (!force && this.isLoaded) return this as LoadedComfyWorkflow
+
+    if (!this.originalContent) {
+      throw new Error('[ASSERT] Workflow content should be loaded')
+    }
+
+    // Note: originalContent is populated by super.load()
+    console.debug('load and start tracking of workflow', this.path)
+    this.changeTracker = markRaw(
+      new ChangeTracker(
+        this,
+        /* initialState= */ JSON.parse(this.originalContent)
+      )
+    )
+    return this as LoadedComfyWorkflow
+  }
+
+  unload(): void {
+    console.debug('unload workflow', this.path)
+    this.changeTracker = null
+    super.unload()
+  }
+
+  async save() {
+    this.content = JSON.stringify(this.activeState)
+    // Force save to ensure the content is updated in remote storage incase
+    // the isModified state is screwed by changeTracker.
+    const ret = await super.save({ force: true })
+    this.changeTracker?.reset()
+    this.isModified = false
+    return ret
+  }
+
+  /**
+   * Save the workflow as a new file.
+   * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
+   * @returns this
+   */
+  async saveAs(path: string) {
+    this.content = JSON.stringify(this.activeState)
+    return await super.saveAs(path)
+  }
+
+  async rename(newName: string) {
+    const newPath = this.directory + '/' + appendJsonExt(newName)
+    await super.rename(newPath)
+    return this
+  }
+}
+
+export interface LoadedComfyWorkflow extends ComfyWorkflow {
+  isLoaded: true
+  originalContent: string
+  content: string
+  changeTracker: ChangeTracker
+  initialState: ComfyWorkflowJSON
+  activeState: ComfyWorkflowJSON
+}
 
 export const useWorkflowStore = defineStore('workflow', () => {
-  const activeWorkflow = ref<ComfyWorkflow | null>(null)
+  /**
+   * Detach the workflow from the store. lightweight helper function.
+   * @param workflow The workflow to detach.
+   * @returns The index of the workflow in the openWorkflowPaths array, or -1 if the workflow was not open.
+   */
+  const detachWorkflow = (workflow: ComfyWorkflow) => {
+    delete workflowLookup.value[workflow.path]
+    const index = openWorkflowPaths.value.indexOf(workflow.path)
+    if (index !== -1) {
+      openWorkflowPaths.value = openWorkflowPaths.value.filter(
+        (path) => path !== workflow.path
+      )
+    }
+    return index
+  }
+
+  /**
+   * Attach the workflow to the store. lightweight helper function.
+   * @param workflow The workflow to attach.
+   * @param openIndex The index to open the workflow at.
+   */
+  const attachWorkflow = (workflow: ComfyWorkflow, openIndex: number = -1) => {
+    workflowLookup.value[workflow.path] = workflow
+
+    if (openIndex !== -1) {
+      openWorkflowPaths.value.splice(openIndex, 0, workflow.path)
+    }
+  }
+
+  /**
+   * The active workflow currently being edited.
+   */
+  const activeWorkflow = ref<LoadedComfyWorkflow | null>(null)
+  const isActive = (workflow: ComfyWorkflow) =>
+    activeWorkflow.value?.path === workflow.path
+  /**
+   * All workflows.
+   */
   const workflowLookup = ref<Record<string, ComfyWorkflow>>({})
-  const workflows = computed(() => Object.values(workflowLookup.value))
-  const persistedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isPersisted)
+  const workflows = computed<ComfyWorkflow[]>(() =>
+    Object.values(workflowLookup.value)
   )
+  const getWorkflowByPath = (path: string): ComfyWorkflow | null =>
+    workflowLookup.value[path] ?? null
+
+  /**
+   * The paths of the open workflows. It is setup as a ref to allow user
+   * to reorder the workflows opened.
+   */
+  const openWorkflowPaths = ref<string[]>([])
+  const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isOpen)
+    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
   )
+  const isOpen = (workflow: ComfyWorkflow) =>
+    openWorkflowPathSet.value.has(workflow.path)
+
+  /**
+   * Set the workflow as the active workflow.
+   * @param workflow The workflow to open.
+   */
+  const openWorkflow = async (
+    workflow: ComfyWorkflow
+  ): Promise<LoadedComfyWorkflow> => {
+    if (isActive(workflow)) return workflow as LoadedComfyWorkflow
+
+    if (!openWorkflowPaths.value.includes(workflow.path)) {
+      openWorkflowPaths.value.push(workflow.path)
+    }
+    const loadedWorkflow = await workflow.load()
+    activeWorkflow.value = loadedWorkflow
+    console.debug('[workflowStore] open workflow', workflow.path)
+    return loadedWorkflow
+  }
+
+  const getUnconflictedPath = (basePath: string): string => {
+    const { directory, filename, suffix } = getPathDetails(basePath)
+    let counter = 2
+    let newPath = basePath
+    while (workflowLookup.value[newPath]) {
+      newPath = `${directory}/${filename} (${counter}).${suffix}`
+      counter++
+    }
+    return newPath
+  }
+
+  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+    const fullPath = getUnconflictedPath(
+      'workflows/' + (path ?? 'Unsaved Workflow.json')
+    )
+    const workflow = new ComfyWorkflow({
+      path: fullPath,
+      modified: Date.now(),
+      size: 0
+    })
+
+    workflow.originalContent = workflow.content = workflowData
+      ? JSON.stringify(workflowData)
+      : defaultGraphJSON
+
+    workflowLookup.value[workflow.path] = workflow
+    return workflow
+  }
+
+  const closeWorkflow = async (workflow: ComfyWorkflow) => {
+    openWorkflowPaths.value = openWorkflowPaths.value.filter(
+      (path) => path !== workflow.path
+    )
+    if (workflow.isTemporary) {
+      delete workflowLookup.value[workflow.path]
+    } else {
+      workflow.unload()
+    }
+    console.debug('[workflowStore] close workflow', workflow.path)
+  }
+
+  /**
+   * Get the workflow at the given index shift from the active workflow.
+   * @param shift The shift to the next workflow. Positive for next, negative for previous.
+   * @returns The next workflow or null if the shift is out of bounds.
+   */
+  const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
+    const index = openWorkflowPaths.value.indexOf(
+      activeWorkflow.value?.path ?? ''
+    )
+
+    if (index !== -1) {
+      const length = openWorkflows.value.length
+      const nextIndex = (index + shift + length) % length
+      const nextWorkflow = openWorkflows.value[nextIndex]
+      return nextWorkflow ?? null
+    }
+    return null
+  }
+
+  const persistedWorkflows = computed(() =>
+    Array.from(workflows.value).filter((workflow) => workflow.isPersisted)
+  )
+  const syncWorkflows = async (dir: string = '') => {
+    await syncEntities(
+      dir ? 'workflows/' + dir : 'workflows',
+      workflowLookup.value,
+      (file) =>
+        new ComfyWorkflow({
+          path: file.path,
+          modified: file.modified,
+          size: file.size
+        }),
+      (existingWorkflow, file) => {
+        existingWorkflow.lastModified = file.modified
+        existingWorkflow.size = file.size
+        existingWorkflow.unload()
+      },
+      /* exclude */ (workflow) => workflow.isTemporary
+    )
+  }
+
+  const bookmarkStore = useWorkflowBookmarkStore()
   const bookmarkedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.isBookmarked)
+    workflows.value.filter((workflow) =>
+      bookmarkStore.isBookmarked(workflow.path)
+    )
   )
   const modifiedWorkflows = computed(() =>
-    workflows.value.filter((workflow) => workflow.unsaved)
+    workflows.value.filter((workflow) => workflow.isModified)
   )
 
   const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
@@ -31,50 +299,78 @@ export const useWorkflowStore = defineStore('workflow', () => {
   )
   // Bookmarked workflows tree is flat.
   const bookmarkedWorkflowsTree = computed(() =>
-    buildTree(bookmarkedWorkflows.value, (workflow: ComfyWorkflow) => [
-      workflow.path ?? 'temporary_workflow'
-    ])
+    buildTree(bookmarkedWorkflows.value, (workflow) => [workflow.key])
   )
   // Open workflows tree is flat.
   const openWorkflowsTree = computed(() =>
-    buildTree(openWorkflows.value, (workflow: ComfyWorkflow) => [workflow.key])
+    buildTree(openWorkflows.value, (workflow) => [workflow.key])
   )
 
-  const loadOpenedWorkflowIndexShift = async (shift: number) => {
-    const index = openWorkflows.value.indexOf(
-      activeWorkflow.value as ComfyWorkflow
-    )
-    if (index !== -1) {
-      const length = openWorkflows.value.length
-      const nextIndex = (index + shift + length) % length
-      const nextWorkflow = openWorkflows.value[nextIndex]
-      if (nextWorkflow) {
-        await nextWorkflow.load()
-      }
+  const renameWorkflow = async (workflow: ComfyWorkflow, newName: string) => {
+    // Capture all needed values upfront
+    const oldPath = workflow.path
+    const newPath = workflow.directory + '/' + appendJsonExt(newName)
+    const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
+
+    const openIndex = detachWorkflow(workflow)
+    // Perform the actual rename operation first
+    try {
+      await workflow.rename(newName)
+    } finally {
+      attachWorkflow(workflow, openIndex)
+    }
+
+    // Update bookmarks
+    if (wasBookmarked) {
+      bookmarkStore.setBookmarked(oldPath, false)
+      bookmarkStore.setBookmarked(newPath, true)
     }
   }
 
-  const loadNextOpenedWorkflow = async () => {
-    await loadOpenedWorkflowIndexShift(1)
+  const deleteWorkflow = async (workflow: ComfyWorkflow) => {
+    await workflow.delete()
+    if (bookmarkStore.isBookmarked(workflow.path)) {
+      bookmarkStore.setBookmarked(workflow.path, false)
+    }
+    delete workflowLookup.value[workflow.path]
   }
 
-  const loadPreviousOpenedWorkflow = async () => {
-    await loadOpenedWorkflowIndexShift(-1)
+  /**
+   * Save a workflow.
+   * @param workflow The workflow to save.
+   */
+  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+    // Detach the workflow and re-attach to force refresh the tree objects.
+    const openIndex = detachWorkflow(workflow)
+    try {
+      await workflow.save()
+    } finally {
+      attachWorkflow(workflow, openIndex)
+    }
   }
 
   return {
     activeWorkflow,
-    workflows,
+    isActive,
     openWorkflows,
+    openWorkflowsTree,
+    openedWorkflowIndexShift,
+    openWorkflow,
+    isOpen,
+    closeWorkflow,
+    createTemporary,
+    renameWorkflow,
+    deleteWorkflow,
+    saveWorkflow,
+
+    workflows,
     bookmarkedWorkflows,
     modifiedWorkflows,
-    workflowLookup,
+    getWorkflowByPath,
     workflowsTree,
     bookmarkedWorkflowsTree,
-    openWorkflowsTree,
     buildWorkflowTree,
-    loadNextOpenedWorkflow,
-    loadPreviousOpenedWorkflow
+    syncWorkflows
   }
 })
 
@@ -98,6 +394,7 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   }
 
   const setBookmarked = (path: string, value: boolean) => {
+    if (bookmarks.value.has(path) === value) return
     if (value) {
       bookmarks.value.add(path)
     } else {

@@ -36,6 +36,14 @@ export class Topbar {
     await this.page.waitForTimeout(300)
   }
 
+  async saveWorkflowAs(workflowName: string) {
+    await this.triggerTopbarCommand(['Workflow', 'Save As'])
+    await this.page.locator('.p-dialog-content input').fill(workflowName)
+    await this.page.keyboard.press('Enter')
+    // Wait for the dialog to close.
+    await this.page.waitForTimeout(300)
+  }
+
   async triggerTopbarCommand(path: string[]) {
     if (path.length < 2) {
       throw new Error('Path is too short')

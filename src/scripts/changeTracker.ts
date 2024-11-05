@@ -1,34 +1,62 @@
 import type { ComfyApp } from './app'
 import { api } from './api'
-import { clone } from './utils'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import { ComfyWorkflow } from './workflows'
-import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { LGraphNode } from '@comfyorg/litegraph'
-import { ExecutedWsMessage } from '@/types/apiTypes'
+import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
+import _ from 'lodash'
+
+function clone(obj: any) {
+  try {
+    if (typeof structuredClone !== 'undefined') {
+      return structuredClone(obj)
+    }
+  } catch (error) {
+    // structuredClone is stricter than using JSON.parse/stringify so fallback to that
+  }
+
+  return JSON.parse(JSON.stringify(obj))
+}
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
-  #app?: ComfyApp
+  /**
+   * The active state of the workflow.
+   */
+  activeState: ComfyWorkflowJSON
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
-  activeState: ComfyWorkflowJSON | null = null
-  isOurLoad: boolean = false
   changeCount: number = 0
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
 
+  static app?: ComfyApp
   get app(): ComfyApp {
-    // Global tracker has #app set, while other trackers have workflow bounded
-    return this.#app ?? this.workflow.manager.app
+    return ChangeTracker.app!
   }
 
-  constructor(public workflow: ComfyWorkflow) {}
+  constructor(
+    /**
+     * The workflow that this change tracker is tracking
+     */
+    public workflow: ComfyWorkflow,
+    /**
+     * The initial state of the workflow
+     */
+    public initialState: ComfyWorkflowJSON
+  ) {
+    this.activeState = initialState
+  }
 
-  #setApp(app: ComfyApp) {
-    this.#app = app
+  /**
+   * Save the current state as the initial state.
+   */
+  reset(state?: ComfyWorkflowJSON) {
+    this.activeState = state ?? this.activeState
+    this.initialState = this.activeState
   }
 
   store() {
@@ -48,10 +76,22 @@ export class ChangeTracker {
     }
   }
 
+  updateModified() {
+    // Get the workflow from the store as ChangeTracker is raw object, i.e.
+    // `this.workflow` is not reactive.
+    const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
+    if (workflow) {
+      workflow.isModified = !ChangeTracker.graphEqual(
+        this.initialState,
+        this.activeState
+      )
+    }
+  }
+
   checkState() {
     if (!this.app.graph || this.changeCount) return
-
-    const currentState = this.app.graph.serialize()
+    // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+    const currentState = this.app.graph.serialize() as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = clone(currentState)
       return
@@ -63,10 +103,10 @@ export class ChangeTracker {
       }
       this.activeState = clone(currentState)
       this.redoQueue.length = 0
-      this.workflow.unsaved = true
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
       )
+      this.updateModified()
     }
   }
 
@@ -74,12 +114,12 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       target.push(this.activeState!)
-      this.isOurLoad = true
       await this.app.loadGraphData(prevState, false, false, this.workflow, {
         showMissingModelsDialog: false,
         showMissingNodesDialog: false
       })
       this.activeState = prevState
+      this.updateModified()
     }
   }
 
@@ -114,21 +154,11 @@ export class ChangeTracker {
   }
 
   static init(app: ComfyApp) {
-    const changeTracker = () =>
-      app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
-    globalTracker.#setApp(app)
+    const getCurrentChangeTracker = () =>
+      useWorkflowStore().activeWorkflow?.changeTracker
+    const checkState = () => getCurrentChangeTracker()?.checkState()
 
-    const loadGraphData = app.loadGraphData
-    app.loadGraphData = async function (...args) {
-      const v = await loadGraphData.apply(this, args)
-      const ct = changeTracker()
-      if (ct.isOurLoad) {
-        ct.isOurLoad = false
-      } else {
-        ct.checkState()
-      }
-      return v
-    }
+    ChangeTracker.app = app
 
     let keyIgnored = false
     window.addEventListener(
@@ -160,12 +190,15 @@ export class ChangeTracker {
             e.key === 'Meta'
           if (keyIgnored) return
 
+          const changeTracker = getCurrentChangeTracker()
+          if (!changeTracker) return
+
           // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker().undoRedo(e)) return
+          if (await changeTracker.undoRedo(e)) return
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(app, bindInputEl)) return
-          changeTracker().checkState()
+          changeTracker.checkState()
         })
       },
       true
@@ -174,35 +207,35 @@ export class ChangeTracker {
     window.addEventListener('keyup', (e) => {
       if (keyIgnored) {
         keyIgnored = false
-        changeTracker().checkState()
+        checkState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     api.addEventListener('graphCleared', () => {
-      changeTracker().checkState()
+      checkState()
     })
 
     // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
 
@@ -216,7 +249,7 @@ export class ChangeTracker {
     ) {
       const extendedCallback = (v: any) => {
         callback(v)
-        changeTracker().checkState()
+        checkState()
       }
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
@@ -225,7 +258,7 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      changeTracker().checkState()
+      checkState()
       return v
     }
 
@@ -234,10 +267,7 @@ export class ChangeTracker {
     LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
       const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
-        const ct = changeTracker()
-        if (!ct.isOurLoad) {
-          ct.checkState()
-        }
+        checkState()
       }
       return v
     }
@@ -246,9 +276,9 @@ export class ChangeTracker {
     document.addEventListener('litegraph:canvas', (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (detail.subType === 'before-change') {
-        changeTracker().beforeChange()
+        getCurrentChangeTracker()?.beforeChange()
       } else if (detail.subType === 'after-change') {
-        changeTracker().afterChange()
+        getCurrentChangeTracker()?.afterChange()
       }
     })
 
@@ -290,7 +320,7 @@ export class ChangeTracker {
       const htmlElement = activeEl as HTMLElement
       if (`on${evt}` in htmlElement) {
         const listener = () => {
-          app.workflowManager.activeWorkflow?.changeTracker?.checkState()
+          useWorkflowStore().activeWorkflow?.changeTracker?.checkState?.()
           htmlElement.removeEventListener(evt, listener)
         }
         htmlElement.addEventListener(evt, listener)
@@ -300,28 +330,24 @@ export class ChangeTracker {
     return false
   }
 
-  static graphEqual(a: any, b: any, path = '') {
+  static graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
     if (a === b) return true
 
     if (typeof a == 'object' && a && typeof b == 'object' && b) {
-      const keys = Object.getOwnPropertyNames(a)
-
-      if (keys.length != Object.getOwnPropertyNames(b).length) {
+      // Compare nodes ignoring order
+      if (
+        !_.isEqualWith(a.nodes, b.nodes, (arrA, arrB) => {
+          if (Array.isArray(arrA) && Array.isArray(arrB)) {
+            return _.isEqual(new Set(arrA), new Set(arrB))
+          }
+        })
+      ) {
         return false
       }
 
-      for (const key of keys) {
-        let av = a[key]
-        let bv = b[key]
-        if (!path && key === 'nodes') {
-          // Nodes need to be sorted as the order changes when selecting nodes
-          av = [...av].sort((a, b) => a.id - b.id)
-          bv = [...bv].sort((a, b) => a.id - b.id)
-        } else if (path === 'extra.ds') {
-          // Ignore view changes
-          continue
-        }
-        if (!ChangeTracker.graphEqual(av, bv, path + (path ? '.' : '') + key)) {
+      // Compare other properties normally
+      for (const key of ['links', 'groups']) {
+        if (!_.isEqual(a[key], b[key])) {
           return false
         }
       }
@@ -332,5 +358,3 @@ export class ChangeTracker {
     return false
   }
 }
-
-export const globalTracker = new ChangeTracker({} as ComfyWorkflow)

@@ -11,12 +11,16 @@
     <template #option="{ option }">
       <span
         class="workflow-label text-sm max-w-[150px] truncate inline-block"
-        v-tooltip="option.tooltip"
+        v-tooltip.bottom="option.workflow.key"
       >
-        {{ option.label }}
+        {{ option.workflow.filename }}
       </span>
       <div class="relative">
-        <span class="status-indicator" v-if="option.unsaved">•</span>
+        <span
+          class="status-indicator"
+          v-if="!workspaceStore.shiftDown && option.workflow.isModified"
+          >•</span
+        >
         <Button
           class="close-button p-0 w-auto"
           icon="pi pi-times"
@@ -31,34 +35,30 @@
 </template>
 
 <script setup lang="ts">
-import { app } from '@/scripts/app'
-import { ComfyWorkflow } from '@/scripts/workflows'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed } from 'vue'
+import { workflowService } from '@/services/workflowService'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const props = defineProps<{
   class?: string
 }>()
 
+const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+
 interface WorkflowOption {
-  label: string
-  tooltip: string
   value: string
-  unsaved: boolean
+  workflow: ComfyWorkflow
 }
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
-  label: workflow.name,
-  tooltip: workflow.path,
-  value: workflow.key,
-  unsaved: workflow.unsaved
+  value: workflow.path,
+  workflow
 })
-
-const optionToWorkflow = (option: WorkflowOption): ComfyWorkflow =>
-  workflowStore.workflowLookup[option.value]
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map(workflowToOption)
@@ -78,13 +78,13 @@ const onWorkflowChange = (option: WorkflowOption) => {
     return
   }
 
-  const workflow = optionToWorkflow(option)
-  workflow.load()
+  workflowService.openWorkflow(option.workflow)
 }
 
 const onCloseWorkflow = (option: WorkflowOption) => {
-  const workflow = optionToWorkflow(option)
-  app.workflowManager.closeWorkflow(workflow)
+  workflowService.closeWorkflow(option.workflow, {
+    warnIfUnsaved: !workspaceStore.shiftDown
+  })
 }
 </script>
 

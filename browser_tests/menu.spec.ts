@@ -392,7 +392,7 @@ test.describe('Menu', () => {
       await tab.newBlankWorkflowButton.click()
       expect(await tab.getOpenedWorkflowNames()).toEqual([
         '*Unsaved Workflow.json',
-        '*Unsaved Workflow (2).json'
+        'Unsaved Workflow (2).json'
       ])
     })
 
@@ -409,6 +409,19 @@ test.describe('Menu', () => {
       expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
         expect.arrayContaining(['workflow1.json', 'workflow2.json'])
       )
+    })
+
+    test('Can save workflow as', async ({ comfyPage }) => {
+      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json'])
+
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow4.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
     test('Does not report warning when switching between opened workflows', async ({
@@ -441,7 +454,7 @@ test.describe('Menu', () => {
       await closeButton.click()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['*Unsaved Workflow (2).json'])
+      ).toEqual(['Unsaved Workflow.json'])
     })
   })
 
@@ -466,7 +479,7 @@ test.describe('Menu', () => {
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow (2)'
+        'Unsaved Workflow'
       ])
     })
   })

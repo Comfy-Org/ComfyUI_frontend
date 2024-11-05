@@ -4,6 +4,8 @@ import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { UserDataFullInfo } from '@/types/apiTypes'
+import { syncEntities } from '@/utils/syncUtil'
+import { getPathDetails } from '@/utils/formatUtil'
 
 /**
  * Represents a file in the user's data directory.
@@ -37,25 +39,60 @@ export class UserFile {
      */
     public lastModified: number,
     /**
-     * File size in bytes.
+     * File size in bytes. -1 for temporary files.
      */
     public size: number
   ) {
-    this.directory = path.split('/').slice(0, -1).join('/')
-    this.fullFilename = path.split('/').pop() ?? path
-    this.filename = this.fullFilename.split('.').slice(0, -1).join('.')
-    this.suffix = this.fullFilename.split('.').pop() ?? null
+    const details = getPathDetails(path)
+    this.path = path
+    this.directory = details.directory
+    this.fullFilename = details.fullFilename
+    this.filename = details.filename
+    this.suffix = details.suffix
   }
 
-  get isOpen() {
-    return !!this.content
+  updatePath(newPath: string) {
+    const details = getPathDetails(newPath)
+    this.path = newPath
+    this.directory = details.directory
+    this.fullFilename = details.fullFilename
+    this.filename = details.filename
+    this.suffix = details.suffix
+  }
+
+  static createTemporary(path: string): UserFile {
+    return new UserFile(path, Date.now(), -1)
+  }
+
+  get isTemporary() {
+    return this.size === 0
+  }
+
+  get isPersisted() {
+    return !this.isTemporary
+  }
+
+  get key(): string {
+    return this.path
+  }
+
+  get isLoaded() {
+    return this.content !== null
   }
 
   get isModified() {
     return this.content !== this.originalContent
   }
 
-  async load(): Promise<UserFile> {
+  /**
+   * Loads the file content from the remote storage.
+   */
+  async load({
+    force = false
+  }: { force?: boolean } = {}): Promise<LoadedUserFile> {
+    if (this.isTemporary || (!force && this.isLoaded))
+      return this as LoadedUserFile
+
     this.isLoading = true
     const resp = await api.getUserData(this.path)
     if (resp.status !== 200) {
@@ -66,19 +103,34 @@ export class UserFile {
     this.content = await resp.text()
     this.originalContent = this.content
     this.isLoading = false
-    return this
+    return this as LoadedUserFile
+  }
+
+  /**
+   * Unloads the file content from memory
+   */
+  unload(): void {
+    this.content = null
+    this.originalContent = null
+    this.isLoading = false
   }
 
   async saveAs(newPath: string): Promise<UserFile> {
-    const tempFile = new TempUserFile(newPath, this.content ?? undefined)
+    const tempFile = this.isTemporary ? this : UserFile.createTemporary(newPath)
+    tempFile.content = this.content
     await tempFile.save()
     return tempFile
   }
 
-  async save(): Promise<UserFile> {
-    if (!this.isModified) return this
+  /**
+   * Saves the file to the remote storage.
+   * @param force Whether to force the save even if the file is not modified.
+   */
+  async save({ force = false }: { force?: boolean } = {}): Promise<UserFile> {
+    if (this.isPersisted && !this.isModified && !force) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
+      overwrite: this.isPersisted,
       throwOnError: true,
       full_info: true
     })
@@ -95,6 +147,8 @@ export class UserFile {
   }
 
   async delete(): Promise<void> {
+    if (this.isTemporary) return
+
     const resp = await api.deleteUserData(this.path)
     if (resp.status !== 204) {
       throw new Error(
@@ -104,13 +158,18 @@ export class UserFile {
   }
 
   async rename(newPath: string): Promise<UserFile> {
+    if (this.isTemporary) {
+      this.updatePath(newPath)
+      return this
+    }
+
     const resp = await api.moveUserData(this.path, newPath)
     if (resp.status !== 200) {
       throw new Error(
         `Failed to rename file '${this.path}': ${resp.status} ${resp.statusText}`
       )
     }
-    this.path = newPath
+    this.updatePath(newPath)
     // Note: Backend supports full_info=true feature after
     // https://github.com/comfyanonymous/ComfyUI/pull/5446
     const updatedFile = (await resp.json()) as string | UserDataFullInfo
@@ -122,56 +181,21 @@ export class UserFile {
   }
 }
 
-export class TempUserFile extends UserFile {
-  constructor(path: string, content: string = '') {
-    // Initialize with current timestamp and 0 size since it's temporary
-    super(path, Date.now(), 0)
-    this.content = content
-    this.originalContent = content
-  }
-
-  // Override methods that interact with backend
-  async load(): Promise<TempUserFile> {
-    // No need to load as it's a temporary file
-    return this
-  }
-
-  async save(): Promise<TempUserFile> {
-    // First save should create the actual file on the backend
-    const resp = await api.storeUserData(this.path, this.content, {
-      throwOnError: true,
-      full_info: true
-    })
-
-    const updatedFile = (await resp.json()) as string | UserDataFullInfo
-    if (typeof updatedFile === 'object') {
-      this.lastModified = updatedFile.modified
-      this.size = updatedFile.size
-    }
-    this.originalContent = this.content
-    return this
-  }
-
-  async delete(): Promise<void> {
-    // No need to delete from backend as it doesn't exist there
-  }
-
-  async rename(newPath: string): Promise<TempUserFile> {
-    // Just update the path locally since it's not on backend yet
-    this.path = newPath
-    return this
-  }
+export interface LoadedUserFile extends UserFile {
+  isLoaded: true
+  originalContent: string
+  content: string
 }
 
 export const useUserFileStore = defineStore('userFile', () => {
-  const userFilesByPath = ref(new Map<string, UserFile>())
+  const userFilesByPath = ref<Record<string, UserFile>>({})
 
-  const userFiles = computed(() => Array.from(userFilesByPath.value.values()))
+  const userFiles = computed(() => Object.values(userFilesByPath.value))
   const modifiedFiles = computed(() =>
     userFiles.value.filter((file: UserFile) => file.isModified)
   )
-  const openedFiles = computed(() =>
-    userFiles.value.filter((file: UserFile) => file.isOpen)
+  const loadedFiles = computed(() =>
+    userFiles.value.filter((file: UserFile) => file.isLoaded)
   )
 
   const fileTree = computed<TreeExplorerNode<UserFile>>(
@@ -186,39 +210,22 @@ export const useUserFileStore = defineStore('userFile', () => {
    * @param dir The directory to sync.
    */
   const syncFiles = async (dir: string = '') => {
-    const files = await api.listUserDataFullInfo(dir)
-
-    for (const file of files) {
-      const existingFile = userFilesByPath.value.get(file.path)
-
-      if (!existingFile) {
-        // New file, add it to the map
-        userFilesByPath.value.set(
-          file.path,
-          new UserFile(file.path, file.modified, file.size)
-        )
-      } else if (existingFile.lastModified !== file.modified) {
-        // File has been modified, update its properties
+    await syncEntities(
+      dir,
+      userFilesByPath.value,
+      (file) => new UserFile(file.path, file.modified, file.size),
+      (existingFile, file) => {
         existingFile.lastModified = file.modified
         existingFile.size = file.size
-        existingFile.originalContent = null
-        existingFile.content = null
-        existingFile.isLoading = false
+        existingFile.unload()
       }
-    }
-
-    // Remove files that no longer exist
-    for (const [path, _] of userFilesByPath.value) {
-      if (!files.some((file) => file.path === path)) {
-        userFilesByPath.value.delete(path)
-      }
-    }
+    )
   }
 
   return {
     userFiles,
     modifiedFiles,
-    openedFiles,
+    loadedFiles,
     fileTree,
     syncFiles
   }
