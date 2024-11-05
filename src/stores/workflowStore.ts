@@ -128,11 +128,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The index of the workflow in the openWorkflowPaths array, or -1 if the workflow was not open.
    */
   const detachWorkflow = (workflow: ComfyWorkflow) => {
-    if (workflow.isPersisted) {
-      delete persistedWorkflowByPath.value[workflow.path]
-    } else {
-      temporaryWorkflows.value.delete(workflow)
-    }
+    delete workflowLookup.value[workflow.path]
     const index = openWorkflowPaths.value.indexOf(workflow.path)
     if (index !== -1) {
       openWorkflowPaths.value = openWorkflowPaths.value.filter(
@@ -148,11 +144,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param openIndex The index to open the workflow at.
    */
   const attachWorkflow = (workflow: ComfyWorkflow, openIndex: number = -1) => {
-    if (workflow.isPersisted) {
-      persistedWorkflowByPath.value[workflow.path] = workflow
-    } else {
-      temporaryWorkflows.value.add(workflow)
-    }
+    workflowLookup.value[workflow.path] = workflow
 
     if (openIndex !== -1) {
       openWorkflowPaths.value.splice(openIndex, 0, workflow.path)
@@ -166,6 +158,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const isActive = (workflow: ComfyWorkflow) =>
     activeWorkflow.value?.path === workflow.path
   /**
+   * All workflows.
+   */
+  const workflowLookup = ref<Record<string, ComfyWorkflow>>({})
+  const workflows = computed<ComfyWorkflow[]>(() =>
+    Object.values(workflowLookup.value)
+  )
+  const getWorkflowByPath = (path: string): ComfyWorkflow | null =>
+    workflowLookup.value[path] ?? null
+
+  /**
    * The paths of the open workflows. It is setup as a ref to allow user
    * to reorder the workflows opened.
    */
@@ -176,10 +178,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   )
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
-  /**
-   * The temporary workflows that are not saved to remote storage.
-   */
-  const temporaryWorkflows = ref<Set<ComfyWorkflow>>(new Set())
 
   /**
    * Set the workflow as the active workflow.
@@ -224,7 +222,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ? JSON.stringify(workflowData)
       : defaultGraphJSON
 
-    temporaryWorkflows.value.add(workflow)
+    workflowLookup.value[workflow.path] = workflow
     return workflow
   }
 
@@ -233,7 +231,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       (path) => path !== workflow.path
     )
     if (workflow.isTemporary) {
-      temporaryWorkflows.value.delete(workflow)
+      delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
     }
@@ -259,14 +257,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return null
   }
 
-  const persistedWorkflowByPath = ref<Record<string, ComfyWorkflow>>({})
   const persistedWorkflows = computed(() =>
-    Object.values(persistedWorkflowByPath.value)
+    Array.from(workflows.value).filter((workflow) => workflow.isPersisted)
   )
   const syncWorkflows = async (dir: string = '') => {
     await syncEntities(
       dir ? 'workflows/' + dir : 'workflows',
-      persistedWorkflowByPath.value,
+      workflowLookup.value,
       (file) =>
         new ComfyWorkflow({
           path: file.path,
@@ -277,14 +274,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
         existingWorkflow.lastModified = file.modified
         existingWorkflow.size = file.size
         existingWorkflow.unload()
-      }
+      },
+      /* exclude */ (workflow) => workflow.isTemporary
     )
   }
-
-  const workflows = computed(() => [
-    ...persistedWorkflows.value,
-    ...temporaryWorkflows.value
-  ])
 
   const bookmarkStore = useWorkflowBookmarkStore()
   const bookmarkedWorkflows = computed(() =>
@@ -295,14 +288,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const modifiedWorkflows = computed(() =>
     workflows.value.filter((workflow) => workflow.isModified)
   )
-  const workflowLookup = computed<Record<string, ComfyWorkflow>>(
-    () =>
-      Object.fromEntries(
-        workflows.value.map((workflow) => [workflow.path, workflow])
-      ) as Record<string, ComfyWorkflow>
-  )
-  const getWorkflowByPath = (path: string): ComfyWorkflow | null =>
-    workflowLookup.value[path] ?? null
 
   const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
     return buildTree(workflows, (workflow: ComfyWorkflow) =>
@@ -347,22 +332,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (bookmarkStore.isBookmarked(workflow.path)) {
       bookmarkStore.setBookmarked(workflow.path, false)
     }
-    if (workflow.isPersisted) {
-      delete persistedWorkflowByPath.value[workflow.path]
-    }
+    delete workflowLookup.value[workflow.path]
   }
 
   /**
-   * Save a workflow. From temporary to persisted.
+   * Save a workflow.
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
-    const openIndex = detachWorkflow(workflow)
-    try {
-      await workflow.save()
-    } finally {
-      attachWorkflow(workflow, openIndex)
-    }
+    await workflow.save()
   }
 
   return {

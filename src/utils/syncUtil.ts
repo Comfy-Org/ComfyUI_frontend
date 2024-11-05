@@ -1,10 +1,19 @@
 import { api } from '@/scripts/api'
 
+/**
+ * Sync entities from the API to the entityByPath map.
+ * @param dir The directory to sync from
+ * @param entityByPath The map to sync to
+ * @param createEntity A function to create an entity from a file
+ * @param updateEntity A function to update an entity from a file
+ * @param exclude A function to exclude an entity
+ */
 export async function syncEntities<T>(
   dir: string,
   entityByPath: Record<string, T>,
   createEntity: (file: any) => T,
-  updateEntity: (entity: T, file: any) => void
+  updateEntity: (entity: T, file: any) => void,
+  exclude: (file: T) => boolean = () => false
 ) {
   const files = (await api.listUserDataFullInfo(dir)).map((file) => ({
     ...file,
@@ -17,6 +26,9 @@ export async function syncEntities<T>(
     if (!existingEntity) {
       // New entity, add it to the map
       entityByPath[file.path] = createEntity(file)
+    } else if (exclude(existingEntity)) {
+      // Entity has been excluded, skip it
+      continue
     } else {
       // Entity has been modified, update its properties
       updateEntity(existingEntity, file)
@@ -24,7 +36,8 @@ export async function syncEntities<T>(
   }
 
   // Remove entities that no longer exist
-  for (const path in entityByPath) {
+  for (const [path, entity] of Object.entries(entityByPath)) {
+    if (exclude(entity)) continue
     if (!files.some((file) => file.path === path)) {
       delete entityByPath[path]
     }

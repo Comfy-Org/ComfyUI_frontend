@@ -16,17 +16,6 @@ jest.mock('@/scripts/api', () => ({
   }
 }))
 
-jest.mock('@/scripts/changeTracker', () => {
-  return {
-    ChangeTracker: jest.fn().mockImplementation((workflow, initialState) => ({
-      workflow: { path: workflow.path }, // Only keep necessary properties
-      initialState,
-      activeState: initialState,
-      reset: jest.fn()
-    }))
-  }
-})
-
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
   let bookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
@@ -55,6 +44,20 @@ describe('useWorkflowStore', () => {
     })
     ;(api.storeUserData as jest.Mock).mockResolvedValue({
       status: 200
+    })
+  })
+
+  describe('syncWorkflows', () => {
+    it('should sync workflows', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      expect(store.workflows.length).toBe(2)
+    })
+
+    it('should exclude temporary workflows', async () => {
+      const workflow = store.createTemporary('c.json')
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      expect(store.workflows.length).toBe(3)
+      expect(store.workflows.filter((w) => w.isTemporary)).toEqual([workflow])
     })
   })
 
