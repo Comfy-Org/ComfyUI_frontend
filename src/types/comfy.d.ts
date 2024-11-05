@@ -16,6 +16,12 @@ export type Widgets = Record<
   ) => { widget?: IWidget; minWidth?: number; minHeight?: number }
 >
 
+export interface AboutPageBadge {
+  label: string
+  url: string
+  icon: string
+}
+
 export type MenuCommandGroup = {
   /**
    * The path to the menu group.
@@ -65,6 +71,10 @@ export interface ComfyExtension {
    * Bottom panel tabs to add to the bottom panel
    */
   bottomPanelTabs?: BottomPanelExtension[]
+  /**
+   * Badges to add to the about page
+   */
+  aboutPageBadges?: AboutPageBadge[]
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
