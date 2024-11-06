@@ -1,31 +1,32 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-import ServerStartView from '@/views/ServerStartView.vue'
-import { useWorkspaceStore, WorkspaceState } from '@/stores/workspaceStore'
+import { isElectron } from './utils/envUtil'
 
 const router = createRouter({
-  history: createWebHistory(window.location.pathname),
+  history: createWebHistory(),
   routes: [
-    {
-      path: '/server-start',
-      component: ServerStartView
-    },
     {
       path: '/',
       component: LayoutDefault,
       children: [
         {
           path: '',
+          name: 'GraphView',
           component: () => import('@/views/GraphView.vue')
+        },
+        {
+          path: 'server-start',
+          name: 'ServerStartView',
+          component: () => import('@/views/ServerStartView.vue'),
+          beforeEnter: async (to, from, next) => {
+            if (isElectron()) {
+              next()
+            } else {
+              next('/')
+            }
+          }
         }
-      ],
-      beforeEnter: async (to, from, next) => {
-        if (useWorkspaceStore().state !== WorkspaceState.Ready) {
-          next('/server-start')
-        } else {
-          next()
-        }
-      }
+      ]
     }
   ],
 
