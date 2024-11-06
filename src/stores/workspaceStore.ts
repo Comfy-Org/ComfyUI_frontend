@@ -8,7 +8,19 @@ import { useSidebarTabStore } from './workspace/sidebarTabStore'
 import { useSettingStore } from './settingStore'
 import { useWorkflowStore } from './workflowStore'
 
+export enum WorkspaceState {
+  /**
+   * ComfyUI server is starting. Loading custom nodes happens here.
+   */
+  ServerStart = 'server-start',
+  /**
+   * ComfyUI server is ready.
+   */
+  Ready = 'ready'
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
+  const workspaceState = ref(WorkspaceState.ServerStart)
   const spinner = ref(false)
   const shiftDown = ref(false)
   /**
@@ -57,6 +69,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   return {
+    state: workspaceState,
     spinner,
     shiftDown,
     focusMode,
