@@ -19,6 +19,7 @@ const router = createRouter({
           name: 'ServerStartView',
           component: () => import('@/views/ServerStartView.vue'),
           beforeEnter: async (to, from, next) => {
+            // Only allow access to this page in electron environment
             if (isElectron()) {
               next()
             } else {
