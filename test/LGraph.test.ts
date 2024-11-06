@@ -1,45 +1,42 @@
-import { LGraph, LGraphGroup, LGraphNode, LiteGraph } from "../src/litegraph"
-import { LiteGraphGlobal } from "../src/LiteGraphGlobal"
+import { describe } from "vitest"
+import { LGraph, LiteGraph } from "@/litegraph"
+import { lgTest } from "./lgTest"
 
-function makeGraph() {
-  const LiteGraph = new LiteGraphGlobal()
-  LiteGraph.registerNodeType("TestNode", LGraphNode)
-  LiteGraph.registerNodeType("OtherNode", LGraphNode)
-  LiteGraph.registerNodeType("", LGraphNode)
-  return new LGraph()
-}
-
-describe("LGraph", () => {
-  it("can be instantiated", () => {
-    // @ts-ignore TODO: Remove once relative imports fix goes in.
+describe.concurrent("LGraph", () => {
+  lgTest("can be instantiated", ({ expect }) => {
+    // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: "TestGraph" })
     expect(graph).toBeInstanceOf(LGraph)
     expect(graph.extra).toBe("TestGraph")
+    expect(graph.extra).toBe("TestGraph")
+  })
+
+  lgTest("populates optional values", ({ expect, minimalSerialisableGraph }) => {
+    const dGraph = new LGraph(minimalSerialisableGraph)
+    expect(dGraph.links).toBeInstanceOf(Map)
+    expect(dGraph.nodes).toBeInstanceOf(Array)
+    expect(dGraph.groups).toBeInstanceOf(Array)
+  })
+
+  lgTest("matches previous snapshot", ({ expect, minimalSerialisableGraph, basicSerialisableGraph }) => {
+    const minLGraph = new LGraph(minimalSerialisableGraph)
+    expect(minLGraph).toMatchSnapshot("minLGraph")
+    const basicLGraph = new LGraph(basicSerialisableGraph)
+    expect(basicLGraph).toMatchSnapshot("basicLGraph")
   })
 })
 
-describe("Legacy LGraph Compatibility Layer", () => {
-  it("can be extended via prototype", () => {
-    const graph = new LGraph()
+describe.concurrent("Legacy LGraph Compatibility Layer", () => {
+  lgTest("can be extended via prototype", ({ expect, minimalGraph }) => {
     // @ts-expect-error Should always be an error.
     LGraph.prototype.newMethod = function () {
       return "New method added via prototype"
     }
     // @ts-expect-error Should always be an error.
-    expect(graph.newMethod()).toBe("New method added via prototype")
+    expect(minimalGraph.newMethod()).toBe("New method added via prototype")
   })
 
-  it("is correctly assigned to LiteGraph", () => {
+  lgTest("is correctly assigned to LiteGraph", ({ expect }) => {
     expect(LiteGraph.LGraph).toBe(LGraph)
-  })
-})
-
-describe("LGraph Serialisation", () => {
-  it("should serialise", () => {
-    const graph = new LGraph()
-    graph.add(new LGraphNode("Test Node"))
-    graph.add(new LGraphGroup("Test Group"))
-    expect(graph.nodes.length).toBe(1)
-    expect(graph.groups.length).toBe(1)
   })
 })

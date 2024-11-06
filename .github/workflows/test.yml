@@ -25,6 +25,6 @@ jobs:
       run: |
         npm ci
         npm run build
-    - name: Run jest tests
+    - name: Run vitest tests
       run: |
-        npm test -- --verbose
+        npm test -- --reporter=verbose

@@ -25,11 +25,7 @@
     "preview": "vite preview",
     "watch": "vite build --watch",
     "release": "node scripts/release.js",
-    "test": "jest",
-    "deprecated-test:allVersions": "./utils/test.sh",
-    "deprecated-prettier": "npx prettier --write src/**/*.* css/**/*.*",
-    "deprecated-lint": "npx eslint src",
-    "deprecated-lint:fix": "npx eslint --fix src"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -45,13 +41,12 @@
   },
   "homepage": "https://github.com/Comfy-Org/litegraph.js",
   "devDependencies": {
-    "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
-    "jest-environment-jsdom": "^29.7.0",
-    "ts-jest": "^29.2.4",
+    "jsdom": "^25.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",
     "vite": "^5.3.4",
-    "vite-plugin-dts": "^4.3.0"
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^2.1.4"
   }
 }

@@ -1,9 +1,9 @@
-import {
-  LGraphNode,
-} from "../src/litegraph"
+import { describe, expect } from "vitest"
+import { LGraphNode } from "@/litegraph"
+import { lgTest } from "./lgTest"
 
 describe("LGraphNode", () => {
-  it("should serialize position/size correctly", () => {
+  lgTest("should serialize position/size correctly", () => {
     const node = new LGraphNode("TestNode")
     node.pos = [10, 10]
     expect(node.pos).toEqual(new Float32Array([10, 10]))
