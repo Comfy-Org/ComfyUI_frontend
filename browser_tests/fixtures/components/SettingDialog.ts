@@ -31,4 +31,10 @@ export class SettingDialog {
     )
     await settingInputDiv.locator('input').click()
   }
+
+  async goToAboutPanel() {
+    const aboutButton = this.page.locator('li[aria-label="About"]')
+    await aboutButton.click()
+    await this.page.waitForSelector('div.about-container')
+  }
 }

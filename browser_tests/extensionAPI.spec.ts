@@ -134,4 +134,27 @@ test.describe('Topbar commands', () => {
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
     })
   })
+
+  test.describe('About panel', () => {
+    test('Should allow adding badges', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          aboutPageBadges: [
+            {
+              label: 'Test Badge',
+              url: 'https://example.com',
+              icon: 'pi pi-box'
+            }
+          ]
+        })
+      })
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.goToAboutPanel()
+      const badge = comfyPage.page.locator('.about-badge').last()
+      expect(badge).toBeDefined()
+      expect(await badge.textContent()).toContain('Test Badge')
+    })
+  })
 })
