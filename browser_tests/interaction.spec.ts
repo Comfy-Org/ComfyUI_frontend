@@ -527,6 +527,13 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('string_node_id')
     await expect(comfyPage.canvas).toHaveScreenshot('string_node_id.png')
   })
+
+  test('Can load workflow with ("STRING",) input node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('string_input')
+    await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
+  })
 })
 
 test.describe('Load duplicate workflow', () => {
