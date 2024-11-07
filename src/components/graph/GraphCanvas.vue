@@ -1,6 +1,8 @@
 <template>
   <teleport to=".graph-canvas-container">
-    <LiteGraphCanvasSplitterOverlay v-if="betaMenuEnabled">
+    <LiteGraphCanvasSplitterOverlay
+      v-if="betaMenuEnabled && !workspaceStore.focusMode"
+    >
       <template #side-bar-panel>
         <SideToolbar />
       </template>
@@ -65,9 +67,7 @@ const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
 const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
-  () =>
-    settingStore.get('Comfy.UseNewMenu') !== 'Disabled' &&
-    !workspaceStore.focusMode
+  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
 const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')

@@ -2,10 +2,12 @@
   <Button
     v-show="workspaceState.focusMode"
     class="comfy-menu-hamburger"
+    :style="positionCSS"
     icon="pi pi-bars"
     severity="secondary"
     text
     size="large"
+    v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
     @click="exitFocusMode"
   />
 </template>
@@ -13,7 +15,7 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { watchEffect } from 'vue'
+import { computed, CSSProperties, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 
@@ -33,14 +35,21 @@ watchEffect(() => {
     app.ui.menuContainer.style.display = 'block'
   }
 })
+
+const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
+const positionCSS = computed<CSSProperties>(() =>
+  // 'Bottom' menuSetting shows the hamburger button in the bottom right corner
+  // 'Disabled', 'Top' menuSetting shows the hamburger button in the top right corner
+  menuSetting.value === 'Bottom'
+    ? { bottom: '0px', right: '0px' }
+    : { top: '0px', right: '0px' }
+)
 </script>
 
 <style scoped>
 .comfy-menu-hamburger {
   pointer-events: auto;
   position: fixed;
-  top: 0px;
-  right: 0px;
   z-index: 9999;
 }
 </style>
