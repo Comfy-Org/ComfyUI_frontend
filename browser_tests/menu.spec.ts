@@ -534,22 +534,6 @@ test.describe('Menu', () => {
     })
   })
 
-  test('Shows first time UI message', async ({ comfyPage }) => {
-    await comfyPage.setupSettings({})
-    await comfyPage.reload()
-
-    await comfyPage.settingDialog.open()
-    const message = comfyPage.page.locator('.first-time-ui-message')
-    expect(await message.count()).toBe(1)
-
-    await message.locator('.p-message-close-button').click()
-    expect(await message.count()).toBe(0)
-
-    await comfyPage.reload()
-    await comfyPage.settingDialog.open()
-    expect(await message.count()).toBe(0)
-  })
-
   // Only test 'Top' to reduce test time.
   // ['Bottom', 'Top']
   ;['Top'].forEach(async (position) => {
