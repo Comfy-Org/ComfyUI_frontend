@@ -1929,8 +1929,8 @@ export class LGraphNode implements Positionable, IPinnable {
         }
 
         // UUID: LinkIds
-        // const nextId = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++graph.last_link_id
-        const nextId = ++graph.last_link_id
+        // const nextId = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++graph.state.lastLinkId
+        const nextId = ++graph.state.lastLinkId
 
         //create link class
         link_info = new LLink(

@@ -1,5 +1,5 @@
 import type { ISlotType, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "../interfaces"
-import type { LGraph } from "../LGraph"
+import type { LGraph, LGraphState } from "../LGraph"
 import type { IGraphGroupFlags, LGraphGroup } from "../LGraphGroup"
 import type { LGraphNode, NodeId } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
@@ -17,6 +17,17 @@ export interface Serialisable<SerialisableObject> {
      * @returns An object that can immediately be serialized to JSON.
      */
     asSerialisable(): SerialisableObject
+}
+
+export interface SerialisableGraph {
+    /** Schema version.  @remarks Version bump should add to const union, which is used to narrow type during deserialise. */
+    version: 0 | 1
+    config: LGraph["config"]
+    state: LGraphState
+    groups?: ISerialisedGroup[]
+    nodes?: ISerialisedNode[]
+    links?: SerialisableLLink[]
+    extra?: Record<any, any>
 }
 
 /** Serialised LGraphNode */
@@ -40,15 +51,17 @@ export interface ISerialisedNode {
     widgets_values?: TWidgetValue[]
 }
 
-/** Contains serialised graph elements */
+/**
+ * Original implementation from static litegraph.d.ts
+ * Maintained for backwards compat
+ */
 export type ISerialisedGraph<
     TNode = ReturnType<LGraphNode["serialize"]>,
     TLink = ReturnType<LLink["serialize"]>,
     TGroup = ReturnType<LGraphGroup["serialize"]>
 > = {
-    last_node_id: LGraph["last_node_id"]
-    last_link_id: LGraph["last_link_id"]
-    last_reroute_id?: LGraph["last_reroute_id"]
+    last_node_id: NodeId
+    last_link_id: number
     nodes: TNode[]
     links: TLink[]
     groups: TGroup[]

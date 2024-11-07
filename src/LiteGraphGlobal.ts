@@ -21,7 +21,8 @@ export class LiteGraphGlobal {
     SlotType = SlotType
     LabelPosition = LabelPosition
 
-    VERSION = 0.4
+    /** Used in serialised graphs at one point. */
+    VERSION = 0.4 as const
 
     CANVAS_GRID_SIZE = 10
 

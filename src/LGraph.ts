@@ -1,6 +1,6 @@
 import type { Dictionary, IContextMenuValue, ISlotType, MethodNames, Point } from "./interfaces"
-import type { ISerialisedGraph } from "./types/serialisation"
-import { LGraphEventMode, TitleMode } from "./types/globalEnums"
+import type { ISerialisedGraph, Serialisable, SerialisableGraph } from "./types/serialisation"
+import { LGraphEventMode } from "./types/globalEnums"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
 import { LGraphGroup } from "./LGraphGroup"
@@ -14,6 +14,13 @@ interface IGraphInput {
     value?: unknown
 }
 
+export interface LGraphState {
+    lastGroupId: number
+    lastNodeId: number
+    lastLinkId: number
+    lastRerouteId: number
+}
+
 type ParamsArray<T extends Record<any, any>, K extends MethodNames<T>> = Parameters<T[K]>[1] extends undefined ? Parameters<T[K]> | Parameters<T[K]>[0] : Parameters<T[K]>
 
 /**
@@ -23,8 +30,9 @@ type ParamsArray<T extends Record<any, any>, K extends MethodNames<T>> = Paramet
     + onNodeRemoved: when a node inside this graph is removed
     + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
  */
+export class LGraph implements Serialisable<SerialisableGraph> {
+    static serialisedSchemaVersion = 1 as const
 
-export class LGraph {
     //default supported types
     static supported_types = ["number", "string", "boolean"]
     static STATUS_STOPPED = 1
@@ -47,11 +55,9 @@ export class LGraph {
     links: Map<LinkId, LLink> & Record<LinkId, LLink>
     list_of_graphcanvas: LGraphCanvas[] | null
     status: number
-    last_node_id: number
-    last_link_id: number
-    /** The largest ID created by this graph */
-    last_reroute_id: number
-    lastGroupId: number = -1
+
+    state: LGraphState
+
     _nodes: LGraphNode[]
     _nodes_by_id: Record<NodeId, LGraphNode>
     _nodes_in_order: LGraphNode[]
@@ -72,6 +78,7 @@ export class LGraph {
     _last_trigger_time?: number
     filter?: string
     _subgraph_node?: LGraphNode
+    /** Must contain serialisable values, e.g. primitive types */
     config: { align_to_grid?: any; links_ontop?: any }
     vars: Dictionary<unknown>
     nodes_executing: boolean[]
@@ -80,6 +87,22 @@ export class LGraph {
     extra: Record<any, any>
     inputs: Dictionary<IGraphInput>
     outputs: Dictionary<IGraphInput>
+
+    /** @deprecated See {@link state}.{@link LGraphState.lastNodeId lastNodeId} */
+    get last_node_id() {
+        return this.state.lastNodeId
+    }
+    set last_node_id(value) {
+        this.state.lastNodeId = value
+    }
+    /** @deprecated See {@link state}.{@link LGraphState.lastLinkId lastLinkId} */
+    get last_link_id() {
+        return this.state.lastLinkId
+    }
+    set last_link_id(value) {
+        this.state.lastLinkId = value
+    }
+
     onInputsOutputsChange?(): void
     onInputAdded?(name: string, type: string): void
     onAfterStep?(): void
@@ -102,8 +125,8 @@ export class LGraph {
     onAfterChange?(graph: LGraph, info?: LGraphNode): void
     onConnectionChange?(node: LGraphNode): void
     on_change?(graph: LGraph): void
-    onSerialize?(data: ISerialisedGraph): void
-    onConfigure?(data: ISerialisedGraph): void
+    onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
+    onConfigure?(data: ISerialisedGraph | SerialisableGraph): void
     onGetNodeMenuOptions?(options: IContextMenuValue[], node: LGraphNode): void
     onNodeConnectionChange?(nodeSlotType: ISlotType, targetNode: LGraphNode, slotIndex: number, sourceNode?: LGraphNode, sourceSlotIndex?: number): void
 
@@ -113,7 +136,7 @@ export class LGraph {
      * See {@link LGraph}
      * @param o data from previous serialization [optional]
      */
-    constructor(o?: ISerialisedGraph) {
+    constructor(o?: ISerialisedGraph | SerialisableGraph) {
         if (LiteGraph.debug) console.log("Graph created")
 
         /** @see MapProxyHandler */
@@ -141,8 +164,12 @@ export class LGraph {
         this.stop()
         this.status = LGraph.STATUS_STOPPED
 
-        this.last_node_id = 0
-        this.last_link_id = 0
+        this.state = {
+            lastGroupId: 0,
+            lastNodeId: 0,
+            lastLinkId: 0,
+            lastRerouteId: 0
+        }
 
         this._version = -1 //used to detect changes
 
@@ -158,6 +185,7 @@ export class LGraph {
         this._nodes_by_id = {}
         this._nodes_in_order = [] //nodes sorted in execution order
         this._nodes_executable = null //nodes that contain onExecute sorted in execution order
+        this._links.clear()
 
         //other scene stuff
         this._groups = []
@@ -654,13 +682,14 @@ export class LGraph {
      */
     add(node: LGraphNode | LGraphGroup, skip_compute_order?: boolean): LGraphNode | null | undefined {
         if (!node) return
+        const { state } = this
 
         // LEGACY: This was changed from constructor === LGraphGroup
         //groups
         if (node instanceof LGraphGroup) {
             // Assign group ID
-            if (node.id == null || node.id === -1) node.id = ++this.lastGroupId
-            if (node.id > this.lastGroupId) this.lastGroupId = node.id
+            if (node.id == null || node.id === -1) node.id = ++state.lastGroupId
+            if (node.id > state.lastGroupId) state.lastGroupId = node.id
 
             this._groups.push(node)
             this.setDirtyCanvas(true)
@@ -677,7 +706,7 @@ export class LGraph {
             )
             node.id = LiteGraph.use_uuids
                 ? LiteGraph.uuidv4()
-                : ++this.last_node_id
+                : ++state.lastNodeId
         }
 
         if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -691,9 +720,9 @@ export class LGraph {
         }
         else {
             if (node.id == null || node.id == -1) {
-                node.id = ++this.last_node_id
-            } else if (typeof node.id === "number" && this.last_node_id < node.id) {
-                this.last_node_id = node.id
+                node.id = ++state.lastNodeId
+            } else if (typeof node.id === "number" && state.lastNodeId < node.id) {
+                state.lastNodeId = node.id
             }
         }
 
@@ -1190,67 +1219,106 @@ export class LGraph {
     //save and recover app state ***************************************
     /**
      * Creates a Object containing all the info about this graph, it can be serialized
+     * @deprecated Use {@link asSerialisable}, which returns the newer schema version.
+     * 
      * @return {Object} value of the node
      */
     serialize(option?: { sortNodes: boolean }): ISerialisedGraph {
-        const nodes = !LiteGraph.use_uuids && option?.sortNodes
+        const { config, state, groups, nodes, extra } = this.asSerialisable(option)
+        const links = [...this._links.values()].map(x => x.serialize())
+
+        return {
+            last_node_id: state.lastNodeId,
+            last_link_id: state.lastLinkId,
+            nodes,
+            links,
+            groups,
+            config,
+            extra,
+            version: LiteGraph.VERSION,
+        }
+    }
+
+    /**
+     * Prepares a shallow copy of this object for immediate serialisation or structuredCloning.
+     * The return value should be discarded immediately.
+     * @param options Serialise options = currently `sortNodes: boolean`, whether to sort nodes by ID.
+     * @returns A shallow copy of parts of this graph, with shallow copies of its serialisable objects.
+     * Mutating the properties of the return object may result in changes to your graph.
+     * It is intended for use with {@link structuredClone} or {@link JSON.stringify}.
+     */
+    asSerialisable(options?: { sortNodes: boolean }): SerialisableGraph {
+        const { config, state, extra } = this
+
+        const nodeList = !LiteGraph.use_uuids && options?.sortNodes
             // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
             ? [...this._nodes].sort((a, b) => a.id - b.id)
             : this._nodes
-        const nodes_info = nodes.map(node => node.serialize())
 
-        //pack link info into a non-verbose format
-        const links: SerialisedLLinkArray[] = []
-        for (const link of this._links.values()) {
-            links.push(link.serialize())
-        }
+        const nodes = nodeList.map(node => node.serialize())
+        const groups = this._groups.map(x => x.serialize())
 
-        const groups_info = []
-        for (let i = 0; i < this._groups.length; ++i) {
-            groups_info.push(this._groups[i].serialize())
-        }
+        const links = [...this._links.values()].map(x => x.asSerialisable())
 
-        const data: ISerialisedGraph = {
-            last_node_id: this.last_node_id,
-            last_link_id: this.last_link_id,
-            nodes: nodes_info,
-            links: links,
-            groups: groups_info,
-            config: this.config,
-            extra: this.extra,
-            version: LiteGraph.VERSION
+        const data: SerialisableGraph = {
+            version: LGraph.serialisedSchemaVersion,
+            config,
+            state,
+            groups,
+            nodes,
+            links,
+            extra
         }
 
         this.onSerialize?.(data)
         return data
     }
+
     /**
      * Configure a graph from a JSON string
      * @param {String} str configure a graph from a JSON string
      * @param {Boolean} returns if there was any error parsing
      */
-    configure(data: ISerialisedGraph, keep_old?: boolean): boolean | undefined {
+    configure(data: ISerialisedGraph | SerialisableGraph, keep_old?: boolean): boolean | undefined {
         // TODO: Finish typing configure()
         if (!data) return
-
         if (!keep_old) this.clear()
 
-        const nodesData = data.nodes
+        if (data.version === 0.4) {
+            // Deprecated - old schema version, links are arrays
+            if (Array.isArray(data.links)) {
+                for (const linkData of data.links) {
+                    const link = LLink.createFromArray(linkData)
+                    this._links.set(link.id, link)
+                }
+            }
+        } else {
+            // New schema - one version so far, no check required.
 
-        // LEGACY: This was changed from constructor === Array
-        //decode links info (they are very verbose)
-        if (Array.isArray(data.links)) {
-            this._links.clear()
-            for (const link_data of data.links) {
-                const link = LLink.createFromArray(link_data)
-                this._links.set(link.id, link)
+            // State
+            if (data.state) {
+                const { state: { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } } = data
+                if (lastGroupId != null) this.state.lastGroupId = lastGroupId
+                if (lastLinkId != null) this.state.lastLinkId = lastLinkId
+                if (lastNodeId != null) this.state.lastNodeId = lastNodeId
+                if (lastRerouteId != null) this.state.lastRerouteId = lastRerouteId
+            }
+
+            // Links
+            if (Array.isArray(data.links)) {
+                for (const linkData of data.links) {
+                    const link = LLink.create(linkData)
+                    this._links.set(link.id, link)
+                }
             }
         }
+
+        const nodesData = data.nodes
 
         //copy all stored fields
         for (const i in data) {
             //links must be accepted
-            if (i == "nodes" || i == "groups" || i == "links")
+            if (i == "nodes" || i == "groups" || i == "links" || i === "state")
                 continue
             this[i] = data[i]
         }

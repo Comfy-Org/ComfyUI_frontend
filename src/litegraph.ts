@@ -24,6 +24,7 @@ export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
 export { EaseFunction } from "./types/globalEnums"
+export type { SerialisableGraph, SerialisableLLink } from "./types/serialisation"
 
 export function clamp(v: number, a: number, b: number): number {
     return a > v ? a : b < v ? b : v
