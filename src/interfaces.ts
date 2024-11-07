@@ -24,6 +24,9 @@ export interface Positionable {
     /** true if this object is part of the selection, otherwise false. */
     selected?: boolean
 
+    /** See {@link IPinnable.pinned} */
+    readonly pinned?: boolean
+
     readonly children?: ReadonlySet<Positionable>
 
     /**

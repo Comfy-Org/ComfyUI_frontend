@@ -2444,7 +2444,7 @@ export class LGraphCanvas {
                 this.#dirty()
 
                 function addToSetRecursively(item: Positionable, items: Set<Positionable>): void {
-                    if (items.has(item)) return
+                    if (items.has(item) || item.pinned) return
                     items.add(item)
                     item.children?.forEach(x => addToSetRecursively(x, items))
                 }

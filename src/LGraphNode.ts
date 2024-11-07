@@ -1437,6 +1437,8 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     move(deltaX: number, deltaY: number): void {
+        if (this.pinned) return
+
         this.pos[0] += deltaX
         this.pos[1] += deltaY
     }
