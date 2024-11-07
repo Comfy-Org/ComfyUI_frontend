@@ -26,6 +26,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.7",
     "@babel/preset-env": "^7.22.20",
+    "@comfyorg/comfyui-electron-types": "^0.2.9",
     "@eslint/js": "^9.8.0",
     "@iconify/json": "^2.2.245",
     "@pinia/testing": "^0.1.5",
