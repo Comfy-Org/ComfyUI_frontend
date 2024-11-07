@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
-import { buildTree } from '@/utils/treeUtil'
+import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -295,7 +295,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     )
   }
   const workflowsTree = computed(() =>
-    buildWorkflowTree(persistedWorkflows.value)
+    sortedTree(buildWorkflowTree(persistedWorkflows.value), { groupLeaf: true })
   )
   // Bookmarked workflows tree is flat.
   const bookmarkedWorkflowsTree = computed(() =>

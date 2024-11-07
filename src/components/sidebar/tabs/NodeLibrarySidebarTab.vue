@@ -104,7 +104,7 @@ const searchQuery = ref<string>('')
 
 const root = computed(() => {
   const root = filteredRoot.value || nodeDefStore.nodeTree
-  return alphabeticalSort.value ? sortedTree(root) : root
+  return alphabeticalSort.value ? sortedTree(root, { groupLeaf: true }) : root
 })
 
 const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
