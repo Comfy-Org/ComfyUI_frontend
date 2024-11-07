@@ -1,9 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {
+  createRouter,
+  createWebHashHistory,
+  createWebHistory
+} from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 import { isElectron } from './utils/envUtil'
 
+const isFileProtocol = () => window.location.protocol === 'file:'
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: isFileProtocol() ? createWebHashHistory() : createWebHistory(),
   routes: [
     {
       path: '/',

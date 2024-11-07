@@ -1,3 +1,5 @@
+<!-- This is a dummy page built for electron app only. -->
+<!-- Replace this page with the electron side logic on installation & log streaming. -->
 <template>
   <div
     class="absolute inset-0 flex flex-col items-center justify-center h-screen bg-surface-0"

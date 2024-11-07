@@ -1,3 +1,3 @@
 export function isElectron() {
-  return window['electronAPI'] !== undefined
+  return 'electronAPI' in window && window['electronAPI'] !== undefined
 }
