@@ -70,23 +70,36 @@ export function sortedTree(
   }
 
   if (node.children) {
-    // Split children into folders and files
-    const folders = node.children.filter((child) => !child.leaf)
-    const files = node.children.filter((child) => child.leaf)
+    if (groupLeaf) {
+      // Split children into folders and files
+      const folders = node.children.filter((child) => !child.leaf)
+      const files = node.children.filter((child) => child.leaf)
 
-    // Sort folders and files separately by label
-    const sortedFolders = folders.sort((a, b) =>
-      (a.label ?? '').localeCompare(b.label ?? '')
-    )
-    const sortedFiles = files.sort((a, b) =>
-      (a.label ?? '').localeCompare(b.label ?? '')
-    )
+      // Sort folders and files separately by label
+      const sortedFolders = folders.sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
+      const sortedFiles = files.sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
 
-    // Recursively sort folder children
-    newNode.children = [
-      ...sortedFolders.map((folder) => sortedTree(folder, { groupLeaf })),
-      ...sortedFiles
-    ]
+      // Recursively sort folder children
+      newNode.children = [
+        ...sortedFolders.map((folder) =>
+          sortedTree(folder, { groupLeaf: true })
+        ),
+        ...sortedFiles
+      ]
+    } else {
+      const sortedChildren = [...node.children].sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
+      newNode.children = [
+        ...sortedChildren.map((child) =>
+          sortedTree(child, { groupLeaf: false })
+        )
+      ]
+    }
   }
 
   return newNode
