@@ -114,8 +114,11 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
 import TextDivider from '@/components/common/TextDivider.vue'
-import { computed, nextTick, ref } from 'vue'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import {
+  useWorkflowBookmarkStore,
+  useWorkflowStore
+} from '@/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { TreeNode } from 'primevue/treenode'
 import { TreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -226,4 +229,9 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
 const selectionKeys = computed(() => ({
   [`root/${workflowStore.activeWorkflow?.key}`]: true
 }))
+
+const workflowBookmarkStore = useWorkflowBookmarkStore()
+onMounted(async () => {
+  await workflowBookmarkStore.loadBookmarks()
+})
 </script>
