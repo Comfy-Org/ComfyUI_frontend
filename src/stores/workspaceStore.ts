@@ -57,7 +57,6 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   return {
-    state: workspaceState,
     spinner,
     shiftDown,
     focusMode,
