@@ -25,7 +25,7 @@ import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
-import { ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
   LGraphCanvas,
   LGraph,
@@ -1976,8 +1976,11 @@ export class ComfyApp {
           widget?: IBaseWidget
         } = { minWidth: 1, minHeight: 1 }
         for (const inputName in inputs) {
-          const inputData = inputs[inputName]
-          const type = inputData[0]
+          const _inputData = inputs[inputName]
+          const type = _inputData[0]
+          const options = _inputData[1] ?? {}
+          const inputData = [type, options]
+
           const inputIsRequired = requiredInputs && inputName in requiredInputs
 
           let widgetCreated = true
