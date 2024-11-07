@@ -1,7 +1,7 @@
 <template>
   <Message
     v-if="show"
-    class="m-2"
+    class="first-time-ui-message m-2"
     severity="info"
     :closable="true"
     @close="handleClose"
