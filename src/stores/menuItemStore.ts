@@ -95,6 +95,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   )
 
   registerCommands(['Edit'], ['Comfy.Undo', 'Comfy.Redo'])
+  registerCommands(['Edit'], ['Comfy.RefreshNodeDefinitions'])
   registerCommands(['Edit'], ['Comfy.ClearWorkflow'])
   registerCommands(['Edit'], ['Comfy.OpenClipspace'])
 
