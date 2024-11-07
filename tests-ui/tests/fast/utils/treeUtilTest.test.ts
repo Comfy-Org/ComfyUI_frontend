@@ -101,7 +101,7 @@ describe('sortedTree', () => {
     }
 
     const result = sortedTree(node)
-    expect(result.children?.map((c) => c.label)).toEqual([null, undefined, 'a'])
+    expect(result.children?.map((c) => c.label)).toEqual([undefined, 'a', 'b'])
   })
 
   describe('with groupLeaf=true', () => {
