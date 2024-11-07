@@ -535,6 +535,9 @@ test.describe('Menu', () => {
   })
 
   test('Shows first time UI message', async ({ comfyPage }) => {
+    await comfyPage.setupSettings({})
+    await comfyPage.reload()
+
     await comfyPage.settingDialog.open()
     const message = comfyPage.page.locator('.first-time-ui-message')
     expect(await message.count()).toBe(1)
