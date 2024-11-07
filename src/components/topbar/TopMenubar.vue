@@ -15,11 +15,19 @@
       <div class="comfyui-menu-right" ref="menuRight"></div>
       <Actionbar />
       <BottomPanelToggleButton />
+      <Button
+        icon="pi pi-bars"
+        severity="secondary"
+        text
+        v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
+        @click="workspaceState.focusMode = true"
+      />
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'

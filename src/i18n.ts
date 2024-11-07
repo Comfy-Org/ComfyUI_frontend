@@ -77,6 +77,7 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Hide Menu',
       batchCount: 'Batch Count',
       batchCountTooltip:
         'The number of times the workflow generation should be queued',
@@ -193,6 +194,7 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: '隐藏菜单',
       batchCount: '批次数量',
       batchCountTooltip: '工作流生成次数',
       autoQueue: '自动执行',
@@ -307,6 +309,7 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Скрыть меню',
       batchCount: 'Количество пакетов',
       batchCountTooltip:
         'Количество раз, когда генерация рабочего процесса должна быть помещена в очередь',
