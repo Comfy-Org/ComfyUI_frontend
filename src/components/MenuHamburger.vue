@@ -38,9 +38,11 @@ watchEffect(() => {
 
 const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const positionCSS = computed<CSSProperties>(() =>
-  menuSetting.value === 'Top'
-    ? { top: '0px', right: '0px' }
-    : { bottom: '0px', right: '0px' }
+  // 'Bottom' menuSetting shows the hamburger button in the bottom right corner
+  // 'Disabled', 'Top' menuSetting shows the hamburger button in the top right corner
+  menuSetting.value === 'Bottom'
+    ? { bottom: '0px', right: '0px' }
+    : { top: '0px', right: '0px' }
 )
 </script>
 
