@@ -373,9 +373,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
-    defaultValue: 'Disabled',
-    name: 'Use new menu and workflow management.',
-    experimental: true,
+    defaultValue: 'Top',
+    name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {
