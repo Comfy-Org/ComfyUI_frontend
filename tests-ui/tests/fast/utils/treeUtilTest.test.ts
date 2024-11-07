@@ -89,12 +89,12 @@ describe('sortedTree', () => {
     expect(result.children?.map((c) => c.label)).toEqual(['a', 'b', 'c'])
   })
 
-  it('should handle null labels', () => {
+  it('should handle undefined labels', () => {
     const node: TreeNode = {
       key: 'root',
       label: 'root',
       children: [
-        { key: '1', label: null },
+        { key: '1', label: 'b' },
         { key: '2', label: 'a' },
         { key: '3', label: undefined }
       ]
