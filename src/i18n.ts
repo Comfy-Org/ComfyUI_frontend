@@ -122,7 +122,7 @@ const messages = {
   },
   zh: {
     firstTimeUIMessage:
-      '这是您第一次使用新界面。选择“Use New Menu > Disabled”以恢复旧界面。',
+      '这是您第一次使用新界面。选择“Menu > Use New Menu > Disabled”以恢复旧界面。',
     download: '下载',
     loadAllFolders: '加载所有文件夹',
     refresh: '刷新',
@@ -239,8 +239,6 @@ const messages = {
     }
   },
   ru: {
-    firstTimeUIMessage:
-      'Это первый раз, когда вы используете новый интерфейс. Выберите «Использовать новый меню > Отключено», чтобы восстановить старый интерфейс.',
     download: 'Скачать',
     refresh: 'Обновить',
     loadAllFolders: 'Загрузить все папки',
