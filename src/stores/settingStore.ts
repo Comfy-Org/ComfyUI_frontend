@@ -66,6 +66,10 @@ export const useSettingStore = defineStore('setting', () => {
     })
   }
 
+  function exists(key: string) {
+    return settingValues.value[key] !== undefined
+  }
+
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     settingValues.value[key] = value
     await app.ui.settings.setSettingValueAsync(key, value)
@@ -84,6 +88,7 @@ export const useSettingStore = defineStore('setting', () => {
     addSettings,
     loadExtensionSettings,
     set,
-    get
+    get,
+    exists
   }
 })
