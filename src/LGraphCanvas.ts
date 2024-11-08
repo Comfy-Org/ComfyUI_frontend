@@ -1,4 +1,4 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable, ReadOnlyPoint } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
@@ -7838,17 +7838,20 @@ export class LGraphCanvas {
     }
 
     /**
-     * Centers the camera on a given node (animated version)
-     * @method animateToNode
-     **/
-    animateToNode(
-        node: LGraphNode,
+     * Starts an animation to fit the view around the specified selection of nodes.
+     * @param bounds The bounds to animate the view to, defined by a rectangle.
+     * @param animationParameters Various parameters for the camera movement animation.
+     */
+    animateToBounds(
+        bounds: ReadOnlyRect,
         {
             duration = 350,
             zoom = 0.75,
             easing = EaseFunction.EASE_IN_OUT_QUAD
         }: {
+            /** Duration of the animation in milliseconds. */
             duration?: number,
+            /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
             zoom?: number,
             easing?: EaseFunction
         } = {}
@@ -7871,19 +7874,18 @@ export class LGraphCanvas {
         let targetScale = startScale
         let targetX = startX
         let targetY = startY
+
         if (zoom > 0) {
-            const targetScaleX = (zoom * cw) / Math.max(node.size[0], 300)
-            const targetScaleY = (zoom * ch) / Math.max(node.size[1], 300)
+            const targetScaleX = (zoom * cw) / Math.max(bounds[2], 300)
+            const targetScaleY = (zoom * ch) / Math.max(bounds[3], 300)
 
             // Choose the smaller scale to ensure the node fits into the viewport
             // Ensure we don't go over the max scale
             targetScale = Math.min(targetScaleX, targetScaleY, this.ds.max_scale)
-            targetX = -node.pos[0] - node.size[0] * 0.5 + (cw * 0.5) / targetScale
-            targetY = -node.pos[1] - node.size[1] * 0.5 + (ch * 0.5) / targetScale
-        } else {
-            targetX = -node.pos[0] - node.size[0] * 0.5 + (cw * 0.5) / targetScale
-            targetY = -node.pos[1] - node.size[1] * 0.5 + (ch * 0.5) / targetScale
         }
+        targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
+        targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
+        
         const animate = (timestamp: number) => {
             const elapsed = timestamp - startTimestamp
             const progress = Math.min(elapsed / duration, 1)
