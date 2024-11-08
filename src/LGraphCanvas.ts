@@ -8,7 +8,7 @@ import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
 import { EaseFunction, LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
-import { isInsideRectangle, distance, overlapBounding, isPointInRectangle, containsRect } from "./measure"
+import { isInsideRectangle, distance, overlapBounding, isPointInRectangle, containsRect, createBounds } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
@@ -3234,12 +3234,19 @@ export class LGraphCanvas {
     }
 
     /**
+     * @returns All items on the canvas that can be selected
+     */
+    get positionableItems(): Positionable[] {
+        return [...this.graph._nodes, ...this.graph._groups]
+    }
+
+    /**
      * Selects several items.
      * @param items Items to select - if falsy, all items on the canvas will be selected
      * @param add_to_current_selection If set, the items will be added to the current selection instead of replacing it
      */
     selectItems(items?: Positionable[], add_to_current_selection?: boolean): void {
-        const itemsToSelect = items ?? [...this.graph._nodes, ...this.graph._groups]
+        const itemsToSelect = items ?? this.positionableItems
         if (!add_to_current_selection) this.deselectAll()
         for (const item of itemsToSelect) this.select(item)
         this.onSelectionChange?.(this.selected_nodes)
@@ -7848,13 +7855,7 @@ export class LGraphCanvas {
             duration = 350,
             zoom = 0.75,
             easing = EaseFunction.EASE_IN_OUT_QUAD
-        }: {
-            /** Duration of the animation in milliseconds. */
-            duration?: number,
-            /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
-            zoom?: number,
-            easing?: EaseFunction
-        } = {}
+        }: AnimationOptions = {}
     ) {
         const easeFunctions = {
             linear: (t: number) => t,
@@ -7908,4 +7909,24 @@ export class LGraphCanvas {
         }
         animationId = requestAnimationFrame(animate)
     }
+
+    /**
+     * Fits the view to the selected nodes with animation.
+     * If nothing is selected, the view is fitted around all items in the graph.
+     */
+    fitViewToSelectionAnimated(options: AnimationOptions = {}) {
+        const items: Positionable[] =
+            this.selectedItems.size ?
+                Array.from(this.selectedItems) :
+                this.positionableItems
+        this.animateToBounds(createBounds(items), options)
+    }
+}
+
+export type AnimationOptions = {
+    /** Duration of the animation in milliseconds. */
+    duration?: number,
+    /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
+    zoom?: number,
+    easing?: EaseFunction
 }
