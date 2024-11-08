@@ -234,7 +234,7 @@ const messages = {
       zoomIn: '放大',
       zoomOut: '缩小',
       resetView: '重置视图',
-      fitView: 'Fit View',
+      fitView: '适应视图',
       selectMode: '选择模式',
       panMode: '平移模式',
       toggleLinkVisibility: '切换链接可见性'
@@ -354,7 +354,7 @@ const messages = {
       zoomIn: 'Увеличить',
       zoomOut: 'Уменьшить',
       resetView: 'Сбросить вид',
-      fitView: 'Fit View',
+      fitView: 'Подгонять под выделенные',
       selectMode: 'Выбрать режим',
       panMode: 'Режим панорамирования',
       toggleLinkVisibility: 'Переключить видимость ссылок'
