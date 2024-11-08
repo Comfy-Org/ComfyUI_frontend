@@ -7885,7 +7885,7 @@ export class LGraphCanvas {
         }
         targetX = -bounds[0] - bounds[2] * 0.5 + (cw * 0.5) / targetScale
         targetY = -bounds[1] - bounds[3] * 0.5 + (ch * 0.5) / targetScale
-        
+
         const animate = (timestamp: number) => {
             const elapsed = timestamp - startTimestamp
             const progress = Math.min(elapsed / duration, 1)

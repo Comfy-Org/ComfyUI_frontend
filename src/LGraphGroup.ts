@@ -3,7 +3,7 @@ import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { isInsideRectangle, containsCentre, containsRect } from "./measure"
+import { isInsideRectangle, containsCentre, containsRect, createBounds } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -229,34 +229,13 @@ export class LGraphGroup implements Positionable, IPinnable {
      * @param padding Value in graph units to add to all sides of the group.  Default: 10
      */
     resizeTo(objects: Iterable<Positionable>, padding: number = 10): void {
-        const boundingBox = LGraphGroup.createBounds(objects, padding);
+        const boundingBox = createBounds(objects, padding);
         if(boundingBox === null) return
 
         this.pos[0] = boundingBox[0]
         this.pos[1] = boundingBox[1] - this.titleHeight
         this.size[0] = boundingBox[2]
         this.size[1] = boundingBox[3] + this.titleHeight
-    }
-
-    static createBounds(objects: Iterable<Positionable>, padding: number = 10): ReadOnlyRect | null
-    {
-        const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])
-
-        for (const obj of objects) {
-            const rect = obj.boundingRect
-            bounds[0] = Math.min(bounds[0], rect[0])
-            bounds[1] = Math.min(bounds[1], rect[1])
-            bounds[2] = Math.max(bounds[2], rect[0] + rect[2])
-            bounds[3] = Math.max(bounds[3], rect[1] + rect[3])
-        }
-        if (!bounds.every(x => isFinite(x))) return null
-
-        return [
-            bounds[0] - padding,
-            bounds[1] - padding,
-            bounds[2] - bounds[0] + (2 * padding),
-            bounds[3] - bounds[1] + (2 * padding)
-        ]
     }
 
     /**

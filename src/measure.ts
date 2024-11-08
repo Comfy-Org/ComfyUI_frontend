@@ -1,4 +1,4 @@
-import type { Point, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
+import type { Point, Positionable, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
 import { LinkDirection } from "./types/globalEnums"
 
 /**
@@ -162,7 +162,7 @@ export function addDirectionalOffset(amount: number, direction: LinkDirection, o
 
 /**
  * Rotates an offset in 90° increments.
- * 
+ *
  * Swaps/flips axis values of a 2D vector offset - effectively rotating {@link offset} by 90°
  * @param offset The zero-based offset to rotate
  * @param from Direction to rotate from
@@ -238,7 +238,7 @@ export function getOrientation(lineStart: ReadOnlyPoint, lineEnd: ReadOnlyPoint,
 }
 
 /**
- * 
+ *
  * @param out The array to store the point in
  * @param a Start point
  * @param b End point
@@ -263,4 +263,24 @@ export function findPointOnCurve(
 
     out[0] = (c1 * a[0]) + (c2 * controlA[0]) + (c3 * controlB[0]) + (c4 * b[0])
     out[1] = (c1 * a[1]) + (c2 * controlA[1]) + (c3 * controlB[1]) + (c4 * b[1])
+}
+
+export function createBounds(objects: Iterable<Positionable>, padding: number = 10): ReadOnlyRect | null {
+    const bounds = new Float32Array([Infinity, Infinity, -Infinity, -Infinity])
+
+    for (const obj of objects) {
+        const rect = obj.boundingRect
+        bounds[0] = Math.min(bounds[0], rect[0])
+        bounds[1] = Math.min(bounds[1], rect[1])
+        bounds[2] = Math.max(bounds[2], rect[0] + rect[2])
+        bounds[3] = Math.max(bounds[3], rect[1] + rect[3])
+    }
+    if (!bounds.every(x => isFinite(x))) return null
+
+    return [
+        bounds[0] - padding,
+        bounds[1] - padding,
+        bounds[2] - bounds[0] + (2 * padding),
+        bounds[3] - bounds[1] + (2 * padding)
+    ]
 }
