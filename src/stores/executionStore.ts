@@ -8,7 +8,8 @@ import type {
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionStartWsMessage,
-  ProgressWsMessage
+  ProgressWsMessage,
+  StatusWsMessage
 } from '@/types/apiTypes'
 
 export interface QueuedPrompt {
@@ -17,6 +18,7 @@ export interface QueuedPrompt {
 }
 
 export const useExecutionStore = defineStore('execution', () => {
+  const clientId = ref<string | null>(null)
   const activePromptId = ref<string | null>(null)
   const queuedPrompts = ref<Record<string, QueuedPrompt>>({})
   const executingNodeId = ref<string | null>(null)
@@ -84,6 +86,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('executed', handleExecuted as EventListener)
     api.addEventListener('executing', handleExecuting as EventListener)
     api.addEventListener('progress', handleProgress as EventListener)
+    api.addEventListener('status', handleStatus as EventListener)
   }
 
   function unbindExecutionEvents() {
@@ -98,6 +101,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('executed', handleExecuted as EventListener)
     api.removeEventListener('executing', handleExecuting as EventListener)
     api.removeEventListener('progress', handleProgress as EventListener)
+    api.removeEventListener('status', handleStatus as EventListener)
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -140,6 +144,15 @@ export const useExecutionStore = defineStore('execution', () => {
     _executingNodeProgress.value = e.detail
   }
 
+  function handleStatus(e: CustomEvent<StatusWsMessage>) {
+    if (api.clientId) {
+      clientId.value = api.clientId
+
+      // Once we've received the clientId we no longer need to listen
+      api.removeEventListener('status', handleStatus as EventListener)
+    }
+  }
+
   function storePrompt({
     nodes,
     id,
@@ -167,6 +180,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   return {
     isIdle,
+    clientId,
     activePromptId,
     queuedPrompts,
     executingNodeId,

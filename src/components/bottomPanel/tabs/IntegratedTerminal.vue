@@ -1,61 +1,104 @@
 <template>
-  <div class="p-terminal rounded-none h-full w-full">
-    <ScrollPanel class="h-full w-full" ref="scrollPanelRef">
-      <pre class="px-4 whitespace-pre-wrap">{{ log }}</pre>
-    </ScrollPanel>
+  <div class="relative h-full w-full bg-black">
+    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
+    <ProgressSpinner
+      v-else-if="loading"
+      class="absolute inset-0 flex justify-center items-center h-full z-10"
+    />
+    <div v-show="!loading" class="p-terminal rounded-none h-full w-full p-2">
+      <div class="h-full" ref="terminalEl"></div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import ScrollPanel from 'primevue/scrollpanel'
+import '@xterm/xterm/css/xterm.css'
+import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
 import { api } from '@/scripts/api'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { debounce } from 'lodash'
+import ProgressSpinner from 'primevue/progressspinner'
+import { useExecutionStore } from '@/stores/executionStore'
+import { storeToRefs } from 'pinia'
+import { until } from '@vueuse/core'
+import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 
-const log = ref<string>('')
-const scrollPanelRef = ref<InstanceType<typeof ScrollPanel> | null>(null)
-/**
- * Whether the user has scrolled to the bottom of the terminal.
- * This is used to prevent the terminal from scrolling to the bottom
- * when new logs are fetched.
- */
-const scrolledToBottom = ref(false)
+const errorMessage = ref('')
+const loading = ref(true)
+const terminalEl = ref<HTMLDivElement>()
+const fitAddon = new FitAddon()
+const terminal = new Terminal({
+  convertEol: true
+})
+terminal.loadAddon(fitAddon)
 
-let intervalId: number = 0
+const resizeTerminal = () =>
+  terminal.resize(terminal.cols, fitAddon.proposeDimensions().rows)
+
+const resizeObserver = new ResizeObserver(debounce(resizeTerminal, 50))
+
+const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
+  if (size) {
+    terminal.resize(size.cols, fitAddon.proposeDimensions().rows)
+  }
+  terminal.write(entries.map((e) => e.m).join(''))
+}
+
+const logReceived = (e: CustomEvent<LogsWsMessage>) => {
+  update(e.detail.entries, e.detail.size)
+}
+
+const loadLogEntries = async () => {
+  const logs = await api.getRawLogs()
+  update(logs.entries, logs.size)
+}
+
+const watchLogs = async () => {
+  const { clientId } = storeToRefs(useExecutionStore())
+  if (!clientId.value) {
+    await until(clientId).not.toBeNull()
+  }
+  api.subscribeLogs(true)
+  api.addEventListener('logs', logReceived)
+}
 
 onMounted(async () => {
-  const element = scrollPanelRef.value?.$el
-  const scrollContainer = element?.querySelector('.p-scrollpanel-content')
+  terminal.open(terminalEl.value)
 
-  if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', () => {
-      scrolledToBottom.value =
-        scrollContainer.scrollTop + scrollContainer.clientHeight ===
-        scrollContainer.scrollHeight
-    })
+  try {
+    await loadLogEntries()
+  } catch (err) {
+    console.error('Error loading logs', err)
+    // On older backends the endpoints wont exist
+    errorMessage.value =
+      'Unable to load logs, please ensure you have updated your ComfyUI backend.'
+    return
   }
 
-  const scrollToBottom = () => {
-    if (scrollContainer) {
-      scrollContainer.scrollTop = scrollContainer.scrollHeight
-    }
-  }
+  loading.value = false
+  resizeObserver.observe(terminalEl.value)
 
-  watch(log, () => {
-    if (scrolledToBottom.value) {
-      scrollToBottom()
-    }
-  })
-
-  const fetchLogs = async () => {
-    log.value = await api.getLogs()
-  }
-
-  await fetchLogs()
-  scrollToBottom()
-  intervalId = window.setInterval(fetchLogs, 500)
+  await watchLogs()
 })
 
-onBeforeUnmount(() => {
-  window.clearInterval(intervalId)
+onUnmounted(() => {
+  if (api.clientId) {
+    api.subscribeLogs(false)
+  }
+  api.removeEventListener('logs', logReceived)
+
+  resizeObserver.disconnect()
 })
 </script>
+
+<style scoped>
+:deep(.p-terminal) .xterm {
+  overflow-x: auto;
+}
+
+:deep(.p-terminal) .xterm-screen {
+  background-color: black;
+  overflow-y: hidden;
+}
+</style>

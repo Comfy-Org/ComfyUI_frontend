@@ -11,7 +11,8 @@ import {
   type User,
   type Settings,
   type UserDataFullInfo,
-  validateComfyNodeDef
+  validateComfyNodeDef,
+  LogsRawResponse
 } from '@/types/apiTypes'
 import axios from 'axios'
 
@@ -202,11 +203,6 @@ class ComfyApi extends EventTarget {
                 new CustomEvent('status', { detail: msg.data.status })
               )
               break
-            case 'progress':
-              this.dispatchEvent(
-                new CustomEvent('progress', { detail: msg.data })
-              )
-              break
             case 'executing':
               this.dispatchEvent(
                 new CustomEvent('executing', {
@@ -214,29 +210,15 @@ class ComfyApi extends EventTarget {
                 })
               )
               break
+            case 'progress':
             case 'executed':
-              this.dispatchEvent(
-                new CustomEvent('executed', { detail: msg.data })
-              )
-              break
             case 'execution_start':
-              this.dispatchEvent(
-                new CustomEvent('execution_start', { detail: msg.data })
-              )
-              break
             case 'execution_success':
-              this.dispatchEvent(
-                new CustomEvent('execution_success', { detail: msg.data })
-              )
-              break
             case 'execution_error':
-              this.dispatchEvent(
-                new CustomEvent('execution_error', { detail: msg.data })
-              )
-              break
             case 'execution_cached':
+            case 'logs':
               this.dispatchEvent(
-                new CustomEvent('execution_cached', { detail: msg.data })
+                new CustomEvent(msg.type, { detail: msg.data })
               )
               break
             default:
@@ -718,6 +700,17 @@ class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     return (await axios.get(this.internalURL('/logs'))).data
+  }
+
+  async getRawLogs(): Promise<LogsRawResponse> {
+    return (await axios.get(this.internalURL('/logs/raw'))).data
+  }
+
+  async subscribeLogs(enabled: boolean): Promise<void> {
+    return await axios.patch(this.internalURL('/logs/subscribe'), {
+      enabled,
+      clientId: this.clientId
+    })
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
