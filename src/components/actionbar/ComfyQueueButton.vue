@@ -4,6 +4,7 @@
       class="comfyui-queue-button"
       :label="activeQueueModeMenuItem.label"
       severity="primary"
+      size="small"
       @click="queuePrompt"
       :model="queueModeMenuItems"
       data-testid="queue-button"
@@ -24,6 +25,7 @@
           :label="item.label"
           :icon="item.icon"
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
+          size="small"
           text
           v-tooltip="item.tooltip"
         />
