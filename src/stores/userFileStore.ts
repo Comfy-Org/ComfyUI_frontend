@@ -65,7 +65,7 @@ export class UserFile {
   }
 
   get isTemporary() {
-    return this.size === 0
+    return this.size === -1
   }
 
   get isPersisted() {

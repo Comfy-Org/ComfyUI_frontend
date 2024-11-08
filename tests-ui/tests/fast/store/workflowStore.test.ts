@@ -25,7 +25,7 @@ describe('useWorkflowStore', () => {
       filenames.map((filename) => ({
         path: filename,
         modified: new Date().toISOString(),
-        size: 1 // size !== 0 for remote workflows
+        size: 1 // size !== -1 for remote workflows
       }))
     )
     return await store.syncWorkflows()

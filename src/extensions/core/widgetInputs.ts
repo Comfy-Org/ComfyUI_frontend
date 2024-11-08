@@ -414,7 +414,7 @@ class PrimitiveNode extends LGraphNode {
 }
 
 export function getWidgetConfig(slot) {
-  return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]()
+  return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
 }
 
 function getConfig(widgetName) {
@@ -590,7 +590,7 @@ export function mergeIfValid(
   config1?: unknown
 ) {
   if (!config1) {
-    config1 = output.widget[CONFIG] ?? output.widget[GET_CONFIG]()
+    config1 = getWidgetConfig(output)
   }
 
   if (config1[0] instanceof Array) {
