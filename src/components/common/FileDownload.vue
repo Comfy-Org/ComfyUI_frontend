@@ -16,6 +16,7 @@
         size="small"
         outlined
         :disabled="props.error"
+        :title="props.url"
         @click="download.triggerBrowserDownload"
       />
     </div>
