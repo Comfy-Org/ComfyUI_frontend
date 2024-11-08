@@ -434,6 +434,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
   },
   STRING(node, inputName, inputData: InputSpec, app) {
+    inputData[1] = inputData[1] || {}
     const defaultVal = inputData[1].default || ''
     const multiline = !!inputData[1].multiline
 
