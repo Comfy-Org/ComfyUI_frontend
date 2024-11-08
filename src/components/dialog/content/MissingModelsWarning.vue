@@ -7,7 +7,15 @@
   />
   <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
+      <Suspense v-if="isElectron()">
+        <ElectronFileDownload
+          :url="option.url"
+          :label="option.label"
+          :error="option.error"
+        />
+      </Suspense>
       <FileDownload
+        v-else
         :url="option.url"
         :label="option.label"
         :error="option.error"
@@ -21,6 +29,7 @@ import { ref, computed } from 'vue'
 import ListBox from 'primevue/listbox'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
+import { isElectron } from '@/utils/envUtil'
 
 // TODO: Read this from server internal API rather than hardcoding here
 // as some installations may wish to use custom sources
