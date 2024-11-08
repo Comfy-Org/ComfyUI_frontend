@@ -15,7 +15,9 @@
     >
       <template #icon>
         <i-lucide:list-start v-if="workspaceStore.shiftDown" />
-        <i v-else :class="activeQueueModeMenuItem.icon" />
+        <i-lucide:play v-else-if="queueMode === 'disabled'" />
+        <i-lucide:fast-forward v-else-if="queueMode === 'instant'" />
+        <i-lucide:step-forward v-else-if="queueMode === 'change'" />
       </template>
       <template #item="{ item }">
         <Button
@@ -76,7 +78,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   disabled: {
     key: 'disabled',
     label: 'Queue',
-    icon: 'pi pi-play',
     tooltip: t('menu.disabledTooltip'),
     command: () => {
       queueMode.value = 'disabled'
@@ -85,7 +86,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   instant: {
     key: 'instant',
     label: 'Queue (Instant)',
-    icon: 'pi pi-forward',
     tooltip: t('menu.instantTooltip'),
     command: () => {
       queueMode.value = 'instant'
@@ -94,7 +94,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   change: {
     key: 'change',
     label: 'Queue (Change)',
-    icon: 'pi pi-step-forward-alt',
     tooltip: t('menu.changeTooltip'),
     command: () => {
       queueMode.value = 'change'
