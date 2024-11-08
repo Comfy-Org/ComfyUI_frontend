@@ -7,21 +7,21 @@
       <Button
         class="browse-templates-button"
         icon="pi pi-th-large"
-        v-tooltip="$t('sideToolbar.browseTemplates')"
+        v-tooltip:[tooltipConfig]="$t('sideToolbar.browseTemplates')"
         text
         @click="() => commandStore.execute('Comfy.BrowseTemplates')"
       />
       <Button
         class="open-workflow-button"
         icon="pi pi-folder-open"
-        v-tooltip="$t('sideToolbar.openWorkflow')"
+        v-tooltip:[tooltipConfig]="$t('sideToolbar.openWorkflow')"
         text
         @click="() => commandStore.execute('Comfy.OpenWorkflow')"
       />
       <Button
         class="new-blank-workflow-button"
         icon="pi pi-plus"
-        v-tooltip="$t('sideToolbar.newBlankWorkflow')"
+        v-tooltip:[tooltipConfig]="$t('sideToolbar.newBlankWorkflow')"
         @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
         text
       />
@@ -130,6 +130,12 @@ import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const settingStore = useSettingStore()
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+const tooltipConfig = computed(() => ({
+  position: sidebarLocation.value === 'left' ? 'right' : 'left'
+}))
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
