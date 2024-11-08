@@ -145,6 +145,8 @@ export interface INodeFlags {
     allow_interaction?: boolean
     pinned?: boolean
     collapsed?: boolean
+    /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
+    keepAllLinksOnBypass?: boolean
 }
 
 export interface INodeInputSlot extends INodeSlot {

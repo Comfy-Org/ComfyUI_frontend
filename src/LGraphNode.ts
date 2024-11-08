@@ -121,6 +121,9 @@ export class LGraphNode implements Positionable, IPinnable {
     static filter?: string
     static skip_list?: boolean
 
+    /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
+    static keepAllLinksOnBypass: boolean = false
+
     title: string
     graph: LGraph | null = null
     id: NodeId
@@ -2390,30 +2393,70 @@ export class LGraphNode implements Positionable, IPinnable {
     }
 
     /**
-     * Try auto-connect input to output without this node when possible
-     * (very basic, only takes into account first input-output)
+     * Attempts to gracefully bypass this node in all of its connections by reconnecting all links.
+     * 
+     * Each input is checked against each output.  This is done on a matching index basis, i.e. input 3 -> output 3.
+     * If there are any input links remaining, and {@link flags}.{@link INodeFlags.keepAllLinksOnBypass keepAllLinksOnBypass} is `true`,
+     * each input will check for outputs that match, and take the first one that matches
+     * `true`: Try the index matching first, then every input to every output.
+     * `false`: Only matches indexes, e.g. input 3 to output 3.
+     * 
+     * If {@link flags}.{@link INodeFlags.keepAllLinksOnBypass keepAllLinksOnBypass} is `undefined`, it will fall back to
+     * the static {@link keepAllLinksOnBypass}.
      *
-     * @returns true if connected, false otherwise
+     * @returns `true` if any new links were established, otherwise `false`.
+     * @todo Decision: Change API to return array of new links instead?
      */
     connectInputToOutput(): boolean {
-        if (
-            this.inputs?.length &&
-            this.outputs &&
-            this.outputs.length &&
-            LiteGraph.isValidConnection(this.inputs[0].type, this.outputs[0].type) &&
-            this.inputs[0].link &&
-            this.outputs[0].links &&
-            this.outputs[0].links.length
-        ) {
-            const input_link = this.graph._links.get(this.inputs[0].link)
-            const output_link = this.graph._links.get(this.outputs[0].links[0])
-            const input_node = this.getInputNode(0)
-            const output_node = this.getOutputNodes(0)[0]
-            if (input_node && output_node) {
-                input_node.connect(input_link.origin_slot, output_node, output_link.target_slot)
-                return true
+        const { inputs, outputs, graph } = this
+        if (!inputs || !outputs) return
+
+        const { _links } = graph
+        let madeAnyConnections = false
+
+        // First pass: only match exactly index-to-index
+        for (const [index, input] of inputs.entries()) {
+            const output = outputs[index]
+            if (!output || !LiteGraph.isValidConnection(input.type, output.type)) continue
+
+            const inLink = _links.get(input.link)
+            const inNode = graph.getNodeById(inLink?.origin_id)
+            if (!inNode) continue
+
+            bypassAllLinks(output, inNode, inLink)
+        }
+        // Configured to only use index-to-index matching
+        if (!(this.flags.keepAllLinksOnBypass ?? LGraphNode.keepAllLinksOnBypass)) return madeAnyConnections
+
+        // Second pass: match any remaining links
+        for (const input of inputs) {
+            const inLink = _links.get(input.link)
+            const inNode = graph.getNodeById(inLink?.origin_id)
+            if (!inNode) continue
+
+            for (const output of outputs) {
+                if (!LiteGraph.isValidConnection(input.type, output.type)) continue
+
+                bypassAllLinks(output, inNode, inLink)
+                break
             }
         }
-        return false
+        return madeAnyConnections
+
+        function bypassAllLinks(output: INodeOutputSlot, inNode: LGraphNode, inLink: LLink) {
+            const outLinks = output.links
+                ?.map(x => _links.get(x))
+                .filter(x => !!x)
+            if (!outLinks?.length) return
+
+            for (const outLink of outLinks) {
+                const outNode = graph.getNodeById(outLink.target_id)
+                if (!outNode) return
+
+                // TODO: Add 4th param (afterRerouteId: inLink.parentId) when reroutes are merged.
+                const result = inNode.connect(inLink.origin_slot, outNode, outLink.target_slot)
+                madeAnyConnections ||= !!result
+            }
+        }
     }
 }

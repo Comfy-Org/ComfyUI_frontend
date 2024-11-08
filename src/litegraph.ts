@@ -101,6 +101,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
     title_mode?: TitleMode
     title_color?: string
     title_text_color?: string
+    keepAllLinksOnBypass: boolean
     nodeData: any
     new(): T
 }
