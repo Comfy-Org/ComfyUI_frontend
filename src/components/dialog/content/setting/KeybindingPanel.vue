@@ -19,7 +19,7 @@
       </template>
       <Column field="actions" header="">
         <template #body="slotProps">
-          <div class="actions invisible">
+          <div class="actions invisible flex flex-row">
             <Button
               icon="pi pi-pencil"
               class="p-button-text"
@@ -34,7 +34,21 @@
           </div>
         </template>
       </Column>
-      <Column field="id" header="Command ID" sortable></Column>
+      <Column
+        field="id"
+        header="Command ID"
+        sortable
+        class="max-w-64 2xl:max-w-full"
+      >
+        <template #body="slotProps">
+          <div
+            class="overflow-hidden text-ellipsis whitespace-nowrap"
+            :title="slotProps.data.id"
+          >
+            {{ slotProps.data.id }}
+          </div>
+        </template>
+      </Column>
       <Column field="keybinding" header="Keybinding">
         <template #body="slotProps">
           <KeyComboDisplay
@@ -229,7 +243,7 @@ async function resetKeybindings() {
 
 <style scoped>
 :deep(.p-datatable-tbody) > tr > td {
-  padding: 1px;
+  @apply p-1;
   min-height: 2rem;
 }
 
