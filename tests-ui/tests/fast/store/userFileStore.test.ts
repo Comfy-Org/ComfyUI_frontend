@@ -191,7 +191,9 @@ describe('useUserFileStore', () => {
         expect(api.storeUserData).toHaveBeenCalledWith(
           'newfile.txt',
           'file content',
-          { throwOnError: true, full_info: true, overwrite: true }
+          // SaveAs should create a new temporary file, which will mean
+          // overwrite is false
+          { throwOnError: true, full_info: true, overwrite: false }
         )
         expect(newFile).toBeInstanceOf(UserFile)
         expect(newFile.path).toBe('newfile.txt')
