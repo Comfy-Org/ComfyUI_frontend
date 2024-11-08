@@ -16,11 +16,18 @@
       @mousedown="repeat('Comfy.Canvas.ZoomOut')"
       @mouseup="stopRepeat"
     />
+    <hr />
     <Button
       severity="secondary"
       icon="pi pi-expand"
       v-tooltip.left="t('graphCanvasMenu.resetView')"
       @click="() => commandStore.execute('Comfy.Canvas.ResetView')"
+    />
+    <Button
+      severity="secondary"
+      icon="pi pi-arrow-down-left-and-arrow-up-right-to-center"
+      v-tooltip.left="t('graphCanvasMenu.fitView')"
+      @click="() => commandStore.execute('Comfy.Canvas.FitView')"
     />
     <Button
       severity="secondary"
@@ -95,5 +102,10 @@ const stopRepeat = () => {
 .p-buttongroup-vertical .p-button {
   margin: 0;
   border-radius: 0;
+}
+
+.p-buttongroup-vertical hr {
+  margin: 0;
+  border-color: var(--p-panel-border-color);
 }
 </style>

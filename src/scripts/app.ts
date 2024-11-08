@@ -27,6 +27,7 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
+  LGraphGroup,
   LGraphCanvas,
   LGraph,
   LGraphNode,
@@ -2964,7 +2965,22 @@ export class ComfyApp {
   public goToNode(nodeId: NodeId) {
     const graphNode = this.graph.getNodeById(nodeId)
     if (!graphNode) return
-    this.canvas.animateToBounds(graphNode.boundingRect)
+    this.canvas.animateToBounds(LGraphGroup.createBounds([graphNode]))
+  }
+
+  /**
+   * Fits the view to the selected nodes with animation.
+   * If nothing is selected, the view is fitted around all nodes in the graph.
+   */
+  fitView() {
+    let selection: LGraphNode[]
+    selection = Array.from(app.canvas.selectedItems.values())
+      .map((i) => this.graph.getNodeById(i.id))
+      .filter((i) => i !== null)
+    if (selection.length === 0) {
+      selection = this.graph.nodes
+    }
+    this.canvas.animateToBounds(LGraphGroup.createBounds(selection))
   }
 }
 
