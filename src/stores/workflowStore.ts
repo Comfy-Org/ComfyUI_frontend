@@ -215,7 +215,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const workflow = new ComfyWorkflow({
       path: fullPath,
       modified: Date.now(),
-      size: 0
+      size: -1
     })
 
     workflow.originalContent = workflow.content = workflowData
