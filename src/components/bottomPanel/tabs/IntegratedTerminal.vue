@@ -1,48 +1,64 @@
 <template>
-  <div class="relative h-full w-full bg-black">
-    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
-    <ProgressSpinner
-      v-else-if="loading"
-      class="absolute inset-0 flex justify-center items-center h-full z-10"
-    />
-    <div v-show="!loading" class="p-terminal rounded-none h-full w-full p-2">
-      <div class="h-full" ref="terminalEl"></div>
-    </div>
-  </div>
+  <Tabs value="0" class="h-full w-full">
+    <TabList>
+      <Tab value="0">Logs</Tab>
+      <Tab value="1">Terminal</Tab>
+    </TabList>
+    <TabPanels class="h-full w-full p-0 overflow-hidden">
+      <TabPanel value="0" class="h-full w-full">
+        <div class="relative h-full w-full bg-black">
+          <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
+          <ProgressSpinner
+            v-else-if="loading"
+            class="absolute inset-0 flex justify-center items-center h-full z-10"
+          />
+          <Terminal v-show="!loading" ref="logsTerminal" />
+        </div>
+      </TabPanel>
+      <TabPanel value="1" class="h-full w-full">
+        <div class="relative h-full w-full bg-black">
+          <Terminal
+            ref="commandTerminal"
+            allow-input
+            auto-width
+            @execute="executeCommand"
+          />
+        </div>
+      </TabPanel>
+    </TabPanels>
+  </Tabs>
 </template>
 
 <script setup lang="ts">
-import '@xterm/xterm/css/xterm.css'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
 import { api } from '@/scripts/api'
 import { onMounted, onUnmounted, ref } from 'vue'
-import { debounce } from 'lodash'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useExecutionStore } from '@/stores/executionStore'
 import { storeToRefs } from 'pinia'
 import { until } from '@vueuse/core'
 import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
+import Terminal from '@/components/terminal/Terminal.vue'
+import Tab from 'primevue/tab'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import TabPanel from 'primevue/tabpanel'
+import TabPanels from 'primevue/tabpanels'
+
+type TerminalComponent = {
+  update: (entries: Array<string>, size?: TerminalSize) => void
+}
 
 const errorMessage = ref('')
 const loading = ref(true)
-const terminalEl = ref<HTMLDivElement>()
-const fitAddon = new FitAddon()
-const terminal = new Terminal({
-  convertEol: true
-})
-terminal.loadAddon(fitAddon)
-
-const resizeTerminal = () =>
-  terminal.resize(terminal.cols, fitAddon.proposeDimensions().rows)
-
-const resizeObserver = new ResizeObserver(debounce(resizeTerminal, 50))
+const logsTerminal = ref<TerminalComponent>()
+const commandTerminal = ref<TerminalComponent>()
+const electronBridge: any = null
 
 const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
-  if (size) {
-    terminal.resize(size.cols, fitAddon.proposeDimensions().rows)
-  }
-  terminal.write(entries.map((e) => e.m).join(''))
+  logsTerminal.value.update(
+    entries.map((data) => data.m),
+    size
+  )
 }
 
 const logReceived = (e: CustomEvent<LogsWsMessage>) => {
@@ -63,9 +79,17 @@ const watchLogs = async () => {
   api.addEventListener('logs', logReceived)
 }
 
-onMounted(async () => {
-  terminal.open(terminalEl.value)
+const executeCommand = (message: string) => {
+  if (electronBridge) {
+    // TODO:
+  } else {
+    commandTerminal.value.update([
+      `\x1b[1;31mExecuting native commands isn't supported in this environment, to view a list of available commands type !\x1b[m\n`
+    ])
+  }
+}
 
+onMounted(async () => {
   try {
     await loadLogEntries()
   } catch (err) {
@@ -77,8 +101,6 @@ onMounted(async () => {
   }
 
   loading.value = false
-  resizeObserver.observe(terminalEl.value)
-
   await watchLogs()
 })
 
@@ -87,18 +109,11 @@ onUnmounted(() => {
     api.subscribeLogs(false)
   }
   api.removeEventListener('logs', logReceived)
-
-  resizeObserver.disconnect()
 })
 </script>
 
 <style scoped>
-:deep(.p-terminal) .xterm {
-  overflow-x: auto;
-}
-
-:deep(.p-terminal) .xterm-screen {
-  background-color: black;
-  overflow-y: hidden;
+:deep(.p-autocomplete-input) {
+  width: 100%;
 }
 </style>
