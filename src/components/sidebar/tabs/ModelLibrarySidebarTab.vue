@@ -9,14 +9,14 @@
         @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip="$t('refresh')"
+        v-tooltip.bottom="$t('refresh')"
       />
       <Button
         icon="pi pi-cloud-download"
         @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip="$t('loadAllFolders')"
+        v-tooltip.bottom="$t('loadAllFolders')"
       />
     </template>
     <template #header>
