@@ -24,6 +24,11 @@ describe.concurrent("LGraph", () => {
     const basicLGraph = new LGraph(basicSerialisableGraph)
     expect(basicLGraph).toMatchSnapshot("basicLGraph")
   })
+
+  lgTest("supports schema v0.4 graphs", ({ expect, oldSchemaGraph }) => {
+    const fromOldSchema = new LGraph(oldSchemaGraph)
+    expect(fromOldSchema).toMatchSnapshot("oldSchemaGraph")
+  })
 })
 
 describe.concurrent("Legacy LGraph Compatibility Layer", () => {

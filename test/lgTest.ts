@@ -1,19 +1,9 @@
 import { test } from "vitest"
-import type { ISerialisedGraph } from "../src/types/serialisation"
+import type { ISerialisedGraph, SerialisableGraph } from "../src/types/serialisation"
 import { LGraph } from "@/LGraph"
 
-const minimalSerialisableGraph: ISerialisedGraph = {
-  version: 1,
-  config: {},
-  last_node_id: 0,
-  last_link_id: 0,
-  nodes: [],
-  links: [],
-  groups: [],
-}
-
-const basicSerialisableGraph: ISerialisedGraph = {
-  version: 1,
+const oldSchemaGraph: ISerialisedGraph = {
+  version: 0.4,
   config: {},
   last_node_id: 0,
   last_link_id: 0,
@@ -34,14 +24,55 @@ const basicSerialisableGraph: ISerialisedGraph = {
   links: [],
 }
 
+const minimalSerialisableGraph: SerialisableGraph = {
+  version: 1,
+  config: {},
+  state: {
+    lastNodeId: 0,
+    lastLinkId: 0,
+    lastGroupId: 0,
+    lastRerouteId: 0
+  },
+  nodes: [],
+  links: [],
+  groups: [],
+}
+
+const basicSerialisableGraph: SerialisableGraph = {
+  version: 1,
+  config: {},
+  state: {
+    lastNodeId: 0,
+    lastLinkId: 0,
+    lastGroupId: 0,
+    lastRerouteId: 0
+  },
+  groups: [
+    {
+      id: 123,
+      bounding: [20, 20, 1, 3],
+      color: "#6029aa",
+      font_size: 14,
+      title: "A group to test with",
+    },
+  ],
+  nodes: [
+    {
+      id: 1,
+    },
+  ],
+  links: [],
+}
+
 interface LitegraphFixtures {
   minimalGraph: LGraph
-  minimalSerialisableGraph: ISerialisedGraph
-  basicSerialisableGraph: ISerialisedGraph
+  minimalSerialisableGraph: SerialisableGraph
+  basicSerialisableGraph: SerialisableGraph
+  oldSchemaGraph: ISerialisedGraph
 }
 
 export const lgTest = test.extend<LitegraphFixtures>({
-  minimalGraph: async ({}, use) => {
+  minimalGraph: async ({ }, use) => {
     // Before each test function
     const serialisable = structuredClone(minimalSerialisableGraph)
     const lGraph = new LGraph(serialisable)
@@ -53,4 +84,5 @@ export const lgTest = test.extend<LitegraphFixtures>({
   },
   basicSerialisableGraph: structuredClone(basicSerialisableGraph),
   minimalSerialisableGraph: structuredClone(minimalSerialisableGraph),
+  oldSchemaGraph: structuredClone(oldSchemaGraph),
 })
