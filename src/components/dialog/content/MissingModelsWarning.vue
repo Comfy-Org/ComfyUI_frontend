@@ -58,7 +58,6 @@ const props = defineProps<{
 }>()
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
-const isRunningInElectron = ref(isElectron())
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
     const paths = props.paths[model.directory]

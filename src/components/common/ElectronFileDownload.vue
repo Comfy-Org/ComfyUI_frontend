@@ -1,4 +1,4 @@
-<!-- A file download button with a label and a size hint -->
+<!-- A Electron-backed download button with a label, size hint and progress bar -->
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
@@ -72,6 +72,7 @@ import ProgressBar from 'primevue/progressbar'
 import { ref, computed } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
+import { electronAPI } from '@/utils/envUtil'
 
 const props = defineProps<{
   url: string
@@ -87,7 +88,7 @@ interface ModelDownload {
 }
 
 const { t } = useI18n()
-const { DownloadManager } = window['electronAPI']
+const { DownloadManager } = electronAPI()
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
@@ -131,6 +132,4 @@ const triggerPauseDownload = async () => {
 const triggerResumeDownload = async () => {
   await DownloadManager.resumeDownload(props.url)
 }
-
-console.info(DownloadManager)
 </script>
