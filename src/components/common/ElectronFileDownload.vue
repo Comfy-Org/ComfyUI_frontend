@@ -38,6 +38,7 @@
         @click="triggerPauseDownload"
         v-if="status === 'in_progress'"
         icon="pi pi-pause-circle"
+        v-tooltip.top="t('electronFileDownload.pause')"
       />
 
       <Button
@@ -48,6 +49,7 @@
         @click="triggerResumeDownload"
         v-if="status === 'paused'"
         icon="pi pi-play-circle"
+        v-tooltip.top="t('electronFileDownload.resume')"
       />
 
       <Button
@@ -57,6 +59,7 @@
         :disabled="props.error"
         @click="triggerCancelDownload"
         icon="pi pi-times-circle"
+        v-tooltip.top="t('electronFileDownload.cancel')"
       />
     </div>
   </div>
@@ -68,6 +71,7 @@ import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
 import { ref, computed } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   url: string
@@ -82,6 +86,7 @@ interface ModelDownload {
   progress: number
 }
 
+const { t } = useI18n()
 const { DownloadManager } = window['electronAPI']
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)

@@ -118,6 +118,11 @@ const messages = {
       selectMode: 'Select Mode',
       panMode: 'Pan Mode',
       toggleLinkVisibility: 'Toggle Link Visibility'
+    },
+    electronFileDownload: {
+      pause: 'Pause Download',
+      resume: 'Resume Download',
+      cancel: 'Cancel Download'
     }
   },
   zh: {
