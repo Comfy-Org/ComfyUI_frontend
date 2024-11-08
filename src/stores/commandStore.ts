@@ -293,6 +293,12 @@ export const useCommandStore = defineStore('command', () => {
       }
     },
     {
+      id: 'Comfy.Canvas.FitView',
+      icon: 'pi pi-expand',
+      label: 'Fit view to selected nodes',
+      function: () => app.canvas.fitViewToSelectionAnimated()
+    },
+    {
       id: 'Comfy.Canvas.ToggleLock',
       icon: 'pi pi-lock',
       label: 'Toggle Lock',

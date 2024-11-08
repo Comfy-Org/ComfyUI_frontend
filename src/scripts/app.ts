@@ -27,6 +27,7 @@ import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
+  LGraphGroup,
   LGraphCanvas,
   LGraph,
   LGraphNode,

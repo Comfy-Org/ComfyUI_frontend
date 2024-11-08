@@ -19,8 +19,8 @@
     <Button
       severity="secondary"
       icon="pi pi-expand"
-      v-tooltip.left="t('graphCanvasMenu.resetView')"
-      @click="() => commandStore.execute('Comfy.Canvas.ResetView')"
+      v-tooltip.left="t('graphCanvasMenu.fitView')"
+      @click="() => commandStore.execute('Comfy.Canvas.FitView')"
     />
     <Button
       severity="secondary"
