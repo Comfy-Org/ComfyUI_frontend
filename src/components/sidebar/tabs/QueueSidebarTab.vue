@@ -11,7 +11,9 @@
         severity="secondary"
         @click="toggleImageFit"
         class="toggle-expanded-button"
-        v-tooltip="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
+        v-tooltip:[tooltipConfig]="
+          $t(`sideToolbar.queueTab.${imageFit}ImagePreview`)
+        "
       />
       <Button
         v-if="isInFolderView"
@@ -20,7 +22,7 @@
         severity="secondary"
         @click="exitFolderView"
         class="back-button"
-        v-tooltip="$t('sideToolbar.queueTab.backToAllTasks')"
+        v-tooltip:[tooltipConfig]="$t('sideToolbar.queueTab.backToAllTasks')"
       />
       <template v-else>
         <Button
@@ -29,7 +31,7 @@
           severity="secondary"
           @click="toggleExpanded"
           class="toggle-expanded-button"
-          v-tooltip="$t('sideToolbar.queueTab.showFlatList')"
+          v-tooltip:[tooltipConfig]="$t('sideToolbar.queueTab.showFlatList')"
         />
         <Button
           v-if="queueStore.hasPendingTasks"
@@ -37,7 +39,9 @@
           severity="danger"
           text
           @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
-          v-tooltip.bottom="$t('sideToolbar.queueTab.clearPendingTasks')"
+          v-tooltip:[tooltipConfig]="
+            $t('sideToolbar.queueTab.clearPendingTasks')
+          "
         />
         <Button
           icon="pi pi-trash"
@@ -118,6 +122,13 @@ const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
+
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+const tooltipConfig = computed(() => ({
+  position: sidebarLocation.value === 'left' ? 'right' : 'left'
+}))
 
 // Expanded view: show all outputs in a flat list.
 const isExpanded = ref(false)

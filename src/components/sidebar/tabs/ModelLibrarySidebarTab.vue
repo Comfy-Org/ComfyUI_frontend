@@ -9,14 +9,14 @@
         @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip="$t('refresh')"
+        v-tooltip:[tooltipConfig]="$t('refresh')"
       />
       <Button
         icon="pi pi-cloud-download"
         @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip="$t('loadAllFolders')"
+        v-tooltip:[tooltipConfig]="$t('loadAllFolders')"
       />
     </template>
     <template #header>
@@ -71,6 +71,13 @@ const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+const tooltipConfig = computed(() => ({
+  position: sidebarLocation.value === 'left' ? 'right' : 'left'
+}))
 
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
