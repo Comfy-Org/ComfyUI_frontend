@@ -72,9 +72,15 @@ test.describe('Change Tracker', () => {
     )
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
 
+    // Test what a real person does
+    comfyPage.ctrlZ()
+    comfyPage.ctrlZ()
+    comfyPage.ctrlZ()
     comfyPage.ctrlZ()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
 
+    // Test past the bounds of the buffer
+    comfyPage.ctrlY()
     comfyPage.ctrlY()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
   })
