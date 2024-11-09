@@ -7,15 +7,21 @@
       :initial-path="defaultInstallLocation"
       @complete="showSetup = false"
     />
-    <ProgressOverlay v-else :status="status" :logs="logs" />
+    <div v-else>
+      <h2 class="text-2xl font-bold">{{ ProgressMessages[status] }}</h2>
+      <LogTerminal :fetch-logs="fetchLogs" :fetch-interval="500" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import ProgressOverlay from './screens/ProgressOverlay.vue'
 import FirstTimeSetup from './screens/FirstTimeSetup.vue'
-import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import LogTerminal from '@/components/common/LogTerminal.vue'
+import {
+  ProgressStatus,
+  ProgressMessages
+} from '@comfyorg/comfyui-electron-types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
 const electronAPI = getElectronAPI()
@@ -32,6 +38,10 @@ const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
 
 const addLogMessage = (message: string) => {
   logs.value = [...logs.value, message]
+}
+
+const fetchLogs = async () => {
+  return logs.value.join('\n')
 }
 
 onMounted(() => {
