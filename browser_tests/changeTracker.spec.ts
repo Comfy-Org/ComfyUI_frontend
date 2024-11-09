@@ -64,7 +64,7 @@ test.describe('Change Tracker', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step1.png')
 
     comfyPage.ctrlZ()
-    await expect(comfyPage.canvas).toHaveScreenshot('undo-step2.png')
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
 
     comfyPage.dragAndDrop(
       comfyPage.clipTextEncodeNode1OutputSlot,
@@ -73,7 +73,10 @@ test.describe('Change Tracker', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
 
     comfyPage.ctrlZ()
-    await expect(comfyPage.canvas).toHaveScreenshot('undo-step4.png')
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
+
+    comfyPage.ctrlY()
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
   })
 
   test('Can group multiple change actions into a single transaction', async ({
