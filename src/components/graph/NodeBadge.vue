@@ -18,6 +18,7 @@ import { LGraphBadge } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import type { Palette } from '@/types/colorPalette'
 
 const settingStore = useSettingStore()
 const nodeSourceBadgeMode = computed(
@@ -35,7 +36,7 @@ watch([nodeSourceBadgeMode, nodeIdBadgeMode, nodeLifeCycleBadgeMode], () => {
   app.graph?.setDirtyCanvas(true, true)
 })
 
-const colorPalette = computed(() =>
+const colorPalette = computed<Palette | undefined>(() =>
   getColorPalette(settingStore.get('Comfy.ColorPalette'))
 )
 
@@ -78,10 +79,10 @@ onMounted(() => {
             }
           ),
           fgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_FG_COLOR ||
+            colorPalette.value?.colors?.litegraph_base?.BADGE_FG_COLOR ||
             defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
           bgColor:
-            colorPalette.value.colors.litegraph_base?.BADGE_BG_COLOR ||
+            colorPalette.value?.colors?.litegraph_base?.BADGE_BG_COLOR ||
             defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
         })
       })

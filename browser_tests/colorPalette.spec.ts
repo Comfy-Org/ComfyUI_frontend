@@ -211,7 +211,7 @@ test.describe('Node Color Adjustments', () => {
       await comfyPage.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.setSetting('Comfy.Node.Opacity', 0.3)
       const node = await comfyPage.getFirstNodeRef()
-      await node.clickContextMenuOption('Colors')
+      await node?.clickContextMenuOption('Colors')
     })
 
     test('should persist color adjustments when changing custom node colors', async ({
