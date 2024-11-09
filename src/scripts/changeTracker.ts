@@ -7,6 +7,7 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
+import * as jsondiffpatch from 'jsondiffpatch'
 
 function clone(obj: any) {
   try {
@@ -56,7 +57,7 @@ export class ChangeTracker {
    */
   reset(state?: ComfyWorkflowJSON) {
     this.activeState = state ?? this.activeState
-    this.initialState = this.activeState
+    this.initialState = clone(this.activeState)
   }
 
   store() {
@@ -85,6 +86,15 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
+      if (workflow.isModified) {
+        const diff = ChangeTracker.graphDiff(
+          this.initialState,
+          this.activeState
+        )
+        console.log(this.initialState.nodes)
+        console.log(this.activeState.nodes)
+        console.debug('Graph diff:', diff)
+      }
     }
   }
 
@@ -380,5 +390,21 @@ export class ChangeTracker {
     }
 
     return false
+  }
+
+  static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+    function sortGraphNodes(graph: ComfyWorkflowJSON) {
+      return {
+        links: graph.links,
+        groups: graph.groups,
+        nodes: graph.nodes.sort((a, b) => {
+          if (typeof a.id === 'number' && typeof b.id === 'number') {
+            return a.id - b.id
+          }
+          return 0
+        })
+      }
+    }
+    return jsondiffpatch.diff(sortGraphNodes(a), sortGraphNodes(b))
   }
 }
