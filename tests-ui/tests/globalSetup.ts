@@ -74,4 +74,10 @@ module.exports = async function () {
       useI18n: jest.fn()
     }
   })
+
+  jest.mock('jsondiffpatch', () => {
+    return {
+      diff: jest.fn()
+    }
+  })
 }

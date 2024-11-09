@@ -7,6 +7,8 @@ import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
+import * as jsondiffpatch from 'jsondiffpatch'
+import log from 'loglevel'
 
 function clone(obj: any) {
   try {
@@ -20,6 +22,10 @@ function clone(obj: any) {
   return JSON.parse(JSON.stringify(obj))
 }
 
+const logger = log.getLogger('ChangeTracker')
+// Change to debug for more verbose logging
+logger.setLevel('info')
+
 export class ChangeTracker {
   static MAX_HISTORY = 50
   /**
@@ -29,6 +35,10 @@ export class ChangeTracker {
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
   changeCount: number = 0
+  /**
+   * Whether the redo/undo restoring is in progress.
+   */
+  private restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
@@ -55,8 +65,12 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
+    // Do not reset the state if we are restoring.
+    if (this.restoringState) return
+
+    logger.debug('Reset State')
     this.activeState = state ?? this.activeState
-    this.initialState = this.activeState
+    this.initialState = clone(this.activeState)
   }
 
   store() {
@@ -85,6 +99,13 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
+      if (workflow.isModified) {
+        const diff = ChangeTracker.graphDiff(
+          this.initialState,
+          this.activeState
+        )
+        logger.debug('Graph diff:', diff)
+      }
     }
   }
 
@@ -101,6 +122,8 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
+      logger.debug('Diff detected. Undo queue length:', this.undoQueue.length)
+
       this.activeState = clone(currentState)
       this.redoQueue.length = 0
       api.dispatchEvent(
@@ -114,21 +137,38 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       target.push(this.activeState!)
-      await this.app.loadGraphData(prevState, false, false, this.workflow, {
-        showMissingModelsDialog: false,
-        showMissingNodesDialog: false
-      })
-      this.activeState = prevState
-      this.updateModified()
+      this.restoringState = true
+      try {
+        await this.app.loadGraphData(prevState, false, false, this.workflow, {
+          showMissingModelsDialog: false,
+          showMissingNodesDialog: false
+        })
+        this.activeState = prevState
+        this.updateModified()
+      } finally {
+        this.restoringState = false
+      }
     }
   }
 
   async undo() {
     await this.updateState(this.undoQueue, this.redoQueue)
+    logger.debug(
+      'Undo. Undo queue length:',
+      this.undoQueue.length,
+      'Redo queue length:',
+      this.redoQueue.length
+    )
   }
 
   async redo() {
     await this.updateState(this.redoQueue, this.undoQueue)
+    logger.debug(
+      'Redo. Undo queue length:',
+      this.undoQueue.length,
+      'Redo queue length:',
+      this.redoQueue.length
+    )
   }
 
   async undoRedo(e: KeyboardEvent) {
@@ -198,6 +238,7 @@ export class ChangeTracker {
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(app, bindInputEl)) return
+          logger.debug('checkState on keydown')
           changeTracker.checkState()
         })
       },
@@ -207,21 +248,25 @@ export class ChangeTracker {
     window.addEventListener('keyup', (e) => {
       if (keyIgnored) {
         keyIgnored = false
+        logger.debug('checkState on keyup')
         checkState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
+      logger.debug('checkState on mouseup')
       checkState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
+      logger.debug('checkState on promptQueued')
       checkState()
     })
 
     api.addEventListener('graphCleared', () => {
+      logger.debug('checkState on graphCleared')
       checkState()
     })
 
@@ -229,12 +274,14 @@ export class ChangeTracker {
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
+      logger.debug('checkState on processMouseUp')
       checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, [e])
+      logger.debug('checkState on processMouseDown')
       checkState()
       return v
     }
@@ -251,6 +298,7 @@ export class ChangeTracker {
         callback(v)
         checkState()
       }
+      logger.debug('checkState on prompt')
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
@@ -258,6 +306,7 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
+      logger.debug('checkState on contextMenuClose')
       checkState()
       return v
     }
@@ -267,6 +316,7 @@ export class ChangeTracker {
     LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
       const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
+        logger.debug('checkState on onNodeAdded')
         checkState()
       }
       return v
@@ -356,5 +406,21 @@ export class ChangeTracker {
     }
 
     return false
+  }
+
+  static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+    function sortGraphNodes(graph: ComfyWorkflowJSON) {
+      return {
+        links: graph.links,
+        groups: graph.groups,
+        nodes: graph.nodes.sort((a, b) => {
+          if (typeof a.id === 'number' && typeof b.id === 'number') {
+            return a.id - b.id
+          }
+          return 0
+        })
+      }
+    }
+    return jsondiffpatch.diff(sortGraphNodes(a), sortGraphNodes(b))
   }
 }

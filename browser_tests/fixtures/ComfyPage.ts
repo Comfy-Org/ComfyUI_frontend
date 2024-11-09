@@ -167,7 +167,7 @@ export class ComfyPage {
   }
 
   async setupUser(username: string) {
-    const res = await this.request.get(`${this.url}/users`)
+    const res = await this.request.get(`${this.url}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
@@ -181,7 +181,7 @@ export class ComfyPage {
   }
 
   async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/users`, {
+    const resp = await this.request.post(`${this.url}/api/users`, {
       data: { username }
     })
 

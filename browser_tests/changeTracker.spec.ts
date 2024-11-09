@@ -16,6 +16,43 @@ async function afterChange(comfyPage: ComfyPage) {
 }
 
 test.describe('Change Tracker', () => {
+  test.describe('Undo/Redo', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    })
+
+    // Flaky https://github.com/Comfy-Org/ComfyUI_frontend/pull/1481
+    // The collapse can be recognized as several changes.
+    test.skip('Can undo multiple operations', async ({ comfyPage }) => {
+      function isModified() {
+        return comfyPage.page.evaluate(async () => {
+          return window['app'].extensionManager.workflow.activeWorkflow
+            .isModified
+        })
+      }
+
+      await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
+      expect(await isModified()).toBe(false)
+
+      const node = (await comfyPage.getFirstNodeRef())!
+      await node.click('collapse')
+      await expect(node).toBeCollapsed()
+      expect(await isModified()).toBe(true)
+
+      await comfyPage.ctrlB()
+      await expect(node).toBeBypassed()
+      expect(await isModified()).toBe(true)
+
+      await comfyPage.ctrlZ()
+      await expect(node).not.toBeBypassed()
+      expect(await isModified()).toBe(true)
+
+      await comfyPage.ctrlZ()
+      await expect(node).not.toBeCollapsed()
+      expect(await isModified()).toBe(false)
+    })
+  })
+
   test('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
