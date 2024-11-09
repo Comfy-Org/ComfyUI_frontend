@@ -53,6 +53,29 @@ test.describe('Change Tracker', () => {
     })
   })
 
+  test('Can undo & redo user changes', async ({ comfyPage }) => {
+    comfyPage.clickEmptySpace()
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
+
+    comfyPage.dragAndDrop(
+      comfyPage.clipTextEncodeNode2OutputSlot,
+      comfyPage.kSamplerTitlebar
+    )
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-step1.png')
+
+    comfyPage.ctrlZ()
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-step2.png')
+
+    comfyPage.dragAndDrop(
+      comfyPage.clipTextEncodeNode1OutputSlot,
+      comfyPage.kSamplerTitlebar
+    )
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
+
+    comfyPage.ctrlZ()
+    await expect(comfyPage.canvas).toHaveScreenshot('undo-step4.png')
+  })
+
   test('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {

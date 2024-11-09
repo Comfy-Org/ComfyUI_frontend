@@ -458,9 +458,19 @@ export class ComfyPage {
   get clipTextEncodeNode1InputSlot(): Position {
     return { x: 427, y: 198 }
   }
+  get clipTextEncodeNode1OutputSlot(): Position {
+    return { x: 828, y: 197 }
+  }
 
   get clipTextEncodeNode2InputSlot(): Position {
     return { x: 422, y: 402 }
+  }
+  get clipTextEncodeNode2OutputSlot(): Position {
+    return { x: 828, y: 400 }
+  }
+
+  get kSamplerTitlebar(): Position {
+    return { x: 1058, y: 175 }
   }
 
   // A point on input edge.
