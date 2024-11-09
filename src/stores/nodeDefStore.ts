@@ -176,7 +176,12 @@ export class ComfyNodeDefImpl {
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
     const { output, output_is_list, output_name, output_tooltips } = obj
-    const result = (output ?? []).map((type: string | any[], index: number) => {
+    const type = Object.prototype.toString.call(output)
+    // if(type === '[object String]') {
+    //   console.log(obj, 'obj')
+    // }
+    const outputArray = type === '[object Array]' ? output : []
+    const result = outputArray.map((type: string | any[], index: number) => {
       const typeString = Array.isArray(type) ? 'COMBO' : type
 
       return new ComfyOutputSpec(

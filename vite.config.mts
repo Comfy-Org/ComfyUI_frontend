@@ -7,7 +7,9 @@ import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import Components from 'unplugin-vue-components/vite'
 
-dotenv.config()
+dotenv.config({
+  path: `.env.${process.env.NODE_ENV}`
+})
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
@@ -89,7 +91,7 @@ function getModuleName(id: string): string {
   return fileName.replace(/\.\w+$/, '')  // Remove file extension
 }
 
-const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127.0.0.1:8188'
+const DEV_SERVER_COMFYUI_URL = `${process.env.VITE_BASE_URL}`;
 
 export default defineConfig({
   base: '',
@@ -99,22 +101,22 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
       },
 
-      '/api': {
+      '/nick': {
         target: DEV_SERVER_COMFYUI_URL,
         // Return empty array for extensions API as these modules
         // are not on vite's dev server.
-        bypass: (req, res, options) => {
-          if (req.url === '/api/extensions') {
-            res.end(JSON.stringify([]))
-          }
-          return null
-        },
+        // bypass: (req, res, options) => {
+        //   if (req.url === '/nick/api/comfyui/extensions/') {
+        //     res.end(JSON.stringify([]))
+        //   }
+        //   return null
+        // },
       },
 
-      '/ws': {
-        target: DEV_SERVER_COMFYUI_URL,
-        ws: true
-      },
+      // '/ws': {
+      //   target: DEV_SERVER_COMFYUI_URL,
+      //   ws: true
+      // },
 
       '/testsubrouteindex': {
         target: 'http://localhost:5173',

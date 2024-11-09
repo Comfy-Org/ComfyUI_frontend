@@ -14,8 +14,9 @@ app.registerExtension({
           : undefined
 
         const widget = this.widgets.find((w) => w.name === 'filename_prefix')
+        console.log('onNodeCreated', widget)
         widget.serializeValue = () => {
-          return applyTextReplacements(app, widget.value)
+          return applyTextReplacements(app, `tt_` + widget.value)
         }
 
         return r

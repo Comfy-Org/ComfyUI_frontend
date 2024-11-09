@@ -177,13 +177,13 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
           newName: string
         ) => {
           const workflow = node.data
-          workflow.rename(newName)
+          workflow.rename(newName, node.data.path)
         },
         handleDelete: workflow.isTemporary
           ? undefined
           : (node: TreeExplorerNode<ComfyWorkflow>) => {
               const workflow = node.data
-              workflow.delete()
+              workflow.delete(node.data.path)
             },
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [

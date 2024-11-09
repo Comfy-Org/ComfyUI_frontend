@@ -47,6 +47,7 @@ export const useUserFileStore = defineStore('userFile', () => {
    * @param dir The directory to sync.
    */
   const syncFiles = async () => {
+    console.log('syncFiles')
     const files = await api.listUserDataFullInfo('')
 
     for (const file of files) {

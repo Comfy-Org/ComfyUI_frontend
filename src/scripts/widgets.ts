@@ -498,9 +498,12 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         subfolder = name.substring(0, folder_separator)
         name = name.substring(folder_separator + 1)
       }
-      img.src = api.apiURL(
-        `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
-      )
+      // http://localhost:5173/nick/api/comfyui/view?filename=/media/output/ComfyUI_api_00048_.png&type=output&rand=0.6687345174206274
+      // img.src = api.apiURL(
+      //   `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
+      // )
+      console.log('showImage', name)
+      img.src = `http://10.99.0.122/${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       // @ts-expect-error
       node.setSizeForImage?.()
     }

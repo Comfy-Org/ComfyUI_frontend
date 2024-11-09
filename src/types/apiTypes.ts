@@ -393,6 +393,13 @@ const zPromptResponse = z.object({
     })
     .optional()
 })
+const zPromptResp = z.object({
+  code: z.number(),
+  data: z.object({
+    task_id: z.string()
+  }),
+  msg: z.string()
+})
 
 const zDeviceStats = z.object({
   name: z.string(),
@@ -514,9 +521,19 @@ const zSettings = z.record(z.any()).and(
     .optional()
 )
 
+const zIWorkflowJSON = z.object({
+  parent: z.string()?.optional(),
+  workflow_id: z.string(),
+  name: z.string(),
+  description: z.string()
+})
+
+export type IWorkflowJSON = z.infer<typeof zIWorkflowJSON>
+
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
 export type ExtensionsResponse = z.infer<typeof zExtensionsResponse>
 export type PromptResponse = z.infer<typeof zPromptResponse>
+export type PromptResp = z.infer<typeof zPromptResp>
 export type Settings = z.infer<typeof zSettings>
 export type DeviceStats = z.infer<typeof zDeviceStats>
 export type SystemStats = z.infer<typeof zSystemStats>

@@ -80,19 +80,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   // Core menu commands
   registerCommands(['Workflow'], ['Comfy.NewBlankWorkflow'])
 
-  registerCommands(
-    ['Workflow'],
-    ['Comfy.OpenWorkflow', 'Comfy.BrowseTemplates']
-  )
-  registerCommands(
-    ['Workflow'],
-    [
-      'Comfy.SaveWorkflow',
-      'Comfy.SaveWorkflowAs',
-      'Comfy.ExportWorkflow',
-      'Comfy.ExportWorkflowAPI'
-    ]
-  )
+  registerCommands(['Workflow'], ['Comfy.OpenWorkflow'])
+  registerCommands(['Workflow'], ['Comfy.SaveWorkflow', 'Comfy.SaveWorkflowAs'])
 
   registerCommands(['Edit'], ['Comfy.Undo', 'Comfy.Redo'])
   registerCommands(['Edit'], ['Comfy.ClearWorkflow'])

@@ -93,7 +93,8 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     if (this.app.storageLocation === 'browser') {
       this.settingsValues = localStorage
     } else {
-      this.settingsValues = await api.getSettings()
+      const resp = await api.getSettings()
+      this.settingsValues = resp.data
     }
 
     // Trigger onChange for any settings added before load

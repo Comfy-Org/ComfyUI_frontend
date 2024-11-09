@@ -11,7 +11,7 @@ import {
 } from '@/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { markRaw, toRaw } from 'vue'
-import { UserDataFullInfo } from '@/types/apiTypes'
+import { IWorkflowJSON } from '@/types/apiTypes'
 import { useToastStore } from '@/stores/toastStore'
 import { showPromptDialog } from '@/services/dialogService'
 
@@ -65,18 +65,33 @@ export class ComfyWorkflowManager extends EventTarget {
 
   async loadWorkflows() {
     try {
-      const [files, _] = await Promise.all([
-        api.listUserDataFullInfo('workflows'),
-        this.workflowBookmarkStore?.loadBookmarks()
-      ])
+      // const [files, _] = await Promise.all([
+      //   api.listUserDataFullInfo('workflows'),
+      //   this.workflowBookmarkStore?.loadBookmarks()
+      // ])
 
-      files.forEach((file: UserDataFullInfo) => {
-        let workflow = this.workflowLookup[file.path]
+      // files.forEach((file: UserDataFullInfo) => {
+      //   let workflow = this.workflowLookup[file.path]
+      //   if (!workflow) {
+      //     workflow = new ComfyWorkflow(this, file.path, file.path.split('/'))
+      //     this.workflowLookup[workflow.path] = workflow
+      //   }
+      // })
+
+      const [files] = await Promise.all([
+        api.getWorkflowList()
+        // this.workflowBookmarkStore?.loadBookmarks()
+      ])
+      files.forEach((file: IWorkflowJSON) => {
+        let workflow = this.workflowLookup[file.name]
+        console.log(workflow)
         if (!workflow) {
-          workflow = new ComfyWorkflow(this, file.path, file.path.split('/'))
+          workflow = new ComfyWorkflow(this, file.workflow_id, [file.name])
           this.workflowLookup[workflow.path] = workflow
         }
       })
+
+      // console.log(this.workflowLookup, "workflowLookup")
     } catch (error) {
       useToastStore().addAlert(
         'Error loading workflows: ' + (error.message ?? error)
@@ -215,28 +230,32 @@ export class ComfyWorkflow {
 
   private updatePath(path: string, pathParts: string[]) {
     this.path = path
+    const [name] = pathParts || []
+    this.name = name || path
 
-    if (!pathParts) {
-      if (!path.includes('\\')) {
-        pathParts = path.split('/')
-      } else {
-        pathParts = path.split('\\')
-      }
-    }
+    // this.path = path
+    // console.log(pathParts)
 
-    this.pathParts = pathParts
-    this.name = trimJsonExt(pathParts[pathParts.length - 1])
+    // if (!pathParts) {
+    //   if (!path.includes('\\')) {
+    //     pathParts = path.split('/')
+    //   } else {
+    //     pathParts = path.split('\\')
+    //   }
+    // }
+
+    // this.pathParts = pathParts
+    // this.name = trimJsonExt(pathParts[pathParts.length - 1])
   }
 
   async getWorkflowData() {
-    const resp = await api.getUserData('workflows/' + this.path)
-    if (resp.status !== 200) {
-      useToastStore().addAlert(
-        `Error loading workflow file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+    const resp = await api.getWorkflowJSON(this.path)
+    console.log(resp)
+    if (!resp) {
+      useToastStore().addAlert(`Error loading workflow file`)
       return
     }
-    return await resp.json()
+    return resp
   }
 
   async load() {
@@ -281,43 +300,50 @@ export class ComfyWorkflow {
     }
   }
 
-  async rename(path: string) {
-    path = appendJsonExt(path)
-    let resp = await api.moveUserData(
-      'workflows/' + this.path,
-      'workflows/' + path
-    )
-
-    if (resp.status === 409) {
-      if (
-        !confirm(
-          `Workflow '${path}' already exists, do you want to overwrite it?`
-        )
-      )
-        return resp
-      resp = await api.moveUserData(
-        'workflows/' + this.path,
-        'workflows/' + path,
-        { overwrite: true }
-      )
-    }
-
-    if (resp.status !== 200) {
-      useToastStore().addAlert(
-        `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+  async rename(path: string, workflow: string) {
+    path = trimJsonExt(path)
+    console.log(path)
+    let resp = await api.ftSaveWorkflow({ name: path }, workflow)
+    if (resp.code != 0) {
+      useToastStore().addAlert(`Error renaming workflow file error`)
       return
     }
 
-    const isFav = this.isFavorite
-    if (isFav) {
-      await this.favorite(false)
-    }
-    path = (await resp.json()).substring('workflows/'.length)
-    this.updatePath(path, null)
-    if (isFav) {
-      await this.favorite(true)
-    }
+    // let resp = await api.moveUserData(
+    //   'workflows/' + this.path,
+    //   'workflows/' + path
+    // )
+
+    // if (resp.status === 409) {
+    //   if (
+    //     !confirm(
+    //       `Workflow '${path}' already exists, do you want to overwrite it?`
+    //     )
+    //   )
+    //     return resp
+    //   resp = await api.moveUserData(
+    //     'workflows/' + this.path,
+    //     'workflows/' + path,
+    //     { overwrite: true }
+    //   )
+    // }
+
+    // if (resp.status !== 200) {
+    //   useToastStore().addAlert(
+    //     `Error renaming workflow file '${this.path}': ${resp.status} ${resp.statusText}`
+    //   )
+    //   return
+    // }
+
+    // const isFav = this.isFavorite
+    // if (isFav) {
+    //   await this.favorite(false)
+    // }
+    // path = (await resp.json()).substring('workflows/'.length)
+    this.updatePath(workflow, [path])
+    // if (isFav) {
+    //   await this.favorite(true)
+    // }
     this.manager.dispatchEvent(new CustomEvent('rename', { detail: this }))
     setStorageValue('Comfy.PreviousWorkflow', this.path ?? '')
   }
@@ -338,17 +364,16 @@ export class ComfyWorkflow {
     localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
-  async delete() {
+  async delete(workflow_id: string) {
     // TODO: fix delete of current workflow - should mark workflow as unsaved and when saving use old name by default
 
     if (this.isFavorite) {
       await this.favorite(false)
     }
-    const resp = await api.deleteUserData('workflows/' + this.path)
-    if (resp.status !== 204) {
-      useToastStore().addAlert(
-        `Error removing user data file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+    // const resp = await api.deleteUserData('workflows/' + this.path)
+    const resp = await api.deleteWorkflow(workflow_id)
+    if (resp.status != 200) {
+      useToastStore().addAlert(`Error removing user data file`)
     }
 
     this.unsaved = true
@@ -372,40 +397,48 @@ export class ComfyWorkflow {
       path = await showPromptDialog({
         title: 'Save workflow',
         message: 'Enter the filename:',
-        defaultValue: trimJsonExt(this.path) ?? this.name ?? 'workflow'
+        defaultValue: this.name ?? this.path ?? 'workflow'
       })
       if (!path) return
     }
-
-    path = appendJsonExt(path)
-
     const p = await this.manager.app.graphToPrompt()
-    const json = JSON.stringify(p.workflow, null, 2)
-    let resp = await api.storeUserData('workflows/' + path, json, {
-      stringify: false,
-      throwOnError: false,
-      overwrite
+    const resp = await api.createWorkflow({
+      name: path,
+      description: '',
+      workflow_data: p.workflow
     })
-    if (resp.status === 409) {
-      if (
-        !confirm(
-          `Workflow '${path}' already exists, do you want to overwrite it?`
-        )
-      )
-        return
-      resp = await api.storeUserData('workflows/' + path, json, {
-        stringify: false
-      })
-    }
-
-    if (resp.status !== 200) {
-      useToastStore().addAlert(
-        `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+    if (resp.code !== 0) {
+      useToastStore().addAlert(`Error saving workflow `)
       return
     }
+    // console.log(this.path, "this.path");
+    // const json = JSON.stringify(p.workflow, null, 2)
 
-    path = (await resp.json()).substring('workflows/'.length)
+    // let resp = await api.storeUserData('workflows/' + path, json, {
+    //   stringify: false,
+    //   throwOnError: false,
+    //   overwrite
+    // })
+    // if (resp.status === 409) {
+    //   if (
+    //     !confirm(
+    //       `Workflow '${path}' already exists, do you want to overwrite it?`
+    //     )
+    //   )
+    //     return
+    //   resp = await api.storeUserData('workflows/' + path, json, {
+    //     stringify: false
+    //   })
+    // }
+
+    // if (resp.status !== 200) {
+    //   useToastStore().addAlert(
+    //     `Error saving workflow '${this.path}': ${resp.status} ${resp.statusText}`
+    //   )
+    //   return
+    // }
+
+    // path = (await resp.json()).substring('workflows/'.length)
 
     if (!this.path) {
       // Saved new workflow, patch this instance

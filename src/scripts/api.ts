@@ -8,19 +8,25 @@ import {
   validateComfyNodeDef,
   EmbeddingsResponse,
   ExtensionsResponse,
-  PromptResponse,
+  // PromptResponse,
+  PromptResp,
   SystemStats,
   User,
   Settings,
-  UserDataFullInfo
+  UserDataFullInfo,
+  IWorkflowJSON
 } from '@/types/apiTypes'
 import axios from 'axios'
+import { useUrlSearchParams } from '@vueuse/core'
+
+import data from '@/ttt.json'
 
 interface QueuePromptRequestBody {
   client_id: string
   // Mapping from node id to node info + input values
   // TODO: Type this.
-  prompt: Record<number, any>
+  // prompt: Record<number, any>
+  prompt_data: Record<number, any>
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -44,7 +50,7 @@ class ComfyApi extends EventTarget {
   constructor() {
     super()
     this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
+    this.api_base = '' //location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
     this.initialClientId = sessionStorage.getItem('clientId')
   }
@@ -54,7 +60,7 @@ class ComfyApi extends EventTarget {
   }
 
   apiURL(route: string): string {
-    return this.api_base + '/api' + route
+    return this.api_base + '/nick/api/comfyui' + route
   }
 
   fileURL(route: string): string {
@@ -72,6 +78,11 @@ class ComfyApi extends EventTarget {
       options.cache = 'no-cache'
     }
     options.headers['Comfy-User'] = this.user
+
+    const token = localStorage.getItem('authToken') || ''
+    if (token) {
+      options.headers['Authorization'] = `Bearer ${token}`
+    }
     return fetch(this.apiURL(route), options)
   }
 
@@ -250,14 +261,14 @@ class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    // this.#createSocket()
   }
 
   /**
    * Gets a list of extension urls
    */
-  async getExtensions(): Promise<ExtensionsResponse> {
-    const resp = await this.fetchApi('/extensions', { cache: 'no-store' })
+  async getExtensions(): Promise<{ data: ExtensionsResponse }> {
+    const resp = await this.fetchApi('/extensions/', { cache: 'no-store' })
     return await resp.json()
   }
 
@@ -276,8 +287,11 @@ class ComfyApi extends EventTarget {
   async getNodeDefs({ validate = false }: { validate?: boolean } = {}): Promise<
     Record<string, ComfyNodeDef>
   > {
-    const resp = await this.fetchApi('/object_info', { cache: 'no-store' })
-    const objectInfoUnsafe = await resp.json()
+    // const resp = await this.fetchApi('/object_info/', { cache: 'no-store' })
+    // const result = await resp.json();
+    // const objectInfoUnsafe = result.data;
+    const objectInfoUnsafe = data
+
     if (!validate) {
       return objectInfoUnsafe
     }
@@ -305,13 +319,12 @@ class ComfyApi extends EventTarget {
    * @param {number} number The index at which to queue the prompt, passing -1 will insert the prompt at the front of the queue
    * @param {object} prompt The prompt data to queue
    */
-  async queuePrompt(
-    number: number,
-    { output, workflow }
-  ): Promise<PromptResponse> {
+  async queuePrompt(number: number, { output, workflow }): Promise<PromptResp> {
+    // Promise<PromptResponse>
     const body: QueuePromptRequestBody = {
       client_id: this.clientId,
-      prompt: output,
+      //prompt: output,
+      prompt_data: output,
       extra_data: { extra_pnginfo: { workflow } }
     }
 
@@ -321,7 +334,9 @@ class ComfyApi extends EventTarget {
       body.number = number
     }
 
-    const res = await this.fetchApi('/prompt', {
+    const workflow_id = useUrlSearchParams()?.workflow as string
+    const promptParams = `${new URLSearchParams({ workflow_id })}`
+    const res = await this.fetchApi(`/prompt/?${promptParams}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -338,12 +353,20 @@ class ComfyApi extends EventTarget {
     return await res.json()
   }
 
+  async getPromptPulling(task_id: string) {
+    const res = await this.fetchApi(`/${task_id}/status/`)
+    if (res.status !== 200) {
+      return null
+    }
+    return await res.json()
+  }
+
   /**
    * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
    * @returns The list of model folder keys
    */
   async getModelFolders(): Promise<string[]> {
-    const res = await this.fetchApi(`/models`)
+    const res = await this.fetchApi(`/models/`)
     if (res.status === 404) {
       return null
     }
@@ -356,7 +379,7 @@ class ComfyApi extends EventTarget {
    * @returns The list of model filenames within the specified folder
    */
   async getModels(folder: string) {
-    const res = await this.fetchApi(`/models/${folder}`)
+    const res = await this.fetchApi(`/models/${folder}/`)
     if (res.status === 404) {
       return null
     }
@@ -371,7 +394,7 @@ class ComfyApi extends EventTarget {
    */
   async viewMetadata(folder: string, model: string) {
     const res = await this.fetchApi(
-      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
+      `/view_metadata/${folder}/?filename=${encodeURIComponent(model)}`
     )
     const rawResponse = await res.text()
     if (!rawResponse) {
@@ -562,7 +585,7 @@ class ComfyApi extends EventTarget {
    * Gets all setting values for the current user
    * @returns { Promise<string, unknown> } A dictionary of id -> value
    */
-  async getSettings(): Promise<Settings> {
+  async getSettings(): Promise<{ data: Settings }> {
     return (await this.fetchApi('/settings')).json()
   }
 
@@ -600,6 +623,19 @@ class ComfyApi extends EventTarget {
    */
   async getUserData(file: string, options?: RequestInit) {
     return this.fetchApi(`/userdata/${encodeURIComponent(file)}`, options)
+  }
+
+  /*
+   * get workflow.json into graph
+   */
+  async getWorkflowJSON(id: string) {
+    const resp = await this.fetchApi(
+      `/workflow/?${new URLSearchParams({
+        id
+      })}`
+    )
+    const result = await resp.json() // Promise<{ code: number, data: IWorkflowJSON[], msg: string }>
+    return result.code == 0 ? result?.data?.workflow_data : null
   }
 
   /**
@@ -719,6 +755,53 @@ class ComfyApi extends EventTarget {
       )
     }
     return resp.json()
+  }
+
+  async getWorkflowList(): Promise<IWorkflowJSON[]> {
+    const resp = await this.fetchApi('/workflows/')
+    const result = await resp.json() // Promise<{ code: number, data: IWorkflowJSON[], msg: string }>
+    return result.code == 0 ? result.data || [] : []
+  }
+
+  async ftSaveWorkflow(
+    data: {
+      name?: string
+      workflow_data?: Record<string, any>
+      description?: string
+    },
+    workflowId?: string
+  ) {
+    const workflow_id = workflowId || (useUrlSearchParams()?.workflow as string)
+    const res = await this.fetchApi(`/workflow/${workflow_id}/`, {
+      method: 'put',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    return res.json()
+  }
+
+  async deleteWorkflow(workflow_id: string): Promise<any> {
+    const resp = await this.fetchApi(`/workflow/${workflow_id}/`, {
+      method: 'DELETE'
+    })
+    return resp
+  }
+
+  async createWorkflow(data: {
+    name: string
+    workflow_data: Record<string, any>
+    description?: string
+  }) {
+    const res = await this.fetchApi(`/workflow/`, {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    return res.json()
   }
 
   async getLogs(): Promise<string> {

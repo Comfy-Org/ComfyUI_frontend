@@ -23,7 +23,7 @@ import {
 import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
-import { getStorageValue } from './utils'
+// import { getStorageValue } from './utils'
 import { ComfyWorkflowManager, ComfyWorkflow } from './workflows'
 import {
   LGraphCanvas,
@@ -39,7 +39,7 @@ import {
   useNodeDefStore
 } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
-import _ from 'lodash'
+import _, { result } from 'lodash'
 import {
   showExecutionErrorDialog,
   showLoadWorkflowWarning,
@@ -56,6 +56,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
+import { useUrlSearchParams } from '@vueuse/core'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -84,6 +85,9 @@ export class ComfyApp {
    * @type {{number: number, batchCount: number}[]}
    */
   #queueItems = []
+
+  /* List of prompt pulling */
+  #queuePullingItems = []
   /**
    * If the queue is currently being processed
    * @type {boolean}
@@ -701,12 +705,18 @@ export class ComfyApp {
             imagesChanged = true
             imgURLs = imgURLs.concat(
               output.images.map((params) => {
-                return api.apiURL(
-                  '/view?' +
-                    new URLSearchParams(params).toString() +
-                    (this.animatedImages ? '' : app.getPreviewFormatParam()) +
-                    app.getRandParam()
-                )
+                const baseUrl = import.meta.env.VITE_BASE_URL || ''
+                const urlPath =
+                  `${baseUrl}${params.filename}?type=${params.type}` +
+                  (this.animatedImages ? '' : app.getPreviewFormatParam()) +
+                  app.getRandParam()
+                return urlPath
+                // return api.apiURL(
+                //   '/view?' +
+                //     new URLSearchParams(params).toString() +
+                //     (this.animatedImages ? '' : app.getPreviewFormatParam()) +
+                //     app.getRandParam()
+                // )
               })
             )
           }
@@ -1706,7 +1716,8 @@ export class ComfyApp {
   async #loadExtensions() {
     useExtensionStore().loadDisabledExtensionNames()
 
-    const extensions = await api.getExtensions()
+    const result = await api.getExtensions()
+    const extensions = result.data
     this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 
     // Need to load core extensions first as some custom extensions
@@ -1742,8 +1753,13 @@ export class ComfyApp {
   }
 
   async #setUser() {
-    const userConfig = await api.getUserConfig()
-    this.storageLocation = userConfig.storage
+    // const userConfig = await api.getUserConfig();
+    const userConfig = {
+      migrated: true,
+      storage: 'server',
+      users: ''
+    }
+    this.storageLocation = userConfig.storage as StorageLocation
     if (typeof userConfig.migrated == 'boolean') {
       // Single user mode migrated true/false for if the default user is created
       if (!userConfig.migrated && this.storageLocation === 'server') {
@@ -1821,7 +1837,7 @@ export class ComfyApp {
     this.resizeCanvas()
 
     await Promise.all([
-      this.workflowManager.loadWorkflows(),
+      this.workflowManager.loadWorkflows(), // 本地保存操作的工作流
       this.ui.settings.load()
     ])
     await this.#loadExtensions()
@@ -1871,41 +1887,41 @@ export class ComfyApp {
     initWidgets(this)
 
     // Load previous workflow
-    let restored = false
-    try {
-      const loadWorkflow = async (json) => {
-        if (json) {
-          const workflow = JSON.parse(json)
-          const workflowName = getStorageValue('Comfy.PreviousWorkflow')
-          await this.loadGraphData(workflow, true, true, workflowName)
-          return true
-        }
-      }
-      const clientId = api.initialClientId ?? api.clientId
-      restored =
-        (clientId &&
-          (await loadWorkflow(
-            sessionStorage.getItem(`workflow:${clientId}`)
-          ))) ||
-        (await loadWorkflow(localStorage.getItem('workflow')))
-    } catch (err) {
-      console.error('Error loading previous workflow', err)
-    }
+    // let restored = false
+    // try {
+    //   const loadWorkflow = async (json) => {
+    //     if (json) {
+    //       const workflow = JSON.parse(json)
+    //       const workflowName = getStorageValue('Comfy.PreviousWorkflow')
+    //       await this.loadGraphData(workflow, true, true, workflowName)
+    //       return true
+    //     }
+    //   }
+    //   const clientId = api.initialClientId ?? api.clientId
+    //   restored =
+    //     (clientId &&
+    //       (await loadWorkflow(
+    //         sessionStorage.getItem(`workflow:${clientId}`)
+    //       ))) ||
+    //     (await loadWorkflow(localStorage.getItem('workflow')))
+    // } catch (err) {
+    //   console.error('Error loading previous workflow', err)
+    // }
 
-    // We failed to restore a workflow so load the default
-    if (!restored) {
-      await this.loadGraphData()
-    }
+    // // We failed to restore a workflow so load the default
+    // if (!restored) {
+    await this.loadGraphData()
+    // }
 
-    // Save current workflow automatically
-    setInterval(() => {
-      const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-      const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
-      localStorage.setItem('workflow', workflow)
-      if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
-      }
-    }, 1000)
+    // // Save current workflow automatically
+    // setInterval(() => {
+    //   const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+    //   const workflow = JSON.stringify(this.graph.serialize({ sortNodes }))
+    //   localStorage.setItem('workflow', workflow)
+    //   if (api.clientId) {
+    //     sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+    //   }
+    // }, 1000)
 
     this.#addDrawNodeHandler()
     this.#addDrawGroupsHandler()
@@ -2006,6 +2022,7 @@ export class ComfyApp {
         const requiredInputs = nodeData.input.required
 
         var inputs = nodeData['input']['required']
+        console.log(inputs)
         if (nodeData['input']['optional'] != undefined) {
           inputs = Object.assign(
             {},
@@ -2228,7 +2245,15 @@ export class ComfyApp {
 
     let reset_invalid_values = false
     if (!graphData) {
-      graphData = defaultGraph
+      const { workflow } = useUrlSearchParams()
+      // url params workflow id
+      if (workflow) {
+        const data = await api.getWorkflowJSON(workflow as string)
+        graphData = data || defaultGraph
+      } else {
+        graphData = defaultGraph
+      }
+
       reset_invalid_values = true
     }
 
@@ -2623,20 +2648,26 @@ export class ComfyApp {
 
         for (let i = 0; i < batchCount; i++) {
           const p = await this.graphToPrompt()
-
           try {
             const res = await api.queuePrompt(number, p)
-            this.lastNodeErrors = res.node_errors
-            if (this.lastNodeErrors.length > 0) {
-              this.canvas.draw(true, true)
-            } else {
-              try {
-                this.workflowManager.storePrompt({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output)
-                })
-              } catch (error) {}
+            if (res.code == 0) {
+              const task_id = res.data.task_id
+              if (task_id) {
+                this.#queuePullingItems.push(task_id)
+                this.pollingPromptList()
+              }
             }
+            // this.lastNodeErrors = res.node_errors
+            // if (this.lastNodeErrors?.length > 0) {
+            //   this.canvas.draw(true, true)
+            // } else {
+            //   try {
+            //     this.workflowManager.storePrompt({
+            //       id: res.prompt_id,
+            //       nodes: Object.keys(p.output)
+            //     })
+            //   } catch (error) {}
+            // }
           } catch (error) {
             const formattedError = this.#formatPromptError(error)
             this.ui.dialog.show(formattedError)
@@ -3009,6 +3040,59 @@ export class ComfyApp {
     const graphNode = this.graph.getNodeById(nodeId)
     if (!graphNode) return
     this.canvas.centerOnNode(graphNode)
+  }
+
+  async pollingPromptList() {
+    const taskId = this.#queuePullingItems.slice(-1).pop()
+    if (taskId) {
+      useToastStore().add({
+        severity: 'warn',
+        summary: '提示',
+        detail: '排队中...'
+      })
+      const result = await this.pollingPrompt(taskId)
+      result.forEach((item) => {
+        api.dispatchEvent(
+          new CustomEvent('executed', {
+            detail: {
+              node: `${item.node_id}`,
+              display_node: `${item.node_id}`,
+              output: {
+                images: [
+                  {
+                    filename: item.url,
+                    type: 'output'
+                  }
+                ]
+              }
+            }
+          })
+        )
+      })
+      useToastStore().removeAll()
+    }
+  }
+  async pollingPrompt(taskId: string): Promise<any[]> {
+    let timer = null
+    return new Promise((resolve) => {
+      if (timer) clearInterval(timer)
+      timer = setInterval(async () => {
+        const res = await api.getPromptPulling(taskId)
+        if (res.code == 0) {
+          const { status, result } = res.data
+          if (status === 'done') {
+            this.#queuePullingItems = this.#queuePullingItems?.filter(
+              (id) => id != taskId
+            )
+            if (timer) clearInterval(timer)
+            resolve(result ?? [])
+          }
+        } else {
+          if (timer) clearInterval(timer)
+          resolve([])
+        }
+      }, 1000)
+    })
   }
 }
 

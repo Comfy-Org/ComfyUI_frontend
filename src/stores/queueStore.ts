@@ -289,6 +289,7 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
+    console.log('queueStore')
     await app.loadGraphData(toRaw(this.workflow))
     if (this.outputs) {
       app.nodeOutputs = toRaw(this.outputs)
