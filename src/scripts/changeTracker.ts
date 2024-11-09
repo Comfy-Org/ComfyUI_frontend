@@ -8,6 +8,7 @@ import type { ExecutedWsMessage } from '@/types/apiTypes'
 import { useExecutionStore } from '@/stores/executionStore'
 import _ from 'lodash'
 import * as jsondiffpatch from 'jsondiffpatch'
+import log from 'loglevel'
 
 function clone(obj: any) {
   try {
@@ -20,6 +21,10 @@ function clone(obj: any) {
 
   return JSON.parse(JSON.stringify(obj))
 }
+
+const logger = log.getLogger('ChangeTracker')
+// Change to debug for more verbose logging
+logger.setLevel('info')
 
 export class ChangeTracker {
   static MAX_HISTORY = 50
@@ -63,7 +68,7 @@ export class ChangeTracker {
     // Do not reset the state if we are restoring.
     if (this.restoringState) return
 
-    console.debug('Reset State')
+    logger.debug('Reset State')
     this.activeState = state ?? this.activeState
     this.initialState = clone(this.activeState)
   }
@@ -99,7 +104,7 @@ export class ChangeTracker {
           this.initialState,
           this.activeState
         )
-        console.debug('Graph diff:', diff)
+        logger.debug('Graph diff:', diff)
       }
     }
   }
@@ -117,7 +122,7 @@ export class ChangeTracker {
       if (this.undoQueue.length > ChangeTracker.MAX_HISTORY) {
         this.undoQueue.shift()
       }
-      console.debug('Diff detected. Undo queue length:', this.undoQueue.length)
+      logger.debug('Diff detected. Undo queue length:', this.undoQueue.length)
 
       this.activeState = clone(currentState)
       this.redoQueue.length = 0
@@ -148,7 +153,7 @@ export class ChangeTracker {
 
   async undo() {
     await this.updateState(this.undoQueue, this.redoQueue)
-    console.debug(
+    logger.debug(
       'Undo. Undo queue length:',
       this.undoQueue.length,
       'Redo queue length:',
@@ -158,7 +163,7 @@ export class ChangeTracker {
 
   async redo() {
     await this.updateState(this.redoQueue, this.undoQueue)
-    console.debug(
+    logger.debug(
       'Redo. Undo queue length:',
       this.undoQueue.length,
       'Redo queue length:',
@@ -233,7 +238,7 @@ export class ChangeTracker {
 
           // If our active element is some type of input then handle changes after they're done
           if (ChangeTracker.bindInput(app, bindInputEl)) return
-          console.debug('checkState on keydown')
+          logger.debug('checkState on keydown')
           changeTracker.checkState()
         })
       },
@@ -243,25 +248,25 @@ export class ChangeTracker {
     window.addEventListener('keyup', (e) => {
       if (keyIgnored) {
         keyIgnored = false
-        console.debug('checkState on keyup')
+        logger.debug('checkState on keyup')
         checkState()
       }
     })
 
     // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
-      console.debug('checkState on mouseup')
+      logger.debug('checkState on mouseup')
       checkState()
     })
 
     // Handle prompt queue event for dynamic widget changes
     api.addEventListener('promptQueued', () => {
-      console.debug('checkState on promptQueued')
+      logger.debug('checkState on promptQueued')
       checkState()
     })
 
     api.addEventListener('graphCleared', () => {
-      console.debug('checkState on graphCleared')
+      logger.debug('checkState on graphCleared')
       checkState()
     })
 
@@ -269,14 +274,14 @@ export class ChangeTracker {
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
-      console.debug('checkState on processMouseUp')
+      logger.debug('checkState on processMouseUp')
       checkState()
       return v
     }
     const processMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       const v = processMouseDown.apply(this, [e])
-      console.debug('checkState on processMouseDown')
+      logger.debug('checkState on processMouseDown')
       checkState()
       return v
     }
@@ -293,7 +298,7 @@ export class ChangeTracker {
         callback(v)
         checkState()
       }
-      console.debug('checkState on prompt')
+      logger.debug('checkState on prompt')
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
@@ -301,7 +306,7 @@ export class ChangeTracker {
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
-      console.debug('checkState on contextMenuClose')
+      logger.debug('checkState on contextMenuClose')
       checkState()
       return v
     }
@@ -311,7 +316,7 @@ export class ChangeTracker {
     LiteGraph.LGraph.prototype.onNodeAdded = function (node: LGraphNode) {
       const v = onNodeAdded?.apply(this, [node])
       if (!app?.configuringGraph) {
-        console.debug('checkState on onNodeAdded')
+        logger.debug('checkState on onNodeAdded')
         checkState()
       }
       return v
