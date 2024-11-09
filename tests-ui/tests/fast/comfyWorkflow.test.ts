@@ -32,10 +32,11 @@ describe('parseComfyWorkflow', () => {
     workflow.version = undefined
     expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-    workflow.version = '1.0.1' // Invalid format.
+    workflow.version = '1.0.1' // Invalid format (string)
     expect(await validateComfyWorkflow(workflow)).toBeNull()
 
-    workflow.version = 1
+    // 2018-2024 schema: 0.4
+    workflow.version = 0.4
     expect(await validateComfyWorkflow(workflow)).not.toBeNull()
   })
 
