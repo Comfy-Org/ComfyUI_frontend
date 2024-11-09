@@ -100,8 +100,6 @@ const fileSize = computed(() =>
 )
 const [savePath, filename] = props.label.split('/')
 
-console.info({ savePath, filename })
-
 const downloads: ModelDownload[] = await DownloadManager.getAllDownloads()
 const modelDownload = downloads.find(({ url }) => url === props.url)
 
