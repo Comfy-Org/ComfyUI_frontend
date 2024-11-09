@@ -54,34 +54,34 @@ test.describe('Change Tracker', () => {
   })
 
   test('Can undo & redo user changes', async ({ comfyPage }) => {
-    comfyPage.clickEmptySpace()
+    await comfyPage.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
 
-    comfyPage.dragAndDrop(
+    await comfyPage.dragAndDrop(
       comfyPage.clipTextEncodeNode2OutputSlot,
       comfyPage.kSamplerTitlebar
     )
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step1.png')
 
-    comfyPage.ctrlZ()
+    await comfyPage.ctrlZ()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
 
-    comfyPage.dragAndDrop(
+    await comfyPage.dragAndDrop(
       comfyPage.clipTextEncodeNode1OutputSlot,
       comfyPage.kSamplerTitlebar
     )
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
 
     // Test what a real person does
-    comfyPage.ctrlZ()
-    comfyPage.ctrlZ()
-    comfyPage.ctrlZ()
-    comfyPage.ctrlZ()
+    await comfyPage.ctrlZ()
+    await comfyPage.ctrlZ()
+    await comfyPage.ctrlZ()
+    await comfyPage.ctrlZ()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-initial-state.png')
 
     // Test past the bounds of the buffer
-    comfyPage.ctrlY()
-    comfyPage.ctrlY()
+    await comfyPage.ctrlY()
+    await comfyPage.ctrlY()
     await expect(comfyPage.canvas).toHaveScreenshot('undo-step3.png')
   })
 
