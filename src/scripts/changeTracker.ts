@@ -30,6 +30,10 @@ export class ChangeTracker {
   undoQueue: ComfyWorkflowJSON[] = []
   redoQueue: ComfyWorkflowJSON[] = []
   changeCount: number = 0
+  /**
+   * Whether the redo/undo restoring is in progress.
+   */
+  private restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Record<string, any>
@@ -56,6 +60,10 @@ export class ChangeTracker {
    * Save the current state as the initial state.
    */
   reset(state?: ComfyWorkflowJSON) {
+    // Do not reset the state if we are restoring.
+    if (this.restoringState) return
+
+    console.debug('Reset State')
     this.activeState = state ?? this.activeState
     this.initialState = clone(this.activeState)
   }
@@ -91,8 +99,6 @@ export class ChangeTracker {
           this.initialState,
           this.activeState
         )
-        console.log(this.initialState.nodes)
-        console.log(this.activeState.nodes)
         console.debug('Graph diff:', diff)
       }
     }
@@ -126,12 +132,17 @@ export class ChangeTracker {
     const prevState = source.pop()
     if (prevState) {
       target.push(this.activeState!)
-      await this.app.loadGraphData(prevState, false, false, this.workflow, {
-        showMissingModelsDialog: false,
-        showMissingNodesDialog: false
-      })
-      this.activeState = prevState
-      this.updateModified()
+      this.restoringState = true
+      try {
+        await this.app.loadGraphData(prevState, false, false, this.workflow, {
+          showMissingModelsDialog: false,
+          showMissingNodesDialog: false
+        })
+        this.activeState = prevState
+        this.updateModified()
+      } finally {
+        this.restoringState = false
+      }
     }
   }
 
