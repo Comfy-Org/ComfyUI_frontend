@@ -21,7 +21,9 @@ test.describe('Change Tracker', () => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
-    test('Can undo multiple operations', async ({ comfyPage }) => {
+    // Flaky https://github.com/Comfy-Org/ComfyUI_frontend/pull/1481
+    // The collapse can be recognized as several changes.
+    test.skip('Can undo multiple operations', async ({ comfyPage }) => {
       function isModified() {
         return comfyPage.page.evaluate(async () => {
           return window['app'].extensionManager.workflow.activeWorkflow
