@@ -73,7 +73,7 @@ const handleModelHover = async () => {
     modelPreviewStyle.value.left = `${targetRect.left - 400}px`
   }
 
-  modelDef.value.load()
+  modelDef.value.load?.()
 }
 
 const container = ref<HTMLElement | null>(null)
@@ -106,7 +106,7 @@ onMounted(() => {
   modelContentElement.value = container.value?.closest('.p-tree-node-content')
   modelContentElement.value?.addEventListener('mouseenter', handleMouseEnter)
   modelContentElement.value?.addEventListener('mouseleave', handleMouseLeave)
-  modelDef.value.load()
+  modelDef.value.load?.()
 })
 
 onUnmounted(() => {

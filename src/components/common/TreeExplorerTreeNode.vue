@@ -10,25 +10,30 @@
     ]"
     ref="container"
   >
-    <div class="node-content">
-      <span class="node-label">
-        <slot name="before-label" :node="props.node"></slot>
-        <EditableText
-          :modelValue="node.label"
-          :isEditing="isEditing"
-          @edit="handleRename"
+    <div class="flex flex-col w-full">
+      <div class="node-content">
+        <span class="node-label">
+          <slot name="before-label" :node="props.node"></slot>
+          <EditableText
+            :modelValue="node.label"
+            :isEditing="isEditing"
+            @edit="handleRename"
+          />
+          <slot name="after-label" :node="props.node"></slot>
+        </span>
+        <Badge
+          v-if="showNodeBadgeText"
+          :value="nodeBadgeText"
+          severity="secondary"
+          class="leaf-count-badge"
         />
-        <slot name="after-label" :node="props.node"></slot>
-      </span>
-      <Badge
-        v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
-        severity="secondary"
-        class="leaf-count-badge"
-      />
-    </div>
-    <div class="node-actions">
-      <slot name="actions" :node="props.node"></slot>
+      </div>
+      <div class="node-actions">
+        <slot name="actions" :node="props.node"></slot>
+      </div>
+      <div v-if="node.progress">
+        <Progress :value="node.progress" :showLabel="false" class="w-full" />
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +48,7 @@ import type {
 } from '@/types/treeExplorerTypes'
 import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/hooks/errorHooks'
+import ProgressBar from 'primevue/progressbar'
 import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
 
 const props = defineProps<{

@@ -85,6 +85,7 @@ interface ModelDownload {
   url: string
   status: 'paused' | 'in_progress' | 'cancelled'
   progress: number
+  savePath: string
 }
 
 const { t } = useI18n()
@@ -98,6 +99,8 @@ const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
 const [savePath, filename] = props.label.split('/')
+
+console.info({ savePath, filename })
 
 const downloads: ModelDownload[] = await DownloadManager.getAllDownloads()
 const modelDownload = downloads.find(({ url }) => url === props.url)
@@ -116,8 +119,8 @@ DownloadManager.onDownloadProgress((data: ModelDownload) => {
 const triggerDownload = async () => {
   await DownloadManager.startDownload(
     props.url,
-    filename.trim(),
-    savePath.trim()
+    savePath.trim(),
+    filename.trim()
   )
 }
 

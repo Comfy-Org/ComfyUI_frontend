@@ -43,6 +43,7 @@ export interface TreeExplorerNode<T = any> {
   contextMenuItems?:
     | MenuItem[]
     | ((targetNode: RenderedTreeExplorerNode) => MenuItem[])
+  progress?: number
 }
 
 export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
@@ -53,6 +54,7 @@ export interface RenderedTreeExplorerNode<T = any> extends TreeExplorerNode<T> {
   totalLeaves: number
   /** Text to display on the leaf-count badge. Empty string means no badge. */
   badgeText?: string
+  progress?: number
 }
 
 export type TreeExplorerDragAndDropData<T = any> = {

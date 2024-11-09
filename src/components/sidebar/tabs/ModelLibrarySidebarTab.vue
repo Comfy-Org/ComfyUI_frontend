@@ -65,12 +65,18 @@ import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
+import { isElectron, electronAPI } from '@/utils/envUtil'
+import { useI18n } from 'vue-i18n'
+
+const { DownloadManager } = electronAPI()
+
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { t } = useI18n()
 
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
@@ -101,6 +107,8 @@ const root = computed<TreeNode>(() => {
     modelOrFolder.key.split('/')
   )
 })
+
+const downloads = ref<ModelOrFolder[]>([])
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
@@ -164,7 +172,23 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       }
     }
   }
-  return fillNodeInfo(root.value)
+
+  const result = fillNodeInfo(root.value)
+
+  return {
+    ...result,
+    children: [
+      {
+        key: 'downloads',
+        label: 'downloads',
+        leaf: false,
+        children: downloads.value,
+        badgeText: downloads.value.length.toString(),
+        data: {}
+      },
+      ...result.children
+    ]
+  }
 })
 
 watch(
@@ -183,9 +207,60 @@ watch(
   { deep: true }
 )
 
+const getDownloadLabel = ({
+  status,
+  filename
+}: Pick<ModelDownload, 'status' | 'filename'>) => {
+  switch (status) {
+    case 'cancelled':
+      return `${filename} [${t('electronFileDownload.cancelled')}]`
+    case 'paused':
+      return `${filename} [${t('electronFileDownload.paused')}]`
+    case 'completed':
+      return `${filename} [${t('electronFileDownload.completed')}]`
+    default:
+      return filename
+  }
+}
+
+const convertDownloadToModel = ({
+  url,
+  status,
+  filename,
+  savePath,
+  progress
+}: ModelDownload) => ({
+  key: url,
+  label: getDownloadLabel({ filename, status }),
+  leaf: true,
+  children: [],
+  progress: status === 'in_progress' ? progress : undefined,
+  data: {}
+})
+
 onMounted(async () => {
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     await modelStore.loadModels()
+  }
+
+  if (isElectron()) {
+    const allDownloads: ModelDownload[] =
+      await DownloadManager.getAllDownloads()
+
+    DownloadManager.onDownloadProgress((data: ModelDownload) => {
+      if (!downloads.value.find(({ key }) => key === data.url)) {
+        downloads.value.push(convertDownloadToModel(data))
+      }
+
+      let download = downloads.value.find(({ key }) => key === data.url)
+      download.progress =
+        data.status === 'in_progress' ? data.progress : undefined
+      download.label = getDownloadLabel(data)
+    })
+
+    for (const download of allDownloads) {
+      downloads.value.push(convertDownloadToModel(download))
+    }
   }
 })
 </script>

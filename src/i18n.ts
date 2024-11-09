@@ -68,6 +68,7 @@ const messages = {
         sortOrder: 'Sort Order'
       },
       modelLibrary: 'Model Library',
+      downloads: 'Downloads',
       queueTab: {
         showFlatList: 'Show Flat List',
         backToAllTasks: 'Back to All Tasks',
@@ -120,8 +121,10 @@ const messages = {
     },
     electronFileDownload: {
       pause: 'Pause Download',
+      paused: 'Paused',
       resume: 'Resume Download',
-      cancel: 'Cancel Download'
+      cancel: 'Cancel Download',
+      cancelled: 'Cancelled'
     }
   },
   zh: {
