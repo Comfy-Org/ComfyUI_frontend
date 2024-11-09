@@ -18,7 +18,7 @@ async function afterChange(comfyPage: ComfyPage) {
 test.describe('Change Tracker', () => {
   test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('UseNewMenu', 'Top')
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test('Can undo multiple operations', async ({ comfyPage }) => {
