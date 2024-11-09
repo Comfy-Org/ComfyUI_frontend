@@ -9,14 +9,14 @@
         @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip="$t('refresh')"
+        v-tooltip.bottom="$t('refresh')"
       />
       <Button
         icon="pi pi-cloud-download"
         @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip="$t('loadAllFolders')"
+        v-tooltip.bottom="$t('loadAllFolders')"
       />
     </template>
     <template #header>
@@ -75,7 +75,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
   if (!query) {
-    filteredModels.value = modelStore.models
+    filteredModels.value = []
     expandedKeys.value = {}
     return
   }
@@ -94,10 +94,9 @@ const handleSearch = async (query: string) => {
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = [
-    ...modelStore.modelFolders,
-    ...filteredModels.value
-  ]
+  const allNodes: ModelOrFolder[] = searchQuery.value
+    ? filteredModels.value
+    : [...modelStore.modelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )

@@ -63,6 +63,14 @@ There will be a 2-day feature freeze before each stable release. During this per
 ### Major features
 
 <details>
+  <summary>v1.3.22: Integrated server terminal</summary>
+
+Press Ctrl + ` to toggle integrated terminal.
+
+https://github.com/user-attachments/assets/eddedc6a-07a3-4a83-9475-63b3977f6d94
+</details>
+
+<details>
   <summary>v1.3.7: Keybinding customization</summary>
 
 ## Basic UI
@@ -106,6 +114,18 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
 </details>
 
 ### QoL changes
+
+<details>
+  <summary>v1.3.32: **Litegraph** Nested group</summary>
+
+https://github.com/user-attachments/assets/f51adeb1-028e-40af-81e4-0ac13075198a
+</details>
+
+<details>
+  <summary>v1.3.24: **Litegraph** Group selection</summary>
+
+https://github.com/user-attachments/assets/e6230a94-411e-4fba-90cb-6c694200adaa
+</details>
 
 <details>
   <summary>v1.3.6: **Litegraph** Toggle link visibility</summary>
@@ -194,6 +214,26 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 </details>
 
 ### Developer APIs
+
+<details>
+  <summary>v1.3.34: Register about panel badges</summary>
+
+```js
+app.registerExtension({
+  name: 'TestExtension1',
+  aboutPageBadges: [
+    {
+      label: 'Test Badge',
+      url: 'https://example.com',
+      icon: 'pi pi-box'
+    }
+  ]
+})
+```
+
+![image](https://github.com/user-attachments/assets/099e77ee-16ad-4141-b2fc-5e9d5075188b)
+
+</details>
 
 <details>
   <summary>v1.3.22: Register bottom panel tabs</summary>

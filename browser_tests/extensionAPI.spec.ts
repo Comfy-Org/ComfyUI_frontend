@@ -80,22 +80,81 @@ test.describe('Topbar commands', () => {
     )
   })
 
-  test('Should allow adding settings', async ({ comfyPage }) => {
-    await comfyPage.page.evaluate(() => {
-      window['app'].registerExtension({
-        name: 'TestExtension1',
-        settings: [
-          {
-            id: 'TestSetting',
-            name: 'Test Setting',
-            type: 'text',
-            defaultValue: 'Hello, world!'
-          }
-        ]
+  test.describe('Settings', () => {
+    test('Should allow adding settings', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          settings: [
+            {
+              id: 'TestSetting',
+              name: 'Test Setting',
+              type: 'text',
+              defaultValue: 'Hello, world!',
+              onChange: () => {
+                window['changeCount'] = (window['changeCount'] ?? 0) + 1
+              }
+            }
+          ]
+        })
       })
+      // onChange is called when the setting is first added
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(1)
+      expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, world!')
+
+      await comfyPage.setSetting('TestSetting', 'Hello, universe!')
+      expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
     })
-    expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, world!')
-    await comfyPage.setSetting('TestSetting', 'Hello, universe!')
-    expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
+
+    test('Should allow setting boolean settings', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          settings: [
+            {
+              id: 'Comfy.TestSetting',
+              name: 'Test Setting',
+              type: 'boolean',
+              defaultValue: false,
+              onChange: () => {
+                window['changeCount'] = (window['changeCount'] ?? 0) + 1
+              }
+            }
+          ]
+        })
+      })
+
+      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(false)
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(1)
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')
+      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(true)
+      expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
+    })
+  })
+
+  test.describe('About panel', () => {
+    test('Should allow adding badges', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          aboutPageBadges: [
+            {
+              label: 'Test Badge',
+              url: 'https://example.com',
+              icon: 'pi pi-box'
+            }
+          ]
+        })
+      })
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.goToAboutPanel()
+      const badge = comfyPage.page.locator('.about-badge').last()
+      expect(badge).toBeDefined()
+      expect(await badge.textContent()).toContain('Test Badge')
+    })
   })
 })

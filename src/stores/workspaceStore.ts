@@ -6,10 +6,16 @@ import { useQueueSettingsStore } from './queueStore'
 import { useCommandStore } from './commandStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 import { useSettingStore } from './settingStore'
+import { useWorkflowStore } from './workflowStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
   const shiftDown = ref(false)
+  /**
+   * Whether the workspace is in focus mode.
+   * When in focus mode, only the graph editor is visible.
+   */
+  const focusMode = ref(false)
 
   const toast = computed<ToastManager>(() => useToastStore())
   const queueSettings = computed(() => useQueueSettingsStore())
@@ -21,6 +27,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     get: useSettingStore().get,
     set: useSettingStore().set
   }))
+  const workflow = computed(() => useWorkflowStore())
 
   /**
    * Registers a sidebar tab.
@@ -52,11 +59,16 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   return {
     spinner,
     shiftDown,
+    focusMode,
+    toggleFocusMode: () => {
+      focusMode.value = !focusMode.value
+    },
     toast,
     queueSettings,
     command,
     sidebarTab,
     setting,
+    workflow,
 
     registerSidebarTab,
     unregisterSidebarTab,

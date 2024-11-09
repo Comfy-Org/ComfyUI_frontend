@@ -10,9 +10,9 @@ const zNodeType = z.string()
 const zQueueIndex = z.number()
 const zPromptId = z.string()
 const zResultItem = z.object({
-  filename: z.string(),
+  filename: z.string().optional(),
   subfolder: z.string().optional(),
-  type: z.string()
+  type: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
@@ -262,7 +262,9 @@ const zBaseInputSpecValue = z
     forceInput: z.boolean().optional(),
     lazy: z.boolean().optional(),
     rawLink: z.boolean().optional(),
-    tooltip: z.string().optional()
+    tooltip: z.string().optional(),
+    hidden: z.boolean().optional(),
+    advanced: z.boolean().optional()
   })
   .passthrough()
 
@@ -520,7 +522,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
       'Comfy.Extension.Disabled': z.array(z.string()),
       'Comfy.Settings.ExtensionPanel': z.boolean(),
-      'Comfy.LinkRenderMode': z.number()
+      'Comfy.LinkRenderMode': z.number(),
+      'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
+      'Comfy.Node.SnapHighlightsNode': z.boolean()
     })
     .optional()
 )

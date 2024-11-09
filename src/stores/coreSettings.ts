@@ -458,5 +458,23 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: LiteGraph.SPLINE_LINK, text: 'Spline' },
       { value: LiteGraph.HIDDEN_LINK, text: 'Hidden' }
     ]
+  },
+  {
+    id: 'Comfy.Node.AutoSnapLinkToSlot',
+    name: 'Auto snap link to node slot',
+    tooltip:
+      'When dragging a link over a node, the link automatically snap to a viable input slot on the node',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.29'
+  },
+  {
+    id: 'Comfy.Node.SnapHighlightsNode',
+    name: 'Snap highlights node',
+    tooltip:
+      'When dragging a link over a node with viable input slot, highlight the node',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.29'
   }
 ]

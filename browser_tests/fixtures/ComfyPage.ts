@@ -17,6 +17,7 @@ import {
 import { Topbar } from './components/Topbar'
 import { NodeReference } from './utils/litegraphUtils'
 import type { Position, Size } from './types'
+import { SettingDialog } from './components/SettingDialog'
 
 class ComfyMenu {
   public readonly sideToolbar: Locator
@@ -89,6 +90,15 @@ export class ComfyPage {
   public readonly menu: ComfyMenu
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
+  public readonly settingDialog: SettingDialog
+
+  /** Worker index to test user ID */
+  public readonly userIds: string[] = []
+
+  /** Test user ID for the current context */
+  get id() {
+    return this.userIds[comfyPageFixture.info().parallelIndex]
+  }
 
   constructor(
     public readonly page: Page,
@@ -104,6 +114,7 @@ export class ComfyPage {
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
+    this.settingDialog = new SettingDialog(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -143,7 +154,7 @@ export class ComfyPage {
       {
         data: {
           tree_structure: this.convertLeafToContent(structure),
-          base_path: 'user/default/workflows'
+          base_path: `user/${this.id}/workflows`
         }
       }
     )
@@ -153,6 +164,31 @@ export class ComfyPage {
         `Failed to setup workflows directory: ${await resp.text()}`
       )
     }
+  }
+
+  async setupUser(username: string) {
+    const res = await this.request.get(`${this.url}/api/users`)
+    if (res.status() !== 200)
+      throw new Error(`Failed to retrieve users: ${await res.text()}`)
+
+    const apiRes = await res.json()
+    const user = Object.entries(apiRes?.users ?? {}).find(
+      ([, name]) => name === username
+    )
+    const id = user?.[0]
+
+    return id ? id : await this.createUser(username)
+  }
+
+  async createUser(username: string) {
+    const resp = await this.request.post(`${this.url}/api/users`, {
+      data: { username }
+    })
+
+    if (resp.status() !== 200)
+      throw new Error(`Failed to create user: ${await resp.text()}`)
+
+    return await resp.json()
   }
 
   async setupSettings(settings: Record<string, any>) {
@@ -170,10 +206,13 @@ export class ComfyPage {
 
   async setup() {
     await this.goto()
-    await this.page.evaluate(() => {
+    await this.page.evaluate((id) => {
       localStorage.clear()
       sessionStorage.clear()
-    })
+      localStorage.setItem('Comfy.userId', id)
+    }, this.id)
+    await this.goto()
+
     // Unify font for consistent screenshots.
     await this.page.addStyleTag({
       url: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap'
@@ -611,10 +650,14 @@ export class ComfyPage {
       x: nodePos.x + nodeSize.width * ratioX,
       y: nodePos.y + nodeSize.height * ratioY
     }
-    await this.dragAndDrop(bottomRight, target)
+    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
+    await this.dragAndDrop(
+      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
+      target
+    )
     await this.nextFrame()
     if (revertAfter) {
-      await this.dragAndDrop(target, bottomRight)
+      await this.dragAndDrop({ x: target.x - 2, y: target.y - 1 }, bottomRight)
       await this.nextFrame()
     }
   }
@@ -625,14 +668,20 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const ksamplerPos = {
-      x: 864,
-      y: 157
+      x: 863,
+      y: 156
     }
     const ksamplerSize = {
       width: 315,
       height: 292
     }
-    this.resizeNode(ksamplerPos, ksamplerSize, percentX, percentY, revertAfter)
+    return this.resizeNode(
+      ksamplerPos,
+      ksamplerSize,
+      percentX,
+      percentY,
+      revertAfter
+    )
   }
 
   async resizeLoadCheckpointNode(
@@ -641,14 +690,14 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const loadCheckpointPos = {
-      x: 25,
-      y: 440
+      x: 26,
+      y: 444
     }
     const loadCheckpointSize = {
-      width: 320,
-      height: 120
+      width: 315,
+      height: 127
     }
-    this.resizeNode(
+    return this.resizeNode(
       loadCheckpointPos,
       loadCheckpointSize,
       percentX,
@@ -663,14 +712,14 @@ export class ComfyPage {
     revertAfter: boolean = false
   ) {
     const emptyLatentPos = {
-      x: 475,
-      y: 580
+      x: 473,
+      y: 579
     }
     const emptyLatentSize = {
-      width: 303,
-      height: 132
+      width: 315,
+      height: 136
     }
-    this.resizeNode(
+    return this.resizeNode(
       emptyLatentPos,
       emptyLatentSize,
       percentX,
@@ -722,6 +771,12 @@ export class ComfyPage {
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
   comfyPage: async ({ page, request }, use) => {
     const comfyPage = new ComfyPage(page, request)
+
+    const { parallelIndex } = comfyPageFixture.info()
+    const username = `playwright-test-${parallelIndex}`
+    const userId = await comfyPage.setupUser(username)
+    comfyPage.userIds[parallelIndex] = userId
+
     await comfyPage.setupSettings({
       // Hide canvas menu/info by default.
       'Comfy.Graph.CanvasInfo': false,
@@ -730,7 +785,8 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
       'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
       'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
       // Disable tooltips by default to avoid flakiness.
-      'Comfy.EnableTooltips': false
+      'Comfy.EnableTooltips': false,
+      'Comfy.userId': userId
     })
     await comfyPage.setup()
     await use(comfyPage)

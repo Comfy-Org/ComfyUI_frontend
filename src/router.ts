@@ -1,8 +1,15 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import {
+  createRouter,
+  createWebHashHistory,
+  createWebHistory
+} from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
+import { isElectron } from './utils/envUtil'
+
+const isFileProtocol = () => window.location.protocol === 'file:'
 
 const router = createRouter({
-  history: createWebHistory(window.location.pathname),
+  history: isFileProtocol() ? createWebHashHistory() : createWebHistory(),
   routes: [
     {
       path: '/',
@@ -10,7 +17,21 @@ const router = createRouter({
       children: [
         {
           path: '',
+          name: 'GraphView',
           component: () => import('@/views/GraphView.vue')
+        },
+        {
+          path: 'server-start',
+          name: 'ServerStartView',
+          component: () => import('@/views/ServerStartView.vue'),
+          beforeEnter: async (to, from, next) => {
+            // Only allow access to this page in electron environment
+            if (isElectron()) {
+              next()
+            } else {
+              next('/')
+            }
+          }
         }
       ]
     }

@@ -2,6 +2,7 @@
 <template>
   <Dialog
     v-model:visible="dialogStore.isVisible"
+    class="global-dialog"
     modal
     closable
     closeOnEscape
@@ -11,7 +12,6 @@
     @hide="dialogStore.closeDialog"
     @maximize="onMaximize"
     @unmaximize="onUnmaximize"
-    :pt="{ header: 'pb-0' }"
     :aria-labelledby="headerId"
   >
     <template #header>
@@ -57,3 +57,15 @@ const contentProps = computed(() =>
 
 const headerId = `dialog-${Math.random().toString(36).substr(2, 9)}`
 </script>
+
+<style>
+.global-dialog .p-dialog-header {
+  @apply p-2 2xl:p-[var(--p-dialog-header-padding)];
+  @apply pb-0;
+}
+
+.global-dialog .p-dialog-content {
+  @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
+  @apply pt-0;
+}
+</style>

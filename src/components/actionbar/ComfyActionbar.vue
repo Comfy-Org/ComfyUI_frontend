@@ -8,16 +8,6 @@
       <span class="drag-handle cursor-move mr-2 p-0!" ref="dragHandleRef">
       </span>
       <ComfyQueueButton />
-      <Divider layout="vertical" class="mx-1" />
-      <ButtonGroup class="flex flex-nowrap">
-        <Button
-          v-tooltip.bottom="$t('menu.refresh')"
-          icon="pi pi-refresh"
-          severity="secondary"
-          text
-          @click="() => commandStore.execute('Comfy.RefreshNodeDefinitions')"
-        />
-      </ButtonGroup>
     </div>
   </Panel>
 </template>
@@ -25,12 +15,8 @@
 <script lang="ts" setup>
 import { computed, inject, nextTick, onMounted, Ref, ref, watch } from 'vue'
 import Panel from 'primevue/panel'
-import Divider from 'primevue/divider'
-import Button from 'primevue/button'
-import ButtonGroup from 'primevue/buttongroup'
 import ComfyQueueButton from './ComfyQueueButton.vue'
 import { useSettingStore } from '@/stores/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import {
   useDraggable,
   useElementBounding,
@@ -42,7 +28,6 @@ import {
 import { clamp } from 'lodash'
 
 const settingsStore = useSettingStore()
-const commandStore = useCommandStore()
 
 const visible = computed(
   () => settingsStore.get('Comfy.UseNewMenu') !== 'Disabled'

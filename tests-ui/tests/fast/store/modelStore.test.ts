@@ -90,7 +90,9 @@ describe('useModelStore', () => {
   it('should cache model information', async () => {
     enableMocks()
     await store.loadModelFolders()
+    expect(api.getModels).toHaveBeenCalledTimes(0)
     await store.getLoadedModelFolder('checkpoints')
+    expect(api.getModels).toHaveBeenCalledTimes(1)
     await store.getLoadedModelFolder('checkpoints')
     expect(api.getModels).toHaveBeenCalledTimes(1)
   })

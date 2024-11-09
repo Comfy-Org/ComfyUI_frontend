@@ -93,6 +93,7 @@ const generateReport = (systemStats: SystemStats, logs: string) => {
   reportContent.value = `
 # ComfyUI Error Report
 ## Error Details
+- **Node ID:** ${props.error.node_id}
 - **Node Type:** ${props.error.node_type}
 - **Exception Type:** ${props.error.exception_type}
 - **Exception Message:** ${props.error.exception_message}

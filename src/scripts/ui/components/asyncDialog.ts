@@ -52,7 +52,15 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     super.close()
   }
 
-  static async prompt({ title = null, message, actions }) {
+  static async prompt({
+    title = null,
+    message,
+    actions
+  }: {
+    title: string | null
+    message: string
+    actions: Array<string | { value?: any; text: string }>
+  }) {
     const dialog = new ComfyAsyncDialog(actions)
     const content = [$el('span', message)]
     if (title) {

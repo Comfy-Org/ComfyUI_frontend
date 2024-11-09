@@ -1,6 +1,27 @@
 import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
+test.describe('Item Interaction', () => {
+  test('Can select/delete all items', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('mixed_graph_items')
+    await comfyPage.canvas.press('Control+a')
+    await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+    await comfyPage.canvas.press('Delete')
+    await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+  })
+
+  test('Can pin/unpin items with keyboard shortcut', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('mixed_graph_items')
+    await comfyPage.canvas.press('Control+a')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
+    await comfyPage.canvas.press('KeyP')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
+  })
+})
+
 test.describe('Node Interaction', () => {
   test('Can enter prompt', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
@@ -12,7 +33,7 @@ test.describe('Node Interaction', () => {
   })
 
   test.describe('Node Selection', () => {
-    const multiSelectModifiers = ['Control', 'Shift', 'Meta']
+    const multiSelectModifiers = ['Control', 'Shift', 'Meta'] as const
 
     multiSelectModifiers.forEach((modifier) => {
       test(`Can add multiple nodes to selection using ${modifier}+Click`, async ({
@@ -115,6 +136,24 @@ test.describe('Node Interaction', () => {
       )
       await comfyPage.page.keyboard.up('Shift')
       await expect(comfyPage.canvas).toHaveScreenshot('copied-link.png')
+    })
+
+    test('Auto snap&highlight when dragging link over node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
+      await comfyPage.setSetting('Comfy.Node.SnapHighlightsNode', true)
+
+      await comfyPage.page.mouse.move(
+        comfyPage.clipTextEncodeNode1InputSlot.x,
+        comfyPage.clipTextEncodeNode1InputSlot.y
+      )
+      await comfyPage.page.mouse.down()
+      await comfyPage.page.mouse.move(
+        comfyPage.clipTextEncodeNode2InputSlot.x,
+        comfyPage.clipTextEncodeNode2InputSlot.y
+      )
+      await expect(comfyPage.canvas).toHaveScreenshot('snapped-highlighted.png')
     })
   })
 
@@ -487,6 +526,13 @@ test.describe('Load workflow', () => {
   test('Can load workflow with string node id', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('string_node_id')
     await expect(comfyPage.canvas).toHaveScreenshot('string_node_id.png')
+  })
+
+  test('Can load workflow with ("STRING",) input node', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('string_input')
+    await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
 })
 

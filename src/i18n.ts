@@ -77,6 +77,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Hide Menu',
+      showMenu: 'Show Menu',
       batchCount: 'Batch Count',
       batchCountTooltip:
         'The number of times the workflow generation should be queued',
@@ -111,9 +113,15 @@ const messages = {
       zoomIn: 'Zoom In',
       zoomOut: 'Zoom Out',
       resetView: 'Reset View',
+      fitView: 'Fit View',
       selectMode: 'Select Mode',
       panMode: 'Pan Mode',
       toggleLinkVisibility: 'Toggle Link Visibility'
+    },
+    electronFileDownload: {
+      pause: 'Pause Download',
+      resume: 'Resume Download',
+      cancel: 'Cancel Download'
     }
   },
   zh: {
@@ -193,6 +201,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: '隐藏菜单',
+      showMenu: '显示菜单',
       batchCount: '批次数量',
       batchCountTooltip: '工作流生成次数',
       autoQueue: '自动执行',
@@ -225,6 +235,7 @@ const messages = {
       zoomIn: '放大',
       zoomOut: '缩小',
       resetView: '重置视图',
+      fitView: '适应视图',
       selectMode: '选择模式',
       panMode: '平移模式',
       toggleLinkVisibility: '切换链接可见性'
@@ -307,6 +318,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Скрыть меню',
+      showMenu: 'Показать меню',
       batchCount: 'Количество пакетов',
       batchCountTooltip:
         'Количество раз, когда генерация рабочего процесса должна быть помещена в очередь',
@@ -342,6 +355,7 @@ const messages = {
       zoomIn: 'Увеличить',
       zoomOut: 'Уменьшить',
       resetView: 'Сбросить вид',
+      fitView: 'Подгонять под выделенные',
       selectMode: 'Выбрать режим',
       panMode: 'Режим панорамирования',
       toggleLinkVisibility: 'Переключить видимость ссылок'

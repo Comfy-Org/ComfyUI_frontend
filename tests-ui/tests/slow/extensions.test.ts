@@ -1,6 +1,6 @@
 // @ts-strict-ignore
-import { start } from '../utils'
-import lg from '../utils/litegraph'
+import { start } from '../../utils'
+import lg from '../../utils/litegraph'
 
 describe('extensions', () => {
   beforeEach(() => {
