@@ -2,6 +2,8 @@
   <Splitter
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
+    stateKey="sidebar-splitter"
+    stateStorage="local"
   >
     <SplitterPanel
       class="side-bar-panel"
@@ -18,6 +20,8 @@
         class="splitter-overlay max-w-full"
         layout="vertical"
         :pt:gutter="bottomPanelVisible ? '' : 'hidden'"
+        stateKey="bottom-panel-splitter"
+        stateStorage="local"
       >
         <SplitterPanel class="graph-canvas-panel relative">
           <slot name="graph-canvas-panel"></slot>
