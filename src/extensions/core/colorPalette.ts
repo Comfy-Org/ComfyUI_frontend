@@ -452,7 +452,9 @@ const setCustomColorPalettes = (customColorPalettes: ColorPalettes) => {
 }
 
 export const defaultColorPalette = colorPalettes[defaultColorPaletteId]
-export const getColorPalette = (colorPaletteId?) => {
+export const getColorPalette = (
+  colorPaletteId?: string
+): Palette | undefined => {
   if (!colorPaletteId) {
     colorPaletteId = app.ui.settings.getSettingValue(id, defaultColorPaletteId)
   }
