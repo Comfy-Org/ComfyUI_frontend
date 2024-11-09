@@ -48,7 +48,6 @@ import type {
 } from '@/types/treeExplorerTypes'
 import EditableText from '@/components/common/EditableText.vue'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import ProgressBar from 'primevue/progressbar'
 import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
 
 const props = defineProps<{

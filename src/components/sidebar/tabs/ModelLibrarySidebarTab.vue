@@ -78,6 +78,14 @@ const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const { t } = useI18n()
 
+interface ModelDownload {
+  url: string
+  status: 'paused' | 'in_progress' | 'cancelled'
+  progress: number
+  savePath: string
+  filename: string
+}
+
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
   if (!query) {
