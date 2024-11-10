@@ -4,7 +4,7 @@ import {
   createWebHistory
 } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-import { isElectron, electronAPI } from './utils/envUtil'
+import { isElectron } from './utils/envUtil'
 
 const isFileProtocol = () => window.location.protocol === 'file:'
 
@@ -27,11 +27,7 @@ const router = createRouter({
           beforeEnter: async (to, from, next) => {
             // Only allow access to this page in electron environment
             if (isElectron()) {
-              if (await electronAPI().isFirstTimeSetup()) {
-                next('/install')
-              } else {
-                next()
-              }
+              next()
             } else {
               next('/')
             }
