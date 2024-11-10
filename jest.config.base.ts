@@ -14,6 +14,7 @@ const jestConfig: JestConfigWithTsJest = {
       }
     ]
   },
+  transformIgnorePatterns: ['/node_modules/(?!(three|@three)/)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy'
