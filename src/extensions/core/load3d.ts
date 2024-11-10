@@ -14,13 +14,12 @@ async function uploadFile(
   load3d: Load3d,
   file: File,
   updateNode: boolean,
-  fileInput?: HTMLInputElement,
-  pasted: boolean = false
+  fileInput?: HTMLInputElement
 ) {
   try {
     const body = new FormData()
     body.append('image', file)
-    if (pasted) body.append('subfolder', 'pasted')
+    body.append('subfolder', 'mesh')
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
