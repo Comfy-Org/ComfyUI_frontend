@@ -38,12 +38,14 @@ const zModelFile = z.object({
   directory: z.string()
 })
 
-const zGraphState = z.object({
-  lastGroupid: z.number().optional(),
-  lastNodeId: z.number().optional(),
-  lastLinkId: z.number().optional(),
-  lastRerouteId: z.number().optional()
-})
+const zGraphState = z
+  .object({
+    lastGroupid: z.number().optional(),
+    lastNodeId: z.number().optional(),
+    lastLinkId: z.number().optional(),
+    lastRerouteId: z.number().optional()
+  })
+  .passthrough()
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
@@ -54,22 +56,26 @@ const zComfyLink = z.tuple([
   zDataType // Data type
 ])
 
-const zComfyLinkObject = z.object({
-  id: z.number(),
-  origin_id: zNodeId,
-  origin_slot: zSlotIndex,
-  target_id: zNodeId,
-  target_slot: zSlotIndex,
-  type: zDataType,
-  parentId: z.number().optional()
-})
+const zComfyLinkObject = z
+  .object({
+    id: z.number(),
+    origin_id: zNodeId,
+    origin_slot: zSlotIndex,
+    target_id: zNodeId,
+    target_slot: zSlotIndex,
+    type: zDataType,
+    parentId: z.number().optional()
+  })
+  .passthrough()
 
-const zReroute = z.object({
-  id: z.number(),
-  parentId: z.number().optional(),
-  pos: zVector2,
-  linkIds: z.array(z.number()).nullish()
-})
+const zReroute = z
+  .object({
+    id: z.number(),
+    parentId: z.number().optional(),
+    pos: zVector2,
+    linkIds: z.array(z.number()).nullish()
+  })
+  .passthrough()
 
 const zNodeOutput = z
   .object({
