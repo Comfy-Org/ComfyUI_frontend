@@ -6,333 +6,402 @@ import { ComfyApp } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { ClipspaceDialog } from './clipspace'
 
-/*
-Fixes needed:
-- undo message comes and undo is still exdecuted ?
-- when drawing lines, take into account potential new pan and zoom
-- undo states get grouped together when drawing lines
-- previous image is sometimes loaded when mask is saved
-- fill is in wrong color if color changed before fill
-- repair drawing and line drawing
-- hide brush when closing
-- add keyboard shortcuts
-*/
-
 var styles = `
-#maskEditorContainer {
-  display: fixed;
-}
-#maskEditor {
-  display: block;
-  width: 100%;
-  height: calc(100vh - 44px);
-  top: 44px;
-  left: 0;
-  z-index: 8888;
-  position: fixed;
-  background: rgba(50,50,50,0.75);
-  backdrop-filter: blur(10px);
-  overflow: hidden;
-  user-select: none;
-}
-#maskEditor_sidePanelContainer {
-  height: 100%;
-  width: 220px;
-  z-index: 8888;
-  display: flex;
-  flex-direction: column;
-}
-#maskEditor_sidePanel {
-  background: var(--comfy-menu-bg);
-  height: 100%;
-  display: flex;
-  flex-direction: column;  
-  align-items: center;
-}
-#maskEditor_sidePanelShortcuts {
-  display: flex;
-  flex-direction: row;
-  width: 200px;    
-  margin-top: 10px;
-  gap: 10px;
-  justify-content: center;
-}
-.maskEditor_sidePanelIconButton {
-  width: 40px;
-  height: 40px;
-  pointer-events: auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.1s;
-}
-.maskEditor_sidePanelIconButton:hover {
-  background-color: var(--p-surface-800);
-}
-#maskEditor_sidePanelBrushSettings {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 200px;
-  padding: 10px;
-}
-.maskEditor_sidePanelTitle {
-  text-align: center;
-  font-size: 15px;
-  font-family: sans-serif;
-  color: var(--descrip-text);
-  margin-top: 10px;
-}
-#maskEditor_sidePanelBrushShapeContainer {
-  display: flex;
-  width: 180px;
-  height: 50px;
-  border: 1px solid var(--border-color);
-  pointer-events: auto;
-  background: var(--p-surface-800);
-}
-#maskEditor_sidePanelBrushShapeCircle {
-  width: 35px;
-  height: 35px;
-  margin: 5px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color);
-  pointer-events: auto;
-  transition: background 0.1s;
-}
-.maskEditor_sidePanelBrushRange {
-  width: 180px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-}
-.maskEditor_sidePanelBrushRange::-webkit-slider-thumb {
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  cursor: grab;
-  margin-top: -8px;
-  background: var(--p-surface-700);
-  border: 1px solid var(--border-color);
-}
-.maskEditor_sidePanelBrushRange::-moz-range-thumb {
-  height: 20px;
-  width: 20px;
-  border-radius: 50%;
-  cursor: grab;
-  background: var(--p-surface-800);
-  border: 1px solid var(--border-color);
-}
-.maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
-  background: var(--p-surface-700);
-  height: 3px;
-}
-.maskEditor_sidePanelBrushRange::-moz-range-track {
-  background: var(--p-surface-700);
-  height: 3px;
-}
-#maskEditor_sidePanelBrushShapeCircle:hover {
-  background: var(--p-overlaybadge-outline-color);
-}
-#maskEditor_sidePanelBrushShapeSquare {
-  width: 35px;
-  height: 35px;
-  margin: 5px;
-  border: 1px solid var(--border-color);
-  pointer-events: auto;
-  transition: background 0.1s;
-}
-#maskEditor_sidePanelBrushShapeSquare:hover {
-  background: var(--p-overlaybadge-outline-color);
-}
-.maskEditor_sidePanelSubTitle {
-  text-align: center;
-  font-size: 12px;
-  font-family: sans-serif;
-  color: var(--descrip-text);
-}
-#maskEditor_sidePanelImageLayerSettings {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 200px;
-  align-items: center;
-}
-.maskEditor_sidePanelLayer {
-  display: flex;
-  width: 200px;
-  height: 50px;
-}
-.maskEditor_sidePanelLayerVisibilityContainer {
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.maskEditor_sidePanelVisibilityToggle {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  pointer-events: auto;
-}
-.maskEditor_sidePanelLayerIconContainer {
-  width: 60px;
-  height: 50px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  fill: white;
-}
-.maskEditor_sidePanelLayerIconContainer svg {
-  width: 30px;
-  height: 30px;
-}
-#maskEditor_sidePanelMaskLayerBlendingContainer {
-  width: 80px;
-  height: 50px;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-#maskEditor_sidePanelMaskLayerBlendingSelect {
-  width: 80px;
-  height: 30px;
-  border: 1px solid var(--border-color);
-  background-color: var(--p-surface-800);
-  color: var(--input-text);
-  font-family: sans-serif;
-  font-size: 15px;
-  pointer-events: auto;
-  transition: background-color border 0.1s;
-}
-#maskEditor_sidePanelClearCanvasButton:hover {
-  background-color: var(--p-overlaybadge-outline-color);
-  border: none;
-}
-#maskEditor_sidePanelImageLayerImage {
-  max-height: 90%;
-  max-width: 50px;
-}
-#maskEditor_sidePanelClearCanvasButton {
-  width: 180px;
-  height: 30px;
-  border: none;
-  background: var(--p-surface-800);
-  border: 1px solid var(--border-color);
-  color: var(--input-text);
-  font-family: sans-serif;
-  font-size: 15px;
-  pointer-events: auto;
-  transition: background-color 0.1s;
-}
-#maskEditor_sidePanelClearCanvasButton:hover {
-  background-color: var(--p-overlaybadge-outline-color);
-}
-#maskEditor_sidePanelHorizontalButtonContainer {
-  display: flex;
-  gap: 10px;
-  height: 40px;
-}
-.maskEditor_sidePanelBigButton {
-  width: 85px;
-  height: 30px;
-  border: none;
-  background: var(--p-surface-800);
-  border: 1px solid var(--border-color);
-  color: var(--input-text);
-  font-family: sans-serif;
-  font-size: 15px;
-  pointer-events: auto;
-  transition: background-color border 0.1s;
-}
-.maskEditor_sidePanelBigButton:hover {
-  background-color: var(--p-overlaybadge-outline-color);
-  border: none;
-}
-#maskEditor_toolPanel {
-  height: 100%;
-  width: var(--sidebar-width);
-  z-index: 8888;
-  background: var(--comfy-menu-bg);
-  display: flex;
-  flex-direction: column;
-}
-.maskEditor_toolPanelContainer {
-  width: var(--sidebar-width);
-  height: var(--sidebar-width);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  transition: background-color border 0.2s;
-}
-.maskEditor_toolPanelContainer:hover {
-  background-color: var(--p-overlaybadge-outline-color);
-  border: none;
-}
-.maskEditor_toolPanelContainerSelected svg {
-  fill: var(--p-button-text-primary-color) !important;
-}
-.maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
-  display: block;
-}
-.maskEditor_toolPanelContainer svg {
-  width: 75%;
-  aspect-ratio: 1/1;
-  fill: var(--p-button-text-secondary-color);
-}
-.maskEditor_toolPanelIndicator {
-  display: none;
-  height: 100%;
-  width: 4px;
-  position: absolute;
-  left: 0;
-  background: var(--p-button-text-primary-color);
-}
-#maskEditor_sidePanelPaintBucketSettings {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 200px;
-  padding: 10px;
-}
-#canvasBackground {
-  position: absolute;
-  background: white;
-}
+  #maskEditorContainer {
+    display: fixed;
+  }
+  #maskEditor_brush {
+    position: absolute;
+    backgroundColor: transparent;
+    z-index: 8889;
+    pointer-events: none;
+    border-radius: 50%;
+    overflow: visible;
+    outline: 1px dashed black;
+    box-shadow: 0 0 0 1px white;
+  }
+  #maskEditor_brushPreviewGradient {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: none;
+  }
+  #maskEditor {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    left: 0;
+    z-index: 8888;
+    position: fixed;
+    background: rgba(50,50,50,0.75);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    user-select: none;
+  }
+  #maskEditor_sidePanelContainer {
+    height: 100%;
+    width: 220px;
+    z-index: 8888;
+    display: flex;
+    flex-direction: column;
+  }
+  #maskEditor_sidePanel {
+    background: var(--comfy-menu-bg);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-y: scroll;
+  }
+  #maskEditor_sidePanelShortcuts {
+    display: flex;
+    flex-direction: row;
+    width: 200px;
+    margin-top: 10px;
+    gap: 10px;
+    justify-content: center;
+  }
+  .maskEditor_sidePanelIconButton {
+    width: 40px;
+    height: 40px;
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.1s;
+  }
+  .maskEditor_sidePanelIconButton:hover {
+    background-color: var(--p-surface-800);
+  }
+  #maskEditor_sidePanelBrushSettings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 200px;
+    padding: 10px;
+  }
+  .maskEditor_sidePanelTitle {
+    text-align: center;
+    font-size: 15px;
+    font-family: sans-serif;
+    color: var(--descrip-text);
+    margin-top: 10px;
+  }
+  #maskEditor_sidePanelBrushShapeContainer {
+    display: flex;
+    width: 180px;
+    height: 50px;
+    border: 1px solid var(--border-color);
+    pointer-events: auto;
+    background: var(--p-surface-800);
+  }
+  #maskEditor_sidePanelBrushShapeCircle {
+    width: 35px;
+    height: 35px;
+    margin: 5px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    pointer-events: auto;
+    transition: background 0.1s;
+  }
+  .maskEditor_sidePanelBrushRange {
+    width: 180px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .maskEditor_sidePanelBrushRange::-webkit-slider-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    cursor: grab;
+    margin-top: -8px;
+    background: var(--p-surface-700);
+    border: 1px solid var(--border-color);
+  }
+  .maskEditor_sidePanelBrushRange::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    cursor: grab;
+    background: var(--p-surface-800);
+    border: 1px solid var(--border-color);
+  }
+  .maskEditor_sidePanelBrushRange::-webkit-slider-runnable-track {
+    background: var(--p-surface-700);
+    height: 3px;
+  }
+  .maskEditor_sidePanelBrushRange::-moz-range-track {
+    background: var(--p-surface-700);
+    height: 3px;
+  }
+  #maskEditor_sidePanelBrushShapeCircle:hover {
+    background: var(--p-overlaybadge-outline-color);
+  }
+  #maskEditor_sidePanelBrushShapeSquare {
+    width: 35px;
+    height: 35px;
+    margin: 5px;
+    border: 1px solid var(--border-color);
+    pointer-events: auto;
+    transition: background 0.1s;
+  }
+  #maskEditor_sidePanelBrushShapeSquare:hover {
+    background: var(--p-overlaybadge-outline-color);
+  }
+  .maskEditor_sidePanelSubTitle {
+    text-align: center;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: var(--descrip-text);
+  }
+  #maskEditor_sidePanelImageLayerSettings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 200px;
+    align-items: center;
+  }
+  .maskEditor_sidePanelLayer {
+    display: flex;
+    width: 200px;
+    height: 50px;
+  }
+  .maskEditor_sidePanelLayerVisibilityContainer {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .maskEditor_sidePanelVisibilityToggle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+  .maskEditor_sidePanelLayerIconContainer {
+    width: 60px;
+    height: 50px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    fill: white;
+  }
+  .maskEditor_sidePanelLayerIconContainer svg {
+    width: 30px;
+    height: 30px;
+  }
+  #maskEditor_sidePanelMaskLayerBlendingContainer {
+    width: 80px;
+    height: 50px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #maskEditor_sidePanelMaskLayerBlendingSelect {
+    width: 80px;
+    height: 30px;
+    border: 1px solid var(--border-color);
+    background-color: var(--p-surface-800);
+    color: var(--input-text);
+    font-family: sans-serif;
+    font-size: 15px;
+    pointer-events: auto;
+    transition: background-color border 0.1s;
+  }
+  #maskEditor_sidePanelClearCanvasButton:hover {
+    background-color: var(--p-overlaybadge-outline-color);
+    border: none;
+  }
+  #maskEditor_sidePanelImageLayerImage {
+    max-height: 90%;
+    max-width: 50px;
+  }
+  #maskEditor_sidePanelClearCanvasButton {
+    width: 180px;
+    height: 30px;
+    border: none;
+    background: var(--p-surface-800);
+    border: 1px solid var(--border-color);
+    color: var(--input-text);
+    font-family: sans-serif;
+    font-size: 15px;
+    pointer-events: auto;
+    transition: background-color 0.1s;
+  }
+  #maskEditor_sidePanelClearCanvasButton:hover {
+    background-color: var(--p-overlaybadge-outline-color);
+  }
+  #maskEditor_sidePanelHorizontalButtonContainer {
+    display: flex;
+    gap: 10px;
+    height: 40px;
+  }
+  .maskEditor_sidePanelBigButton {
+    width: 85px;
+    height: 30px;
+    border: none;
+    background: var(--p-surface-800);
+    border: 1px solid var(--border-color);
+    color: var(--input-text);
+    font-family: sans-serif;
+    font-size: 15px;
+    pointer-events: auto;
+    transition: background-color border 0.1s;
+  }
+  .maskEditor_sidePanelBigButton:hover {
+    background-color: var(--p-overlaybadge-outline-color);
+    border: none;
+  }
+  #maskEditor_toolPanel {
+    height: 100%;
+    width: var(--sidebar-width);
+    z-index: 8888;
+    background: var(--comfy-menu-bg);
+    display: flex;
+    flex-direction: column;
+  }
+  .maskEditor_toolPanelContainer {
+    width: var(--sidebar-width);
+    height: var(--sidebar-width);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: background-color border 0.2s;
+  }
+  .maskEditor_toolPanelContainer:hover {
+    background-color: var(--p-overlaybadge-outline-color);
+    border: none;
+  }
+  .maskEditor_toolPanelContainerSelected svg {
+    fill: var(--p-button-text-primary-color) !important;
+  }
+  .maskEditor_toolPanelContainerSelected .maskEditor_toolPanelIndicator {
+    display: block;
+  }
+  .maskEditor_toolPanelContainer svg {
+    width: 75%;
+    aspect-ratio: 1/1;
+    fill: var(--p-button-text-secondary-color);
+  }
+  .maskEditor_toolPanelIndicator {
+    display: none;
+    height: 100%;
+    width: 4px;
+    position: absolute;
+    left: 0;
+    background: var(--p-button-text-primary-color);
+  }
+  #maskEditor_sidePanelPaintBucketSettings {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 200px;
+    padding: 10px;
+  }
+  #canvasBackground {
+    background: white;
+    width: 100%;
+    height: 100%;
+  }
+  #maskEditor_sidePanelButtonsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .maskEditor_sidePanelSeparator {
+    width: 200px;
+    height: 2px;
+    background: var(--border-color);
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+  #maskEditor_pointerZone {
+    width: calc(100% - var(--sidebar-width) - 220px);
+    height: 100%;
+  }
+  #maskEditor_uiContainer {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 8888;
+    display: flex;
+    flex-direction: column;
+  }
+  #maskEditorCanvasContainer {
+    position: absolute;
+    width: 1000px;
+    height: 667px;
+    left: 359px;
+    top: 280px;
+  }
+  #imageCanvas {
+    width: 100%;
+    height: 100%;
+  }
+  #maskCanvas {
+    width: 100%;
+    height: 100%;
+  }
+  #maskEditor_uiHorizontalContainer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+  }
+  #maskEditor_topBar {
+    display: flex;
+    height: 44px;
+    align-items: center;
+    background: var(--comfy-menu-bg);
+  }
+  #maskEditor_topBarTitle {
+    margin: 0;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    font-size: 1.2em;
+  }
+  #maskEditor_topBarButtonContainer {
+    display: flex;
+    gap: 0.5rem;
+    margin-right: 0.5rem;
+    position: absolute;
+    right: 0;
+  }
+  #maskEditor_topBarShortcutsContainer {
+    display: flex;
+  }
 
-#maskEditor_sidePanelButtonsContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-}
+  .maskEditor_topPanelIconButton {
+    width: 30px;
+    height: 30px;
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.1s;
+  }
 
-.maskEditor_sidePanelSeparator {
-  width: 200px;
-  height: 2px;
-  background: var(--border-color);
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-#maskEditor_pointerZone {
-  width: calc(100% - var(--sidebar-width) - 220px);
-  height: 100%;
-}
-
-#maskEditor_uiContainer {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  z-index: 8888;
-  display: flex;
-}
+  .maskEditor_topPanelButton {
+    border: none;
+    background: var(--p-surface-800);
+    border: 1px solid var(--border-color);
+    color: var(--input-text);
+    font-family: sans-serif;
+    font-size: 15px;
+    pointer-events: auto;
+    transition: background-color 0.1s;
+  }
+  #maskEditor_topPanelButton:hover {
+    background-color: var(--p-overlaybadge-outline-color);
+  }
 `
 
 var styleSheet = document.createElement('style')
@@ -424,7 +493,7 @@ async function prepare_mask(
 }
 
 // Define the PointerType enum
-enum PointerType {
+enum BrushShape {
   Arc = 'arc',
   Rect = 'rect'
 }
@@ -440,107 +509,1175 @@ enum CompositionOperation {
   DestinationOut = 'destination-out'
 }
 
+enum MaskBlendMode {
+  Black = 'black',
+  White = 'white',
+  Negative = 'negative'
+}
+
 interface Point {
   x: number
   y: number
 }
 
+interface Offset {
+  x: number
+  y: number
+}
+
+export interface Brush {
+  size: number
+  opacity: number
+  hardness: number
+  type: BrushShape
+}
+
+type Callback = (data?: any) => void
+
 class MaskEditorDialog extends ComfyDialog {
   static instance: MaskEditorDialog | null = null
-  static mousedown_x: number = 0
-  static mousedown_y: number = 0
 
-  brush!: HTMLDivElement
-  maskCtx: any
-  maskCanvas!: HTMLCanvasElement
-  brush_size_slider!: HTMLInputElement
-  brush_opacity_slider!: HTMLInputElement
-  colorButton!: HTMLButtonElement
-  saveButton!: HTMLButtonElement
-  zoom_ratio: number = 1
-  pan_x: number = 0
-  pan_y: number = 0
-  imgCanvas!: HTMLCanvasElement
-  last_display_style: string = ''
-  is_visible: boolean = false
-  image!: HTMLImageElement
-  sidebarImage!: HTMLImageElement
-  handler_registered: boolean = false
-  cursorX: number = 0
-  cursorY: number = 0
-  mousedown_pan_x: number = 0
-  mousedown_pan_y: number = 0
-  last_pressure: number = 0
-  pointer_type: PointerType = PointerType.Arc
-  isTouchZooming: boolean = false
-  lastTouchZoomDistance: number = 0
-  lastTouchX: number = 0
-  lastTouchY: number = 0
-  lastTouchMidX: number = 0
-  lastTouchMidY: number = 0
-  brush_opacity: number = 1.0
-  brush_size: number = 10
-  brush_hardness: number = 1.0
-  brush_color_mode: string = 'black'
-  drawing_mode: boolean = false
-  smoothingCoords: Point | null = null
-  smoothingCordsArray: Point[] = []
-  smoothingLastDrawTime: Date | null = null
+  //new
+  uiManager: UIManager
+  toolManager: ToolManager
+  panAndZoomManager: PanAndZoomManager
+  brushTool: BrushTool
+  paintBucketTool: PaintBucketTool
+  canvasHistory: CanvasHistory
+  messageBroker: MessageBroker
+  keyboardManager: KeyboardManager
 
-  isDrawing: boolean = false
-  canvasHistory: any
+  rootElement: HTMLElement
+  imageURL: string
 
-  mouseOverSidePanel: boolean = false
-  mouseOverCanvas: boolean = true
+  isLayoutCreated: boolean = false
+  isOpen: boolean = false
 
-  isAdjustingBrush: boolean = false
-  brushPreviewGradient!: HTMLDivElement
-  brush_hardness_slider!: HTMLInputElement
-
-  initialX: number = 0
-  initialY: number = 0
-  initialBrushSize: number = 0
-  initialBrushHardness: number = 0
-
-  mask_opacity: number = 0.7
-
-  DOUBLE_TAP_DELAY: number = 300
-  lastTwoFingerTap: number = 0
-
-  currentTool: Tools = Tools.Pen
-  toolPanel!: HTMLDivElement
-
-  lineStartPoint: { x: number; y: number } | null = null
-  isDrawingLine: boolean = false
-
-  paintBucketTool: any
-  paintBucketTolerance: number = 32
-
-  brushSettingsHTML!: HTMLDivElement
-  paintBucketSettingsHTML!: HTMLDivElement
-
-  canvasBackground!: HTMLDivElement
-
-  isSpacePressed: boolean = false
-  pointerZone!: HTMLDivElement
-
-  static getInstance() {
-    if (!MaskEditorDialog.instance) {
-      MaskEditorDialog.instance = new MaskEditorDialog()
-    }
-
-    return MaskEditorDialog.instance
-  }
-
-  is_layout_created = false
+  //variables needed?
+  last_display_style: string | null = null
 
   constructor() {
     super()
-    this.element = $el('div.maskEditor_hidden', { parent: document.body }, [])
+    this.rootElement = $el(
+      'div.maskEditor_hidden',
+      { parent: document.body },
+      []
+    )
+
+    this.element = this.rootElement
   }
 
-  setBrushBorderRadius(self: any): void {
-    if (self.pointer_type === PointerType.Rect) {
+  static getInstance() {
+    const currentSrc =
+      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+
+    if (
+      !MaskEditorDialog.instance ||
+      currentSrc !== MaskEditorDialog.instance.imageURL
+    ) {
+      MaskEditorDialog.instance = new MaskEditorDialog()
+    }
+    return MaskEditorDialog.instance
+  }
+
+  async show() {
+    this.cleanup()
+    if (!this.isLayoutCreated) {
+      // layout
+      this.messageBroker = new MessageBroker()
+      this.canvasHistory = new CanvasHistory(this, 20)
+      this.paintBucketTool = new PaintBucketTool(this)
+      this.brushTool = new BrushTool(this)
+      this.panAndZoomManager = new PanAndZoomManager(this)
+      this.toolManager = new ToolManager(this)
+      this.keyboardManager = new KeyboardManager(this)
+      this.uiManager = new UIManager(this.rootElement, this)
+
+      // replacement of onClose hook since close is not real close
+      const self = this
+      const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          if (
+            mutation.type === 'attributes' &&
+            mutation.attributeName === 'style'
+          ) {
+            if (
+              self.last_display_style &&
+              self.last_display_style != 'none' &&
+              self.element.style.display == 'none'
+            ) {
+              //self.brush.style.display = 'none'
+              ComfyApp.onClipspaceEditorClosed()
+            }
+
+            self.last_display_style = self.element.style.display
+          }
+        })
+      })
+
+      const config = { attributes: true }
+      observer.observe(this.rootElement, config)
+
+      this.isLayoutCreated = true
+
+      await this.uiManager.setlayout()
+    }
+
+    //this.zoomAndPanManager.reset()
+
+    this.rootElement.id = 'maskEditor'
+    this.rootElement.style.display = 'flex'
+    this.element.style.display = 'flex'
+    await this.uiManager.initUI()
+    this.paintBucketTool.initPaintBucketTool()
+    await this.canvasHistory.saveInitialState()
+    this.isOpen = true
+
+    const src = ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+    this.uiManager.setSidebarImage(src)
+
+    this.keyboardManager.addListeners()
+  }
+
+  private cleanup() {
+    // Remove all maskEditor elements
+    const maskEditors = document.querySelectorAll('[id^="maskEditor"]');
+    maskEditors.forEach(element => element.remove());
+
+    // Remove brush elements specifically
+    const brushElements = document.querySelectorAll('#maskEditor_brush');
+    brushElements.forEach(element => element.remove());
+  }
+
+  isOpened() {
+    return this.isOpen
+  }
+
+  async save() {
+    const backupCanvas = document.createElement('canvas')
+    const imageCanvas = this.uiManager.getImgCanvas()
+    const maskCanvas = this.uiManager.getMaskCanvas()
+    const image = this.uiManager.getImage()
+    const backupCtx = backupCanvas.getContext('2d', {
+      willReadFrequently: true
+    })
+
+    backupCanvas.width = imageCanvas.width
+    backupCanvas.height = imageCanvas.height
+
+    if (!backupCtx) {
+      console.log('Failed to save mask. Please try again.')
+      return
+    }
+
+    backupCtx.clearRect(0, 0, backupCanvas.width, backupCanvas.height)
+    backupCtx.drawImage(
+      maskCanvas,
+      0,
+      0,
+      maskCanvas.width,
+      maskCanvas.height,
+      0,
+      0,
+      backupCanvas.width,
+      backupCanvas.height
+    )
+
+    // paste mask data into alpha channel
+    const backupData = backupCtx.getImageData(
+      0,
+      0,
+      backupCanvas.width,
+      backupCanvas.height
+    )
+
+    // refine mask image
+    for (let i = 0; i < backupData.data.length; i += 4) {
+      const alpha = backupData.data[i + 3]
+      backupData.data[i] = 0
+      backupData.data[i + 1] = 0
+      backupData.data[i + 2] = 0
+      backupData.data[i + 3] = 255 - alpha
+    }
+
+    backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    backupCtx.putImageData(backupData, 0, 0)
+
+    const formData = new FormData()
+    const filename = 'clipspace-mask-' + performance.now() + '.png'
+
+    const item = {
+      filename: filename,
+      subfolder: 'clipspace',
+      type: 'input'
+    }
+
+    if (ComfyApp.clipspace.images) ComfyApp.clipspace.images[0] = item
+
+    if (ComfyApp.clipspace.widgets) {
+      const index = ComfyApp.clipspace.widgets.findIndex(
+        (obj) => obj.name === 'image'
+      )
+
+      if (index >= 0) ComfyApp.clipspace.widgets[index].value = item
+    }
+
+    const dataURL = backupCanvas.toDataURL()
+    const blob = dataURLToBlob(dataURL)
+
+    let original_url = new URL(image.src)
+
+    type Ref = { filename: string; subfolder?: string; type?: string }
+
+    this.uiManager.setBrushOpacity(0)
+
+    const original_ref: Ref = {
+      filename: original_url.searchParams.get('filename')
+    }
+
+    let original_subfolder = original_url.searchParams.get('subfolder')
+    if (original_subfolder) original_ref.subfolder = original_subfolder
+
+    let original_type = original_url.searchParams.get('type')
+    if (original_type) original_ref.type = original_type
+
+    formData.append('image', blob, filename)
+    formData.append('original_ref', JSON.stringify(original_ref))
+    formData.append('type', 'input')
+    formData.append('subfolder', 'clipspace')
+
+    this.uiManager.setSaveButtonText('Saving...')
+    this.uiManager.setSaveButtonEnabled(false)
+    this.keyboardManager.removeListeners()
+    await uploadMask(item, formData)
+    ComfyApp.onClipspaceEditorSave()
+    this.close()
+    this.isOpen = false
+  }
+
+  getMessageBroker() {
+    return this.messageBroker
+  }
+}
+
+class CanvasHistory {
+  maskEditor: MaskEditorDialog
+  messageBroker: MessageBroker
+
+  canvas: HTMLCanvasElement
+  ctx: CanvasRenderingContext2D
+  states: ImageData[]
+  currentStateIndex: number
+  maxStates: number
+  initialized: boolean
+
+  constructor(maskEditor: MaskEditorDialog, maxStates = 20) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.states = []
+    this.currentStateIndex = -1
+    this.maxStates = maxStates
+    this.initialized = false
+    this.createListeners()
+  }
+
+  private async pullCanvas() {
+    this.canvas = await this.messageBroker.pull('maskCanvas')
+    this.ctx = await this.messageBroker.pull('maskCtx')
+  }
+
+  private createListeners() {
+    this.messageBroker.subscribe('saveState', () => this.saveState())
+    this.messageBroker.subscribe('undo', () => this.undo())
+    this.messageBroker.subscribe('redo', () => this.redo())
+  }
+
+  clearStates() {
+    this.states = []
+    this.currentStateIndex = -1
+    this.initialized = false
+  }
+
+  async saveInitialState() {
+    await this.pullCanvas()
+    if (!this.canvas.width || !this.canvas.height) {
+      // Canvas not ready yet, defer initialization
+      requestAnimationFrame(() => this.saveInitialState())
+      return
+    }
+
+    this.clearStates()
+    const state = this.ctx.getImageData(
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    )
+
+    this.states.push(state)
+    this.currentStateIndex = 0
+    this.initialized = true
+  }
+
+  saveState() {
+    // Ensure we have an initial state
+    if (!this.initialized || this.currentStateIndex === -1) {
+      this.saveInitialState()
+      return
+    }
+
+    this.states = this.states.slice(0, this.currentStateIndex + 1)
+    const state = this.ctx.getImageData(
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    )
+    this.states.push(state)
+    this.currentStateIndex++
+
+    if (this.states.length > this.maxStates) {
+      this.states.shift()
+      this.currentStateIndex--
+    }
+
+    console.log('save state')
+  }
+
+  undo() {
+    if (this.states.length > 1 && this.currentStateIndex > 0) {
+      this.currentStateIndex--
+      this.restoreState(this.states[this.currentStateIndex])
+      console.log(
+        `Undo: ${this.currentStateIndex + 1} states behind, ${
+          this.states.length - (this.currentStateIndex + 1)
+        } states ahead`
+      )
+      console.log('nr of states: ' + this.states.length)
+    } else {
+      console.log('No more undo states available')
+    }
+  }
+
+  redo() {
+    if (
+      this.states.length > 1 &&
+      this.currentStateIndex < this.states.length - 1
+    ) {
+      this.currentStateIndex++
+      this.restoreState(this.states[this.currentStateIndex])
+      console.log(
+        `Redo: ${this.currentStateIndex + 1} states behind, ${
+          this.states.length - (this.currentStateIndex + 1)
+        } states ahead`
+      )
+      console.log('nr of states: ' + this.states.length)
+    } else {
+      console.log('No more redo states available')
+    }
+  }
+
+  restoreState(state: ImageData) {
+    if (state && this.initialized) {
+      this.ctx.putImageData(state, 0, 0)
+    }
+  }
+}
+
+class PaintBucketTool {
+  maskEditor: MaskEditorDialog
+  messageBroker: MessageBroker
+
+  private canvas: HTMLCanvasElement
+  private ctx: CanvasRenderingContext2D
+  private width: number | null = null
+  private height: number | null = null
+  private imageData: ImageData | null = null
+  private data: Uint8ClampedArray | null = null
+  private tolerance: number = 5
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.createListeners()
+    this.addPullTopics()
+  }
+
+  initPaintBucketTool() {
+    this.pullCanvas()
+  }
+
+  private async pullCanvas() {
+    this.canvas = await this.messageBroker.pull('maskCanvas')
+    this.ctx = await this.messageBroker.pull('maskCtx')
+  }
+
+  private createListeners() {
+    this.messageBroker.subscribe('setTolerance', (tolerance: number) =>
+      this.setTolerance(tolerance)
+    )
+
+    this.messageBroker.subscribe('paintBucketFill', (point: Point) =>
+      this.floodFill(point)
+    )
+  }
+
+  private addPullTopics() {
+    this.messageBroker.createPullTopic(
+      'getTolerance',
+      async () => this.tolerance
+    )
+  }
+
+  private getPixel(x: number, y: number): number {
+    return this.data![(y * this.width + x) * 4 + 3]
+  }
+
+  private setPixel(x: number, y: number, alpha: number): void {
+    const index = (y * this.width + x) * 4
+    this.data![index] = 0 // R
+    this.data![index + 1] = 0 // G
+    this.data![index + 2] = 0 // B
+    this.data![index + 3] = alpha // A
+  }
+
+  // Helper to check if a pixel should be filled
+  private shouldFillPixel(
+    currentAlpha: number,
+    targetAlpha: number,
+    tolerance: number
+  ): boolean {
+    // Only fill pixels that are very close to the target alpha
+    // and are not already fully opaque
+    return (
+      currentAlpha !== -1 &&
+      currentAlpha !== 255 &&
+      Math.abs(currentAlpha - targetAlpha) <= tolerance
+    )
+  }
+
+  private floodFill(point: Point): void {
+    console.log('Flood fill at', point)
+
+    // Reduced default tolerance
+    let startX = Math.floor(point.x)
+    let startY = Math.floor(point.y)
+    this.width = this.canvas.width
+    this.height = this.canvas.height
+
+    if (
+      startX < 0 ||
+      startX >= this.width ||
+      startY < 0 ||
+      startY >= this.height
+    ) {
+      return
+    }
+
+    this.imageData = this.ctx.getImageData(0, 0, this.width, this.height)
+    this.data = this.imageData.data
+
+    const targetAlpha = this.getPixel(startX, startY)
+
+    // Don't fill if clicking on fully opaque or invalid pixels
+    if (targetAlpha === 255 || targetAlpha === -1) {
+      return
+    }
+
+    // Use a regular array for the stack as we don't need the performance optimization here
+    const stack: Array<[number, number]> = []
+    const visited = new Uint8Array(this.width * this.height)
+
+    // Start the fill
+    if (this.shouldFillPixel(targetAlpha, targetAlpha, this.tolerance)) {
+      stack.push([startX, startY])
+    }
+
+    while (stack.length > 0) {
+      const [x, y] = stack.pop()!
+      const visitedIndex = y * this.width + x
+
+      // Skip if already visited
+      if (visited[visitedIndex]) {
+        continue
+      }
+
+      const currentAlpha = this.getPixel(x, y)
+
+      // Skip if this pixel shouldn't be filled
+      if (!this.shouldFillPixel(currentAlpha, targetAlpha, this.tolerance)) {
+        continue
+      }
+
+      // Mark as visited and fill
+      visited[visitedIndex] = 1
+      this.setPixel(x, y, 255)
+
+      // Check in each cardinal direction
+      const directions = [
+        [x, y - 1], // up
+        [x + 1, y], // right
+        [x, y + 1], // down
+        [x - 1, y] // left
+      ]
+
+      for (const [newX, newY] of directions) {
+        // Check bounds and visited state
+        if (
+          newX >= 0 &&
+          newX < this.width &&
+          newY >= 0 &&
+          newY < this.height &&
+          !visited[newY * this.width + newX]
+        ) {
+          const neighborAlpha = this.getPixel(newX, newY)
+          // Only add to stack if the neighbor pixel should be filled
+          if (
+            this.shouldFillPixel(neighborAlpha, targetAlpha, this.tolerance)
+          ) {
+            stack.push([newX, newY])
+          }
+        }
+      }
+    }
+
+    this.ctx.putImageData(this.imageData, 0, 0)
+
+    // Clean up
+    this.imageData = null
+    this.data = null
+  }
+
+  setTolerance(tolerance: number): void {
+    this.tolerance = tolerance
+  }
+
+  getTolerance(): number {
+    return this.tolerance
+  }
+}
+
+class BrushTool {
+  brushSettings: Brush //this saves the current brush settings
+  maskBlendMode: MaskBlendMode
+
+  isDrawing: boolean = false
+  isDrawingLine: boolean = false
+  lineStartPoint: Point | null = null
+  smoothingCordsArray: Point[] = []
+  smoothingLastDrawTime: Date
+  maskCtx: CanvasRenderingContext2D | null = null
+
+  //brush adjustment
+  isBrushAdjusting: boolean = false
+  brushPreviewGradient: HTMLElement | null = null
+  initialPoint: Point | null = null
+
+  maskEditor: MaskEditorDialog
+  messageBroker: MessageBroker
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.createListeners()
+    this.addPullTopics()
+
+    this.brushSettings = {
+      size: 10,
+      opacity: 100,
+      hardness: 1,
+      type: BrushShape.Arc
+    }
+    this.maskBlendMode = MaskBlendMode.Black
+  }
+
+  private createListeners() {
+    //setters
+    this.messageBroker.subscribe('setBrushSize', (size: number) =>
+      this.setBrushSize(size)
+    )
+    this.messageBroker.subscribe('setBrushOpacity', (opacity: number) =>
+      this.setBrushOpacity(opacity)
+    )
+    this.messageBroker.subscribe('setBrushHardness', (hardness: number) =>
+      this.setBrushHardness(hardness)
+    )
+    this.messageBroker.subscribe('setBrushShape', (type: BrushShape) =>
+      this.setBrushType(type)
+    )
+    //brush adjustment
+    this.messageBroker.subscribe(
+      'brushAdjustmentStart',
+      (event: PointerEvent) => this.startBrushAdjustment(event)
+    )
+    this.messageBroker.subscribe('brushAdjustment', (event: PointerEvent) =>
+      this.handleBrushAdjustment(event)
+    )
+    //drawing
+    this.messageBroker.subscribe('drawStart', (event: PointerEvent) =>
+      this.start_drawing(event)
+    )
+    this.messageBroker.subscribe('draw', (event: PointerEvent) =>
+      this.handleDrawing(event)
+    )
+    this.messageBroker.subscribe('drawEnd', (event: PointerEvent) =>
+      this.drawEnd(event)
+    )
+  }
+
+  private addPullTopics() {
+    this.messageBroker.createPullTopic(
+      'brushSize',
+      async () => this.brushSettings.size
+    )
+    this.messageBroker.createPullTopic(
+      'brushOpacity',
+      async () => this.brushSettings.opacity
+    )
+    this.messageBroker.createPullTopic(
+      'brushHardness',
+      async () => this.brushSettings.hardness
+    )
+    this.messageBroker.createPullTopic(
+      'brushType',
+      async () => this.brushSettings.type
+    )
+    this.messageBroker.createPullTopic(
+      'maskBlendMode',
+      async () => this.maskBlendMode
+    )
+    this.messageBroker.createPullTopic(
+      'brushSettings',
+      async () => this.brushSettings
+    )
+  }
+
+  private async start_drawing(event: PointerEvent) {
+    this.isDrawing = true
+    let compositionOp: CompositionOperation
+    let currentTool = await this.messageBroker.pull('currentTool')
+    let coords = { x: event.offsetX, y: event.offsetY }
+    let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
+
+    //set drawing mode
+    if (currentTool === Tools.Eraser || event.buttons == 2) {
+      compositionOp = CompositionOperation.DestinationOut //eraser
+    } else {
+      compositionOp = CompositionOperation.SourceOver //pen
+    }
+
+    //check if user wants to draw line or free draw
+    if (event.shiftKey && this.lineStartPoint) {
+      this.isDrawingLine = true
+      this.drawLine(this.lineStartPoint, coords_canvas, compositionOp)
+    } else {
+      this.isDrawingLine = false
+      this.init_shape(compositionOp)
+      this.draw_shape(coords_canvas)
+    }
+    this.lineStartPoint = coords_canvas
+    this.smoothingCordsArray = [coords_canvas] //used to smooth the drawing line
+    this.smoothingLastDrawTime = new Date()
+  }
+
+  private async handleDrawing(event: PointerEvent) {
+    var diff = performance.now() - this.smoothingLastDrawTime.getTime()
+    let coords = { x: event.offsetX, y: event.offsetY }
+    let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
+    let currentTool = await this.messageBroker.pull('currentTool')
+
+    /* move to draw
+    if (event instanceof PointerEvent && event.pointerType == 'pen') {
+      brush_size *= event.pressure
+      this.last_pressure = event.pressure
+    } else {
+      brush_size = this.brush_size //this is the problem with pen pressure
+    }
+    */
+
+    if (diff > 20 && !this.isDrawing)
+      requestAnimationFrame(() => {
+        this.init_shape(CompositionOperation.SourceOver)
+        this.draw_shape(coords_canvas)
+        this.smoothingCordsArray.push(coords_canvas)
+      })
+    else
+      requestAnimationFrame(() => {
+        if (currentTool === Tools.Eraser || event.buttons == 2) {
+          this.init_shape(CompositionOperation.DestinationOut)
+        } else {
+          this.init_shape(CompositionOperation.SourceOver)
+        }
+
+        //use drawWithSmoothing for better performance or change step in drawWithBetterSmoothing
+        this.drawWithBetterSmoothing(coords_canvas)
+      })
+
+    this.smoothingLastDrawTime = new Date()
+  }
+
+  private async drawEnd(event: PointerEvent) {
+    const coords = { x: event.offsetX, y: event.offsetY }
+    const coords_canvas = await this.messageBroker.pull(
+      'screenToCanvas',
+      coords
+    )
+
+    if (this.isDrawing) {
+      this.isDrawing = false
+      this.messageBroker.publish('saveState')
+      this.lineStartPoint = coords_canvas
+    }
+  }
+
+  private drawWithBetterSmoothing(point: Point) {
+    // Add current point to the smoothing array
+    if (!this.smoothingCordsArray) {
+      this.smoothingCordsArray = []
+    }
+
+    this.smoothingCordsArray.push(point)
+
+    // Keep a moving window of points for the spline
+    const MAX_POINTS = 5
+    if (this.smoothingCordsArray.length > MAX_POINTS) {
+      this.smoothingCordsArray.shift()
+    }
+
+    // Need at least 3 points for cubic spline interpolation
+    if (this.smoothingCordsArray.length >= 3) {
+      const dx = point.x - this.smoothingCordsArray[0].x
+      const dy = point.y - this.smoothingCordsArray[0].y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const step = 2
+      const steps = Math.ceil(distance / step)
+
+      // Generate interpolated points
+      const interpolatedPoints = this.calculateCubicSplinePoints(
+        this.smoothingCordsArray,
+        steps // number of segments between each pair of control points
+      )
+
+      // Draw all interpolated points
+      for (const point of interpolatedPoints) {
+        this.draw_shape(point)
+      }
+    } else {
+      // If we don't have enough points yet, just draw the current point
+      this.draw_shape(point)
+    }
+  }
+
+  private async drawLine(
+    p1: Point,
+    p2: Point,
+    compositionOp: CompositionOperation
+  ) {
+    const brush_size = await this.messageBroker.pull('brushSize')
+    const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
+    const steps = Math.ceil(distance / (brush_size / 4)) // Adjust for smoother lines
+
+    this.init_shape(compositionOp)
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps
+      const x = p1.x + (p2.x - p1.x) * t
+      const y = p1.y + (p2.y - p1.y) * t
+      const point = { x: x, y: y }
+      this.draw_shape(point)
+    }
+  }
+
+  //brush adjustment
+
+  private async startBrushAdjustment(event: PointerEvent) {
+    event.preventDefault()
+    const coords = { x: event.offsetX, y: event.offsetY }
+    let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
+    this.messageBroker.publish('setBrushPreviewGradientVisibility', true)
+    this.initialPoint = coords_canvas
+    this.isBrushAdjusting = true
+    return
+  }
+
+  private async handleBrushAdjustment(event: PointerEvent) {
+    const coords = { x: event.offsetX, y: event.offsetY }
+    let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
+
+    const delta_x = coords_canvas.x - this.initialPoint!.x
+    const delta_y = coords_canvas.y - this.initialPoint!.y
+
+    // Adjust brush size (horizontal movement)
+    const newSize = Math.max(
+      1,
+      Math.min(100, this.brushSettings.size! + delta_x / 10)
+    )
+
+    // Adjust brush hardness (vertical movement)
+    const newHardness = Math.max(
+      0,
+      Math.min(1, this.brushSettings!.hardness - delta_y / 200)
+    )
+
+    this.brushSettings.size = newSize
+    this.brushSettings.hardness = newHardness
+
+    this.messageBroker.publish('updateBrushPreview')
+
+    return
+  }
+
+  //helper functions
+
+  private async draw_shape(point: Point) {
+    const brushSettings: Brush = await this.messageBroker.pull('brushSettings')
+    const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
+    const brushType = await this.messageBroker.pull('brushType')
+    const maskColor = await this.messageBroker.pull('getMaskColor')
+    const size = brushSettings.size
+    const opacity = brushSettings.opacity
+    const hardness = brushSettings.hardness
+
+    const x = point.x
+    const y = point.y
+
+    // Extend the gradient radius beyond the brush size
+    const extendedSize = size * (2 - hardness)
+
+    let gradient = maskCtx.createRadialGradient(x, y, 0, x, y, extendedSize)
+
+    const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
+
+    if (hardness === 1) {
+      gradient.addColorStop(
+        0,
+        isErasing
+          ? `rgba(255, 255, 255, ${opacity})`
+          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      )
+      gradient.addColorStop(
+        1,
+        isErasing
+          ? `rgba(255, 255, 255, ${opacity})`
+          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+      )
+    } else {
+      let softness = 1 - hardness
+      let innerStop = Math.max(0, hardness - softness)
+      let outerStop = size / extendedSize
+
+      if (isErasing) {
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
+        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
+        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
+        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
+      } else {
+        gradient.addColorStop(
+          0,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        )
+        gradient.addColorStop(
+          innerStop,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
+        )
+        gradient.addColorStop(
+          outerStop,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
+        )
+        gradient.addColorStop(
+          1,
+          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
+        )
+      }
+    }
+
+    maskCtx.fillStyle = gradient
+    maskCtx.beginPath()
+    if (brushType === BrushShape.Rect) {
+      maskCtx.rect(
+        x - extendedSize,
+        y - extendedSize,
+        extendedSize * 2,
+        extendedSize * 2
+      )
+    } else {
+      maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
+    }
+    maskCtx.fill()
+  }
+
+  private async init_shape(compositionOperation: CompositionOperation) {
+    const maskBlendMode = await this.messageBroker.pull('maskBlendMode')
+    const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
+    maskCtx.beginPath()
+    if (compositionOperation == CompositionOperation.SourceOver) {
+      maskCtx.fillStyle = maskBlendMode
+      maskCtx.globalCompositeOperation = CompositionOperation.SourceOver
+    } else if (compositionOperation == CompositionOperation.DestinationOut) {
+      maskCtx.globalCompositeOperation = CompositionOperation.DestinationOut
+    }
+  }
+
+  private calculateCubicSplinePoints(
+    points: Point[],
+    numSegments: number = 10
+  ): Point[] {
+    const result: Point[] = []
+
+    const xCoords = points.map((p) => p.x)
+    const yCoords = points.map((p) => p.y)
+
+    const xDerivatives = this.calculateSplineCoefficients(xCoords)
+    const yDerivatives = this.calculateSplineCoefficients(yCoords)
+
+    // Generate points along the spline
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i]
+      const p1 = points[i + 1]
+      const d0x = xDerivatives[i]
+      const d1x = xDerivatives[i + 1]
+      const d0y = yDerivatives[i]
+      const d1y = yDerivatives[i + 1]
+
+      for (let t = 0; t <= numSegments; t++) {
+        const t_normalized = t / numSegments
+
+        // Hermite basis functions
+        const h00 = 2 * t_normalized ** 3 - 3 * t_normalized ** 2 + 1
+        const h10 = t_normalized ** 3 - 2 * t_normalized ** 2 + t_normalized
+        const h01 = -2 * t_normalized ** 3 + 3 * t_normalized ** 2
+        const h11 = t_normalized ** 3 - t_normalized ** 2
+
+        const x = h00 * p0.x + h10 * d0x + h01 * p1.x + h11 * d1x
+        const y = h00 * p0.y + h10 * d0y + h01 * p1.y + h11 * d1y
+
+        result.push({ x, y })
+      }
+    }
+
+    return result
+  }
+
+  private calculateSplineCoefficients(values: number[]): number[] {
+    const n = values.length - 1
+    const matrix: number[][] = new Array(n + 1)
+      .fill(0)
+      .map(() => new Array(n + 1).fill(0))
+    const rhs: number[] = new Array(n + 1).fill(0)
+
+    // Set up tridiagonal matrix
+    for (let i = 1; i < n; i++) {
+      matrix[i][i - 1] = 1
+      matrix[i][i] = 4
+      matrix[i][i + 1] = 1
+      rhs[i] = 3 * (values[i + 1] - values[i - 1])
+    }
+
+    // Set boundary conditions (natural spline)
+    matrix[0][0] = 2
+    matrix[0][1] = 1
+    matrix[n][n - 1] = 1
+    matrix[n][n] = 2
+    rhs[0] = 3 * (values[1] - values[0])
+    rhs[n] = 3 * (values[n] - values[n - 1])
+
+    // Solve tridiagonal system using Thomas algorithm
+    for (let i = 1; i <= n; i++) {
+      const m = matrix[i][i - 1] / matrix[i - 1][i - 1]
+      matrix[i][i] -= m * matrix[i - 1][i]
+      rhs[i] -= m * rhs[i - 1]
+    }
+
+    const solution: number[] = new Array(n + 1)
+    solution[n] = rhs[n] / matrix[n][n]
+    for (let i = n - 1; i >= 0; i--) {
+      solution[i] = (rhs[i] - matrix[i][i + 1] * solution[i + 1]) / matrix[i][i]
+    }
+
+    return solution
+  }
+
+  private setBrushSize(size: number) {
+    this.brushSettings.size = size
+  }
+
+  private setBrushOpacity(opacity: number) {
+    this.brushSettings.opacity = opacity
+  }
+
+  private setBrushHardness(hardness: number) {
+    this.brushSettings.hardness = hardness
+  }
+
+  private setBrushType(type: BrushShape) {
+    this.brushSettings.type = type
+  }
+}
+
+class UIManager {
+  private rootElement: HTMLElement
+  private brush!: HTMLDivElement
+  private brushPreviewGradient!: HTMLDivElement
+  private maskCtx: any
+  private maskCanvas!: HTMLCanvasElement
+  private imgCanvas!: HTMLCanvasElement
+  private brushSettingsHTML!: HTMLDivElement
+  private paintBucketSettingsHTML!: HTMLDivElement
+  private maskOpacitySlider!: HTMLInputElement
+  private brushHardnessSlider!: HTMLInputElement
+  private brushSizeSlider!: HTMLInputElement
+  private brushOpacitySlider!: HTMLInputElement
+  private sidebarImage!: HTMLImageElement
+  private saveButton!: HTMLButtonElement
+  private toolPanel!: HTMLDivElement
+  private sidePanel!: HTMLDivElement
+  private pointerZone!: HTMLDivElement
+  private canvasBackground!: HTMLDivElement
+  private canvasContainer!: HTMLDivElement
+  private image: HTMLImageElement
+
+  private maskEditor: MaskEditorDialog
+  private messageBroker: MessageBroker
+
+  private mask_opacity: number = 0.7
+  private maskBlendMode: MaskBlendMode = MaskBlendMode.Black
+
+  constructor(rootElement: HTMLElement, maskEditor: MaskEditorDialog) {
+    this.rootElement = rootElement
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.addListeners()
+    this.addPullTopics()
+  }
+
+  addListeners() {
+    this.messageBroker.subscribe('updateBrushPreview', async () =>
+      this.updateBrushPreview()
+    )
+
+    this.messageBroker.subscribe(
+      'paintBucketCursor',
+      (isPaintBucket: boolean) => this.handlePaintBucketCursor(isPaintBucket)
+    )
+
+    this.messageBroker.subscribe('panCursor', (isPan: boolean) =>
+      this.handlePanCursor(isPan)
+    )
+
+    this.messageBroker.subscribe('setBrushVisibility', (isVisible: boolean) =>
+      this.setBrushVisibility(isVisible)
+    )
+
+    this.messageBroker.subscribe(
+      'setBrushPreviewGradientVisibility',
+      (isVisible: boolean) => this.setBrushPreviewGradientVisibility(isVisible)
+    )
+  }
+
+  addPullTopics() {
+    this.messageBroker.createPullTopic(
+      'maskCanvas',
+      async () => this.maskCanvas
+    )
+    this.messageBroker.createPullTopic('maskCtx', async () => this.maskCtx)
+    this.messageBroker.createPullTopic('imgCanvas', async () => this.imgCanvas)
+    this.messageBroker.createPullTopic(
+      'screenToCanvas',
+      async (coords: Point) => this.screenToCanvas(coords)
+    )
+    this.messageBroker.createPullTopic(
+      'getCanvasContainer',
+      async () => this.canvasContainer
+    )
+    this.messageBroker.createPullTopic('getMaskColor', async () =>
+      this.getMaskColor()
+    )
+  }
+
+  async setlayout() {
+    var user_ui = await this.createUI()
+    var canvasContainer = this.createBackgroundUI()
+
+    var brush = await this.createBrush()
+    await this.setBrushBorderRadius()
+    this.setBrushOpacity(1)
+    this.rootElement.appendChild(canvasContainer)
+    this.rootElement.appendChild(user_ui)
+    document.body.appendChild(brush)
+  }
+
+  private async createUI() {
+    var ui_container = document.createElement('div')
+    ui_container.id = 'maskEditor_uiContainer'
+
+    var top_bar = await this.createTopBar()
+
+    var ui_horizontal_container = document.createElement('div')
+    ui_horizontal_container.id = 'maskEditor_uiHorizontalContainer'
+
+    var side_panel_container = await this.createSidePanel()
+
+    var pointer_zone = this.createPointerZone()
+
+    var tool_panel = this.createToolPanel()
+
+    ui_horizontal_container.appendChild(tool_panel)
+    ui_horizontal_container.appendChild(pointer_zone)
+    ui_horizontal_container.appendChild(side_panel_container)
+
+    ui_container.appendChild(top_bar)
+    ui_container.appendChild(ui_horizontal_container)
+
+    return ui_container
+  }
+
+  private createBackgroundUI() {
+    const canvasContainer = document.createElement('div')
+    canvasContainer.id = 'maskEditorCanvasContainer'
+
+    const imgCanvas = document.createElement('canvas')
+    imgCanvas.id = 'imageCanvas'
+
+    const maskCanvas = document.createElement('canvas')
+    maskCanvas.id = 'maskCanvas'
+
+    const canvas_background = document.createElement('div')
+    canvas_background.id = 'canvasBackground'
+
+    canvasContainer.appendChild(imgCanvas)
+    canvasContainer.appendChild(maskCanvas)
+    canvasContainer.appendChild(canvas_background)
+
+    // prepare content
+    this.imgCanvas = imgCanvas
+    this.maskCanvas = maskCanvas
+    this.canvasContainer = canvasContainer
+    this.canvasBackground = canvas_background
+    this.maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })
+    this.setEventHandler()
+
+    //remove styling and move to css file
+
+    this.imgCanvas.style.position = 'absolute'
+    this.maskCanvas.style.position = 'absolute'
+
+    this.imgCanvas.style.top = '200'
+    this.imgCanvas.style.left = '0'
+
+    this.maskCanvas.style.top = this.imgCanvas.style.top
+    this.maskCanvas.style.left = this.imgCanvas.style.left
+
+    const maskCanvasStyle = this.getMaskCanvasStyle()
+    this.maskCanvas.style.mixBlendMode = maskCanvasStyle.mixBlendMode
+    this.maskCanvas.style.opacity = maskCanvasStyle.opacity.toString()
+
+    return canvasContainer
+  }
+
+  async setBrushBorderRadius() {
+    const brushSettings = await this.messageBroker.pull('brushSettings')
+
+    if (brushSettings.type === BrushShape.Rect) {
       this.brush.style.borderRadius = '0%'
       // @ts-expect-error
       this.brush.style.MozBorderRadius = '0%'
@@ -555,45 +1692,22 @@ class MaskEditorDialog extends ComfyDialog {
     }
   }
 
-  createSidePanel() {
-    const self = this
+  async initUI() {
+    this.saveButton.innerText = 'Save'
+    this.saveButton.disabled = false
 
+    await this.setImages(this.imgCanvas) //probably change method to initImageCanvas
+  }
+
+  private async createSidePanel() {
     var side_panel_container = document.createElement('div')
     side_panel_container.id = 'maskEditor_sidePanelContainer'
+    this.sidePanel = side_panel_container
 
     //side panel
 
     var side_panel = document.createElement('div')
     side_panel.id = 'maskEditor_sidePanel'
-
-    /// shortcuts
-
-    var side_panel_shortcuts = document.createElement('div')
-    side_panel_shortcuts.id = 'maskEditor_sidePanelShortcuts'
-
-    var side_panel_undo_button = document.createElement('div')
-    side_panel_undo_button.id = 'maskEditor_sidePanelUndoButton'
-    side_panel_undo_button.classList.add('maskEditor_sidePanelIconButton')
-    side_panel_undo_button.innerHTML =
-      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"><path d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"></path> </svg>'
-
-    side_panel_undo_button.addEventListener('click', () => {
-      self.canvasHistory.undo()
-    })
-
-    var side_panel_redo_button = document.createElement('div')
-    side_panel_redo_button.id = 'maskEditor_sidePanelRedoButton'
-    side_panel_redo_button.classList.add('maskEditor_sidePanelIconButton')
-    side_panel_redo_button.innerHTML =
-      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"> <path class="cls-1" d="M6.23,12.18c-1.97,0-3.58-1.61-3.58-3.58,0-2.11,1.71-3.58,4.17-3.58h3.98l-1.43-1.43c-.18-.18-.18-.47,0-.64.18-.18.46-.18.64,0l2.21,2.21c.09.09.13.2.13.32s-.05.24-.13.32l-2.21,2.21c-.18.18-.47.18-.64,0-.18-.18-.18-.47,0-.64l1.43-1.43h-3.98c-1.92,0-3.26,1.1-3.26,2.67,0,1.47,1.2,2.67,2.67,2.67.25,0,.46.2.46.46s-.2.46-.46.46Z"/></svg>'
-
-    side_panel_redo_button.addEventListener('click', () => {
-      self.canvasHistory.redo()
-    })
-
-    side_panel_shortcuts.appendChild(side_panel_undo_button)
-    side_panel_shortcuts.appendChild(side_panel_redo_button)
-
     /// brush settings
 
     var side_panel_brush_settings = document.createElement('div')
@@ -625,8 +1739,8 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_brush_settings_brush_shape_circle.addEventListener(
       'click',
       () => {
-        self.pointer_type = PointerType.Arc
-        this.setBrushBorderRadius(self)
+        this.messageBroker.publish('setBrushShape', BrushShape.Arc)
+        this.setBrushBorderRadius()
         side_panel_brush_settings_brush_shape_circle.style.background =
           'var(--p-button-text-primary-color)'
         side_panel_brush_settings_brush_shape_square.style.background = ''
@@ -641,8 +1755,8 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_brush_settings_brush_shape_square.addEventListener(
       'click',
       () => {
-        self.pointer_type = PointerType.Rect
-        this.setBrushBorderRadius(self)
+        this.messageBroker.publish('setBrushShape', BrushShape.Rect)
+        this.setBrushBorderRadius()
         side_panel_brush_settings_brush_shape_square.style.background =
           'var(--p-button-text-primary-color)'
         side_panel_brush_settings_brush_shape_circle.style.background = ''
@@ -677,12 +1791,15 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_brush_settings_thickness_input.addEventListener(
       'input',
       (event) => {
-        self.brush_size = parseInt((event.target as HTMLInputElement)!.value)
-        self.updateBrushPreview(self)
+        this.messageBroker.publish(
+          'setBrushSize',
+          parseInt(side_panel_brush_settings_thickness_input.value)
+        )
+        this.updateBrushPreview()
       }
     )
 
-    this.brush_size_slider = side_panel_brush_settings_thickness_input
+    this.brushSizeSlider = side_panel_brush_settings_thickness_input
 
     var side_panel_brush_settings_opacity_title = document.createElement('span')
     side_panel_brush_settings_opacity_title.classList.add(
@@ -705,14 +1822,15 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_brush_settings_opacity_input.addEventListener(
       'input',
       (event) => {
-        self.brush_opacity = parseFloat(
-          (event.target as HTMLInputElement)!.value
+        this.messageBroker.publish(
+          'setBrushOpacity',
+          parseFloat(side_panel_brush_settings_opacity_input.value)
         )
-        self.updateBrushPreview(self)
+        this.updateBrushPreview()
       }
     )
 
-    this.brush_opacity_slider = side_panel_brush_settings_opacity_input
+    this.brushOpacitySlider = side_panel_brush_settings_opacity_input
 
     var side_panel_brush_settings_hardness_title =
       document.createElement('span')
@@ -736,14 +1854,15 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_brush_settings_hardness_input.addEventListener(
       'input',
       (event) => {
-        self.brush_hardness = parseFloat(
-          (event.target as HTMLInputElement)!.value
+        this.messageBroker.publish(
+          'setBrushHardness',
+          parseFloat(side_panel_brush_settings_hardness_input.value)
         )
-        self.updateBrushPreview(self)
+        this.updateBrushPreview()
       }
     )
 
-    this.brush_hardness_slider = side_panel_brush_settings_hardness_input
+    this.brushHardnessSlider = side_panel_brush_settings_hardness_input
 
     side_panel_brush_settings.appendChild(side_panel_brush_settings_title)
     side_panel_brush_settings.appendChild(
@@ -798,11 +1917,14 @@ class MaskEditorDialog extends ComfyDialog {
       'type',
       'range'
     )
+
+    var tolerance = await this.messageBroker.pull('getTolerance')
+
     side_panel_paint_bucket_settings_tolerance_input.setAttribute('min', '0')
     side_panel_paint_bucket_settings_tolerance_input.setAttribute('max', '255')
     side_panel_paint_bucket_settings_tolerance_input.setAttribute(
       'value',
-      String(this.paintBucketTolerance)
+      String(tolerance)
     )
 
     side_panel_paint_bucket_settings_tolerance_input.classList.add(
@@ -812,9 +1934,11 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_paint_bucket_settings_tolerance_input.addEventListener(
       'input',
       (event) => {
-        self.paintBucketTolerance = parseInt(
+        var paintBucketTolerance = parseInt(
           (event.target as HTMLInputElement)!.value
         )
+
+        this.messageBroker.publish('setTolerance', paintBucketTolerance)
       }
     )
 
@@ -867,9 +1991,9 @@ class MaskEditorDialog extends ComfyDialog {
       'change',
       (event) => {
         if (!(event.target as HTMLInputElement)!.checked) {
-          self.maskCanvas.style.opacity = '0'
+          this.maskCanvas.style.opacity = '0'
         } else {
-          self.maskCanvas.style.opacity = String(self.mask_opacity)
+          this.maskCanvas.style.opacity = String(this.mask_opacity) //change name
         }
       }
     )
@@ -900,7 +2024,7 @@ class MaskEditorDialog extends ComfyDialog {
       option_element.innerText = option
       side_panel_mask_layer_blending_select.appendChild(option_element)
 
-      if (option == self.brush_color_mode) {
+      if (option == this.maskBlendMode) {
         option_element.selected = true
       }
     })
@@ -908,8 +2032,10 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_mask_layer_blending_select.addEventListener(
       'change',
       (event) => {
-        self.brush_color_mode = (event.target as HTMLSelectElement)!.value
-        self.updateWhenBrushColorModeChanged()
+        const selectedValue = (event.target as HTMLSelectElement)
+          .value as MaskBlendMode
+        this.maskBlendMode = selectedValue
+        this.updateMaskColor()
       }
     )
 
@@ -943,10 +2069,10 @@ class MaskEditorDialog extends ComfyDialog {
     )
 
     side_panel_mask_layer_opacity_input.addEventListener('input', (event) => {
-      self.mask_opacity = parseFloat((event.target as HTMLInputElement)!.value)
-      self.maskCanvas.style.opacity = String(self.mask_opacity)
+      this.mask_opacity = parseFloat((event.target as HTMLInputElement)!.value)
+      this.maskCanvas.style.opacity = String(this.mask_opacity)
 
-      if (self.mask_opacity == 0) {
+      if (this.mask_opacity == 0) {
         side_panel_mask_layer_visibility_toggle.checked = false
       } else {
         side_panel_mask_layer_visibility_toggle.checked = true
@@ -980,9 +2106,9 @@ class MaskEditorDialog extends ComfyDialog {
       'change',
       (event) => {
         if (!(event.target as HTMLInputElement)!.checked) {
-          self.imgCanvas.style.opacity = '0'
+          this.imgCanvas.style.opacity = '0'
         } else {
-          self.imgCanvas.style.opacity = '1'
+          this.imgCanvas.style.opacity = '1'
         }
       }
     )
@@ -1025,89 +2151,110 @@ class MaskEditorDialog extends ComfyDialog {
     side_panel_image_layer_settings.appendChild(side_panel_image_layer_title)
     side_panel_image_layer_settings.appendChild(side_panel_image_layer)
 
-    /// clear canvas button
-
-    var side_panel_buttons_container = document.createElement('div')
-    side_panel_buttons_container.id = 'maskEditor_sidePanelButtonsContainer'
-
-    var side_panel_clear_canvas_button = document.createElement('button')
-    side_panel_clear_canvas_button.id = 'maskEditor_sidePanelClearCanvasButton'
-    side_panel_clear_canvas_button.innerText = 'Clear Canvas'
-
-    side_panel_clear_canvas_button.addEventListener('click', () => {
-      self.maskCtx.clearRect(
-        0,
-        0,
-        self.maskCanvas.width,
-        self.maskCanvas.height
-      )
-      this.canvasHistory.saveState()
-    })
-
-    var side_panel_button_container = document.createElement('div')
-    side_panel_button_container.id =
-      'maskEditor_sidePanelHorizontalButtonContainer'
-
-    var side_panel_cancel_button = document.createElement('button')
-    side_panel_cancel_button.classList.add('maskEditor_sidePanelBigButton')
-    side_panel_cancel_button.innerText = 'Cancel'
-
-    side_panel_cancel_button.addEventListener('click', () => {
-      document.removeEventListener('keydown', (event: KeyboardEvent) =>
-        MaskEditorDialog.handleKeyDown(self, event)
-      )
-      document.removeEventListener('keyup', (event: KeyboardEvent) =>
-        MaskEditorDialog.handleKeyUp(self, event)
-      )
-      self.close()
-    })
-
-    var side_panel_save_button = document.createElement('button')
-    side_panel_save_button.classList.add('maskEditor_sidePanelBigButton')
-    side_panel_save_button.innerText = 'Save'
-
-    this.saveButton = side_panel_save_button
-
-    side_panel_save_button.addEventListener('click', () => {
-      document.removeEventListener('keydown', (event: KeyboardEvent) =>
-        MaskEditorDialog.handleKeyDown(self, event)
-      )
-      document.removeEventListener('keyup', (event: KeyboardEvent) =>
-        MaskEditorDialog.handleKeyUp(self, event)
-      )
-      self.save()
-    })
-
-    side_panel_button_container.appendChild(side_panel_cancel_button)
-    side_panel_button_container.appendChild(side_panel_save_button)
-
-    side_panel_buttons_container.appendChild(side_panel_clear_canvas_button)
-    side_panel_buttons_container.appendChild(side_panel_button_container)
-
     const side_panel_separator1 = document.createElement('div')
     side_panel_separator1.classList.add('maskEditor_sidePanelSeparator')
 
     const side_panel_separator2 = document.createElement('div')
     side_panel_separator2.classList.add('maskEditor_sidePanelSeparator')
 
-    const side_panel_separator3 = document.createElement('div')
-    side_panel_separator3.classList.add('maskEditor_sidePanelSeparator')
-
-    side_panel.appendChild(side_panel_shortcuts)
-    side_panel.appendChild(side_panel_separator1)
     side_panel.appendChild(side_panel_brush_settings)
     side_panel.appendChild(side_panel_paint_bucket_settings)
-    side_panel.appendChild(side_panel_separator2)
+    side_panel.appendChild(side_panel_separator1)
     side_panel.appendChild(side_panel_image_layer_settings)
-    side_panel.appendChild(side_panel_separator3)
-    side_panel.appendChild(side_panel_buttons_container)
 
     side_panel_container.appendChild(side_panel)
 
     return side_panel_container
   }
 
-  createToolPanel() {
+  private async createTopBar() {
+    var top_bar = document.createElement('div')
+    top_bar.id = 'maskEditor_topBar'
+
+    var top_bar_title_container = document.createElement('div')
+    top_bar_title_container.id = 'maskEditor_topBarTitleContainer'
+
+    var top_bar_title = document.createElement('h1')
+    top_bar_title.id = 'maskEditor_topBarTitle'
+    top_bar_title.innerText = 'ComfyUI'
+
+    top_bar_title_container.appendChild(top_bar_title)
+
+    var top_bar_shortcuts_container = document.createElement('div')
+    top_bar_shortcuts_container.id = 'maskEditor_topBarShortcutsContainer'
+
+    var top_bar_undo_button = document.createElement('div')
+    top_bar_undo_button.id = 'maskEditor_topBarUndoButton'
+    top_bar_undo_button.classList.add('maskEditor_topPanelIconButton')
+    top_bar_undo_button.innerHTML =
+      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"><path d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"></path> </svg>'
+
+    top_bar_undo_button.addEventListener('click', () => {
+      this.messageBroker.publish('undo')
+    })
+
+    var top_bar_redo_button = document.createElement('div')
+    top_bar_redo_button.id = 'maskEditor_topBarRedoButton'
+    top_bar_redo_button.classList.add('maskEditor_topPanelIconButton')
+    top_bar_redo_button.innerHTML =
+      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"> <path class="cls-1" d="M6.23,12.18c-1.97,0-3.58-1.61-3.58-3.58,0-2.11,1.71-3.58,4.17-3.58h3.98l-1.43-1.43c-.18-.18-.18-.47,0-.64.18-.18.46-.18.64,0l2.21,2.21c.09.09.13.2.13.32s-.05.24-.13.32l-2.21,2.21c-.18.18-.47.18-.64,0-.18-.18-.18-.47,0-.64l1.43-1.43h-3.98c-1.92,0-3.26,1.1-3.26,2.67,0,1.47,1.2,2.67,2.67,2.67.25,0,.46.2.46.46s-.2.46-.46.46Z"/></svg>'
+
+    top_bar_redo_button.addEventListener('click', () => {
+      this.messageBroker.publish('redo')
+    })
+
+    top_bar_shortcuts_container.appendChild(top_bar_undo_button)
+    top_bar_shortcuts_container.appendChild(top_bar_redo_button)
+
+    var top_bar_button_container = document.createElement('div')
+    top_bar_button_container.id = 'maskEditor_topBarButtonContainer'
+
+    var top_bar_clear_button = document.createElement('button')
+    top_bar_clear_button.id = 'maskEditor_topBarClearButton'
+    top_bar_clear_button.classList.add('maskEditor_topPanelButton')
+    top_bar_clear_button.innerText = 'Clear'
+
+    top_bar_clear_button.addEventListener('click', () => {
+      this.maskCtx.clearRect(
+        0,
+        0,
+        this.maskCanvas.width,
+        this.maskCanvas.height
+      )
+      this.messageBroker.publish('saveState')
+    })
+
+    var top_bar_save_button = document.createElement('button')
+    top_bar_save_button.id = 'maskEditor_topBarSaveButton'
+    top_bar_save_button.classList.add('maskEditor_topPanelButton')
+    top_bar_save_button.innerText = 'Save'
+    this.saveButton = top_bar_save_button
+
+    top_bar_save_button.addEventListener('click', () => {
+      this.maskEditor.save()
+    })
+
+    var top_bar_cancel_button = document.createElement('button')
+    top_bar_cancel_button.id = 'maskEditor_topBarCancelButton'
+    top_bar_cancel_button.classList.add('maskEditor_topPanelButton')
+    top_bar_cancel_button.innerText = 'Cancel'
+
+    top_bar_cancel_button.addEventListener('click', () => {
+      this.maskEditor.close()
+    })
+
+    top_bar_button_container.appendChild(top_bar_clear_button)
+    top_bar_button_container.appendChild(top_bar_save_button)
+    top_bar_button_container.appendChild(top_bar_cancel_button)
+
+    top_bar.appendChild(top_bar_title_container)
+    top_bar.appendChild(top_bar_shortcuts_container)
+    top_bar.appendChild(top_bar_button_container)
+
+    return top_bar
+  }
+
+  private createToolPanel() {
     var pen_tool_panel = document.createElement('div')
     pen_tool_panel.id = 'maskEditor_toolPanel'
     this.toolPanel = pen_tool_panel
@@ -1130,7 +2277,8 @@ class MaskEditorDialog extends ComfyDialog {
     toolElements.push(toolPanel_brushToolContainer)
 
     toolPanel_brushToolContainer.addEventListener('click', () => {
-      this.currentTool = Tools.Pen
+      //move logic to tool manager
+      this.messageBroker.publish('setTool', Tools.Pen)
       for (let toolElement of toolElements) {
         if (toolElement != toolPanel_brushToolContainer) {
           toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
@@ -1140,7 +2288,7 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
-
+      this.messageBroker.publish('setTool', Tools.Pen)
       this.pointerZone.style.cursor = 'none'
       this.brush.style.opacity = '1'
     })
@@ -1166,7 +2314,8 @@ class MaskEditorDialog extends ComfyDialog {
     toolElements.push(toolPanel_eraserToolContainer)
 
     toolPanel_eraserToolContainer.addEventListener('click', () => {
-      this.currentTool = Tools.Eraser
+      //move logic to tool manager
+      this.messageBroker.publish('setTool', Tools.Eraser)
       for (let toolElement of toolElements) {
         if (toolElement != toolPanel_eraserToolContainer) {
           toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
@@ -1176,7 +2325,7 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
-
+      this.messageBroker.publish('setTool', Tools.Eraser)
       this.pointerZone.style.cursor = 'none'
       this.brush.style.opacity = '1'
     })
@@ -1202,7 +2351,8 @@ class MaskEditorDialog extends ComfyDialog {
     toolElements.push(toolPanel_paintBucketToolContainer)
 
     toolPanel_paintBucketToolContainer.addEventListener('click', () => {
-      this.currentTool = Tools.PaintBucket
+      //move logic to tool manager
+      this.messageBroker.publish('setTool', Tools.PaintBucket)
       for (let toolElement of toolElements) {
         if (toolElement != toolPanel_paintBucketToolContainer) {
           toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
@@ -1212,7 +2362,7 @@ class MaskEditorDialog extends ComfyDialog {
           this.paintBucketSettingsHTML.style.display = 'flex'
         }
       }
-
+      this.messageBroker.publish('setTool', Tools.PaintBucket)
       this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
       this.brush.style.opacity = '0'
     })
@@ -1238,24 +2388,22 @@ class MaskEditorDialog extends ComfyDialog {
     return pen_tool_panel
   }
 
-  createPointerZone() {
-    const self = this
-
+  private createPointerZone() {
     const pointer_zone = document.createElement('div')
     pointer_zone.id = 'maskEditor_pointerZone'
 
     this.pointerZone = pointer_zone
 
     pointer_zone.addEventListener('pointerdown', (event: PointerEvent) => {
-      this.handlePointerDown(self, event)
+      this.messageBroker.publish('pointerDown', event)
     })
 
     pointer_zone.addEventListener('pointermove', (event: PointerEvent) => {
-      this.handlePointerMove(self, event)
+      this.messageBroker.publish('pointerMove', event)
     })
 
     pointer_zone.addEventListener('pointerup', (event: PointerEvent) => {
-      this.handlePointerUp(self, event)
+      this.messageBroker.publish('pointerUp', event)
     })
 
     pointer_zone.addEventListener('pointerleave', (event: PointerEvent) => {
@@ -1263,231 +2411,131 @@ class MaskEditorDialog extends ComfyDialog {
       this.pointerZone.style.cursor = ''
     })
 
-    pointer_zone.addEventListener('pointerenter', (event: PointerEvent) => {
-      if (this.currentTool == Tools.PaintBucket) {
-        this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
-        this.brush.style.opacity = '0'
-      } else {
-        this.pointerZone.style.cursor = 'none'
-        this.brush.style.opacity = '1'
-      }
+    pointer_zone.addEventListener('touchstart', (event: TouchEvent) => {
+      this.messageBroker.publish('handleTouchStart', event)
     })
+
+    pointer_zone.addEventListener('touchmove', (event: TouchEvent) => {
+      this.messageBroker.publish('handleTouchMove', event)
+    })
+
+    pointer_zone.addEventListener('touchend', (event: TouchEvent) => {
+      this.messageBroker.publish('handleTouchEnd', event)
+    })
+
+    pointer_zone.addEventListener('wheel', (event) =>
+      this.messageBroker.publish('wheel', event)
+    )
+
+    pointer_zone.addEventListener(
+      'pointerenter',
+      async (event: PointerEvent) => {
+        let currentTool = await this.messageBroker.pull('currentTool')
+
+        if (currentTool == Tools.PaintBucket) {
+          this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+          this.brush.style.opacity = '0'
+        } else {
+          this.pointerZone.style.cursor = 'none'
+          this.brush.style.opacity = '1'
+        }
+      }
+    )
 
     return pointer_zone
   }
 
-  screenToCanvas(
-    clientX: number,
-    clientY: number
-  ): { x: number; x_unscaled: number; y: number; y_unscaled: number } {
+  async screenToCanvas(clientPoint: Point): Promise<Point> {
     // Get the bounding rectangles for both elements
+    const zoomRatio = await this.messageBroker.pull('zoomRatio')
     const canvasRect = this.maskCanvas.getBoundingClientRect()
-    const pointerZoneRect = this.pointerZone.getBoundingClientRect()
 
     // Calculate the offset between pointer zone and canvas
-    const offsetX = pointerZoneRect.left - canvasRect.left
-    const offsetY = pointerZoneRect.top - canvasRect.top
+    const offsetX = clientPoint.x - canvasRect.left + this.toolPanel.clientWidth
+    const offsetY = clientPoint.y - canvasRect.top + 44 // 44 is the height of the top menu
 
-    const x_unscaled = clientX + offsetX
-    const y_unscaled = clientY + offsetY
+    const x = offsetX / zoomRatio
+    const y = offsetY / zoomRatio
 
-    const x = x_unscaled / this.zoom_ratio
-    const y = y_unscaled / this.zoom_ratio
-
-    return { x: x, x_unscaled: x_unscaled, y: y, y_unscaled: y_unscaled }
+    return { x: x, y: y }
   }
 
-  setEventHandler(maskCanvas: HTMLCanvasElement) {
-    const self = this
+  private setEventHandler() {
+    this.maskCanvas.addEventListener('contextmenu', (event: Event) => {
+      event.preventDefault()
+    })
 
-    if (!this.handler_registered) {
-      maskCanvas.addEventListener('contextmenu', (event: Event) => {
+    this.rootElement.addEventListener('contextmenu', (event: Event) => {
+      event.preventDefault()
+    })
+
+    this.rootElement.addEventListener('dragstart', (event) => {
+      if (event.ctrlKey) {
         event.preventDefault()
-      })
-
-      this.element.addEventListener('contextmenu', (event: Event) => {
-        event.preventDefault()
-      })
-
-      this.element.addEventListener('wheel', (event) =>
-        this.handleWheelEvent(self, event)
-      )
-
-      maskCanvas.addEventListener(
-        'touchstart',
-        this.handleTouchStart.bind(this)
-      )
-      maskCanvas.addEventListener('touchmove', this.handleTouchMove.bind(this))
-      maskCanvas.addEventListener('touchend', this.handleTouchEnd.bind(this))
-
-      this.element.addEventListener('dragstart', (event) => {
-        if (event.ctrlKey) {
-          event.preventDefault()
-        }
-      })
-
-      this.handler_registered = true
-    }
+      }
+    })
   }
 
-  createUI() {
-    var ui_container = document.createElement('div')
-    ui_container.id = 'maskEditor_uiContainer'
-
-    var side_panel_container = this.createSidePanel()
-
-    var pointer_zone = this.createPointerZone()
-
-    var tool_panel = this.createToolPanel()
-
-    ui_container.appendChild(tool_panel)
-    ui_container.appendChild(pointer_zone)
-    ui_container.appendChild(side_panel_container)
-
-    return ui_container
-  }
-
-  setlayout(imgCanvas: HTMLCanvasElement, maskCanvas: HTMLCanvasElement) {
-    const self = this
-    self.pointer_type = PointerType.Arc
-
-    var user_ui = this.createUI()
-
+  private async createBrush() {
     var brush = document.createElement('div')
-    brush.id = 'brush'
-    brush.style.backgroundColor = 'transparent'
-    brush.style.outline = '1px dashed black'
-    brush.style.boxShadow = '0 0 0 1px white'
-    brush.style.position = 'absolute'
-    brush.style.zIndex = '8889'
-    brush.style.pointerEvents = 'none'
-    brush.style.borderRadius = '50%'
-    brush.style.overflow = 'visible'
+    const brushSettings = await this.messageBroker.pull('brushSettings')
+    brush.id = 'maskEditor_brush'
 
     var brush_preview_gradient = document.createElement('div')
-    brush_preview_gradient.style.position = 'absolute'
-    brush_preview_gradient.style.width = '100%'
-    brush_preview_gradient.style.height = '100%'
-    brush_preview_gradient.style.borderRadius = '50%'
-    brush_preview_gradient.style.display = 'none'
+    brush_preview_gradient.id = 'maskEditor_brushPreviewGradient'
 
     brush.appendChild(brush_preview_gradient)
 
-    var canvas_background = document.createElement('div')
-    canvas_background.id = 'canvasBackground'
-
-    this.canvasBackground = canvas_background
-
     this.brush = brush
     this.brushPreviewGradient = brush_preview_gradient
-    this.setBrushBorderRadius(self)
-    this.element.appendChild(imgCanvas)
-    this.element.appendChild(maskCanvas)
-    this.element.appendChild(canvas_background)
-    this.element.appendChild(user_ui)
-    document.body.appendChild(brush)
 
-    this.element.appendChild(imgCanvas)
-    this.element.appendChild(maskCanvas)
-
-    imgCanvas.style.position = 'absolute'
-    maskCanvas.style.position = 'absolute'
-
-    imgCanvas.style.top = '200'
-    imgCanvas.style.left = '0'
-
-    maskCanvas.style.top = imgCanvas.style.top
-    maskCanvas.style.left = imgCanvas.style.left
-
-    const maskCanvasStyle = this.getMaskCanvasStyle()
-    maskCanvas.style.mixBlendMode = maskCanvasStyle.mixBlendMode
-    maskCanvas.style.opacity = maskCanvasStyle.opacity.toString()
+    return brush
   }
 
-  async show() {
-    this.zoom_ratio = 1.0
-    this.pan_x = 0
-    this.pan_y = 0
+  async setImages(imgCanvas: HTMLCanvasElement) {
+    const imgCtx = imgCanvas.getContext('2d', { willReadFrequently: true })
+    const maskCtx = this.maskCtx
+    const maskCanvas = this.maskCanvas
 
-    document.body.addEventListener('contextmenu', this.disableContextMenu, {
-      capture: true
+    imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
+    maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
+
+    // image load
+    const filepath = ComfyApp.clipspace.images
+
+    const alpha_url = new URL(
+      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+    )
+
+    console.log()
+
+    alpha_url.searchParams.delete('channel')
+    alpha_url.searchParams.delete('preview')
+    alpha_url.searchParams.set('channel', 'a')
+    let mask_image: HTMLImageElement = await loadImage(alpha_url)
+
+    // original image load
+    const rgb_url = new URL(
+      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+    )
+    rgb_url.searchParams.delete('channel')
+    rgb_url.searchParams.set('channel', 'rgb')
+    this.image = new Image()
+
+    this.image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = rgb_url.toString()
     })
 
-    if (!this.is_layout_created) {
-      // layout
-      const imgCanvas = document.createElement('canvas')
-      const maskCanvas = document.createElement('canvas')
+    const sidePanelWidth = this.sidePanel.clientWidth
 
-      imgCanvas.id = 'imageCanvas'
-      maskCanvas.id = 'maskCanvas'
+    maskCanvas.width = this.image.width
+    maskCanvas.height = this.image.height
 
-      this.setlayout(imgCanvas, maskCanvas)
-
-      // prepare content
-      this.imgCanvas = imgCanvas
-      this.maskCanvas = maskCanvas
-      this.maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })
-
-      this.canvasHistory = new CanvasHistory(maskCanvas, this.maskCtx)
-
-      this.paintBucketTool = new PaintBucketTool(this.maskCanvas, this.maskCtx)
-
-      this.setEventHandler(maskCanvas)
-
-      this.is_layout_created = true
-
-      // replacement of onClose hook since close is not real close
-      const self = this
-      const observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (mutation) {
-          if (
-            mutation.type === 'attributes' &&
-            mutation.attributeName === 'style'
-          ) {
-            if (
-              self.last_display_style &&
-              self.last_display_style != 'none' &&
-              self.element.style.display == 'none'
-            ) {
-              //self.brush.style.display = 'none'
-              ComfyApp.onClipspaceEditorClosed()
-            }
-
-            self.last_display_style = self.element.style.display
-          }
-        })
-      })
-
-      const config = { attributes: true }
-      observer.observe(this.element, config)
-    }
-
-    // The keydown event needs to be reconfigured when closing the dialog as it gets removed.
-    document.addEventListener('keydown', (event: KeyboardEvent) =>
-      MaskEditorDialog.handleKeyDown(this, event)
-    )
-    document.addEventListener('keyup', (event: KeyboardEvent) =>
-      MaskEditorDialog.handleKeyUp(this, event)
-    )
-
-    this.saveButton.innerText = 'Save'
-    this.saveButton.disabled = false
-
-    this.element.id = 'maskEditor'
-    this.element.style.display = 'flex'
-    await this.setImages(this.imgCanvas)
-    this.canvasHistory.clearStates()
-    await new Promise((resolve) => setTimeout(resolve, 50))
-    this.canvasHistory.saveInitialState()
-
-    this.is_visible = true
-
-    this.sidebarImage.src =
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-  }
-
-  isOpened() {
-    return this.element.style.display == 'block'
+    await this.invalidateCanvas(this.image, mask_image)
+    this.messageBroker.publish('initZoomPan', [this.image, this.rootElement])
   }
 
   async invalidateCanvas(
@@ -1510,159 +2558,18 @@ class MaskEditorDialog extends ComfyDialog {
       mask_image,
       this.maskCanvas,
       maskCtx!,
-      this.getMaskColor()
+      await this.getMaskColor()
     )
   }
 
-  async setImages(imgCanvas: HTMLCanvasElement) {
-    let self = this
-
-    const imgCtx = imgCanvas.getContext('2d', { willReadFrequently: true })
-    const maskCtx = this.maskCtx
-    const maskCanvas = this.maskCanvas
-
-    imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
-    maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
-
-    // image load
-    const filepath = ComfyApp.clipspace.images
-
-    const alpha_url = new URL(
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-    )
-    alpha_url.searchParams.delete('channel')
-    alpha_url.searchParams.delete('preview')
-    alpha_url.searchParams.set('channel', 'a')
-    let mask_image: HTMLImageElement = await loadImage(alpha_url)
-
-    // original image load
-    const rgb_url = new URL(
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-    )
-    rgb_url.searchParams.delete('channel')
-    rgb_url.searchParams.set('channel', 'rgb')
-    this.image = new Image()
-
-    this.image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve(img)
-      img.onerror = reject
-      img.src = rgb_url.toString()
-    })
-
-    maskCanvas.width = self.image.width
-    maskCanvas.height = self.image.height
-
-    await self.invalidateCanvas(self.image, mask_image)
-    self.initializeCanvasPanZoom()
-  }
-
-  initializeCanvasPanZoom() {
-    // set initialize
-    let drawWidth = this.image.width
-    let drawHeight = this.image.height
-
-    let width = this.element.clientWidth
-    let height = this.element.clientHeight
-
-    if (this.image.width > width) {
-      drawWidth = width
-      drawHeight = (drawWidth / this.image.width) * this.image.height
-    }
-
-    if (drawHeight > height) {
-      drawHeight = height
-      drawWidth = (drawHeight / this.image.height) * this.image.width
-    }
-
-    this.zoom_ratio = drawWidth / this.image.width
-
-    const canvasX = (width - drawWidth) / 2
-    const canvasY = (height - drawHeight) / 2
-    this.pan_x = canvasX
-    this.pan_y = canvasY
-
-    this.invalidatePanZoom()
-  }
-
-  invalidatePanZoom() {
-    let raw_width = this.image.width * this.zoom_ratio
-    let raw_height = this.image.height * this.zoom_ratio
-    if (this.pan_x + raw_width < 10) {
-      this.pan_x = 10 - raw_width
-    }
-    if (this.pan_y + raw_height < 10) {
-      this.pan_y = 10 - raw_height
-    }
-    let width = `${raw_width}px`
-    let height = `${raw_height}px`
-    let left = `${this.pan_x}px`
-    let top = `${this.pan_y}px`
-    this.maskCanvas.style.width = width
-    this.maskCanvas.style.height = height
-    this.maskCanvas.style.left = left
-    this.maskCanvas.style.top = top
-    this.imgCanvas.style.width = width
-    this.imgCanvas.style.height = height
-    this.imgCanvas.style.left = left
-    this.imgCanvas.style.top = top
-    this.canvasBackground.style.width = width
-    this.canvasBackground.style.height = height
-    this.canvasBackground.style.left = left
-    this.canvasBackground.style.top = top
-  }
-
-  getMaskCanvasStyle() {
-    if (this.brush_color_mode === 'negative') {
-      return {
-        mixBlendMode: 'difference',
-        opacity: '1'
-      }
-    } else {
-      return {
-        mixBlendMode: 'initial',
-        opacity: this.mask_opacity
-      }
-    }
-  }
-
-  getMaskColor() {
-    if (this.brush_color_mode === 'black') {
-      return { r: 0, g: 0, b: 0 }
-    }
-    if (this.brush_color_mode === 'white') {
-      return { r: 255, g: 255, b: 255 }
-    }
-    if (this.brush_color_mode === 'negative') {
-      // negative effect only works with white color
-      return { r: 255, g: 255, b: 255 }
-    }
-
-    return { r: 0, g: 0, b: 0 }
-  }
-
-  getMaskFillStyle() {
-    const maskColor = this.getMaskColor()
-
-    return 'rgb(' + maskColor.r + ',' + maskColor.g + ',' + maskColor.b + ')'
-  }
-
-  setCanvasBackground() {
-    if (this.brush_color_mode === 'white') {
-      this.canvasBackground.style.background = 'black'
-    } else {
-      this.canvasBackground.style.background = 'white'
-    }
-  }
-
-  updateWhenBrushColorModeChanged() {
+  private async updateMaskColor() {
     // update mask canvas css styles
     const maskCanvasStyle = this.getMaskCanvasStyle()
     this.maskCanvas.style.mixBlendMode = maskCanvasStyle.mixBlendMode
     this.maskCanvas.style.opacity = maskCanvasStyle.opacity.toString()
 
     // update mask canvas rgb colors
-    const maskColor = this.getMaskColor()
+    const maskColor = await this.getMaskColor()
     this.maskCtx.fillStyle = `rgb(${maskColor.r}, ${maskColor.g}, ${maskColor.b})`
 
     //set canvas background color
@@ -1682,56 +2589,33 @@ class MaskEditorDialog extends ComfyDialog {
     this.maskCtx.putImageData(maskData, 0, 0)
   }
 
-  static handleKeyDown(self: MaskEditorDialog, event: KeyboardEvent) {
-    if (event.key === ']') {
-      self.brush_size = Math.min(self.brush_size + 2, 100)
-      self.brush_size_slider.value = self.brush_size.toString()
-    } else if (event.key === '[') {
-      self.brush_size = Math.max(self.brush_size - 2, 1)
-      self.brush_size_slider.value = self.brush_size.toString()
-    } else if (event.key === 'Enter') {
-      self.save()
-    } else if (event.key === ' ') {
-      self.isSpacePressed = true
-    }
-
-    // Check if user presses ctrl + z or cmd + z
-    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-      self.canvasHistory.undo()
-    }
-
-    // Check if user presses ctrl + shift + z or cmd + shift + z
-    if (
-      (event.ctrlKey || event.metaKey) &&
-      event.shiftKey &&
-      event.key === 'Z'
-    ) {
-      self.canvasHistory.redo()
-    }
-
-    self.updateBrushPreview(self)
-  }
-
-  static handleKeyUp(self: MaskEditorDialog, event: KeyboardEvent) {
-    if (event.key === ' ') {
-      self.isSpacePressed = false
+  getMaskCanvasStyle() {
+    if (this.maskBlendMode === MaskBlendMode.Negative) {
+      return {
+        mixBlendMode: 'difference',
+        opacity: '1'
+      }
+    } else {
+      return {
+        mixBlendMode: 'initial',
+        opacity: this.mask_opacity
+      }
     }
   }
 
-  static handlePointerUp(event: PointerEvent) {
-    event.preventDefault()
-    this.mousedown_x = 0
-    this.mousedown_y = 0
+  async updateBrushPreview() {
+    const cursorPoint = await this.messageBroker.pull('cursorPoint')
+    const pan_offset = await this.messageBroker.pull('panOffset')
+    const brushSettings = await this.messageBroker.pull('brushSettings')
+    const zoom_ratio = await this.messageBroker.pull('zoomRatio')
+    const centerX = cursorPoint.x + pan_offset.x
+    const centerY = cursorPoint.y + pan_offset.y
+    const brush = this.brush
+    const hardness = brushSettings.hardness
+    const extendedSize = brushSettings.size * (2 - hardness) * 2 * zoom_ratio
 
-    MaskEditorDialog.instance!.drawing_mode = false
-  }
-
-  updateBrushPreview(self: MaskEditorDialog) {
-    const centerX = self.cursorX + self.pan_x
-    const centerY = self.cursorY + self.pan_y
-    const brush = self.brush
-    const hardness = self.brush_hardness
-    const extendedSize = self.brush_size * (2 - hardness) * 2 * this.zoom_ratio
+    this.brushSizeSlider.value = String(brushSettings.size)
+    this.brushHardnessSlider.value = String(hardness)
 
     brush.style.width = extendedSize + 'px'
     brush.style.height = extendedSize + 'px'
@@ -1739,13 +2623,13 @@ class MaskEditorDialog extends ComfyDialog {
     brush.style.top = centerY - extendedSize / 2 + 'px'
 
     if (hardness === 1) {
-      self.brushPreviewGradient.style.background = 'rgba(255, 0, 0, 0.5)'
+      this.brushPreviewGradient.style.background = 'rgba(255, 0, 0, 0.5)'
       return
     }
 
     const opacityStop = hardness / 4 + 0.25
 
-    self.brushPreviewGradient.style.background = `
+    this.brushPreviewGradient.style.background = `
         radial-gradient(
             circle,
             rgba(255, 0, 0, 0.5) 0%,
@@ -1755,54 +2639,339 @@ class MaskEditorDialog extends ComfyDialog {
     `
   }
 
-  handleWheelEvent(self: MaskEditorDialog, event: WheelEvent) {
-    // zoom canvas
-    const oldZoom = this.zoom_ratio
-    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
-    this.zoom_ratio = Math.max(
-      0.2,
-      Math.min(10.0, this.zoom_ratio * zoomFactor)
-    )
-    const newZoom = this.zoom_ratio
-
-    // Get mouse position relative to the container
-    const rect = self.maskCanvas.getBoundingClientRect()
-    const mouseX = event.clientX - rect.left
-    const mouseY = event.clientY - rect.top
-
-    // Calculate new pan position
-    const scaleFactor = newZoom / oldZoom
-    this.pan_x += mouseX - mouseX * scaleFactor
-    this.pan_y += mouseY - mouseY * scaleFactor
-
-    this.invalidatePanZoom()
-
-    // Update cursor position with new pan values
-    this.updateCursorPosition(this, event.clientX, event.clientY)
-    this.updateBrushPreview(this)
+  getMaskBlendMode() {
+    return this.maskBlendMode
   }
 
-  pointMoveEvent(self: MaskEditorDialog, event: PointerEvent) {
-    if (event.pointerType == 'touch') return
-    this.cursorX = event.pageX
-    this.cursorY = event.pageY
-    //self.updateBrushPreview(self)
+  setSidebarImage(src: string) {
+    this.sidebarImage.src = src
   }
 
-  pan_move(self: MaskEditorDialog, event: PointerEvent) {
-    if (MaskEditorDialog.mousedown_x) {
-      let deltaX = MaskEditorDialog.mousedown_x! - event.clientX
-      let deltaY = MaskEditorDialog.mousedown_y! - event.clientY
-
-      self.pan_x = this.mousedown_pan_x - deltaX
-      self.pan_y = this.mousedown_pan_y - deltaY
-      self.invalidatePanZoom()
+  async getMaskColor() {
+    if (this.maskBlendMode === MaskBlendMode.Black) {
+      return { r: 0, g: 0, b: 0 }
     }
+    if (this.maskBlendMode === MaskBlendMode.White) {
+      return { r: 255, g: 255, b: 255 }
+    }
+    if (this.maskBlendMode === MaskBlendMode.Negative) {
+      // negative effect only works with white color
+      return { r: 255, g: 255, b: 255 }
+    }
+
+    return { r: 0, g: 0, b: 0 }
+  }
+
+  async getMaskFillStyle() {
+    const maskColor = await this.getMaskColor()
+
+    return 'rgb(' + maskColor.r + ',' + maskColor.g + ',' + maskColor.b + ')'
+  }
+
+  async setCanvasBackground() {
+    if (this.maskBlendMode === MaskBlendMode.White) {
+      this.canvasBackground.style.background = 'black'
+    } else {
+      this.canvasBackground.style.background = 'white'
+    }
+  }
+
+  getMaskCanvas() {
+    return this.maskCanvas
+  }
+
+  getImgCanvas() {
+    return this.imgCanvas
+  }
+
+  getImage() {
+    return this.image
+  }
+
+  setBrushOpacity(opacity: number) {
+    this.brush.style.opacity = String(opacity)
+  }
+
+  setSaveButtonEnabled(enabled: boolean) {
+    this.saveButton.disabled = !enabled
+  }
+
+  setSaveButtonText(text: string) {
+    this.saveButton.innerText = text
+  }
+
+  handlePaintBucketCursor(isPaintBucket: boolean) {
+    console.log('paint bucket cursor')
+
+    if (isPaintBucket) {
+      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+    } else {
+      this.pointerZone.style.cursor = 'none'
+    }
+  }
+
+  handlePanCursor(isPanning: boolean) {
+    if (isPanning) {
+      this.pointerZone.style.cursor = 'grabbing'
+    } else {
+      this.pointerZone.style.cursor = 'none'
+    }
+  }
+
+  setBrushVisibility(visible: boolean) {
+    this.brush.style.opacity = visible ? '1' : '0'
+  }
+
+  setBrushPreviewGradientVisibility(visible: boolean) {
+    this.brushPreviewGradient.style.display = visible ? 'block' : 'none'
+  }
+}
+
+class ToolManager {
+  maskEditor: MaskEditorDialog
+  messageBroker: MessageBroker
+  mouseDownPoint: Point | null = null
+
+  currentTool: Tools = Tools.Pen
+  isAdjustingBrush: boolean = false // is user adjusting brush size or hardness with alt + right mouse button
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.addListeners()
+    this.addPullTopics()
+  }
+
+  private addListeners() {
+    this.messageBroker.subscribe('setTool', async (tool: Tools) => {
+      this.setTool(tool)
+    })
+
+    this.messageBroker.subscribe('pointerDown', async (event: PointerEvent) => {
+      this.handlePointerDown(event)
+    })
+
+    this.messageBroker.subscribe('pointerMove', async (event: PointerEvent) => {
+      this.handlePointerMove(event)
+    })
+
+    this.messageBroker.subscribe('pointerUp', async (event: PointerEvent) => {
+      this.handlePointerUp(event)
+    })
+
+    this.messageBroker.subscribe('wheel', async (event: WheelEvent) => {
+      this.handleWheelEvent(event)
+    })
+  }
+
+  private async addPullTopics() {
+    this.messageBroker.createPullTopic('currentTool', async () =>
+      this.getCurrentTool()
+    )
+  }
+
+  //tools
+
+  setTool(tool: Tools) {
+    this.currentTool = tool
+  }
+
+  getCurrentTool() {
+    return this.currentTool
+  }
+
+  private async handlePointerDown(event: PointerEvent) {
+    event.preventDefault()
+    if (event.pointerType == 'touch') return
+
+    var isSpacePressed = await this.messageBroker.pull('isKeyPressed', ' ')
+
+    // Pan canvas
+    if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
+      this.messageBroker.publish('panStart', event)
+      this.messageBroker.publish('setBrushVisibility', false)
+      return
+    }
+
+    //paint bucket
+    if (this.currentTool === Tools.PaintBucket && event.button === 0) {
+      console.log('paint bucket')
+      const offset = { x: event.offsetX, y: event.offsetY }
+      const coords_canvas = await this.messageBroker.pull(
+        'screenToCanvas',
+        offset
+      )
+      this.messageBroker.publish('paintBucketFill', coords_canvas)
+      this.messageBroker.publish('saveState')
+      return
+    }
+
+    // (brush resize/change hardness) Check for alt + right mouse button
+    if (event.altKey && event.button === 2) {
+      this.isAdjustingBrush = true
+      this.messageBroker.publish('brushAdjustmentStart', event)
+      return
+    }
+
+    //drawing
+    if ([0, 2].includes(event.button)) {
+      this.messageBroker.publish('drawStart', event)
+      return
+    }
+  }
+
+  private async handlePointerMove(event: PointerEvent) {
+    event.preventDefault()
+    if (event.pointerType == 'touch') return
+    const newCursorPoint = { x: event.clientX, y: event.clientY }
+    this.messageBroker.publish('cursorPoint', newCursorPoint)
+
+    var isSpacePressed = await this.messageBroker.pull('isKeyPressed', ' ')
+    this.messageBroker.publish('updateBrushPreview')
+
+    //move the canvas
+    if (event.buttons === 4 || (event.buttons === 1 && isSpacePressed)) {
+      this.messageBroker.publish('panMove', event)
+      return
+    }
+
+    //prevent drawing with paint bucket tool
+    if (this.currentTool === Tools.PaintBucket) return
+
+    // alt + right mouse button hold brush adjustment
+    if (
+      this.isAdjustingBrush &&
+      (this.currentTool === Tools.Pen || this.currentTool === Tools.Eraser) &&
+      event.altKey &&
+      event.buttons === 2
+    ) {
+      this.messageBroker.publish('brushAdjustment', event)
+      return
+    }
+
+    //draw with pen or eraser
+    if (event.buttons == 1 || event.buttons == 2) {
+      this.messageBroker.publish('draw', event)
+      return
+    }
+  }
+
+  private handlePointerUp(event: PointerEvent) {
+    this.messageBroker.publish('panCursor', false)
+    if (this.currentTool != Tools.PaintBucket) {
+      this.messageBroker.publish('paintBucketCursor', false)
+      this.messageBroker.publish('setBrushVisibility', true)
+    }
+    this.messageBroker.publish('updateBrushPreview')
+    this.messageBroker.publish('setBrushPreviewGradientVisibility', false)
+    if (event.pointerType === 'touch') return
+    this.messageBroker.publish(
+      'paintBucketCursor',
+      this.currentTool === Tools.PaintBucket
+    )
+    this.isAdjustingBrush = false
+    this.messageBroker.publish('drawEnd', event)
+    this.mouseDownPoint = null
+  }
+
+  private handleWheelEvent(event: WheelEvent) {
+    this.messageBroker.publish('zoom', event)
+    const newCursorPoint = { x: event.clientX, y: event.clientY }
+    this.messageBroker.publish('cursorPoint', newCursorPoint)
+  }
+}
+
+class PanAndZoomManager {
+  maskEditor: MaskEditorDialog
+  messageBroker: MessageBroker
+
+  DOUBLE_TAP_DELAY: number = 300
+  lastTwoFingerTap: number = 0
+
+  isTouchZooming: boolean = false
+  lastTouchZoomDistance: number = 0
+  lastTouchMidPoint: Point = { x: 0, y: 0 }
+  lastTouchPoint: Point = { x: 0, y: 0 }
+
+  zoom_ratio: number = 1
+  pan_offset: Offset = { x: 0, y: 0 }
+
+  mouseDownPoint: Point | null = null
+  initialPan: Offset = { x: 0, y: 0 }
+
+  canvasContainer: HTMLElement | null = null
+
+  image: HTMLImageElement | null = null
+
+  cursorPoint: Point = { x: 0, y: 0 }
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+
+    this.addListeners()
+    this.addPullTopics()
+  }
+
+  private addListeners() {
+    this.messageBroker.subscribe(
+      'initZoomPan',
+      async (args: [HTMLImageElement, HTMLElement]) => {
+        await this.initializeCanvasPanZoom(args[0], args[1])
+      }
+    )
+
+    this.messageBroker.subscribe('panStart', async (event: PointerEvent) => {
+      this.handlePanStart(event)
+    })
+
+    this.messageBroker.subscribe('panMove', async (event: PointerEvent) => {
+      this.handlePanMove(event)
+    })
+
+    this.messageBroker.subscribe('zoom', async (event: WheelEvent) => {
+      this.zoom(event)
+    })
+
+    this.messageBroker.subscribe('cursorPoint', async (point: Point) => {
+      this.updateCursorPosition(point)
+    })
+
+    this.messageBroker.subscribe(
+      'handleTouchStart',
+      async (event: TouchEvent) => {
+        this.handleTouchStart(event)
+      }
+    )
+
+    this.messageBroker.subscribe(
+      'handleTouchMove',
+      async (event: TouchEvent) => {
+        this.handleTouchMove(event)
+      }
+    )
+
+    this.messageBroker.subscribe(
+      'handleTouchEnd',
+      async (event: TouchEvent) => {
+        this.handleTouchEnd(event)
+      }
+    )
+  }
+
+  private addPullTopics() {
+    this.messageBroker.createPullTopic(
+      'cursorPoint',
+      async () => this.cursorPoint
+    )
+    this.messageBroker.createPullTopic('zoomRatio', async () => this.zoom_ratio)
+    this.messageBroker.createPullTopic('panOffset', async () => this.pan_offset)
   }
 
   handleTouchStart(event: TouchEvent) {
     event.preventDefault()
     if ((event.touches[0] as any).touchType === 'stylus') return
+    this.messageBroker.publish('setBrushVisibility', false)
     if (event.touches.length === 2) {
       const currentTime = new Date().getTime()
       const tapTimeDiff = currentTime - this.lastTwoFingerTap
@@ -1818,12 +2987,13 @@ class MaskEditorDialog extends ComfyDialog {
         this.isTouchZooming = true
         this.lastTouchZoomDistance = this.getTouchDistance(event.touches)
         const midpoint = this.getTouchMidpoint(event.touches)
-        this.lastTouchMidX = midpoint.x
-        this.lastTouchMidY = midpoint.y
+        this.lastTouchMidPoint = midpoint
       }
     } else if (event.touches.length === 1) {
-      this.lastTouchX = event.touches[0].clientX
-      this.lastTouchY = event.touches[0].clientY
+      this.lastTouchPoint = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      }
     }
   }
 
@@ -1833,6 +3003,7 @@ class MaskEditorDialog extends ComfyDialog {
 
     this.lastTwoFingerTap = 0
     if (this.isTouchZooming && event.touches.length === 2) {
+      // Handle zooming
       const newDistance = this.getTouchDistance(event.touches)
       const zoomFactor = newDistance / this.lastTouchZoomDistance
       const oldZoom = this.zoom_ratio
@@ -1844,31 +3015,32 @@ class MaskEditorDialog extends ComfyDialog {
 
       // Calculate the midpoint of the two touches
       const midpoint = this.getTouchMidpoint(event.touches)
-      const midX = midpoint.x
-      const midY = midpoint.y
+
+      // Handle panning - calculate the movement of the midpoint
+      if (this.lastTouchMidPoint) {
+        const deltaX = midpoint.x - this.lastTouchMidPoint.x
+        const deltaY = midpoint.y - this.lastTouchMidPoint.y
+
+        // Apply the pan
+        this.pan_offset.x += deltaX
+        this.pan_offset.y += deltaY
+      }
 
       // Get touch position relative to the container
-      const rect = this.maskCanvas.getBoundingClientRect()
-      const touchX = midX - rect.left
-      const touchY = midY - rect.top
+      const rect = this.maskEditor.uiManager
+        .getMaskCanvas()
+        .getBoundingClientRect()
+      const touchX = midpoint.x - rect.left
+      const touchY = midpoint.y - rect.top
 
       // Calculate new pan position based on zoom
       const scaleFactor = newZoom / oldZoom
-      this.pan_x += touchX - touchX * scaleFactor
-      this.pan_y += touchY - touchY * scaleFactor
-
-      // Calculate additional pan based on touch movement
-      if (this.lastTouchMidX !== null && this.lastTouchMidY !== null) {
-        const panDeltaX = midX - this.lastTouchMidX
-        const panDeltaY = midY - this.lastTouchMidY
-        this.pan_x += panDeltaX
-        this.pan_y += panDeltaY
-      }
+      this.pan_offset.x += touchX - touchX * scaleFactor
+      this.pan_offset.y += touchY - touchY * scaleFactor
 
       this.invalidatePanZoom()
       this.lastTouchZoomDistance = newDistance
-      this.lastTouchMidX = midX
-      this.lastTouchMidY = midY
+      this.lastTouchMidPoint = midpoint
     } else if (event.touches.length === 1) {
       // Handle single touch pan
       this.handleSingleTouchPan(event.touches[0])
@@ -1880,873 +3052,416 @@ class MaskEditorDialog extends ComfyDialog {
     if (
       event.touches.length === 0 &&
       (event.touches[0] as any).touchType === 'stylus'
-    )
+    ) {
       return
+    }
 
     this.isTouchZooming = false
-    this.lastTouchMidX = 0
-    this.lastTouchMidY = 0
+    this.lastTouchMidPoint = { x: 0, y: 0 }
 
     if (event.touches.length === 0) {
-      this.lastTouchX = 0
-      this.lastTouchY = 0
+      this.lastTouchPoint = { x: 0, y: 0 }
     } else if (event.touches.length === 1) {
-      this.lastTouchX = event.touches[0].clientX
-      this.lastTouchY = event.touches[0].clientY
+      this.lastTouchPoint = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      }
     }
   }
 
-  handleDoubleTap() {
-    this.canvasHistory.undo()
-    // Add any additional logic needed after undo
-  }
-
-  getTouchDistance(touches: TouchList) {
+  private getTouchDistance(touches: TouchList) {
     const dx = touches[0].clientX - touches[1].clientX
     const dy = touches[0].clientY - touches[1].clientY
     return Math.sqrt(dx * dx + dy * dy)
   }
 
-  getTouchMidpoint(touches: TouchList) {
+  private getTouchMidpoint(touches: TouchList) {
     return {
       x: (touches[0].clientX + touches[1].clientX) / 2,
       y: (touches[0].clientY + touches[1].clientY) / 2
     }
   }
 
-  handleSingleTouchPan(touch: Touch) {
-    if (this.lastTouchX === null || this.lastTouchY === null) {
-      this.lastTouchX = touch.clientX
-      this.lastTouchY = touch.clientY
+  private handleSingleTouchPan(touch: Touch) {
+    if (this.lastTouchPoint === null) {
+      this.lastTouchPoint = { x: touch.clientX, y: touch.clientY }
       return
     }
 
-    const deltaX = touch.clientX - this.lastTouchX
-    const deltaY = touch.clientY - this.lastTouchY
+    const deltaX = touch.clientX - this.lastTouchPoint.x
+    const deltaY = touch.clientY - this.lastTouchPoint.y
 
-    this.pan_x += deltaX
-    this.pan_y += deltaY
+    this.pan_offset.x += deltaX
+    this.pan_offset.y += deltaY
 
+    this.maskEditor.panAndZoomManager.invalidatePanZoom()
+
+    this.lastTouchPoint = { x: touch.clientX, y: touch.clientY }
+  }
+
+  private updateCursorPosition(clientPoint: Point) {
+    var cursorX = clientPoint.x - this.pan_offset.x
+    var cursorY = clientPoint.y - this.pan_offset.y
+
+    this.cursorPoint = { x: cursorX, y: cursorY }
+  }
+
+  //prob redundant
+  handleDoubleTap() {
+    this.messageBroker.publish('undo')
+    // Add any additional logic needed after undo
+  }
+
+  async zoom(event: WheelEvent) {
+    // zoom canvas
+    const oldZoom = this.zoom_ratio
+    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
+    this.zoom_ratio = Math.max(
+      0.2,
+      Math.min(10.0, this.zoom_ratio * zoomFactor)
+    )
+    const newZoom = this.zoom_ratio
+
+    const maskCanvas = await this.messageBroker.pull('maskCanvas')
+
+    const coords = { x: event.clientX, y: event.clientY }
+    const cursorPoint = await this.messageBroker.pull('screenToCanvas', coords)
+
+    // Get mouse position relative to the container
+    const rect = maskCanvas.getBoundingClientRect()
+    const mouseX = event.clientX - rect.left
+    const mouseY = event.clientY - rect.top
+
+    // Calculate new pan position
+    const scaleFactor = newZoom / oldZoom
+    this.pan_offset.x += mouseX - mouseX * scaleFactor
+    this.pan_offset.y += mouseY - mouseY * scaleFactor
     this.invalidatePanZoom()
 
-    this.lastTouchX = touch.clientX
-    this.lastTouchY = touch.clientY
+    // Update cursor position with new pan values
+    this.messageBroker.publish('updateBrushPreview')
   }
 
-  handlePointerMove(self: MaskEditorDialog, event: PointerEvent) {
-    event.preventDefault()
-    if (event.pointerType == 'touch') return
-    self.updateCursorPosition(self, event.clientX, event.clientY)
+  async initializeCanvasPanZoom(image, rootElement) {
+    // Get side panel width
+    let sidePanelWidth = 220
+    let topBarHeight = 44
 
-    //move the canvas
-    if (event.buttons === 4 || (event.buttons === 1 && this.isSpacePressed)) {
-      self.pan_move(self, event)
-      return
+    // Calculate available width accounting for both side panels
+    let availableWidth = rootElement.clientWidth - 2 * sidePanelWidth
+    let availableHeight = rootElement.clientHeight - topBarHeight
+
+    // Initial dimensions
+    let drawWidth = image.width
+    let drawHeight = image.height
+
+    // First check if width needs scaling
+    if (drawWidth > availableWidth) {
+      drawWidth = availableWidth
+      drawHeight = (drawWidth / image.width) * image.height
     }
 
-    //prevent drawing with paint bucket tool
-    if (this.currentTool === Tools.PaintBucket) return
-
-    self.updateBrushPreview(self)
-
-    // alt + right mouse button hold brush adjustment
-    if (
-      self.isAdjustingBrush &&
-      (this.currentTool === Tools.Pen || this.currentTool === Tools.Eraser) &&
-      event.altKey &&
-      event.buttons === 2
-    ) {
-      this.handleBrushAdjustment(self, event)
-      return
+    // Then check if height needs scaling
+    if (drawHeight > availableHeight) {
+      drawHeight = availableHeight
+      drawWidth = (drawHeight / image.height) * image.width
     }
 
-    //draw with pen or eraser
-    if (event.buttons == 1 || event.buttons == 2) {
-      var diff = performance.now() - self.smoothingLastDrawTime.getTime()
-
-      let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
-
-      console.log(coords_canvas)
-
-      var brush_size = this.brush_size
-      var brush_hardness = this.brush_hardness
-      var brush_opacity = this.brush_opacity
-
-      if (event instanceof PointerEvent && event.pointerType == 'pen') {
-        brush_size *= event.pressure
-        this.last_pressure = event.pressure
-      } else {
-        brush_size = this.brush_size //this is the problem with pen pressure
-      }
-
-      //not sure what this does
-      if (diff > 20 && !this.drawing_mode)
-        requestAnimationFrame(() => {
-          self.init_shape(self, CompositionOperation.SourceOver)
-          self.draw_shape(
-            self,
-            coords_canvas.x,
-            coords_canvas.y,
-            brush_size,
-            brush_hardness,
-            brush_opacity
-          )
-          this.smoothingCoords = { x: coords_canvas.x, y: coords_canvas.y }
-          this.smoothingCordsArray = [
-            { x: coords_canvas.x, y: coords_canvas.y }
-          ]
-        })
-      else
-        requestAnimationFrame(() => {
-          if (this.currentTool === Tools.Eraser) {
-            self.init_shape(self, CompositionOperation.DestinationOut)
-          } else if (event.buttons == 2) {
-            self.init_shape(self, CompositionOperation.DestinationOut)
-          } else {
-            self.init_shape(self, CompositionOperation.SourceOver)
-          }
-
-          //use drawWithSmoothing for better performance or change step in drawWithBetterSmoothing
-          this.drawWithBetterSmoothing(
-            self,
-            coords_canvas.x,
-            coords_canvas.y,
-            brush_size,
-            brush_hardness,
-            brush_opacity
-          )
-        })
-
-      this.smoothingLastDrawTime = new Date()
+    if (this.image === null) {
+      this.image = image
     }
+
+    this.zoom_ratio = drawWidth / image.width
+
+    // Center the canvas in the available space
+    const canvasX = sidePanelWidth + (availableWidth - drawWidth) / 2
+    const canvasY = (availableHeight - drawHeight) / 2
+
+    this.pan_offset.x = canvasX
+    this.pan_offset.y = canvasY
+
+    await this.invalidatePanZoom()
   }
 
-  handleBrushAdjustment(self: MaskEditorDialog, event: PointerEvent) {
-    const delta_x = event.clientX - self.initialX!
-    const delta_y = event.clientY - self.initialY!
+  //probably move to PanZoomManager
+  async invalidatePanZoom() {
+    let raw_width = this.image.width * this.zoom_ratio
+    let raw_height = this.image.height * this.zoom_ratio
+    if (this.pan_offset.x + raw_width < 10) {
+      this.pan_offset.x = 10 - raw_width
+    }
+    if (this.pan_offset.y + raw_height < 10) {
+      this.pan_offset.y = 10 - raw_height
+    }
+    let width = `${raw_width}px`
+    let height = `${raw_height}px`
+    let left = `${this.pan_offset.x}px`
+    let top = `${this.pan_offset.y}px`
 
-    // Adjust brush size (horizontal movement)
-    const newSize = Math.max(
-      1,
-      Math.min(100, self.initialBrushSize! + delta_x / 5)
-    )
-    self.brush_size = newSize
-    self.brush_size_slider.value = newSize.toString()
+    if (this.canvasContainer === null)
+      this.canvasContainer = await this.messageBroker.pull('getCanvasContainer')
 
-    // Adjust brush hardness (vertical movement)
-    const newHardness = Math.max(
-      0,
-      Math.min(1, self.initialBrushHardness! - delta_y / 200)
-    )
-    self.brush_hardness = newHardness
-    self.brush_hardness_slider.value = newHardness.toString()
+    this.canvasContainer.style.width = width
+    this.canvasContainer.style.height = height
+    this.canvasContainer.style.left = left
+    this.canvasContainer.style.top = top
+  }
 
-    self.updateBrushPreview(self)
+  private handlePanStart(event: PointerEvent) {
+    let coords_canvas = this.messageBroker.pull('screenToCanvas', {
+      x: event.offsetX,
+      y: event.offsetY
+    })
+    this.mouseDownPoint = { x: event.clientX, y: event.clientY }
+    this.messageBroker.publish('panCursor', true)
+    this.initialPan = this.pan_offset
     return
   }
 
-  //maybe remove this function
-  drawWithSmoothing(
-    self: MaskEditorDialog,
-    clientX: number,
-    clientY: number,
-    brush_size: number,
-    brush_hardness: number,
-    brush_opacity: number
-  ) {
-    // Get current canvas coordinates
-    if (this.smoothingCoords) {
-      // Calculate distance in screen coordinates
-      const dx = clientX - this.smoothingCoords.x
-      const dy = clientY - this.smoothingCoords.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
+  private handlePanMove(event: PointerEvent) {
+    let deltaX = this.mouseDownPoint.x - event.clientX
+    let deltaY = this.mouseDownPoint.y - event.clientY
 
-      console.log(distance)
+    let pan_x = this.initialPan.x - deltaX
+    let pan_y = this.initialPan.y - deltaY
 
-      if (distance > 0) {
-        const step = 0.1
-        const steps = Math.ceil(distance / step)
-        const stepSize = distance / steps
+    this.pan_offset = { x: pan_x, y: pan_y }
 
-        for (let i = 0; i < steps; i++) {
-          const x = this.smoothingCoords.x + dx * (i / steps)
-          const y = this.smoothingCoords.y + dy * (i / steps)
-          self.draw_shape(self, x, y, brush_size, brush_hardness, brush_opacity)
-        }
-      }
+    this.invalidatePanZoom()
+  }
+}
+
+class MessageBroker {
+  private pushTopics: Record<string, Callback[]> = {}
+  private pullTopics: Record<string, (data?: any) => Promise<any>> = {}
+
+  constructor() {
+    this.registerListeners()
+  }
+
+  // Push
+
+  private registerListeners() {
+    // Register listeners
+    this.createPushTopic('panStart')
+    this.createPushTopic('paintBucketFill')
+    this.createPushTopic('saveState')
+    this.createPushTopic('brushAdjustmentStart')
+    this.createPushTopic('drawStart')
+    this.createPushTopic('panMove')
+    this.createPushTopic('updateBrushPreview')
+    this.createPushTopic('brushAdjustment')
+    this.createPushTopic('draw')
+    this.createPushTopic('paintBucketCursor')
+    this.createPushTopic('panCursor')
+    this.createPushTopic('drawEnd')
+    this.createPushTopic('zoom')
+    this.createPushTopic('undo')
+    this.createPushTopic('redo')
+    this.createPushTopic('cursorPoint')
+    this.createPushTopic('panOffset')
+    this.createPushTopic('zoomRatio')
+    this.createPushTopic('getMaskCanvas')
+    this.createPushTopic('getCanvasContainer')
+    this.createPushTopic('screenToCanvas')
+    this.createPushTopic('isKeyPressed')
+    this.createPushTopic('isCombinationPressed')
+    this.createPushTopic('setTolerance')
+    this.createPushTopic('setBrushSize')
+    this.createPushTopic('setBrushHardness')
+    this.createPushTopic('setBrushOpacity')
+    this.createPushTopic('setBrushShape')
+    this.createPushTopic('initZoomPan')
+    this.createPushTopic('setTool')
+    this.createPushTopic('pointerDown')
+    this.createPushTopic('pointerMove')
+    this.createPushTopic('pointerUp')
+    this.createPushTopic('wheel')
+    this.createPushTopic('initPaintBucketTool')
+    this.createPushTopic('setBrushVisibility')
+    this.createPushTopic('setBrushPreviewGradientVisibility')
+    this.createPushTopic('handleTouchStart')
+    this.createPushTopic('handleTouchMove')
+    this.createPushTopic('handleTouchEnd')
+  }
+
+  /**
+   * Creates a new push topic (listener is notified)
+   *
+   * @param {string} topicName - The name of the topic to create.
+   * @throws {Error} If the topic already exists.
+   */
+  createPushTopic(topicName: string) {
+    if (this.topicExists(this.pushTopics, topicName)) {
+      throw new Error('Topic already exists')
+    }
+    this.pushTopics[topicName] = []
+  }
+
+  /**
+   * Subscribe a callback function to the given topic.
+   *
+   * @param {string} topicName - The name of the topic to subscribe to.
+   * @param {Callback} callback - The callback function to be subscribed.
+   * @throws {Error} If the topic does not exist.
+   */
+  subscribe(topicName: string, callback: Callback) {
+    if (!this.topicExists(this.pushTopics, topicName)) {
+      throw new Error(`Topic "${topicName}" does not exist!`)
+    }
+    this.pushTopics[topicName].push(callback)
+  }
+
+  /**
+   * Removes a callback function from the list of subscribers for a given topic.
+   *
+   * @param {string} topicName - The name of the topic to unsubscribe from.
+   * @param {Callback} callback - The callback function to remove from the subscribers list.
+   * @throws {Error} If the topic does not exist in the list of topics.
+   */
+  unsubscribe(topicName: string, callback: Callback) {
+    if (!this.topicExists(this.pushTopics, topicName)) {
+      throw new Error('Topic does not exist')
+    }
+    const index = this.pushTopics[topicName].indexOf(callback)
+    if (index > -1) {
+      this.pushTopics[topicName].splice(index, 1)
+    }
+  }
+
+  /**
+   * Publishes data to a specified topic with variable number of arguments.
+   * @param {string} topicName - The name of the topic to publish to.
+   * @param {...any[]} args - Variable number of arguments to pass to subscribers
+   * @throws {Error} If the specified topic does not exist.
+   */
+  publish(topicName: string, ...args: any[]) {
+    if (!this.topicExists(this.pushTopics, topicName)) {
+      throw new Error(`Topic "${topicName}" does not exist!`)
     }
 
-    // Store current screen coordinates for next time
-    this.smoothingCoords = { x: clientX, y: clientY }
+    this.pushTopics[topicName].forEach((callback) => {
+      callback(...args)
+    })
+  }
 
-    // Draw the final point
-    self.draw_shape(
-      self,
-      clientX,
-      clientY,
-      brush_size,
-      brush_hardness,
-      brush_opacity
+  // Pull
+
+  /**
+   * Creates a new pull topic (listener must request data)
+   *
+   * @param {string} topicName - The name of the topic to create.
+   * @param {() => Promise<any>} callBack - The callback function to be called when data is requested.
+   * @throws {Error} If the topic already exists.
+   */
+  createPullTopic(topicName: string, callBack: (data?: any) => Promise<any>) {
+    if (this.topicExists(this.pullTopics, topicName)) {
+      throw new Error('Topic already exists')
+    }
+    this.pullTopics[topicName] = callBack
+  }
+
+  /**
+   * Requests data from a specified pull topic.
+   * @param {string} topicName - The name of the topic to request data from.
+   * @returns {Promise<any>} - The data from the pull topic.
+   * @throws {Error} If the specified topic does not exist.
+   */
+  async pull(topicName: string, data?: any): Promise<any> {
+    if (!this.topicExists(this.pullTopics, topicName)) {
+      throw new Error('Topic does not exist')
+    }
+
+    const callBack = this.pullTopics[topicName]
+    try {
+      const result = await callBack(data)
+      return result
+    } catch (error) {
+      console.error(`Error pulling data from topic "${topicName}":`, error)
+      throw error
+    }
+  }
+
+  // Helper Methods
+
+  /**
+   * Checks if a topic exists in the given topics object.
+   * @param {Record<string, any>} topics - The topics object to check.
+   * @param {string} topicName - The name of the topic to check.
+   * @returns {boolean} - True if the topic exists, false otherwise.
+   */
+  private topicExists(topics: Record<string, any>, topicName: string): boolean {
+    return topics.hasOwnProperty(topicName)
+  }
+}
+
+class KeyboardManager {
+  private keysDown: string[] = []
+  private maskEditor: MaskEditorDialog
+  private messageBroker: MessageBroker
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.addPullTopics()
+  }
+
+  private addPullTopics() {
+    // isKeyPressed
+    this.messageBroker.createPullTopic('isKeyPressed', (key: string) =>
+      Promise.resolve(this.isKeyDown(key))
     )
   }
 
-  drawWithBetterSmoothing(
-    self: MaskEditorDialog,
-    clientX: number,
-    clientY: number,
-    brush_size: number,
-    brush_hardness: number,
-    brush_opacity: number
-  ) {
-    // Add current point to the smoothing array
-    if (!this.smoothingCordsArray) {
-      this.smoothingCordsArray = []
-    }
-
-    this.smoothingCordsArray.push({ x: clientX, y: clientY })
-
-    // Keep a moving window of points for the spline
-    const MAX_POINTS = 5
-    if (this.smoothingCordsArray.length > MAX_POINTS) {
-      this.smoothingCordsArray.shift()
-    }
-
-    // Need at least 3 points for cubic spline interpolation
-    if (this.smoothingCordsArray.length >= 3) {
-      const dx = clientX - this.smoothingCordsArray[0].x
-      const dy = clientY - this.smoothingCordsArray[0].y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const step = 2
-      const steps = Math.ceil(distance / step)
-
-      // Generate interpolated points
-      const interpolatedPoints = this.calculateCubicSplinePoints(
-        this.smoothingCordsArray,
-        steps // number of segments between each pair of control points
-      )
-
-      // Draw all interpolated points
-      for (const point of interpolatedPoints) {
-        self.draw_shape(
-          self,
-          point.x,
-          point.y,
-          brush_size,
-          brush_hardness,
-          brush_opacity
-        )
-      }
-    } else {
-      // If we don't have enough points yet, just draw the current point
-      self.draw_shape(
-        self,
-        clientX,
-        clientY,
-        brush_size,
-        brush_hardness,
-        brush_opacity
-      )
-    }
+  addListeners() {
+    document.addEventListener('keydown', (event) => this.handleKeyDown(event))
+    document.addEventListener('keyup', (event) => this.handleKeyUp(event))
+    window.addEventListener('blur', () => this.clearKeys())
   }
 
-  calculateCubicSplinePoints(
-    points: Point[],
-    numSegments: number = 10
-  ): Point[] {
-    const result: Point[] = []
+  removeListeners() {
+    document.removeEventListener('keydown', (event) =>
+      this.handleKeyDown(event)
+    )
+    document.removeEventListener('keyup', (event) => this.handleKeyUp(event))
+  }
 
-    const xCoords = points.map((p) => p.x)
-    const yCoords = points.map((p) => p.y)
+  private clearKeys() {
+    this.keysDown = []
+  }
 
-    const xDerivatives = this.calculateSplineCoefficients(xCoords)
-    const yDerivatives = this.calculateSplineCoefficients(yCoords)
-
-    // Generate points along the spline
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i]
-      const p1 = points[i + 1]
-      const d0x = xDerivatives[i]
-      const d1x = xDerivatives[i + 1]
-      const d0y = yDerivatives[i]
-      const d1y = yDerivatives[i + 1]
-
-      for (let t = 0; t <= numSegments; t++) {
-        const t_normalized = t / numSegments
-
-        // Hermite basis functions
-        const h00 = 2 * t_normalized ** 3 - 3 * t_normalized ** 2 + 1
-        const h10 = t_normalized ** 3 - 2 * t_normalized ** 2 + t_normalized
-        const h01 = -2 * t_normalized ** 3 + 3 * t_normalized ** 2
-        const h11 = t_normalized ** 3 - t_normalized ** 2
-
-        const x = h00 * p0.x + h10 * d0x + h01 * p1.x + h11 * d1x
-        const y = h00 * p0.y + h10 * d0y + h01 * p1.y + h11 * d1y
-
-        result.push({ x, y })
-      }
+  private handleKeyDown(event: KeyboardEvent) {
+    if (!this.keysDown.includes(event.key)) {
+      this.keysDown.push(event.key)
     }
+    if (this.redoCombinationPressed()) return
+    this.undoCombinationPressed()
+  }
 
+  private handleKeyUp(event: KeyboardEvent) {
+    this.keysDown = this.keysDown.filter((key) => key !== event.key)
+  }
+
+  private isKeyDown(key: string) {
+    return this.keysDown.includes(key)
+  }
+
+  // combinations
+
+  private undoCombinationPressed() {
+    const combination = ['control', 'z']
+    const keysDownLower = this.keysDown.map(key => key.toLowerCase())
+    const result = combination.every((key) => keysDownLower.includes(key))
+    if (result) this.messageBroker.publish('undo')
     return result
   }
 
-  calculateSplineCoefficients(values: number[]): number[] {
-    const n = values.length - 1
-    const matrix: number[][] = new Array(n + 1)
-      .fill(0)
-      .map(() => new Array(n + 1).fill(0))
-    const rhs: number[] = new Array(n + 1).fill(0)
-
-    // Set up tridiagonal matrix
-    for (let i = 1; i < n; i++) {
-      matrix[i][i - 1] = 1
-      matrix[i][i] = 4
-      matrix[i][i + 1] = 1
-      rhs[i] = 3 * (values[i + 1] - values[i - 1])
-    }
-
-    // Set boundary conditions (natural spline)
-    matrix[0][0] = 2
-    matrix[0][1] = 1
-    matrix[n][n - 1] = 1
-    matrix[n][n] = 2
-    rhs[0] = 3 * (values[1] - values[0])
-    rhs[n] = 3 * (values[n] - values[n - 1])
-
-    // Solve tridiagonal system using Thomas algorithm
-    for (let i = 1; i <= n; i++) {
-      const m = matrix[i][i - 1] / matrix[i - 1][i - 1]
-      matrix[i][i] -= m * matrix[i - 1][i]
-      rhs[i] -= m * rhs[i - 1]
-    }
-
-    const solution: number[] = new Array(n + 1)
-    solution[n] = rhs[n] / matrix[n][n]
-    for (let i = n - 1; i >= 0; i--) {
-      solution[i] = (rhs[i] - matrix[i][i + 1] * solution[i + 1]) / matrix[i][i]
-    }
-
-    return solution
-  }
-
-  updateCursorPosition(
-    self: MaskEditorDialog,
-    clientX: number,
-    clientY: number
-  ) {
-    self.cursorX = clientX - self.pan_x
-    self.cursorY = clientY - self.pan_y
-  }
-
-  disableContextMenu(event: Event) {
-    event.preventDefault()
-    event.stopPropagation()
-  }
-
-  handlePointerDown(self: MaskEditorDialog, event: PointerEvent) {
-    event.preventDefault()
-    if (event.pointerType == 'touch') return
-
-    // Pan canvas
-    if (event.buttons === 4 || (event.buttons === 1 && this.isSpacePressed)) {
-      MaskEditorDialog.mousedown_x = event.clientX
-      MaskEditorDialog.mousedown_y = event.clientY
-      this.brush.style.opacity = '0'
-      this.pointerZone.style.cursor = 'grabbing'
-      self.mousedown_pan_x = self.pan_x
-      self.mousedown_pan_y = self.pan_y
-      return
-    }
-
-    //paint bucket
-    if (this.currentTool === Tools.PaintBucket && event.button === 0) {
-      console.log('paint bucket')
-      let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
-      this.handlePaintBucket(coords_canvas)
-      return
-    }
-
-    // Start drawing
-    this.isDrawing = true
-    var brush_size = this.brush_size
-    var brush_hardness = this.brush_hardness
-    var brush_opacity = this.brush_opacity
-    let coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
-    if (event.pointerType == 'pen') {
-      brush_size *= event.pressure
-      this.last_pressure = event.pressure
-
-      this.toolPanel.style.display = 'flex'
-    }
-
-    // (brush resize/change hardness) Check for alt + right mouse button
-    if (event.altKey && event.button === 2) {
-      self.brushPreviewGradient.style.display = ''
-      self.initialX = event.clientX
-      self.initialY = event.clientY
-      self.initialBrushSize = self.brush_size
-      self.initialBrushHardness = self.brush_hardness
-      self.isAdjustingBrush = true
-      event.preventDefault()
-      return
-    }
-
-    //drawing
-    if ([0, 2].includes(event.button)) {
-      self.drawing_mode = true
-      let compositionOp: CompositionOperation
-
-      //set drawing mode
-      if (this.currentTool === Tools.Eraser) {
-        compositionOp = CompositionOperation.DestinationOut //eraser
-      } else if (event.button === 2) {
-        compositionOp = CompositionOperation.DestinationOut //eraser
-      } else {
-        compositionOp = CompositionOperation.SourceOver //pen
-      }
-
-      //check if user wants to draw line or free draw
-      if (event.shiftKey && this.lineStartPoint) {
-        this.isDrawingLine = true
-        const p2 = { x: coords_canvas.x, y: coords_canvas.y }
-        this.drawLine(
-          self,
-          this.lineStartPoint,
-          p2,
-          brush_size,
-          brush_hardness,
-          brush_opacity,
-          compositionOp
-        )
-      } else {
-        self.init_shape(self, compositionOp)
-        self.draw_shape(
-          self,
-          coords_canvas.x,
-          coords_canvas.y,
-          brush_size,
-          brush_hardness,
-          brush_opacity
-        )
-      }
-      this.lineStartPoint = { x: coords_canvas.x, y: coords_canvas.y }
-      this.smoothingCoords = { x: coords_canvas.x, y: coords_canvas.y } //maybe remove this
-      this.smoothingCordsArray = [{ x: coords_canvas.x, y: coords_canvas.y }] //used to smooth the drawing line
-      this.smoothingLastDrawTime = new Date()
-    }
-  }
-
-  handlePaintBucket(point: Point) {
-    console.log(point)
-    this.paintBucketTool.floodFill(point.x, point.y, this.paintBucketTolerance)
-  }
-
-  init_shape(self: MaskEditorDialog, compositionOperation) {
-    self.maskCtx.beginPath()
-    if (compositionOperation == CompositionOperation.SourceOver) {
-      self.maskCtx.fillStyle = this.getMaskFillStyle()
-      self.maskCtx.globalCompositeOperation = CompositionOperation.SourceOver
-    } else if (compositionOperation == CompositionOperation.DestinationOut) {
-      self.maskCtx.globalCompositeOperation =
-        CompositionOperation.DestinationOut
-    }
-  }
-
-  drawLine(
-    self: MaskEditorDialog,
-    p1: { x: number; y: number },
-    p2: { x: number; y: number },
-    brush_size: number,
-    brush_hardness: number,
-    brush_opacity: number,
-    compositionOp: CompositionOperation
-  ) {
-    const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-    const steps = Math.ceil(distance / (brush_size / 4)) // Adjust for smoother lines
-
-    self.init_shape(self, compositionOp)
-
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps
-      const x = p1.x + (p2.x - p1.x) * t
-      const y = p1.y + (p2.y - p1.y) * t
-      self.draw_shape(self, x, y, brush_size, brush_hardness, brush_opacity)
-    }
-  }
-
-  draw_shape(
-    self: MaskEditorDialog,
-    x: number,
-    y: number,
-    brush_size: number,
-    hardness: number,
-    opacity: number
-  ) {
-    hardness = isNaN(hardness) ? 1 : Math.max(0, Math.min(1, hardness))
-    // Extend the gradient radius beyond the brush size
-    const extendedSize = brush_size * (2 - hardness)
-
-    let gradient = self.maskCtx.createRadialGradient(
-      x,
-      y,
-      0,
-      x,
-      y,
-      extendedSize
-    )
-
-    // Get the current mask color based on the blending mode
-    const maskColor = self.getMaskColor()
-
-    const isErasing =
-      self.maskCtx.globalCompositeOperation === 'destination-out'
-
-    if (hardness === 1) {
-      gradient.addColorStop(
-        0,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-      gradient.addColorStop(
-        1,
-        isErasing
-          ? `rgba(255, 255, 255, ${opacity})`
-          : `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-      )
-    } else {
-      let softness = 1 - hardness
-      let innerStop = Math.max(0, hardness - softness)
-      let outerStop = brush_size / extendedSize
-
-      if (isErasing) {
-        gradient.addColorStop(0, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(innerStop, `rgba(255, 255, 255, ${opacity})`)
-        gradient.addColorStop(outerStop, `rgba(255, 255, 255, ${opacity / 2})`)
-        gradient.addColorStop(1, `rgba(255, 255, 255, 0)`)
-      } else {
-        gradient.addColorStop(
-          0,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          innerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity})`
-        )
-        gradient.addColorStop(
-          outerStop,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, ${opacity / 2})`
-        )
-        gradient.addColorStop(
-          1,
-          `rgba(${maskColor.r}, ${maskColor.g}, ${maskColor.b}, 0)`
-        )
-      }
-    }
-
-    self.maskCtx.fillStyle = gradient
-    self.maskCtx.beginPath()
-    if (self.pointer_type === PointerType.Rect) {
-      self.maskCtx.rect(
-        x - extendedSize,
-        y - extendedSize,
-        extendedSize * 2,
-        extendedSize * 2
-      )
-    } else {
-      self.maskCtx.arc(x, y, extendedSize, 0, Math.PI * 2, false)
-    }
-    self.maskCtx.fill()
-  }
-
-  handlePointerUp(self: MaskEditorDialog, event: PointerEvent) {
-    if (event.pointerType === 'touch') return
-    if (this.currentTool === Tools.PaintBucket) {
-      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
-      this.brush.style.opacity = '0'
-    } else {
-      this.pointerZone.style.cursor = 'none'
-      this.brush.style.opacity = '1'
-      this.updateBrushPreview(this)
-    }
-
-    this.isAdjustingBrush = false
-    this.brushPreviewGradient.style.display = 'none'
-
-    MaskEditorDialog.handlePointerUp(event)
-    if (this.isDrawing) {
-      this.isDrawing = false
-      this.canvasHistory.saveState()
-      const coords_canvas = self.screenToCanvas(event.offsetX, event.offsetY)
-      this.lineStartPoint = coords_canvas
-      console.log(coords_canvas)
-    }
-  }
-
-  async save() {
-    const backupCanvas = document.createElement('canvas')
-    const backupCtx = backupCanvas.getContext('2d', {
-      willReadFrequently: true
-    })
-    backupCanvas.width = this.image.width
-    backupCanvas.height = this.image.height
-
-    if (!backupCtx) {
-      console.log('Failed to save mask. Please try again.')
-      return
-    }
-
-    backupCtx.clearRect(0, 0, backupCanvas.width, backupCanvas.height)
-    backupCtx.drawImage(
-      this.maskCanvas,
-      0,
-      0,
-      this.maskCanvas.width,
-      this.maskCanvas.height,
-      0,
-      0,
-      backupCanvas.width,
-      backupCanvas.height
-    )
-
-    // paste mask data into alpha channel
-    const backupData = backupCtx.getImageData(
-      0,
-      0,
-      backupCanvas.width,
-      backupCanvas.height
-    )
-
-    // refine mask image
-    for (let i = 0; i < backupData.data.length; i += 4) {
-      const alpha = backupData.data[i + 3]
-      backupData.data[i] = 0
-      backupData.data[i + 1] = 0
-      backupData.data[i + 2] = 0
-      backupData.data[i + 3] = 255 - alpha
-    }
-
-    backupCtx.globalCompositeOperation = CompositionOperation.SourceOver
-    backupCtx.putImageData(backupData, 0, 0)
-
-    const formData = new FormData()
-    const filename = 'clipspace-mask-' + performance.now() + '.png'
-
-    const item = {
-      filename: filename,
-      subfolder: 'clipspace',
-      type: 'input'
-    }
-
-    if (ComfyApp.clipspace.images) ComfyApp.clipspace.images[0] = item
-
-    if (ComfyApp.clipspace.widgets) {
-      const index = ComfyApp.clipspace.widgets.findIndex(
-        (obj) => obj.name === 'image'
-      )
-
-      if (index >= 0) ComfyApp.clipspace.widgets[index].value = item
-    }
-
-    const dataURL = backupCanvas.toDataURL()
-    const blob = dataURLToBlob(dataURL)
-
-    let original_url = new URL(this.image.src)
-
-    type Ref = { filename: string; subfolder?: string; type?: string }
-
-    const original_ref: Ref = {
-      filename: original_url.searchParams.get('filename')
-    }
-
-    let original_subfolder = original_url.searchParams.get('subfolder')
-    if (original_subfolder) original_ref.subfolder = original_subfolder
-
-    let original_type = original_url.searchParams.get('type')
-    if (original_type) original_ref.type = original_type
-
-    formData.append('image', blob, filename)
-    formData.append('original_ref', JSON.stringify(original_ref))
-    formData.append('type', 'input')
-    formData.append('subfolder', 'clipspace')
-
-    this.saveButton.innerText = 'Saving...'
-    this.saveButton.disabled = true
-    await uploadMask(item, formData)
-    ComfyApp.onClipspaceEditorSave()
-    this.close()
-  }
-}
-
-class CanvasHistory {
-  canvas: HTMLCanvasElement
-  ctx: CanvasRenderingContext2D
-  states: ImageData[]
-  currentStateIndex: number
-  maxStates: number
-  initialized: boolean
-
-  constructor(
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D,
-    maxStates = 20
-  ) {
-    this.canvas = canvas
-    this.ctx = ctx
-    this.states = []
-    this.currentStateIndex = -1
-    this.maxStates = maxStates
-    this.initialized = false
-  }
-
-  clearStates() {
-    this.states = []
-    this.currentStateIndex = -1
-    this.initialized = false
-  }
-
-  saveInitialState() {
-    if (!this.canvas.width || !this.canvas.height) {
-      // Canvas not ready yet, defer initialization
-      requestAnimationFrame(() => this.saveInitialState())
-      return
-    }
-
-    this.clearStates()
-    const state = this.ctx.getImageData(
-      0,
-      0,
-      this.canvas.width,
-      this.canvas.height
-    )
-
-    this.states.push(state)
-    this.currentStateIndex = 0
-    this.initialized = true
-  }
-
-  saveState() {
-    // Ensure we have an initial state
-    if (!this.initialized || this.currentStateIndex === -1) {
-      this.saveInitialState()
-      return
-    }
-
-    this.states = this.states.slice(0, this.currentStateIndex + 1)
-    const state = this.ctx.getImageData(
-      0,
-      0,
-      this.canvas.width,
-      this.canvas.height
-    )
-    this.states.push(state)
-    this.currentStateIndex++
-
-    if (this.states.length > this.maxStates) {
-      this.states.shift()
-      this.currentStateIndex--
-    }
-  }
-
-  undo() {
-    if (this.currentStateIndex >= 0) {
-      this.currentStateIndex--
-      this.restoreState(this.states[this.currentStateIndex])
-    } else {
-      alert('No more undo states')
-    }
-  }
-
-  redo() {
-    if (this.currentStateIndex < this.states.length - 1) {
-      this.currentStateIndex++
-      this.restoreState(this.states[this.currentStateIndex])
-    } else {
-      alert('No more redo states')
-    }
-  }
-
-  restoreState(state: ImageData) {
-    if (state && this.initialized) {
-      this.ctx.putImageData(state, 0, 0)
-    }
-  }
-}
-
-class PaintBucketTool {
-  canvas: HTMLCanvasElement
-  ctx: CanvasRenderingContext2D
-  width: number
-  height: number
-
-  constructor(maskCanvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-    this.canvas = maskCanvas
-    this.ctx = ctx
-    this.width = maskCanvas.width
-    this.height = maskCanvas.height
-  }
-
-  // Get the color/alpha value at a specific pixel
-  getPixel(imageData: ImageData, x: number, y: number) {
-    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return -1
-    const index = (y * this.width + x) * 4
-    // For mask, we only care about alpha channel
-    //log rgba values for debugging
-    return imageData.data[index + 3]
-  }
-
-  // Set the color/alpha value at a specific pixel
-  setPixel(imageData: ImageData, x: number, y: number, alpha: number) {
-    const index = (y * this.width + x) * 4
-    imageData.data[index] = 0 // R
-    imageData.data[index + 1] = 0 // G
-    imageData.data[index + 2] = 0 // B
-    imageData.data[index + 3] = alpha // A
-  }
-
-  // Main flood fill function
-  floodFill(startX: number, startY: number, tolerance = 32) {
-    this.width = this.canvas.width
-    this.height = this.canvas.height
-
-    const imageData = this.ctx.getImageData(0, 0, this.width, this.height)
-    const targetAlpha = this.getPixel(imageData, startX, startY)
-
-    // If clicking on a fully opaque pixel, return
-    if (targetAlpha === 255) return
-
-    // Queue for processing pixels
-    const queue = []
-    queue.push([startX, startY])
-
-    // Keep track of visited pixels
-    const visited = new Set()
-    const key = (x: number, y: number) => `${x},${y}`
-
-    while (queue.length > 0) {
-      const [x, y] = queue.pop()
-      const currentKey = key(x, y)
-
-      if (visited.has(currentKey)) continue
-      visited.add(currentKey)
-
-      const currentAlpha = this.getPixel(imageData, x, y)
-
-      // Check if pixel should be filled
-      if (currentAlpha === -1) continue // Out of bounds
-      if (Math.abs(currentAlpha - targetAlpha) > tolerance) continue
-
-      // Fill the pixel
-      this.setPixel(imageData, x, y, 255)
-
-      // Add neighboring pixels to queue
-      queue.push([x + 1, y]) // Right
-      queue.push([x - 1, y]) // Left
-      queue.push([x, y + 1]) // Down
-      queue.push([x, y - 1]) // Up
-    }
-
-    // Update the canvas with filled region
-    this.ctx.putImageData(imageData, 0, 0)
+  private redoCombinationPressed() {
+    const combination = ['control', 'shift', 'z']
+    const keysDownLower = this.keysDown.map(key => key.toLowerCase())
+    const result = combination.every((key) => keysDownLower.includes(key))
+    if (result) this.messageBroker.publish('redo')
+    return result
   }
 }
 
