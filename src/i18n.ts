@@ -3,6 +3,9 @@ import { createI18n } from 'vue-i18n'
 const messages = {
   en: {
     install: {
+      installLocation: 'Install Location',
+      migration: 'Migration',
+      desktopSettings: 'Desktop Settings',
       chooseInstallationLocation: 'Choose Installation Location',
       systemLocations: 'System Locations',
       failedToSelectDirectory: 'Failed to select directory',

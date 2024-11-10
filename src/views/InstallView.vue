@@ -4,9 +4,15 @@
   >
     <Stepper class="mt-[20vh]" value="1">
       <StepList>
-        <Step value="1" :disabled="hasError">Install location</Step>
-        <Step value="2" :disabled="hasError">Migration</Step>
-        <Step value="3" :disabled="hasError">Desktop settings</Step>
+        <Step value="1" :disabled="hasError">
+          {{ $t('install.installLocation') }}
+        </Step>
+        <Step value="2" :disabled="hasError">
+          {{ $t('install.migration') }}
+        </Step>
+        <Step value="3" :disabled="hasError">
+          {{ $t('install.desktopSettings') }}
+        </Step>
       </StepList>
       <StepPanels>
         <StepPanel value="1" v-slot="{ activateCallback }">
