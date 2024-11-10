@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { IWidget } from '@comfyorg/litegraph'
 
 async function uploadFile(
   modelWidget: IWidget,
@@ -549,9 +550,6 @@ app.registerExtension({
 
         node.load3d = new Load3d(node, container)
 
-        widget.container = containerWrapper
-        widget.parent = node
-
         const modelWidget = node.widgets.find(
           (w: IWidget) => w.name === 'model_file'
         )
@@ -796,8 +794,6 @@ app.registerExtension({
 
           fileInput.remove()
 
-          widget.container?.remove()
-
           origOnRemoved?.apply(this, arguments)
         }
 
@@ -806,7 +802,7 @@ app.registerExtension({
         }
 
         return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D', widget.container)
+          widget: node.addDOMWidget(inputName, 'LOAD_3D', containerWrapper)
         }
       }
     }
