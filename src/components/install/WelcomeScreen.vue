@@ -21,18 +21,21 @@
 </template>
 
 <script setup lang="ts">
+import Steps from 'primevue/steps'
+import Button from 'primevue/button'
+
 const installSteps = [
   {
-    label: 'Installation Location',
+    label: 'Install Location',
     icon: 'pi pi-folder'
-  },
-  {
-    label: 'Python Setup',
-    icon: 'pi pi-code'
   },
   {
     label: 'Migration',
     icon: 'pi pi-download'
+  },
+  {
+    label: 'Desktop Settings',
+    icon: 'pi pi-desktop'
   },
   {
     label: 'Review',

@@ -4,7 +4,7 @@ import {
   createWebHistory
 } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-import { isElectron } from './utils/envUtil'
+import { isElectron, electronAPI } from './utils/envUtil'
 
 const isFileProtocol = () => window.location.protocol === 'file:'
 
@@ -29,9 +29,7 @@ const router = createRouter({
             if (isElectron()) {
               next()
             } else {
-              // TODO: Get from electronAPI
-              const isFirstTimeInstall = true
-              next(isFirstTimeInstall ? '/install' : '/')
+              next((await electronAPI().isFirstTimeSetup()) ? '/install' : '/')
             }
           }
         },

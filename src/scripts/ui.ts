@@ -636,6 +636,7 @@ export class ComfyUI {
         }
       })
     ]) as HTMLDivElement
+    this.menuContainer.style.display = 'none'
 
     this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
 

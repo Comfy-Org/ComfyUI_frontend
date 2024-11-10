@@ -59,9 +59,5 @@ onMounted(() => {
   electronAPI.onLogMessage((message: string) => {
     addLogMessage(message)
   })
-
-  electronAPI.onDefaultInstallLocation((location: string) => {
-    defaultInstallLocation.value = location
-  })
 })
 </script>
