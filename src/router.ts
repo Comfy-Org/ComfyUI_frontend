@@ -27,9 +27,13 @@ const router = createRouter({
           beforeEnter: async (to, from, next) => {
             // Only allow access to this page in electron environment
             if (isElectron()) {
-              next()
+              if (await electronAPI().isFirstTimeSetup()) {
+                next('/install')
+              } else {
+                next()
+              }
             } else {
-              next((await electronAPI().isFirstTimeSetup()) ? '/install' : '/')
+              next('/')
             }
           }
         },
