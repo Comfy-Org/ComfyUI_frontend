@@ -23,7 +23,7 @@
 
     <!-- System Paths Info -->
     <div class="bg-neutral-800 p-4 rounded-lg">
-      <h3 class="text-lg font-medium mb-3 text-neutral-100">
+      <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
         System Locations
       </h3>
       <div class="flex flex-col gap-2">
