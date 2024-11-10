@@ -10,15 +10,49 @@
       </StepList>
       <StepPanels>
         <StepPanel value="1" v-slot="{ activateCallback }">
-          <InstallLocationPicker
-            :next-step-callback="() => activateCallback('2')"
-          />
+          <InstallLocationPicker />
+          <div class="flex pt-6 justify-end">
+            <Button
+              label="Next"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              @click="activateCallback('2')"
+            />
+          </div>
         </StepPanel>
-        <StepPanel value="2">
+        <StepPanel value="2" v-slot="{ activateCallback }">
           <MigrationPicker />
+          <div class="flex pt-6 justify-between">
+            <Button
+              label="Back"
+              severity="secondary"
+              icon="pi pi-arrow-left"
+              @click="activateCallback('1')"
+            />
+            <Button
+              label="Next"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              @click="activateCallback('3')"
+            />
+          </div>
         </StepPanel>
-        <StepPanel value="3">
+        <StepPanel value="3" v-slot="{ activateCallback }">
           <DesktopSettingsConfiguration />
+          <div class="flex pt-6 justify-between">
+            <Button
+              label="Back"
+              severity="secondary"
+              icon="pi pi-arrow-left"
+              @click="activateCallback('2')"
+            />
+            <Button
+              label="Install"
+              icon="pi pi-check"
+              iconPos="right"
+              @click="install()"
+            />
+          </div>
         </StepPanel>
       </StepPanels>
     </Stepper>
@@ -26,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Stepper from 'primevue/stepper'
 import StepList from 'primevue/steplist'
 import StepPanels from 'primevue/steppanels'
@@ -35,6 +70,11 @@ import StepPanel from 'primevue/steppanel'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
+import { electronAPI } from '@/utils/envUtil'
+
+const install = () => {
+  ;(electronAPI() as any).installComfyUI()
+}
 </script>
 
 <style scoped>

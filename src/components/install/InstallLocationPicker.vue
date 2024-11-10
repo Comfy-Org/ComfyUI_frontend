@@ -53,16 +53,6 @@
         </div>
       </div>
     </div>
-
-    <div class="flex justify-end">
-      <Button
-        label="Next"
-        icon="pi pi-arrow-right"
-        iconPos="right"
-        @click="props.nextStepCallback"
-        :disabled="pathError !== ''"
-      />
-    </div>
   </div>
 </template>
 
@@ -77,10 +67,6 @@ import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-
-const props = defineProps<{
-  nextStepCallback: () => void
-}>()
 
 const installPath = ref('')
 const pathError = ref('')
