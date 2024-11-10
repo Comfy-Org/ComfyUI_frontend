@@ -3,7 +3,7 @@
     <!-- Source Location Section -->
     <div class="flex flex-col gap-4">
       <h2 class="text-2xl font-semibold text-neutral-100">
-        Migrate from Existing Installation
+        {{ $t('install.migrateFromExistingInstallation') }}
       </h2>
 
       <div class="flex gap-2">
@@ -28,7 +28,7 @@
       class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
     >
       <h3 class="text-lg font-medium text-neutral-100">
-        Select Items to Migrate
+        {{ $t('install.selectItemsToMigrate') }}
       </h3>
 
       <div class="flex flex-col gap-3">
@@ -52,8 +52,7 @@
 
     <!-- Skip Migration -->
     <div v-else class="text-neutral-400 italic">
-      Migration is optional. If you don't have an existing installation, you can
-      skip this step.
+      {{ $t('install.migrationOptional') }}
     </div>
   </div>
 </template>

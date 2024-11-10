@@ -15,7 +15,11 @@ const messages = {
       appDataLocationTooltip:
         "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
       appPathLocationTooltip:
-        "ComfyUI's app asset directory. Stores the ComfyUI code and assets"
+        "ComfyUI's app asset directory. Stores the ComfyUI code and assets",
+      migrateFromExistingInstallation: 'Migrate from Existing Installation',
+      selectItemsToMigrate: 'Select Items to Migrate',
+      migrationOptional:
+        "Migration is optional. If you don't have an existing installation, you can skip this step."
     },
     download: 'Download',
     loadAllFolders: 'Load All Folders',
