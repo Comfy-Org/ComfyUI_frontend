@@ -12,6 +12,9 @@
       <StepPanel>
         <MigrationPicker />
       </StepPanel>
+      <StepPanel>
+        <DesktopSettingsConfiguration />
+      </StepPanel>
     </StepPanels>
   </Stepper>
 </template>
@@ -25,4 +28,5 @@ import StepPanel from 'primevue/steppanel'
 
 import InstallLocationPicker from '@/components/install/steps/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/steps/MigrationPicker.vue'
+import DesktopSettingsConfiguration from '@/components/install/steps/DesktopSettingsConfiguration.vue'
 </script>
