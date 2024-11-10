@@ -4,19 +4,23 @@
   >
     <Stepper class="mt-[20vh]" value="1">
       <StepList>
-        <Step value="1">Install location</Step>
-        <Step value="2">Migration</Step>
-        <Step value="3">Desktop settings</Step>
+        <Step value="1" :disabled="hasError">Install location</Step>
+        <Step value="2" :disabled="hasError">Migration</Step>
+        <Step value="3" :disabled="hasError">Desktop settings</Step>
       </StepList>
       <StepPanels>
         <StepPanel value="1" v-slot="{ activateCallback }">
-          <InstallLocationPicker />
+          <InstallLocationPicker
+            v-model:installPath="installPath"
+            v-model:pathError="pathError"
+          />
           <div class="flex pt-6 justify-end">
             <Button
               label="Next"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('2')"
+              :disabled="pathError !== ''"
             />
           </div>
         </StepPanel>
@@ -71,6 +75,12 @@ import InstallLocationPicker from '@/components/install/InstallLocationPicker.vu
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
+import { ref, computed } from 'vue'
+
+const installPath = ref('')
+const pathError = ref('')
+
+const hasError = computed(() => pathError.value !== '')
 
 const install = () => {
   ;(electronAPI() as any).installComfyUI()

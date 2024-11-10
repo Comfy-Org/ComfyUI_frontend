@@ -68,8 +68,8 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-const installPath = ref('')
-const pathError = ref('')
+const installPath = defineModel<string>('installPath', { required: true })
+const pathError = defineModel<string>('pathError', { required: true })
 const appData = ref('')
 const appPath = ref('')
 
