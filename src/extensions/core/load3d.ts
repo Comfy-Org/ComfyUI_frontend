@@ -7,7 +7,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { IWidget } from '@comfyorg/litegraph'
-import { HTMLDivElement } from 'happy-dom'
 import { ComfyNode } from '@/types/comfyWorkflow'
 
 async function uploadFile(
