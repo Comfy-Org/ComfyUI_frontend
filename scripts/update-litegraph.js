@@ -27,7 +27,7 @@ try {
   // Create the PR
   console.log('Creating PR...')
   execSync(
-    `gh pr create --title "Update litegraph ${newVersion}" --label "Dependencies" --body "Automated update of litegraph to version ${newVersion}"`,
+    `gh pr create --title "Update litegraph ${newVersion}" --label "dependencies" --body "Automated update of litegraph to version ${newVersion}"`,
     { stdio: 'inherit' }
   )
 
