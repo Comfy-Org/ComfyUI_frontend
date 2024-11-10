@@ -2,6 +2,14 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    install: {
+      installLocationTooltip:
+        "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
+      appDataLocationTooltip:
+        "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
+      appPathLocationTooltip:
+        "ComfyUI's app asset directory. Stores the ComfyUI code and assets"
+    },
     download: 'Download',
     loadAllFolders: 'Load All Folders',
     refresh: 'Refresh',

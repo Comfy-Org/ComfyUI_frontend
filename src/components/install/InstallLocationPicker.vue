@@ -7,18 +7,24 @@
       </h2>
 
       <div class="flex gap-2">
-        <InputText
-          v-model="installPath"
-          class="flex-1"
-          :class="{ 'p-invalid': pathError }"
-          @change="validatePath"
-        />
+        <IconField class="flex-1">
+          <InputText
+            v-model="installPath"
+            class="w-full"
+            :class="{ 'p-invalid': pathError }"
+            @change="validatePath"
+          />
+          <InputIcon
+            class="pi pi-info-circle"
+            v-tooltip="$t('install.installLocationTooltip')"
+          />
+        </IconField>
         <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
       </div>
 
-      <small v-if="pathError" class="text-red-400">
+      <Message v-if="pathError" severity="error">
         {{ pathError }}
-      </small>
+      </Message>
     </div>
 
     <!-- System Paths Info -->
@@ -31,11 +37,19 @@
           <i class="pi pi-folder text-neutral-400" />
           <span class="text-neutral-400">App Data:</span>
           <span class="text-neutral-200">{{ appData }}</span>
+          <span
+            class="pi pi-info-circle"
+            v-tooltip="$t('install.appDataLocationTooltip')"
+          ></span>
         </div>
         <div class="flex items-center gap-2">
           <i class="pi pi-desktop text-neutral-400" />
           <span class="text-neutral-400">App Path:</span>
           <span class="text-neutral-200">{{ appPath }}</span>
+          <span
+            class="pi pi-info-circle"
+            v-tooltip="$t('install.appPathLocationTooltip')"
+          ></span>
         </div>
       </div>
     </div>
@@ -47,6 +61,9 @@ import { ref, onMounted } from 'vue'
 import { electronAPI } from '@/utils/envUtil'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
+import Message from 'primevue/message'
 
 const installPath = ref('')
 const pathError = ref('')
