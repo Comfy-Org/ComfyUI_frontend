@@ -176,13 +176,20 @@ export class LGraphCanvas {
     set isDragging(value: boolean) {
         this.state.draggingItems = value
     }
+
+    get title_text_font(): string {
+        return `${LiteGraph.NODE_TEXT_SIZE}px Arial`
+    }
+
+    get inner_text_font(): string {
+        return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px Arial`
+    }
+
     options: { skip_events?: any; viewport?: any; skip_render?: any; autoresize?: any }
     background_image: string
     ds: DragAndScale
     zoom_modify_alpha: boolean
     zoom_speed: number
-    title_text_font: string
-    inner_text_font: string
     node_title_color: string
     default_link_color: string
     default_connection_color: {
@@ -363,9 +370,6 @@ export class LGraphCanvas {
         this.zoom_modify_alpha = true //otherwise it generates ugly patterns when scaling down too much
         this.zoom_speed = 1.1 // in range (1.01, 2.5). Less than 1 will invert the zoom direction
 
-        this.title_text_font = "" + LiteGraph.NODE_TEXT_SIZE + "px Arial"
-        this.inner_text_font =
-            "normal " + LiteGraph.NODE_SUBTEXT_SIZE + "px Arial"
         this.node_title_color = LiteGraph.NODE_TITLE_COLOR
         this.default_link_color = LiteGraph.LINK_COLOR
         this.default_connection_color = {
