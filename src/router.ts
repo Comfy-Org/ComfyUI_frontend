@@ -32,6 +32,19 @@ const router = createRouter({
               next('/')
             }
           }
+        },
+        {
+          path: 'install',
+          name: 'InstallView',
+          component: () => import('@/views/InstallView.vue'),
+          beforeEnter: async (to, from, next) => {
+            // Only allow access to this page in electron environment
+            if (isElectron()) {
+              next()
+            } else {
+              next('/')
+            }
+          }
         }
       ]
     }

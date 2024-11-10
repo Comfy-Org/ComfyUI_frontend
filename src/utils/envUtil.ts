@@ -5,5 +5,5 @@ export function isElectron() {
 }
 
 export function electronAPI() {
-  return window['electronAPI'] as ElectronAPI
+  return (window as any)['electronAPI'] as ElectronAPI
 }
