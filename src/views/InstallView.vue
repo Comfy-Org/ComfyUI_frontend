@@ -9,8 +9,10 @@
         <Step value="3">Desktop settings</Step>
       </StepList>
       <StepPanels>
-        <StepPanel value="1">
-          <InstallLocationPicker />
+        <StepPanel value="1" v-slot="{ activateCallback }">
+          <InstallLocationPicker
+            :next-step-callback="() => activateCallback('2')"
+          />
         </StepPanel>
         <StepPanel value="2">
           <MigrationPicker />
@@ -34,3 +36,9 @@ import InstallLocationPicker from '@/components/install/InstallLocationPicker.vu
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 </script>
+
+<style scoped>
+:deep(.p-steppanel) {
+  @apply bg-transparent;
+}
+</style>
