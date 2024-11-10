@@ -2207,7 +2207,6 @@
   "PrimereTextOutput": 1,
   "easy imageScaleDownBy": 1,
   "WebcamCapture": 1,
-  "ThreeDViewer": 1,
   "ImageEnhanceDifference+": 1,
   "DynamicThresholdingSimple": 1,
   "Simple Wildcards": 1,
@@ -2599,5 +2598,6 @@
   "Perlin Power Fractal Latent (PPF Noise)": 1,
   "Cross-Hatch Power Fractal (PPF Noise)": 1,
   "Linear Cross-Hatch Power Fractal (PPF Noise)": 1,
-  "CLIPTextEncodeControlnet": 1
+  "CLIPTextEncodeControlnet": 1,
+  "Load3D": 1
 }
