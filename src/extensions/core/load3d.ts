@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { useToastStore } from '@/stores/toastStore'
@@ -8,6 +7,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { IWidget } from '@comfyorg/litegraph'
+import { HTMLDivElement } from 'happy-dom'
+import { ComfyNode } from '@/types/comfyWorkflow'
 
 async function uploadFile(
   modelWidget: IWidget,
@@ -32,8 +33,8 @@ async function uploadFile(
       let path = data.name
       if (data.subfolder) path = data.subfolder + '/' + path
 
-      if (!modelWidget.options.values.includes(path)) {
-        modelWidget.options.values.push(path)
+      if (!modelWidget?.options?.values?.includes(path)) {
+        modelWidget?.options?.values?.push(path)
       }
 
       if (updateNode) {
@@ -90,7 +91,10 @@ class Load3d {
   gridHelper: THREE.GridHelper
   lights: THREE.Light[] = []
 
-  constructor(node, container) {
+  constructor(node: ComfyNode, container: Element | HTMLElement) {
+    console.log(node)
+    console.log(container)
+
     this.node = node
 
     this.scene = new THREE.Scene()
@@ -117,7 +121,10 @@ class Load3d {
     this.renderer = new THREE.WebGLRenderer({ antialias: true })
     this.renderer.setSize(300, 300)
     this.renderer.setClearColor(0x282828)
-    container.appendChild(this.renderer.domElement)
+
+    const rendererDomElement: HTMLCanvasElement = this.renderer.domElement
+
+    container.appendChild(rendererDomElement)
 
     this.controls = new OrbitControls(
       this.activeCamera,
@@ -357,8 +364,15 @@ class Load3d {
   }
 
   handleResize() {
-    const width = this.renderer.domElement.parentElement.clientWidth
-    const height = this.renderer.domElement.parentElement.clientHeight
+    const parentElement = this.renderer?.domElement?.parentElement
+
+    if (!parentElement) {
+      console.warn('Parent element not found')
+      return
+    }
+
+    const width = parentElement?.clientWidth
+    const height = parentElement?.clientHeight
 
     if (this.activeCamera === this.perspectiveCamera) {
       this.perspectiveCamera.aspect = width / height
@@ -495,8 +509,6 @@ app.registerExtension({
   getCustomWidgets(app) {
     return {
       LOAD_3D(node, inputName) {
-        const container1 = document.createElement('div')
-
         let load3dNodes = app.graph._nodes.filter((wi) => wi.type == 'Load3D')
 
         node.name = `load3d_${load3dNodes.length}`
@@ -513,40 +525,6 @@ app.registerExtension({
         const buttonContainer = document.createElement('div')
         buttonContainer.classList.add('comfyui-load-3d-buttons')
         containerWrapper.appendChild(buttonContainer)
-
-        const widget = {
-          type: 'load3d',
-          name: `l3d_${inputName}`,
-          draw: function (ctx, _, widgetWidth, y, widgetHeight) {
-            const margin = 10
-            const visible = app.canvas.ds.scale > 0.5
-            const w = widgetWidth - margin * 2
-
-            const clientRectBound = ctx.canvas.getBoundingClientRect()
-            const transform = new DOMMatrix()
-              .scaleSelf(
-                clientRectBound.width / ctx.canvas.width,
-                clientRectBound.height / ctx.canvas.height
-              )
-              .multiplySelf(ctx.getTransform())
-              .translateSelf(margin, margin + y)
-
-            Object.assign(this.container.style, {
-              left: `${transform.a * margin + transform.e}px`,
-              top: `${transform.d + transform.f}px`,
-              width: `${w * transform.a}px`,
-              height: `${w * transform.d}px`,
-              position: 'absolute',
-              zIndex: app.graph._nodes.indexOf(node)
-            })
-
-            this.container.hidden = !visible
-
-            if (node.load3d && !this.container.hidden) {
-              node.load3d.handleResize()
-            }
-          }
-        }
 
         node.load3d = new Load3d(node, container)
 
@@ -577,18 +555,21 @@ app.registerExtension({
         buttonGroup.classList.add('comfyui-load-3d-button-group')
         buttonContainer.appendChild(buttonGroup)
 
-        const uploadButton = document.createElement('button')
+        const uploadButton: HTMLButtonElement = document.createElement('button')
         uploadButton.textContent = 'Choose Model'
         uploadButton.onclick = () => fileInput.click()
         uploadButton.className = 'comfyui-load-3d-btn full-width'
         buttonGroup.appendChild(uploadButton)
 
-        const clearModelButton = document.createElement('button')
+        const clearModelButton: HTMLButtonElement =
+          document.createElement('button')
         clearModelButton.textContent = 'Clear Model'
         clearModelButton.className = 'comfyui-load-3d-btn full-width'
         clearModelButton.onclick = () => {
           node.load3d.clearModel()
-          const modelWidget = node.widgets.find((w) => w.name === 'model_file')
+          const modelWidget = node.widgets.find(
+            (w: IWidget) => w.name === 'model_file'
+          )
           if (modelWidget) {
             modelWidget.value = ''
           }
@@ -797,7 +778,7 @@ app.registerExtension({
           origOnRemoved?.apply(this, arguments)
         }
 
-        node.onDrawBackground = function (ctx) {
+        node.onDrawBackground = function () {
           node.load3d.renderer.domElement.hidden = this.flags.collapsed
         }
 
@@ -959,9 +940,9 @@ app.registerExtension({
   nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
-    const sceneWidget = node.widgets.find((w) => w.name === 'image')
-    const w = node.widgets.find((w) => w.name === 'width')
-    const h = node.widgets.find((w) => w.name === 'height')
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
+    const w = node.widgets.find((w: IWidget) => w.name === 'width')
+    const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
     sceneWidget.serializeValue = async () => {
       const imageData = await node.load3d.captureScene(w.value, h.value)

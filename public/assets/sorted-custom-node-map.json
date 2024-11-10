@@ -2598,6 +2598,5 @@
   "Perlin Power Fractal Latent (PPF Noise)": 1,
   "Cross-Hatch Power Fractal (PPF Noise)": 1,
   "Linear Cross-Hatch Power Fractal (PPF Noise)": 1,
-  "CLIPTextEncodeControlnet": 1,
-  "Load3D": 1
+  "CLIPTextEncodeControlnet": 1
 }
