@@ -3,7 +3,7 @@
     <!-- Installation Path Section -->
     <div class="flex flex-col gap-4">
       <h2 class="text-2xl font-semibold text-neutral-100">
-        Choose Installation Location
+        {{ $t('install.chooseInstallationLocation') }}
       </h2>
 
       <div class="flex gap-2">
@@ -30,7 +30,7 @@
     <!-- System Paths Info -->
     <div class="bg-neutral-800 p-4 rounded-lg">
       <h3 class="text-lg font-medium mt-0 mb-3 text-neutral-100">
-        System Locations
+        {{ $t('install.systemLocations') }}
       </h3>
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-2">
@@ -64,6 +64,9 @@ import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import Message from 'primevue/message'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const installPath = ref('')
 const pathError = ref('')
@@ -90,7 +93,7 @@ const validatePath = async () => {
       pathError.value = validation.error
     }
   } catch (error) {
-    pathError.value = 'Failed to validate path'
+    pathError.value = t('install.pathValidationFailed')
   }
 }
 
@@ -102,7 +105,7 @@ const browsePath = async () => {
       await validatePath()
     }
   } catch (error) {
-    pathError.value = 'Failed to select directory'
+    pathError.value = t('install.failedToSelectDirectory')
   }
 }
 

@@ -3,6 +3,10 @@ import { createI18n } from 'vue-i18n'
 const messages = {
   en: {
     install: {
+      chooseInstallationLocation: 'Choose Installation Location',
+      systemLocations: 'System Locations',
+      failedToSelectDirectory: 'Failed to select directory',
+      pathValidationFailed: 'Failed to validate path',
       installLocationTooltip:
         "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
       appDataLocationTooltip:
