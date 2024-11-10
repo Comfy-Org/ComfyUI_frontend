@@ -174,6 +174,7 @@ const zExtra = z
   })
   .passthrough()
 
+/** Schema version 0.4 */
 export const zComfyWorkflow = z
   .object({
     last_node_id: zNodeId,
@@ -188,9 +189,10 @@ export const zComfyWorkflow = z
   })
   .passthrough()
 
+/** Schema version 1 */
 const zComfyWorkflow1 = z
   .object({
-    version: z.number(),
+    version: z.literal(1),
     config: zConfig.optional().nullable(),
     state: zGraphState,
     groups: z.array(zGroup).optional(),
