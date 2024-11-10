@@ -132,9 +132,16 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: '.'
+    },
+    commandId: 'Comfy.Canvas.FitView',
+    targetSelector: '#graph-canvas'
+  },
+  {
+    combo: {
       key: 'p'
     },
-    commandId: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+    commandId: 'Comfy.Canvas.ToggleSelected.Pin',
     targetSelector: '#graph-canvas'
   },
   {
@@ -160,5 +167,18 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
     targetSelector: '#graph-canvas'
+  },
+  {
+    combo: {
+      key: '`',
+      ctrl: true
+    },
+    commandId: 'Workspace.ToggleBottomPanelTab.integrated-terminal'
+  },
+  {
+    combo: {
+      key: 'f'
+    },
+    commandId: 'Workspace.ToggleFocusMode'
   }
 ]

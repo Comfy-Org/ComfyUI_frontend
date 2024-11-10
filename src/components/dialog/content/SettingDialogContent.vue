@@ -1,6 +1,6 @@
 <template>
   <div class="settings-container">
-    <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-64">
+    <ScrollPanel class="settings-sidebar flex-shrink-0 p-2 w-48 2xl:w-64">
       <SearchBox
         class="settings-search-box w-full mb-2"
         v-model:modelValue="searchQuery"
@@ -16,7 +16,7 @@
         class="border-none w-full"
       />
     </ScrollPanel>
-    <Divider layout="vertical" />
+    <Divider layout="vertical" class="mx-1 2xl:mx-4" />
     <ScrollPanel class="settings-content flex-grow">
       <Tabs :value="tabValue">
         <TabPanels class="settings-tab-panels">

@@ -2,6 +2,10 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    download: 'Download',
+    loadAllFolders: 'Load All Folders',
+    refresh: 'Refresh',
+    terminal: 'Terminal',
     videoFailedToLoad: 'Video failed to load',
     extensionName: 'Extension Name',
     reloadToApplyChanges: 'Reload to apply changes',
@@ -73,6 +77,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Hide Menu',
+      showMenu: 'Show Menu',
       batchCount: 'Batch Count',
       batchCountTooltip:
         'The number of times the workflow generation should be queued',
@@ -91,7 +97,8 @@ const messages = {
       refresh: 'Refresh node definitions',
       clipspace: 'Open Clipspace',
       resetView: 'Reset canvas view',
-      clear: 'Clear workflow'
+      clear: 'Clear workflow',
+      toggleBottomPanel: 'Toggle Bottom Panel'
     },
     templateWorkflows: {
       title: 'Get Started with a Template',
@@ -106,12 +113,22 @@ const messages = {
       zoomIn: 'Zoom In',
       zoomOut: 'Zoom Out',
       resetView: 'Reset View',
+      fitView: 'Fit View',
       selectMode: 'Select Mode',
       panMode: 'Pan Mode',
       toggleLinkVisibility: 'Toggle Link Visibility'
+    },
+    electronFileDownload: {
+      pause: 'Pause Download',
+      resume: 'Resume Download',
+      cancel: 'Cancel Download'
     }
   },
   zh: {
+    download: '下载',
+    loadAllFolders: '加载所有文件夹',
+    refresh: '刷新',
+    terminal: '终端',
     videoFailedToLoad: '视频加载失败',
     extensionName: '扩展名称',
     reloadToApplyChanges: '重新加载以应用更改',
@@ -184,6 +201,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: '隐藏菜单',
+      showMenu: '显示菜单',
       batchCount: '批次数量',
       batchCountTooltip: '工作流生成次数',
       autoQueue: '自动执行',
@@ -200,7 +219,8 @@ const messages = {
       refresh: '刷新节点',
       clipspace: '打开剪贴板',
       resetView: '重置画布视图',
-      clear: '清空工作流'
+      clear: '清空工作流',
+      toggleBottomPanel: '底部面板'
     },
     templateWorkflows: {
       title: '从模板开始',
@@ -215,12 +235,17 @@ const messages = {
       zoomIn: '放大',
       zoomOut: '缩小',
       resetView: '重置视图',
+      fitView: '适应视图',
       selectMode: '选择模式',
       panMode: '平移模式',
       toggleLinkVisibility: '切换链接可见性'
     }
   },
   ru: {
+    download: 'Скачать',
+    refresh: 'Обновить',
+    loadAllFolders: 'Загрузить все папки',
+    terminal: 'Терминал',
     videoFailedToLoad: 'Видео не удалось загрузить',
     extensionName: 'Название расширения',
     reloadToApplyChanges: 'Перезагрузите, чтобы применить изменения',
@@ -293,6 +318,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Скрыть меню',
+      showMenu: 'Показать меню',
       batchCount: 'Количество пакетов',
       batchCountTooltip:
         'Количество раз, когда генерация рабочего процесса должна быть помещена в очередь',
@@ -328,6 +355,7 @@ const messages = {
       zoomIn: 'Увеличить',
       zoomOut: 'Уменьшить',
       resetView: 'Сбросить вид',
+      fitView: 'Подгонять под выделенные',
       selectMode: 'Выбрать режим',
       panMode: 'Режим панорамирования',
       toggleLinkVisibility: 'Переключить видимость ссылок'

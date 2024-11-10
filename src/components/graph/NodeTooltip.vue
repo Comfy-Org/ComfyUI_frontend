@@ -23,35 +23,6 @@ const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
 
-const getHoveredWidget = () => {
-  const node = comfyApp.canvas.node_over
-  if (!node.widgets) return
-
-  const graphPos = comfyApp.canvas.graph_mouse
-  const x = graphPos[0] - node.pos[0]
-  const y = graphPos[1] - node.pos[1]
-
-  for (const w of node.widgets) {
-    let widgetWidth: number, widgetHeight: number
-    if (w.computeSize) {
-      ;[widgetWidth, widgetHeight] = w.computeSize(node.size[0])
-    } else {
-      widgetWidth = (w as { width?: number }).width || node.size[0]
-      widgetHeight = LiteGraph.NODE_WIDGET_HEIGHT
-    }
-
-    if (
-      w.last_y !== undefined &&
-      x >= 6 &&
-      x <= widgetWidth - 12 &&
-      y >= w.last_y &&
-      y <= w.last_y + widgetHeight
-    ) {
-      return w
-    }
-  }
-}
-
 const hideTooltip = () => (tooltipText.value = null)
 
 const showTooltip = async (tooltip: string | null | undefined) => {
@@ -111,7 +82,7 @@ const onIdle = () => {
     return showTooltip(nodeDef.output.all?.[outputSlot]?.tooltip)
   }
 
-  const widget = getHoveredWidget()
+  const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
     return showTooltip(

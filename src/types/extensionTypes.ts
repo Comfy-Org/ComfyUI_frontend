@@ -6,24 +6,40 @@ export interface BaseSidebarTabExtension {
   title: string
   icon?: string
   iconBadge?: string | (() => string | null)
-  order?: number
   tooltip?: string
 }
 
-export interface VueSidebarTabExtension extends BaseSidebarTabExtension {
+export interface BaseBottomPanelExtension {
+  id: string
+  title: string
+}
+
+export interface VueExtension {
+  id: string
   type: 'vue'
   component: Component
 }
 
-export interface CustomSidebarTabExtension extends BaseSidebarTabExtension {
+export interface CustomExtension {
+  id: string
   type: 'custom'
   render: (container: HTMLElement) => void
   destroy?: () => void
 }
 
+export type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
+export type CustomSidebarTabExtension = BaseSidebarTabExtension &
+  CustomExtension
 export type SidebarTabExtension =
   | VueSidebarTabExtension
   | CustomSidebarTabExtension
+
+export type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
+export type CustomBottomPanelExtension = BaseBottomPanelExtension &
+  CustomExtension
+export type BottomPanelExtension =
+  | VueBottomPanelExtension
+  | CustomBottomPanelExtension
 
 export type ToastManager = {
   add(message: ToastMessageOptions): void
@@ -37,9 +53,12 @@ export interface ExtensionManager {
   unregisterSidebarTab(id: string): void
   getSidebarTabs(): SidebarTabExtension[]
 
-  // Toast
   toast: ToastManager
   command: CommandManager
+  setting: {
+    get: (id: string) => any
+    set: (id: string, value: any) => void
+  }
 }
 
 export interface CommandManager {

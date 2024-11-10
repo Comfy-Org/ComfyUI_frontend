@@ -1,9 +1,7 @@
-// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { globalTracker } from '@/scripts/changeTracker'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import {
@@ -16,9 +14,12 @@ import { ComfyExtension } from '@/types/comfy'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { useWorkflowStore } from './workflowStore'
+import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
+import { useWorkspaceStore } from './workspaceStore'
+import { workflowService } from '@/services/workflowService'
 
 export interface ComfyCommand {
   id: string
@@ -74,8 +75,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   }
 }
 
-const getTracker = () =>
-  app.workflowManager.activeWorkflow?.changeTracker ?? globalTracker
+const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
 
 const getSelectedNodes = (): LGraphNode[] => {
   const selectedNodes = app.canvas.selected_nodes
@@ -118,12 +118,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
-      function: () => {
-        app.workflowManager.setWorkflow(null)
-        app.clean()
-        app.graph.clear()
-        app.workflowManager.activeWorkflow.track()
-      }
+      function: () => workflowService.loadBlankWorkflow()
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -138,17 +133,18 @@ export const useCommandStore = defineStore('command', () => {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: async () => {
-        await app.loadGraphData()
-      }
+      function: () => workflowService.loadDefaultWorkflow()
     },
     {
       id: 'Comfy.SaveWorkflow',
       icon: 'pi pi-save',
       label: 'Save Workflow',
       menubarLabel: 'Save',
-      function: () => {
-        app.workflowManager.activeWorkflow.save()
+      function: async () => {
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        if (!workflow) return
+
+        await workflowService.saveWorkflow(workflow)
       }
     },
     {
@@ -156,8 +152,11 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-save',
       label: 'Save Workflow As',
       menubarLabel: 'Save As',
-      function: () => {
-        app.workflowManager.activeWorkflow.save(true)
+      function: async () => {
+        const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
+        if (!workflow) return
+
+        await workflowService.saveWorkflowAs(workflow)
       }
     },
     {
@@ -166,7 +165,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Export Workflow',
       menubarLabel: 'Export',
       function: () => {
-        app.menu.exportWorkflow('workflow', 'workflow')
+        workflowService.exportWorkflow('workflow', 'workflow')
       }
     },
     {
@@ -175,7 +174,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Export Workflow (API Format)',
       menubarLabel: 'Export (API)',
       function: () => {
-        app.menu.exportWorkflow('workflow_api', 'output')
+        workflowService.exportWorkflow('workflow_api', 'output')
       }
     },
     {
@@ -183,7 +182,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-undo',
       label: 'Undo',
       function: async () => {
-        await getTracker().undo()
+        await getTracker()?.undo?.()
       }
     },
     {
@@ -191,7 +190,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-refresh',
       label: 'Redo',
       function: async () => {
-        await getTracker().redo()
+        await getTracker()?.redo?.()
       }
     },
     {
@@ -222,7 +221,7 @@ export const useCommandStore = defineStore('command', () => {
       icon: 'pi pi-clipboard',
       label: 'Clipspace',
       function: () => {
-        app['openClipspace']?.()
+        app.openClipspace()
       }
     },
     {
@@ -273,10 +272,10 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Zoom In',
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(ds.scale * 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(
+          ds.scale * 1.1,
+          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
+        )
         app.canvas.setDirty(true, true)
       }
     },
@@ -286,12 +285,18 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Zoom Out',
       function: () => {
         const ds = app.canvas.ds
-        ds.changeScale(ds.scale / 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(
+          ds.scale / 1.1,
+          ds.element ? [ds.element.width / 2, ds.element.height / 2] : undefined
+        )
         app.canvas.setDirty(true, true)
       }
+    },
+    {
+      id: 'Comfy.Canvas.FitView',
+      icon: 'pi pi-expand',
+      label: 'Fit view to selected nodes',
+      function: () => app.canvas.fitViewToSelectionAnimated()
     },
     {
       id: 'Comfy.Canvas.ToggleLock',
@@ -359,14 +364,13 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Group Selected Nodes',
       versionAdded: '1.3.7',
       function: () => {
-        if (
-          !app.canvas.selected_nodes ||
-          Object.keys(app.canvas.selected_nodes).length === 0
-        ) {
+        const { canvas } = app
+        if (!canvas.selectedItems?.size) {
           useToastStore().add({
             severity: 'error',
-            summary: 'No nodes selected',
-            detail: 'Please select nodes to group',
+            summary: 'Nothing to group',
+            detail:
+              'Please select the nodes (or other groups) to create a group for',
             life: 3000
           })
           return
@@ -375,8 +379,8 @@ export const useCommandStore = defineStore('command', () => {
         const padding = useSettingStore().get(
           'Comfy.GroupSelectedNodes.Padding'
         )
-        group.addNodes(Object.values(app.canvas.selected_nodes), padding)
-        app.canvas.graph.add(group)
+        group.resizeTo(canvas.selectedItems, padding)
+        canvas.graph.add(group)
         useTitleEditorStore().titleEditorTarget = group
       }
     },
@@ -386,7 +390,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        useWorkflowStore().loadNextOpenedWorkflow()
+        workflowService.loadNextOpenedWorkflow()
       }
     },
     {
@@ -395,7 +399,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        useWorkflowStore().loadPreviousOpenedWorkflow()
+        workflowService.loadPreviousOpenedWorkflow()
       }
     },
     {
@@ -425,6 +429,19 @@ export const useCommandStore = defineStore('command', () => {
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
         })
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ToggleSelected.Pin',
+      icon: 'pi pi-pin',
+      label: 'Pin/Unpin Selected Items',
+      versionAdded: '1.3.33',
+      function: () => {
+        for (const item of app.canvas.selectedItems) {
+          if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+            item.pin(!item.pinned)
+          }
+        }
       }
     },
     {
@@ -458,6 +475,24 @@ export const useCommandStore = defineStore('command', () => {
           }
         }
       })()
+    },
+    {
+      id: 'Workspace.ToggleBottomPanel',
+      icon: 'pi pi-list',
+      label: 'Toggle Bottom Panel',
+      versionAdded: '1.3.22',
+      function: () => {
+        useBottomPanelStore().toggleBottomPanel()
+      }
+    },
+    {
+      id: 'Workspace.ToggleFocusMode',
+      icon: 'pi pi-eye',
+      label: 'Toggle Focus Mode',
+      versionAdded: '1.3.27',
+      function: () => {
+        useWorkspaceStore().toggleFocusMode()
+      }
     }
   ]
 

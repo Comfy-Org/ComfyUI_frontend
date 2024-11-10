@@ -1,11 +1,8 @@
 import { expect } from '@playwright/test'
-import { ComfyPage, NodeReference, comfyPageFixture as test } from './ComfyPage'
+import { ComfyPage, comfyPageFixture as test } from './fixtures/ComfyPage'
+import type { NodeReference } from './fixtures/utils/litegraphUtils'
 
 test.describe('Group Node', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-  })
-
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
@@ -17,11 +14,6 @@ test.describe('Group Node', () => {
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
-      await libraryTab.close()
     })
 
     test('Is added to node library sidebar', async ({ comfyPage }) => {
@@ -98,6 +90,7 @@ test.describe('Group Node', () => {
   })
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
     const tooltipTimeout = 500
@@ -146,7 +139,9 @@ test.describe('Group Node', () => {
   }) => {
     await comfyPage.loadWorkflow('legacy_group_node')
     expect(await comfyPage.getGraphNodesCount()).toBe(1)
-    expect(comfyPage.page.locator('.comfy-missing-nodes')).not.toBeVisible()
+    await expect(
+      comfyPage.page.locator('.comfy-missing-nodes')
+    ).not.toBeVisible()
   })
 
   test.describe('Copy and paste', () => {
@@ -190,13 +185,6 @@ test.describe('Group Node', () => {
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
       await groupNode.copy()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.page.evaluate((groupNodeName) => {
-        window['LiteGraph'].unregisterNodeType(groupNodeName)
-      }, GROUP_NODE_TYPE)
     })
 
     test('Copies and pastes group node within the same workflow', async ({

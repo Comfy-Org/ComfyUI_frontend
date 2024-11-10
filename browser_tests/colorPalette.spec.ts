@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 const customColorPalettes = {
   obsidian: {
@@ -135,12 +135,6 @@ test.describe('Color Palette', () => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
   })
 
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.CustomColorPalettes', {})
-    await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
-    await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
-  })
-
   test('Can show custom color palette', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
     await comfyPage.nextFrame()
@@ -156,11 +150,6 @@ test.describe('Color Palette', () => {
 test.describe('Node Color Adjustments', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('every_node_color')
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
-    await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
   })
 
   test('should adjust opacity via node opacity setting', async ({
@@ -222,7 +211,7 @@ test.describe('Node Color Adjustments', () => {
       await comfyPage.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.setSetting('Comfy.Node.Opacity', 0.3)
       const node = await comfyPage.getFirstNodeRef()
-      await node.clickContextMenuOption('Colors')
+      await node?.clickContextMenuOption('Colors')
     })
 
     test('should persist color adjustments when changing custom node colors', async ({

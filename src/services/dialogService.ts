@@ -11,19 +11,16 @@ import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionEr
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { i18n } from '@/i18n'
+import type { MissingNodeType } from '@/types/comfy'
 
 export function showLoadWorkflowWarning(props: {
-  missingNodeTypes: any[]
-  hasAddedNodes: boolean
+  missingNodeTypes: MissingNodeType[]
   [key: string]: any
 }) {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: LoadWorkflowWarning,
-    props,
-    dialogComponentProps: {
-      maximizable: true
-    }
+    props
   })
 }
 
@@ -35,10 +32,7 @@ export function showMissingModelsWarning(props: {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
     component: MissingModelsWarning,
-    props,
-    dialogComponentProps: {
-      maximizable: true
-    }
+    props
   })
 }
 

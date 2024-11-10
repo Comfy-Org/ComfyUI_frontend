@@ -50,21 +50,55 @@ export function flattenTree<T>(tree: TreeNode): T[] {
   return result
 }
 
-export function sortedTree(node: TreeNode): TreeNode {
-  // Create a new node with the same label and data
+/**
+ * Sort the children of the node recursively.
+ * @param node - The node to sort.
+ * @param options - The options for sorting.
+ * @param options.groupLeaf - Whether to group leaf nodes together.
+ * @returns The sorted node.
+ */
+export function sortedTree(
+  node: TreeNode,
+  {
+    groupLeaf = false
+  }: {
+    groupLeaf?: boolean
+  } = {}
+): TreeNode {
   const newNode: TreeNode = {
     ...node
   }
 
   if (node.children) {
-    // Sort the children of the current node
-    const sortedChildren = [...node.children].sort((a, b) =>
-      (a.label ?? '').localeCompare(b.label ?? '')
-    )
-    // Recursively sort the children and add them to the new node
-    newNode.children = []
-    for (const child of sortedChildren) {
-      newNode.children.push(sortedTree(child))
+    if (groupLeaf) {
+      // Split children into folders and files
+      const folders = node.children.filter((child) => !child.leaf)
+      const files = node.children.filter((child) => child.leaf)
+
+      // Sort folders and files separately by label
+      const sortedFolders = folders.sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
+      const sortedFiles = files.sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
+
+      // Recursively sort folder children
+      newNode.children = [
+        ...sortedFolders.map((folder) =>
+          sortedTree(folder, { groupLeaf: true })
+        ),
+        ...sortedFiles
+      ]
+    } else {
+      const sortedChildren = [...node.children].sort((a, b) =>
+        (a.label ?? '').localeCompare(b.label ?? '')
+      )
+      newNode.children = [
+        ...sortedChildren.map((child) =>
+          sortedTree(child, { groupLeaf: false })
+        )
+      ]
     }
   }
 

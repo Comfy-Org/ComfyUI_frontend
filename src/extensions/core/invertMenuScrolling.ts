@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { LiteGraph } from '@comfyorg/litegraph'
 import { app } from '../../scripts/app'
 
@@ -9,22 +10,17 @@ app.registerExtension({
   init() {
     const ctxMenu = LiteGraph.ContextMenu
     const replace = () => {
-      type CtxMenuConstructorArgs = ConstructorParameters<typeof ctxMenu>
-      class InvertContextMenu extends ctxMenu {
-        constructor(
-          values: CtxMenuConstructorArgs[0],
-          options: CtxMenuConstructorArgs[1]
-        ) {
-          options = options || {}
-          if (options.scroll_speed) {
-            options.scroll_speed *= -1
-          } else {
-            options.scroll_speed = -0.1
-          }
-          super(values, options)
+      // @ts-expect-error
+      LiteGraph.ContextMenu = function (values, options) {
+        options = options || {}
+        if (options.scroll_speed) {
+          options.scroll_speed *= -1
+        } else {
+          options.scroll_speed = -0.1
         }
+        return ctxMenu.call(this, values, options)
       }
-      LiteGraph.ContextMenu = InvertContextMenu
+      LiteGraph.ContextMenu.prototype = ctxMenu.prototype
     }
     app.ui.settings.addSetting({
       id,

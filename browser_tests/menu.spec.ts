@@ -1,17 +1,9 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    const currentThemeId = await comfyPage.menu.getThemeId()
-    if (currentThemeId !== 'dark') {
-      await comfyPage.menu.toggleTheme()
-    }
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
   // Skip reason: Flaky.
@@ -25,8 +17,7 @@ test.describe('Menu', () => {
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     // Theme id should persist after reload.
-    await comfyPage.page.reload()
-    await comfyPage.setup()
+    await comfyPage.reload()
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     await comfyPage.menu.toggleTheme()
@@ -368,8 +359,7 @@ test.describe('Menu', () => {
         'KSampler'
       ])
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
-      await comfyPage.page.reload()
-      await comfyPage.setup()
+      await comfyPage.reload()
       expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
         []
       )
@@ -402,7 +392,7 @@ test.describe('Menu', () => {
       await tab.newBlankWorkflowButton.click()
       expect(await tab.getOpenedWorkflowNames()).toEqual([
         '*Unsaved Workflow.json',
-        '*Unsaved Workflow (2).json'
+        'Unsaved Workflow (2).json'
       ])
     })
 
@@ -412,13 +402,26 @@ test.describe('Menu', () => {
         'workflow2.json': 'default.json'
       })
       // Avoid reset view as the button is not visible in BetaMenu UI.
-      await comfyPage.setup({ resetView: false })
+      await comfyPage.setup()
 
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
       expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
         expect.arrayContaining(['workflow1.json', 'workflow2.json'])
       )
+    })
+
+    test('Can save workflow as', async ({ comfyPage }) => {
+      await comfyPage.menu.workflowsTab.newBlankWorkflowButton.click()
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json'])
+
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow4.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
     test('Does not report warning when switching between opened workflows', async ({
@@ -451,7 +454,7 @@ test.describe('Menu', () => {
       await closeButton.click()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['*Unsaved Workflow (2).json'])
+      ).toEqual(['Unsaved Workflow.json'])
     })
   })
 
@@ -476,7 +479,7 @@ test.describe('Menu', () => {
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
-        'Unsaved Workflow (2)'
+        'Unsaved Workflow'
       ])
     })
   })
@@ -503,6 +506,31 @@ test.describe('Menu', () => {
         hasText: 'Ctrl + s'
       })
       expect(await exportTag.count()).toBe(1)
+    })
+
+    test('Can catch error when executing command', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].registerExtension({
+          name: 'TestExtension1',
+          commands: [
+            {
+              id: 'foo',
+              label: 'foo-command',
+              function: () => {
+                throw new Error('foo!')
+              }
+            }
+          ],
+          menuCommands: [
+            {
+              path: ['ext'],
+              commands: ['foo']
+            }
+          ]
+        })
+      })
+      await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
+      expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })
   })
 

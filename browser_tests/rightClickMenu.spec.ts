@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 import { NodeBadgeMode } from '../src/types/nodeSource'
 
 test.describe('Canvas Right Click Menu', () => {
@@ -95,11 +95,6 @@ test.describe('Node Right Click Menu', () => {
 
   test.describe('Widget conversion', () => {
     const convertibleWidgetTypes = ['text', 'string', 'number', 'toggle']
-
-    test.afterEach(async ({ comfyPage }) => {
-      // Restore default setting value
-      await comfyPage.setSetting('Comfy.NodeInputConversionSubmenus', true)
-    })
 
     test('Can convert widget to input', async ({ comfyPage }) => {
       await comfyPage.rightClickEmptyLatentNode()

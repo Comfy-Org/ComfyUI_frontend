@@ -1,7 +1,7 @@
 import type { Response } from '@playwright/test'
 import type { StatusWsMessage } from '../src/types/apiTypes.ts'
 import { expect, mergeTests } from '@playwright/test'
-import { comfyPageFixture } from './ComfyPage'
+import { comfyPageFixture } from './fixtures/ComfyPage'
 import { webSocketFixture } from './fixtures/ws.ts'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
@@ -9,10 +9,6 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 test.describe('Actionbar', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
   /**
@@ -56,7 +52,9 @@ test.describe('Actionbar', () => {
           (n) => n.type === 'EmptyLatentImage'
         )
         node.widgets[0].value = value
-        window['app'].workflowManager.activeWorkflow.changeTracker.checkState()
+        window[
+          'app'
+        ].extensionManager.workflow.activeWorkflow.changeTracker.checkState()
       }, value)
     }
 

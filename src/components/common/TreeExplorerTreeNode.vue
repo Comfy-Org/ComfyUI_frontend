@@ -80,9 +80,11 @@ const errorHandling = useErrorHandling()
 const handleRename = errorHandling.wrapWithErrorHandlingAsync(
   async (newName: string) => {
     await props.node.handleRename(props.node, newName)
-    renameEditingNode.value = null
   },
-  props.node.handleError
+  props.node.handleError,
+  () => {
+    renameEditingNode.value = null
+  }
 )
 const container = ref<HTMLElement | null>(null)
 const canDrop = ref(false)

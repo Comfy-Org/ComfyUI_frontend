@@ -35,7 +35,7 @@ import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
 import type { SystemStats } from '@/types/apiTypes'
 import DeviceInfo from '@/components/common/DeviceInfo.vue'
-import { formatMemory } from '@/utils/formatUtil'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   stats: SystemStats
@@ -58,7 +58,7 @@ const systemColumns = [
 
 const formatValue = (value: any, field: string) => {
   if (['ram_total', 'ram_free'].includes(field)) {
-    return formatMemory(value)
+    return formatSize(value)
   }
   return value
 }

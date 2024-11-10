@@ -1,8 +1,13 @@
 <template>
   <teleport to=".graph-canvas-container">
-    <LiteGraphCanvasSplitterOverlay v-if="betaMenuEnabled">
+    <LiteGraphCanvasSplitterOverlay
+      v-if="betaMenuEnabled && !workspaceStore.focusMode"
+    >
       <template #side-bar-panel>
         <SideToolbar />
+      </template>
+      <template #bottom-panel>
+        <BottomPanel />
       </template>
       <template #graph-canvas-panel>
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
@@ -14,19 +19,22 @@
   </teleport>
   <NodeSearchboxPopover />
   <NodeTooltip v-if="tooltipEnabled" />
+  <NodeBadge />
 </template>
 
 <script setup lang="ts">
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import NodeBadge from '@/components/graph/NodeBadge.vue'
 import { ref, computed, onMounted, watchEffect } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   LiteGraph,
   LGraph,
@@ -47,6 +55,9 @@ import {
 } from '@/stores/modelToNodeStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { setStorageValue } from '@/scripts/utils'
+import { ChangeTracker } from '@/scripts/changeTracker'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -78,6 +89,16 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LiteGraph.snaps_for_comfy = settingStore.get('Comfy.Node.AutoSnapLinkToSlot')
+})
+
+watchEffect(() => {
+  LiteGraph.snap_highlights_node = settingStore.get(
+    'Comfy.Node.SnapHighlightsNode'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
@@ -100,19 +121,35 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const linkRenderMode = settingStore.get('Comfy.LinkRenderMode')
+  if (canvasStore.canvas) {
+    canvasStore.canvas.links_render_mode = linkRenderMode
+    canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
+  }
+})
+
+watchEffect(() => {
   if (!canvasStore.canvas) return
 
-  if (canvasStore.canvas.dragging_canvas) {
+  if (canvasStore.canvas.state.draggingCanvas) {
     canvasStore.canvas.canvas.style.cursor = 'grabbing'
     return
   }
 
-  if (canvasStore.canvas.read_only) {
+  if (canvasStore.canvas.state.readOnly) {
     canvasStore.canvas.canvas.style.cursor = 'grab'
     return
   }
 
   canvasStore.canvas.canvas.style.cursor = 'default'
+})
+
+const workflowStore = useWorkflowStore()
+watchEffect(() => {
+  if (workflowStore.activeWorkflow) {
+    const workflow = workflowStore.activeWorkflow
+    setStorageValue('Comfy.PreviousWorkflow', workflow.key)
+  }
 })
 
 usePragmaticDroppable(() => canvasRef.value, {
@@ -186,6 +223,9 @@ onMounted(async () => {
   comfyApp.vueAppReady = true
 
   workspaceStore.spinner = true
+  // ChangeTracker needs to be initialized before setup, as it will overwrite
+  // some listeners of litegraph canvas.
+  ChangeTracker.init(comfyApp)
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   workspaceStore.spinner = false

@@ -215,7 +215,7 @@ class PrimitiveNode extends LGraphNode {
     }
 
     // Store current size as addWidget resizes the node
-    const size = this.size
+    const [oldWidth, oldHeight] = this.size
     let widget
     if (type in ComfyWidgets) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
@@ -277,8 +277,8 @@ class PrimitiveNode extends LGraphNode {
 
     // Use the biggest dimensions in case the widgets caused the node to grow
     this.size = [
-      Math.max(this.size[0], size[0]),
-      Math.max(this.size[1], size[1])
+      Math.max(this.size[0], oldWidth),
+      Math.max(this.size[1], oldHeight)
     ]
 
     if (!recreating) {
@@ -414,7 +414,7 @@ class PrimitiveNode extends LGraphNode {
 }
 
 export function getWidgetConfig(slot) {
-  return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]()
+  return slot.widget[CONFIG] ?? slot.widget[GET_CONFIG]?.() ?? ['*', {}]
 }
 
 function getConfig(widgetName) {
@@ -489,7 +489,7 @@ export function convertToInput(
   const { type } = getWidgetType(config)
 
   // Add input and store widget config for creating on primitive node
-  const sz = node.size
+  const [oldWidth, oldHeight] = node.size
   const inputIsOptional = !!widget.options?.inputIsOptional
   const input = node.addInput(widget.name, type, {
     widget: { name: widget.name, [GET_CONFIG]: () => config },
@@ -501,13 +501,16 @@ export function convertToInput(
   }
 
   // Restore original size but grow if needed
-  node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+  node.setSize([
+    Math.max(oldWidth, node.size[0]),
+    Math.max(oldHeight, node.size[1])
+  ])
   return input
 }
 
 function convertToWidget(node, widget) {
   showWidget(widget)
-  const sz = node.size
+  const [oldWidth, oldHeight] = node.size
   node.removeInput(node.inputs.findIndex((i) => i.widget?.name === widget.name))
 
   for (const widget of node.widgets) {
@@ -515,7 +518,10 @@ function convertToWidget(node, widget) {
   }
 
   // Restore original size but grow if needed
-  node.setSize([Math.max(sz[0], node.size[0]), Math.max(sz[1], node.size[1])])
+  node.setSize([
+    Math.max(oldWidth, node.size[0]),
+    Math.max(oldHeight, node.size[1])
+  ])
 }
 
 function getWidgetType(config: InputSpec) {
@@ -584,7 +590,7 @@ export function mergeIfValid(
   config1?: unknown
 ) {
   if (!config1) {
-    config1 = output.widget[CONFIG] ?? output.widget[GET_CONFIG]()
+    config1 = getWidgetConfig(output)
   }
 
   if (config1[0] instanceof Array) {

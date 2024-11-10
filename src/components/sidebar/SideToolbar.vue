@@ -17,20 +17,11 @@
       </div>
     </nav>
   </teleport>
-  <div v-if="selectedTab" class="sidebar-content-container">
-    <component v-if="selectedTab.type === 'vue'" :is="selectedTab.component" />
-    <div
-      v-else
-      :ref="
-        (el) => {
-          if (el)
-            mountCustomTab(
-              selectedTab as CustomSidebarTabExtension,
-              el as HTMLElement
-            )
-        }
-      "
-    ></div>
+  <div
+    v-if="selectedTab"
+    class="sidebar-content-container h-full overflow-y-auto overflow-x-hidden"
+  >
+    <ExtensionSlot :extension="selectedTab" />
   </div>
 </template>
 
@@ -38,13 +29,11 @@
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
-import { computed, onBeforeUnmount } from 'vue'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
+import { computed } from 'vue'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/stores/settingStore'
-import {
-  CustomSidebarTabExtension,
-  SidebarTabExtension
-} from '@/types/extensionTypes'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 
 const workspaceStore = useWorkspaceStore()
@@ -62,20 +51,9 @@ const isSmall = computed(
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const mountCustomTab = (tab: CustomSidebarTabExtension, el: HTMLElement) => {
-  tab.render(el)
-}
 const onTabClick = (item: SidebarTabExtension) => {
   workspaceStore.sidebarTab.toggleSidebarTab(item.id)
 }
-onBeforeUnmount(() => {
-  tabs.value.forEach((tab) => {
-    if (tab.type === 'custom' && tab.destroy) {
-      tab.destroy()
-    }
-  })
-})
-
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   const keybinding = keybindingStore.getKeybindingByCommandId(
@@ -114,10 +92,5 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 .side-tool-bar-end {
   align-self: flex-end;
   margin-top: auto;
-}
-
-.sidebar-content-container {
-  height: 100%;
-  overflow-y: auto;
 }
 </style>

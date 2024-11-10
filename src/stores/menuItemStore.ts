@@ -49,7 +49,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       .map(
         (command) =>
           ({
-            command: command.function,
+            command: () => commandStore.execute(command.id),
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
@@ -95,6 +95,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   )
 
   registerCommands(['Edit'], ['Comfy.Undo', 'Comfy.Redo'])
+  registerCommands(['Edit'], ['Comfy.RefreshNodeDefinitions'])
   registerCommands(['Edit'], ['Comfy.ClearWorkflow'])
   registerCommands(['Edit'], ['Comfy.OpenClipspace'])
 

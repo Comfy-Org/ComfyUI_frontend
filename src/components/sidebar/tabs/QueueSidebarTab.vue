@@ -11,7 +11,7 @@
         severity="secondary"
         @click="toggleImageFit"
         class="toggle-expanded-button"
-        v-tooltip="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
+        v-tooltip.bottom="$t(`sideToolbar.queueTab.${imageFit}ImagePreview`)"
       />
       <Button
         v-if="isInFolderView"
@@ -20,7 +20,7 @@
         severity="secondary"
         @click="exitFolderView"
         class="back-button"
-        v-tooltip="$t('sideToolbar.queueTab.backToAllTasks')"
+        v-tooltip.bottom="$t('sideToolbar.queueTab.backToAllTasks')"
       />
       <template v-else>
         <Button

@@ -4,6 +4,7 @@
       class="comfyui-queue-button"
       :label="activeQueueModeMenuItem.label"
       severity="primary"
+      size="small"
       @click="queuePrompt"
       :model="queueModeMenuItems"
       data-testid="queue-button"
@@ -15,13 +16,16 @@
     >
       <template #icon>
         <i-lucide:list-start v-if="workspaceStore.shiftDown" />
-        <i v-else :class="activeQueueModeMenuItem.icon" />
+        <i-lucide:play v-else-if="queueMode === 'disabled'" />
+        <i-lucide:fast-forward v-else-if="queueMode === 'instant'" />
+        <i-lucide:step-forward v-else-if="queueMode === 'change'" />
       </template>
       <template #item="{ item }">
         <Button
           :label="item.label"
           :icon="item.icon"
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
+          size="small"
           text
           v-tooltip="item.tooltip"
         />
@@ -65,7 +69,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
-import { useWorkspaceStore } from '@/stores/workspaceStateStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
@@ -76,7 +80,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   disabled: {
     key: 'disabled',
     label: 'Queue',
-    icon: 'pi pi-play',
     tooltip: t('menu.disabledTooltip'),
     command: () => {
       queueMode.value = 'disabled'
@@ -85,7 +88,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   instant: {
     key: 'instant',
     label: 'Queue (Instant)',
-    icon: 'pi pi-forward',
     tooltip: t('menu.instantTooltip'),
     command: () => {
       queueMode.value = 'instant'
@@ -94,7 +96,6 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   change: {
     key: 'change',
     label: 'Queue (Change)',
-    icon: 'pi pi-step-forward-alt',
     tooltip: t('menu.changeTooltip'),
     command: () => {
       queueMode.value = 'change'

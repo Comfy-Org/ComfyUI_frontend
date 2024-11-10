@@ -31,8 +31,9 @@ app.registerExtension({
       const commandStore = useCommandStore()
       const keybinding = keybindingStore.getKeybinding(keyCombo)
       if (keybinding && keybinding.targetSelector !== '#graph-canvas') {
-        await commandStore.execute(keybinding.commandId)
+        // Prevent default browser behavior first, then execute the command
         event.preventDefault()
+        await commandStore.execute(keybinding.commandId)
         return
       }
 

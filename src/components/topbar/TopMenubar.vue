@@ -3,7 +3,7 @@
     <div
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
-      v-show="betaMenuEnabled"
+      v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
@@ -14,20 +14,32 @@
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
       <Actionbar />
+      <BottomPanelToggleButton />
+      <Button
+        icon="pi pi-bars"
+        severity="secondary"
+        text
+        v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
+        @click="workspaceState.focusMode = true"
+      />
     </div>
   </teleport>
 </template>
 
 <script setup lang="ts">
+import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
+import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton.vue'
 import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus } from '@vueuse/core'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')

@@ -1,19 +1,18 @@
-// @ts-strict-ignore
-import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import {
-  DownloadModelStatus,
-  HistoryTaskItem,
-  PendingTaskItem,
-  RunningTaskItem,
-  ComfyNodeDef,
+  type HistoryTaskItem,
+  type PendingTaskItem,
+  type RunningTaskItem,
+  type ComfyNodeDef,
+  type EmbeddingsResponse,
+  type ExtensionsResponse,
+  type PromptResponse,
+  type SystemStats,
+  type User,
+  type Settings,
+  type UserDataFullInfo,
   validateComfyNodeDef,
-  EmbeddingsResponse,
-  ExtensionsResponse,
-  PromptResponse,
-  SystemStats,
-  User,
-  Settings,
-  UserDataFullInfo
+  LogsRawResponse
 } from '@/types/apiTypes'
 import axios from 'axios'
 
@@ -35,15 +34,23 @@ class ComfyApi extends EventTarget {
   #registered = new Set()
   api_host: string
   api_base: string
-  initialClientId: string
-  user: string
-  socket?: WebSocket
+  /**
+   * The client id from the initial session storage.
+   */
+  initialClientId: string | null
+  /**
+   * The current client id from websocket status updates.
+   */
   clientId?: string
+  user: string
+  socket: WebSocket | null = null
 
   reportedUnknownMessageTypes = new Set<string>()
 
   constructor() {
     super()
+    // api.user is set by ComfyApp.setup()
+    this.user = ''
     this.api_host = location.host
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
@@ -72,7 +79,14 @@ class ComfyApi extends EventTarget {
     if (!options.cache) {
       options.cache = 'no-cache'
     }
-    options.headers['Comfy-User'] = this.user
+
+    if (Array.isArray(options.headers)) {
+      options.headers.push(['Comfy-User', this.user])
+    } else if (options.headers instanceof Headers) {
+      options.headers.set('Comfy-User', this.user)
+    } else {
+      options.headers['Comfy-User'] = this.user
+    }
     return fetch(this.apiURL(route), options)
   }
 
@@ -180,17 +194,13 @@ class ComfyApi extends EventTarget {
           switch (msg.type) {
             case 'status':
               if (msg.data.sid) {
-                this.clientId = msg.data.sid
-                window.name = this.clientId // use window name so it isnt reused when duplicating tabs
-                sessionStorage.setItem('clientId', this.clientId) // store in session storage so duplicate tab can load correct workflow
+                const clientId = msg.data.sid
+                this.clientId = clientId
+                window.name = clientId // use window name so it isnt reused when duplicating tabs
+                sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchEvent(
                 new CustomEvent('status', { detail: msg.data.status })
-              )
-              break
-            case 'progress':
-              this.dispatchEvent(
-                new CustomEvent('progress', { detail: msg.data })
               )
               break
             case 'executing':
@@ -200,34 +210,15 @@ class ComfyApi extends EventTarget {
                 })
               )
               break
+            case 'progress':
             case 'executed':
-              this.dispatchEvent(
-                new CustomEvent('executed', { detail: msg.data })
-              )
-              break
             case 'execution_start':
-              this.dispatchEvent(
-                new CustomEvent('execution_start', { detail: msg.data })
-              )
-              break
             case 'execution_success':
-              this.dispatchEvent(
-                new CustomEvent('execution_success', { detail: msg.data })
-              )
-              break
             case 'execution_error':
-              this.dispatchEvent(
-                new CustomEvent('execution_error', { detail: msg.data })
-              )
-              break
             case 'execution_cached':
+            case 'logs':
               this.dispatchEvent(
-                new CustomEvent('execution_cached', { detail: msg.data })
-              )
-              break
-            case 'download_progress':
-              this.dispatchEvent(
-                new CustomEvent('download_progress', { detail: msg.data })
+                new CustomEvent(msg.type, { detail: msg.data })
               )
               break
             default:
@@ -308,10 +299,13 @@ class ComfyApi extends EventTarget {
    */
   async queuePrompt(
     number: number,
-    { output, workflow }
+    {
+      output,
+      workflow
+    }: { output: Record<number, any>; workflow: ComfyWorkflowJSON }
   ): Promise<PromptResponse> {
     const body: QueuePromptRequestBody = {
-      client_id: this.clientId,
+      client_id: this.clientId ?? '', // TODO: Unify clientId access
       prompt: output,
       extra_data: { extra_pnginfo: { workflow } }
     }
@@ -346,9 +340,12 @@ class ComfyApi extends EventTarget {
   async getModelFolders(): Promise<string[]> {
     const res = await this.fetchApi(`/models`)
     if (res.status === 404) {
-      return null
+      return []
     }
-    return await res.json()
+    const folderBlacklist = ['configs', 'custom_nodes']
+    return (await res.json()).filter(
+      (folder: string) => !folderBlacklist.includes(folder)
+    )
   }
 
   /**
@@ -356,10 +353,10 @@ class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(folder: string) {
+  async getModels(folder: string): Promise<string[]> {
     const res = await this.fetchApi(`/models/${folder}`)
     if (res.status === 404) {
-      return null
+      return []
     }
     return await res.json()
   }
@@ -393,36 +390,6 @@ class ComfyApi extends EventTarget {
   }
 
   /**
-   * Tells the server to download a model from the specified URL to the specified directory and filename
-   * @param {string} url The URL to download the model from
-   * @param {string} model_directory The main directory (eg 'checkpoints') to save the model to
-   * @param {string} model_filename The filename to save the model as
-   * @param {number} progress_interval The interval in seconds at which to report download progress (via 'download_progress' event)
-   */
-  async internalDownloadModel(
-    url: string,
-    model_directory: string,
-    model_filename: string,
-    progress_interval: number,
-    folder_path: string
-  ): Promise<DownloadModelStatus> {
-    const res = await this.fetchApi('/internal/models/download', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        url,
-        model_directory,
-        model_filename,
-        progress_interval,
-        folder_path
-      })
-    })
-    return await res.json()
-  }
-
-  /**
    * Loads a list of items (queue or history)
    * @param {string} type The type of items to load, queue or history
    * @returns The items of the specified type grouped by their status
@@ -447,12 +414,12 @@ class ComfyApi extends EventTarget {
       const data = await res.json()
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt) => ({
+        Running: data.queue_running.map((prompt: Record<number, any>) => ({
           taskType: 'Running',
           prompt,
           remove: { name: 'Cancel', cb: () => api.interrupt() }
         })),
-        Pending: data.queue_pending.map((prompt) => ({
+        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
           taskType: 'Pending',
           prompt
         }))
@@ -617,10 +584,16 @@ class ComfyApi extends EventTarget {
       overwrite?: boolean
       stringify?: boolean
       throwOnError?: boolean
-    } = { overwrite: true, stringify: true, throwOnError: true }
+      full_info?: boolean
+    } = {
+      overwrite: true,
+      stringify: true,
+      throwOnError: true,
+      full_info: false
+    }
   ): Promise<Response> {
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}`,
+      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
         body: options?.stringify ? JSON.stringify(data) : data,
@@ -692,12 +665,15 @@ class ComfyApi extends EventTarget {
     recurse: boolean,
     split?: false
   ): Promise<string[]>
-  async listUserData(dir, recurse, split) {
+  /**
+   * @deprecated Use `listUserDataFullInfo` instead.
+   */
+  async listUserData(dir: string, recurse: boolean, split?: boolean) {
     const resp = await this.fetchApi(
       `/userdata?${new URLSearchParams({
-        recurse,
+        recurse: recurse ? 'true' : 'false',
         dir,
-        split
+        split: split ? 'true' : 'false'
       })}`
     )
     if (resp.status === 404) return []
@@ -724,6 +700,17 @@ class ComfyApi extends EventTarget {
 
   async getLogs(): Promise<string> {
     return (await axios.get(this.internalURL('/logs'))).data
+  }
+
+  async getRawLogs(): Promise<LogsRawResponse> {
+    return (await axios.get(this.internalURL('/logs/raw'))).data
+  }
+
+  async subscribeLogs(enabled: boolean): Promise<void> {
+    return await axios.patch(this.internalURL('/logs/subscribe'), {
+      enabled,
+      clientId: this.clientId
+    })
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
