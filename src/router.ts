@@ -29,6 +29,21 @@ const router = createRouter({
             if (isElectron()) {
               next()
             } else {
+              // TODO: Get from electronAPI
+              const isFirstTimeInstall = true
+              next(isFirstTimeInstall ? '/install' : '/')
+            }
+          }
+        },
+        {
+          path: 'install',
+          name: 'InstallView',
+          component: () => import('@/views/InstallView.vue'),
+          beforeEnter: async (to, from, next) => {
+            // Only allow access to this page in electron environment
+            if (isElectron()) {
+              next()
+            } else {
               next('/')
             }
           }
