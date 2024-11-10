@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <div class="flex pt-6 justify-end">
+    <div class="flex justify-end">
       <Button
         label="Next"
         icon="pi pi-arrow-right"
