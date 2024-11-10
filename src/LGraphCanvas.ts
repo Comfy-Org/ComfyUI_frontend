@@ -2971,12 +2971,14 @@ export class LGraphCanvas {
         ))
     }
 
+    /** @todo Refactor to where it belongs - e.g. Deleting / creating nodes is not actually canvas event. */
     emitBeforeChange(): void {
         this.emitEvent({
             subType: "before-change",
         })
     }
 
+    /** @todo See {@link emitBeforeChange} */
     emitAfterChange(): void {
         this.emitEvent({
             subType: "after-change",
@@ -3314,9 +3316,12 @@ export class LGraphCanvas {
 
     /**
      * Deletes all selected items from the graph.
+     * 
+     * @todo Refactor deletion task to LGraph.  Selection is a canvas property, delete is a graph action.
      */
     deleteSelected(): void {
         const { graph } = this
+        this.emitBeforeChange()
         graph.beforeChange()
 
         for (const item of this.selectedItems) {
@@ -3337,6 +3342,7 @@ export class LGraphCanvas {
         this.highlighted_links = {}
         this.setDirty(true)
         graph.afterChange()
+        this.emitAfterChange()
     }
 
     /**
