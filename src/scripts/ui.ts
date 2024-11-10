@@ -636,6 +636,8 @@ export class ComfyUI {
         }
       })
     ]) as HTMLDivElement
+    // Hide by default on construction so it does not interfere with other views.
+    this.menuContainer.style.display = 'none'
 
     this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
 
