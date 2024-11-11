@@ -105,6 +105,12 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LiteGraph.middle_click_slot_add_default_node = settingStore.get(
+    'Comfy.Node.MiddleClickRerouteNode'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 

@@ -495,5 +495,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.3.40'
+  },
+  {
+    id: 'Comfy.Node.MiddleClickRerouteNode',
+    name: 'Middle-click creates a new Reroute node',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.40'
   }
 ]
