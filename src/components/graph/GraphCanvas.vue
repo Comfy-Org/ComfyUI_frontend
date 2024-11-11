@@ -141,6 +141,15 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.linkMarkerShape = linkMarkerShape
+    canvas.setDirty(false, true)
+  }
+})
+
+watchEffect(() => {
   const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
   const { canvas } = canvasStore
   if (canvas) {

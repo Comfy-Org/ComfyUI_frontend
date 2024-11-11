@@ -5,6 +5,7 @@ import {
   LinkReleaseTriggerMode
 } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
+import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
@@ -468,6 +469,18 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: LiteGraph.SPLINE_LINK, text: 'Spline' },
       { value: LiteGraph.HIDDEN_LINK, text: 'Hidden' }
     ]
+  },
+  {
+    id: 'Comfy.Graph.LinkMarkers',
+    name: 'Link midpoint markers',
+    defaultValue: LinkMarkerShape.Circle,
+    type: 'combo',
+    options: [
+      { value: LinkMarkerShape.None, text: 'None' },
+      { value: LinkMarkerShape.Circle, text: 'Circle' },
+      { value: LinkMarkerShape.Arrow, text: 'Arrow' }
+    ],
+    versionAdded: '1.3.41'
   },
   {
     id: 'Comfy.Node.AutoSnapLinkToSlot',
