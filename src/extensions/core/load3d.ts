@@ -1,5 +1,5 @@
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
+import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -276,7 +276,9 @@ class Load3d {
       }
 
       if (!fileExtension) {
-        throw new Error('Could not determine file type')
+        useToastStore().addAlert('Could not determine file type')
+
+        return
       }
 
       let model: THREE.Object3D | null = null
@@ -304,7 +306,8 @@ class Load3d {
           break
 
         default:
-          throw new Error(`Unsupported file format: ${fileExtension}`)
+          useToastStore().addAlert(`Unsupported file format: ${fileExtension}`)
+          return
       }
 
       if (model) {
@@ -494,12 +497,6 @@ function getResourceURL(
 
 app.registerExtension({
   name: 'Comfy.Load3D',
-
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (nodeData.name === 'Load3D') {
-      console.log('[Load 3D] Registering node...', nodeData)
-    }
-  },
 
   getCustomWidgets(app) {
     return {
@@ -784,7 +781,7 @@ app.registerExtension({
     }
   },
 
-  async init(app) {
+  async init() {
     const style = document.createElement('style')
 
     style.innerText = `
