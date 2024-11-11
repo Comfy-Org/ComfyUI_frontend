@@ -99,6 +99,12 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LGraphNode.keepAllLinksOnBypass = settingStore.get(
+    'Comfy.Node.BypassAllLinksOnDelete'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 

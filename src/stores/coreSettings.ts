@@ -476,5 +476,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.3.29'
+  },
+  {
+    id: 'Comfy.Node.BypassAllLinksOnDelete',
+    name: 'Keep all links when deleting nodes',
+    tooltip:
+      'When deleting a node, attempt to reconnect all of its input and output links (bypassing the deleted node)',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.40'
   }
 ]
