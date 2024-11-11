@@ -21,7 +21,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="model-lib-search-box p-4"
+        class="model-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         :placeholder="$t('searchModels') + '...'"
         @search="handleSearch"
