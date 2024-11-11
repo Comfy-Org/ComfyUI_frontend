@@ -61,14 +61,15 @@ export const workflowService = {
     })
     if (!newFilename) return
 
+    const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
+    const newKey = newPath.substring(ComfyWorkflow.basePath.length)
+
     if (workflow.isTemporary) {
-      await this.renameWorkflow(workflow, newFilename)
+      await this.renameWorkflow(workflow, newPath)
       await useWorkflowStore().saveWorkflow(workflow)
     } else {
       const tempWorkflow = useWorkflowStore().createTemporary(
-        (workflow.directory + '/' + appendJsonExt(newFilename)).substring(
-          ComfyWorkflow.basePath.length
-        ),
+        newKey,
         workflow.activeState as ComfyWorkflowJSON
       )
       await this.openWorkflow(tempWorkflow)
