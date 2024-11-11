@@ -1,6 +1,10 @@
 // @ts-strict-ignore
 import { ComfyLogging } from './logging'
-import { ComfyWidgetConstructor, initWidgets } from './widgets'
+import {
+  type ComfyWidgetConstructor,
+  ComfyWidgets,
+  initWidgets
+} from './widgets'
 import { ComfyUI, $el } from './ui'
 import { api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -171,7 +175,10 @@ export class ComfyApp {
    * @deprecated Use useWidgetStore().widgets instead
    */
   get widgets(): Record<string, ComfyWidgetConstructor> {
-    return useWidgetStore().widgets
+    if (this.vueAppReady) {
+      return useWidgetStore().widgets
+    }
+    return ComfyWidgets
   }
 
   constructor() {
