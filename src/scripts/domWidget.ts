@@ -268,7 +268,7 @@ LGraphNode.prototype.addDOMWidget = function (
   name: string,
   type: string,
   element: HTMLElement,
-  options: Record<string, any>
+  options: Record<string, any> = {}
 ): DOMWidget {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 

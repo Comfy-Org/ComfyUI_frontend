@@ -7,6 +7,7 @@ import { useSettingStore } from './settingStore'
 import { app } from '@/scripts/app'
 import { useMenuItemStore } from './menuItemStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
+import { useWidgetStore } from './widgetStore'
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
@@ -50,6 +51,16 @@ export const useExtensionStore = defineStore('extension', () => {
     useMenuItemStore().loadExtensionMenuCommands(extension)
     useSettingStore().loadExtensionSettings(extension)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
+    if (extension.getCustomWidgets) {
+      // TODO(huchenlei): We should deprecate the async return value of
+      // getCustomWidgets.
+      ;(async () => {
+        if (extension.getCustomWidgets) {
+          const widgets = await extension.getCustomWidgets(app)
+          useWidgetStore().registerCustomWidgets(widgets)
+        }
+      })()
+    }
     /*
      * Extensions are currently stored in both extensionStore and app.extensions.
      * Legacy jest tests still depend on app.extensions being populated.
