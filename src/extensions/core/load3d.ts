@@ -152,15 +152,28 @@ class Load3d {
     this.startAnimation()
   }
 
-  toggleCamera() {
+  toggleCamera(cameraType?: 'perspective' | 'orthographic') {
     const position = this.activeCamera.position.clone()
     const rotation = this.activeCamera.rotation.clone()
     const target = this.controls.target.clone()
 
-    this.activeCamera =
-      this.activeCamera === this.perspectiveCamera
-        ? this.orthographicCamera
-        : this.perspectiveCamera
+    if (!cameraType) {
+      this.activeCamera =
+        this.activeCamera === this.perspectiveCamera
+          ? this.orthographicCamera
+          : this.perspectiveCamera
+    } else {
+      const requestedCamera =
+        cameraType === 'perspective'
+          ? this.perspectiveCamera
+          : this.orthographicCamera
+
+      if (this.activeCamera === requestedCamera) {
+        return
+      }
+
+      this.activeCamera = requestedCamera
+    }
 
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
@@ -172,9 +185,9 @@ class Load3d {
     this.handleResize()
   }
 
-  toggleGrid() {
+  toggleGrid(showGrid) {
     if (this.gridHelper) {
-      this.gridHelper.visible = !this.gridHelper.visible
+      this.gridHelper.visible = showGrid
     }
   }
 
@@ -430,7 +443,7 @@ class Load3d {
     })
   }
 
-  setViewPosition(position: 'front' | 'top' | 'right' | 'iso') {
+  setViewPosition(position: 'front' | 'top' | 'right' | 'isometric') {
     const box = new THREE.Box3()
     let center = new THREE.Vector3()
     let size = new THREE.Vector3()
@@ -454,7 +467,7 @@ class Load3d {
       case 'right':
         this.activeCamera.position.set(distance, 0, 0)
         break
-      case 'iso':
+      case 'isometric':
         this.activeCamera.position.set(distance, distance, distance)
         break
     }
@@ -570,168 +583,6 @@ app.registerExtension({
         }
         buttonGroup.appendChild(clearModelButton)
 
-        const controlsWrapper = document.createElement('div')
-        controlsWrapper.classList.add('comfyui-load-3d-controls-wrapper')
-        buttonContainer.appendChild(controlsWrapper)
-
-        const controlsHeader = document.createElement('div')
-        controlsHeader.classList.add('comfyui-load-3d-controls-header')
-        controlsWrapper.appendChild(controlsHeader)
-
-        const headerTitle = document.createElement('span')
-        headerTitle.textContent = 'Display Controls'
-        headerTitle.className = 'controls-header-title'
-
-        const collapseIcon = document.createElement('span')
-        collapseIcon.className = 'collapse-icon'
-        collapseIcon.textContent = '▼'
-
-        controlsHeader.appendChild(headerTitle)
-        controlsHeader.appendChild(collapseIcon)
-
-        const controlsContainer = document.createElement('div')
-        controlsContainer.classList.add('comfyui-load-3d-controls')
-        controlsWrapper.appendChild(controlsContainer)
-
-        let isExpanded = true
-        controlsHeader.onclick = () => {
-          isExpanded = !isExpanded
-          controlsContainer.classList.toggle('collapsed', !isExpanded)
-          collapseIcon.textContent = isExpanded ? '▼' : '▶'
-          collapseIcon.style.transform = isExpanded ? 'none' : 'rotate(-90deg)'
-
-          const transitionDuration = 200
-          setTimeout(() => {
-            if (node.load3d) {
-              node.load3d.handleResize()
-            }
-          }, transitionDuration)
-        }
-
-        const viewContainer = document.createElement('div')
-        viewContainer.classList.add('comfyui-load-3d-control-group')
-
-        const viewLabel = document.createElement('span')
-        viewLabel.textContent = 'View:'
-        viewLabel.className = 'control-label'
-
-        const viewSelect = document.createElement('select')
-        viewSelect.className = 'comfyui-load-3d-select'
-
-        const views = [
-          { name: 'Front View', value: 'front' },
-          { name: 'Top View', value: 'top' },
-          { name: 'Right View', value: 'right' },
-          { name: 'Isometric', value: 'iso' }
-        ]
-
-        views.forEach((view) => {
-          const option = document.createElement('option')
-          option.value = view.value
-          option.textContent = view.name
-          viewSelect.appendChild(option)
-        })
-
-        viewSelect.onchange = () => {
-          node.load3d.setViewPosition(viewSelect.value as any)
-        }
-
-        viewContainer.appendChild(viewLabel)
-        viewContainer.appendChild(viewSelect)
-        controlsContainer.appendChild(viewContainer)
-
-        const cameraContainer = document.createElement('div')
-        cameraContainer.classList.add('comfyui-load-3d-control-group')
-
-        const cameraLabel = document.createElement('span')
-        cameraLabel.textContent = 'Camera:'
-        cameraLabel.className = 'control-label'
-
-        const cameraSelect = document.createElement('select')
-        cameraSelect.className = 'comfyui-load-3d-select'
-
-        const cameras = [
-          { name: 'Perspective', value: 'perspective' },
-          { name: 'Orthographic', value: 'orthographic' }
-        ]
-
-        cameras.forEach((camera) => {
-          const option = document.createElement('option')
-          option.value = camera.value
-          option.textContent = camera.name
-          cameraSelect.appendChild(option)
-        })
-
-        cameraSelect.onchange = () => {
-          node.load3d.toggleCamera()
-        }
-
-        cameraContainer.appendChild(cameraLabel)
-        cameraContainer.appendChild(cameraSelect)
-        controlsContainer.appendChild(cameraContainer)
-
-        const gridContainer = document.createElement('div')
-        gridContainer.classList.add('comfyui-load-3d-control-group')
-
-        const gridLabel = document.createElement('span')
-        gridLabel.textContent = 'Grid:'
-        gridLabel.className = 'control-label'
-
-        const gridSelect = document.createElement('select')
-        gridSelect.className = 'comfyui-load-3d-select'
-
-        const grids = [
-          { name: 'Show', value: 'show' },
-          { name: 'Hide', value: 'hide' }
-        ]
-
-        grids.forEach((grid) => {
-          const option = document.createElement('option')
-          option.value = grid.value
-          option.textContent = grid.name
-          gridSelect.appendChild(option)
-        })
-
-        gridSelect.onchange = () => {
-          node.load3d.toggleGrid()
-        }
-
-        gridContainer.appendChild(gridLabel)
-        gridContainer.appendChild(gridSelect)
-        controlsContainer.appendChild(gridContainer)
-
-        const bgContainer = document.createElement('div')
-        bgContainer.classList.add('comfyui-load-3d-control-group')
-
-        const bgLabel = document.createElement('span')
-        bgLabel.textContent = 'Background:'
-        bgLabel.className = 'control-label'
-
-        const bgSelect = document.createElement('select')
-        bgSelect.className = 'comfyui-load-3d-select'
-
-        const backgrounds = [
-          { name: 'Dark', color: '#282828' },
-          { name: 'Light', color: '#f0f0f0' },
-          { name: 'Black', color: '#000000' },
-          { name: 'White', color: '#ffffff' }
-        ]
-
-        backgrounds.forEach((bg) => {
-          const option = document.createElement('option')
-          option.value = bg.color
-          option.textContent = bg.name
-          bgSelect.appendChild(option)
-        })
-
-        bgSelect.onchange = () => {
-          node.load3d.setBackgroundColor(bgSelect.value)
-        }
-
-        bgContainer.appendChild(bgLabel)
-        bgContainer.appendChild(bgSelect)
-        controlsContainer.appendChild(bgContainer)
-
         node.onResize = function () {
           let [w, h] = this.size
           if (w <= 300) w = 300
@@ -766,7 +617,7 @@ app.registerExtension({
     }
   },
 
-  async init() {
+  init() {
     const style = document.createElement('style')
 
     style.innerText = `
@@ -821,95 +672,6 @@ app.registerExtension({
         .comfyui-load-3d-btn:hover {
           background: #3a3a3a;
         }
-      
-        .comfyui-load-3d-controls-wrapper {
-          border-radius: 4px;
-          overflow: hidden;
-          background: rgba(0, 0, 0, 0.2);
-        }
-        
-        .comfyui-load-3d-controls-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 8px 12px;
-          background: rgba(0, 0, 0, 0.3);
-          cursor: pointer;
-          user-select: none;
-          transition: background-color 0.2s;
-        }
-      
-        .comfyui-load-3d-controls-header:hover {
-          background: rgba(0, 0, 0, 0.4);
-        }
-      
-        .controls-header-title {
-          color: #fff;
-          font-size: 12px;
-          font-weight: 500;
-        }
-      
-        .collapse-icon {
-          color: #fff;
-          font-size: 10px;
-          transition: transform 0.2s ease;
-        }
-        
-        .comfyui-load-3d-controls {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
-          padding: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .comfyui-load-3d-control-group {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .control-label {
-          color: #fff;
-          font-size: 12px;
-          min-width: 70px;
-        }
-        
-        .comfyui-load-3d-select {
-          background: #2a2a2a;
-          border: 1px solid #3a3a3a;
-          color: #fff;
-          padding: 4px 8px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          flex: 1;
-        }
-        
-        .comfyui-load-3d-select:hover {
-          background: #3a3a3a;
-        }
-        
-        .comfyui-load-3d-select:focus {
-          outline: none;
-          border-color: #4a4a4a;
-        }
-        .comfyui-load-3d-controls {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
-          padding: 12px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-          transition: all 0.2s ease;
-          max-height: 500px;
-          overflow: hidden;
-        }
-      
-        .comfyui-load-3d-controls.collapsed {
-          max-height: 0;
-          padding: 0;
-          opacity: 0;
-        }
       `
     document.head.appendChild(style)
   },
@@ -917,7 +679,69 @@ app.registerExtension({
   async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
-    node.setSize([300, 650])
+    node.setSize([300, 550])
+
+    await nextTick()
+
+    const modelWidget = node.widgets.find(
+      (w: IWidget) => w.name === 'model_file'
+    )
+
+    const onModelWidgetUpdate = () => {
+      if (modelWidget.value) {
+        const filename = modelWidget.value
+        const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
+
+        node.load3d.loadModel(modelUrl, filename)
+      }
+    }
+
+    if (modelWidget.value) {
+      onModelWidgetUpdate()
+    }
+
+    modelWidget.callback = onModelWidgetUpdate
+
+    const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
+
+    node.load3d.toggleGrid(showGrid.value)
+
+    showGrid.callback = (value) => {
+      node.load3d.toggleGrid(value)
+    }
+
+    const cameraType = node.widgets.find(
+      (w: IWidget) => w.name === 'camera_type'
+    )
+
+    node.load3d.toggleCamera(cameraType.value)
+
+    cameraType.callback = (value) => {
+      node.load3d.toggleCamera(value)
+    }
+
+    const view = node.widgets.find((w: IWidget) => w.name === 'view')
+
+    view.callback = (value) => {
+      node.load3d.setViewPosition(value)
+    }
+
+    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
+
+    /*
+    const backgrounds = [
+      { name: 'Dark', color: '#282828' },
+      { name: 'Light', color: '#f0f0f0' },
+      { name: 'Black', color: '#000000' },
+      { name: 'White', color: '#ffffff' }
+    ]
+     */
+
+    node.load3d.setBackgroundColor(bgColor.value)
+
+    bgColor.callback = (value) => {
+      node.load3d.setBackgroundColor(value)
+    }
 
     const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
@@ -949,26 +773,5 @@ app.registerExtension({
       const data = await resp.json()
       return `threed/${data.name} [temp]`
     }
-
-    await nextTick()
-
-    const modelWidget = node.widgets.find(
-      (w: IWidget) => w.name === 'model_file'
-    )
-
-    const onModelWidgetUpdate = () => {
-      if (modelWidget.value) {
-        const filename = modelWidget.value
-        const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
-
-        node.load3d.loadModel(modelUrl, filename)
-      }
-    }
-
-    if (modelWidget.value) {
-      onModelWidgetUpdate()
-    }
-
-    modelWidget.callback = onModelWidgetUpdate
   }
 })
