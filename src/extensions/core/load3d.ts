@@ -51,7 +51,7 @@ async function uploadFile(
           if (mtlFile) {
             const mtlFormData = new FormData()
             mtlFormData.append('image', mtlFile)
-            if (pasted) mtlFormData.append('subfolder', 'pasted')
+            mtlFormData.append('subfolder', 'mesh')
 
             await api.fetchApi('/upload/image', {
               method: 'POST',
