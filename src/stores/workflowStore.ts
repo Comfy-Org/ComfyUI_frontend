@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
-import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
