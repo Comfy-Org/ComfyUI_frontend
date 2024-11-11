@@ -22,6 +22,8 @@ declare module '@comfyorg/litegraph' {
      * Callback fired on each node after the graph is configured
      */
     onAfterGraphConfigured?(): void
+    onGraphConfigured?(): void
+    onExecuted?(output: any): void
     onNodeCreated?(this: LGraphNode): void
     setInnerNodes?(nodes: LGraphNode[]): void
     applyToGraph?(extraLinks?: LLink[]): void
@@ -38,7 +40,7 @@ declare module '@comfyorg/litegraph' {
       name: string,
       type: string,
       element: HTMLElement,
-      options: Record<string, any>
+      options?: Record<string, any>
     ): DOMWidget
   }
 

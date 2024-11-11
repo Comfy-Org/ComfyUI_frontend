@@ -5,6 +5,7 @@ import type { IWidget } from '@comfyorg/litegraph'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { ComfyNodeDef } from '@/types/apiTypes'
 import { useToastStore } from '@/stores/toastStore'
+import { Widgets } from '@/types/comfy'
 
 type FolderType = 'input' | 'output' | 'temp'
 
@@ -107,7 +108,7 @@ app.registerExtension({
           audioUIWidget.element.classList.add('empty-audio-widget')
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
-          node.onExecuted = function (message) {
+          node.onExecuted = function (message: any) {
             onExecuted?.apply(this, arguments)
             const audios = message.audio
             if (!audios) return
@@ -120,7 +121,7 @@ app.registerExtension({
         }
         return { widget: audioUIWidget }
       }
-    }
+    } as Widgets
   },
   onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
     for (const [nodeId, output] of Object.entries(nodeOutputs)) {
@@ -153,9 +154,9 @@ app.registerExtension({
         const audioWidget: IWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audio'
         )
-        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find(
+        const audioUIWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audioUI'
-        )
+        ) as DOMWidget<HTMLAudioElement>
 
         const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(

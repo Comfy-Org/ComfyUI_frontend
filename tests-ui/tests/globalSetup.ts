@@ -69,6 +69,16 @@ module.exports = async function () {
     }
   })
 
+  jest.mock('@/stores/widgetStore', () => {
+    const widgets = {}
+    return {
+      useWidgetStore: () => ({
+        widgets,
+        registerCustomWidgets: jest.fn()
+      })
+    }
+  })
+
   jest.mock('vue-i18n', () => {
     return {
       useI18n: jest.fn()

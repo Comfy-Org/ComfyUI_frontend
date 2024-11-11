@@ -86,6 +86,7 @@ import {
   defaultColorPalette
 } from '@/extensions/core/colorPalette'
 import _ from 'lodash'
+import { useWidgetStore } from '@/stores/widgetStore'
 
 const props = defineProps({
   nodeDef: {
@@ -101,16 +102,16 @@ const props = defineProps({
 const colors = getColorPalette()?.colors?.litegraph_base
 const litegraphColors = colors ?? defaultColorPalette.colors.litegraph_base
 
-const nodeDefStore = useNodeDefStore()
+const widgetStore = useWidgetStore()
 
 const nodeDef = props.nodeDef
 const allInputDefs = nodeDef.input.all
 const allOutputDefs = nodeDef.output.all
 const slotInputDefs = allInputDefs.filter(
-  (input) => !nodeDefStore.inputIsWidget(input)
+  (input) => !widgetStore.inputIsWidget(input)
 )
 const widgetInputDefs = allInputDefs.filter((input) =>
-  nodeDefStore.inputIsWidget(input)
+  widgetStore.inputIsWidget(input)
 )
 const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   let stringValue: string
