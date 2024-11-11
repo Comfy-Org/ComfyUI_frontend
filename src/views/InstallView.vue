@@ -2,7 +2,7 @@
   <div
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[20vh]" value="1">
+    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="1">
       <StepList>
         <Step value="1" :disabled="hasError">
           {{ $t('install.installLocation') }}
@@ -51,7 +51,10 @@
           </div>
         </StepPanel>
         <StepPanel value="3" v-slot="{ activateCallback }">
-          <DesktopSettingsConfiguration />
+          <DesktopSettingsConfiguration
+            v-model:autoUpdate="autoUpdate"
+            v-model:allowMetrics="allowMetrics"
+          />
           <div class="flex pt-6 justify-between">
             <Button
               label="Back"
@@ -91,6 +94,9 @@ const pathError = ref('')
 
 const migrationSourcePath = ref('')
 const migrationItemIds = ref<string[]>([])
+
+const autoUpdate = ref(true)
+const allowMetrics = ref(true)
 
 const hasError = computed(() => pathError.value !== '')
 

@@ -19,7 +19,29 @@ const messages = {
       migrateFromExistingInstallation: 'Migrate from Existing Installation',
       selectItemsToMigrate: 'Select Items to Migrate',
       migrationOptional:
-        "Migration is optional. If you don't have an existing installation, you can skip this step."
+        "Migration is optional. If you don't have an existing installation, you can skip this step.",
+      desktopAppSettings: 'Desktop App Settings',
+      desktopAppSettingsDescription:
+        'Configure how ComfyUI behaves on your desktop. You can change these settings later.',
+      settings: {
+        autoUpdate: 'Automatic Updates',
+        allowMetrics: 'Usage Analytics',
+        autoUpdateDescription:
+          "Automatically download and install updates when they become available. You'll always be notified before updates are installed.",
+        allowMetricsDescription:
+          'Help improve ComfyUI by sending anonymous usage data. No personal information or workflow content will be collected.',
+        learnMoreAboutData: 'Learn more about data collection',
+        dataCollectionDialog: {
+          title: 'About Data Collection',
+          whatWeCollect: 'What we collect:',
+          whatWeDoNotCollect: "What we don't collect:",
+          errorReports: 'Error reports',
+          systemInfo: 'Operating system and app version',
+          personalInformation: 'Personal information',
+          workflowContent: 'Workflow content',
+          fileSystemInformation: 'File system information'
+        }
+      }
     },
     download: 'Download',
     loadAllFolders: 'Load All Folders',
