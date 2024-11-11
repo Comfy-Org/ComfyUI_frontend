@@ -8,6 +8,7 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { IWidget } from '@comfyorg/litegraph'
 import { ComfyNode } from '@/types/comfyWorkflow'
+import { nextTick } from 'vue'
 
 async function uploadFile(
   modelWidget: IWidget,
@@ -731,23 +732,6 @@ app.registerExtension({
         bgContainer.appendChild(bgSelect)
         controlsContainer.appendChild(bgContainer)
 
-        const onModelWidgetUpdate = () => {
-          if (modelWidget.value) {
-            const filename = modelWidget.value
-            const modelUrl = api.apiURL(
-              getResourceURL(...splitFilePath(filename))
-            )
-
-            node.load3d.loadModel(modelUrl, filename)
-          }
-        }
-
-        if (modelWidget.value) {
-          onModelWidgetUpdate()
-        }
-
-        modelWidget.callback = onModelWidgetUpdate
-
         node.onResize = function () {
           let [w, h] = this.size
           if (w <= 300) w = 300
@@ -930,7 +914,7 @@ app.registerExtension({
     document.head.appendChild(style)
   },
 
-  nodeCreated(node) {
+  async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
     node.setSize([300, 650])
@@ -965,5 +949,26 @@ app.registerExtension({
       const data = await resp.json()
       return `threed/${data.name} [temp]`
     }
+
+    await nextTick()
+
+    const modelWidget = node.widgets.find(
+      (w: IWidget) => w.name === 'model_file'
+    )
+
+    const onModelWidgetUpdate = () => {
+      if (modelWidget.value) {
+        const filename = modelWidget.value
+        const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
+
+        node.load3d.loadModel(modelUrl, filename)
+      }
+    }
+
+    if (modelWidget.value) {
+      onModelWidgetUpdate()
+    }
+
+    modelWidget.callback = onModelWidgetUpdate
   }
 })
