@@ -17,9 +17,9 @@
         <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
       </div>
 
-      <small v-if="pathError" class="text-red-400">
+      <Message v-if="pathError" severity="error">
         {{ pathError }}
-      </small>
+      </Message>
     </div>
 
     <!-- Migration Options -->
@@ -27,7 +27,7 @@
       v-if="isValidSource"
       class="flex flex-col gap-4 bg-neutral-800 p-4 rounded-lg"
     >
-      <h3 class="text-lg font-medium text-neutral-100">
+      <h3 class="text-lg mt-0 font-medium text-neutral-100">
         {{ $t('install.selectItemsToMigrate') }}
       </h3>
 
@@ -35,14 +35,20 @@
         <div
           v-for="item in migrationItems"
           :key="item.id"
-          class="flex items-start gap-3 p-2 hover:bg-neutral-700 rounded"
+          class="flex items-center gap-3 p-2 hover:bg-neutral-700 rounded"
+          @click="item.selected = !item.selected"
         >
-          <Checkbox v-model="item.selected" :inputId="item.id" :binary="true" />
+          <Checkbox
+            v-model="item.selected"
+            :inputId="item.id"
+            :binary="true"
+            @click.stop
+          />
           <div>
             <label :for="item.id" class="text-neutral-200 font-medium">
               {{ item.label }}
             </label>
-            <p class="text-sm text-neutral-400 mt-1">
+            <p class="text-sm text-neutral-400 my-1">
               {{ item.description }}
             </p>
           </div>
@@ -58,42 +64,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, computed, onMounted, watchEffect } from 'vue'
 import { electronAPI } from '@/utils/envUtil'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import Message from 'primevue/message'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const electron = electronAPI() as any
 
-const sourcePath = ref('')
-const pathError = ref('')
-const isValidSource = ref(false)
+const sourcePath = defineModel<string>('sourcePath', { required: false })
+const migrationItemIds = defineModel<string[]>('migrationItemIds', {
+  required: false
+})
 
-const migrationItems = reactive([
-  {
-    id: 'extra_paths',
-    label: 'Custom Paths Configuration',
-    description: 'Migrate extra_paths.yaml containing custom node locations',
-    selected: true
-  },
-  {
-    id: 'user_files',
-    label: 'User Files',
-    description: 'Migrate user-created workflows and custom nodes',
-    selected: true
-  },
-  {
-    id: 'custom_nodes',
-    label: 'Custom Nodes',
-    description: 'Migrate installed custom nodes and their configurations',
-    selected: true
-  }
-])
+const migrationItems = ref([])
+const pathError = ref('')
+const isValidSource = computed(
+  () => sourcePath.value !== '' && pathError.value === ''
+)
 
 const validateSource = async () => {
   if (!sourcePath.value) {
-    isValidSource.value = false
     pathError.value = ''
     return
   }
@@ -102,15 +97,10 @@ const validateSource = async () => {
     pathError.value = ''
     const validation = await electron.validateComfyUISource(sourcePath.value)
 
-    if (validation.isValid) {
-      isValidSource.value = true
-    } else {
-      isValidSource.value = false
-      pathError.value = validation.error
-    }
+    if (!validation.isValid) pathError.value = validation.error
   } catch (error) {
-    isValidSource.value = false
-    pathError.value = 'Failed to validate source'
+    console.error(error)
+    pathError.value = t('install.pathValidationFailed')
   }
 }
 
@@ -122,21 +112,21 @@ const browsePath = async () => {
       await validateSource()
     }
   } catch (error) {
-    pathError.value = 'Failed to select directory'
+    console.error(error)
+    pathError.value = t('install.failedToSelectDirectory')
   }
 }
 
-// Emit selected items when they change
-watch(
-  migrationItems,
-  (items) => {
-    emit('update:selection', {
-      sourcePath: sourcePath.value,
-      items: items.filter((item) => item.selected).map((item) => item.id)
-    })
-  },
-  { deep: true }
-)
+onMounted(async () => {
+  migrationItems.value = (await electron.migrationItems()).map((item) => ({
+    ...item,
+    selected: true
+  }))
+})
 
-const emit = defineEmits(['update:selection'])
+watchEffect(() => {
+  migrationItemIds.value = migrationItems.value
+    .filter((item) => item.selected)
+    .map((item) => item.id)
+})
 </script>

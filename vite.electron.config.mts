@@ -28,6 +28,20 @@ const mockElectronAPI: Plugin = {
             }
             return { isValid: true }
           },
+          migrationItems: () =>
+            Promise.resolve([
+              {
+                id: 'user_files',
+                label: 'User Files',
+                description: 'Settings and user-created workflows'
+              }
+            ]),
+          validateComfyUISource: (path) => {
+            if (path === 'bad') {
+              return { isValid: false, error: 'Bad path!' }
+            }
+            return { isValid: true }
+          },
           showDirectoryPicker: () => Promise.resolve('C:/Users/username/comfyui-electron/1')
         };`
       }

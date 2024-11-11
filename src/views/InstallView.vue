@@ -31,7 +31,10 @@
           </div>
         </StepPanel>
         <StepPanel value="2" v-slot="{ activateCallback }">
-          <MigrationPicker />
+          <MigrationPicker
+            v-model:sourcePath="migrationSourcePath"
+            v-model:migrationItemIds="migrationItemIds"
+          />
           <div class="flex pt-6 justify-between">
             <Button
               label="Back"
@@ -85,6 +88,9 @@ import { ref, computed } from 'vue'
 
 const installPath = ref('')
 const pathError = ref('')
+
+const migrationSourcePath = ref('')
+const migrationItemIds = ref<string[]>([])
 
 const hasError = computed(() => pathError.value !== '')
 
