@@ -1,15 +1,16 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
-import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
 import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import { appendJsonExt, getPathDetails } from '@/utils/formatUtil'
+import { getPathDetails } from '@/utils/formatUtil'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { syncEntities } from '@/utils/syncUtil'
 
 export class ComfyWorkflow extends UserFile {
+  static readonly basePath = 'workflows/'
+
   /**
    * The change tracker for the workflow. Non-reactive raw object.
    */
@@ -28,7 +29,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   get key() {
-    return this.path.substring('workflows/'.length)
+    return this.path.substring(ComfyWorkflow.basePath.length)
   }
 
   get activeState(): ComfyWorkflowJSON | null {
@@ -103,12 +104,6 @@ export class ComfyWorkflow extends UserFile {
   async saveAs(path: string) {
     this.content = JSON.stringify(this.activeState)
     return await super.saveAs(path)
-  }
-
-  async rename(newName: string) {
-    const newPath = this.directory + '/' + appendJsonExt(newName)
-    await super.rename(newPath)
-    return this
   }
 }
 
@@ -210,7 +205,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
     const fullPath = getUnconflictedPath(
-      'workflows/' + (path ?? 'Unsaved Workflow.json')
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
     )
     const workflow = new ComfyWorkflow({
       path: fullPath,
@@ -289,33 +284,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflows.value.filter((workflow) => workflow.isModified)
   )
 
-  const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
-    return buildTree(workflows, (workflow: ComfyWorkflow) =>
-      workflow.key.split('/')
-    )
-  }
-  const workflowsTree = computed(() =>
-    sortedTree(buildWorkflowTree(persistedWorkflows.value), { groupLeaf: true })
-  )
-  // Bookmarked workflows tree is flat.
-  const bookmarkedWorkflowsTree = computed(() =>
-    buildTree(bookmarkedWorkflows.value, (workflow) => [workflow.key])
-  )
-  // Open workflows tree is flat.
-  const openWorkflowsTree = computed(() =>
-    buildTree(openWorkflows.value, (workflow) => [workflow.key])
-  )
-
-  const renameWorkflow = async (workflow: ComfyWorkflow, newName: string) => {
+  const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     // Capture all needed values upfront
     const oldPath = workflow.path
-    const newPath = workflow.directory + '/' + appendJsonExt(newName)
     const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
     const openIndex = detachWorkflow(workflow)
     // Perform the actual rename operation first
     try {
-      await workflow.rename(newName)
+      await workflow.rename(newPath)
     } finally {
       attachWorkflow(workflow, openIndex)
     }
@@ -353,7 +330,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     activeWorkflow,
     isActive,
     openWorkflows,
-    openWorkflowsTree,
     openedWorkflowIndexShift,
     openWorkflow,
     isOpen,
@@ -365,11 +341,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     workflows,
     bookmarkedWorkflows,
+    persistedWorkflows,
     modifiedWorkflows,
     getWorkflowByPath,
-    workflowsTree,
-    bookmarkedWorkflowsTree,
-    buildWorkflowTree,
     syncWorkflows
   }
 })

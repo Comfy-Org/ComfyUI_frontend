@@ -42,7 +42,9 @@
         >
           <TextDivider text="Open" type="dashed" class="ml-2" />
           <TreeExplorer
-            :roots="renderTreeNode(workflowStore.openWorkflowsTree).children"
+            :roots="
+              renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open).children
+            "
             :selectionKeys="selectionKeys"
           >
             <template #node="{ node }">
@@ -72,7 +74,10 @@
           <TextDivider text="Bookmarks" type="dashed" class="ml-2" />
           <TreeExplorer
             :roots="
-              renderTreeNode(workflowStore.bookmarkedWorkflowsTree).children
+              renderTreeNode(
+                bookmarkedWorkflowsTree,
+                WorkflowTreeType.Bookmarks
+              ).children
             "
           >
             <template #node="{ node }">
@@ -83,7 +88,9 @@
         <div class="comfyui-workflows-browse">
           <TextDivider text="Browse" type="dashed" class="ml-2" />
           <TreeExplorer
-            :roots="renderTreeNode(workflowStore.workflowsTree).children"
+            :roots="
+              renderTreeNode(workflowsTree, WorkflowTreeType.Browse).children
+            "
             v-model:expandedKeys="expandedKeys"
           >
             <template #node="{ node }">
@@ -94,7 +101,9 @@
       </div>
       <div class="comfyui-workflows-search-panel" v-else>
         <TreeExplorer
-          :roots="renderTreeNode(filteredRoot).children"
+          :roots="
+            renderTreeNode(filteredRoot, WorkflowTreeType.Browse).children
+          "
           v-model:expandedKeys="expandedKeys"
         >
           <template #node="{ node }">
@@ -128,6 +137,8 @@ import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
 import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { appendJsonExt } from '@/utils/formatUtil'
+import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -138,9 +149,7 @@ const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
 const filteredWorkflows = ref<ComfyWorkflow[]>([])
 const filteredRoot = computed<TreeNode>(() => {
-  return workflowStore.buildWorkflowTree(
-    filteredWorkflows.value as ComfyWorkflow[]
-  )
+  return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
 const handleSearch = (query: string) => {
   if (query.length === 0) {
@@ -172,8 +181,37 @@ const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
   }
 }
 
-const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
-  const children = node.children?.map(renderTreeNode)
+enum WorkflowTreeType {
+  Open = 'Open',
+  Bookmarks = 'Bookmarks',
+  Browse = 'Browse'
+}
+
+const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
+  return buildTree(workflows, (workflow: ComfyWorkflow) =>
+    workflow.key.split('/')
+  )
+}
+
+const workflowsTree = computed(() =>
+  sortedTree(buildWorkflowTree(workflowStore.persistedWorkflows), {
+    groupLeaf: true
+  })
+)
+// Bookmarked workflows tree is flat.
+const bookmarkedWorkflowsTree = computed(() =>
+  buildTree(workflowStore.bookmarkedWorkflows, (workflow) => [workflow.key])
+)
+// Open workflows tree is flat.
+const openWorkflowsTree = computed(() =>
+  buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
+)
+
+const renderTreeNode = (
+  node: TreeNode,
+  type: WorkflowTreeType
+): TreeExplorerNode<ComfyWorkflow> => {
+  const children = node.children?.map((child) => renderTreeNode(child, type))
 
   const workflow: ComfyWorkflow = node.data
 
@@ -194,7 +232,12 @@ const renderTreeNode = (node: TreeNode): TreeExplorerNode<ComfyWorkflow> => {
           node: TreeExplorerNode<ComfyWorkflow>,
           newName: string
         ) => {
-          await workflowService.renameWorkflow(workflow, newName)
+          const newPath =
+            type === WorkflowTreeType.Browse
+              ? workflow.directory + '/' + appendJsonExt(newName)
+              : ComfyWorkflow.basePath + appendJsonExt(newName)
+
+          await workflowService.renameWorkflow(workflow, newPath)
         },
         handleDelete: workflow.isTemporary
           ? undefined
