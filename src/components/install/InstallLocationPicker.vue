@@ -6,6 +6,10 @@
         {{ $t('install.chooseInstallationLocation') }}
       </h2>
 
+      <p class="text-neutral-400 my-0">
+        {{ $t('install.installLocationDescription') }}
+      </p>
+
       <div class="flex gap-2">
         <IconField class="flex-1">
           <InputText

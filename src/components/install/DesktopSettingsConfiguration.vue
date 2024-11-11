@@ -5,7 +5,7 @@
         {{ $t('install.desktopAppSettings') }}
       </h2>
 
-      <p class="text-neutral-400">
+      <p class="text-neutral-400 my-0">
         {{ $t('install.desktopAppSettingsDescription') }}
       </p>
     </div>

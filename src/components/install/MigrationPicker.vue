@@ -6,6 +6,10 @@
         {{ $t('install.migrateFromExistingInstallation') }}
       </h2>
 
+      <p class="text-neutral-400 my-0">
+        {{ $t('install.migrationSourcePathDescription') }}
+      </p>
+
       <div class="flex gap-2">
         <InputText
           v-model="sourcePath"
