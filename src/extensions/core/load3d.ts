@@ -90,9 +90,6 @@ class Load3d {
   lights: THREE.Light[] = []
 
   constructor(node: ComfyNode, container: Element | HTMLElement) {
-    console.log(node)
-    console.log(container)
-
     this.node = node
 
     this.scene = new THREE.Scene()
@@ -922,7 +919,7 @@ app.registerExtension({
           padding: 12px;
           border-top: 1px solid rgba(255, 255, 255, 0.1);
           transition: all 0.2s ease;
-          max-height: 500px; /* 或者其他合适的值 */
+          max-height: 500px;
           overflow: hidden;
         }
       
