@@ -67,7 +67,7 @@ export const workflowService = {
     } else {
       const tempWorkflow = useWorkflowStore().createTemporary(
         (workflow.directory + '/' + appendJsonExt(newFilename)).substring(
-          'workflows/'.length
+          ComfyWorkflow.basePath.length
         ),
         workflow.activeState as ComfyWorkflowJSON
       )
@@ -162,8 +162,8 @@ export const workflowService = {
     await workflowStore.closeWorkflow(workflow)
   },
 
-  async renameWorkflow(workflow: ComfyWorkflow, newName: string) {
-    await useWorkflowStore().renameWorkflow(workflow, newName)
+  async renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
+    await useWorkflowStore().renameWorkflow(workflow, newPath)
   },
 
   async deleteWorkflow(workflow: ComfyWorkflow) {
@@ -212,7 +212,7 @@ export const workflowService = {
     const workflowStore = useWorkspaceStore().workflow
     if (typeof value === 'string') {
       const workflow = workflowStore.getWorkflowByPath(
-        'workflows/' + appendJsonExt(value)
+        ComfyWorkflow.basePath + appendJsonExt(value)
       )
       if (workflow?.isPersisted) {
         const loadedWorkflow = await workflowStore.openWorkflow(workflow)
