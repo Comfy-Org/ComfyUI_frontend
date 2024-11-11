@@ -101,7 +101,13 @@ const allowMetrics = ref(true)
 const hasError = computed(() => pathError.value !== '')
 
 const install = () => {
-  ;(electronAPI() as any).installComfyUI()
+  ;(electronAPI() as any).installComfyUI({
+    installPath: installPath.value,
+    autoUpdate: autoUpdate.value,
+    allowMetrics: allowMetrics.value,
+    migrationSourcePath: migrationSourcePath.value,
+    migrationItemIds: migrationItemIds.value
+  })
 }
 </script>
 
