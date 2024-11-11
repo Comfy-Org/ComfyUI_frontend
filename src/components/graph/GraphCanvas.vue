@@ -135,6 +135,15 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.reroutesEnabled = reroutesEnabled
+    canvas.setDirty(false, true)
+  }
+})
+
+watchEffect(() => {
   if (!canvasStore.canvas) return
 
   if (canvasStore.canvas.state.draggingCanvas) {

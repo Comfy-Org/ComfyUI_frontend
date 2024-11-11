@@ -387,6 +387,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
+    id: 'Comfy.RerouteBeta',
+    name: 'Opt-in to the reroute beta test',
+    tooltip:
+      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
+    experimental: true,
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.3.41'
+  },
+  {
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',
