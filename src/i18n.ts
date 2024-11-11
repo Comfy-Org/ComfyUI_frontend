@@ -166,6 +166,45 @@ const messages = {
     }
   },
   zh: {
+    install: {
+      installLocation: '安装位置',
+      migration: '迁移',
+      desktopSettings: '桌面设置',
+      chooseInstallationLocation: '选择安装位置',
+      systemLocations: '系统位置',
+      failedToSelectDirectory: '选择目录失败',
+      pathValidationFailed: '路径验证失败',
+      installLocationTooltip:
+        'ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n',
+      appDataLocationTooltip:
+        'ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置',
+      appPathLocationTooltip: 'ComfyUI 的应用资源目录。存储 ComfyUI 代码和资源',
+      migrateFromExistingInstallation: '从现有安装迁移',
+      selectItemsToMigrate: '选择要迁移的项目',
+      migrationOptional: '迁移是可选的。如果您没有现有安装，可以跳过此步骤。',
+      desktopAppSettings: '桌面应用设置',
+      desktopAppSettingsDescription:
+        '配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。',
+      settings: {
+        autoUpdate: '自动更新',
+        allowMetrics: '使用分析',
+        autoUpdateDescription:
+          '当有更新可用时自动下载并安装。在安装更新之前，您会收到通知。',
+        allowMetricsDescription:
+          '通过发送匿名使用数据帮助改进 ComfyUI。不会收集任何个人信息或工作流内容。',
+        learnMoreAboutData: '了解更多关于数据收集的信息',
+        dataCollectionDialog: {
+          title: '关于数据收集',
+          whatWeCollect: '我们收集什么：',
+          whatWeDoNotCollect: '我们不收集什么：',
+          errorReports: '错误报告',
+          systemInfo: '操作系统和应用版本',
+          personalInformation: '个人信息',
+          workflowContent: '工作流内容',
+          fileSystemInformation: '文件系统信息'
+        }
+      }
+    },
     download: '下载',
     loadAllFolders: '加载所有文件夹',
     refresh: '刷新',
@@ -283,6 +322,47 @@ const messages = {
     }
   },
   ru: {
+    install: {
+      installLocation: 'Место установки',
+      migration: 'Миграция',
+      desktopSettings: 'Настройки рабочего стола',
+      chooseInstallationLocation: 'Выберите место установки',
+      systemLocations: 'Системные расположения',
+      failedToSelectDirectory: 'Не удалось выбрать директорию',
+      pathValidationFailed: 'Не удалось проверить путь',
+      installLocationTooltip:
+        'Пользовательская директория ComfyUI. Хранит:\n- Python окружение\n- Модели\n- Пользовательские узлы\n',
+      appDataLocationTooltip:
+        'Директория данных приложения ComfyUI. Хранит:\n- Логи\n- Конфигурации сервера',
+      appPathLocationTooltip:
+        'Директория ресурсов приложения ComfyUI. Хранит код и ресурсы ComfyUI',
+      migrateFromExistingInstallation: 'Миграция с существующей установки',
+      selectItemsToMigrate: 'Выберите элементы для миграции',
+      migrationOptional:
+        'Миграция необязательна. Если у вас нет существующей установки, вы можете пропустить этот шаг.',
+      desktopAppSettings: 'Настройки приложения',
+      desktopAppSettingsDescription:
+        'Настройте поведение ComfyUI на вашем рабочем столе. Вы можете изменить эти настройки позже.',
+      settings: {
+        autoUpdate: 'Автоматические обновления',
+        allowMetrics: 'Аналитика использования',
+        autoUpdateDescription:
+          'Автоматически загружать и устанавливать обновления при их появлении. Вы всегда будете уведомлены перед установкой обновлений.',
+        allowMetricsDescription:
+          'Помогите улучшить ComfyUI, отправляя анонимные данные об использовании. Личная информация и содержимое рабочих процессов не собираются.',
+        learnMoreAboutData: 'Узнать больше о сборе данных',
+        dataCollectionDialog: {
+          title: 'О сборе данных',
+          whatWeCollect: 'Что мы собираем:',
+          whatWeDoNotCollect: 'Что мы не собираем:',
+          errorReports: 'Отчёты об ошибках',
+          systemInfo: 'Операционная система и версия приложения',
+          personalInformation: 'Личная информация',
+          workflowContent: 'Содержимое рабочих процессов',
+          fileSystemInformation: 'Информация о файловой системе'
+        }
+      }
+    },
     download: 'Скачать',
     refresh: 'Обновить',
     loadAllFolders: 'Загрузить все папки',
