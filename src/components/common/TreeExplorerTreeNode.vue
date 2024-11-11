@@ -31,9 +31,6 @@
       <div class="node-actions">
         <slot name="actions" :node="props.node"></slot>
       </div>
-      <div v-if="node.progress">
-        <Progress :value="node.progress" :showLabel="false" class="w-full" />
-      </div>
     </div>
   </div>
 </template>

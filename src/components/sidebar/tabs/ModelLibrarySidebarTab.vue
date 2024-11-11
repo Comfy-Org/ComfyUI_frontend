@@ -28,6 +28,67 @@
       />
     </template>
     <template #body>
+      <div class="mx-6 mb-4" v-if="downloads.length > 0">
+        <div class="text-lg my-4">
+          {{ t('electronFileDownload.inProgress') }}
+        </div>
+
+        <template v-for="download in downloads">
+          <div class="flex flex-col">
+            <div>
+              {{ getDownloadLabel(download.savePath) }}
+            </div>
+            <div v-if="['cancelled', 'error'].includes(download.status)">
+              <Chip class="h-6 text-sm font-light bg-red-700">
+                {{ t('electronFileDownload.cancelled') }}
+              </Chip>
+            </div>
+            <div
+              class="mt-2 flex flex-row items-center gap-2"
+              v-if="
+                ['in_progress', 'paused', 'completed'].includes(download.status)
+              "
+            >
+              <ProgressBar
+                class="flex-1"
+                :value="Number((download.progress * 100).toFixed(1))"
+              />
+
+              <Button
+                class="file-action-button w-[22px] h-[22px]"
+                size="small"
+                rounded
+                @click="triggerPauseDownload(download.url)"
+                v-if="download.status === 'in_progress'"
+                icon="pi pi-pause"
+                v-tooltip.top="t('electronFileDownload.pause')"
+              />
+
+              <Button
+                class="file-action-button w-[22px] h-[22px]"
+                size="small"
+                rounded
+                @click="triggerResumeDownload(download.url)"
+                v-if="download.status === 'paused'"
+                icon="pi pi-play"
+                v-tooltip.top="t('electronFileDownload.resume')"
+              />
+
+              <Button
+                class="file-action-button w-[22px] h-[22px] p-red"
+                size="small"
+                rounded
+                severity="danger"
+                @click="triggerCancelDownload(download.url)"
+                v-if="['in_progress', 'paused'].includes(download.status)"
+                icon="pi pi-times-circle"
+                v-tooltip.top="t('electronFileDownload.cancel')"
+              />
+            </div>
+          </div>
+        </template>
+      </div>
+
       <TreeExplorer
         class="model-lib-tree-explorer py-0"
         :roots="renderedRoot.children"
@@ -48,6 +109,8 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import ProgressBar from 'primevue/progressbar'
+import Chip from 'primevue/chip'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -67,8 +130,8 @@ import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
 import { isElectron, electronAPI } from '@/utils/envUtil'
 import { useI18n } from 'vue-i18n'
-
-const { DownloadManager } = electronAPI()
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { storeToRefs } from 'pinia'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
@@ -77,14 +140,8 @@ const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const { t } = useI18n()
-
-interface ModelDownload {
-  url: string
-  status: 'paused' | 'in_progress' | 'cancelled'
-  progress: number
-  savePath: string
-  filename: string
-}
+const electronDownloadStore = useElectronDownloadStore()
+const { downloads } = storeToRefs(electronDownloadStore)
 
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
@@ -115,8 +172,6 @@ const root = computed<TreeNode>(() => {
     modelOrFolder.key.split('/')
   )
 })
-
-const downloads = ref<ModelOrFolder[]>([])
 
 const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
   const nameFormat = settingStore.get('Comfy.ModelLibrary.NameFormat')
@@ -181,22 +236,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
     }
   }
 
-  const result = fillNodeInfo(root.value)
-
-  return {
-    ...result,
-    children: [
-      {
-        key: 'downloads',
-        label: 'downloads',
-        leaf: false,
-        children: downloads.value,
-        badgeText: downloads.value.length.toString(),
-        data: {}
-      },
-      ...result.children
-    ]
-  }
+  return fillNodeInfo(root.value)
 })
 
 watch(
@@ -215,60 +255,21 @@ watch(
   { deep: true }
 )
 
-const getDownloadLabel = ({
-  status,
-  filename
-}: Pick<ModelDownload, 'status' | 'filename'>) => {
-  switch (status) {
-    case 'cancelled':
-      return `${filename} [${t('electronFileDownload.cancelled')}]`
-    case 'paused':
-      return `${filename} [${t('electronFileDownload.paused')}]`
-    case 'completed':
-      return `${filename} [${t('electronFileDownload.completed')}]`
-    default:
-      return filename
-  }
+const getDownloadLabel = (savePath: string, filename: string) => {
+  let parts = (savePath ?? '').split('/')
+  parts = parts.length === 1 ? parts[0].split('\\') : parts
+  const name = parts.pop()
+  const dir = parts.pop()
+  return `${dir}/${name}`
 }
 
-const convertDownloadToModel = ({
-  url,
-  status,
-  filename,
-  savePath,
-  progress
-}: ModelDownload) => ({
-  key: url,
-  label: getDownloadLabel({ filename, status }),
-  leaf: true,
-  children: [],
-  progress: status === 'in_progress' ? progress : undefined,
-  data: {}
-})
+const triggerCancelDownload = (url: string) => electronDownloadStore.cancel(url)
+const triggerPauseDownload = (url: string) => electronDownloadStore.pause(url)
+const triggerResumeDownload = (url: string) => electronDownloadStore.resume(url)
 
 onMounted(async () => {
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
     await modelStore.loadModels()
-  }
-
-  if (isElectron()) {
-    const allDownloads: ModelDownload[] =
-      await DownloadManager.getAllDownloads()
-
-    DownloadManager.onDownloadProgress((data: ModelDownload) => {
-      if (!downloads.value.find(({ key }) => key === data.url)) {
-        downloads.value.push(convertDownloadToModel(data))
-      }
-
-      let download = downloads.value.find(({ key }) => key === data.url)
-      download.progress =
-        data.status === 'in_progress' ? data.progress : undefined
-      download.label = getDownloadLabel(data)
-    })
-
-    for (const download of allDownloads) {
-      downloads.value.push(convertDownloadToModel(download))
-    }
   }
 })
 </script>

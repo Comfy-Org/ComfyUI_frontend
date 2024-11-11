@@ -28,7 +28,7 @@
       class="flex flex-row items-center gap-2"
       v-if="status === 'in_progress' || status === 'paused'"
     >
-      <ProgressBar class="flex-1" :value="downloadProgress" />
+      <ProgressBar class="flex-1" :value="Number(downloadProgress)" />
 
       <Button
         class="file-action-button"
@@ -59,6 +59,7 @@
         :disabled="props.error"
         @click="triggerCancelDownload"
         icon="pi pi-times-circle"
+        severity="danger"
         v-tooltip.top="t('electronFileDownload.cancel')"
       />
     </div>
@@ -69,10 +70,11 @@
 import { useDownload } from '@/hooks/downloadHooks'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
 import { electronAPI } from '@/utils/envUtil'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const props = defineProps<{
   url: string
@@ -81,56 +83,37 @@ const props = defineProps<{
   error?: string
 }>()
 
-interface ModelDownload {
-  url: string
-  status: 'paused' | 'in_progress' | 'cancelled'
-  progress: number
-  savePath: string
-}
-
 const { t } = useI18n()
 const { DownloadManager } = electronAPI()
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
-const status = ref<ModelDownload | null>(null)
 const downloadProgress = ref<number>(0)
+const status = ref<string | null>(null)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
+const electronDownloadStore = useElectronDownloadStore()
 const [savePath, filename] = props.label.split('/')
 
-const downloads: ModelDownload[] = await DownloadManager.getAllDownloads()
-const modelDownload = downloads.find(({ url }) => url === props.url)
+electronDownloadStore.$subscribe((mutation, { downloads }) => {
+  const download = downloads.find((download) => props.url === download.url)
 
-const updateProperties = (download: ModelDownload) => {
-  if (download.url === props.url) {
-    status.value = download.status
+  if (download) {
     downloadProgress.value = (download.progress * 100).toFixed(1)
+    status.value = download.status
   }
-}
-
-DownloadManager.onDownloadProgress((data: ModelDownload) => {
-  updateProperties(data)
 })
 
 const triggerDownload = async () => {
-  await DownloadManager.startDownload(
-    props.url,
-    savePath.trim(),
-    filename.trim()
-  )
+  await electronDownloadStore.start({
+    url: props.url,
+    savePath: savePath.trim(),
+    filename: filename.trim()
+  })
 }
 
-const triggerCancelDownload = async () => {
-  await DownloadManager.cancelDownload(props.url)
-}
-
-const triggerPauseDownload = async () => {
-  await DownloadManager.pauseDownload(props.url)
-}
-
-const triggerResumeDownload = async () => {
-  await DownloadManager.resumeDownload(props.url)
-}
+const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
+const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
+const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
 </script>

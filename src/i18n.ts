@@ -120,6 +120,7 @@ const messages = {
       toggleLinkVisibility: 'Toggle Link Visibility'
     },
     electronFileDownload: {
+      inProgress: 'In Progress',
       pause: 'Pause Download',
       paused: 'Paused',
       resume: 'Resume Download',
