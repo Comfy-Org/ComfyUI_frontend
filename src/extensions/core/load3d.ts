@@ -506,6 +506,7 @@ app.registerExtension({
         node.name = `load3d_${load3dNodes.length}`
 
         const containerWrapper = document.createElement('div')
+
         containerWrapper.id = `load-3d-wrapper-${inputName.toLowerCase()}`
         containerWrapper.classList.add('comfyui-load-3d-wrapper')
 
@@ -931,6 +932,8 @@ app.registerExtension({
 
   nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
+
+    node.setSize([300, 650])
 
     const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
