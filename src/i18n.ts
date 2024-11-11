@@ -2,6 +2,10 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    welcome: {
+      title: 'Welcome to ComfyUI',
+      getStarted: 'Get Started'
+    },
     install: {
       installLocation: 'Install Location',
       migration: 'Migration',
