@@ -4,11 +4,13 @@
   >
     <div class="flex flex-col items-center justify-center gap-8 p-8">
       <!-- Header -->
-      <h1 class="animated-gradient-text text-glow">Welcome to ComfyUI</h1>
+      <h1 class="animated-gradient-text text-glow select-none">
+        {{ $t('welcome.title') }}
+      </h1>
 
       <!-- Get Started Button -->
       <Button
-        label="Get Started"
+        :label="$t('welcome.getStarted')"
         icon="pi pi-arrow-right"
         iconPos="right"
         size="large"
