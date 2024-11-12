@@ -105,6 +105,12 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LiteGraph.middle_click_slot_add_default_node = settingStore.get(
+    'Comfy.Node.MiddleClickRerouteNode'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
@@ -131,6 +137,24 @@ watchEffect(() => {
   if (canvasStore.canvas) {
     canvasStore.canvas.links_render_mode = linkRenderMode
     canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
+  }
+})
+
+watchEffect(() => {
+  const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.linkMarkerShape = linkMarkerShape
+    canvas.setDirty(false, true)
+  }
+})
+
+watchEffect(() => {
+  const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.reroutesEnabled = reroutesEnabled
+    canvas.setDirty(false, true)
   }
 })
 

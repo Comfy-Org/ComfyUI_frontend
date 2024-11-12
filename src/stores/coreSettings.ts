@@ -5,6 +5,7 @@ import {
   LinkReleaseTriggerMode
 } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
+import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
@@ -484,5 +485,34 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.3.40'
+  },
+  {
+    id: 'Comfy.Node.MiddleClickRerouteNode',
+    name: 'Middle-click creates a new Reroute node',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.RerouteBeta',
+    name: 'Opt-in to the reroute beta test',
+    tooltip:
+      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
+    experimental: true,
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.Graph.LinkMarkers',
+    name: 'Link midpoint markers',
+    defaultValue: LinkMarkerShape.Circle,
+    type: 'combo',
+    options: [
+      { value: LinkMarkerShape.None, text: 'None' },
+      { value: LinkMarkerShape.Circle, text: 'Circle' },
+      { value: LinkMarkerShape.Arrow, text: 'Arrow' }
+    ],
+    versionAdded: '1.3.42'
   }
 ]
