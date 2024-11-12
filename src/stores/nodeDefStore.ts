@@ -323,20 +323,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByName.value[nodeDef.name] = nodeDefImpl
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
-  function getWidgetType(type: string, inputName: string) {
-    if (type === 'COMBO') {
-      return 'COMBO'
-    } else if (`${type}:${inputName}` in widgets.value) {
-      return `${type}:${inputName}`
-    } else if (type in widgets.value) {
-      return type
-    } else {
-      return null
-    }
-  }
-  function inputIsWidget(spec: BaseInputSpec) {
-    return getWidgetType(spec.type, spec.name) !== null
-  }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
     // Frontend-only nodes don't have nodeDef
     return nodeDefsByName.value[node.constructor?.nodeData?.name] ?? null
@@ -345,7 +331,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   return {
     nodeDefsByName,
     nodeDefsByDisplayName,
-    widgets,
     showDeprecated,
     showExperimental,
 
@@ -356,8 +341,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
-    getWidgetType,
-    inputIsWidget,
     fromLGraphNode
   }
 })

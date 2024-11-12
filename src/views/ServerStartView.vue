@@ -1,17 +1,44 @@
-<!-- This is a dummy page built for electron app only. -->
-<!-- Replace this page with the electron side logic on installation & log streaming. -->
 <template>
   <div
-    class="absolute inset-0 flex flex-col items-center justify-center h-screen bg-surface-0"
+    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <ProgressSpinner class="w-16 h-16 mb-4" />
-    <div class="text-xl">{{ $t('loading') }}{{ counter }}</div>
+    <h2 class="text-2xl font-bold">{{ ProgressMessages[status] }}</h2>
+    <LogTerminal :fetch-logs="fetchLogs" :fetch-interval="500" />
   </div>
 </template>
 
 <script setup lang="ts">
-import ProgressSpinner from 'primevue/progressspinner'
-import { useInterval } from '@vueuse/core'
+import { ref, onMounted } from 'vue'
+import LogTerminal from '@/components/common/LogTerminal.vue'
+import {
+  ProgressStatus,
+  ProgressMessages
+} from '@comfyorg/comfyui-electron-types'
+import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
-const counter = useInterval(1000)
+const electronAPI = getElectronAPI()
+
+const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
+const logs = ref<string[]>([])
+
+const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
+  status.value = newStatus
+  logs.value = [] // Clear logs when status changes
+}
+
+const addLogMessage = (message: string) => {
+  logs.value = [...logs.value, message]
+}
+
+const fetchLogs = async () => {
+  return logs.value.join('\n')
+}
+
+onMounted(() => {
+  electronAPI.sendReady()
+  electronAPI.onProgressUpdate(updateProgress)
+  electronAPI.onLogMessage((message: string) => {
+    addLogMessage(message)
+  })
+})
 </script>

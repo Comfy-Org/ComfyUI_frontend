@@ -401,7 +401,6 @@ test.describe('Menu', () => {
         'workflow1.json': 'default.json',
         'workflow2.json': 'default.json'
       })
-      // Avoid reset view as the button is not visible in BetaMenu UI.
       await comfyPage.setup()
 
       const tab = comfyPage.menu.workflowsTab
@@ -409,6 +408,33 @@ test.describe('Menu', () => {
       expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
         expect.arrayContaining(['workflow1.json', 'workflow2.json'])
       )
+    })
+
+    test('Can rename nested workflow from opened workflow item', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        foo: {
+          'bar.json': 'default.json'
+        }
+      })
+      await comfyPage.setup()
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      // Switch to the parent folder
+      await tab.getPersistedItem('foo').click()
+      await comfyPage.page.waitForTimeout(300)
+      // Switch to the nested workflow
+      await tab.getPersistedItem('bar').click()
+      await comfyPage.page.waitForTimeout(300)
+
+      const openedWorkflow = tab.getOpenedItem('foo/bar')
+      await tab.renameWorkflow(openedWorkflow, 'foo/baz')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json',
+        'foo/baz.json'
+      ])
     })
 
     test('Can save workflow as', async ({ comfyPage }) => {

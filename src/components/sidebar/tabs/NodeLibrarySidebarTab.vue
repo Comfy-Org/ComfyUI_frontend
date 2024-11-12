@@ -23,7 +23,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="node-lib-search-box p-4"
+        class="node-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"

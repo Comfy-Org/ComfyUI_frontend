@@ -1,6 +1,6 @@
 <template>
   <Tree
-    class="tree-explorer"
+    class="tree-explorer p-2 2xl:p-4"
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectionKeys"

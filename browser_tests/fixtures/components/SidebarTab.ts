@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test'
+import { Locator, Page } from '@playwright/test'
 
 class SidebarTab {
   constructor(
@@ -110,11 +110,30 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 
   async switchToWorkflow(workflowName: string) {
-    const workflowLocator = this.page.locator(
-      '.comfyui-workflows-open .node-label',
-      { hasText: workflowName }
-    )
+    const workflowLocator = this.getOpenedItem(workflowName)
     await workflowLocator.click()
+    await this.page.waitForTimeout(300)
+  }
+
+  getOpenedItem(name: string) {
+    return this.page.locator('.comfyui-workflows-open .node-label', {
+      hasText: name
+    })
+  }
+
+  getPersistedItem(name: string) {
+    return this.page.locator('.comfyui-workflows-browse .node-label', {
+      hasText: name
+    })
+  }
+
+  async renameWorkflow(locator: Locator, newName: string) {
+    await locator.click({ button: 'right' })
+    await this.page
+      .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
+      .click()
+    await this.page.keyboard.type(newName)
+    await this.page.keyboard.press('Enter')
     await this.page.waitForTimeout(300)
   }
 }

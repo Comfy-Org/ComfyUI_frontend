@@ -1,7 +1,12 @@
 // @ts-strict-ignore
+import { useSettingStore } from '@/stores/settingStore'
 import { app, ANIM_PREVIEW_WIDGET } from './app'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
+import {
+  ICustomWidget,
+  IWidgetOptions
+} from '@comfyorg/litegraph/dist/types/widgets'
 
 const SIZE = Symbol()
 
@@ -12,15 +17,20 @@ interface Rect {
   y: number
 }
 
-export interface DOMWidget<T = HTMLElement> {
-  type: string
+export interface DOMWidget<T extends HTMLElement, V extends object | string>
+  extends ICustomWidget<T> {
+  // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
+  type: 'custom'
   name: string
   computedHeight?: number
   element?: T
-  options: any
-  value?: any
+  options: DOMWidgetOptions<T, V>
+  value: V
   y?: number
-  callback?: (value: any) => void
+  callback?: (value: V) => void
+  /**
+   * Draw the widget on the canvas.
+   */
   draw?: (
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
@@ -28,7 +38,29 @@ export interface DOMWidget<T = HTMLElement> {
     y: number,
     widgetHeight: number
   ) => void
+  /**
+   * TODO(huchenlei): Investigate when is this callback fired. `onRemove` is
+   * on litegraph's IBaseWidget definition, but not called in litegraph.
+   * Currently only called in widgetInputs.ts.
+   */
   onRemove?: () => void
+}
+
+export interface DOMWidgetOptions<
+  T extends HTMLElement,
+  V extends object | string
+> extends IWidgetOptions {
+  hideOnZoom?: boolean
+  selectOn?: string[]
+  onHide?: (widget: DOMWidget<T, V>) => void
+  getValue?: () => V
+  setValue?: (value: V) => void
+  getMinHeight?: () => number
+  getMaxHeight?: () => number
+  getHeight?: () => string | number
+  onDraw?: (widget: DOMWidget<T, V>) => void
+  beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
+  afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
 }
 
 function intersect(a: Rect, b: Rect): Vector4 | null {
@@ -50,26 +82,23 @@ function getClipPath(
   )[0] as LGraphNode
   if (selectedNode && selectedNode !== node) {
     const elRect = element.getBoundingClientRect()
-    const MARGIN = 7
-    const scale = app.canvas.ds.scale
+    const MARGIN = 4
+    const { offset, scale } = app.canvas.ds
+    const { renderArea } = selectedNode
 
-    const bounding = selectedNode.getBounding()
+    // Get intersection in browser space
     const intersection = intersect(
       {
-        x: elRect.x / scale - canvasRect.left,
-        y: elRect.y / scale - canvasRect.top,
-        width: elRect.width / scale,
-        height: elRect.height / scale
+        x: elRect.left - canvasRect.left,
+        y: elRect.top - canvasRect.top,
+        width: elRect.width,
+        height: elRect.height
       },
       {
-        x: selectedNode.pos[0] + app.canvas.ds.offset[0] - MARGIN,
-        y:
-          selectedNode.pos[1] +
-          app.canvas.ds.offset[1] -
-          LiteGraph.NODE_TITLE_HEIGHT -
-          MARGIN,
-        width: bounding[2] + MARGIN + MARGIN,
-        height: bounding[3] + MARGIN + MARGIN
+        x: (renderArea[0] + offset[0] - MARGIN) * scale,
+        y: (renderArea[1] + offset[1] - MARGIN) * scale,
+        width: (renderArea[2] + 2 * MARGIN) * scale,
+        height: (renderArea[3] + 2 * MARGIN) * scale
       }
     )
 
@@ -77,10 +106,12 @@ function getClipPath(
       return ''
     }
 
-    const clipX = canvasRect.left + intersection[0] - elRect.x / scale + 'px'
-    const clipY = canvasRect.top + intersection[1] - elRect.y / scale + 'px'
-    const clipWidth = intersection[2] + 'px'
-    const clipHeight = intersection[3] + 'px'
+    // Convert intersection to canvas scale (element has scale transform)
+    const clipX =
+      (intersection[0] - elRect.left + canvasRect.left) / scale + 'px'
+    const clipY = (intersection[1] - elRect.top + canvasRect.top) / scale + 'px'
+    const clipWidth = intersection[2] / scale + 'px'
+    const clipHeight = intersection[3] / scale + 'px'
     const path = `polygon(0% 0%, 0% 100%, ${clipX} 100%, ${clipX} ${clipY}, calc(${clipX} + ${clipWidth}) ${clipY}, calc(${clipX} + ${clipWidth}) calc(${clipY} + ${clipHeight}), ${clipX} calc(${clipY} + ${clipHeight}), ${clipX} 100%, 100% 100%, 100% 0%)`
     return path
   }
@@ -249,27 +280,15 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   return visibleNodes
 }
 
-let enableDomClipping = true
-
-export function addDomClippingSetting(): void {
-  app.ui.settings.addSetting({
-    id: 'Comfy.DOMClippingEnabled',
-    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
-    name: 'Enable DOM element clipping (enabling may reduce performance)',
-    type: 'boolean',
-    defaultValue: enableDomClipping,
-    onChange(value) {
-      enableDomClipping = !!value
-    }
-  })
-}
-
-LGraphNode.prototype.addDOMWidget = function (
+LGraphNode.prototype.addDOMWidget = function <
+  T extends HTMLElement,
+  V extends object | string
+>(
   name: string,
   type: string,
-  element: HTMLElement,
-  options: Record<string, any>
-): DOMWidget {
+  element: T,
+  options: DOMWidgetOptions<T, V> = {}
+): DOMWidget<T, V> {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 
   if (!element.parentElement) {
@@ -295,13 +314,15 @@ LGraphNode.prototype.addDOMWidget = function (
     element.title = tooltip
   }
 
-  const widget: DOMWidget = {
+  const widget: DOMWidget<T, V> = {
+    // @ts-expect-error All unrecognized types will be treated the same way as 'custom'
+    // in litegraph internally.
     type,
     name,
-    get value() {
+    get value(): V {
       return options.getValue?.() ?? undefined
     },
-    set value(v) {
+    set value(v: V) {
       options.setValue?.(v)
       widget.callback?.(widget.value)
     },
@@ -316,11 +337,16 @@ LGraphNode.prototype.addDOMWidget = function (
         computeSize.call(node, node.size)
       }
 
+      const { offset, scale } = app.canvas.ds
+
       const hidden =
-        (!!options.hideOnZoom && app.canvas.ds.scale < 0.5) ||
+        (!!options.hideOnZoom && scale < 0.5) ||
         widget.computedHeight <= 0 ||
+        // @ts-expect-error Used by widgetInputs.ts
         widget.type === 'converted-widget' ||
+        // @ts-expect-error Used by groupNode.ts
         widget.type === 'hidden'
+
       element.dataset.shouldHide = hidden ? 'true' : 'false'
       const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
       const isCollapsed = element.dataset.collapsed === 'true'
@@ -335,23 +361,16 @@ LGraphNode.prototype.addDOMWidget = function (
         return
       }
 
-      const margin = 10
       const elRect = ctx.canvas.getBoundingClientRect()
-      const transform = new DOMMatrix()
-        .scaleSelf(
-          elRect.width / ctx.canvas.width,
-          elRect.height / ctx.canvas.height
-        )
-        .multiplySelf(ctx.getTransform())
-        .translateSelf(margin, margin + y)
-
-      const scale = new DOMMatrix().scaleSelf(transform.a, transform.d)
+      const margin = 10
+      const top = node.pos[0] + offset[0] + margin
+      const left = node.pos[1] + offset[1] + margin + y
 
       Object.assign(element.style, {
         transformOrigin: '0 0',
-        transform: scale,
-        left: `${transform.a + transform.e}px`,
-        top: `${transform.d + transform.f}px`,
+        transform: `scale(${scale})`,
+        left: `${top * scale}px`,
+        top: `${left * scale}px`,
         width: `${widgetWidth - margin * 2}px`,
         height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
         position: 'absolute',
@@ -359,7 +378,7 @@ LGraphNode.prototype.addDOMWidget = function (
         pointerEvents: app.canvas.read_only ? 'none' : 'auto'
       })
 
-      if (enableDomClipping) {
+      if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
         element.style.clipPath = getClipPath(node, element, elRect)
         element.style.willChange = 'clip-path'
       }

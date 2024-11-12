@@ -58,7 +58,6 @@ const getNewNodeLocation = (): [number, number] => {
   }
 
   const originalEvent = triggerEvent.value.detail.originalEvent
-  // @ts-expect-error LiteGraph types are not typed
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
 const nodeFilters = ref<FilterAndValue[]>([])
@@ -153,8 +152,16 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
     showSearchBox: () => showSearchBox(e)
   }
   const connectionOptions = firstLink.output
-    ? { nodeFrom: firstLink.node, slotFrom: firstLink.output }
-    : { nodeTo: firstLink.node, slotTo: firstLink.input }
+    ? {
+        nodeFrom: firstLink.node,
+        slotFrom: firstLink.output,
+        afterRerouteId: firstLink.afterRerouteId
+      }
+    : {
+        nodeTo: firstLink.node,
+        slotTo: firstLink.input,
+        afterRerouteId: firstLink.afterRerouteId
+      }
   canvasStore.canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
@@ -178,7 +185,6 @@ const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
   } else if (e.detail.subType === 'group-double-click') {
     const group = e.detail.group
     const [x, y] = group.pos
-    // @ts-expect-error LiteGraphCanvasEvent is not typed
     const relativeY = e.detail.originalEvent.canvasY - y
     // Show search box if the click is NOT on the title bar
     if (relativeY > group.titleHeight) {

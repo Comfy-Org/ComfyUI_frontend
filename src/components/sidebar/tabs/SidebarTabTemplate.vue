@@ -5,7 +5,7 @@
   >
     <div class="comfy-vue-side-bar-header">
       <Toolbar
-        class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-10"
+        class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-8"
       >
         <template #start>
           <span class="text-sm">{{ props.title.toUpperCase() }}</span>
@@ -32,3 +32,9 @@ const props = defineProps<{
   class?: string
 }>()
 </script>
+
+<style scoped>
+:deep(.p-toolbar-end) .p-button {
+  @apply py-1 2xl:py-2;
+}
+</style>
