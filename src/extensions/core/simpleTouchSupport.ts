@@ -11,7 +11,8 @@ app.registerExtension({
     let zoomPos
     let touchTime
     let lastTouch
-
+    let lastScale
+    let lastOffset
     function getMultiTouchPos(e) {
       return Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
@@ -24,6 +25,8 @@ app.registerExtension({
       (e) => {
         touchCount++
         lastTouch = null
+        lastScale = null
+        lastOffset = null
         if (e.touches?.length === 1) {
           // Store start time for press+hold for context menu
           touchTime = new Date()
@@ -32,6 +35,14 @@ app.registerExtension({
           touchTime = null
           if (e.touches?.length === 2) {
             // Store center pos for zoom
+
+            lastScale = app.canvas.ds.scale
+            lastOffset = [app.canvas.ds.offset[0], app.canvas.ds.offset[1]]
+            lastTouch = {
+              clientX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+              clientY: (e.touches[0].clientY + e.touches[1].clientY) / 2
+            }
+
             zoomPos = getMultiTouchPos(e)
             app.canvas.pointer_is_down = false
           }
@@ -41,9 +52,10 @@ app.registerExtension({
     )
 
     app.canvasEl.addEventListener('touchend', (e: TouchEvent) => {
-      touchZooming = false
       touchCount = e.touches?.length ?? touchCount - 1
-      if (touchTime && !e.touches?.length) {
+
+      if (e.touches?.length !== 1) touchZooming = false
+      else if (touchTime && !e.touches?.length) {
         if (new Date().getTime() - touchTime > 600) {
           try {
             // hack to get litegraph to use this event
@@ -80,14 +92,44 @@ app.registerExtension({
 
           let scale = app.canvas.ds.scale
           const diff = zoomPos - newZoomPos
-          if (diff > 0.5) {
-            scale *= 1 / 1.07
-          } else if (diff < -0.5) {
-            scale *= 1.07
+
+          scale = lastScale - diff / 100
+
+          const newX = ((midX - lastTouch.clientX) * 1) / scale
+          const newY = ((midY - lastTouch.clientY) * 1) / scale
+
+          const convertCanvasToOffset = function (pos, scale) {
+            let out = [0, 0]
+            out[0] = pos[0] / scale - app.canvas.ds.offset[0]
+            out[1] = pos[1] / scale - app.canvas.ds.offset[1]
+            return out
           }
-          app.canvas.ds.changeScale(scale, [midX, midY])
+
+          if (scale < app.canvas.ds.min_scale) {
+            scale = app.canvas.ds.min_scale
+          } else if (scale > app.canvas.ds.max_scale) {
+            scale = app.canvas.ds.max_scale
+          }
+
+          const oldScale = app.canvas.ds.scale
+
+          app.canvas.ds.scale = scale
+
+          if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
+            app.canvas.ds.scale = 1
+          }
+
+          const newScale = app.canvas.ds.scale
+
+          var oldCenter = convertCanvasToOffset([midX, midY], oldScale)
+          var newCenter = convertCanvasToOffset([midX, midY], newScale)
+
+          lastOffset[0] += newCenter[0] - oldCenter[0]
+          lastOffset[1] += newCenter[1] - oldCenter[1]
+
+          app.canvas.ds.offset = [lastOffset[0] + newX, lastOffset[1] + newY]
+
           app.canvas.setDirty(true, true)
-          zoomPos = newZoomPos
         }
       },
       true
