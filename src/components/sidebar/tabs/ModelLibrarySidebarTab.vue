@@ -33,7 +33,7 @@
           {{ t('electronFileDownload.inProgress') }}
         </div>
 
-        <template v-for="download in downloads">
+        <template v-for="download in downloads" :key="download.url">
           <div class="flex flex-col">
             <div>
               {{ getDownloadLabel(download.savePath) }}
@@ -128,7 +128,6 @@ import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
-import { isElectron, electronAPI } from '@/utils/envUtil'
 import { useI18n } from 'vue-i18n'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { storeToRefs } from 'pinia'

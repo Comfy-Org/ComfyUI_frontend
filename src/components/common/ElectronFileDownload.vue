@@ -70,7 +70,7 @@
 import { useDownload } from '@/hooks/downloadHooks'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
 import { electronAPI } from '@/utils/envUtil'
