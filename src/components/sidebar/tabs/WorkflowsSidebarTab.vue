@@ -28,7 +28,7 @@
     </template>
     <template #header>
       <SearchBox
-        class="workflows-search-box p-4"
+        class="workflows-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('searchWorkflows') + '...'"
