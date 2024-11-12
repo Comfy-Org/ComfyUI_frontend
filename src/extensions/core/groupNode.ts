@@ -3,8 +3,8 @@ import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { mergeIfValid } from './widgetInputs'
 import { ManageGroupDialog } from './groupNodeManage'
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph, type LGraph } from '@comfyorg/litegraph'
+import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { useToastStore } from '@/stores/toastStore'
@@ -144,21 +144,15 @@ class GroupNodeBuilder {
     }
 
     // Use the built in copyToClipboard function to generate the node data we need
-    const backup = localStorage.getItem('litegrapheditor_clipboard')
     try {
-      // @ts-expect-error
-      // TODO Figure out if copyToClipboard is really taking this param
-      app.canvas.copyToClipboard(this.nodes)
-      const config = JSON.parse(
-        localStorage.getItem('litegrapheditor_clipboard')
-      )
+      const serialised = copyToClipboard(this.nodes, app.canvas.graph)
+      const config = JSON.parse(serialised)
 
       storeLinkTypes(config)
       storeExternalLinks(config)
 
       return config
     } finally {
-      localStorage.setItem('litegrapheditor_clipboard', backup)
     }
   }
 }
@@ -842,7 +836,6 @@ export class GroupNodeHandler {
 
     this.node.convertToNodes = () => {
       const addInnerNodes = () => {
-        const backup = localStorage.getItem('litegrapheditor_clipboard')
         // Clone the node data so we dont mutate it for other nodes
         const c = { ...this.groupData.nodeData }
         c.nodes = [...c.nodes]
@@ -858,9 +851,7 @@ export class GroupNodeHandler {
           }
           c.nodes[i] = { ...c.nodes[i], id }
         }
-        localStorage.setItem('litegrapheditor_clipboard', JSON.stringify(c))
-        app.canvas.pasteFromClipboard()
-        localStorage.setItem('litegrapheditor_clipboard', backup)
+        pasteFromClipboard(JSON.stringify(c), app.canvas)
 
         const [x, y] = this.node.pos
         let top
@@ -968,10 +959,14 @@ export class GroupNodeHandler {
         }
       }
 
+      app.canvas.emitBeforeChange()
+
       const { newNodes, selectedIds } = addInnerNodes()
       reconnectInputs(selectedIds)
       reconnectOutputs(selectedIds)
       app.graph.remove(this.node)
+
+      app.canvas.emitAfterChange()
 
       return newNodes
     }
@@ -1483,6 +1478,118 @@ function ungroupSelectedGroupNodes() {
 
 function manageGroupNodes() {
   new ManageGroupDialog(app).show()
+}
+
+function copyToClipboard(nodes: LGraphNode[], graph: LGraph): string {
+  const clipboard_info = {
+    nodes: [],
+    links: []
+  }
+  let index = 0
+  const selected_nodes_array: LGraphNode[] = []
+
+  for (const i in nodes) {
+    const node = nodes[i]
+    if (node.clonable === false) continue
+
+    node._relative_id = index
+    selected_nodes_array.push(node)
+    index += 1
+  }
+
+  for (let i = 0; i < selected_nodes_array.length; ++i) {
+    const node = selected_nodes_array[i]
+    const cloned = node.clone()
+    if (!cloned) {
+      console.warn('node type not found: ' + node.type)
+      continue
+    }
+    clipboard_info.nodes.push(cloned.serialize())
+    if (node.inputs?.length) {
+      for (let j = 0; j < node.inputs.length; ++j) {
+        const input = node.inputs[j]
+        if (!input || input.link == null) continue
+
+        const link_info = graph._links.get(input.link)
+        if (!link_info) continue
+
+        const target_node = graph.getNodeById(link_info.origin_id)
+        if (!target_node) continue
+
+        clipboard_info.links.push([
+          target_node._relative_id,
+          link_info.origin_slot, //j,
+          node._relative_id,
+          link_info.target_slot,
+          target_node.id
+        ])
+      }
+    }
+  }
+
+  return JSON.stringify(clipboard_info)
+}
+
+function pasteFromClipboard(data: string, canvas: LGraphCanvas): void {
+  if (!data) return
+
+  const graph = canvas.graph
+  graph.beforeChange()
+
+  //create nodes
+  const clipboard_info = JSON.parse(data)
+  // calculate top-left node, could work without this processing but using diff with last node pos :: clipboard_info.nodes[clipboard_info.nodes.length-1].pos
+  let posMin: false | [number, number] = false
+  let posMinIndexes: false | [number, number] = false
+  for (let i = 0; i < clipboard_info.nodes.length; ++i) {
+    if (posMin) {
+      if (posMin[0] > clipboard_info.nodes[i].pos[0]) {
+        posMin[0] = clipboard_info.nodes[i].pos[0]
+        posMinIndexes[0] = i
+      }
+      if (posMin[1] > clipboard_info.nodes[i].pos[1]) {
+        posMin[1] = clipboard_info.nodes[i].pos[1]
+        posMinIndexes[1] = i
+      }
+    } else {
+      posMin = [clipboard_info.nodes[i].pos[0], clipboard_info.nodes[i].pos[1]]
+      posMinIndexes = [i, i]
+    }
+  }
+  const nodes: LGraphNode[] = []
+  for (let i = 0; i < clipboard_info.nodes.length; ++i) {
+    const node_data = clipboard_info.nodes[i]
+    const node = LiteGraph.createNode(node_data.type)
+    if (node) {
+      node.configure(node_data)
+
+      //paste in last known mouse position
+      node.pos[0] += canvas.graph_mouse[0] - posMin[0] //+= 5;
+      node.pos[1] += canvas.graph_mouse[1] - posMin[1] //+= 5;
+
+      graph.add(node, true)
+
+      nodes.push(node)
+    }
+  }
+
+  //create links
+  for (let i = 0; i < clipboard_info.links.length; ++i) {
+    const link_info = clipboard_info.links[i]
+    let origin_node: LGraphNode = undefined
+    const origin_node_relative_id = link_info[0]
+    if (origin_node_relative_id != null) {
+      origin_node = nodes[origin_node_relative_id]
+    }
+    const target_node = nodes[link_info[2]]
+    if (origin_node && target_node)
+      origin_node.connect(link_info[1], target_node, link_info[3])
+    else console.warn('Warning, nodes missing on pasting')
+  }
+
+  canvas.selectNodes(nodes)
+
+  graph.afterChange()
 }
 
 const id = 'Comfy.GroupNode'
