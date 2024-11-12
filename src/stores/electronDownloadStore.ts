@@ -27,7 +27,8 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
         downloads.value.push(download)
       }
 
-      DownloadManager.onDownloadProgress((data: ElectronDownload) => {
+      // ToDO: replace with ElectronDownload type
+      DownloadManager.onDownloadProgress((data: any) => {
         if (!findByUrl(data.url)) {
           downloads.value.push(data)
         }
