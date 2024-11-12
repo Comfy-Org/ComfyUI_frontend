@@ -28,6 +28,16 @@
       />
     </template>
     <template #body>
+      <div class="mx-6 mb-4" v-if="downloads.length > 0">
+        <div class="text-lg my-4">
+          {{ t('electronFileDownload.inProgress') }}
+        </div>
+
+        <template v-for="download in downloads" :key="download.url">
+          <DownloadItem :download="download" />
+        </template>
+      </div>
+
       <TreeExplorer
         class="model-lib-tree-explorer py-0"
         :roots="renderedRoot.children"
@@ -48,6 +58,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import DownloadItem from '@/components/sidebar/tabs/modelLibrary/DownloadItem.vue'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -65,12 +76,19 @@ import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
+import { useI18n } from 'vue-i18n'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { storeToRefs } from 'pinia'
+
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { t } = useI18n()
+const electronDownloadStore = useElectronDownloadStore()
+const { downloads } = storeToRefs(electronDownloadStore)
 
 const filteredModels = ref<ComfyModelDef[]>([])
 const handleSearch = async (query: string) => {
@@ -164,6 +182,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       }
     }
   }
+
   return fillNodeInfo(root.value)
 })
 

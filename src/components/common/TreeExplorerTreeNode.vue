@@ -10,25 +10,27 @@
     ]"
     ref="container"
   >
-    <div class="node-content">
-      <span class="node-label">
-        <slot name="before-label" :node="props.node"></slot>
-        <EditableText
-          :modelValue="node.label"
-          :isEditing="isEditing"
-          @edit="handleRename"
+    <div class="flex flex-col w-full">
+      <div class="node-content">
+        <span class="node-label">
+          <slot name="before-label" :node="props.node"></slot>
+          <EditableText
+            :modelValue="node.label"
+            :isEditing="isEditing"
+            @edit="handleRename"
+          />
+          <slot name="after-label" :node="props.node"></slot>
+        </span>
+        <Badge
+          v-if="showNodeBadgeText"
+          :value="nodeBadgeText"
+          severity="secondary"
+          class="leaf-count-badge"
         />
-        <slot name="after-label" :node="props.node"></slot>
-      </span>
-      <Badge
-        v-if="showNodeBadgeText"
-        :value="nodeBadgeText"
-        severity="secondary"
-        class="leaf-count-badge"
-      />
-    </div>
-    <div class="node-actions">
-      <slot name="actions" :node="props.node"></slot>
+      </div>
+      <div class="node-actions">
+        <slot name="actions" :node="props.node"></slot>
+      </div>
     </div>
   </div>
 </template>
