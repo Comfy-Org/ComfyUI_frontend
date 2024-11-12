@@ -388,16 +388,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.RerouteBeta',
-    name: 'Opt-in to the reroute beta test',
-    tooltip:
-      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
-    experimental: true,
-    type: 'boolean',
-    defaultValue: false,
-    versionAdded: '1.3.41'
-  },
-  {
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',
@@ -471,18 +461,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     ]
   },
   {
-    id: 'Comfy.Graph.LinkMarkers',
-    name: 'Link midpoint markers',
-    defaultValue: LinkMarkerShape.Circle,
-    type: 'combo',
-    options: [
-      { value: LinkMarkerShape.None, text: 'None' },
-      { value: LinkMarkerShape.Circle, text: 'Circle' },
-      { value: LinkMarkerShape.Arrow, text: 'Arrow' }
-    ],
-    versionAdded: '1.3.41'
-  },
-  {
     id: 'Comfy.Node.AutoSnapLinkToSlot',
     name: 'Auto snap link to node slot',
     tooltip:
@@ -514,6 +492,28 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Middle-click creates a new Reroute node',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.3.40'
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.RerouteBeta',
+    name: 'Opt-in to the reroute beta test',
+    tooltip:
+      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
+    experimental: true,
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.Graph.LinkMarkers',
+    name: 'Link midpoint markers',
+    defaultValue: LinkMarkerShape.Circle,
+    type: 'combo',
+    options: [
+      { value: LinkMarkerShape.None, text: 'None' },
+      { value: LinkMarkerShape.Circle, text: 'Circle' },
+      { value: LinkMarkerShape.Arrow, text: 'Arrow' }
+    ],
+    versionAdded: '1.3.42'
   }
 ]
