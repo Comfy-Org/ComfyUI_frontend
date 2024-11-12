@@ -34,10 +34,13 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
         }
 
         const download = findByUrl(data.url)
-        download.progress = data.progress
-        download.status = data.status
-        download.filename = data.filename
-        download.savePath = data.savePath
+
+        if (download) {
+          download.progress = data.progress
+          download.status = data.status
+          download.filename = data.filename
+          download.savePath = data.savePath
+        }
       })
     }
   }
