@@ -185,7 +185,7 @@ class Load3d {
     this.handleResize()
   }
 
-  toggleGrid(showGrid) {
+  toggleGrid(showGrid: boolean) {
     if (this.gridHelper) {
       this.gridHelper.visible = showGrid
     }
@@ -706,7 +706,7 @@ app.registerExtension({
 
     node.load3d.toggleGrid(showGrid.value)
 
-    showGrid.callback = (value) => {
+    showGrid.callback = (value: boolean) => {
       node.load3d.toggleGrid(value)
     }
 
@@ -716,13 +716,13 @@ app.registerExtension({
 
     node.load3d.toggleCamera(cameraType.value)
 
-    cameraType.callback = (value) => {
+    cameraType.callback = (value: string) => {
       node.load3d.toggleCamera(value)
     }
 
     const view = node.widgets.find((w: IWidget) => w.name === 'view')
 
-    view.callback = (value) => {
+    view.callback = (value: string) => {
       node.load3d.setViewPosition(value)
     }
 
@@ -739,7 +739,7 @@ app.registerExtension({
 
     node.load3d.setBackgroundColor(bgColor.value)
 
-    bgColor.callback = (value) => {
+    bgColor.callback = (value: string) => {
       node.load3d.setBackgroundColor(value)
     }
 
