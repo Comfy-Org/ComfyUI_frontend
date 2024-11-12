@@ -84,7 +84,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { DownloadManager, openDevTools } = electronAPI()
+const { DownloadManager } = electronAPI()
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
@@ -95,8 +95,6 @@ const fileSize = computed(() =>
 )
 const electronDownloadStore = useElectronDownloadStore()
 const [savePath, filename] = props.label.split('/')
-
-openDevTools()
 
 electronDownloadStore.$subscribe((mutation, { downloads }) => {
   const download = downloads.find((download) => props.url === download.url)
