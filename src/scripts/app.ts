@@ -15,7 +15,6 @@ import {
   importA1111,
   getLatentMetadata
 } from './pnginfo'
-import { addDomClippingSetting } from './domWidget'
 import { createImageHost, calculateImageGrid } from './ui/imagePreview'
 import { DraggableList } from './ui/draggableList'
 import { applyTextReplacements, addStylesheet } from './utils'
@@ -1806,7 +1805,6 @@ export class ComfyApp {
     ])
     await this.#loadExtensions()
 
-    addDomClippingSetting()
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()

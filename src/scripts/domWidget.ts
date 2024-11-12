@@ -1,4 +1,5 @@
 // @ts-strict-ignore
+import { useSettingStore } from '@/stores/settingStore'
 import { app, ANIM_PREVIEW_WIDGET } from './app'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
@@ -248,21 +249,6 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   return visibleNodes
 }
 
-let enableDomClipping = true
-
-export function addDomClippingSetting(): void {
-  app.ui.settings.addSetting({
-    id: 'Comfy.DOMClippingEnabled',
-    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
-    name: 'Enable DOM element clipping (enabling may reduce performance)',
-    type: 'boolean',
-    defaultValue: enableDomClipping,
-    onChange(value) {
-      enableDomClipping = !!value
-    }
-  })
-}
-
 LGraphNode.prototype.addDOMWidget = function (
   name: string,
   type: string,
@@ -353,7 +339,7 @@ LGraphNode.prototype.addDOMWidget = function (
         pointerEvents: app.canvas.read_only ? 'none' : 'auto'
       })
 
-      if (enableDomClipping) {
+      if (useSettingStore().get('Comfy.DOMClippingEnabled')) {
         element.style.clipPath = getClipPath(node, element, elRect)
         element.style.willChange = 'clip-path'
       }
