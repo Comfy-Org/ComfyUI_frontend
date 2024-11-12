@@ -191,6 +191,14 @@ class Load3d {
     }
   }
 
+  setLightIntensity(intensity: number) {
+    this.lights.forEach((light) => {
+      if (light instanceof THREE.DirectionalLight) {
+        light.intensity = intensity
+      }
+    })
+  }
+
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
@@ -515,7 +523,7 @@ app.registerExtension({
   getCustomWidgets(app) {
     return {
       LOAD_3D(node, inputName) {
-        let load3dNodes = app.graph._nodes.filter((wi) => wi.type == 'Load3D')
+        let load3dNodes = app.graph._nodes.filter((wi) => wi.type == 'LOAD_3D')
 
         node.name = `load3d_${load3dNodes.length}`
 
@@ -529,59 +537,7 @@ app.registerExtension({
         container.classList.add('comfyui-load-3d')
         containerWrapper.appendChild(container)
 
-        const buttonContainer = document.createElement('div')
-        buttonContainer.classList.add('comfyui-load-3d-buttons')
-        containerWrapper.appendChild(buttonContainer)
-
         node.load3d = new Load3d(node, container)
-
-        const modelWidget = node.widgets.find(
-          (w: IWidget) => w.name === 'model_file'
-        )
-
-        const fileInput = document.createElement('input')
-        fileInput.type = 'file'
-        fileInput.accept = '.gltf,.glb,.obj,.mtl'
-        fileInput.style.display = 'none'
-        fileInput.onchange = () => {
-          if (fileInput.files?.length) {
-            uploadFile(
-              modelWidget,
-              node.load3d,
-              fileInput.files[0],
-              true,
-              fileInput
-            ).catch((error) => {
-              console.error('File upload failed:', error)
-              useToastStore().addAlert('File upload failed')
-            })
-          }
-        }
-
-        const buttonGroup = document.createElement('div')
-        buttonGroup.classList.add('comfyui-load-3d-button-group')
-        buttonContainer.appendChild(buttonGroup)
-
-        const uploadButton: HTMLButtonElement = document.createElement('button')
-        uploadButton.textContent = 'Choose Model'
-        uploadButton.onclick = () => fileInput.click()
-        uploadButton.className = 'comfyui-load-3d-btn full-width'
-        buttonGroup.appendChild(uploadButton)
-
-        const clearModelButton: HTMLButtonElement =
-          document.createElement('button')
-        clearModelButton.textContent = 'Clear Model'
-        clearModelButton.className = 'comfyui-load-3d-btn full-width'
-        clearModelButton.onclick = () => {
-          node.load3d.clearModel()
-          const modelWidget = node.widgets.find(
-            (w: IWidget) => w.name === 'model_file'
-          )
-          if (modelWidget) {
-            modelWidget.value = ''
-          }
-        }
-        buttonGroup.appendChild(clearModelButton)
 
         node.onResize = function () {
           let [w, h] = this.size
@@ -600,8 +556,6 @@ app.registerExtension({
           if (this.load3d) {
             this.load3d.remove()
           }
-
-          fileInput.remove()
 
           origOnRemoved?.apply(this, arguments)
         }
@@ -624,8 +578,7 @@ app.registerExtension({
         .comfyui-load-3d-wrapper {
           display: flex;
           flex-direction: column;
-          gap: 10px;
-          padding: 10px;
+          
           background: transparent;
         }
         
@@ -633,44 +586,12 @@ app.registerExtension({
           flex: 1;
           position: relative;
           overflow: hidden;
-          border-radius: 4px;
-          background: #1a1a1a;
+          
         }
         
         .comfyui-load-3d canvas {
           width: 100% !important;
           height: 100% !important;
-        }
-        
-        .comfyui-load-3d-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        
-        .comfyui-load-3d-button-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        
-        .comfyui-load-3d-btn {
-          background: #2a2a2a;
-          border: 1px solid #3a3a3a;
-          color: #fff;
-          padding: 6px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-          transition: background-color 0.2s;
-        }
-        
-        .full-width {
-          width: 100%;
-        }
-        
-        .comfyui-load-3d-btn:hover {
-          background: #3a3a3a;
         }
       `
     document.head.appendChild(style)
@@ -679,7 +600,7 @@ app.registerExtension({
   async nodeCreated(node) {
     if (node.constructor.comfyClass !== 'Load3D') return
 
-    node.setSize([300, 550])
+    const [oldWidth, oldHeight] = node.size
 
     await nextTick()
 
@@ -728,19 +649,20 @@ app.registerExtension({
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
 
-    /*
-    const backgrounds = [
-      { name: 'Dark', color: '#282828' },
-      { name: 'Light', color: '#f0f0f0' },
-      { name: 'Black', color: '#000000' },
-      { name: 'White', color: '#ffffff' }
-    ]
-     */
-
     node.load3d.setBackgroundColor(bgColor.value)
 
     bgColor.callback = (value: string) => {
       node.load3d.setBackgroundColor(value)
+    }
+
+    const lightIntensity = node.widgets.find(
+      (w: IWidget) => w.name === 'light_intensity'
+    )
+
+    node.load3d.setLightIntensity(lightIntensity.value)
+
+    lightIntensity.callback = (value: number) => {
+      node.load3d.setLightIntensity(value)
     }
 
     const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
@@ -773,5 +695,40 @@ app.registerExtension({
       const data = await resp.json()
       return `threed/${data.name} [temp]`
     }
+
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.gltf,.glb,.obj,.mtl'
+    fileInput.style.display = 'none'
+    fileInput.onchange = () => {
+      if (fileInput.files?.length) {
+        uploadFile(
+          modelWidget,
+          node.load3d,
+          fileInput.files[0],
+          true,
+          fileInput
+        ).catch((error) => {
+          console.error('File upload failed:', error)
+          useToastStore().addAlert('File upload failed')
+        })
+      }
+    }
+
+    node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
+      fileInput.click()
+    })
+
+    node.addWidget('button', 'clear', 'clear', () => {
+      node.load3d.clearModel()
+      const modelWidget = node.widgets.find(
+        (w: IWidget) => w.name === 'model_file'
+      )
+      if (modelWidget) {
+        modelWidget.value = ''
+      }
+    })
+
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
 })
