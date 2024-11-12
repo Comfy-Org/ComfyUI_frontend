@@ -17,16 +17,17 @@ interface Rect {
   y: number
 }
 
-export interface DOMWidget<T extends HTMLElement> extends ICustomWidget {
+export interface DOMWidget<T extends HTMLElement, V extends object | string>
+  extends ICustomWidget<T> {
   // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
   type: 'custom'
   name: string
   computedHeight?: number
   element?: T
-  options: DOMWidgetOptions<T>
-  value: any
+  options: DOMWidgetOptions<T, V>
+  value: V
   y?: number
-  callback?: (value: any) => void
+  callback?: (value: V) => void
   /**
    * Draw the widget on the canvas.
    */
@@ -45,19 +46,21 @@ export interface DOMWidget<T extends HTMLElement> extends ICustomWidget {
   onRemove?: () => void
 }
 
-export interface DOMWidgetOptions<T extends HTMLElement>
-  extends IWidgetOptions {
+export interface DOMWidgetOptions<
+  T extends HTMLElement,
+  V extends object | string
+> extends IWidgetOptions {
   hideOnZoom?: boolean
   selectOn?: string[]
-  onHide?: (widget: DOMWidget<T>) => void
-  getValue?: () => any
-  setValue?: (value: any) => void
+  onHide?: (widget: DOMWidget<T, V>) => void
+  getValue?: () => V
+  setValue?: (value: V) => void
   getMinHeight?: () => number
   getMaxHeight?: () => number
   getHeight?: () => string | number
-  onDraw?: (widget: DOMWidget<T>) => void
-  beforeResize?: (this: DOMWidget<T>, node: LGraphNode) => void
-  afterResize?: (this: DOMWidget<T>, node: LGraphNode) => void
+  onDraw?: (widget: DOMWidget<T, V>) => void
+  beforeResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
+  afterResize?: (this: DOMWidget<T, V>, node: LGraphNode) => void
 }
 
 function intersect(a: Rect, b: Rect): Vector4 | null {
@@ -277,12 +280,15 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   return visibleNodes
 }
 
-LGraphNode.prototype.addDOMWidget = function <T extends HTMLElement>(
+LGraphNode.prototype.addDOMWidget = function <
+  T extends HTMLElement,
+  V extends object | string
+>(
   name: string,
   type: string,
   element: T,
-  options: DOMWidgetOptions<T> = {}
-): DOMWidget<T> {
+  options: DOMWidgetOptions<T, V> = {}
+): DOMWidget<T, V> {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 
   if (!element.parentElement) {
@@ -308,15 +314,15 @@ LGraphNode.prototype.addDOMWidget = function <T extends HTMLElement>(
     element.title = tooltip
   }
 
-  const widget: DOMWidget<T> = {
+  const widget: DOMWidget<T, V> = {
     // @ts-expect-error All unrecognized types will be treated the same way as 'custom'
     // in litegraph internally.
     type,
     name,
-    get value() {
+    get value(): V {
       return options.getValue?.() ?? undefined
     },
-    set value(v) {
+    set value(v: V) {
       options.setValue?.(v)
       widget.callback?.(widget.value)
     },
