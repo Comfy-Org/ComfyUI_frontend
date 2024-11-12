@@ -778,6 +778,7 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     comfyPage.userIds[parallelIndex] = userId
 
     await comfyPage.setupSettings({
+      'Comfy.UseNewMenu': 'Disabled',
       // Hide canvas menu/info by default.
       'Comfy.Graph.CanvasInfo': false,
       'Comfy.Graph.CanvasMenu': false,
