@@ -121,7 +121,7 @@ app.registerExtension({
         }
         return { widget: audioUIWidget }
       }
-    } as Widgets
+    }
   },
   onNodeOutputsUpdated(nodeOutputs: Record<number, any>) {
     for (const [nodeId, output] of Object.entries(nodeOutputs)) {

@@ -3,6 +3,10 @@ import { useSettingStore } from '@/stores/settingStore'
 import { app, ANIM_PREVIEW_WIDGET } from './app'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
+import {
+  ICustomWidget,
+  IWidgetOptions
+} from '@comfyorg/litegraph/dist/types/widgets'
 
 const SIZE = Symbol()
 
@@ -13,15 +17,19 @@ interface Rect {
   y: number
 }
 
-export interface DOMWidget<T = HTMLElement> {
-  type: string
+export interface DOMWidget<T extends HTMLElement> extends ICustomWidget {
+  // All unrecognized types will be treated the same way as 'custom' in litegraph internally.
+  type: 'custom'
   name: string
   computedHeight?: number
   element?: T
-  options: any
-  value?: any
+  options: DOMWidgetOptions<T>
+  value: any
   y?: number
   callback?: (value: any) => void
+  /**
+   * Draw the widget on the canvas.
+   */
   draw?: (
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
@@ -29,7 +37,27 @@ export interface DOMWidget<T = HTMLElement> {
     y: number,
     widgetHeight: number
   ) => void
+  /**
+   * TODO(huchenlei): Investigate when is this callback fired. `onRemove` is
+   * on litegraph's IBaseWidget definition, but not called in litegraph.
+   * Currently only called in widgetInputs.ts.
+   */
   onRemove?: () => void
+}
+
+export interface DOMWidgetOptions<T extends HTMLElement>
+  extends IWidgetOptions {
+  hideOnZoom?: boolean
+  selectOn?: string[]
+  onHide?: (widget: DOMWidget<T>) => void
+  getValue?: () => any
+  setValue?: (value: any) => void
+  getMinHeight?: () => number
+  getMaxHeight?: () => number
+  getHeight?: () => string | number
+  onDraw?: (widget: DOMWidget<T>) => void
+  beforeResize?: (this: DOMWidget<T>, node: LGraphNode) => void
+  afterResize?: (this: DOMWidget<T>, node: LGraphNode) => void
 }
 
 function intersect(a: Rect, b: Rect): Vector4 | null {
@@ -249,12 +277,12 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
   return visibleNodes
 }
 
-LGraphNode.prototype.addDOMWidget = function (
+LGraphNode.prototype.addDOMWidget = function <T extends HTMLElement>(
   name: string,
   type: string,
-  element: HTMLElement,
-  options: Record<string, any> = {}
-): DOMWidget {
+  element: T,
+  options: DOMWidgetOptions<T> = {}
+): DOMWidget<T> {
   options = { hideOnZoom: true, selectOn: ['focus', 'click'], ...options }
 
   if (!element.parentElement) {
@@ -280,7 +308,9 @@ LGraphNode.prototype.addDOMWidget = function (
     element.title = tooltip
   }
 
-  const widget: DOMWidget = {
+  const widget: DOMWidget<T> = {
+    // @ts-expect-error All unrecognized types will be treated the same way as 'custom'
+    // in litegraph internally.
     type,
     name,
     get value() {
@@ -306,8 +336,11 @@ LGraphNode.prototype.addDOMWidget = function (
       const hidden =
         (!!options.hideOnZoom && scale < 0.5) ||
         widget.computedHeight <= 0 ||
+        // @ts-expect-error Used by widgetInputs.ts
         widget.type === 'converted-widget' ||
+        // @ts-expect-error Used by groupNode.ts
         widget.type === 'hidden'
+
       element.dataset.shouldHide = hidden ? 'true' : 'false'
       const isInVisibleNodes = element.dataset.isInVisibleNodes === 'true'
       const isCollapsed = element.dataset.collapsed === 'true'
