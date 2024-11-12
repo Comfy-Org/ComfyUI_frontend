@@ -50,26 +50,23 @@ function getClipPath(
   )[0] as LGraphNode
   if (selectedNode && selectedNode !== node) {
     const elRect = element.getBoundingClientRect()
-    const MARGIN = 7
-    const scale = app.canvas.ds.scale
+    const MARGIN = 4
+    const { offset, scale } = app.canvas.ds
+    const { renderArea } = selectedNode
 
-    const bounding = selectedNode.getBounding()
+    // Get intersection in browser space
     const intersection = intersect(
       {
-        x: elRect.x / scale - canvasRect.left,
-        y: elRect.y / scale - canvasRect.top,
-        width: elRect.width / scale,
-        height: elRect.height / scale
+        x: elRect.left - canvasRect.left,
+        y: elRect.top - canvasRect.top,
+        width: elRect.width,
+        height: elRect.height
       },
       {
-        x: selectedNode.pos[0] + app.canvas.ds.offset[0] - MARGIN,
-        y:
-          selectedNode.pos[1] +
-          app.canvas.ds.offset[1] -
-          LiteGraph.NODE_TITLE_HEIGHT -
-          MARGIN,
-        width: bounding[2] + MARGIN + MARGIN,
-        height: bounding[3] + MARGIN + MARGIN
+        x: (renderArea[0] + offset[0] - MARGIN) * scale,
+        y: (renderArea[1] + offset[1] - MARGIN) * scale,
+        width: (renderArea[2] + 2 * MARGIN) * scale,
+        height: (renderArea[3] + 2 * MARGIN) * scale
       }
     )
 
@@ -77,10 +74,12 @@ function getClipPath(
       return ''
     }
 
-    const clipX = canvasRect.left + intersection[0] - elRect.x / scale + 'px'
-    const clipY = canvasRect.top + intersection[1] - elRect.y / scale + 'px'
-    const clipWidth = intersection[2] + 'px'
-    const clipHeight = intersection[3] + 'px'
+    // Convert intersection to canvas scale (element has scale transform)
+    const clipX =
+      (intersection[0] - elRect.left + canvasRect.left) / scale + 'px'
+    const clipY = (intersection[1] - elRect.top + canvasRect.top) / scale + 'px'
+    const clipWidth = intersection[2] / scale + 'px'
+    const clipHeight = intersection[3] / scale + 'px'
     const path = `polygon(0% 0%, 0% 100%, ${clipX} 100%, ${clipX} ${clipY}, calc(${clipX} + ${clipWidth}) ${clipY}, calc(${clipX} + ${clipWidth}) calc(${clipY} + ${clipHeight}), ${clipX} calc(${clipY} + ${clipHeight}), ${clipX} 100%, 100% 100%, 100% 0%)`
     return path
   }
