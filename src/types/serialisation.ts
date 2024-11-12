@@ -1,11 +1,12 @@
-import type { ISlotType, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Rect, Size } from "../interfaces"
+import type { ISlotType, Dictionary, INodeFlags, INodeInputSlot, INodeOutputSlot, Point, Size } from "../interfaces"
 import type { LGraph, LGraphState } from "../LGraph"
 import type { IGraphGroupFlags, LGraphGroup } from "../LGraphGroup"
 import type { LGraphNode, NodeId } from "../LGraphNode"
 import type { LiteGraph } from "../litegraph"
 import type { LinkId, LLink } from "../LLink"
+import type { RerouteId } from "../Reroute"
 import type { TWidgetValue } from "../types/widgets"
-import { RenderShape } from "./globalEnums"
+import type { RenderShape } from "./globalEnums"
 
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
@@ -27,6 +28,7 @@ export interface SerialisableGraph {
     groups?: ISerialisedGroup[]
     nodes?: ISerialisedNode[]
     links?: SerialisableLLink[]
+    reroutes?: SerialisableReroute[]
     extra?: Record<any, any>
 }
 
@@ -67,7 +69,7 @@ export type ISerialisedGraph<
     groups: TGroup[]
     config: LGraph["config"]
     version: typeof LiteGraph.VERSION
-    extra?: unknown
+    extra?: Record<any, any>
 }
 
 /** Serialised LGraphGroup */
@@ -87,6 +89,14 @@ export interface IClipboardContents {
     nodes?: ISerialisedNode[]
     links?: TClipboardLink[]
 }
+
+export interface SerialisableReroute {
+    id: RerouteId
+    parentId?: RerouteId
+    pos: Point
+    linkIds: LinkId[]
+}
+
 export interface SerialisableLLink {
     /** Link ID */
     id: LinkId
@@ -100,4 +110,6 @@ export interface SerialisableLLink {
     target_slot: number
     /** Data type of the link */
     type: ISlotType
+    /** ID of the last reroute (from input to output) that this link passes through, otherwise `undefined` */
+    parentId?: RerouteId
 }

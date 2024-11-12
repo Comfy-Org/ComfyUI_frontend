@@ -3,7 +3,7 @@ import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { isInsideRectangle, containsCentre, containsRect, createBounds } from "./measure"
+import { containsCentre, containsRect, isInsideRectangle, isPointInRectangle, createBounds } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -194,21 +194,26 @@ export class LGraphGroup implements Positionable, IPinnable {
     }
 
     recomputeInsideNodes(): void {
-        const { nodes, groups } = this.graph
+        const { nodes, reroutes, groups } = this.graph
         const children = this._children
-        const node_bounding = new Float32Array(4)
         this._nodes.length = 0
         children.clear()
 
-        // move any nodes we partially overlap
+        // Move nodes we overlap the centre point of
         for (const node of nodes) {
-            node.getBounding(node_bounding)
-            if (containsCentre(this._bounding, node_bounding)) {
+            if (containsCentre(this._bounding, node.boundingRect)) {
                 this._nodes.push(node)
                 children.add(node)
             }
         }
 
+        // Move reroutes we overlap the centre point of
+        for (const reroute of reroutes.values()) {
+            if (isPointInRectangle(reroute.pos, this._bounding))
+                children.add(reroute)
+        }
+
+        // Move groups we wholly contain
         for (const group of groups) {
             if (containsRect(this._bounding, group._bounding))
                 children.add(group)
@@ -283,7 +288,7 @@ export class LGraphGroup implements Positionable, IPinnable {
     }
 
     isInResize(x: number, y: number): boolean {
-        const b = this._bounding
+        const b = this.boundingRect
         const right = b[0] + b[2]
         const bottom = b[1] + b[3]
 

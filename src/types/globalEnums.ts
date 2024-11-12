@@ -37,6 +37,16 @@ export enum LinkRenderType {
     SPLINE_LINK = 2,
 }
 
+/** The marker in the middle of a link */
+export enum LinkMarkerShape {
+    /** Do not display markers */
+    None = 0,
+    /** Circles (default) */
+    Circle = 1,
+    /** Directional arrows */
+    Arrow = 2,
+}
+
 export enum TitleMode {
     NORMAL_TITLE = 0,
     NO_TITLE = 1,

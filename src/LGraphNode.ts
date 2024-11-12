@@ -5,6 +5,7 @@ import type { ISerialisedNode } from "./types/serialisation"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import type { CanvasMouseEvent } from "./types/events"
 import type { DragAndScale } from "./DragAndScale"
+import type { Reroute, RerouteId } from "./Reroute"
 import { LGraphEventMode, NodeSlotType, TitleMode, RenderShape } from "./types/globalEnums"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
@@ -36,6 +37,8 @@ interface ConnectByTypeOptions {
     wildcardToTyped?: boolean
     /** Allow our typed slot to connect to wildcard slots on remote node. Default: true */
     typedToWildcard?: boolean
+    /** The {@link Reroute.id} that the connection is being dragged from. */
+    afterRerouteId?: RerouteId
 }
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
@@ -1291,7 +1294,7 @@ export class LGraphNode implements Positionable, IPinnable {
         if (this.widgets?.length) {
             for (let i = 0, l = this.widgets.length; i < l; ++i) {
                 const widget = this.widgets[i]
-                if (widget.hidden || (widget.advanced && !this.showAdvanced)) continue;
+                if (widget.hidden || (widget.advanced && !this.showAdvanced)) continue
 
                 widgets_height += widget.computeSize
                     ? widget.computeSize(size[0])[1] + 4
@@ -1795,7 +1798,7 @@ export class LGraphNode implements Positionable, IPinnable {
      */
     connectByType(slot: number | string, target_node: LGraphNode, target_slotType: ISlotType, optsIn?: ConnectByTypeOptions): LLink | null {
         const slotIndex = this.findConnectByTypeSlot(true, target_node, target_slotType, optsIn)
-        if (slotIndex !== null) return this.connect(slot, target_node, slotIndex)
+        if (slotIndex !== null) return this.connect(slot, target_node, slotIndex, optsIn?.afterRerouteId)
 
         console.debug("[connectByType]: no way to connect type: ", target_slotType, " to node: ", target_node)
         return null
@@ -1816,7 +1819,7 @@ export class LGraphNode implements Positionable, IPinnable {
             if ("generalTypeInCase" in optsIn) optsIn.typedToWildcard = !!optsIn.generalTypeInCase
         }
         const slotIndex = this.findConnectByTypeSlot(false, source_node, source_slotType, optsIn)
-        if (slotIndex !== null) return source_node.connect(slotIndex, this, slot)
+        if (slotIndex !== null) return source_node.connect(slotIndex, this, slot, optsIn?.afterRerouteId)
 
         console.debug("[connectByType]: no way to connect type: ", source_slotType, " to node: ", source_node)
         return null
@@ -1829,7 +1832,7 @@ export class LGraphNode implements Positionable, IPinnable {
      * @param {number | string} target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
      * @return {Object} the link_info is created, otherwise null
      */
-    connect(slot: number | string, target_node: LGraphNode, target_slot: ISlotType): LLink | null {
+    connect(slot: number | string, target_node: LGraphNode, target_slot: ISlotType, afterRerouteId?: RerouteId): LLink | null {
         // Allow legacy API support for searching target_slot by string, without mutating the input variables
         let targetIndex: number
 
@@ -1919,7 +1922,7 @@ export class LGraphNode implements Positionable, IPinnable {
         //if there is something already plugged there, disconnect
         if (target_node.inputs[targetIndex]?.link != null) {
             graph.beforeChange()
-            target_node.disconnectInput(targetIndex)
+            target_node.disconnectInput(targetIndex, true)
             changed = true
         }
         if (output.links?.length) {
@@ -1942,7 +1945,8 @@ export class LGraphNode implements Positionable, IPinnable {
             this.id,
             slot,
             target_node.id,
-            targetIndex
+            targetIndex,
+            afterRerouteId
         )
 
         //add to graph links list
@@ -1953,6 +1957,10 @@ export class LGraphNode implements Positionable, IPinnable {
         output.links.push(link_info.id)
         //connect in input
         target_node.inputs[targetIndex].link = link_info.id
+
+        // Reroutes
+        LLink.getReroutes(graph, link_info)
+            .forEach(x => x?.linkIds.add(nextId))
         graph._version++
 
         //link_info has been created now, so its updated
@@ -2108,9 +2116,10 @@ export class LGraphNode implements Positionable, IPinnable {
     /**
      * Disconnect one input
      * @param slot Input slot index, or the name of the slot
+     * @param keepReroutes If `true`, reroutes will not be garbage collected.
      * @return true if disconnected successfully or already disconnected, otherwise false
      */
-    disconnectInput(slot: number | string): boolean {
+    disconnectInput(slot: number | string, keepReroutes?: boolean): boolean {
         // Allow search by string
         if (typeof slot === "string") {
             slot = this.findInputSlot(slot)
@@ -2150,7 +2159,7 @@ export class LGraphNode implements Positionable, IPinnable {
                     }
                 }
 
-                this.graph._links.delete(link_id)
+                link_info.disconnect(this.graph, keepReroutes)
                 if (this.graph) this.graph._version++
 
                 this.onConnectionsChange?.(
@@ -2453,8 +2462,7 @@ export class LGraphNode implements Positionable, IPinnable {
                 const outNode = graph.getNodeById(outLink.target_id)
                 if (!outNode) return
 
-                // TODO: Add 4th param (afterRerouteId: inLink.parentId) when reroutes are merged.
-                const result = inNode.connect(inLink.origin_slot, outNode, outLink.target_slot)
+                const result = inNode.connect(inLink.origin_slot, outNode, outLink.target_slot, inLink.parentId)
                 madeAnyConnections ||= !!result
             }
         }

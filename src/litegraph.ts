@@ -23,7 +23,7 @@ export { INodeSlot, INodeInputSlot, INodeOutputSlot, ConnectingLink, CanvasColou
 export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
-export { EaseFunction } from "./types/globalEnums"
+export { EaseFunction, LinkMarkerShape } from "./types/globalEnums"
 export type { SerialisableGraph, SerialisableLLink } from "./types/serialisation"
 export { createBounds } from "./measure"
 

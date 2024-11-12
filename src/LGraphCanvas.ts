@@ -1,19 +1,21 @@
-import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
+import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuOptions, INodeSlot, INodeInputSlot, INodeOutputSlot, IOptionalSlotData, Point, Rect, Rect32, Size, IContextMenuValue, ISlotType, ConnectingLink, NullableProperties, Positionable, LinkSegment, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
 import type { IClipboardContents } from "./types/serialisation"
-import type { LLink } from "./LLink"
+import { LLink } from "./LLink"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
-import { EaseFunction, LGraphEventMode, LinkDirection, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
+import { EaseFunction, LGraphEventMode, LinkDirection, LinkMarkerShape, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
-import { isInsideRectangle, distance, overlapBounding, isPointInRectangle, containsRect, createBounds } from "./measure"
+import { isInsideRectangle, distance, overlapBounding, isPointInRectangle, findPointOnCurve, containsRect, createBounds } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
+import { Reroute, type RerouteId } from "./Reroute"
+import { getAllNestedItems } from "./utils/collections"
 
 interface IShowSearchOptions {
     node_to?: LGraphNode
@@ -31,7 +33,7 @@ interface IShowSearchOptions {
     show_all_on_open?: boolean
 }
 
-interface INodeFromTo {
+interface ICreateNodeOptions {
     /** input */
     nodeFrom?: LGraphNode
     /** input */
@@ -41,12 +43,12 @@ interface INodeFromTo {
     /** output */
     slotTo?: number | INodeOutputSlot | INodeInputSlot
     /** pass the event coords */
-}
 
-interface ICreateNodeOptions extends INodeFromTo {
     // FIXME: Should not be optional
     /** Position of new node */
     position?: Point
+    /** Create the connection from a reroute */
+    afterRerouteId?: RerouteId
 
     // FIXME: Should not be optional
     /** choose a nodetype to add, AUTO to set at first good */
@@ -57,7 +59,8 @@ interface ICreateNodeOptions extends INodeFromTo {
     posSizeFix?: Point //-alphaPosY*2*/
     e?: CanvasMouseEvent
     allow_searchbox?: boolean
-    showSearchBox?: LGraphCanvas["showSearchBox"]
+    /** See {@link LGraphCanvas.showSearchBox} */
+    showSearchBox?: ((event: CanvasMouseEvent, options?: IShowSearchOptions) => HTMLDivElement | void)
 }
 
 interface ICloseableDiv extends HTMLDivElement {
@@ -115,6 +118,9 @@ export class LGraphCanvas {
     static #link_bounding = new Float32Array(4)
     static #tempA = new Float32Array(2)
     static #tempB = new Float32Array(2)
+    static #lTempA: Point = new Float32Array(2)
+    static #lTempB: Point = new Float32Array(2)
+    static #lTempC: Point = new Float32Array(2)
 
     static DEFAULT_BACKGROUND_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAQBJREFUeNrs1rEKwjAUhlETUkj3vP9rdmr1Ysammk2w5wdxuLgcMHyptfawuZX4pJSWZTnfnu/lnIe/jNNxHHGNn//HNbbv+4dr6V+11uF527arU7+u63qfa/bnmh8sWLBgwYJlqRf8MEptXPBXJXa37BSl3ixYsGDBMliwFLyCV/DeLIMFCxYsWLBMwSt4Be/NggXLYMGCBUvBK3iNruC9WbBgwYJlsGApeAWv4L1ZBgsWLFiwYJmCV/AK3psFC5bBggULloJX8BpdwXuzYMGCBctgwVLwCl7Be7MMFixYsGDBsu8FH1FaSmExVfAxBa/gvVmwYMGCZbBg/W4vAQYA5tRF9QYlv/QAAAAASUVORK5CYII="
 
@@ -229,6 +235,12 @@ export class LGraphCanvas {
     render_execution_order: boolean
     render_title_colored: boolean
     render_link_tooltip: boolean
+
+    /** Controls whether reroutes are rendered at all. */
+    reroutesEnabled: boolean = false
+
+    /** Shape of the markers shown at the midpoint of links.  Default: Circle */
+    linkMarkerShape: LinkMarkerShape = LinkMarkerShape.Circle
     links_render_mode: number
     /** mouse in canvas coordinates, where 0,0 is the top-left corner of the blue rectangle */
     mouse: Point
@@ -250,9 +262,11 @@ export class LGraphCanvas {
     current_node: LGraphNode | null
     /** used for widgets */
     node_widget?: [LGraphNode, IWidget] | null
-    over_link_center: LLink | null
+    over_link_center: LinkSegment | null
     last_mouse_position: Point
     visible_area?: Rect32
+    /** Contains all links and reroutes that were rendered.  Repopulated every render cycle. */
+    renderedPaths: Set<LinkSegment> = new Set()
     visible_links?: LLink[]
     connecting_links: ConnectingLink[] | null
     viewport?: Rect
@@ -284,7 +298,7 @@ export class LGraphCanvas {
     /** A map of nodes that require selective-redraw */
     dirty_nodes = new Map<NodeId, LGraphNode>()
     dirty_area?: Rect
-    // Unused
+    /** @deprecated Unused */
     node_in_panel?: LGraphNode
     last_mouse: Point = [0, 0]
     last_mouseclick: number = 0
@@ -303,10 +317,13 @@ export class LGraphCanvas {
     _mouseout_callback?(e: CanvasMouseEvent): boolean
     _key_callback?(e: KeyboardEvent): boolean
     _ondrop_callback?(e: CanvasDragEvent): unknown
+    /** @deprecated WebGL */
     gl?: never
     bgctx?: CanvasRenderingContext2D
     is_rendering?: boolean
+    /** @deprecated Panels */
     block_click?: boolean
+    /** @deprecated Panels */
     last_click_position?: Point
     resizing_node?: LGraphNode
     /** @deprecated See {@link LGraphCanvas.resizingGroup} */
@@ -316,7 +333,9 @@ export class LGraphCanvas {
     _highlight_pos?: Point
     _highlight_input?: INodeInputSlot
     // TODO: Check if panels are used
+    /** @deprecated Panels */
     node_panel
+    /** @deprecated Panels */
     options_panel
     onDropItem: (e: Event) => any
     _bg_img: HTMLImageElement
@@ -325,7 +344,9 @@ export class LGraphCanvas {
     // TODO: This looks like another panel thing
     prompt_box: IDialog
     search_box: HTMLDivElement
+    /** @deprecated Panels */
     SELECTED_NODE: LGraphNode
+    /** @deprecated Panels */
     NODEPANEL_IS_OPEN: boolean
     getMenuOptions?(): IContextMenuValue[]
     getExtraMenuOptions?(canvas: LGraphCanvas, options: IContextMenuValue[]): IContextMenuValue[]
@@ -1739,8 +1760,8 @@ export class LGraphCanvas {
         let skip_action = false
         const now = LiteGraph.getTime()
         const is_double_click = (now - this.last_mouseclick < 300)
-        this.mouse[0] = e.clientX
-        this.mouse[1] = e.clientY
+        this.mouse[0] = x
+        this.mouse[1] = y
         this.graph_mouse[0] = e.canvasX
         this.graph_mouse[1] = e.canvasY
         this.last_click_position = [this.mouse[0], this.mouse[1]]
@@ -2027,46 +2048,79 @@ export class LGraphCanvas {
                 }
             } //clicked outside of nodes
             else {
+                if (this.reroutesEnabled && !skip_action && !this.read_only) {
+                    // Check for reroutes
+                    const reroute = graph.getRerouteOnPos(e.canvasX, e.canvasY)
+                    if (reroute) {
+                        this.processSelect(reroute, e)
+
+                        if (e.shiftKey) {
+                            // Connect new link from reroute
+                            const link = graph._links.get(reroute.linkIds.values().next().value)
+
+                            const outputNode = graph.getNodeById(link.origin_id)
+                            const slot = link.origin_slot
+                            this.connecting_links = [{
+                                node: outputNode,
+                                slot,
+                                input: null,
+                                output: outputNode.outputs[slot],
+                                pos: outputNode.getConnectionPos(false, slot),
+                                afterRerouteId: reroute.id,
+                            }]
+                        } else {
+                            this.isDragging = true
+                        }
+
+                        skip_action = true
+                    }
+                }
+
                 if (!skip_action) {
                     //search for link connector
                     if (!this.read_only) {
                         // Set the width of the line for isPointInStroke checks
                         const lineWidth = this.ctx.lineWidth
                         this.ctx.lineWidth = this.connections_width + 7
-                        for (let i = 0; i < this.visible_links.length; ++i) {
-                            const link = this.visible_links[i]
-                            const center = link._pos
-                            let overLink: LLink = null
-                            if (!center ||
-                                e.canvasX < center[0] - 4 ||
-                                e.canvasX > center[0] + 4 ||
-                                e.canvasY < center[1] - 4 ||
-                                e.canvasY > center[1] + 4) {
-                                // If we shift click on a link then start a link from that input
-                                if (e.shiftKey && link.path && this.ctx.isPointInStroke(link.path, e.canvasX, e.canvasY)) {
-                                    overLink = link
-                                } else {
-                                    continue
+
+                        for (const linkSegment of this.renderedPaths) {
+                            const centre = linkSegment._pos
+                            if (!centre) continue
+
+                            // FIXME: Clean up
+                            if (isInsideRectangle(e.canvasX, e.canvasY, centre[0] - 4, centre[1] - 4, 8, 8)) {
+                                this.showLinkMenu(linkSegment, e)
+                                //clear tooltip
+                                this.over_link_center = null
+                                break
+                            }
+
+                            // If we shift click on a link then start a link from that input
+                            if ((e.shiftKey || e.altKey) && linkSegment.path && this.ctx.isPointInStroke(linkSegment.path, e.canvasX, e.canvasY)) {
+                                if (e.shiftKey && !e.altKey) {
+                                    const slot = linkSegment.origin_slot
+                                    const originNode = graph._nodes_by_id[linkSegment.origin_id]
+
+                                    const connecting: ConnectingLink = {
+                                        node: originNode,
+                                        slot,
+                                        output: originNode.outputs[slot],
+                                        pos: originNode.getConnectionPos(false, slot),
+                                    }
+                                    this.connecting_links = [connecting]
+                                    if (this.reroutesEnabled && linkSegment.parentId) connecting.afterRerouteId = linkSegment.parentId
+
+                                    skip_action = true
+                                    break
+                                } else if (this.reroutesEnabled && e.altKey && !e.shiftKey) {
+                                    const newReroute = graph.createReroute([e.canvasX, e.canvasY], linkSegment)
+                                    this.processSelect(newReroute, e)
+                                    this.isDragging = true
+
+                                    skip_action = true
+                                    break
                                 }
                             }
-                            if (overLink) {
-                                const slot = overLink.origin_slot
-                                const originNode = graph._nodes_by_id[overLink.origin_id]
-
-                                this.connecting_links ??= []
-                                this.connecting_links.push({
-                                    node: originNode,
-                                    slot,
-                                    output: originNode.outputs[slot],
-                                    pos: originNode.getConnectionPos(false, slot),
-                                })
-                                skip_action = true
-                            } else {
-                                //link clicked
-                                this.showLinkMenu(link, e)
-                                this.over_link_center = null //clear tooltip
-                            }
-                            break
                         }
 
                         // Restore line width
@@ -2209,7 +2263,7 @@ export class LGraphCanvas {
 
         }
 
-        this.last_mouse = [e.clientX, e.clientY]
+        this.last_mouse = [x, y]
         this.last_mouseclick = LiteGraph.getTime()
         this.last_mouse_dragging = true
 
@@ -2402,25 +2456,12 @@ export class LGraphCanvas {
                         ? "se-resize"
                         : "crosshair"
                 }
-            } else { //not over a node
-                //search for link connector
-                let over_link: LLink = null
-                for (let i = 0; i < this.visible_links.length; ++i) {
-                    const link = this.visible_links[i]
-                    const center = link._pos
-                    if (!center ||
-                        e.canvasX < center[0] - 4 ||
-                        e.canvasX > center[0] + 4 ||
-                        e.canvasY < center[1] - 4 ||
-                        e.canvasY > center[1] + 4) {
-                        continue
-                    }
-                    over_link = link
-                    break
-                }
-                if (over_link != this.over_link_center) {
-                    this.over_link_center = over_link
-                    this.dirty_canvas = true
+            } else {
+                // Not over a node
+                const segment = this.#getLinkCentreOnPos(e)
+                if (this.over_link_center !== segment) {
+                    this.over_link_center = segment
+                    this.dirty_bgcanvas = true
                 }
 
                 if (this.canvas) {
@@ -2436,22 +2477,15 @@ export class LGraphCanvas {
             // Items being dragged
             if (this.isDragging && !this.live_mode) {
                 const selected = this.selectedItems
-                const allItems = e.ctrlKey ? selected : new Set<Positionable>()
-
-                if (!e.ctrlKey)
-                    selected?.forEach(x => addToSetRecursively(x, allItems))
+                const allItems = e.ctrlKey ? selected : getAllNestedItems(selected)
 
                 const deltaX = delta[0] / this.ds.scale
                 const deltaY = delta[1] / this.ds.scale
-                allItems.forEach(x => x.move(deltaX, deltaY, true))
+                for (const item of allItems) {
+                    if (!item.pinned) item.move(deltaX, deltaY, true)
+                }
 
                 this.#dirty()
-
-                function addToSetRecursively(item: Positionable, items: Set<Positionable>): void {
-                    if (items.has(item) || item.pinned) return
-                    items.add(item)
-                    item.children?.forEach(x => addToSetRecursively(x, items))
-                }
             }
 
             if (this.resizing_node && !this.live_mode) {
@@ -2557,6 +2591,14 @@ export class LGraphCanvas {
                             group.recomputeInsideNodes()
                             group.selected = true
                         }
+
+                        if (this.reroutesEnabled) {
+                            for (const reroute of this.graph.reroutes.values()) {
+                                if (!isPointInRectangle(reroute.pos, dragRect)) continue
+                                this.selectedItems.add(reroute)
+                                reroute.selected = true
+                            }
+                        }
                     } else {
                         // will select of update selection
                         this.selectNodes([node], e.shiftKey || e.ctrlKey || e.metaKey) // add to selection add to selection with ctrlKey or shiftKey
@@ -2582,7 +2624,7 @@ export class LGraphCanvas {
                                 e.canvasY
                             )
                             if (slot != -1) {
-                                link.node.connect(link.slot, node, slot)
+                                link.node.connect(link.slot, node, slot, link.afterRerouteId)
                             } else if (this.link_over_widget) {
                                 this.emitEvent({
                                     subType: "connectingWidgetLink",
@@ -2594,7 +2636,7 @@ export class LGraphCanvas {
                             } else {
                                 //not on top of an input
                                 // look for a good slot
-                                link.node.connectByType(link.slot, node, link.output.type)
+                                link.node.connectByType(link.slot, node, link.output.type, { afterRerouteId: link.afterRerouteId })
                             }
                         } else if (link.input) {
                             const slot = this.isOverNodeOutput(
@@ -2604,11 +2646,11 @@ export class LGraphCanvas {
                             )
 
                             if (slot != -1) {
-                                node.connect(slot, link.node, link.slot) // this is inverted has output-input nature like
+                                node.connect(slot, link.node, link.slot, link.afterRerouteId) // this is inverted has output-input nature like
                             } else {
                                 //not on top of an input
                                 // look for a good slot
-                                link.node.connectByTypeOutput(link.slot, node, link.input.type)
+                                link.node.connectByTypeOutput(link.slot, node, link.input.type, { afterRerouteId: link.afterRerouteId })
                             }
                         }
                     }
@@ -2632,6 +2674,7 @@ export class LGraphCanvas {
                         originalEvent: e,
                         linkReleaseContext: linkReleaseContextExtended,
                     })
+                    // No longer in use
                     // add menu when releasing link in empty space
                     if (LiteGraph.release_link_on_empty_shows_menu) {
                         if (e.shiftKey) {
@@ -2647,8 +2690,6 @@ export class LGraphCanvas {
                         }
                     }
                 }
-
-                this.connecting_links = null
             } //not dragging connection
             else if (this.resizing_node) {
                 this.#dirty()
@@ -2672,8 +2713,13 @@ export class LGraphCanvas {
                 this.node_dragged = null
             } //no node being dragged
             else {
-                if (!node && e.click_time < 300 && !this.graph.groups.some(x => x.isPointInTitlebar(e.canvasX, e.canvasY))) {
-                    this.deselectAll()
+                if (
+                    !node &&
+                    e.click_time < 300 &&
+                    !this.graph.getGroupTitlebarOnPos(e.canvasX, e.canvasY) &&
+                    (!this.reroutesEnabled || !this.graph.getRerouteOnPos(e.canvasX, e.canvasY))
+                ) {
+                    this.processSelect(null, e)
                 }
 
                 this.dirty_canvas = true
@@ -2686,6 +2732,8 @@ export class LGraphCanvas {
                     e.canvasY - this.node_capturing_input.pos[1]
                 ])
             }
+
+            this.connecting_links = null
         } else if (e.which == 2) {
             //middle button
             this.dirty_canvas = true
@@ -3243,7 +3291,7 @@ export class LGraphCanvas {
      * @returns All items on the canvas that can be selected
      */
     get positionableItems(): Positionable[] {
-        return [...this.graph._nodes, ...this.graph._groups]
+        return [...this.graph._nodes, ...this.graph._groups, ...this.graph.reroutes.values()]
     }
 
     /**
@@ -3337,9 +3385,12 @@ export class LGraphCanvas {
                 this.onNodeDeselected?.(node)
             } else if (item instanceof LGraphGroup) {
                 graph.remove(item)
+            } else if (item instanceof Reroute) {
+                graph.removeReroute(item.id)
             }
         }
 
+        this.selectedItems.clear()
         this.selected_nodes = {}
         this.selectedItems.clear()
         this.current_node = null
@@ -3595,7 +3646,7 @@ export class LGraphCanvas {
                 }
             }
 
-            if (this.connecting_links) {
+            if (this.connecting_links?.length) {
                 //current connection (the one being dragged by the mouse)
                 for (const link of this.connecting_links) {
                     ctx.lineWidth = this.connections_width
@@ -3603,8 +3654,8 @@ export class LGraphCanvas {
 
                     const connInOrOut = link.output || link.input
 
-                    const connType = connInOrOut.type
-                    let connDir = connInOrOut.dir
+                    const connType = connInOrOut?.type
+                    let connDir = connInOrOut?.dir
                     if (connDir == null) {
                         if (link.output)
                             connDir = link.node.horizontal ? LinkDirection.DOWN : LinkDirection.RIGHT
@@ -3612,7 +3663,7 @@ export class LGraphCanvas {
                         else
                             connDir = link.node.horizontal ? LinkDirection.UP : LinkDirection.LEFT
                     }
-                    const connShape = connInOrOut.shape
+                    const connShape = connInOrOut?.shape
 
                     switch (connType) {
                         case LiteGraph.EVENT:
@@ -3622,11 +3673,13 @@ export class LGraphCanvas {
                             link_color = LiteGraph.CONNECTING_LINK_COLOR
                     }
 
-                    const highlightPos: Point = this.#getHighlightPosition()
+                    // If not using reroutes, link.afterRerouteId should be undefined.
+                    const pos = this.graph.reroutes.get(link.afterRerouteId)?.pos ?? link.pos
+                    const highlightPos = this.#getHighlightPosition()
                     //the connection being dragged by the mouse
                     this.renderLink(
                         ctx,
-                        link.pos,
+                        pos,
                         highlightPos,
                         null,
                         false,
@@ -3640,8 +3693,8 @@ export class LGraphCanvas {
                     if (connType === LiteGraph.EVENT ||
                         connShape === RenderShape.BOX) {
                         ctx.rect(
-                            link.pos[0] - 6 + 0.5,
-                            link.pos[1] - 5 + 0.5,
+                            pos[0] - 6 + 0.5,
+                            pos[1] - 5 + 0.5,
                             14,
                             10
                         )
@@ -3654,15 +3707,15 @@ export class LGraphCanvas {
                             10
                         )
                     } else if (connShape === RenderShape.ARROW) {
-                        ctx.moveTo(link.pos[0] + 8, link.pos[1] + 0.5)
-                        ctx.lineTo(link.pos[0] - 4, link.pos[1] + 6 + 0.5)
-                        ctx.lineTo(link.pos[0] - 4, link.pos[1] - 6 + 0.5)
+                        ctx.moveTo(pos[0] + 8, pos[1] + 0.5)
+                        ctx.lineTo(pos[0] - 4, pos[1] + 6 + 0.5)
+                        ctx.lineTo(pos[0] - 4, pos[1] - 6 + 0.5)
                         ctx.closePath()
                     }
                     else {
                         ctx.arc(
-                            link.pos[0],
-                            link.pos[1],
+                            pos[0],
+                            pos[1],
                             4,
                             0,
                             Math.PI * 2
@@ -3722,6 +3775,18 @@ export class LGraphCanvas {
         //this is a function I use in webgl renderer
         // @ts-expect-error
         if (ctx.finish2D) ctx.finish2D()
+    }
+
+    /** @returns If the pointer is over a link centre marker, the link segment it belongs to.  Otherwise, `undefined`.  */
+    #getLinkCentreOnPos(e: CanvasMouseEvent): LinkSegment | undefined {
+        for (const linkSegment of this.renderedPaths) {
+            const centre = linkSegment._pos
+            if (!centre) continue
+
+            if (isInsideRectangle(e.canvasX, e.canvasY, centre[0] - 4, centre[1] - 4, 8, 8)) {
+                return linkSegment
+            }
+        }
     }
 
     /** Get the target snap / highlight point in graph space */
@@ -4312,8 +4377,8 @@ export class LGraphCanvas {
         const render_text = !low_quality
         const highlightColour = LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ?? LiteGraph.NODE_SELECTED_TITLE_COLOR ?? LiteGraph.NODE_TEXT_COLOR
 
-        const out_slot = this.connecting_links ? this.connecting_links[0].output : null
-        const in_slot = this.connecting_links ? this.connecting_links[0].input : null
+        const out_slot = this.connecting_links?.[0]?.output
+        const in_slot = this.connecting_links?.[0]?.input
         ctx.lineWidth = 1
 
         let max_y = 0
@@ -4509,22 +4574,40 @@ export class LGraphCanvas {
 
         ctx.globalAlpha = 1.0
     }
-    //used by this.over_link_center
-    drawLinkTooltip(ctx: CanvasRenderingContext2D, link: LLink): void {
+
+    /**
+     * Draws the link mouseover effect and tooltip.
+     * @param ctx Canvas 2D context to draw on
+     * @param link The link to render the mouseover effect for
+     * @remarks
+     * Called against {@link LGraphCanvas.over_link_center}.
+     * @todo Split tooltip from hover, so it can be drawn / eased separately
+     */
+    drawLinkTooltip(ctx: CanvasRenderingContext2D, link: LinkSegment): void {
         const pos = link._pos
         ctx.fillStyle = "black"
         ctx.beginPath()
-        ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2)
+        if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
+            const transform = ctx.getTransform()
+            ctx.translate(pos[0], pos[1])
+            if (Number.isFinite(link._centreAngle)) ctx.rotate(link._centreAngle)
+            ctx.moveTo(-2, -3)
+            ctx.lineTo(+4, 0)
+            ctx.lineTo(-2, +3)
+            ctx.setTransform(transform)
+        } else if (this.linkMarkerShape == null || this.linkMarkerShape === LinkMarkerShape.Circle) {
+            ctx.arc(pos[0], pos[1], 3, 0, Math.PI * 2)
+        }
         ctx.fill()
 
-        if (link.data == null)
-            return
+        // @ts-expect-error TODO: Better value typing
+        const data = link.data
+        if (data == null) return
 
+        // @ts-expect-error TODO: Better value typing
         if (this.onDrawLinkTooltip?.(ctx, link, this) == true)
             return
 
-        // TODO: Better value typing
-        const data = link.data
         let text: string = null
 
         if (typeof data === "number")
@@ -4913,6 +4996,8 @@ export class LGraphCanvas {
     }
 
     drawConnections(ctx: CanvasRenderingContext2D): void {
+        const rendered = this.renderedPaths
+        rendered.clear()
         const now = LiteGraph.getTime()
         const visible_area = this.visible_area
         LGraphCanvas.#margin_area[0] = visible_area[0] - 20
@@ -4945,41 +5030,30 @@ export class LGraphCanvas {
                 const start_node = this.graph.getNodeById(link.origin_id)
                 if (start_node == null) continue
 
-                const start_node_slot = link.origin_slot
-                let start_node_slotpos: Point = null
-                if (start_node_slot == -1) {
-                    start_node_slotpos = [
-                        start_node.pos[0] + 10,
-                        start_node.pos[1] + 10
-                    ]
-                } else {
-                    start_node_slotpos = start_node.getConnectionPos(
-                        false,
-                        start_node_slot,
-                        LGraphCanvas.#tempA
-                    )
-                }
+                const outputId = link.origin_slot
+                const start_node_slotpos: Point = outputId == -1
+                    ? [start_node.pos[0] + 10, start_node.pos[1] + 10]
+                    : start_node.getConnectionPos(false, outputId, LGraphCanvas.#tempA)
+
                 const end_node_slotpos = node.getConnectionPos(true, i, LGraphCanvas.#tempB)
 
-                //compute link bounding
-                LGraphCanvas.#link_bounding[0] = start_node_slotpos[0]
-                LGraphCanvas.#link_bounding[1] = start_node_slotpos[1]
-                LGraphCanvas.#link_bounding[2] = end_node_slotpos[0] - start_node_slotpos[0]
-                LGraphCanvas.#link_bounding[3] = end_node_slotpos[1] - start_node_slotpos[1]
-                if (LGraphCanvas.#link_bounding[2] < 0) {
-                    LGraphCanvas.#link_bounding[0] += LGraphCanvas.#link_bounding[2]
-                    LGraphCanvas.#link_bounding[2] = Math.abs(LGraphCanvas.#link_bounding[2])
-                }
-                if (LGraphCanvas.#link_bounding[3] < 0) {
-                    LGraphCanvas.#link_bounding[1] += LGraphCanvas.#link_bounding[3]
-                    LGraphCanvas.#link_bounding[3] = Math.abs(LGraphCanvas.#link_bounding[3])
-                }
+                // Get all points this link passes through
+                const reroutes = this.reroutesEnabled ? LLink.getReroutes(this.graph, link) : []
+                const points = [start_node_slotpos, ...reroutes.map(x => x.pos), end_node_slotpos]
+
+                // Bounding box of all points (bezier overshoot on long links will be cut)
+                const pointsX = points.map(x => x[0])
+                const pointsY = points.map(x => x[1])
+                LGraphCanvas.#link_bounding[0] = Math.min(...pointsX)
+                LGraphCanvas.#link_bounding[1] = Math.min(...pointsY)
+                LGraphCanvas.#link_bounding[2] = Math.max(...pointsX) - LGraphCanvas.#link_bounding[0]
+                LGraphCanvas.#link_bounding[3] = Math.max(...pointsY) - LGraphCanvas.#link_bounding[1]
 
                 //skip links outside of the visible area of the canvas
                 if (!overlapBounding(LGraphCanvas.#link_bounding, LGraphCanvas.#margin_area))
                     continue
 
-                const start_slot = start_node.outputs[start_node_slot]
+                const start_slot = start_node.outputs[outputId]
                 const end_slot = node.inputs[i]
                 if (!start_slot || !end_slot)
                     continue
@@ -4988,17 +5062,78 @@ export class LGraphCanvas {
                 const end_dir = end_slot.dir ||
                     (node.horizontal ? LinkDirection.UP : LinkDirection.LEFT)
 
-                this.renderLink(
-                    ctx,
-                    start_node_slotpos,
-                    end_node_slotpos,
-                    link,
-                    false,
-                    0,
-                    null,
-                    start_dir,
-                    end_dir
-                )
+                // Has reroutes
+                if (reroutes.length) {
+                    let startControl: Point
+
+                    const l = reroutes.length
+                    for (let j = 0; j < l; j++) {
+                        const reroute = reroutes[j]
+
+                        if (!rendered.has(reroute)) {
+                            rendered.add(reroute)
+
+                            const prevReroute = this.graph.reroutes.get(reroute.parentId)
+                            const startPos = prevReroute?.pos ?? start_node_slotpos
+                            reroute.calculateAngle(this.last_draw_time, this.graph, startPos)
+
+                            this.renderLink(
+                                ctx,
+                                startPos,
+                                reroute.pos,
+                                link,
+                                false,
+                                0,
+                                null,
+                                start_dir,
+                                end_dir,
+                                {
+                                    startControl,
+                                    endControl: reroute.controlPoint,
+                                    reroute,
+                                },
+                            )
+                        }
+
+                        // Calculate start control for the next iter control point
+                        const nextPos = reroutes[j + 1]?.pos ?? end_node_slotpos
+                        const dist = Math.min(80, distance(reroute.pos, nextPos) * 0.25)
+                        startControl = [dist * reroute.cos, dist * reroute.sin]
+                    }
+
+                    // Render final link segment
+                    this.renderLink(
+                        ctx,
+                        points.at(-2),
+                        points.at(-1),
+                        link,
+                        false,
+                        0,
+                        null,
+                        start_dir,
+                        end_dir,
+                        { startControl },
+                    )
+
+                    // Render the reroute circles
+                    const defaultColor = LGraphCanvas.link_type_colors[link.type] || this.default_link_color
+                    for (const reroute of reroutes) {
+                        reroute.draw(ctx, link.color || defaultColor)
+                    }
+                } else {
+                    this.renderLink(
+                        ctx,
+                        start_node_slotpos,
+                        end_node_slotpos,
+                        link,
+                        false,
+                        0,
+                        null,
+                        start_dir,
+                        end_dir
+                    )
+                }
+                rendered.add(link)
 
                 //event triggered rendered on top
                 if (link && link._last_time && now - link._last_time < 1000) {
@@ -5025,6 +5160,7 @@ export class LGraphCanvas {
 
     /**
      * draws a link between two points
+     * @param ctx Canvas 2D rendering context
      * @param {vec2} a start pos
      * @param {vec2} b end pos
      * @param {Object} link the link object with all the link info
@@ -5034,35 +5170,44 @@ export class LGraphCanvas {
      * @param {LinkDirection} start_dir the direction enum
      * @param {LinkDirection} end_dir the direction enum
      * @param {number} num_sublines number of sublines (useful to represent vec3 or rgb)
-     **/
-    renderLink(ctx: CanvasRenderingContext2D,
-        a: Point,
-        b: Point,
+     */
+    renderLink(
+        ctx: CanvasRenderingContext2D,
+        a: ReadOnlyPoint,
+        b: ReadOnlyPoint,
         link: LLink,
         skip_border: boolean,
         flow: number,
         color: CanvasColour,
         start_dir: LinkDirection,
         end_dir: LinkDirection,
-        num_sublines?: number): void {
+        {
+            startControl,
+            endControl,
+            reroute,
+            num_sublines = 1
+        }: {
+            /** When defined, render data will be saved to this reroute instead of the {@link link}. */
+            reroute?: Reroute
+            /** Offset of the bezier curve control point from {@link a point a} (output side) */
+            startControl?: ReadOnlyPoint
+            /** Offset of the bezier curve control point from {@link b point b} (input side) */
+            endControl?: ReadOnlyPoint
+            /** Number of sublines (useful to represent vec3 or rgb) @todo If implemented, refactor calculations out of the loop */
+            num_sublines?: number
+        } = {},
+    ): void {
+        if (link) this.visible_links.push(link)
 
-        if (link) {
-            this.visible_links.push(link)
-        }
+        const linkColour = link != null && this.highlighted_links[link.id]
+            ? "#FFF"
+            : color || link?.color || LGraphCanvas.link_type_colors[link.type] || this.default_link_color
+        const startDir = start_dir || LinkDirection.RIGHT
+        const endDir = end_dir || LinkDirection.LEFT
 
-        //choose color
-        if (!color && link) {
-            color = link.color || LGraphCanvas.link_type_colors[link.type]
-        }
-        color ||= this.default_link_color
-        if (link != null && this.highlighted_links[link.id]) {
-            color = "#FFF"
-        }
-
-        start_dir = start_dir || LinkDirection.RIGHT
-        end_dir = end_dir || LinkDirection.LEFT
-
-        const dist = distance(a, b)
+        const dist = this.links_render_mode == LinkRenderType.SPLINE_LINK && (!endControl || !startControl)
+            ? distance(a, b)
+            : null
 
         // TODO: Subline code below was inserted in the wrong place - should be before this statement
         if (this.render_connections_border && this.ds.scale > 0.6) {
@@ -5070,126 +5215,132 @@ export class LGraphCanvas {
         }
         ctx.lineJoin = "round"
         num_sublines ||= 1
-        if (num_sublines > 1) {
-            ctx.lineWidth = 0.5
-        }
+        if (num_sublines > 1) ctx.lineWidth = 0.5
 
         //begin line shape
         const path = new Path2D()
-        if (link) {
-            // Store the path on the link for hittests
-            link.path = path
-        }
+
+        /** The link or reroute we're currently rendering */
+        const linkSegment = reroute ?? link
+        if (linkSegment) linkSegment.path = path
+
+        const innerA = LGraphCanvas.#lTempA
+        const innerB = LGraphCanvas.#lTempB
+
+        /** Reference to {@link reroute._pos} if present, or {@link link._pos} if present.  Caches the centre point of the link. */
+        const pos: Point = linkSegment?._pos ?? [0, 0]
+
         for (let i = 0; i < num_sublines; i += 1) {
             const offsety = (i - (num_sublines - 1) * 0.5) * 5
+            innerA[0] = a[0]
+            innerA[1] = a[1]
+            innerB[0] = b[0]
+            innerB[1] = b[1]
 
             if (this.links_render_mode == LinkRenderType.SPLINE_LINK) {
+                if (endControl) {
+                    innerB[0] = b[0] + endControl[0]
+                    innerB[1] = b[1] + endControl[1]
+                } else {
+                    this.#addSplineOffset(innerB, endDir, dist)
+                }
+                if (startControl) {
+                    innerA[0] = a[0] + startControl[0]
+                    innerA[1] = a[1] + startControl[1]
+                } else {
+                    this.#addSplineOffset(innerA, startDir, dist)
+                }
                 path.moveTo(a[0], a[1] + offsety)
-                let start_offset_x = 0
-                let start_offset_y = 0
-                let end_offset_x = 0
-                let end_offset_y = 0
-                switch (start_dir) {
-                    case LinkDirection.LEFT:
-                        start_offset_x = dist * -0.25
-                        break
-                    case LinkDirection.RIGHT:
-                        start_offset_x = dist * 0.25
-                        break
-                    case LinkDirection.UP:
-                        start_offset_y = dist * -0.25
-                        break
-                    case LinkDirection.DOWN:
-                        start_offset_y = dist * 0.25
-                        break
-                }
-                switch (end_dir) {
-                    case LinkDirection.LEFT:
-                        end_offset_x = dist * -0.25
-                        break
-                    case LinkDirection.RIGHT:
-                        end_offset_x = dist * 0.25
-                        break
-                    case LinkDirection.UP:
-                        end_offset_y = dist * -0.25
-                        break
-                    case LinkDirection.DOWN:
-                        end_offset_y = dist * 0.25
-                        break
-                }
                 path.bezierCurveTo(
-                    a[0] + start_offset_x,
-                    a[1] + start_offset_y + offsety,
-                    b[0] + end_offset_x,
-                    b[1] + end_offset_y + offsety,
+                    innerA[0],
+                    innerA[1] + offsety,
+                    innerB[0],
+                    innerB[1] + offsety,
                     b[0],
                     b[1] + offsety
                 )
+
+                // Calculate centre point
+                findPointOnCurve(pos, a, b, innerA, innerB, 0.5)
+
+                if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
+                    const justPastCentre = LGraphCanvas.#lTempC
+                    findPointOnCurve(justPastCentre, a, b, innerA, innerB, 0.51)
+
+                    linkSegment._centreAngle = Math.atan2(justPastCentre[1] - pos[1], justPastCentre[0] - pos[0])
+                }
             } else if (this.links_render_mode == LinkRenderType.LINEAR_LINK) {
-                path.moveTo(a[0], a[1] + offsety)
-                let start_offset_x = 0
-                let start_offset_y = 0
-                let end_offset_x = 0
-                let end_offset_y = 0
-                switch (start_dir) {
-                    case LinkDirection.LEFT:
-                        start_offset_x = -1
-                        break
-                    case LinkDirection.RIGHT:
-                        start_offset_x = 1
-                        break
-                    case LinkDirection.UP:
-                        start_offset_y = -1
-                        break
-                    case LinkDirection.DOWN:
-                        start_offset_y = 1
-                        break
-                }
-                switch (end_dir) {
-                    case LinkDirection.LEFT:
-                        end_offset_x = -1
-                        break
-                    case LinkDirection.RIGHT:
-                        end_offset_x = 1
-                        break
-                    case LinkDirection.UP:
-                        end_offset_y = -1
-                        break
-                    case LinkDirection.DOWN:
-                        end_offset_y = 1
-                        break
-                }
                 const l = 15
-                path.lineTo(
-                    a[0] + start_offset_x * l,
-                    a[1] + start_offset_y * l + offsety
-                )
-                path.lineTo(
-                    b[0] + end_offset_x * l,
-                    b[1] + end_offset_y * l + offsety
-                )
+                switch (startDir) {
+                    case LinkDirection.LEFT:
+                        innerA[0] += -l
+                        break
+                    case LinkDirection.RIGHT:
+                        innerA[0] += l
+                        break
+                    case LinkDirection.UP:
+                        innerA[1] += -l
+                        break
+                    case LinkDirection.DOWN:
+                        innerA[1] += l
+                        break
+                }
+                switch (endDir) {
+                    case LinkDirection.LEFT:
+                        innerB[0] += -l
+                        break
+                    case LinkDirection.RIGHT:
+                        innerB[0] += l
+                        break
+                    case LinkDirection.UP:
+                        innerB[1] += -l
+                        break
+                    case LinkDirection.DOWN:
+                        innerB[1] += l
+                        break
+                }
+                path.moveTo(a[0], a[1] + offsety)
+                path.lineTo(innerA[0], innerA[1] + offsety)
+                path.lineTo(innerB[0], innerB[1] + offsety)
                 path.lineTo(b[0], b[1] + offsety)
+
+                // Calculate centre point
+                pos[0] = (innerA[0] + innerB[0]) * 0.5
+                pos[1] = (innerA[1] + innerB[1]) * 0.5
+
+                if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
+                    linkSegment._centreAngle = Math.atan2(innerB[1] - innerA[1], innerB[0] - innerA[0])
+                }
             } else if (this.links_render_mode == LinkRenderType.STRAIGHT_LINK) {
+                if (startDir == LinkDirection.RIGHT) {
+                    innerA[0] += 10
+                } else {
+                    innerA[1] += 10
+                }
+                if (endDir == LinkDirection.LEFT) {
+                    innerB[0] -= 10
+                } else {
+                    innerB[1] -= 10
+                }
+                const midX = (innerA[0] + innerB[0]) * 0.5
+
                 path.moveTo(a[0], a[1])
-                let start_x = a[0]
-                let start_y = a[1]
-                let end_x = b[0]
-                let end_y = b[1]
-                if (start_dir == LinkDirection.RIGHT) {
-                    start_x += 10
-                } else {
-                    start_y += 10
-                }
-                if (end_dir == LinkDirection.LEFT) {
-                    end_x -= 10
-                } else {
-                    end_y -= 10
-                }
-                path.lineTo(start_x, start_y)
-                path.lineTo((start_x + end_x) * 0.5, start_y)
-                path.lineTo((start_x + end_x) * 0.5, end_y)
-                path.lineTo(end_x, end_y)
+                path.lineTo(innerA[0], innerA[1])
+                path.lineTo(midX, innerA[1])
+                path.lineTo(midX, innerB[1])
+                path.lineTo(innerB[0], innerB[1])
                 path.lineTo(b[0], b[1])
+
+                // Calculate centre point
+                pos[0] = midX
+                pos[1] = (innerA[1] + innerB[1]) * 0.5
+
+                if (linkSegment && this.linkMarkerShape === LinkMarkerShape.Arrow) {
+                    const diff = innerB[1] - innerA[1]
+                    if (Math.abs(diff) < 4) linkSegment._centreAngle = 0
+                    else if (diff > 0) linkSegment._centreAngle = Math.PI * 0.5
+                    else linkSegment._centreAngle = -(Math.PI * 0.5)
+                }
             } else {
                 return
             } //unknown
@@ -5204,19 +5355,15 @@ export class LGraphCanvas {
         }
 
         ctx.lineWidth = this.connections_width
-        ctx.fillStyle = ctx.strokeStyle = color
+        ctx.fillStyle = ctx.strokeStyle = linkColour
         ctx.stroke(path)
-        //end line shape
-        const pos = this.computeConnectionPoint(a, b, 0.5, start_dir, end_dir)
-        if (link?._pos) {
-            link._pos[0] = pos[0]
-            link._pos[1] = pos[1]
-        }
 
         //render arrow in the middle
         if (this.ds.scale >= 0.6 &&
             this.highquality_render &&
-            end_dir != LinkDirection.CENTER) {
+            linkSegment &&
+            // TODO: Re-assess this usage - likely a workaround that linkSegment truthy check resolves
+            endDir != LinkDirection.CENTER) {
             //render arrow
             if (this.render_connection_arrows) {
                 //compute two points in the connection
@@ -5224,29 +5371,29 @@ export class LGraphCanvas {
                     a,
                     b,
                     0.25,
-                    start_dir,
-                    end_dir
+                    startDir,
+                    endDir
                 )
                 const posB = this.computeConnectionPoint(
                     a,
                     b,
                     0.26,
-                    start_dir,
-                    end_dir
+                    startDir,
+                    endDir
                 )
                 const posC = this.computeConnectionPoint(
                     a,
                     b,
                     0.75,
-                    start_dir,
-                    end_dir
+                    startDir,
+                    endDir
                 )
                 const posD = this.computeConnectionPoint(
                     a,
                     b,
                     0.76,
-                    start_dir,
-                    end_dir
+                    startDir,
+                    endDir
                 )
 
                 //compute the angle between them so the arrow points in the right direction
@@ -5280,23 +5427,35 @@ export class LGraphCanvas {
                 ctx.setTransform(transform)
             }
 
-            //circle
+            // Draw link centre marker
             ctx.beginPath()
-            ctx.arc(pos[0], pos[1], 5, 0, Math.PI * 2)
+            if (this.linkMarkerShape === LinkMarkerShape.Arrow) {
+                const transform = ctx.getTransform()
+                ctx.translate(pos[0], pos[1])
+                ctx.rotate(linkSegment._centreAngle)
+                // The math is off, but it currently looks better in chromium
+                ctx.moveTo(-3.2, -5)
+                ctx.lineTo(+7, 0)
+                ctx.lineTo(-3.2, +5)
+                ctx.fill()
+                ctx.setTransform(transform)
+            } else if (this.linkMarkerShape == null || this.linkMarkerShape === LinkMarkerShape.Circle) {
+                ctx.arc(pos[0], pos[1], 5, 0, Math.PI * 2)
+            }
             ctx.fill()
         }
 
         //render flowing points
         if (flow) {
-            ctx.fillStyle = color
+            ctx.fillStyle = linkColour
             for (let i = 0; i < 5; ++i) {
                 const f = (LiteGraph.getTime() * 0.001 + i * 0.2) % 1
                 const flowPos = this.computeConnectionPoint(
                     a,
                     b,
                     f,
-                    start_dir,
-                    end_dir
+                    startDir,
+                    endDir
                 )
                 ctx.beginPath()
                 ctx.arc(flowPos[0], flowPos[1], 5, 0, 2 * Math.PI)
@@ -5948,44 +6107,49 @@ export class LGraphCanvas {
     boundaryNodesForSelection(): NullableProperties<IBoundaryNodes> {
         return LGraphCanvas.getBoundaryNodes(this.selected_nodes)
     }
-    showLinkMenu(link: LLink, e: CanvasMouseEvent): boolean {
-        const graph = this.graph
-        const node_left = graph.getNodeById(link.origin_id)
-        const node_right = graph.getNodeById(link.target_id)
-        // TODO: Replace ternary with ?? ""
-        const fromType = node_left?.outputs?.[link.origin_slot]
-            ? node_left.outputs[link.origin_slot].type
-            : false
-        const destType = node_right?.outputs?.[link.target_slot]
-            ? node_right.inputs[link.target_slot].type
-            : false
+
+    showLinkMenu(segment: LinkSegment, e: CanvasMouseEvent): boolean {
+        const { graph } = this
+        const node_left = graph.getNodeById(segment.origin_id)
+        const fromType = node_left?.outputs?.[segment.origin_slot]?.type ?? "*"
 
         const options = ["Add Node", null, "Delete", null]
+        if (this.reroutesEnabled) options.splice(1, 0, "Add Reroute")
 
+        const title = "data" in segment && segment.data != null
+            ? segment.data.constructor.name
+            : null
         const menu = new LiteGraph.ContextMenu(options, {
             event: e,
-            title: link.data != null ? link.data.constructor.name : null,
-            callback: inner_clicked
+            title,
+            callback: inner_clicked.bind(this)
         })
 
-        function inner_clicked(v: string, options: unknown, e: MouseEvent) {
+        function inner_clicked(this: LGraphCanvas, v: string, options: unknown, e: MouseEvent) {
             switch (v) {
                 case "Add Node":
                     LGraphCanvas.onMenuAdd(null, null, e, menu, function (node) {
                         if (!node.inputs?.length || !node.outputs?.length) return
 
                         // leave the connection type checking inside connectByType
-                        // @ts-expect-error Assigning from check to false results in the type being treated as "*".  This should fail.
-                        if (node_left.connectByType(link.origin_slot, node, fromType)) {
-                            // @ts-expect-error Assigning from check to false results in the type being treated as "*".  This should fail.
-                            node.connectByType(link.target_slot, node_right, destType)
+                        const options = this.reroutesEnabled
+                            ? { afterRerouteId: segment.parentId }
+                            : undefined
+                        if (node_left.connectByType(segment.origin_slot, node, fromType, options)) {
                             node.pos[0] -= node.size[0] * 0.5
                         }
                     })
                     break
 
+                case "Add Reroute": {
+                    this.adjustMouseEvent(e)
+                    graph.createReroute([e.canvasX, e.canvasY], segment)
+                    this.setDirty(false, true)
+                    break
+                }
+
                 case "Delete":
-                    graph.removeLink(link.id)
+                    graph.removeLink(segment.id)
                     break
                 default:
             }
@@ -5993,6 +6157,7 @@ export class LGraphCanvas {
 
         return false
     }
+
     createDefaultNodeForSlot(optPass: ICreateNodeOptions): boolean {
         const opts = Object.assign<ICreateNodeOptions, ICreateNodeOptions>({
             nodeFrom: null,
@@ -6004,6 +6169,7 @@ export class LGraphCanvas {
             posAdd: [0, 0],
             posSizeFix: [0, 0]
         }, optPass || {})
+        const { afterRerouteId } = opts
 
         const isFrom = opts.nodeFrom && opts.slotFrom !== null
         const isTo = !isFrom && opts.nodeTo && opts.slotTo !== null
@@ -6110,9 +6276,9 @@ export class LGraphCanvas {
 
                     // connect the two!
                     if (isFrom) {
-                        opts.nodeFrom.connectByType(iSlotConn, newNode, fromSlotType)
+                        opts.nodeFrom.connectByType(iSlotConn, newNode, fromSlotType, { afterRerouteId })
                     } else {
-                        opts.nodeTo.connectByTypeOutput(iSlotConn, newNode, fromSlotType)
+                        opts.nodeTo.connectByTypeOutput(iSlotConn, newNode, fromSlotType, { afterRerouteId })
                     }
 
                     // if connecting in between
@@ -6138,6 +6304,7 @@ export class LGraphCanvas {
             showSearchBox: this.showSearchBox,
         }, optPass || {})
         const that = this
+        const { afterRerouteId } = opts
 
         const isFrom = opts.nodeFrom && opts.slotFrom
         const isTo = !isFrom && opts.nodeTo && opts.slotTo
@@ -6203,9 +6370,9 @@ export class LGraphCanvas {
                 case "Add Node":
                     LGraphCanvas.onMenuAdd(null, null, e, menu, function (node) {
                         if (isFrom) {
-                            opts.nodeFrom.connectByType(iSlotConn, node, fromSlotType)
+                            opts.nodeFrom.connectByType(iSlotConn, node, fromSlotType, { afterRerouteId })
                         } else {
-                            opts.nodeTo.connectByTypeOutput(iSlotConn, node, fromSlotType)
+                            opts.nodeTo.connectByTypeOutput(iSlotConn, node, fromSlotType, { afterRerouteId })
                         }
                     })
                     break
@@ -6221,7 +6388,8 @@ export class LGraphCanvas {
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const nodeCreated = that.createDefaultNodeForSlot(Object.assign<ICreateNodeOptions, ICreateNodeOptions>(opts, {
                         position: [opts.e.canvasX, opts.e.canvasY],
-                        nodeType: v
+                        nodeType: v,
+                        afterRerouteId,
                     }))
                     break
                 }
@@ -7760,6 +7928,18 @@ export class LGraphCanvas {
             menu_info = this.getNodeMenuOptions(node)
         } else {
             menu_info = this.getCanvasMenuOptions()
+
+            // Check for reroutes
+            if (this.reroutesEnabled) {
+                const reroute = this.graph.getRerouteOnPos(event.canvasX, event.canvasY)
+                if (reroute) {
+                    menu_info.unshift({
+                        content: "Delete Reroute",
+                        callback: () => this.graph.removeReroute(reroute.id)
+                    }, null)
+                }
+            }
+
             const group = this.graph.getGroupOnPos(
                 event.canvasX,
                 event.canvasY
