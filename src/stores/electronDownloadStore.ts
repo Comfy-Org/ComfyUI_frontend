@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { isElectron, electronAPI } from '@/utils/envUtil'
 
-interface ElectronDownload {
+export interface ElectronDownload {
   url: string
   status: 'paused' | 'in_progress' | 'cancelled'
   progress: number

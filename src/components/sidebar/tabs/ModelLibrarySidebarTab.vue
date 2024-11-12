@@ -34,58 +34,7 @@
         </div>
 
         <template v-for="download in downloads" :key="download.url">
-          <div class="flex flex-col">
-            <div>
-              {{ getDownloadLabel(download.savePath) }}
-            </div>
-            <div v-if="['cancelled', 'error'].includes(download.status)">
-              <Chip class="h-6 text-sm font-light bg-red-700">
-                {{ t('electronFileDownload.cancelled') }}
-              </Chip>
-            </div>
-            <div
-              class="mt-2 flex flex-row items-center gap-2"
-              v-if="
-                ['in_progress', 'paused', 'completed'].includes(download.status)
-              "
-            >
-              <ProgressBar
-                class="flex-1"
-                :value="Number((download.progress * 100).toFixed(1))"
-              />
-
-              <Button
-                class="file-action-button w-[22px] h-[22px]"
-                size="small"
-                rounded
-                @click="triggerPauseDownload(download.url)"
-                v-if="download.status === 'in_progress'"
-                icon="pi pi-pause"
-                v-tooltip.top="t('electronFileDownload.pause')"
-              />
-
-              <Button
-                class="file-action-button w-[22px] h-[22px]"
-                size="small"
-                rounded
-                @click="triggerResumeDownload(download.url)"
-                v-if="download.status === 'paused'"
-                icon="pi pi-play"
-                v-tooltip.top="t('electronFileDownload.resume')"
-              />
-
-              <Button
-                class="file-action-button w-[22px] h-[22px] p-red"
-                size="small"
-                rounded
-                severity="danger"
-                @click="triggerCancelDownload(download.url)"
-                v-if="['in_progress', 'paused'].includes(download.status)"
-                icon="pi pi-times-circle"
-                v-tooltip.top="t('electronFileDownload.cancel')"
-              />
-            </div>
-          </div>
+          <DownloadItem :download="download" />
         </template>
       </div>
 
@@ -109,8 +58,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
-import ProgressBar from 'primevue/progressbar'
-import Chip from 'primevue/chip'
+import DownloadItem from '@/components/sidebar/tabs/modelLibrary/DownloadItem.vue'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -253,18 +201,6 @@ watch(
   },
   { deep: true }
 )
-
-const getDownloadLabel = (savePath: string, filename: string) => {
-  let parts = (savePath ?? '').split('/')
-  parts = parts.length === 1 ? parts[0].split('\\') : parts
-  const name = parts.pop()
-  const dir = parts.pop()
-  return `${dir}/${name}`
-}
-
-const triggerCancelDownload = (url: string) => electronDownloadStore.cancel(url)
-const triggerPauseDownload = (url: string) => electronDownloadStore.pause(url)
-const triggerResumeDownload = (url: string) => electronDownloadStore.resume(url)
 
 onMounted(async () => {
   if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
