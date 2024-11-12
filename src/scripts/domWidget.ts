@@ -316,8 +316,10 @@ LGraphNode.prototype.addDOMWidget = function (
         computeSize.call(node, node.size)
       }
 
+      const { offset, scale } = app.canvas.ds
+
       const hidden =
-        (!!options.hideOnZoom && app.canvas.ds.scale < 0.5) ||
+        (!!options.hideOnZoom && scale < 0.5) ||
         widget.computedHeight <= 0 ||
         widget.type === 'converted-widget' ||
         widget.type === 'hidden'
@@ -335,23 +337,16 @@ LGraphNode.prototype.addDOMWidget = function (
         return
       }
 
-      const margin = 10
       const elRect = ctx.canvas.getBoundingClientRect()
-      const transform = new DOMMatrix()
-        .scaleSelf(
-          elRect.width / ctx.canvas.width,
-          elRect.height / ctx.canvas.height
-        )
-        .multiplySelf(ctx.getTransform())
-        .translateSelf(margin, margin + y)
-
-      const scale = new DOMMatrix().scaleSelf(transform.a, transform.d)
+      const margin = 10
+      const top = node.pos[0] + offset[0] + margin
+      const left = node.pos[1] + offset[1] + margin + y
 
       Object.assign(element.style, {
         transformOrigin: '0 0',
-        transform: scale,
-        left: `${transform.a + transform.e}px`,
-        top: `${transform.d + transform.f}px`,
+        transform: `scale(${scale})`,
+        left: `${top * scale}px`,
+        top: `${left * scale}px`,
         width: `${widgetWidth - margin * 2}px`,
         height: `${(widget.computedHeight ?? 50) - margin * 2}px`,
         position: 'absolute',
