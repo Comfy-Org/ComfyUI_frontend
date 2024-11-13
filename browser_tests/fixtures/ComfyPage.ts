@@ -592,41 +592,42 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async ctrlSend(keyToPress: string) {
-    await this.page.keyboard.press(`Control+${keyToPress}`)
+  async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
+    const target = locator ?? this.page.keyboard
+    await target.press(`Control+${keyToPress}`)
     await this.nextFrame()
   }
 
-  async ctrlA() {
-    await this.ctrlSend('KeyA')
+  async ctrlA(locator?: Locator | null) {
+    await this.ctrlSend('KeyA', locator)
   }
 
-  async ctrlB() {
-    await this.ctrlSend('KeyB')
+  async ctrlB(locator?: Locator | null) {
+    await this.ctrlSend('KeyB', locator)
   }
 
-  async ctrlC() {
-    await this.ctrlSend('KeyC')
+  async ctrlC(locator?: Locator | null) {
+    await this.ctrlSend('KeyC', locator)
   }
 
-  async ctrlV() {
-    await this.ctrlSend('KeyV')
+  async ctrlV(locator?: Locator | null) {
+    await this.ctrlSend('KeyV', locator)
   }
 
-  async ctrlZ() {
-    await this.ctrlSend('KeyZ')
+  async ctrlZ(locator?: Locator | null) {
+    await this.ctrlSend('KeyZ', locator)
   }
 
-  async ctrlY() {
-    await this.ctrlSend('KeyY')
+  async ctrlY(locator?: Locator | null) {
+    await this.ctrlSend('KeyY', locator)
   }
 
-  async ctrlArrowUp() {
-    await this.ctrlSend('ArrowUp')
+  async ctrlArrowUp(locator?: Locator | null) {
+    await this.ctrlSend('ArrowUp', locator)
   }
 
-  async ctrlArrowDown() {
-    await this.ctrlSend('ArrowDown')
+  async ctrlArrowDown(locator?: Locator | null) {
+    await this.ctrlSend('ArrowDown', locator)
   }
 
   async closeMenu() {
