@@ -98,15 +98,15 @@ const isValidSource = computed(
   () => sourcePath.value !== '' && pathError.value === ''
 )
 
-const validateSource = async () => {
-  if (!sourcePath.value) {
+const validateSource = async (sourcePath: string) => {
+  if (!sourcePath) {
     pathError.value = ''
     return
   }
 
   try {
     pathError.value = ''
-    const validation = await electron.validateComfyUISource(sourcePath.value)
+    const validation = await electron.validateComfyUISource(sourcePath)
 
     if (!validation.isValid) pathError.value = validation.error
   } catch (error) {
@@ -120,7 +120,7 @@ const browsePath = async () => {
     const result = await electron.showDirectoryPicker()
     if (result) {
       sourcePath.value = result
-      await validateSource()
+      await validateSource(result)
     }
   } catch (error) {
     console.error(error)
