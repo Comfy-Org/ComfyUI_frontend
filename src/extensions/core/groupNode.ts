@@ -145,7 +145,7 @@ class GroupNodeBuilder {
 
     // Use the built in copyToClipboard function to generate the node data we need
     try {
-      const serialised = copyToClipboard(this.nodes, app.canvas.graph)
+      const serialised = serialise(this.nodes, app.canvas.graph)
       const config = JSON.parse(serialised)
 
       storeLinkTypes(config)
@@ -851,7 +851,7 @@ export class GroupNodeHandler {
           }
           c.nodes[i] = { ...c.nodes[i], id }
         }
-        pasteFromClipboard(JSON.stringify(c), app.canvas)
+        deserialise(JSON.stringify(c), app.canvas)
 
         const [x, y] = this.node.pos
         let top
@@ -1480,110 +1480,112 @@ function manageGroupNodes() {
   new ManageGroupDialog(app).show()
 }
 
-function copyToClipboard(nodes: LGraphNode[], graph: LGraph): string {
-  const clipboard_info = {
+/**
+ * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function
+ * @param nodes All nodes to be serialised
+ * @param graph The graph we are working in
+ * @returns A serialised string of all nodes, and their connections
+ * @deprecated Format not in use anywhere else.
+ */
+function serialise(nodes: LGraphNode[], graph: LGraph): string {
+  const serialisable = {
     nodes: [],
     links: []
   }
   let index = 0
-  const selected_nodes_array: LGraphNode[] = []
+  const cloneable: LGraphNode[] = []
 
-  for (const i in nodes) {
-    const node = nodes[i]
+  for (const node of nodes) {
     if (node.clonable === false) continue
 
-    node._relative_id = index
-    selected_nodes_array.push(node)
-    index += 1
+    node._relative_id = index++
+    cloneable.push(node)
   }
 
-  for (let i = 0; i < selected_nodes_array.length; ++i) {
-    const node = selected_nodes_array[i]
+  // Clone the node
+  for (const node of cloneable) {
     const cloned = node.clone()
     if (!cloned) {
       console.warn('node type not found: ' + node.type)
       continue
     }
-    clipboard_info.nodes.push(cloned.serialize())
-    if (node.inputs?.length) {
-      for (let j = 0; j < node.inputs.length; ++j) {
-        const input = node.inputs[j]
-        if (!input || input.link == null) continue
 
-        const link_info = graph._links.get(input.link)
-        if (!link_info) continue
+    serialisable.nodes.push(cloned.serialize())
+    if (!node.inputs?.length) continue
 
-        const target_node = graph.getNodeById(link_info.origin_id)
-        if (!target_node) continue
+    // For inputs only, gather link details of every connection
+    for (const input of node.inputs) {
+      if (!input || input.link == null) continue
 
-        clipboard_info.links.push([
-          target_node._relative_id,
-          link_info.origin_slot, //j,
-          node._relative_id,
-          link_info.target_slot,
-          target_node.id
-        ])
-      }
+      const link = graph.links.get(input.link)
+      if (!link) continue
+
+      const outNode = graph.getNodeById(link.origin_id)
+      if (!outNode) continue
+
+      // Special format for old Litegraph copy & paste only
+      serialisable.links.push([
+        outNode._relative_id,
+        link.origin_slot,
+        node._relative_id,
+        link.target_slot,
+        outNode.id
+      ])
     }
   }
 
-  return JSON.stringify(clipboard_info)
+  return JSON.stringify(serialisable)
 }
 
-function pasteFromClipboard(data: string, canvas: LGraphCanvas): void {
+/**
+ * Deserialises nodes and links using a modified version of the old Litegraph (copy &) paste function
+ * @param data The serialised nodes and links to create
+ * @param canvas The canvas to create the serialised items in
+ */
+function deserialise(data: string, canvas: LGraphCanvas): void {
   if (!data) return
 
-  const graph = canvas.graph
+  const { graph, graph_mouse } = canvas
   graph.beforeChange()
 
-  //create nodes
-  const clipboard_info = JSON.parse(data)
-  // calculate top-left node, could work without this processing but using diff with last node pos :: clipboard_info.nodes[clipboard_info.nodes.length-1].pos
-  let posMin: false | [number, number] = false
-  let posMinIndexes: false | [number, number] = false
-  for (let i = 0; i < clipboard_info.nodes.length; ++i) {
-    if (posMin) {
-      if (posMin[0] > clipboard_info.nodes[i].pos[0]) {
-        posMin[0] = clipboard_info.nodes[i].pos[0]
-        posMinIndexes[0] = i
-      }
-      if (posMin[1] > clipboard_info.nodes[i].pos[1]) {
-        posMin[1] = clipboard_info.nodes[i].pos[1]
-        posMinIndexes[1] = i
-      }
-    } else {
-      posMin = [clipboard_info.nodes[i].pos[0], clipboard_info.nodes[i].pos[1]]
-      posMinIndexes = [i, i]
-    }
+  const deserialised = JSON.parse(data)
+
+  // Find the top left point of the boundary of all pasted nodes
+  const topLeft = [Infinity, Infinity]
+  for (const { pos } of deserialised.nodes) {
+    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
+    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
   }
+
+  // Silent default instead of throw
+  if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
+    topLeft[0] = graph_mouse[0]
+    topLeft[1] = graph_mouse[1]
+  }
+
+  // Create nodes
   const nodes: LGraphNode[] = []
-  for (let i = 0; i < clipboard_info.nodes.length; ++i) {
-    const node_data = clipboard_info.nodes[i]
-    const node = LiteGraph.createNode(node_data.type)
-    if (node) {
-      node.configure(node_data)
+  for (const info of deserialised.nodes) {
+    const node = LiteGraph.createNode(info.type)
+    if (!node) continue
 
-      //paste in last known mouse position
-      node.pos[0] += canvas.graph_mouse[0] - posMin[0] //+= 5;
-      node.pos[1] += canvas.graph_mouse[1] - posMin[1] //+= 5;
+    node.configure(info)
 
-      graph.add(node, true)
+    // Paste to the bottom right of pointer
+    node.pos[0] += graph_mouse[0] - topLeft[0]
+    node.pos[1] += graph_mouse[1] - topLeft[1]
 
-      nodes.push(node)
-    }
+    graph.add(node, true)
+    nodes.push(node)
   }
 
-  //create links
-  for (let i = 0; i < clipboard_info.links.length; ++i) {
-    const link_info = clipboard_info.links[i]
-    let origin_node: LGraphNode = undefined
-    const origin_node_relative_id = link_info[0]
-    if (origin_node_relative_id != null) {
-      origin_node = nodes[origin_node_relative_id]
-    }
-    const target_node = nodes[link_info[2]]
-    if (origin_node && target_node)
-      origin_node.connect(link_info[1], target_node, link_info[3])
+  // Create links
+  for (const info of deserialised.links) {
+    const relativeId = info[0]
+    const outNode = relativeId != null ? nodes[relativeId] : undefined
+
+    const inNode = nodes[info[2]]
+    if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
     else console.warn('Warning, nodes missing on pasting')
   }
 
