@@ -76,7 +76,7 @@ app.registerExtension({
       'touchmove',
       (e) => {
         touchTime = null
-        if (touchCount === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
+        if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer_is_down = false
           touchZooming = true
