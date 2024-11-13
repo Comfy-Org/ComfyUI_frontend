@@ -587,9 +587,7 @@ export class ComfyPage {
   }
 
   async ctrlSend(keyToPress: string) {
-    await this.page.keyboard.down('Control')
-    await this.page.keyboard.press(keyToPress)
-    await this.page.keyboard.up('Control')
+    await this.page.keyboard.press(`Control+${keyToPress}`)
     await this.nextFrame()
   }
 
