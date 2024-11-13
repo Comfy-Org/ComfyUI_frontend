@@ -83,7 +83,10 @@ body {
   /* Position at the first row */
   grid-row: 1;
   /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
+  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
+  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
+  is located in body-top. */
+  z-index: 1001;
   display: flex;
   flex-direction: column;
 }
