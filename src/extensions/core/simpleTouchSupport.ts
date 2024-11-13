@@ -8,7 +8,7 @@ let touchCount = 0
 app.registerExtension({
   name: 'Comfy.SimpleTouchSupport',
   setup() {
-    let zoomPos
+    let touchDist
     let touchTime
     let lastTouch
     let lastScale
@@ -43,7 +43,7 @@ app.registerExtension({
             lastScale = app.canvas.ds.scale
             lastTouch = getMultiTouchCenter(e)
 
-            zoomPos = getMultiTouchPos(e)
+            touchDist = getMultiTouchPos(e)
             app.canvas.pointer_is_down = false
           }
         }
@@ -85,22 +85,16 @@ app.registerExtension({
           LiteGraph.closeAllContextMenus()
           // @ts-expect-error
           app.canvas.search_box?.close()
-          const newZoomPos = getMultiTouchPos(e)
+          const newTouchDist = getMultiTouchPos(e)
 
           const center = getMultiTouchCenter(e)
 
           let scale = app.canvas.ds.scale
-          const diff = zoomPos - newZoomPos
 
-          scale = lastScale - diff / 100
+          scale = (lastScale * newTouchDist) / touchDist
 
-          const newX = ((center.clientX - lastTouch.clientX) * 1) / scale
-          const newY = ((center.clientY - lastTouch.clientY) * 1) / scale
-
-          const convertCanvasToOffset = (pos, scale) => [
-            pos[0] / scale - app.canvas.ds.offset[0],
-            pos[1] / scale - app.canvas.ds.offset[1]
-          ]
+          const newX = (center.clientX - lastTouch.clientX) / scale
+          const newY = (center.clientY - lastTouch.clientY) / scale
 
           // Code from LiteGraph
           if (scale < app.canvas.ds.min_scale) {
@@ -113,20 +107,19 @@ app.registerExtension({
 
           app.canvas.ds.scale = scale
 
+          // Code from LiteGraph
           if (Math.abs(app.canvas.ds.scale - 1) < 0.01) {
             app.canvas.ds.scale = 1
           }
 
           const newScale = app.canvas.ds.scale
 
-          var oldCenter = convertCanvasToOffset(
-            [center.clientX, center.clientY],
-            oldScale
-          )
-          var newCenter = convertCanvasToOffset(
-            [center.clientX, center.clientY],
-            newScale
-          )
+          const convertScaleToOffset = (scale) => [
+            center.clientX / scale - app.canvas.ds.offset[0],
+            center.clientY / scale - app.canvas.ds.offset[1]
+          ]
+          var oldCenter = convertScaleToOffset(oldScale)
+          var newCenter = convertScaleToOffset(newScale)
 
           app.canvas.ds.offset[0] += newX + newCenter[0] - oldCenter[0]
           app.canvas.ds.offset[1] += newY + newCenter[1] - oldCenter[1]
