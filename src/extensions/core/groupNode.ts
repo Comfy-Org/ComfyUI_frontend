@@ -923,10 +923,8 @@ export class GroupNodeHandler {
 
         // Shift each node
         for (const newNode of newNodes) {
-          newNode.pos = [
-            newNode.pos[0] - (left - x),
-            newNode.pos[1] - (top - y)
-          ]
+          newNode.pos[0] -= left - x
+          newNode.pos[1] -= top - y
         }
 
         return { newNodes, selectedIds }
