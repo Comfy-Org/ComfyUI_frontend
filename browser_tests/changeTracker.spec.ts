@@ -75,13 +75,11 @@ test.describe('Change Tracker', () => {
       expect(await getUndoQueueSize()).toBe(2)
       expect(await getRedoQueueSize()).toBe(1)
 
-      // TODO(huchenlei): Following assertion is flaky.
-      // Seems like ctrlZ() is not triggered correctly.
-      // await comfyPage.ctrlZ()
-      // await expect(node).not.toBeCollapsed()
-      // expect(await isModified()).toBe(false)
-      // expect(await getUndoQueueSize()).toBe(1)
-      // expect(await getRedoQueueSize()).toBe(2)
+      await comfyPage.ctrlZ()
+      await expect(node).not.toBeCollapsed()
+      expect(await isModified()).toBe(false)
+      expect(await getUndoQueueSize()).toBe(1)
+      expect(await getRedoQueueSize()).toBe(2)
     })
   })
 
