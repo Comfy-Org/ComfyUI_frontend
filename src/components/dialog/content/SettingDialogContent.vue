@@ -18,7 +18,7 @@
     </ScrollPanel>
     <Divider layout="vertical" class="mx-1 2xl:mx-4" />
     <ScrollPanel class="settings-content flex-grow">
-      <Tabs :value="tabValue">
+      <Tabs :value="tabValue" :lazy="true">
         <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
         <TabPanels class="settings-tab-panels">
           <TabPanel key="search-results" value="Search Results">
