@@ -1,16 +1,16 @@
 <template>
-  <Terminal @created="terminalCreated" />
+  <BaseTerminal @created="terminalCreated" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, defineEmits, Ref } from 'vue'
-import { useTerminal } from './useTerminal'
+import type { useTerminal } from './useTerminal'
 import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Terminal from './Terminal.vue'
+import BaseTerminal from './BaseTerminal.vue'
 
 const emit = defineEmits<{
   error: [string]

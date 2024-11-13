@@ -1,13 +1,13 @@
 <template>
-  <Terminal @created="terminalCreated" />
+  <BaseTerminal @created="terminalCreated" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, Ref } from 'vue'
-import { useTerminal } from './useTerminal'
+import type { useTerminal } from './useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { IDisposable } from '@xterm/xterm'
-import Terminal from './Terminal.vue'
+import BaseTerminal from './BaseTerminal.vue'
 
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
