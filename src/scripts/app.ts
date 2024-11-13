@@ -64,6 +64,7 @@ import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2123,8 +2124,14 @@ export class ComfyApp {
         continue
       }
 
-      localStorage.setItem('litegrapheditor_clipboard', template.data)
-      app.canvas.pasteFromClipboard()
+      // Check for old clipboard format
+      const data = JSON.parse(template.data)
+      if (!data.reroutes) {
+        deserialiseAndCreate(template.data, app.canvas)
+      } else {
+        localStorage.setItem('litegrapheditor_clipboard', template.data)
+        app.canvas.pasteFromClipboard()
+      }
 
       // Move mouse position down to paste the next template below
 
