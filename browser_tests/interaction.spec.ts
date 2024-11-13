@@ -285,7 +285,8 @@ test.describe('Node Interaction', () => {
       position: {
         x: 50,
         y: 10
-      }
+      },
+      delay: 5
     })
     await comfyPage.page.keyboard.type('Hello World')
     await comfyPage.page.keyboard.press('Enter')
@@ -300,7 +301,8 @@ test.describe('Node Interaction', () => {
       position: {
         x: 50,
         y: 50
-      }
+      },
+      delay: 5
     })
     expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
   })
@@ -352,7 +354,8 @@ test.describe('Group Interaction', () => {
       position: {
         x: 50,
         y: 10
-      }
+      },
+      delay: 5
     })
     await comfyPage.page.keyboard.type('Hello World')
     await comfyPage.page.keyboard.press('Enter')
