@@ -21,7 +21,7 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   const initialize = async () => {
     if (isElectron()) {
       const allDownloads: ElectronDownload[] =
-        await DownloadManager.getAllDownloads()
+        (await DownloadManager.getAllDownloads()) as unknown as ElectronDownload[]
 
       for (const download of allDownloads) {
         downloads.value.push(download)
