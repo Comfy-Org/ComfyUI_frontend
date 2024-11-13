@@ -3,6 +3,9 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from './fixtures/ComfyPage'
+import type { useWorkspaceStore } from '../src/stores/workspaceStore'
+
+type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -25,24 +28,24 @@ test.describe('Change Tracker', () => {
     test('Can undo multiple operations', async ({ comfyPage }) => {
       function isModified() {
         return comfyPage.page.evaluate(async () => {
-          return window['app'].extensionManager.workflow.activeWorkflow
-            .isModified
+          return !!(window['app'].extensionManager as WorkspaceStore).workflow
+            .activeWorkflow?.isModified
         })
       }
 
       function getUndoQueueSize() {
         return comfyPage.page.evaluate(() => {
-          const workflow =
-            window['app'].extensionManager.workflow.activeWorkflow
-          return workflow.changeTracker.undoQueue.length
+          const workflow = (window['app'].extensionManager as WorkspaceStore)
+            .workflow.activeWorkflow
+          return workflow?.changeTracker.undoQueue.length
         })
       }
 
       function getRedoQueueSize() {
         return comfyPage.page.evaluate(() => {
-          const workflow =
-            window['app'].extensionManager.workflow.activeWorkflow
-          return workflow.changeTracker.redoQueue.length
+          const workflow = (window['app'].extensionManager as WorkspaceStore)
+            .workflow.activeWorkflow
+          return workflow?.changeTracker.redoQueue.length
         })
       }
       expect(await getUndoQueueSize()).toBe(0)
