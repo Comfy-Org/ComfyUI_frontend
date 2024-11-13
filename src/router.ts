@@ -22,7 +22,12 @@ const guardElectronAccess = (
 }
 
 const router = createRouter({
-  history: isFileProtocol() ? createWebHashHistory() : createWebHistory(),
+  history: isFileProtocol()
+    ? createWebHashHistory()
+    : // Base path must be specified to ensure correct relative paths
+      // Example: For URL 'http://localhost:7801/ComfyBackendDirect',
+      // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
+      createWebHistory(window.location.pathname),
   routes: [
     {
       path: '/',
