@@ -80,7 +80,9 @@ watch(hoveredItemStore, (hoveredItem) => {
     return hideTooltip()
   }
   const item = hoveredItem.value
-  const nodeDef = nodeDefStore.nodeDefsByName[item.node.type]
+  const nodeDef =
+    nodeDefStore.nodeDefsByName[item.node.type] ??
+    LiteGraph.registered_node_types[item.node.type]?.nodeData
   if (item.type == 'Title') {
     let description = nodeDef.description
     if (Array.isArray(description)) {
@@ -93,7 +95,11 @@ watch(hoveredItemStore, (hoveredItem) => {
     showTooltip(nodeDef?.output?.all?.[item.outputSlot]?.tooltip)
   } else if (item.type == 'Widget') {
     showTooltip(
-      item.widget.tooltip ?? nodeDef.input.getInput(item.widget.name)?.tooltip
+      item.widget.tooltip ??
+        (
+          nodeDef.input.optional?.[item.widget.name] ??
+          nodeDef.input.required?.[item.widget.name]
+        )?.tooltip
     )
   } else {
     hideTooltip()
@@ -106,7 +112,9 @@ const onIdle = () => {
   if (!node) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
-  const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+  const nodeDef =
+    nodeDefStore.nodeDefsByName[node.type] ??
+    LiteGraph.registered_node_types[node.type]?.nodeData
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&

@@ -85,8 +85,8 @@ function selectHelp(name: string, value?: string) {
   if (!docElement.value || !name) {
     return null
   }
-  if (def[2]?.select) {
-    return def[2].select(docElement.value, name, value)
+  if (def.description[2]?.select) {
+    return def.description[2].select(docElement.value, name, value)
   }
   //attempt to navigate to name in help
   function collapseUnlessMatch(items, t) {
