@@ -1,8 +1,8 @@
 <template>
   <Tabs value="0" class="h-full w-full">
-    <TabList>
+    <TabList v-if="isElectron">
       <Tab value="0">Logs</Tab>
-      <Tab value="1" v-if="isElectron">Terminal</Tab>
+      <Tab value="1">Terminal</Tab>
     </TabList>
     <TabPanels class="h-full w-full p-0 overflow-hidden">
       <TabPanel value="0" class="h-full w-full">
