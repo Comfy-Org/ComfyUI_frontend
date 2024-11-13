@@ -109,7 +109,7 @@ test.describe('Change Tracker', () => {
     await expect(node).not.toBeCollapsed()
 
     // Run again, but within a change transaction
-    beforeChange(comfyPage)
+    await beforeChange(comfyPage)
 
     await node.click('collapse')
     await comfyPage.ctrlB()
@@ -117,7 +117,7 @@ test.describe('Change Tracker', () => {
     await expect(node).toBeBypassed()
 
     // End transaction
-    afterChange(comfyPage)
+    await afterChange(comfyPage)
 
     // Ensure undo reverts both changes
     await comfyPage.ctrlZ()
