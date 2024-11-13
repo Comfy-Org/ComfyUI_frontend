@@ -26,7 +26,7 @@ app.registerExtension({
       }
     }
 
-    app.canvasEl.addEventListener(
+    app.canvasEl.parentElement.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
         touchCount++
@@ -51,47 +51,44 @@ app.registerExtension({
       true
     )
 
-    app.canvasEl.addEventListener('touchend', (e: TouchEvent) => {
-      touchCount = e.touches?.length ?? touchCount - 1
+    app.canvasEl.parentElement.addEventListener('touchend', (e: TouchEvent) => {
+      touchCount--
 
       if (e.touches?.length !== 1) touchZooming = false
       if (touchTime && !e.touches?.length) {
         if (new Date().getTime() - touchTime > 600) {
-          try {
-            // hack to get litegraph to use this event
-            e.constructor = CustomEvent
-          } catch (error) {}
-          // @ts-expect-error
-          e.clientX = lastTouch.clientX
-          // @ts-expect-error
-          e.clientY = lastTouch.clientY
-
-          app.canvas.pointer_is_down = true
-          // @ts-expect-error
-          app.canvas._mousedown_callback(e)
+          if (e.target === app.canvasEl) {
+            app.canvasEl.dispatchEvent(
+              new PointerEvent('pointerdown', {
+                button: 2,
+                clientX: e.changedTouches[0].clientX,
+                clientY: e.changedTouches[0].clientY
+              })
+            )
+            e.preventDefault()
+          }
         }
         touchTime = null
       }
     })
 
-    app.canvasEl.addEventListener(
+    app.canvasEl.parentElement.addEventListener(
       'touchmove',
       (e) => {
         touchTime = null
-        if (e.touches?.length === 2) {
+        if (touchCount === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
+          e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer_is_down = false
           touchZooming = true
-          // @ts-expect-error
-          LiteGraph.closeAllContextMenus()
+
+          LiteGraph.closeAllContextMenus(window)
           // @ts-expect-error
           app.canvas.search_box?.close()
           const newTouchDist = getMultiTouchPos(e)
 
           const center = getMultiTouchCenter(e)
 
-          let scale = app.canvas.ds.scale
-
-          scale = (lastScale * newTouchDist) / touchDist
+          let scale = (lastScale * newTouchDist) / touchDist
 
           const newX = (center.clientX - lastTouch.clientX) / scale
           const newY = (center.clientY - lastTouch.clientY) / scale
@@ -140,6 +137,7 @@ LGraphCanvas.prototype.processMouseDown = function (e) {
   if (touchZooming || touchCount) {
     return
   }
+  app.canvas.pointer_is_down = false // Prevent context menu from opening on second tap
   return processMouseDown.apply(this, arguments)
 }
 
