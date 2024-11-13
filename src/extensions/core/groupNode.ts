@@ -851,7 +851,7 @@ export class GroupNodeHandler {
           }
           c.nodes[i] = { ...c.nodes[i], id }
         }
-        deserialise(JSON.stringify(c), app.canvas)
+        deserialiseAndCreate(JSON.stringify(c), app.canvas)
 
         const [x, y] = this.node.pos
         let top
@@ -1542,7 +1542,7 @@ function serialise(nodes: LGraphNode[], graph: LGraph): string {
  * @param data The serialised nodes and links to create
  * @param canvas The canvas to create the serialised items in
  */
-function deserialise(data: string, canvas: LGraphCanvas): void {
+function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   if (!data) return
 
   const { graph, graph_mouse } = canvas
