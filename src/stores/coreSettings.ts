@@ -514,5 +514,12 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: LinkMarkerShape.Arrow, text: 'Arrow' }
     ],
     versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.DOMClippingEnabled',
+    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
+    name: 'Enable DOM element clipping (enabling may reduce performance)',
+    type: 'boolean',
+    defaultValue: true
   }
 ]

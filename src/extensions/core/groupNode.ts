@@ -3,8 +3,8 @@ import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { mergeIfValid } from './widgetInputs'
 import { ManageGroupDialog } from './groupNodeManage'
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph, type LGraph } from '@comfyorg/litegraph'
+import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { useToastStore } from '@/stores/toastStore'
@@ -144,21 +144,15 @@ class GroupNodeBuilder {
     }
 
     // Use the built in copyToClipboard function to generate the node data we need
-    const backup = localStorage.getItem('litegrapheditor_clipboard')
     try {
-      // @ts-expect-error
-      // TODO Figure out if copyToClipboard is really taking this param
-      app.canvas.copyToClipboard(this.nodes)
-      const config = JSON.parse(
-        localStorage.getItem('litegrapheditor_clipboard')
-      )
+      const serialised = serialise(this.nodes, app.canvas.graph)
+      const config = JSON.parse(serialised)
 
       storeLinkTypes(config)
       storeExternalLinks(config)
 
       return config
     } finally {
-      localStorage.setItem('litegrapheditor_clipboard', backup)
     }
   }
 }
@@ -842,7 +836,6 @@ export class GroupNodeHandler {
 
     this.node.convertToNodes = () => {
       const addInnerNodes = () => {
-        const backup = localStorage.getItem('litegrapheditor_clipboard')
         // Clone the node data so we dont mutate it for other nodes
         const c = { ...this.groupData.nodeData }
         c.nodes = [...c.nodes]
@@ -858,9 +851,7 @@ export class GroupNodeHandler {
           }
           c.nodes[i] = { ...c.nodes[i], id }
         }
-        localStorage.setItem('litegrapheditor_clipboard', JSON.stringify(c))
-        app.canvas.pasteFromClipboard()
-        localStorage.setItem('litegrapheditor_clipboard', backup)
+        deserialiseAndCreate(JSON.stringify(c), app.canvas)
 
         const [x, y] = this.node.pos
         let top
@@ -923,10 +914,8 @@ export class GroupNodeHandler {
 
         // Shift each node
         for (const newNode of newNodes) {
-          newNode.pos = [
-            newNode.pos[0] - (left - x),
-            newNode.pos[1] - (top - y)
-          ]
+          newNode.pos[0] -= left - x
+          newNode.pos[1] -= top - y
         }
 
         return { newNodes, selectedIds }
@@ -970,10 +959,14 @@ export class GroupNodeHandler {
         }
       }
 
+      app.canvas.emitBeforeChange()
+
       const { newNodes, selectedIds } = addInnerNodes()
       reconnectInputs(selectedIds)
       reconnectOutputs(selectedIds)
       app.graph.remove(this.node)
+
+      app.canvas.emitAfterChange()
 
       return newNodes
     }
@@ -1485,6 +1478,120 @@ function ungroupSelectedGroupNodes() {
 
 function manageGroupNodes() {
   new ManageGroupDialog(app).show()
+}
+
+/**
+ * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function
+ * @param nodes All nodes to be serialised
+ * @param graph The graph we are working in
+ * @returns A serialised string of all nodes, and their connections
+ * @deprecated Format not in use anywhere else.
+ */
+function serialise(nodes: LGraphNode[], graph: LGraph): string {
+  const serialisable = {
+    nodes: [],
+    links: []
+  }
+  let index = 0
+  const cloneable: LGraphNode[] = []
+
+  for (const node of nodes) {
+    if (node.clonable === false) continue
+
+    node._relative_id = index++
+    cloneable.push(node)
+  }
+
+  // Clone the node
+  for (const node of cloneable) {
+    const cloned = node.clone()
+    if (!cloned) {
+      console.warn('node type not found: ' + node.type)
+      continue
+    }
+
+    serialisable.nodes.push(cloned.serialize())
+    if (!node.inputs?.length) continue
+
+    // For inputs only, gather link details of every connection
+    for (const input of node.inputs) {
+      if (!input || input.link == null) continue
+
+      const link = graph.links.get(input.link)
+      if (!link) continue
+
+      const outNode = graph.getNodeById(link.origin_id)
+      if (!outNode) continue
+
+      // Special format for old Litegraph copy & paste only
+      serialisable.links.push([
+        outNode._relative_id,
+        link.origin_slot,
+        node._relative_id,
+        link.target_slot,
+        outNode.id
+      ])
+    }
+  }
+
+  return JSON.stringify(serialisable)
+}
+
+/**
+ * Deserialises nodes and links using a modified version of the old Litegraph (copy &) paste function
+ * @param data The serialised nodes and links to create
+ * @param canvas The canvas to create the serialised items in
+ */
+function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
+  if (!data) return
+
+  const { graph, graph_mouse } = canvas
+  graph.beforeChange()
+
+  const deserialised = JSON.parse(data)
+
+  // Find the top left point of the boundary of all pasted nodes
+  const topLeft = [Infinity, Infinity]
+  for (const { pos } of deserialised.nodes) {
+    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
+    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
+  }
+
+  // Silent default instead of throw
+  if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
+    topLeft[0] = graph_mouse[0]
+    topLeft[1] = graph_mouse[1]
+  }
+
+  // Create nodes
+  const nodes: LGraphNode[] = []
+  for (const info of deserialised.nodes) {
+    const node = LiteGraph.createNode(info.type)
+    if (!node) continue
+
+    node.configure(info)
+
+    // Paste to the bottom right of pointer
+    node.pos[0] += graph_mouse[0] - topLeft[0]
+    node.pos[1] += graph_mouse[1] - topLeft[1]
+
+    graph.add(node, true)
+    nodes.push(node)
+  }
+
+  // Create links
+  for (const info of deserialised.links) {
+    const relativeId = info[0]
+    const outNode = relativeId != null ? nodes[relativeId] : undefined
+
+    const inNode = nodes[info[2]]
+    if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
+    else console.warn('Warning, nodes missing on pasting')
+  }
+
+  canvas.selectNodes(nodes)
+
+  graph.afterChange()
 }
 
 const id = 'Comfy.GroupNode'
