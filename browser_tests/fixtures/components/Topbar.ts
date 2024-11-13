@@ -44,6 +44,13 @@ export class Topbar {
     await this.triggerTopbarCommand(['Workflow', command])
     await this.getSaveDialog().fill(workflowName)
     await this.page.keyboard.press('Enter')
+
+    // Wait for workflow service to finish saving
+    await this.page.waitForFunction(
+      () => !window['app'].extensionManager.workflow.isBusy,
+      undefined,
+      { timeout: 3000 }
+    )
     // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
   }
