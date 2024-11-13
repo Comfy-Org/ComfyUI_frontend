@@ -68,24 +68,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 import { electronAPI } from '@/utils/envUtil'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import { useI18n } from 'vue-i18n'
+import { MigrationItems } from '@comfyorg/comfyui-electron-types'
 
 const { t } = useI18n()
 
-const electron = electronAPI() as any
+const electron = electronAPI()
 
 const sourcePath = defineModel<string>('sourcePath', { required: false })
 const migrationItemIds = defineModel<string[]>('migrationItemIds', {
   required: false
 })
 
-const migrationItems = ref([])
+const migrationItems = ref(
+  MigrationItems.map((item) => ({
+    ...item,
+    selected: true
+  }))
+)
+
 const pathError = ref('')
 const isValidSource = computed(
   () => sourcePath.value !== '' && pathError.value === ''
@@ -120,13 +127,6 @@ const browsePath = async () => {
     pathError.value = t('install.failedToSelectDirectory')
   }
 }
-
-onMounted(async () => {
-  migrationItems.value = (await electron.migrationItems()).map((item) => ({
-    ...item,
-    selected: true
-  }))
-})
 
 watchEffect(() => {
   migrationItemIds.value = migrationItems.value

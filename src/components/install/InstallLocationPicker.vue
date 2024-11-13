@@ -77,8 +77,7 @@ const pathError = defineModel<string>('pathError', { required: true })
 const appData = ref('')
 const appPath = ref('')
 
-// TODO: Implement the actual electron API.
-const electron = electronAPI() as any
+const electron = electronAPI()
 
 // Get system paths on component mount
 onMounted(async () => {

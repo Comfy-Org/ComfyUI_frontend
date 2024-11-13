@@ -88,6 +88,7 @@ import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const installPath = ref('')
 const pathError = ref('')
@@ -100,14 +101,16 @@ const allowMetrics = ref(true)
 
 const hasError = computed(() => pathError.value !== '')
 
+const router = useRouter()
 const install = () => {
-  ;(electronAPI() as any).installComfyUI({
+  electronAPI().installComfyUI({
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
     migrationItemIds: migrationItemIds.value
   })
+  router.push('/server-start')
 }
 </script>
 
