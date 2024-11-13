@@ -68,6 +68,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   if (!data) return
 
   const { graph, graph_mouse } = canvas
+  canvas.emitBeforeChange()
   graph.beforeChange()
 
   const deserialised = JSON.parse(data)
@@ -114,4 +115,5 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   canvas.selectNodes(nodes)
 
   graph.afterChange()
+  canvas.emitAfterChange()
 }
