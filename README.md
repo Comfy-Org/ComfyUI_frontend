@@ -425,9 +425,17 @@ hook is used to auto-format code on commit.
 Note: The dev server will NOT load any extension from the ComfyUI server. Only
 core extensions will be loaded.
 
-- Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
+- Run `npm run dev:electron` to start the dev server with electron API mocked
+
+#### Access dev server on touch devices
+
+After you start the dev server, you should see following logs:
+![image](https://github.com/user-attachments/assets/9e04a439-452e-468c-8ba1-de9cbab6e03f)
+
+Make sure your desktop machine and touch device are on the same network. On your touch device,
+navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
 
 ### Unit Test
 
