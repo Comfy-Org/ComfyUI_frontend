@@ -284,32 +284,45 @@ export const useWorkflowStore = defineStore('workflow', () => {
     workflows.value.filter((workflow) => workflow.isModified)
   )
 
+  /** A filesystem operation is currently in progress (e.g. save, rename, delete) */
+  const isBusy = ref<boolean>(false)
+
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
-    // Capture all needed values upfront
-    const oldPath = workflow.path
-    const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
-
-    const openIndex = detachWorkflow(workflow)
-    // Perform the actual rename operation first
+    isBusy.value = true
     try {
-      await workflow.rename(newPath)
-    } finally {
-      attachWorkflow(workflow, openIndex)
-    }
+      // Capture all needed values upfront
+      const oldPath = workflow.path
+      const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
 
-    // Update bookmarks
-    if (wasBookmarked) {
-      bookmarkStore.setBookmarked(oldPath, false)
-      bookmarkStore.setBookmarked(newPath, true)
+      const openIndex = detachWorkflow(workflow)
+      // Perform the actual rename operation first
+      try {
+        await workflow.rename(newPath)
+      } finally {
+        attachWorkflow(workflow, openIndex)
+      }
+
+      // Update bookmarks
+      if (wasBookmarked) {
+        bookmarkStore.setBookmarked(oldPath, false)
+        bookmarkStore.setBookmarked(newPath, true)
+      }
+    } finally {
+      isBusy.value = false
     }
   }
 
   const deleteWorkflow = async (workflow: ComfyWorkflow) => {
-    await workflow.delete()
-    if (bookmarkStore.isBookmarked(workflow.path)) {
-      bookmarkStore.setBookmarked(workflow.path, false)
+    isBusy.value = true
+    try {
+      await workflow.delete()
+      if (bookmarkStore.isBookmarked(workflow.path)) {
+        bookmarkStore.setBookmarked(workflow.path, false)
+      }
+      delete workflowLookup.value[workflow.path]
+    } finally {
+      isBusy.value = false
     }
-    delete workflowLookup.value[workflow.path]
   }
 
   /**
@@ -317,12 +330,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param workflow The workflow to save.
    */
   const saveWorkflow = async (workflow: ComfyWorkflow) => {
-    // Detach the workflow and re-attach to force refresh the tree objects.
-    const openIndex = detachWorkflow(workflow)
+    isBusy.value = true
     try {
-      await workflow.save()
+      // Detach the workflow and re-attach to force refresh the tree objects.
+      const openIndex = detachWorkflow(workflow)
+      try {
+        await workflow.save()
+      } finally {
+        attachWorkflow(workflow, openIndex)
+      }
     } finally {
-      attachWorkflow(workflow, openIndex)
+      isBusy.value = false
     }
   }
 
@@ -333,6 +351,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openedWorkflowIndexShift,
     openWorkflow,
     isOpen,
+    isBusy,
     closeWorkflow,
     createTemporary,
     renameWorkflow,
