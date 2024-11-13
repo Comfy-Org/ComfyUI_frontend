@@ -27,15 +27,15 @@ export function useTerminal(element: Ref<HTMLElement>) {
       autoCols: boolean = true,
       onResize?: () => void
     ) {
-      const ensureValidRows = (rows: number) => {
-        if (isNaN(rows)) {
+      const ensureValidRows = (rows: number | undefined) => {
+        if (rows == null || isNaN(rows)) {
           return root.value?.clientHeight / 20
         }
         return rows
       }
 
-      const ensureValidCols = (cols: number) => {
-        if (isNaN(cols)) {
+      const ensureValidCols = (cols: number | undefined): number => {
+        if (cols == null || isNaN(cols)) {
           // Sometimes this is NaN if so, estimate.
           return root.value?.clientWidth / 8
         }
@@ -46,8 +46,8 @@ export function useTerminal(element: Ref<HTMLElement>) {
         const dims = fitAddon.proposeDimensions()
         // Sometimes propose returns NaN, so we may need to estimate.
         terminal.resize(
-          autoCols ? ensureValidCols(dims.cols) : terminal.cols,
-          autoRows ? ensureValidRows(dims.rows) : terminal.rows
+          autoCols ? ensureValidCols(dims?.cols) : terminal.cols,
+          autoRows ? ensureValidRows(dims?.rows) : terminal.rows
         )
         onResize?.()
       }
