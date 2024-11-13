@@ -47,10 +47,11 @@ test.describe('Change Tracker', () => {
       expect(await getUndoQueueSize()).toBe(0)
       expect(await getRedoQueueSize()).toBe(0)
 
+      // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
-      await comfyPage.page.waitForFunction(
-        () => !window['app'].extensionManager.workflow.activeWorkflow.isModified
-      )
+      expect(await comfyPage.getToastErrorCount()).toBe(0)
+      expect(await isModified()).toBe(false)
+
       // TODO(huchenlei): Investigate why saving the workflow is causing the
       // undo queue to be triggered.
       expect(await getUndoQueueSize()).toBe(1)

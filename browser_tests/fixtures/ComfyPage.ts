@@ -349,6 +349,12 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  async getToastErrorCount() {
+    return await this.page
+      .locator('.p-toast-message.p-toast-message-error')
+      .count()
+  }
+
   async getVisibleToastCount() {
     return await this.page.locator('.p-toast:visible').count()
   }
