@@ -518,16 +518,14 @@ function getResourceURL(
   return `/view?${params}`
 }
 
+const nodeToSceneMap: Map<ComfyNode, Load3d> = new Map()
+
 app.registerExtension({
   name: 'Comfy.Load3D',
 
   getCustomWidgets(app) {
     return {
       LOAD_3D(node, inputName) {
-        let load3dNodes = app.graph._nodes.filter((wi) => wi.type == 'LOAD_3D')
-
-        node.name = `load3d_${load3dNodes.length}`
-
         const containerWrapper = document.createElement('div')
 
         containerWrapper.id = `load-3d-wrapper-${inputName.toLowerCase()}`
@@ -538,31 +536,30 @@ app.registerExtension({
         container.classList.add('comfyui-load-3d')
         containerWrapper.appendChild(container)
 
-        node.load3d = new Load3d(node, container)
+        const load3d = new Load3d(node, container)
+
+        nodeToSceneMap.set(node, load3d)
 
         node.onResize = function () {
-          let [w, h] = this.size
-          if (w <= 300) w = 300
-          if (h <= 300) h = 300
-          this.size = [w, h]
-
-          if (this.load3d) {
-            this.load3d.handleResize()
+          if (load3d) {
+            load3d.handleResize()
           }
         }
 
         const origOnRemoved = node.onRemoved
 
         node.onRemoved = function () {
-          if (this.load3d) {
-            this.load3d.remove()
+          if (load3d) {
+            load3d.remove()
           }
+
+          nodeToSceneMap.delete(node)
 
           origOnRemoved?.apply(this, arguments)
         }
 
         node.onDrawBackground = function () {
-          node.load3d.renderer.domElement.hidden = this.flags.collapsed
+          load3d.renderer.domElement.hidden = this.flags.collapsed
         }
 
         return {
@@ -609,12 +606,14 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
+    const load3d = nodeToSceneMap.get(node)
+
     const onModelWidgetUpdate = () => {
       if (modelWidget.value) {
         const filename = modelWidget.value
         const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
 
-        node.load3d.loadModel(modelUrl, filename)
+        load3d.loadModel(modelUrl, filename)
       }
     }
 
@@ -626,44 +625,44 @@ app.registerExtension({
 
     const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
 
-    node.load3d.toggleGrid(showGrid.value)
+    load3d.toggleGrid(showGrid.value)
 
     showGrid.callback = (value: boolean) => {
-      node.load3d.toggleGrid(value)
+      load3d.toggleGrid(value)
     }
 
     const cameraType = node.widgets.find(
       (w: IWidget) => w.name === 'camera_type'
     )
 
-    node.load3d.toggleCamera(cameraType.value)
+    load3d.toggleCamera(cameraType.value)
 
-    cameraType.callback = (value: string) => {
-      node.load3d.toggleCamera(value)
+    cameraType.callback = (value: 'perspective' | 'orthographic') => {
+      load3d.toggleCamera(value)
     }
 
     const view = node.widgets.find((w: IWidget) => w.name === 'view')
 
-    view.callback = (value: string) => {
-      node.load3d.setViewPosition(value)
+    view.callback = (value: 'front' | 'top' | 'right' | 'isometric') => {
+      load3d.setViewPosition(value)
     }
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
 
-    node.load3d.setBackgroundColor(bgColor.value)
+    load3d.setBackgroundColor(bgColor.value)
 
     bgColor.callback = (value: string) => {
-      node.load3d.setBackgroundColor(value)
+      load3d.setBackgroundColor(value)
     }
 
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
 
-    node.load3d.setLightIntensity(lightIntensity.value)
+    load3d.setLightIntensity(lightIntensity.value)
 
     lightIntensity.callback = (value: number) => {
-      node.load3d.setLightIntensity(value)
+      load3d.setLightIntensity(value)
     }
 
     const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
@@ -671,7 +670,7 @@ app.registerExtension({
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
     sceneWidget.serializeValue = async () => {
-      const imageData = await node.load3d.captureScene(w.value, h.value)
+      const imageData = await load3d.captureScene(w.value, h.value)
 
       const blob = await fetch(imageData).then((r) => r.blob())
       const name = `scene_${Date.now()}.png`
@@ -705,7 +704,7 @@ app.registerExtension({
       if (fileInput.files?.length) {
         uploadFile(
           modelWidget,
-          node.load3d,
+          load3d,
           fileInput.files[0],
           true,
           fileInput
@@ -721,7 +720,7 @@ app.registerExtension({
     })
 
     node.addWidget('button', 'clear', 'clear', () => {
-      node.load3d.clearModel()
+      load3d.clearModel()
       const modelWidget = node.widgets.find(
         (w: IWidget) => w.name === 'model_file'
       )
