@@ -128,7 +128,7 @@ test.describe('Change Tracker', () => {
     await expect(node).not.toBeCollapsed()
   })
 
-  test('Can group multiple transaction calls into a single one', async ({
+  test('Can nest multiple change transactions without adding undo steps', async ({
     comfyPage
   }) => {
     const node = (await comfyPage.getFirstNodeRef())!
