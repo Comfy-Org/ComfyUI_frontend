@@ -432,7 +432,19 @@ core extensions will be loaded.
 #### Access dev server on touch devices
 
 After you start the dev server, you should see following logs:
-![image](https://github.com/user-attachments/assets/9e04a439-452e-468c-8ba1-de9cbab6e03f)
+
+```
+> comfyui-frontend@1.3.42 dev
+> vite
+
+
+  VITE v5.4.6  ready in 488 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://172.21.80.1:5173/
+  ➜  Network: http://192.168.2.20:5173/
+  ➜  press h + enter to show help
+```
 
 Make sure your desktop machine and touch device are on the same network. On your touch device,
 navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
