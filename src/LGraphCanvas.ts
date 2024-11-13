@@ -2,8 +2,8 @@ import type { CanvasColour, Dictionary, Direction, IBoundaryNodes, IContextMenuO
 import type { IWidget, TWidgetValue } from "./types/widgets"
 import { LGraphNode, type NodeId } from "./LGraphNode"
 import type { CanvasDragEvent, CanvasMouseEvent, CanvasWheelEvent, CanvasEventDetail, CanvasPointerEvent } from "./types/events"
-import type { IClipboardContents } from "./types/serialisation"
-import { LLink } from "./LLink"
+import type { ClipboardItems } from "./types/serialisation"
+import { LLink, type LinkId } from "./LLink"
 import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
 import { EaseFunction, LGraphEventMode, LinkDirection, LinkMarkerShape, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
@@ -98,6 +98,21 @@ export interface LGraphCanvasState {
     draggingCanvas: boolean
     /** The canvas is read-only, preventing changes to nodes, disconnecting links, moving items, etc. */
     readOnly: boolean
+}
+
+/**
+ * The items created by a clipboard paste operation.
+ * Includes maps of original copied IDs to newly created items.
+ */
+interface ClipboardPasteResult {
+    /** All successfully created items */
+    created: Positionable[]
+    /** Map: original node IDs to newly created nodes */
+    nodes: Map<NodeId, LGraphNode>
+    /** Map: original link IDs to new link IDs */
+    links: Map<LinkId, LLink>
+    /** Map: original reroute IDs to newly created reroutes */
+    reroutes: Map<RerouteId, Reroute>
 }
 
 /**
@@ -2961,55 +2976,51 @@ export class LGraphCanvas {
             return false
         }
     }
-    copyToClipboard(nodes?: Dictionary<LGraphNode>): void {
-        const clipboard_info: IClipboardContents = {
+
+    /**
+     * Copies canvas items to an internal, app-specific clipboard backed by local storage.
+     * When called without parameters, it copies {@link selectedItems}.
+     * @param items The items to copy.  If nullish, all selected items are copied.
+     */
+    copyToClipboard(items?: Iterable<Positionable>): void {
+        const serialisable: ClipboardItems = {
             nodes: [],
+            groups: [],
+            reroutes: [],
             links: []
         }
-        let index = 0
-        const selected_nodes_array: LGraphNode[] = []
-        if (!nodes) nodes = this.selected_nodes
-        for (const i in nodes) {
-            const node = nodes[i]
-            if (node.clonable === false) continue
 
-            node._relative_id = index
-            selected_nodes_array.push(node)
-            index += 1
-        }
+        // Create serialisable objects
+        for (const item of items ?? this.selectedItems) {
+            if (item instanceof LGraphNode) {
+                // Nodes
+                if (item.clonable === false) continue
 
-        for (let i = 0; i < selected_nodes_array.length; ++i) {
-            const node = selected_nodes_array[i]
-            const cloned = node.clone()
-            if (!cloned) {
-                console.warn("node type not found: " + node.type)
-                continue
-            }
-            clipboard_info.nodes.push(cloned.serialize())
-            if (node.inputs?.length) {
-                for (let j = 0; j < node.inputs.length; ++j) {
-                    const input = node.inputs[j]
-                    if (!input || input.link == null) continue
+                const cloned = item.clone()?.serialize()
+                if (!cloned) continue
 
-                    const link_info = this.graph._links.get(input.link)
-                    if (!link_info) continue
+                cloned.id = item.id
+                serialisable.nodes.push(cloned)
 
-                    const target_node = this.graph.getNodeById(link_info.origin_id)
-                    if (!target_node) continue
+                // Links
+                const links = item.inputs
+                    ?.map(input => this.graph._links.get(input?.link)?.asSerialisable())
+                    .filter(x => !!x)
 
-                    clipboard_info.links.push([
-                        target_node._relative_id,
-                        link_info.origin_slot, //j,
-                        node._relative_id,
-                        link_info.target_slot,
-                        target_node.id
-                    ])
-                }
+                if (!links) continue
+                serialisable.links.push(...links)
+            } else if (item instanceof LGraphGroup) {
+                // Groups
+                serialisable.groups.push(item.serialize())
+            } else if (this.reroutesEnabled && item instanceof Reroute) {
+                // Reroutes
+                serialisable.reroutes.push(item.asSerialisable())
             }
         }
+
         localStorage.setItem(
             "litegrapheditor_clipboard",
-            JSON.stringify(clipboard_info)
+            JSON.stringify(serialisable)
         )
     }
 
@@ -3037,76 +3048,137 @@ export class LGraphCanvas {
         })
     }
 
-    _pasteFromClipboard(isConnectUnselected = false): void {
+    /**
+     * Pastes the items from the canvas "clipbaord" - a local storage variable.
+     * @param connectInputs If `true`, always attempt to connect inputs of pasted nodes - including to nodes that were not pasted.
+     */
+    _pasteFromClipboard(connectInputs = false): ClipboardPasteResult {
         // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
-        if (!LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs && isConnectUnselected) return
+        if (!LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs && connectInputs) return
+
         const data = localStorage.getItem("litegrapheditor_clipboard")
         if (!data) return
 
-        this.graph.beforeChange()
+        const { graph } = this
+        graph.beforeChange()
 
-        //create nodes
-        const clipboard_info: IClipboardContents = JSON.parse(data)
-        // calculate top-left node, could work without this processing but using diff with last node pos :: clipboard_info.nodes[clipboard_info.nodes.length-1].pos
-        let posMin: false | [number, number] = false
-        let posMinIndexes: false | [number, number] = false
-        for (let i = 0; i < clipboard_info.nodes.length; ++i) {
-            if (posMin) {
-                if (posMin[0] > clipboard_info.nodes[i].pos[0]) {
-                    posMin[0] = clipboard_info.nodes[i].pos[0]
-                    posMinIndexes[0] = i
-                }
-                if (posMin[1] > clipboard_info.nodes[i].pos[1]) {
-                    posMin[1] = clipboard_info.nodes[i].pos[1]
-                    posMinIndexes[1] = i
-                }
-            }
-            else {
-                posMin = [clipboard_info.nodes[i].pos[0], clipboard_info.nodes[i].pos[1]]
-                posMinIndexes = [i, i]
-            }
+        // Parse & initialise
+        const parsed: ClipboardItems = JSON.parse(data)
+        parsed.nodes ??= []
+        parsed.groups ??= []
+        parsed.reroutes ??= []
+        parsed.links ??= []
+
+        // Find top-left-most boundary
+        let offsetX = Infinity
+        let offsetY = Infinity
+        for (const item of [...parsed.nodes, ...parsed.reroutes]) {
+            if (item.pos[0] < offsetX) offsetX = item.pos[0]
+            if (item.pos[1] < offsetY) offsetY = item.pos[1]
         }
-        const nodes: LGraphNode[] = []
-        for (let i = 0; i < clipboard_info.nodes.length; ++i) {
-            const node_data = clipboard_info.nodes[i]
-            const node = LiteGraph.createNode(node_data.type)
-            if (node) {
-                node.configure(node_data)
 
-                //paste in last known mouse position
-                node.pos[0] += this.graph_mouse[0] - posMin[0] //+= 5;
-                node.pos[1] += this.graph_mouse[1] - posMin[1] //+= 5;
-
-                this.graph.add(node, true)
-
-                nodes.push(node)
+        // TODO: Remove when implementing `asSerialisable`
+        if (parsed.groups) {
+            for (const group of parsed.groups) {
+                if (group.bounding[0] < offsetX) offsetX = group.bounding[0]
+                if (group.bounding[1] < offsetY) offsetY = group.bounding[1]
             }
         }
 
-        //create links
-        for (let i = 0; i < clipboard_info.links.length; ++i) {
-            const link_info = clipboard_info.links[i]
-            let origin_node: LGraphNode = undefined
-            const origin_node_relative_id = link_info[0]
-            if (origin_node_relative_id != null) {
-                origin_node = nodes[origin_node_relative_id]
-            } else if (LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs && isConnectUnselected) {
-                const origin_node_id = link_info[4]
-                if (origin_node_id) {
-                    origin_node = this.graph.getNodeById(origin_node_id)
-                }
-            }
-            const target_node = nodes[link_info[2]]
-            if (origin_node && target_node)
-                origin_node.connect(link_info[1], target_node, link_info[3])
+        const results: ClipboardPasteResult = {
+            created: [],
+            nodes: new Map<NodeId, LGraphNode>(),
+            links: new Map<LinkId, LLink>(),
+            reroutes: new Map<RerouteId, Reroute>(),
+        }
+        const { created, nodes, links, reroutes } = results
 
-            else
-                console.warn("Warning, nodes missing on pasting")
+        // const failedNodes: ISerialisedNode[] = []
+
+        // Groups
+        for (const info of parsed.groups) {
+            info.id = undefined
+
+            const group = new LGraphGroup()
+            group.configure(info)
+            graph.add(group)
+            created.push(group)
         }
 
-        this.selectNodes(nodes)
+        // Nodes
+        for (const info of parsed.nodes) {
+            const node = LiteGraph.createNode(info.type)
+            if (!node) {
+                // failedNodes.push(info)
+                continue
+            }
 
-        this.graph.afterChange()
+            nodes.set(info.id, node)
+            info.id = undefined
+
+            node.configure(info)
+            graph.add(node)
+
+            created.push(node)
+        }
+
+        // Reroutes
+        for (const info of parsed.reroutes) {
+            const { id } = info
+            info.id = undefined
+
+            const reroute = graph.setReroute(info)
+            created.push(reroute)
+            reroutes.set(id, reroute)
+        }
+
+        // Remap reroute parentIds for pasted reroutes
+        for (const reroute of reroutes.values()) {
+            const mapped = reroutes.get(reroute.parentId)
+            if (mapped) reroute.parentId = mapped.id
+        }
+
+        // Links
+        for (const info of parsed.links) {
+            // Find the copied node / reroute ID
+            let outNode = nodes.get(info.origin_id)
+            let afterRerouteId = reroutes.get(info.parentId)?.id
+
+            // If it wasn't copied, use the original graph value
+            if (connectInputs && LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs) {
+                outNode ??= graph.getNodeById(info.origin_id)
+                afterRerouteId ??= info.parentId
+            }
+
+            const inNode = nodes.get(info.target_id)
+            if (inNode) {
+                const link = outNode?.connect(info.origin_slot, inNode, info.target_slot, afterRerouteId)
+                if (link) links.set(info.id, link)
+            }
+        }
+
+        // Remap linkIds
+        for (const reroute of reroutes.values()) {
+            const ids = [...reroute.linkIds].map(x => links.get(x)?.id ?? x)
+            reroute.update(reroute.parentId, undefined, ids)
+
+            // Remove any invalid items
+            if (!reroute.validateLinks(graph.links)) graph.removeReroute(reroute.id)
+        }
+
+        // Adjust positions
+        for (const item of created) {
+            item.pos[0] += this.graph_mouse[0] - offsetX
+            item.pos[1] += this.graph_mouse[1] - offsetY
+        }
+
+        // TODO: Report failures, i.e. `failedNodes`
+
+        this.selectItems(created)
+
+        graph.afterChange()
+
+        return results
     }
 
     pasteFromClipboard(isConnectUnselected = false): void {

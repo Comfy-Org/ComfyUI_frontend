@@ -1265,7 +1265,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
      * @param linkIds IDs of links that pass through this reroute
      */
     setReroute({ id, parentId, pos, linkIds }: SerialisableReroute): Reroute {
+        id ??= ++this.state.lastRerouteId
         if (id > this.state.lastRerouteId) this.state.lastRerouteId = id
+
         const reroute = this.reroutes.get(id) ?? new Reroute(id, this)
         reroute.update(parentId, pos, linkIds)
         this.reroutes.set(id, reroute)

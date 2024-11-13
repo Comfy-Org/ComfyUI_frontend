@@ -84,6 +84,14 @@ export interface ISerialisedGroup {
 
 export type TClipboardLink = [targetRelativeIndex: number, originSlot: number, nodeRelativeIndex: number, targetSlot: number, targetNodeId: NodeId]
 
+/** Items copied from the canvas */
+export interface ClipboardItems {
+    nodes?: ISerialisedNode[]
+    groups?: ISerialisedGroup[]
+    reroutes?: SerialisableReroute[]
+    links?: SerialisableLLink[]
+}
+
 /** */
 export interface IClipboardContents {
     nodes?: ISerialisedNode[]
