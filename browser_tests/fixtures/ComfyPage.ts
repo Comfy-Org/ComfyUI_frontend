@@ -617,7 +617,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -629,7 +629,7 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
