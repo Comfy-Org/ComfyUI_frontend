@@ -1,6 +1,6 @@
 <template>
   <TreeExplorer
-    class="node-lib-bookmark-tree-explorer py-0"
+    class="node-lib-bookmark-tree-explorer"
     ref="treeExplorerRef"
     :roots="renderedBookmarkedRoot.children"
     :expandedKeys="expandedKeys"

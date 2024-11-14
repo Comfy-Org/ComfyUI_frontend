@@ -31,7 +31,7 @@
       <ElectronDownloadItems v-if="isElectron()" />
 
       <TreeExplorer
-        class="model-lib-tree-explorer py-0"
+        class="model-lib-tree-explorer"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
       >
