@@ -91,9 +91,7 @@ class Load3d {
   gridHelper: THREE.GridHelper
   lights: THREE.Light[] = []
 
-  constructor(node: ComfyNode, container: Element | HTMLElement) {
-    this.node = node
-
+  constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000)
@@ -518,7 +516,7 @@ function getResourceURL(
   return `/view?${params}`
 }
 
-const nodeToSceneMap: Map<ComfyNode, Load3d> = new Map()
+const containerToLoad3D = new Map()
 
 app.registerExtension({
   name: 'Comfy.Load3D',
@@ -526,19 +524,15 @@ app.registerExtension({
   getCustomWidgets(app) {
     return {
       LOAD_3D(node, inputName) {
-        const containerWrapper = document.createElement('div')
-
-        containerWrapper.id = `load-3d-wrapper-${inputName.toLowerCase()}`
-        containerWrapper.classList.add('comfyui-load-3d-wrapper')
+        let load3dNode = app.graph._nodes.filter((wi) => wi.type == 'Load3D')
 
         const container = document.createElement('div')
-        container.id = `load-3d-${inputName.toLowerCase()}`
-        container.classList.add('comfyui-load-3d')
-        containerWrapper.appendChild(container)
+        container.id = `comfy-load-3d-${load3dNode.length}`
+        container.classList.add('comfy-load-3d')
 
-        const load3d = new Load3d(node, container)
+        const load3d = new Load3d(container)
 
-        nodeToSceneMap.set(node, load3d)
+        containerToLoad3D.set(container.id, load3d)
 
         node.onResize = function () {
           if (load3d) {
@@ -553,7 +547,7 @@ app.registerExtension({
             load3d.remove()
           }
 
-          nodeToSceneMap.delete(node)
+          containerToLoad3D.delete(container)
 
           origOnRemoved?.apply(this, arguments)
         }
@@ -563,7 +557,7 @@ app.registerExtension({
         }
 
         return {
-          widget: node.addDOMWidget(inputName, 'LOAD_3D', containerWrapper)
+          widget: node.addDOMWidget(inputName, 'LOAD_3D', container)
         }
       }
     }
@@ -573,21 +567,16 @@ app.registerExtension({
     const style = document.createElement('style')
 
     style.innerText = `
-        .comfyui-load-3d-wrapper {
+        .comfy-load-3d {
           display: flex;
           flex-direction: column;
-          
           background: transparent;
-        }
-        
-        .comfyui-load-3d {
           flex: 1;
           position: relative;
           overflow: hidden;
-          
         }
         
-        .comfyui-load-3d canvas {
+        .comfy-load-3d canvas {
           width: 100% !important;
           height: 100% !important;
         }
@@ -602,11 +591,15 @@ app.registerExtension({
 
     await nextTick()
 
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
+
+    const container = sceneWidget.element
+
+    const load3d = containerToLoad3D.get(container.id)
+
     const modelWidget = node.widgets.find(
       (w: IWidget) => w.name === 'model_file'
     )
-
-    const load3d = nodeToSceneMap.get(node)
 
     const onModelWidgetUpdate = () => {
       if (modelWidget.value) {
@@ -665,7 +658,6 @@ app.registerExtension({
       load3d.setLightIntensity(value)
     }
 
-    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
@@ -702,6 +694,9 @@ app.registerExtension({
     fileInput.style.display = 'none'
     fileInput.onchange = () => {
       if (fileInput.files?.length) {
+        const modelWidget = node.widgets.find(
+          (w: IWidget) => w.name === 'model_file'
+        )
         uploadFile(
           modelWidget,
           load3d,
