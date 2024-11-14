@@ -28,7 +28,11 @@
       class="flex flex-row items-center gap-2"
       v-if="status === 'in_progress' || status === 'paused'"
     >
-      <ProgressBar class="flex-1" :value="downloadProgress" />
+      <ProgressBar
+        class="flex-1"
+        :value="downloadProgress"
+        :show-value="downloadProgress > 10"
+      />
 
       <Button
         class="file-action-button"

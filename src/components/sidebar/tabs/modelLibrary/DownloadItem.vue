@@ -19,6 +19,7 @@
       <ProgressBar
         class="flex-1"
         :value="Number((download.progress * 100).toFixed(1))"
+        :show-value="download.progress > 0.1"
       />
 
       <Button
