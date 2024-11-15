@@ -1573,10 +1573,7 @@ export class ComfyApp {
     api.addEventListener('execution_start', ({ detail }) => {
       this.lastExecutionError = null
       this.graph.nodes.forEach((node) => {
-        // @ts-expect-error
-        if (node.onExecutionStart)
-          // @ts-expect-error
-          node.onExecutionStart()
+        if (node.onExecutionStart) node.onExecutionStart()
       })
     })
 
@@ -2408,8 +2405,8 @@ export class ComfyApp {
         }
       }
 
-      const innerNodes = outerNode['getInnerNodes']
-        ? outerNode['getInnerNodes']()
+      const innerNodes = outerNode.getInnerNodes
+        ? outerNode.getInnerNodes()
         : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2427,8 +2424,8 @@ export class ComfyApp {
     for (const outerNode of graph.computeExecutionOrder(false)) {
       const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
-        !skipNode && outerNode['getInnerNodes']
-          ? outerNode['getInnerNodes']()
+        !skipNode && outerNode.getInnerNodes
+          ? outerNode.getInnerNodes()
           : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2894,7 +2891,6 @@ export class ComfyApp {
     for (let nodeNum in this.graph.nodes) {
       const node = this.graph.nodes[nodeNum]
       const def = defs[node.type]
-      // @ts-expect-error
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 
