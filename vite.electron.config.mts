@@ -16,6 +16,7 @@ const mockElectronAPI: Plugin = {
           onProgressUpdate: () => {},
           onLogMessage: () => {},
           isFirstTimeSetup: () => Promise.resolve(true),
+          getElectronVersion: () => Promise.resolve('0.0.0'),
           getSystemPaths: () =>
             Promise.resolve({
               appData: 'C:/Users/username/AppData/Roaming',

@@ -1,4 +1,5 @@
 import { app } from '@/scripts/app'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore';
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 ;(async () => {
   if (!isElectron()) return
@@ -97,6 +98,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         function() {
           // TODO(huchenlei): Add a confirmation dialog.
           electronAPI.reinstall()
+        },
+      },
+      {
+        id: 'Comfy-Desktop.ToggleBottomPanel',
+        label: 'Toggle Bottom Panel',
+        icon: 'pi pi-bars',
+        function() {
+          useBottomPanelStore().toggleBottomPanel()
         }
       }
     ],
@@ -124,6 +133,10 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       {
         path: ['Help'],
         commands: ['Comfy-Desktop.Reinstall']
+      },
+      {
+        path: ['Help'],
+        commands: ['Comfy-Desktop.ToggleBottomPanel']
       }
     ],
 
