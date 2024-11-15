@@ -521,5 +521,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Enable DOM element clipping (enabling may reduce performance)',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.Graph.CtrlShiftZoom',
+    name: 'Enable fast-zoom shortcut (Ctrl + Shift + Drag)',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.4.0'
   }
 ]

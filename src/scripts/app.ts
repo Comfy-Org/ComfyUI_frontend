@@ -1227,7 +1227,8 @@ export class ComfyApp {
     const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       // prepare for ctrl+shift drag: zoom start
-      if (e.ctrlKey && e.shiftKey && e.buttons) {
+      const useFastZoom = useSettingStore().get('Comfy.Graph.CtrlShiftZoom')
+      if (useFastZoom && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
         self.zoom_drag_start = [e.x, e.y, this.ds.scale]
         return
       }
