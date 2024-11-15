@@ -13,7 +13,8 @@ export interface ElectronDownload {
 /** Electron donwloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
-  const { DownloadManager } = electronAPI()
+  const api = electronAPI()
+  const DownloadManager = api?.DownloadManager
 
   const findByUrl = (url: string) =>
     downloads.value.find((download) => url === download.url)
@@ -21,14 +22,15 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
   const initialize = async () => {
     if (isElectron()) {
       const allDownloads: ElectronDownload[] =
-        (await DownloadManager.getAllDownloads()) as unknown as ElectronDownload[]
+        ((await DownloadManager?.getAllDownloads()) ??
+          []) as unknown as ElectronDownload[]
 
       for (const download of allDownloads) {
         downloads.value.push(download)
       }
 
       // ToDO: replace with ElectronDownload type
-      DownloadManager.onDownloadProgress((data: any) => {
+      DownloadManager?.onDownloadProgress((data: any) => {
         if (!findByUrl(data.url)) {
           downloads.value.push(data)
         }
@@ -52,10 +54,10 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     savePath,
     filename
   }: Pick<ElectronDownload, 'url' | 'savePath' | 'filename'>) =>
-    DownloadManager.startDownload(url, savePath, filename)
-  const pause = (url: string) => DownloadManager.pauseDownload(url)
-  const resume = (url: string) => DownloadManager.resumeDownload(url)
-  const cancel = (url: string) => DownloadManager.cancelDownload(url)
+    DownloadManager?.startDownload(url, savePath, filename)
+  const pause = (url: string) => DownloadManager?.pauseDownload(url)
+  const resume = (url: string) => DownloadManager?.resumeDownload(url)
+  const cancel = (url: string) => DownloadManager?.cancelDownload(url)
 
   return {
     downloads,
