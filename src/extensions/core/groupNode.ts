@@ -968,14 +968,16 @@ export class GroupNodeHandler {
 
       app.canvas.emitBeforeChange()
 
-      const { newNodes, selectedIds } = addInnerNodes()
-      reconnectInputs(selectedIds)
-      reconnectOutputs(selectedIds)
-      app.graph.remove(this.node)
+      try {
+        const { newNodes, selectedIds } = addInnerNodes()
+        reconnectInputs(selectedIds)
+        reconnectOutputs(selectedIds)
+        app.graph.remove(this.node)
 
-      app.canvas.emitAfterChange()
-
-      return newNodes
+        return newNodes
+      } finally {
+        app.canvas.emitAfterChange()
+      }
     }
 
     const getExtraMenuOptions = this.node.getExtraMenuOptions
