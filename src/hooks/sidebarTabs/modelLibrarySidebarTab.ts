@@ -2,10 +2,7 @@ import { markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import {
-  type ElectronDownload,
-  useElectronDownloadStore
-} from '@/stores/electronDownloadStore'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   const { t } = useI18n()
