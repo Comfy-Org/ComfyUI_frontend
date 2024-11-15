@@ -262,6 +262,7 @@ onMounted(async () => {
   ChangeTracker.init(comfyApp)
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
+  canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
   window['app'] = comfyApp
