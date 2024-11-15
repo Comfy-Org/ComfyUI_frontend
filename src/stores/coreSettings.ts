@@ -527,6 +527,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Enable fast-zoom shortcut (Ctrl + Shift + Drag)',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.3.45'
+    versionAdded: '1.4.0'
   }
 ]
