@@ -431,6 +431,8 @@ core extensions will be loaded.
 
 #### Access dev server on touch devices
 
+Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.
+
 After you start the dev server, you should see following logs:
 
 ```
