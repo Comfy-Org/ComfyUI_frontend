@@ -3,13 +3,23 @@ import type { CanvasMouseEvent } from "./types/events"
 import { LiteGraph } from "./litegraph"
 import { isInRect } from "./measure"
 
+export interface DragAndScaleState {
+    offset: Point
+    scale: number
+}
+
 export class DragAndScale {
+    /**
+     * The state of this DragAndScale instance.
+     *
+     * Implemented as a POCO that can be proxied without side-effects.
+     */
+    state: DragAndScaleState
+
     /** Maximum scale (zoom in) */
     max_scale: number
     /** Minimum scale (zoom out) */
     min_scale: number
-    offset: Point
-    scale: number
     enabled: boolean
     last_mouse: Point
     element?: HTMLCanvasElement
@@ -22,9 +32,25 @@ export class DragAndScale {
     /** @deprecated */
     onmouse?(e: unknown): boolean
 
+    get offset(): Point {
+        return this.state.offset
+    }
+    set offset(value: Point) {
+        this.state.offset = value
+    }
+
+    get scale(): number {
+        return this.state.scale
+    }
+    set scale(value: number) {
+        this.state.scale = value
+    }
+
     constructor(element?: HTMLCanvasElement, skip_events?: boolean) {
-        this.offset = new Float32Array([0, 0])
-        this.scale = 1
+        this.state = {
+            offset: new Float32Array([0, 0]),
+            scale: 1
+        }
         this.max_scale = 10
         this.min_scale = 0.1
         this.onredraw = null
