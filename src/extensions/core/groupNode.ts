@@ -13,6 +13,7 @@ import {
   deserialiseAndCreate,
   serialise
 } from '@/extensions/core/vintageClipboard'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 
 type GroupNodeWorkflowData = {
   external: ComfyLink[]
@@ -56,7 +57,7 @@ const Workflow = {
 
 class GroupNodeBuilder {
   nodes: LGraphNode[]
-  nodeData: any
+  nodeData: GroupNodeWorkflowData
 
   constructor(nodes: LGraphNode[]) {
     this.nodes = nodes
@@ -175,7 +176,7 @@ export class GroupNodeConfig {
   primitiveToWidget: {}
   nodeInputs: {}
   outputVisibility: any[]
-  nodeDef: any
+  nodeDef: ComfyNodeDef
   inputs: any[]
   linksFrom: {}
   linksTo: {}
@@ -204,6 +205,7 @@ export class GroupNodeConfig {
       output: [],
       output_name: [],
       output_is_list: [],
+      // @ts-expect-error Unused, doesn't exist
       output_is_hidden: [],
       name: source + SEPARATOR + this.name,
       display_name: this.name,
@@ -695,11 +697,11 @@ export class GroupNodeConfig {
 }
 
 export class GroupNodeHandler {
-  node
+  node: LGraphNode
   groupData
   innerNodes: any
 
-  constructor(node) {
+  constructor(node: LGraphNode) {
     this.node = node
     this.groupData = node.constructor?.nodeData?.[GROUP]
 
@@ -774,6 +776,7 @@ export class GroupNodeHandler {
 
     this.node.updateLink = (link) => {
       // Replace the group node reference with the internal node
+      // @ts-expect-error Can this be removed?  Or replaced with: LLink.create(link.asSerialisable())
       link = { ...link }
       const output = this.groupData.newToOldOutputMap[link.origin_slot]
       let innerNode = this.innerNodes[output.node.index]
@@ -965,17 +968,20 @@ export class GroupNodeHandler {
 
       app.canvas.emitBeforeChange()
 
-      const { newNodes, selectedIds } = addInnerNodes()
-      reconnectInputs(selectedIds)
-      reconnectOutputs(selectedIds)
-      app.graph.remove(this.node)
+      try {
+        const { newNodes, selectedIds } = addInnerNodes()
+        reconnectInputs(selectedIds)
+        reconnectOutputs(selectedIds)
+        app.graph.remove(this.node)
 
-      app.canvas.emitAfterChange()
-
-      return newNodes
+        return newNodes
+      } finally {
+        app.canvas.emitAfterChange()
+      }
     }
 
     const getExtraMenuOptions = this.node.getExtraMenuOptions
+    // @ts-expect-error Should pass patched return value getExtraMenuOptions
     this.node.getExtraMenuOptions = function (_, options) {
       getExtraMenuOptions?.apply(this, arguments)
 
@@ -988,6 +994,7 @@ export class GroupNodeHandler {
         null,
         {
           content: 'Convert to nodes',
+          // @ts-expect-error
           callback: () => {
             return this.convertToNodes()
           }
@@ -1148,6 +1155,7 @@ export class GroupNodeHandler {
 
           if (
             old.inputName !== 'image' &&
+            // @ts-expect-error Widget values
             !widget.options.values.includes(widget.value)
           ) {
             widget.value = widget.options.values[0]
@@ -1354,6 +1362,7 @@ export class GroupNodeHandler {
       if (!originNode) continue // this node is in the group
       originNode.connect(
         originSlot,
+        // @ts-expect-error Valid - uses deprecated interface.  Required check: if (graph.getNodeById(this.node.id) !== this.node) report()
         this.node.id,
         this.groupData.oldToNewInputMap[targetId][targetSlot]
       )
@@ -1475,7 +1484,7 @@ function ungroupSelectedGroupNodes() {
   const nodes = Object.values(app.canvas.selected_nodes ?? {})
   for (const node of nodes) {
     if (GroupNodeHandler.isGroupNode(node)) {
-      node['convertToNodes']?.()
+      node.convertToNodes?.()
     }
   }
 }

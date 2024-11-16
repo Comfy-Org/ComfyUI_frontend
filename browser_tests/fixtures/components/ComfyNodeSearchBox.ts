@@ -43,7 +43,7 @@ export class ComfyNodeSearchBox {
   }
 
   get filterButton() {
-    return this.page.locator('.comfy-vue-node-search-container ._filter-button')
+    return this.page.locator('.comfy-vue-node-search-container .filter-button')
   }
 
   async fillAndSelectFirstNode(
