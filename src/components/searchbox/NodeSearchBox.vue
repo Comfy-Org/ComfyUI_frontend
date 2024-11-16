@@ -16,7 +16,7 @@
     <Button
       icon="pi pi-filter"
       severity="secondary"
-      class="z-10"
+      class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
     />
     <Dialog v-model:visible="nodeSearchFilterVisible" class="min-w-96">
