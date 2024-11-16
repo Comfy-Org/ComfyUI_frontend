@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, Ref } from 'vue'
-import type { useTerminal } from './useTerminal'
+import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { IDisposable } from '@xterm/xterm'
 import BaseTerminal from './BaseTerminal.vue'
@@ -31,7 +31,7 @@ const terminalCreated = (
 
   useAutoSize(root, true, true, () => {
     // If we aren't visible, don't resize
-    if (!terminal.element.offsetParent) return
+    if (!terminal.element?.offsetParent) return
 
     terminalApi.resize(terminal.cols, terminal.rows)
   })

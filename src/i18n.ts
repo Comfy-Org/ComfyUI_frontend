@@ -57,6 +57,7 @@ const messages = {
     loadAllFolders: 'Load All Folders',
     refresh: 'Refresh',
     terminal: 'Terminal',
+    logs: 'Logs',
     videoFailedToLoad: 'Video failed to load',
     extensionName: 'Extension Name',
     reloadToApplyChanges: 'Reload to apply changes',

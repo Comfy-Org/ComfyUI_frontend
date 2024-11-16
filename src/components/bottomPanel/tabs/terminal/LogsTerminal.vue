@@ -1,21 +1,27 @@
 <template>
-  <BaseTerminal @created="terminalCreated" />
+  <div class="bg-black h-full w-full">
+    <p v-if="errorMessage" class="p-4 text-center">{{ errorMessage }}</p>
+    <ProgressSpinner
+      v-else-if="loading"
+      class="relative inset-0 flex justify-center items-center h-full z-10"
+    />
+    <BaseTerminal v-show="!loading" @created="terminalCreated" />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, defineEmits, Ref } from 'vue'
-import type { useTerminal } from './useTerminal'
+import { onMounted, onUnmounted, Ref, ref } from 'vue'
+import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import BaseTerminal from './BaseTerminal.vue'
+import ProgressSpinner from 'primevue/progressspinner'
 
-const emit = defineEmits<{
-  error: [string]
-  ready: []
-}>()
+const errorMessage = ref('')
+const loading = ref(true)
 
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
@@ -54,15 +60,13 @@ const terminalCreated = (
     } catch (err) {
       console.error('Error loading logs', err)
       // On older backends the endpoints wont exist
-      emit(
-        'error',
+      errorMessage.value =
         'Unable to load logs, please ensure you have updated your ComfyUI backend.'
-      )
       return
     }
 
-    emit('ready')
     await watchLogs()
+    loading.value = false
   })
 
   onUnmounted(() => {
