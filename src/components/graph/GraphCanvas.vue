@@ -1,7 +1,10 @@
 <template>
   <teleport to=".graph-canvas-container">
+    <!-- Load splitter overlay only after comfyApp is ready. -->
+    <!-- If load immediately, the top-level splitter stateKey won't be correctly
+    synced with the stateStorage (localStorage). -->
     <LiteGraphCanvasSplitterOverlay
-      v-if="betaMenuEnabled && !workspaceStore.focusMode"
+      v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
     >
       <template #side-bar-panel>
         <SideToolbar />
@@ -237,6 +240,7 @@ usePragmaticDroppable(() => canvasRef.value, {
   }
 })
 
+const comfyAppReady = ref(false)
 onMounted(async () => {
   // Backward compatible
   // Assign all properties of lg to window
@@ -258,11 +262,13 @@ onMounted(async () => {
   ChangeTracker.init(comfyApp)
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
+  canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
 
+  comfyAppReady.value = true
   emit('ready')
 })
 </script>

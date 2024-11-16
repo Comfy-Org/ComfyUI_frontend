@@ -504,6 +504,7 @@ test.describe('Menu', () => {
       await comfyPage.menu.topbar.saveWorkflow(workflowName)
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([workflowName])
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
+      await comfyPage.nextFrame()
       expect(await comfyPage.menu.topbar.getTabNames()).toEqual([
         'Unsaved Workflow'
       ])
@@ -525,8 +526,7 @@ test.describe('Menu', () => {
     })
 
     test('Displays keybinding next to item', async ({ comfyPage }) => {
-      const workflowMenuItem =
-        await comfyPage.menu.topbar.getMenuItem('Workflow')
+      const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('Workflow')
       await workflowMenuItem.click()
       const exportTag = comfyPage.page.locator('.keybinding-tag', {
         hasText: 'Ctrl + s'

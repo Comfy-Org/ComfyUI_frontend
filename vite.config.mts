@@ -11,6 +11,8 @@ dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+// vite dev server will listen on all addresses, including LAN and public addresses
+const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 
 interface ShimResult {
   code: string
@@ -94,6 +96,7 @@ const DEV_SERVER_COMFYUI_URL = process.env.DEV_SERVER_COMFYUI_URL || 'http://127
 export default defineConfig({
   base: '',
   server: {
+    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -175,6 +178,9 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    exclude: ['@comfyorg/litegraph']
+    exclude: [
+      '@comfyorg/litegraph',
+      '@comfyorg/comfyui-electron-types'
+    ]
   }
 }) as UserConfigExport

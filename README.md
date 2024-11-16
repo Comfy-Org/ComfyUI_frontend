@@ -425,9 +425,31 @@ hook is used to auto-format code on commit.
 Note: The dev server will NOT load any extension from the ComfyUI server. Only
 core extensions will be loaded.
 
-- Run `npm install` to install the necessary packages
 - Start local ComfyUI backend at `localhost:8188`
 - Run `npm run dev` to start the dev server
+- Run `npm run dev:electron` to start the dev server with electron API mocked
+
+#### Access dev server on touch devices
+
+Enable remote access to the dev server by setting `VITE_REMOTE_DEV` in `.env` to `true`.
+
+After you start the dev server, you should see following logs:
+
+```
+> comfyui-frontend@1.3.42 dev
+> vite
+
+
+  VITE v5.4.6  ready in 488 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://172.21.80.1:5173/
+  ➜  Network: http://192.168.2.20:5173/
+  ➜  press h + enter to show help
+```
+
+Make sure your desktop machine and touch device are on the same network. On your touch device,
+navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
 
 ### Unit Test
 

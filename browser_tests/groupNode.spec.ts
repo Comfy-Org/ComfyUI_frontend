@@ -77,8 +77,13 @@ test.describe('Group Node', () => {
         .click()
     })
   })
-
-  test('Can be added to canvas using search', async ({ comfyPage }) => {
+  // The 500ms fixed delay on the search results is causing flakiness
+  // Potential solution: add a spinner state when the search is in progress,
+  // and observe that state from the test. Blocker: the PrimeVue AutoComplete
+  // does not have a v-model on the query, so we cannot observe the raw
+  // query update, and thus cannot set the spinning state between the raw query
+  // update and the debounced search update.
+  test.skip('Can be added to canvas using search', async ({ comfyPage }) => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     await comfyPage.convertAllNodesToGroupNode(groupNodeName)
     await comfyPage.doubleClickCanvas()

@@ -14,9 +14,9 @@ import {
   ProgressStatus,
   ProgressMessages
 } from '@comfyorg/comfyui-electron-types'
-import { electronAPI as getElectronAPI } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 
-const electronAPI = getElectronAPI()
+const electron = electronAPI()
 
 const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
 const logs = ref<string[]>([])
@@ -35,9 +35,9 @@ const fetchLogs = async () => {
 }
 
 onMounted(() => {
-  electronAPI.sendReady()
-  electronAPI.onProgressUpdate(updateProgress)
-  electronAPI.onLogMessage((message: string) => {
+  electron.sendReady()
+  electron.onProgressUpdate(updateProgress)
+  electron.onLogMessage((message: string) => {
     addLogMessage(message)
   })
 })

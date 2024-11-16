@@ -64,6 +64,7 @@ import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1226,7 +1227,8 @@ export class ComfyApp {
     const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       // prepare for ctrl+shift drag: zoom start
-      if (e.ctrlKey && e.shiftKey && e.buttons) {
+      const useFastZoom = useSettingStore().get('Comfy.Graph.CtrlShiftZoom')
+      if (useFastZoom && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
         self.zoom_drag_start = [e.x, e.y, this.ds.scale]
         return
       }
@@ -1571,10 +1573,7 @@ export class ComfyApp {
     api.addEventListener('execution_start', ({ detail }) => {
       this.lastExecutionError = null
       this.graph.nodes.forEach((node) => {
-        // @ts-expect-error
-        if (node.onExecutionStart)
-          // @ts-expect-error
-          node.onExecutionStart()
+        if (node.onExecutionStart) node.onExecutionStart()
       })
     })
 
@@ -2123,8 +2122,14 @@ export class ComfyApp {
         continue
       }
 
-      localStorage.setItem('litegrapheditor_clipboard', template.data)
-      app.canvas.pasteFromClipboard()
+      // Check for old clipboard format
+      const data = JSON.parse(template.data)
+      if (!data.reroutes) {
+        deserialiseAndCreate(template.data, app.canvas)
+      } else {
+        localStorage.setItem('litegrapheditor_clipboard', template.data)
+        app.canvas.pasteFromClipboard()
+      }
 
       // Move mouse position down to paste the next template below
 
@@ -2400,8 +2405,8 @@ export class ComfyApp {
         }
       }
 
-      const innerNodes = outerNode['getInnerNodes']
-        ? outerNode['getInnerNodes']()
+      const innerNodes = outerNode.getInnerNodes
+        ? outerNode.getInnerNodes()
         : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2419,8 +2424,8 @@ export class ComfyApp {
     for (const outerNode of graph.computeExecutionOrder(false)) {
       const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
-        !skipNode && outerNode['getInnerNodes']
-          ? outerNode['getInnerNodes']()
+        !skipNode && outerNode.getInnerNodes
+          ? outerNode.getInnerNodes()
           : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2886,7 +2891,6 @@ export class ComfyApp {
     for (let nodeNum in this.graph.nodes) {
       const node = this.graph.nodes[nodeNum]
       const def = defs[node.type]
-      // @ts-expect-error
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 

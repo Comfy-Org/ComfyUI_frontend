@@ -48,7 +48,7 @@
         class="m-2"
       />
       <TreeExplorer
-        class="node-lib-tree-explorer py-0"
+        class="node-lib-tree-explorer"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
       >

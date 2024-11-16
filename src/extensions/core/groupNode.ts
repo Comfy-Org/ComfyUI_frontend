@@ -3,12 +3,17 @@ import { app } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { mergeIfValid } from './widgetInputs'
 import { ManageGroupDialog } from './groupNodeManage'
-import type { LGraphNode } from '@comfyorg/litegraph'
-import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph, type LGraph } from '@comfyorg/litegraph'
+import { LGraphNode, type NodeId } from '@comfyorg/litegraph/dist/LGraphNode'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyExtension } from '@/types/comfy'
+import {
+  deserialiseAndCreate,
+  serialise
+} from '@/extensions/core/vintageClipboard'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 
 type GroupNodeWorkflowData = {
   external: ComfyLink[]
@@ -52,7 +57,7 @@ const Workflow = {
 
 class GroupNodeBuilder {
   nodes: LGraphNode[]
-  nodeData: any
+  nodeData: GroupNodeWorkflowData
 
   constructor(nodes: LGraphNode[]) {
     this.nodes = nodes
@@ -144,21 +149,15 @@ class GroupNodeBuilder {
     }
 
     // Use the built in copyToClipboard function to generate the node data we need
-    const backup = localStorage.getItem('litegrapheditor_clipboard')
     try {
-      // @ts-expect-error
-      // TODO Figure out if copyToClipboard is really taking this param
-      app.canvas.copyToClipboard(this.nodes)
-      const config = JSON.parse(
-        localStorage.getItem('litegrapheditor_clipboard')
-      )
+      const serialised = serialise(this.nodes, app.canvas.graph)
+      const config = JSON.parse(serialised)
 
       storeLinkTypes(config)
       storeExternalLinks(config)
 
       return config
     } finally {
-      localStorage.setItem('litegrapheditor_clipboard', backup)
     }
   }
 }
@@ -177,7 +176,7 @@ export class GroupNodeConfig {
   primitiveToWidget: {}
   nodeInputs: {}
   outputVisibility: any[]
-  nodeDef: any
+  nodeDef: ComfyNodeDef
   inputs: any[]
   linksFrom: {}
   linksTo: {}
@@ -206,6 +205,7 @@ export class GroupNodeConfig {
       output: [],
       output_name: [],
       output_is_list: [],
+      // @ts-expect-error Unused, doesn't exist
       output_is_hidden: [],
       name: source + SEPARATOR + this.name,
       display_name: this.name,
@@ -697,11 +697,11 @@ export class GroupNodeConfig {
 }
 
 export class GroupNodeHandler {
-  node
+  node: LGraphNode
   groupData
   innerNodes: any
 
-  constructor(node) {
+  constructor(node: LGraphNode) {
     this.node = node
     this.groupData = node.constructor?.nodeData?.[GROUP]
 
@@ -776,6 +776,7 @@ export class GroupNodeHandler {
 
     this.node.updateLink = (link) => {
       // Replace the group node reference with the internal node
+      // @ts-expect-error Can this be removed?  Or replaced with: LLink.create(link.asSerialisable())
       link = { ...link }
       const output = this.groupData.newToOldOutputMap[link.origin_slot]
       let innerNode = this.innerNodes[output.node.index]
@@ -842,7 +843,6 @@ export class GroupNodeHandler {
 
     this.node.convertToNodes = () => {
       const addInnerNodes = () => {
-        const backup = localStorage.getItem('litegrapheditor_clipboard')
         // Clone the node data so we dont mutate it for other nodes
         const c = { ...this.groupData.nodeData }
         c.nodes = [...c.nodes]
@@ -858,9 +858,7 @@ export class GroupNodeHandler {
           }
           c.nodes[i] = { ...c.nodes[i], id }
         }
-        localStorage.setItem('litegrapheditor_clipboard', JSON.stringify(c))
-        app.canvas.pasteFromClipboard()
-        localStorage.setItem('litegrapheditor_clipboard', backup)
+        deserialiseAndCreate(JSON.stringify(c), app.canvas)
 
         const [x, y] = this.node.pos
         let top
@@ -923,10 +921,8 @@ export class GroupNodeHandler {
 
         // Shift each node
         for (const newNode of newNodes) {
-          newNode.pos = [
-            newNode.pos[0] - (left - x),
-            newNode.pos[1] - (top - y)
-          ]
+          newNode.pos[0] -= left - x
+          newNode.pos[1] -= top - y
         }
 
         return { newNodes, selectedIds }
@@ -970,15 +966,22 @@ export class GroupNodeHandler {
         }
       }
 
-      const { newNodes, selectedIds } = addInnerNodes()
-      reconnectInputs(selectedIds)
-      reconnectOutputs(selectedIds)
-      app.graph.remove(this.node)
+      app.canvas.emitBeforeChange()
 
-      return newNodes
+      try {
+        const { newNodes, selectedIds } = addInnerNodes()
+        reconnectInputs(selectedIds)
+        reconnectOutputs(selectedIds)
+        app.graph.remove(this.node)
+
+        return newNodes
+      } finally {
+        app.canvas.emitAfterChange()
+      }
     }
 
     const getExtraMenuOptions = this.node.getExtraMenuOptions
+    // @ts-expect-error Should pass patched return value getExtraMenuOptions
     this.node.getExtraMenuOptions = function (_, options) {
       getExtraMenuOptions?.apply(this, arguments)
 
@@ -991,6 +994,7 @@ export class GroupNodeHandler {
         null,
         {
           content: 'Convert to nodes',
+          // @ts-expect-error
           callback: () => {
             return this.convertToNodes()
           }
@@ -1151,6 +1155,7 @@ export class GroupNodeHandler {
 
           if (
             old.inputName !== 'image' &&
+            // @ts-expect-error Widget values
             !widget.options.values.includes(widget.value)
           ) {
             widget.value = widget.options.values[0]
@@ -1357,6 +1362,7 @@ export class GroupNodeHandler {
       if (!originNode) continue // this node is in the group
       originNode.connect(
         originSlot,
+        // @ts-expect-error Valid - uses deprecated interface.  Required check: if (graph.getNodeById(this.node.id) !== this.node) report()
         this.node.id,
         this.groupData.oldToNewInputMap[targetId][targetSlot]
       )
@@ -1478,7 +1484,7 @@ function ungroupSelectedGroupNodes() {
   const nodes = Object.values(app.canvas.selected_nodes ?? {})
   for (const node of nodes) {
     if (GroupNodeHandler.isGroupNode(node)) {
-      node['convertToNodes']?.()
+      node.convertToNodes?.()
     }
   }
 }

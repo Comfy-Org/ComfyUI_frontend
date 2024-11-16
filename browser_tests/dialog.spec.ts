@@ -36,6 +36,7 @@ test.describe('Execution error', () => {
   }) => {
     await comfyPage.loadWorkflow('execution_error')
     await comfyPage.queueButton.click()
+    await comfyPage.nextFrame()
 
     // Wait for the element with the .comfy-execution-error selector to be visible
     const executionError = comfyPage.page.locator('.comfy-error-report')

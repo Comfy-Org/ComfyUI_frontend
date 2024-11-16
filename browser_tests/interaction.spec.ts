@@ -285,7 +285,8 @@ test.describe('Node Interaction', () => {
       position: {
         x: 50,
         y: 10
-      }
+      },
+      delay: 5
     })
     await comfyPage.page.keyboard.type('Hello World')
     await comfyPage.page.keyboard.press('Enter')
@@ -300,7 +301,8 @@ test.describe('Node Interaction', () => {
       position: {
         x: 50,
         y: 50
-      }
+      },
+      delay: 5
     })
     expect(await comfyPage.page.locator('.node-title-editor').count()).toBe(0)
   })
@@ -352,7 +354,8 @@ test.describe('Group Interaction', () => {
       position: {
         x: 50,
         y: 10
-      }
+      },
+      delay: 5
     })
     await comfyPage.page.keyboard.type('Hello World')
     await comfyPage.page.keyboard.press('Enter')
@@ -504,7 +507,7 @@ test.describe('Widget Interaction', () => {
     await expect(textBox).toHaveValue('')
     await textBox.fill('Hello World')
     await expect(textBox).toHaveValue('Hello World')
-    await comfyPage.ctrlZ()
+    await comfyPage.ctrlZ(null)
     await expect(textBox).toHaveValue('')
   })
 
@@ -515,9 +518,9 @@ test.describe('Widget Interaction', () => {
     await textBox.fill('1girl')
     await expect(textBox).toHaveValue('1girl')
     await textBox.selectText()
-    await comfyPage.ctrlArrowUp()
+    await comfyPage.ctrlArrowUp(null)
     await expect(textBox).toHaveValue('(1girl:1.05)')
-    await comfyPage.ctrlZ()
+    await comfyPage.ctrlZ(null)
     await expect(textBox).toHaveValue('1girl')
   })
 })

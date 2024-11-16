@@ -28,8 +28,10 @@
       />
     </template>
     <template #body>
+      <ElectronDownloadItems v-if="isElectron()" />
+
       <TreeExplorer
-        class="model-lib-tree-explorer py-0"
+        class="model-lib-tree-explorer"
         :roots="renderedRoot.children"
         v-model:expandedKeys="expandedKeys"
       >
@@ -48,6 +50,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -65,6 +68,8 @@ import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
+import { isElectron } from '@/utils/envUtil'
+
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
@@ -164,6 +169,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       }
     }
   }
+
   return fillNodeInfo(root.value)
 })
 

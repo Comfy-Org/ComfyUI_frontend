@@ -77,8 +77,7 @@ const pathError = defineModel<string>('pathError', { required: true })
 const appData = ref('')
 const appPath = ref('')
 
-// TODO: Implement the actual electron API.
-const electron = electronAPI() as any
+const electron = electronAPI()
 
 // Get system paths on component mount
 onMounted(async () => {
@@ -88,10 +87,10 @@ onMounted(async () => {
   installPath.value = paths.defaultInstallPath
 })
 
-const validatePath = async () => {
+const validatePath = async (path: string) => {
   try {
     pathError.value = ''
-    const validation = await electron.validateInstallPath(installPath.value)
+    const validation = await electron.validateInstallPath(path)
 
     if (!validation.isValid) {
       pathError.value = validation.error
@@ -106,7 +105,7 @@ const browsePath = async () => {
     const result = await electron.showDirectoryPicker()
     if (result) {
       installPath.value = result
-      await validatePath()
+      await validatePath(result)
     }
   } catch (error) {
     pathError.value = t('install.failedToSelectDirectory')
