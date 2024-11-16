@@ -138,14 +138,7 @@ class Load3d {
     this.fbxLoader = new FBXLoader()
     this.clock = new THREE.Clock()
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
-    directionalLight.position.set(1, 1, 1)
-    this.scene.add(directionalLight)
-    this.lights.push(directionalLight)
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
-    this.scene.add(ambientLight)
-    this.lights.push(ambientLight)
+    this.setupLights()
 
     this.gridHelper = new THREE.GridHelper(10, 10)
     this.gridHelper.position.set(0, 0, 0)
@@ -156,6 +149,37 @@ class Load3d {
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  setupLights() {
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+    this.scene.add(ambientLight)
+    this.lights.push(ambientLight)
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.8)
+    mainLight.position.set(0, 10, 10)
+    this.scene.add(mainLight)
+    this.lights.push(mainLight)
+
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.5)
+    backLight.position.set(0, 10, -10)
+    this.scene.add(backLight)
+    this.lights.push(backLight)
+
+    const leftFillLight = new THREE.DirectionalLight(0xffffff, 0.3)
+    leftFillLight.position.set(-10, 0, 0)
+    this.scene.add(leftFillLight)
+    this.lights.push(leftFillLight)
+
+    const rightFillLight = new THREE.DirectionalLight(0xffffff, 0.3)
+    rightFillLight.position.set(10, 0, 0)
+    this.scene.add(rightFillLight)
+    this.lights.push(rightFillLight)
+
+    const bottomLight = new THREE.DirectionalLight(0xffffff, 0.2)
+    bottomLight.position.set(0, -10, 0)
+    this.scene.add(bottomLight)
+    this.lights.push(bottomLight)
   }
 
   toggleCamera(cameraType?: 'perspective' | 'orthographic') {
@@ -200,7 +224,17 @@ class Load3d {
   setLightIntensity(intensity: number) {
     this.lights.forEach((light) => {
       if (light instanceof THREE.DirectionalLight) {
-        light.intensity = intensity
+        if (light === this.lights[1]) {
+          light.intensity = intensity * 0.8
+        } else if (light === this.lights[2]) {
+          light.intensity = intensity * 0.5
+        } else if (light === this.lights[5]) {
+          light.intensity = intensity * 0.2
+        } else {
+          light.intensity = intensity * 0.3
+        }
+      } else if (light instanceof THREE.AmbientLight) {
+        light.intensity = intensity * 0.5
       }
     })
   }
