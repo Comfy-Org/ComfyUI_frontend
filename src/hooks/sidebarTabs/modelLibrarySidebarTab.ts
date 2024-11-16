@@ -3,10 +3,10 @@ import { useI18n } from 'vue-i18n'
 import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { isElectron } from '@/utils/envUtil'
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   const { t } = useI18n()
-  const electronDownloadStore = useElectronDownloadStore()
 
   return {
     id: 'model-library',
@@ -16,8 +16,11 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     component: markRaw(ModelLibrarySidebarTab),
     type: 'vue',
     iconBadge: () => {
-      if (electronDownloadStore.downloads.length > 0) {
-        return electronDownloadStore.downloads.length.toString()
+      if (isElectron()) {
+        const electronDownloadStore = useElectronDownloadStore()
+        if (electronDownloadStore.downloads.length > 0) {
+          return electronDownloadStore.downloads.length.toString()
+        }
       }
 
       return null
