@@ -28,7 +28,14 @@
       class="flex flex-row items-center gap-2"
       v-if="status === 'in_progress' || status === 'paused'"
     >
-      <ProgressBar class="flex-1" :value="downloadProgress" />
+      <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
+           https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499     
+      -->
+      <ProgressBar
+        class="flex-1"
+        :value="downloadProgress"
+        :show-value="downloadProgress > 10"
+      />
 
       <Button
         class="file-action-button"

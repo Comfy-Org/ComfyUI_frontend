@@ -16,9 +16,13 @@
       class="mt-2 flex flex-row items-center gap-2"
       v-if="['in_progress', 'paused', 'completed'].includes(download.status)"
     >
+      <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
+           https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499     
+      -->
       <ProgressBar
         class="flex-1"
         :value="Number((download.progress * 100).toFixed(1))"
+        :show-value="download.progress > 0.1"
       />
 
       <Button
