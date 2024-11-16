@@ -13,6 +13,7 @@
       :modelValue="modelValue"
       @update:modelValue="updateValue"
       class="input-part"
+      max-fraction-digits="3"
       :class="inputClass"
       :min="min"
       :max="max"
