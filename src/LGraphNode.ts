@@ -9,7 +9,7 @@ import type { Reroute, RerouteId } from "./Reroute"
 import { LGraphEventMode, NodeSlotType, TitleMode, RenderShape } from "./types/globalEnums"
 import { BadgePosition, LGraphBadge } from "./LGraphBadge"
 import { type LGraphNodeConstructor, LiteGraph } from "./litegraph"
-import { isInsideRectangle, isXyInRectangle } from "./measure"
+import { isInRectangle, isInRect } from "./measure"
 import { LLink } from "./LLink"
 
 export type NodeId = number | string
@@ -322,8 +322,11 @@ export class LGraphNode implements Positionable, IPinnable {
     onGetOutputs?(this: LGraphNode): INodeOutputSlot[]
     onMouseUp?(this: LGraphNode, e: CanvasMouseEvent, pos: Point): void
     onMouseEnter?(this: LGraphNode, e: CanvasMouseEvent): void
+    /** Blocks drag if return value is truthy. @param pos Offset from {@link LGraphNode.pos}. */
     onMouseDown?(this: LGraphNode, e: CanvasMouseEvent, pos: Point, canvas: LGraphCanvas): boolean
+    /** @param pos Offset from {@link LGraphNode.pos}. */
     onDblClick?(this: LGraphNode, e: CanvasMouseEvent, pos: Point, canvas: LGraphCanvas): void
+    /** @param pos Offset from {@link LGraphNode.pos}. */
     onNodeTitleDblClick?(this: LGraphNode, e: CanvasMouseEvent, pos: Point, canvas: LGraphCanvas): void
     onDrawTitle?(this: LGraphNode, ctx: CanvasRenderingContext2D): void
     onDrawTitleText?(this: LGraphNode, ctx: CanvasRenderingContext2D, title_height: number, size: Size, scale: number, title_text_font: string, selected: boolean): void
@@ -1330,7 +1333,7 @@ export class LGraphNode implements Positionable, IPinnable {
     inResizeCorner(canvasX: number, canvasY: number): boolean {
         const rows = this.outputs ? this.outputs.length : 1
         const outputs_offset = (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
-        return isInsideRectangle(canvasX,
+        return isInRectangle(canvasX,
             canvasY,
             this.pos[0] + this.size[0] - 15,
             this.pos[1] + Math.max(this.size[1] - 15, outputs_offset),
@@ -1518,7 +1521,7 @@ export class LGraphNode implements Positionable, IPinnable {
      * @return {boolean}
      */
     isPointInside(x: number, y: number): boolean {
-        return isXyInRectangle(x, y, this.boundingRect)
+        return isInRect(x, y, this.boundingRect)
     }
 
     /**
@@ -1529,7 +1532,7 @@ export class LGraphNode implements Positionable, IPinnable {
      */
     isPointInCollapse(x: number, y: number): boolean {
         const squareLength = LiteGraph.NODE_TITLE_HEIGHT
-        return isInsideRectangle(x, y, this.pos[0], this.pos[1] - squareLength, squareLength, squareLength)
+        return isInRectangle(x, y, this.pos[0], this.pos[1] - squareLength, squareLength, squareLength)
     }
 
     /**
@@ -1545,7 +1548,7 @@ export class LGraphNode implements Positionable, IPinnable {
             for (let i = 0, l = this.inputs.length; i < l; ++i) {
                 const input = this.inputs[i]
                 this.getConnectionPos(true, i, link_pos)
-                if (isInsideRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
+                if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
                     return { input, slot: i, link_pos }
                 }
             }
@@ -1555,12 +1558,42 @@ export class LGraphNode implements Positionable, IPinnable {
             for (let i = 0, l = this.outputs.length; i < l; ++i) {
                 const output = this.outputs[i]
                 this.getConnectionPos(false, i, link_pos)
-                if (isInsideRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
+                if (isInRectangle(x, y, link_pos[0] - 10, link_pos[1] - 5, 20, 10)) {
                     return { output, slot: i, link_pos }
                 }
             }
         }
 
+        return null
+    }
+
+    /**
+     * Gets the widget on this node at the given co-ordinates.
+     * @param canvasX X co-ordinate in graph space
+     * @param canvasY Y co-ordinate in graph space
+     * @returns The widget found, otherwise `null`
+     */
+    getWidgetOnPos(canvasX: number, canvasY: number, includeDisabled = false): IWidget | null {
+        const { widgets, pos, size } = this
+        if (!widgets?.length) return null
+
+        const x = canvasX - pos[0]
+        const y = canvasY - pos[1]
+        const nodeWidth = size[0]
+
+        for (const widget of widgets) {
+            if (!widget || (widget.disabled && !includeDisabled) || widget.hidden || (widget.advanced && !this.showAdvanced)) continue
+
+            const h = widget.computeSize
+                ? widget.computeSize(nodeWidth)[1]
+                : LiteGraph.NODE_WIDGET_HEIGHT
+            const w = widget.width || nodeWidth
+            if (
+                widget.last_y !== undefined &&
+                isInRectangle(x, y, 6, widget.last_y, w - 12, h)
+            )
+                return widget
+        }
         return null
     }
 

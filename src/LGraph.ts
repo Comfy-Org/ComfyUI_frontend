@@ -826,9 +826,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
                 const canvas = this.list_of_graphcanvas[i]
                 if (canvas.selected_nodes[node.id])
                     delete canvas.selected_nodes[node.id]
-
-                if (canvas.node_dragged == node)
-                    canvas.node_dragged = null
             }
         }
 
@@ -1223,18 +1220,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         this.canvasAction(c => c.onConnectionChange?.())
     }
     /**
-     * returns if the graph is in live mode
-     */
-    isLive(): boolean {
-        if (!this.list_of_graphcanvas) return false
-
-        for (let i = 0; i < this.list_of_graphcanvas.length; ++i) {
-            const c = this.list_of_graphcanvas[i]
-            if (c.live_mode) return true
-        }
-        return false
-    }
-    /**
      * clears the triggered slot animation in all links (stop visual animation)
      */
     clearTriggeredSlots(): void {
@@ -1334,7 +1319,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
         const node = this.getNodeById(link.target_id)
         node?.disconnectInput(link.target_slot)
-        
+
         link.disconnect(this)
     }
 

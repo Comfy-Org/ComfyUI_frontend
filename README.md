@@ -32,7 +32,6 @@ Try it in the [demo site](https://tamats.com/projects/litegraph/editor).
 - Customizable theme (colors, shapes, background)
 - Callbacks to personalize every action/drawing/event of nodes
 - Subgraphs (nodes that contain graphs themselves)
-- Live mode system (hides the graph but calls nodes to render whatever they want, useful to create UIs)
 - Graphs can be executed in NodeJS
 - Highly customizable nodes (color, shape, slots vertical or horizontal, widgets, custom rendering)
 - Easy to integrate in any JS application (one single file, no dependencies)

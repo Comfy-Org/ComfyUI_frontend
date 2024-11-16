@@ -1,6 +1,7 @@
 import type { Point, Rect, Rect32 } from "./interfaces"
 import type { CanvasMouseEvent } from "./types/events"
 import { LiteGraph } from "./litegraph"
+import { isInRect } from "./measure"
 
 export class DragAndScale {
     /** Maximum scale (zoom in) */
@@ -98,7 +99,7 @@ export class DragAndScale {
         e.canvasy = y
         e.dragging = this.dragging
 
-        const is_inside = !this.viewport || (this.viewport && x >= this.viewport[0] && x < (this.viewport[0] + this.viewport[2]) && y >= this.viewport[1] && y < (this.viewport[1] + this.viewport[3]))
+        const is_inside = !this.viewport || isInRect(x, y, this.viewport)
 
         let ignore = false
         if (this.onmouse) {

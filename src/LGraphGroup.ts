@@ -1,9 +1,9 @@
-import type { IContextMenuValue, IPinnable, Point, Positionable, ReadOnlyRect, Size } from "./interfaces"
+import type { IContextMenuValue, IPinnable, Point, Positionable, Size } from "./interfaces"
 import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { containsCentre, containsRect, isInsideRectangle, isPointInRectangle, createBounds } from "./measure"
+import { containsCentre, containsRect, isInRectangle, isPointInRect, createBounds } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -63,7 +63,6 @@ export class LGraphGroup implements Positionable, IPinnable {
         this._size[0] = Math.max(LGraphGroup.minWidth, v[0])
         this._size[1] = Math.max(LGraphGroup.minHeight, v[1])
     }
-
 
     get boundingRect() {
         return this._bounding
@@ -209,7 +208,7 @@ export class LGraphGroup implements Positionable, IPinnable {
 
         // Move reroutes we overlap the centre point of
         for (const reroute of reroutes.values()) {
-            if (isPointInRectangle(reroute.pos, this._bounding))
+            if (isPointInRect(reroute.pos, this._bounding))
                 children.add(reroute)
         }
 
@@ -283,8 +282,8 @@ export class LGraphGroup implements Positionable, IPinnable {
     }
 
     isPointInTitlebar(x: number, y: number): boolean {
-        const b = this._bounding
-        return isInsideRectangle(x, y, b[0], b[1], b[2], this.titleHeight)
+        const b = this.boundingRect
+        return isInRectangle(x, y, b[0], b[1], b[2], this.titleHeight)
     }
 
     isInResize(x: number, y: number): boolean {

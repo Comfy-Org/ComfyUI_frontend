@@ -219,7 +219,7 @@ export interface IContextMenuOptions extends IContextMenuBase {
     scroll_speed?: number
     left?: number
     top?: number
-    scale?: string
+    scale?: number
     node?: LGraphNode
     autoopen?: boolean
 }

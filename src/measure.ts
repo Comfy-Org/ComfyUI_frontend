@@ -1,4 +1,4 @@
-import type { Point, Positionable, ReadOnlyPoint, ReadOnlyRect } from "./interfaces"
+import type { Point, Positionable, ReadOnlyPoint, ReadOnlyRect, Rect } from "./interfaces"
 import { LinkDirection } from "./types/globalEnums"
 
 /**
@@ -16,43 +16,70 @@ export function distance(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
 /**
  * Calculates the distance2 (squared) between two points (2D vector).
  * Much faster when only comparing distances (closest/furthest point).
- * @param a Point a as `x, y`
- * @param b Point b as `x, y`
- * @returns Distance2 (squared) between point {@link a} & {@link b}
+ * @param x1 Origin point X
+ * @param y1 Origin point Y
+ * @param x2 Destination point X
+ * @param y2 Destination point Y
+ * @returns Distance2 (squared) between point [{@link x1}, {@link y1}] & [{@link x2}, {@link y2}]
  */
-export function dist2(a: ReadOnlyPoint, b: ReadOnlyPoint): number {
-    return ((b[0] - a[0]) * (b[0] - a[0])) + ((b[1] - a[1]) * (b[1] - a[1]))
+export function dist2(x1: number, y1: number, x2: number, y2: number): number {
+    return ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1))
 }
 
 /**
  * Determines whether a point is inside a rectangle.
+ * 
+ * Otherwise identical to {@link isInsideRectangle}, it also returns `true` if `x` equals `left` or `y` equals `top`.
+ * @param x Point x
+ * @param y Point y
+ * @param left Rect x
+ * @param top Rect y
+ * @param width Rect width
+ * @param height Rect height
+ * @returns `true` if the point is inside the rect, otherwise `false`
+ */
+export function isInRectangle(x: number, y: number, left: number, top: number, width: number, height: number): boolean {
+    return x >= left
+        && x < left + width
+        && y >= top
+        && y < top + height
+}
+
+/**
+ * Determines whether a {@link Point} is inside a {@link Rect}.
  * @param point The point to check, as `x, y`
  * @param rect The rectangle, as `x, y, width, height`
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
-export function isPointInRectangle(point: ReadOnlyPoint, rect: ReadOnlyRect): boolean {
-    return rect[0] <= point[0]
-        && rect[0] + rect[2] > point[0]
-        && rect[1] <= point[1]
-        && rect[1] + rect[3] > point[1]
+export function isPointInRect(point: ReadOnlyPoint, rect: ReadOnlyRect): boolean {
+    return point[0] >= rect[0]
+        && point[0] < rect[0] + rect[2]
+        && point[1] >= rect[1]
+        && point[1] < rect[1] + rect[3]
 }
 
 /**
- * Determines whether a point is inside a rectangle.
+ * Determines whether the point represented by {@link x}, {@link y} is inside a {@link Rect}.
  * @param x X co-ordinate of the point to check
  * @param y Y co-ordinate of the point to check
  * @param rect The rectangle, as `x, y, width, height`
  * @returns `true` if the point is inside the rect, otherwise `false`
  */
-export function isXyInRectangle(x: number, y: number, rect: ReadOnlyRect): boolean {
-    return rect[0] <= x
-        && rect[0] + rect[2] > x
-        && rect[1] <= y
-        && rect[1] + rect[3] > y
+export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
+    return x >= rect[0]
+        && x < rect[0] + rect[2]
+        && y >= rect[1]
+        && y < rect[1] + rect[3]
 }
 
 /**
- * Determines whether a point is inside a rectangle.
+ * Determines whether a point (`x, y`) is inside a rectangle.
+ * 
+ * This is the original litegraph implementation.  It returns `false` if `x` is equal to `left`, or `y` is equal to `top`.
+ * @deprecated
+ * Use {@link isInRectangle} to match inclusive of top left.
+ * This function returns a false negative when an integer point (e.g. pixel) is on the leftmost or uppermost edge of a rectangle.
+ * 
  * @param x Point x
  * @param y Point y
  * @param left Rect x
@@ -109,7 +136,7 @@ export function overlapBounding(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
 export function containsCentre(a: ReadOnlyRect, b: ReadOnlyRect): boolean {
     const centreX = b[0] + (b[2] * 0.5)
     const centreY = b[1] + (b[3] * 0.5)
-    return isXyInRectangle(centreX, centreY, a)
+    return isInRect(centreX, centreY, a)
 }
 
 /**
