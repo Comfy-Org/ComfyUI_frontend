@@ -137,6 +137,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     onExecuteStep?(): void
     onNodeAdded?(node: LGraphNode): void
     onNodeRemoved?(node: LGraphNode): void
+    onNodeUpdated?(node: LGraphNode): void
     onTrigger?(action: string, param: unknown): void
     onInputRenamed?(old_name: string, name: string): void
     onInputTypeChanged?(name: string, type: string): void
@@ -145,8 +146,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     onOutputRenamed?(old_name: string, name: string): void
     onOutputTypeChanged?(name: string, type: string): void
     onOutputRemoved?(name: string): void
-    onBeforeChange?(graph: LGraph, info?: LGraphNode): void
-    onAfterChange?(graph: LGraph, info?: LGraphNode): void
+    onBeforeChange?(graph: LGraph, node?: LGraphNode): void
+    onAfterChange?(graph: LGraph, node?: LGraphNode): void
     onConnectionChange?(node: LGraphNode): void
     on_change?(graph: LGraph): void
     onSerialize?(data: ISerialisedGraph | SerialisableGraph): void
@@ -1205,14 +1206,18 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         }
     }
     //used for undo, called before any change is made to the graph
-    beforeChange(info?: LGraphNode): void {
-        this.onBeforeChange?.(this, info)
+    beforeChange(node?: LGraphNode): void {
+        this.onBeforeChange?.(this, node)
         this.canvasAction(c => c.onBeforeChange?.(this))
     }
     //used to resend actions, called after any change is made to the graph
-    afterChange(info?: LGraphNode): void {
-        this.onAfterChange?.(this, info)
+    afterChange(node?: LGraphNode): void {
+        this.onAfterChange?.(this, node)
         this.canvasAction(c => c.onAfterChange?.(this))
+    }
+    nodeUpdate(node?: LGraphNode): void {
+      this.onNodeUpdated?.(node)
+      this.canvasAction(c => c.onNodeUpdated?.(node))
     }
     connectionChange(node: LGraphNode): void {
         this.updateExecutionOrder()

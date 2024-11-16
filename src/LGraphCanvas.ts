@@ -370,6 +370,8 @@ export class LGraphCanvas {
     onBeforeChange?(graph: LGraph): void
     /** called after modifying the graph */
     onAfterChange?(graph: LGraph): void
+    onPositionChanged?: (offset: Point) => void
+    onZoomChanged?: (scale: number) => void
     onClear?: () => void
     /** called after moving a node */
     onNodeMoved?: (node_dragged: LGraphNode) => void
@@ -384,6 +386,8 @@ export class LGraphCanvas {
     onShowNodePanel?: (n: LGraphNode) => void
     onNodeSelected?: (node: LGraphNode) => void
     onNodeDeselected?: (node: LGraphNode) => void
+    onNodeUpdated?: (node: LGraphNode) => void
+    onNodeWidgetChanged?: (node: LGraphNode, name: string, value: unknown, widget: IWidget) => void
     onRender?: (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => void
     /** Implement this function to allow conversion of widget types to input types, e.g. number -> INT or FLOAT for widget link validation checks */
     getWidgetLinkType?: (widget: IWidget, node: LGraphNode) => string | null | undefined
@@ -2357,6 +2361,10 @@ export class LGraphCanvas {
             this.ds.offset[0] += delta[0] / this.ds.scale
             this.ds.offset[1] += delta[1] / this.ds.scale
             this.#dirty()
+
+            if (this.onPositionChanged) {
+                this.onPositionChanged(this.ds.offset)
+            }
         } else if ((this.allow_interaction || (node && node.flags.allow_interaction)) && !this.read_only) {
             if (this.connecting_links) this.dirty_canvas = true
 
@@ -2800,6 +2808,14 @@ export class LGraphCanvas {
 
         this.ds.changeScale(scale, [e.clientX, e.clientY])
 
+        if (this.onZoomChanged) {
+            this.onZoomChanged(scale)
+        }
+    
+        if (this.onPositionChanged) {
+            this.onPositionChanged(this.ds.offset)
+        }
+        
         this.graph.change()
 
         e.preventDefault()
@@ -3494,6 +3510,10 @@ export class LGraphCanvas {
             node.size[1] * 0.5 +
             (this.canvas.height * 0.5) / (this.ds.scale * dpi)
         this.setDirty(true, true)
+
+        if (this.onPositionChanged) {
+            this.onPositionChanged(this.ds.offset)
+        }
     }
     /**
      * adds some useful properties to a mouse event, like the position in graph coordinates
@@ -5927,7 +5947,9 @@ export class LGraphCanvas {
                     if (event.type === LiteGraph.pointerevents_method + "down") {
                         if (w.callback) {
                             setTimeout(function () {
-                                w.callback(w, that, node, pos, event)
+                              that.onNodeWidgetChanged?.(node, w.name, w.value, w)
+                              node.onWidgetChanged?.(w.name, w.value, old_value, w)
+                              w.callback(w, that, node, pos, event)
                             }, 20)
                         }
                         w.clicked = true
@@ -6067,6 +6089,7 @@ export class LGraphCanvas {
 
             //value changed
             if (old_value != w.value) {
+                that.onNodeWidgetChanged?.(node, w.name, w.value, w)
                 node.onWidgetChanged?.(w.name, w.value, old_value, w)
                 node.graph._version++
             }
@@ -6077,6 +6100,9 @@ export class LGraphCanvas {
         function inner_value_change(widget: IWidget, value: TWidgetValue) {
             const v = widget.type === "number" ? Number(value) : value
             widget.value = v
+
+            that.onNodeWidgetChanged?.(node, widget.name, widget.value, widget)
+        
             if (widget.options?.property && node.properties[widget.options.property] !== undefined) {
                 node.setProperty(widget.options.property, v)
             }
@@ -8162,6 +8188,10 @@ export class LGraphCanvas {
             }
 
             this.setDirty(true, true)
+
+            if (this.onPositionChanged) {
+                this.onPositionChanged(this.ds.offset)
+            }
 
             if (progress < 1) {
                 animationId = requestAnimationFrame(animate)
