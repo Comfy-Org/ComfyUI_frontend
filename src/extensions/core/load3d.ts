@@ -7,8 +7,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { IWidget } from '@comfyorg/litegraph'
-import { ComfyNode } from '@/types/comfyWorkflow'
 import { nextTick } from 'vue'
 
 async function uploadFile(
@@ -85,11 +85,16 @@ class Load3d {
   gltfLoader: GLTFLoader
   objLoader: OBJLoader
   mtlLoader: MTLLoader
+  fbxLoader: FBXLoader
   currentModel: THREE.Object3D | null = null
+  currentAnimation: THREE.AnimationMixer | null = null
+  animationActions: THREE.AnimationAction[] = []
+  isAnimationPlaying: boolean = false
   node: any
   private animationFrameId: number | null = null
   gridHelper: THREE.GridHelper
   lights: THREE.Light[] = []
+  clock: THREE.Clock
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -130,6 +135,8 @@ class Load3d {
     this.gltfLoader = new GLTFLoader()
     this.objLoader = new OBJLoader()
     this.mtlLoader = new MTLLoader()
+    this.fbxLoader = new FBXLoader()
+    this.clock = new THREE.Clock()
 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
     directionalLight.position.set(1, 1, 1)
@@ -208,6 +215,15 @@ class Load3d {
   }
 
   clearModel() {
+    if (this.currentAnimation) {
+      this.animationActions.forEach((action) => {
+        action.stop()
+      })
+      this.currentAnimation = null
+    }
+    this.animationActions = []
+    this.isAnimationPlaying = false
+
     const objectsToRemove: THREE.Object3D[] = []
 
     this.scene.traverse((object) => {
@@ -273,6 +289,20 @@ class Load3d {
     this.renderer.render(this.scene, this.activeCamera)
   }
 
+  toggleAnimation(play?: boolean) {
+    if (!this.currentAnimation || this.animationActions.length === 0) return
+
+    this.isAnimationPlaying = play ?? !this.isAnimationPlaying
+
+    this.animationActions.forEach((action) => {
+      if (this.isAnimationPlaying) {
+        action.paused = false
+      } else {
+        action.paused = true
+      }
+    })
+  }
+
   remove() {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId)
@@ -305,6 +335,22 @@ class Load3d {
       let model: THREE.Object3D | null = null
 
       switch (fileExtension) {
+        case 'fbx':
+          const fbxModel = await this.fbxLoader.loadAsync(url)
+          model = fbxModel
+
+          if (fbxModel.animations.length > 0) {
+            this.currentAnimation = new THREE.AnimationMixer(fbxModel)
+            this.animationActions = fbxModel.animations.map((clip) => {
+              const action = this.currentAnimation!.clipAction(clip)
+              action.clampWhenFinished = true
+              action.play()
+              action.paused = true
+              return action
+            })
+          }
+          break
+
         case 'obj':
           const mtlUrl = url.replace(/\.obj([^.]*$)/, '.mtl$1')
           try {
@@ -411,6 +457,12 @@ class Load3d {
 
   animate = () => {
     requestAnimationFrame(this.animate)
+
+    if (this.currentAnimation && this.isAnimationPlaying) {
+      const delta = this.clock.getDelta()
+      this.currentAnimation.update(delta)
+    }
+
     this.controls.update()
     this.renderer.render(this.scene, this.activeCamera)
   }
@@ -662,6 +714,8 @@ app.registerExtension({
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
     sceneWidget.serializeValue = async () => {
+      load3d.toggleAnimation(false)
+
       const imageData = await load3d.captureScene(w.value, h.value)
 
       const blob = await fetch(imageData).then((r) => r.blob())
@@ -690,7 +744,7 @@ app.registerExtension({
 
     const fileInput = document.createElement('input')
     fileInput.type = 'file'
-    fileInput.accept = '.gltf,.glb,.obj,.mtl'
+    fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx'
     fileInput.style.display = 'none'
     fileInput.onchange = () => {
       if (fileInput.files?.length) {
@@ -723,6 +777,15 @@ app.registerExtension({
         modelWidget.value = ''
       }
     })
+
+    const toggleAnimationButton = node.addWidget(
+      'button',
+      'Play/Pause Animation',
+      'toggle_animation',
+      () => {
+        load3d.toggleAnimation()
+      }
+    )
 
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
