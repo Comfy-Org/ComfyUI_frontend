@@ -61,6 +61,8 @@ import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { api } from '@/scripts/api'
+import { useEventListener } from '@vueuse/core'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -178,12 +180,25 @@ watchEffect(() => {
 })
 
 const workflowStore = useWorkflowStore()
+const persistCurrentWorkflow = () => {
+  const workflow = JSON.stringify(comfyApp.serializeGraph())
+  localStorage.setItem('workflow', workflow)
+  if (api.clientId) {
+    sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+  }
+}
+
 watchEffect(() => {
   if (workflowStore.activeWorkflow) {
     const workflow = workflowStore.activeWorkflow
     setStorageValue('Comfy.PreviousWorkflow', workflow.key)
+    // When the activeWorkflow changes, the graph has already been loaded.
+    // Saving the current state of the graph to the localStorage.
+    persistCurrentWorkflow()
   }
 })
+
+useEventListener(api, 'graphChanged', persistCurrentWorkflow)
 
 usePragmaticDroppable(() => canvasRef.value, {
   onDrop: (event) => {

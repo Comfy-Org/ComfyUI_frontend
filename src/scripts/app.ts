@@ -1865,15 +1865,6 @@ export class ComfyApp {
       await this.loadGraphData()
     }
 
-    // Save current workflow automatically
-    setInterval(() => {
-      const workflow = JSON.stringify(this.serializeGraph())
-      localStorage.setItem('workflow', workflow)
-      if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
-      }
-    }, 1000)
-
     this.#addDrawNodeHandler()
     this.#addDrawGroupsHandler()
     this.#addDropHandler()
