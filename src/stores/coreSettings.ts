@@ -1,9 +1,6 @@
 import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import {
-  LinkReleaseTriggerAction,
-  LinkReleaseTriggerMode
-} from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
 import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'

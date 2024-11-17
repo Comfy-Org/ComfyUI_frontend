@@ -537,6 +537,34 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('string_input')
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
+
+  test('Restore workflow on reload (switch workflow)', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+    await comfyPage.reload({ clearStorage: false })
+    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+  })
+
+  test('Restore workflow on reload (modify workflow)', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    const node = (await comfyPage.getFirstNodeRef())!
+    await node.click('collapse')
+    // Wait 300ms between 2 clicks so that it is not treated as a double click
+    // by litegraph.
+    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.clickEmptySpace()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'single_ksampler_modified.png'
+    )
+    await comfyPage.reload({ clearStorage: false })
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'single_ksampler_modified.png'
+    )
+  })
 })
 
 test.describe('Load duplicate workflow', () => {
