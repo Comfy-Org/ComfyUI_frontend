@@ -62,7 +62,6 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
-import { useEventListener } from '@vueuse/core'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -198,7 +197,7 @@ watchEffect(() => {
   }
 })
 
-useEventListener(api, 'graphChanged', persistCurrentWorkflow)
+api.addEventListener('graphChanged', persistCurrentWorkflow)
 
 usePragmaticDroppable(() => canvasRef.value, {
   onDrop: (event) => {
