@@ -538,11 +538,28 @@ test.describe('Load workflow', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
 
-  test('Restore workflow on reload', async ({ comfyPage }) => {
+  test('Restore workflow on reload (switch workflow)', async ({
+    comfyPage
+  }) => {
     await comfyPage.loadWorkflow('single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
     await comfyPage.reload()
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+  })
+
+  test('Restore workflow on reload (modify workflow)', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    const node = (await comfyPage.getFirstNodeRef())!
+    await node.click('collapse')
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'single_ksampler_modified.png'
+    )
+    await comfyPage.reload()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'single_ksampler_modified.png'
+    )
   })
 })
 
