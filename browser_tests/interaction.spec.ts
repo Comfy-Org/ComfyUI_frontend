@@ -537,6 +537,13 @@ test.describe('Load workflow', () => {
     await comfyPage.loadWorkflow('string_input')
     await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
   })
+
+  test('Restore workflow on reload', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('single_ksampler')
+    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+    await comfyPage.reload()
+    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+  })
 })
 
 test.describe('Load duplicate workflow', () => {
