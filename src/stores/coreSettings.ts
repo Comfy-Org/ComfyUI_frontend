@@ -35,6 +35,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.LinkRelease.Action',
+    category: ['LiteGraph', 'LinkRelease', 'Action'],
     name: 'Action on link release (No modifier)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
@@ -42,6 +43,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.LinkRelease.ActionShift',
+    category: ['LiteGraph', 'LinkRelease', 'ActionShift'],
     name: 'Action on link release (Shift)',
     type: 'combo',
     options: Object.values(LinkReleaseTriggerAction),
@@ -81,7 +83,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Sidebar.Location',
-    category: ['Comfy', 'Sidebar', 'Location'],
+    category: ['Appearance', 'Sidebar', 'Location'],
     name: 'Sidebar location',
     type: 'combo',
     options: ['left', 'right'],
@@ -89,7 +91,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Sidebar.Size',
-    category: ['Comfy', 'Sidebar', 'Size'],
+    category: ['Appearance', 'Sidebar', 'Size'],
     name: 'Sidebar size',
     type: 'combo',
     options: ['normal', 'small'],
@@ -97,7 +99,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
-    category: ['Comfy', 'Node Widget', 'TextareaWidget', 'FontSize'],
+    category: ['Appearance', 'Node Widget', 'TextareaWidget', 'FontSize'],
     name: 'Textarea widget font size',
     type: 'slider',
     defaultValue: 10,
@@ -121,7 +123,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Graph.CanvasInfo',
-    name: 'Show canvas info (fps, etc.)',
+    category: ['LiteGraph', 'Canvas', 'CanvasInfo'],
+    name: 'Show canvas info on bottom left corner (fps, etc.)',
     type: 'boolean',
     defaultValue: true
   },
@@ -143,6 +146,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.Opacity',
+    category: ['Appearance', 'Node', 'Opacity'],
     name: 'Node opacity',
     type: 'slider',
     defaultValue: 1,
@@ -167,6 +171,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',
+    category: ['LiteGraph', 'Canvas', 'ZoomSpeed'],
     name: 'Canvas zoom speed',
     type: 'slider',
     defaultValue: 1.1,
@@ -207,6 +212,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
+    category: ['LiteGraph', 'Group', 'Padding'],
     name: 'Group selected nodes padding',
     type: 'slider',
     defaultValue: 10,
@@ -217,12 +223,14 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.DoubleClickTitleToEdit',
+    category: ['LiteGraph', 'Node', 'DoubleClickTitleToEdit'],
     name: 'Double click node title to edit',
     type: 'boolean',
     defaultValue: true
   },
   {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
+    category: ['LiteGraph', 'Group', 'DoubleClickTitleToEdit'],
     name: 'Double click group title to edit',
     type: 'boolean',
     defaultValue: true
@@ -270,6 +278,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
+    category: ['LiteGraph', 'Node', 'NodeSourceBadgeMode'],
     name: 'Node source badge mode',
     type: 'combo',
     options: Object.values(NodeBadgeMode),
@@ -277,6 +286,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.NodeBadge.NodeIdBadgeMode',
+    category: ['LiteGraph', 'Node', 'NodeIdBadgeMode'],
     name: 'Node ID badge mode',
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
@@ -284,6 +294,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
+    category: ['LiteGraph', 'Node', 'NodeLifeCycleBadgeMode'],
     name: 'Node life cycle badge mode',
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
@@ -316,7 +327,7 @@ export const CORE_SETTINGS: SettingParams[] = [
    */
   {
     id: 'Comfy.PreviewFormat',
-    category: ['Comfy', 'Node Widget', 'PreviewFormat'],
+    category: ['LiteGraph', 'Node Widget', 'PreviewFormat'],
     name: 'Preview image format',
     tooltip:
       'When displaying a preview in the image widget, convert it to a lightweight image, e.g. webp, jpeg, webp;50, etc.',
@@ -325,14 +336,14 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.DisableSliders',
-    category: ['Comfy', 'Node Widget', 'DisableSliders'],
+    category: ['LiteGraph', 'Node Widget', 'DisableSliders'],
     name: 'Disable node widget sliders',
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'Comfy.DisableFloatRounding',
-    category: ['Comfy', 'Node Widget', 'DisableFloatRounding'],
+    category: ['LiteGraph', 'Node Widget', 'DisableFloatRounding'],
     name: 'Disable default float widget rounding.',
     tooltip:
       '(requires page reload) Cannot disable round when round is set by the node in the backend.',
@@ -341,7 +352,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.FloatRoundingPrecision',
-    category: ['Comfy', 'Node Widget', 'FloatRoundingPrecision'],
+    category: ['LiteGraph', 'Node Widget', 'FloatRoundingPrecision'],
     name: 'Float widget rounding decimal places [0 = auto].',
     tooltip: '(requires page reload)',
     type: 'slider',
@@ -354,7 +365,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.EnableTooltips',
-    category: ['Comfy', 'Node', 'EnableTooltips'],
+    category: ['LiteGraph', 'Node', 'EnableTooltips'],
     name: 'Enable Tooltips',
     type: 'boolean',
     defaultValue: true
@@ -395,6 +406,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Graph.CanvasMenu',
+    category: ['LiteGraph', 'Canvas', 'CanvasMenu'],
     name: 'Show graph canvas menu',
     type: 'boolean',
     defaultValue: true
@@ -448,7 +460,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.LinkRenderMode',
-    category: ['Comfy', 'Graph', 'LinkRenderMode'],
+    category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
     defaultValue: 2,
     type: 'combo',
@@ -461,6 +473,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.AutoSnapLinkToSlot',
+    category: ['LiteGraph', 'Node', 'AutoSnapLinkToSlot'],
     name: 'Auto snap link to node slot',
     tooltip:
       'When dragging a link over a node, the link automatically snap to a viable input slot on the node',
@@ -470,6 +483,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.SnapHighlightsNode',
+    category: ['LiteGraph', 'Node', 'SnapHighlightsNode'],
     name: 'Snap highlights node',
     tooltip:
       'When dragging a link over a node with viable input slot, highlight the node',
@@ -479,6 +493,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.BypassAllLinksOnDelete',
+    category: ['LiteGraph', 'Node', 'BypassAllLinksOnDelete'],
     name: 'Keep all links when deleting nodes',
     tooltip:
       'When deleting a node, attempt to reconnect all of its input and output links (bypassing the deleted node)',
@@ -488,6 +503,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Node.MiddleClickRerouteNode',
+    category: ['LiteGraph', 'Node', 'MiddleClickRerouteNode'],
     name: 'Middle-click creates a new Reroute node',
     type: 'boolean',
     defaultValue: true,
@@ -495,6 +511,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.RerouteBeta',
+    category: ['LiteGraph', 'RerouteBeta'],
     name: 'Opt-in to the reroute beta test',
     tooltip:
       'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
@@ -505,6 +522,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Graph.LinkMarkers',
+    category: ['LiteGraph', 'Link', 'LinkMarkers'],
     name: 'Link midpoint markers',
     defaultValue: LinkMarkerShape.Circle,
     type: 'combo',
@@ -517,13 +535,14 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.DOMClippingEnabled',
-    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
+    category: ['LiteGraph', 'Node', 'DOMClippingEnabled'],
     name: 'Enable DOM element clipping (enabling may reduce performance)',
     type: 'boolean',
     defaultValue: true
   },
   {
     id: 'Comfy.Graph.CtrlShiftZoom',
+    category: ['LiteGraph', 'Canvas', 'CtrlShiftZoom'],
     name: 'Enable fast-zoom shortcut (Ctrl + Shift + Drag)',
     type: 'boolean',
     defaultValue: true,

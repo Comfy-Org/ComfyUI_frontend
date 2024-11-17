@@ -25,7 +25,7 @@ app.registerExtension({
     // Add setting to control grid size
     app.ui.settings.addSetting({
       id: 'Comfy.SnapToGrid.GridSize',
-      category: ['Comfy', 'Graph', 'GridSize'],
+      category: ['LiteGraph', 'Canvas', 'GridSize'],
       name: 'Snap to grid size',
       type: 'slider',
       attrs: {
@@ -43,7 +43,7 @@ app.registerExtension({
     // Using a new setting id can cause existing users to lose their existing settings.
     const alwaysSnapToGrid = app.ui.settings.addSetting({
       id: 'pysssss.SnapToGrid',
-      category: ['Comfy', 'Graph', 'AlwaysSnapToGrid'],
+      category: ['LiteGraph', 'Canvas', 'AlwaysSnapToGrid'],
       name: 'Always snap to grid',
       type: 'boolean',
       defaultValue: false,
