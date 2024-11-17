@@ -99,7 +99,7 @@ export class ChangeTracker {
         this.initialState,
         this.activeState
       )
-      if (workflow.isModified) {
+      if (logger.getLevel() <= logger.levels.DEBUG && workflow.isModified) {
         const diff = ChangeTracker.graphDiff(
           this.initialState,
           this.activeState
