@@ -1,10 +1,9 @@
-// @ts-strict-ignore
-
 import { app } from '../../scripts/app'
 import { ComfyDialog, $el } from '../../scripts/ui'
 import { ComfyApp } from '../../scripts/app'
 import { api } from '../../scripts/api'
 import { ClipspaceDialog } from './clipspace'
+import { MaskEditorDialogOld } from './maskEditorOld'
 
 var styles = `
   #maskEditorContainer {
@@ -402,6 +401,45 @@ var styles = `
   #maskEditor_topPanelButton:hover {
     background-color: var(--p-overlaybadge-outline-color);
   }
+  #maskEditor_sidePanelColorSelectSettings {
+    flex-direction: column;
+  }
+  
+  .maskEditor_sidePanel_paintBucket_Container {
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    gap: 10px;
+  }
+
+  .maskEditor_sidePanel_colorSelect_Container {
+    display: flex;
+    width: 180px;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  #maskEditor_sidePanelVisibilityToggle {
+    position: absolute;
+    right: 0;
+  }
+
+  #maskEditor_sidePanelColorSelectMethodSelect {
+    position: absolute;
+    right: 0;
+  }
+
+  #maskEditor_sidePanelVisibilityToggle {
+    position: absolute;
+    right: 0;
+  }
+
+  #maskEditor_sidePanel_colorSelect_tolerance_container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 `
 
 var styleSheet = document.createElement('style')
@@ -409,90 +447,6 @@ styleSheet.type = 'text/css'
 styleSheet.innerText = styles
 document.head.appendChild(styleSheet)
 
-// Helper function to convert a data URL to a Blob object
-function dataURLToBlob(dataURL: string) {
-  const parts = dataURL.split(';base64,')
-  const contentType = parts[0].split(':')[1]
-  const byteString = atob(parts[1])
-  const arrayBuffer = new ArrayBuffer(byteString.length)
-  const uint8Array = new Uint8Array(arrayBuffer)
-  for (let i = 0; i < byteString.length; i++) {
-    uint8Array[i] = byteString.charCodeAt(i)
-  }
-  return new Blob([arrayBuffer], { type: contentType })
-}
-
-function loadImage(imagePath: URL): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image() as HTMLImageElement
-    image.onload = function () {
-      resolve(image)
-    }
-    image.onerror = function (error) {
-      reject(error)
-    }
-    image.src = imagePath.href
-  })
-}
-
-async function uploadMask(
-  filepath: { filename: string; subfolder: string; type: string },
-  formData: FormData
-) {
-  await api
-    .fetchApi('/upload/mask', {
-      method: 'POST',
-      body: formData
-    })
-    .then((response) => {})
-    .catch((error) => {
-      console.error('Error:', error)
-    })
-
-  ComfyApp.clipspace.imgs[ComfyApp.clipspace!['selectedIndex']] = new Image()
-  ComfyApp.clipspace.imgs[ComfyApp.clipspace!['selectedIndex']].src =
-    api.apiURL(
-      '/view?' +
-        new URLSearchParams(filepath).toString() +
-        app.getPreviewFormatParam() +
-        app.getRandParam()
-    )
-
-  if (ComfyApp.clipspace.images)
-    ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']] = filepath
-
-  ClipspaceDialog.invalidatePreview()
-}
-
-async function prepare_mask(
-  image: HTMLImageElement,
-  maskCanvas: HTMLCanvasElement,
-  maskCtx: CanvasRenderingContext2D,
-  maskColor: { r: number; g: number; b: number }
-) {
-  // paste mask data into alpha channel
-  maskCtx.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height)
-  const maskData = maskCtx.getImageData(
-    0,
-    0,
-    maskCanvas.width,
-    maskCanvas.height
-  )
-
-  // invert mask
-  for (let i = 0; i < maskData.data.length; i += 4) {
-    const alpha = maskData.data[i + 3]
-    maskData.data[i] = maskColor.r
-    maskData.data[i + 1] = maskColor.g
-    maskData.data[i + 2] = maskColor.b
-    maskData.data[i + 3] = 255 - alpha
-  }
-
-  maskCtx.globalCompositeOperation = 'source-over'
-  maskCtx.putImageData(maskData, 0, 0)
-}
-
-// Define the PointerType enum
 enum BrushShape {
   Arc = 'arc',
   Rect = 'rect'
@@ -501,7 +455,8 @@ enum BrushShape {
 enum Tools {
   Pen = 'pen',
   Eraser = 'eraser',
-  PaintBucket = 'paintBucket'
+  PaintBucket = 'paintBucket',
+  ColorSelect = 'colorSelect'
 }
 
 enum CompositionOperation {
@@ -513,6 +468,12 @@ enum MaskBlendMode {
   Black = 'black',
   White = 'white',
   Negative = 'negative'
+}
+
+enum ColorComparisonMethod {
+  Simple = 'simple',
+  HSL = 'hsl',
+  LAB = 'lab'
 }
 
 interface Point {
@@ -538,20 +499,21 @@ class MaskEditorDialog extends ComfyDialog {
   static instance: MaskEditorDialog | null = null
 
   //new
-  uiManager: UIManager
-  toolManager: ToolManager
-  panAndZoomManager: PanAndZoomManager
-  brushTool: BrushTool
-  paintBucketTool: PaintBucketTool
-  canvasHistory: CanvasHistory
-  messageBroker: MessageBroker
-  keyboardManager: KeyboardManager
+  private uiManager!: UIManager
+  private toolManager!: ToolManager
+  private panAndZoomManager!: PanAndZoomManager
+  private brushTool!: BrushTool
+  private paintBucketTool!: PaintBucketTool
+  private colorSelectTool!: ColorSelectTool
+  private canvasHistory!: CanvasHistory
+  private messageBroker!: MessageBroker
+  private keyboardManager!: KeyboardManager
 
-  rootElement: HTMLElement
-  imageURL: string
+  private rootElement!: HTMLElement
+  private imageURL!: string
 
-  isLayoutCreated: boolean = false
-  isOpen: boolean = false
+  private isLayoutCreated: boolean = false
+  private isOpen: boolean = false
 
   //variables needed?
   last_display_style: string | null = null
@@ -568,6 +530,9 @@ class MaskEditorDialog extends ComfyDialog {
   }
 
   static getInstance() {
+    if (!ComfyApp.clipspace || !ComfyApp.clipspace.imgs) {
+      throw new Error('No clipspace images found')
+    }
     const currentSrc =
       ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
 
@@ -592,6 +557,7 @@ class MaskEditorDialog extends ComfyDialog {
       this.toolManager = new ToolManager(this)
       this.keyboardManager = new KeyboardManager(this)
       this.uiManager = new UIManager(this.rootElement, this)
+      this.colorSelectTool = new ColorSelectTool(this)
 
       // replacement of onClose hook since close is not real close
       const self = this
@@ -630,23 +596,25 @@ class MaskEditorDialog extends ComfyDialog {
     this.element.style.display = 'flex'
     await this.uiManager.initUI()
     this.paintBucketTool.initPaintBucketTool()
+    this.colorSelectTool.initColorSelectTool()
     await this.canvasHistory.saveInitialState()
     this.isOpen = true
-
-    const src = ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
-    this.uiManager.setSidebarImage(src)
-
+    if (ComfyApp.clipspace && ComfyApp.clipspace.imgs) {
+      const src =
+        ComfyApp.clipspace?.imgs[ComfyApp.clipspace['selectedIndex']].src
+      this.uiManager.setSidebarImage(src)
+    }
     this.keyboardManager.addListeners()
   }
 
   private cleanup() {
     // Remove all maskEditor elements
-    const maskEditors = document.querySelectorAll('[id^="maskEditor"]');
-    maskEditors.forEach(element => element.remove());
+    const maskEditors = document.querySelectorAll('[id^="maskEditor"]')
+    maskEditors.forEach((element) => element.remove())
 
     // Remove brush elements specifically
-    const brushElements = document.querySelectorAll('#maskEditor_brush');
-    brushElements.forEach(element => element.remove());
+    const brushElements = document.querySelectorAll('#maskEditor_brush')
+    brushElements.forEach((element) => element.remove())
   }
 
   isOpened() {
@@ -666,7 +634,25 @@ class MaskEditorDialog extends ComfyDialog {
     backupCanvas.height = imageCanvas.height
 
     if (!backupCtx) {
-      console.log('Failed to save mask. Please try again.')
+      return
+    }
+
+    // Ensure the mask image is fully loaded
+    const maskImageLoaded = new Promise<void>((resolve, reject) => {
+      const maskImage = new Image()
+      maskImage.src = maskCanvas.toDataURL()
+      maskImage.onload = () => {
+        resolve()
+      }
+      maskImage.onerror = (error) => {
+        reject(error)
+      }
+    })
+
+    try {
+      await maskImageLoaded
+    } catch (error) {
+      console.error('Error loading mask image:', error)
       return
     }
 
@@ -683,6 +669,21 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.height
     )
 
+    let maskHasContent = false
+    const maskData = backupCtx.getImageData(
+      0,
+      0,
+      backupCanvas.width,
+      backupCanvas.height
+    )
+
+    for (let i = 0; i < maskData.data.length; i += 4) {
+      if (maskData.data[i + 3] !== 0) {
+        maskHasContent = true
+        break
+      }
+    }
+
     // paste mask data into alpha channel
     const backupData = backupCtx.getImageData(
       0,
@@ -690,6 +691,20 @@ class MaskEditorDialog extends ComfyDialog {
       backupCanvas.width,
       backupCanvas.height
     )
+
+    let backupHasContent = false
+    for (let i = 0; i < backupData.data.length; i += 4) {
+      if (backupData.data[i + 3] !== 0) {
+        backupHasContent = true
+        break
+      }
+    }
+
+    if (maskHasContent && !backupHasContent) {
+      console.error('Mask appears to be empty')
+      alert('Cannot save empty mask')
+      return
+    }
 
     // refine mask image
     for (let i = 0; i < backupData.data.length; i += 4) {
@@ -712,18 +727,22 @@ class MaskEditorDialog extends ComfyDialog {
       type: 'input'
     }
 
-    if (ComfyApp.clipspace.images) ComfyApp.clipspace.images[0] = item
-
-    if (ComfyApp.clipspace.widgets) {
+    if (ComfyApp?.clipspace?.widgets?.length) {
       const index = ComfyApp.clipspace.widgets.findIndex(
-        (obj) => obj.name === 'image'
+        (obj) => obj?.name === 'image'
       )
 
-      if (index >= 0) ComfyApp.clipspace.widgets[index].value = item
+      if (index >= 0 && item !== undefined) {
+        try {
+          ComfyApp.clipspace.widgets[index].value = item
+        } catch (err) {
+          console.warn('Failed to set widget value:', err)
+        }
+      }
     }
 
     const dataURL = backupCanvas.toDataURL()
-    const blob = dataURLToBlob(dataURL)
+    const blob = this.dataURLToBlob(dataURL)
 
     let original_url = new URL(image.src)
 
@@ -731,8 +750,12 @@ class MaskEditorDialog extends ComfyDialog {
 
     this.uiManager.setBrushOpacity(0)
 
+    const filenameRef = original_url.searchParams.get('filename')
+    if (!filenameRef) {
+      throw new Error('filename parameter is required')
+    }
     const original_ref: Ref = {
-      filename: original_url.searchParams.get('filename')
+      filename: filenameRef
     }
 
     let original_subfolder = original_url.searchParams.get('subfolder')
@@ -749,35 +772,119 @@ class MaskEditorDialog extends ComfyDialog {
     this.uiManager.setSaveButtonText('Saving...')
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
-    await uploadMask(item, formData)
-    ComfyApp.onClipspaceEditorSave()
-    this.close()
-    this.isOpen = false
+
+    // Retry mechanism
+    const maxRetries = 3
+    let attempt = 0
+    let success = false
+
+    while (attempt < maxRetries && !success) {
+      try {
+        await this.uploadMask(item, formData)
+        success = true
+      } catch (error) {
+        console.error(`Upload attempt ${attempt + 1} failed:`, error)
+        attempt++
+        if (attempt < maxRetries) {
+          console.log('Retrying upload...')
+        } else {
+          console.log('Max retries reached. Upload failed.')
+        }
+      }
+    }
+
+    if (success) {
+      ComfyApp.onClipspaceEditorSave()
+      this.close()
+      this.isOpen = false
+    } else {
+      this.uiManager.setSaveButtonText('Save')
+      this.uiManager.setSaveButtonEnabled(true)
+      this.keyboardManager.addListeners()
+    }
   }
 
   getMessageBroker() {
     return this.messageBroker
   }
+
+  // Helper function to convert a data URL to a Blob object
+  private dataURLToBlob(dataURL: string) {
+    const parts = dataURL.split(';base64,')
+    const contentType = parts[0].split(':')[1]
+    const byteString = atob(parts[1])
+    const arrayBuffer = new ArrayBuffer(byteString.length)
+    const uint8Array = new Uint8Array(arrayBuffer)
+    for (let i = 0; i < byteString.length; i++) {
+      uint8Array[i] = byteString.charCodeAt(i)
+    }
+    return new Blob([arrayBuffer], { type: contentType })
+  }
+
+  private async uploadMask(
+    filepath: { filename: string; subfolder: string; type: string },
+    formData: FormData,
+    retries = 3
+  ) {
+    if (retries <= 0) {
+      throw new Error('Max retries reached')
+      return
+    }
+    await api
+      .fetchApi('/upload/mask', {
+        method: 'POST',
+        body: formData
+      })
+      .then((response) => {
+        if (!response.ok) {
+          console.log('Failed to upload mask:', response)
+          this.uploadMask(filepath, formData, 2)
+        }
+      })
+      .catch((error) => {
+        console.error('Error:', error)
+      })
+
+    try {
+      const selectedIndex = ComfyApp.clipspace?.selectedIndex
+      if (ComfyApp.clipspace?.imgs && selectedIndex !== undefined) {
+        // Create and set new image
+        const newImage = new Image()
+        newImage.src = api.apiURL(
+          '/view?' +
+            new URLSearchParams(filepath).toString() +
+            app.getPreviewFormatParam() +
+            app.getRandParam()
+        )
+        ComfyApp.clipspace.imgs[selectedIndex] = newImage
+
+        // Update images array if it exists
+        if (ComfyApp.clipspace.images) {
+          ComfyApp.clipspace.images[selectedIndex] = filepath
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to update clipspace image:', err)
+    }
+    ClipspaceDialog.invalidatePreview()
+  }
 }
 
 class CanvasHistory {
-  maskEditor: MaskEditorDialog
-  messageBroker: MessageBroker
+  private maskEditor!: MaskEditorDialog
+  private messageBroker!: MessageBroker
 
-  canvas: HTMLCanvasElement
-  ctx: CanvasRenderingContext2D
-  states: ImageData[]
-  currentStateIndex: number
-  maxStates: number
-  initialized: boolean
+  private canvas!: HTMLCanvasElement
+  private ctx!: CanvasRenderingContext2D
+  private states: ImageData[] = []
+  private currentStateIndex: number = -1
+  private maxStates: number = 20
+  private initialized: boolean = false
 
   constructor(maskEditor: MaskEditorDialog, maxStates = 20) {
     this.maskEditor = maskEditor
     this.messageBroker = maskEditor.getMessageBroker()
-    this.states = []
-    this.currentStateIndex = -1
     this.maxStates = maxStates
-    this.initialized = false
     this.createListeners()
   }
 
@@ -840,22 +947,14 @@ class CanvasHistory {
       this.states.shift()
       this.currentStateIndex--
     }
-
-    console.log('save state')
   }
 
   undo() {
     if (this.states.length > 1 && this.currentStateIndex > 0) {
       this.currentStateIndex--
       this.restoreState(this.states[this.currentStateIndex])
-      console.log(
-        `Undo: ${this.currentStateIndex + 1} states behind, ${
-          this.states.length - (this.currentStateIndex + 1)
-        } states ahead`
-      )
-      console.log('nr of states: ' + this.states.length)
     } else {
-      console.log('No more undo states available')
+      alert('No more undo states available')
     }
   }
 
@@ -866,14 +965,8 @@ class CanvasHistory {
     ) {
       this.currentStateIndex++
       this.restoreState(this.states[this.currentStateIndex])
-      console.log(
-        `Redo: ${this.currentStateIndex + 1} states behind, ${
-          this.states.length - (this.currentStateIndex + 1)
-        } states ahead`
-      )
-      console.log('nr of states: ' + this.states.length)
     } else {
-      console.log('No more redo states available')
+      alert('No more redo states available')
     }
   }
 
@@ -888,8 +981,8 @@ class PaintBucketTool {
   maskEditor: MaskEditorDialog
   messageBroker: MessageBroker
 
-  private canvas: HTMLCanvasElement
-  private ctx: CanvasRenderingContext2D
+  private canvas!: HTMLCanvasElement
+  private ctx!: CanvasRenderingContext2D
   private width: number | null = null
   private height: number | null = null
   private imageData: ImageData | null = null
@@ -913,8 +1006,9 @@ class PaintBucketTool {
   }
 
   private createListeners() {
-    this.messageBroker.subscribe('setTolerance', (tolerance: number) =>
-      this.setTolerance(tolerance)
+    this.messageBroker.subscribe(
+      'setPaintBucketTolerance',
+      (tolerance: number) => this.setTolerance(tolerance)
     )
 
     this.messageBroker.subscribe('paintBucketFill', (point: Point) =>
@@ -930,36 +1024,46 @@ class PaintBucketTool {
   }
 
   private getPixel(x: number, y: number): number {
-    return this.data![(y * this.width + x) * 4 + 3]
+    return this.data![(y * this.width! + x) * 4 + 3]
   }
 
-  private setPixel(x: number, y: number, alpha: number): void {
-    const index = (y * this.width + x) * 4
-    this.data![index] = 0 // R
-    this.data![index + 1] = 0 // G
-    this.data![index + 2] = 0 // B
+  private setPixel(
+    x: number,
+    y: number,
+    alpha: number,
+    color: { r: number; g: number; b: number }
+  ): void {
+    const index = (y * this.width! + x) * 4
+    this.data![index] = color.r // R
+    this.data![index + 1] = color.g // G
+    this.data![index + 2] = color.b // B
     this.data![index + 3] = alpha // A
   }
 
-  // Helper to check if a pixel should be filled
-  private shouldFillPixel(
+  private shouldProcessPixel(
     currentAlpha: number,
     targetAlpha: number,
-    tolerance: number
+    tolerance: number,
+    isFillMode: boolean
   ): boolean {
-    // Only fill pixels that are very close to the target alpha
-    // and are not already fully opaque
-    return (
-      currentAlpha !== -1 &&
-      currentAlpha !== 255 &&
-      Math.abs(currentAlpha - targetAlpha) <= tolerance
-    )
+    if (currentAlpha === -1) return false
+
+    if (isFillMode) {
+      // Fill mode: process pixels that are empty/similar to target
+      return (
+        currentAlpha !== 255 &&
+        Math.abs(currentAlpha - targetAlpha) <= tolerance
+      )
+    } else {
+      // Erase mode: process pixels that are filled/similar to target
+      return (
+        currentAlpha === 255 ||
+        Math.abs(currentAlpha - targetAlpha) <= tolerance
+      )
+    }
   }
 
-  private floodFill(point: Point): void {
-    console.log('Flood fill at', point)
-
-    // Reduced default tolerance
+  private async floodFill(point: Point): Promise<void> {
     let startX = Math.floor(point.x)
     let startY = Math.floor(point.y)
     this.width = this.canvas.width
@@ -978,18 +1082,22 @@ class PaintBucketTool {
     this.data = this.imageData.data
 
     const targetAlpha = this.getPixel(startX, startY)
+    const isFillMode = targetAlpha !== 255 // Determine mode based on clicked pixel
 
-    // Don't fill if clicking on fully opaque or invalid pixels
-    if (targetAlpha === 255 || targetAlpha === -1) {
-      return
-    }
+    if (targetAlpha === -1) return
 
-    // Use a regular array for the stack as we don't need the performance optimization here
+    const maskColor = await this.messageBroker.pull('getMaskColor')
     const stack: Array<[number, number]> = []
     const visited = new Uint8Array(this.width * this.height)
 
-    // Start the fill
-    if (this.shouldFillPixel(targetAlpha, targetAlpha, this.tolerance)) {
+    if (
+      this.shouldProcessPixel(
+        targetAlpha,
+        targetAlpha,
+        this.tolerance,
+        isFillMode
+      )
+    ) {
       stack.push([startX, startY])
     }
 
@@ -997,53 +1105,49 @@ class PaintBucketTool {
       const [x, y] = stack.pop()!
       const visitedIndex = y * this.width + x
 
-      // Skip if already visited
-      if (visited[visitedIndex]) {
-        continue
-      }
+      if (visited[visitedIndex]) continue
 
       const currentAlpha = this.getPixel(x, y)
-
-      // Skip if this pixel shouldn't be filled
-      if (!this.shouldFillPixel(currentAlpha, targetAlpha, this.tolerance)) {
+      if (
+        !this.shouldProcessPixel(
+          currentAlpha,
+          targetAlpha,
+          this.tolerance,
+          isFillMode
+        )
+      ) {
         continue
       }
 
-      // Mark as visited and fill
       visited[visitedIndex] = 1
-      this.setPixel(x, y, 255)
+      // Set alpha to 255 for fill mode, 0 for erase mode
+      this.setPixel(x, y, isFillMode ? 255 : 0, maskColor)
 
-      // Check in each cardinal direction
-      const directions = [
-        [x, y - 1], // up
-        [x + 1, y], // right
-        [x, y + 1], // down
-        [x - 1, y] // left
-      ]
-
-      for (const [newX, newY] of directions) {
-        // Check bounds and visited state
-        if (
-          newX >= 0 &&
-          newX < this.width &&
-          newY >= 0 &&
-          newY < this.height &&
-          !visited[newY * this.width + newX]
-        ) {
-          const neighborAlpha = this.getPixel(newX, newY)
-          // Only add to stack if the neighbor pixel should be filled
+      // Check neighbors
+      const checkNeighbor = (nx: number, ny: number) => {
+        if (nx < 0 || nx >= this.width! || ny < 0 || ny >= this.height!) return
+        if (!visited[ny * this.width! + nx]) {
+          const alpha = this.getPixel(nx, ny)
           if (
-            this.shouldFillPixel(neighborAlpha, targetAlpha, this.tolerance)
+            this.shouldProcessPixel(
+              alpha,
+              targetAlpha,
+              this.tolerance,
+              isFillMode
+            )
           ) {
-            stack.push([newX, newY])
+            stack.push([nx, ny])
           }
         }
       }
+
+      checkNeighbor(x - 1, y) // Left
+      checkNeighbor(x + 1, y) // Right
+      checkNeighbor(x, y - 1) // Up
+      checkNeighbor(x, y + 1) // Down
     }
 
     this.ctx.putImageData(this.imageData, 0, 0)
-
-    // Clean up
     this.imageData = null
     this.data = null
   }
@@ -1057,6 +1161,382 @@ class PaintBucketTool {
   }
 }
 
+class ColorSelectTool {
+  private maskEditor!: MaskEditorDialog
+  private messageBroker!: MessageBroker
+  private width: number | null = null
+  private height: number | null = null
+  private canvas!: HTMLCanvasElement
+  private maskCTX!: CanvasRenderingContext2D
+  private imageCTX!: CanvasRenderingContext2D
+  private maskData: Uint8ClampedArray | null = null
+  private imageData: Uint8ClampedArray | null = null
+  private tolerance: number = 20
+  private livePreview: boolean = false
+  private lastPoint: Point | null = null
+  private colorComparisonMethod: ColorComparisonMethod =
+    ColorComparisonMethod.Simple
+  private applyWholeImage: boolean = false
+
+  constructor(maskEditor: MaskEditorDialog) {
+    this.maskEditor = maskEditor
+    this.messageBroker = maskEditor.getMessageBroker()
+    this.createListeners()
+    this.addPullTopics()
+  }
+
+  async initColorSelectTool() {
+    await this.pullCanvas()
+  }
+
+  private async pullCanvas() {
+    this.canvas = await this.messageBroker.pull('imgCanvas')
+    this.maskCTX = await this.messageBroker.pull('maskCtx')
+    this.imageCTX = await this.messageBroker.pull('imageCtx')
+  }
+
+  private createListeners() {
+    this.messageBroker.subscribe('colorSelectFill', (point: Point) =>
+      this.fillColorSelection(point)
+    )
+    this.messageBroker.subscribe(
+      'setColorSelectTolerance',
+      (tolerance: number) => this.setTolerance(tolerance)
+    )
+    this.messageBroker.subscribe('setLivePreview', (livePreview: boolean) =>
+      this.setLivePreview(livePreview)
+    )
+    this.messageBroker.subscribe(
+      'setColorComparisonMethod',
+      (method: ColorComparisonMethod) => this.setComparisonMethod(method)
+    )
+
+    this.messageBroker.subscribe('clearLastPoint', () => this.clearLastPoint())
+
+    this.messageBroker.subscribe('setWholeImage', (applyWholeImage: boolean) =>
+      this.setApplyWholeImage(applyWholeImage)
+    )
+  }
+
+  private async addPullTopics() {
+    this.messageBroker.createPullTopic(
+      'getLivePreview',
+      async () => this.livePreview
+    )
+  }
+
+  private getPixel(x: number, y: number): { r: number; g: number; b: number } {
+    const index = (y * this.width! + x) * 4
+    return {
+      r: this.imageData![index],
+      g: this.imageData![index + 1],
+      b: this.imageData![index + 2]
+    }
+  }
+
+  private isPixelInRange(
+    pixel: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number }
+  ): boolean {
+    switch (this.colorComparisonMethod) {
+      case ColorComparisonMethod.Simple:
+        return this.isPixelInRangeSimple(pixel, target)
+      case ColorComparisonMethod.HSL:
+        return this.isPixelInRangeHSL(pixel, target)
+      case ColorComparisonMethod.LAB:
+        return this.isPixelInRangeLab(pixel, target)
+      default:
+        return this.isPixelInRangeSimple(pixel, target)
+    }
+  }
+
+  private isPixelInRangeSimple(
+    pixel: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number }
+  ): boolean {
+    //calculate the euclidean distance between the two colors
+    const distance = Math.sqrt(
+      Math.pow(pixel.r - target.r, 2) +
+        Math.pow(pixel.g - target.g, 2) +
+        Math.pow(pixel.b - target.b, 2)
+    )
+    return distance <= this.tolerance
+  }
+
+  private isPixelInRangeHSL(
+    pixel: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number }
+  ): boolean {
+    // Convert RGB to HSL
+    const pixelHSL = this.rgbToHSL(pixel.r, pixel.g, pixel.b)
+    const targetHSL = this.rgbToHSL(target.r, target.g, target.b)
+
+    // Compare mainly hue and saturation, be more lenient with lightness
+    const hueDiff = Math.abs(pixelHSL.h - targetHSL.h)
+    const satDiff = Math.abs(pixelHSL.s - targetHSL.s)
+    const lightDiff = Math.abs(pixelHSL.l - targetHSL.l)
+
+    return (
+      hueDiff <= (this.tolerance / 255) * 360 &&
+      satDiff <= (this.tolerance / 255) * 100 &&
+      lightDiff <= (this.tolerance / 255) * 200
+    ) // More lenient with lightness
+  }
+
+  private rgbToHSL(
+    r: number,
+    g: number,
+    b: number
+  ): { h: number; s: number; l: number } {
+    r /= 255
+    g /= 255
+    b /= 255
+
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    let h = 0,
+      s = 0,
+      l = (max + min) / 2
+
+    if (max !== min) {
+      const d = max - min
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+
+      switch (max) {
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0)
+          break
+        case g:
+          h = (b - r) / d + 2
+          break
+        case b:
+          h = (r - g) / d + 4
+          break
+      }
+      h /= 6
+    }
+
+    return {
+      h: h * 360,
+      s: s * 100,
+      l: l * 100
+    }
+  }
+
+  private isPixelInRangeLab(
+    pixel: { r: number; g: number; b: number },
+    target: { r: number; g: number; b: number }
+  ): boolean {
+    const pixelLab = this.rgbToLab(pixel)
+    const targetLab = this.rgbToLab(target)
+
+    // Calculate Delta E (CIE76 formula)
+    const deltaE = Math.sqrt(
+      Math.pow(pixelLab.l - targetLab.l, 2) +
+        Math.pow(pixelLab.a - targetLab.a, 2) +
+        Math.pow(pixelLab.b - targetLab.b, 2)
+    )
+
+    return deltaE <= this.tolerance
+  }
+
+  private rgbToLab(rgb: { r: number; g: number; b: number }): {
+    l: number
+    a: number
+    b: number
+  } {
+    // First convert RGB to XYZ
+    let r = rgb.r / 255
+    let g = rgb.g / 255
+    let b = rgb.b / 255
+
+    r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92
+    g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92
+    b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92
+
+    r *= 100
+    g *= 100
+    b *= 100
+
+    const x = r * 0.4124 + g * 0.3576 + b * 0.1805
+    const y = r * 0.2126 + g * 0.7152 + b * 0.0722
+    const z = r * 0.0193 + g * 0.1192 + b * 0.9505
+
+    // Then XYZ to Lab
+    const xn = 95.047
+    const yn = 100.0
+    const zn = 108.883
+
+    const xyz = [x / xn, y / yn, z / zn]
+    for (let i = 0; i < xyz.length; i++) {
+      xyz[i] =
+        xyz[i] > 0.008856 ? Math.pow(xyz[i], 1 / 3) : 7.787 * xyz[i] + 16 / 116
+    }
+
+    return {
+      l: 116 * xyz[1] - 16,
+      a: 500 * (xyz[0] - xyz[1]),
+      b: 200 * (xyz[1] - xyz[2])
+    }
+  }
+
+  private setPixel(
+    x: number,
+    y: number,
+    alpha: number,
+    color: { r: number; g: number; b: number }
+  ): void {
+    const index = (y * this.width! + x) * 4
+    this.maskData![index] = color.r // R
+    this.maskData![index + 1] = color.g // G
+    this.maskData![index + 2] = color.b // B
+    this.maskData![index + 3] = alpha // A
+  }
+
+  async fillColorSelection(point: Point) {
+    this.width = this.canvas.width
+    this.height = this.canvas.height
+    this.lastPoint = point
+
+    // Get image data
+    const maskData = this.maskCTX.getImageData(0, 0, this.width, this.height)
+    this.maskData = maskData.data
+    this.imageData = this.imageCTX.getImageData(
+      0,
+      0,
+      this.width,
+      this.height
+    ).data
+
+    if (this.applyWholeImage) {
+      // Process entire image
+      const targetPixel = this.getPixel(
+        Math.floor(point.x),
+        Math.floor(point.y)
+      )
+      const maskColor = await this.messageBroker.pull('getMaskColor')
+
+      // Use TypedArrays for better performance
+      const width = this.width!
+      const height = this.height!
+
+      // Process in chunks for better performance
+      const CHUNK_SIZE = 10000
+      for (let i = 0; i < width * height; i += CHUNK_SIZE) {
+        const endIndex = Math.min(i + CHUNK_SIZE, width * height)
+        for (let pixelIndex = i; pixelIndex < endIndex; pixelIndex++) {
+          const x = pixelIndex % width
+          const y = Math.floor(pixelIndex / width)
+          if (this.isPixelInRange(this.getPixel(x, y), targetPixel)) {
+            this.setPixel(x, y, 255, maskColor)
+          }
+        }
+        // Allow UI updates between chunks
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+    } else {
+      // Original flood fill logic
+      let startX = Math.floor(point.x)
+      let startY = Math.floor(point.y)
+
+      if (
+        startX < 0 ||
+        startX >= this.width ||
+        startY < 0 ||
+        startY >= this.height
+      ) {
+        return
+      }
+
+      const pixel = this.getPixel(startX, startY)
+      const stack: Array<[number, number]> = []
+      const visited = new Uint8Array(this.width * this.height)
+
+      stack.push([startX, startY])
+      const maskColor = await this.messageBroker.pull('getMaskColor')
+
+      while (stack.length > 0) {
+        const [x, y] = stack.pop()!
+        const visitedIndex = y * this.width + x
+
+        if (
+          visited[visitedIndex] ||
+          !this.isPixelInRange(this.getPixel(x, y), pixel)
+        ) {
+          continue
+        }
+
+        visited[visitedIndex] = 1
+        this.setPixel(x, y, 255, maskColor)
+
+        // Inline direction checks for better performance
+        if (
+          x > 0 &&
+          !visited[y * this.width + (x - 1)] &&
+          this.isPixelInRange(this.getPixel(x - 1, y), pixel)
+        ) {
+          stack.push([x - 1, y])
+        }
+        if (
+          x < this.width - 1 &&
+          !visited[y * this.width + (x + 1)] &&
+          this.isPixelInRange(this.getPixel(x + 1, y), pixel)
+        ) {
+          stack.push([x + 1, y])
+        }
+        if (
+          y > 0 &&
+          !visited[(y - 1) * this.width + x] &&
+          this.isPixelInRange(this.getPixel(x, y - 1), pixel)
+        ) {
+          stack.push([x, y - 1])
+        }
+        if (
+          y < this.height - 1 &&
+          !visited[(y + 1) * this.width + x] &&
+          this.isPixelInRange(this.getPixel(x, y + 1), pixel)
+        ) {
+          stack.push([x, y + 1])
+        }
+      }
+    }
+
+    this.maskCTX.putImageData(maskData, 0, 0)
+    this.messageBroker.publish('saveState')
+    this.maskData = null
+    this.imageData = null
+  }
+  setTolerance(tolerance: number): void {
+    this.tolerance = tolerance
+
+    if (this.lastPoint && this.livePreview) {
+      this.messageBroker.publish('undo')
+      this.fillColorSelection(this.lastPoint)
+    }
+  }
+
+  setLivePreview(livePreview: boolean): void {
+    this.livePreview = livePreview
+  }
+
+  setComparisonMethod(method: ColorComparisonMethod): void {
+    this.colorComparisonMethod = method
+
+    if (this.lastPoint && this.livePreview) {
+      this.messageBroker.publish('undo')
+      this.fillColorSelection(this.lastPoint)
+    }
+  }
+
+  clearLastPoint() {
+    this.lastPoint = null
+  }
+
+  setApplyWholeImage(applyWholeImage: boolean): void {
+    this.applyWholeImage = applyWholeImage
+  }
+}
+
 class BrushTool {
   brushSettings: Brush //this saves the current brush settings
   maskBlendMode: MaskBlendMode
@@ -1065,7 +1545,7 @@ class BrushTool {
   isDrawingLine: boolean = false
   lineStartPoint: Point | null = null
   smoothingCordsArray: Point[] = []
-  smoothingLastDrawTime: Date
+  smoothingLastDrawTime!: Date
   maskCtx: CanvasRenderingContext2D | null = null
 
   //brush adjustment
@@ -1249,9 +1729,8 @@ class BrushTool {
       const dx = point.x - this.smoothingCordsArray[0].x
       const dy = point.y - this.smoothingCordsArray[0].y
       const distance = Math.sqrt(dx * dx + dy * dy)
-      const step = 2
+      const step = 5
       const steps = Math.ceil(distance / step)
-
       // Generate interpolated points
       const interpolatedPoints = this.calculateCubicSplinePoints(
         this.smoothingCordsArray,
@@ -1262,6 +1741,9 @@ class BrushTool {
       for (const point of interpolatedPoints) {
         this.draw_shape(point)
       }
+
+      //reset the smoothing array
+      this.smoothingCordsArray = [point]
     } else {
       // If we don't have enough points yet, just draw the current point
       this.draw_shape(point)
@@ -1330,7 +1812,7 @@ class BrushTool {
   //helper functions
 
   private async draw_shape(point: Point) {
-    const brushSettings: Brush = await this.messageBroker.pull('brushSettings')
+    const brushSettings: Brush = this.brushSettings
     const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
     const brushType = await this.messageBroker.pull('brushType')
     const maskColor = await this.messageBroker.pull('getMaskColor')
@@ -1518,11 +2000,13 @@ class UIManager {
   private rootElement: HTMLElement
   private brush!: HTMLDivElement
   private brushPreviewGradient!: HTMLDivElement
-  private maskCtx: any
+  private maskCtx!: CanvasRenderingContext2D
+  private imageCtx!: CanvasRenderingContext2D
   private maskCanvas!: HTMLCanvasElement
   private imgCanvas!: HTMLCanvasElement
   private brushSettingsHTML!: HTMLDivElement
   private paintBucketSettingsHTML!: HTMLDivElement
+  private colorSelectSettingsHTML!: HTMLDivElement
   private maskOpacitySlider!: HTMLInputElement
   private brushHardnessSlider!: HTMLInputElement
   private brushSizeSlider!: HTMLInputElement
@@ -1534,7 +2018,7 @@ class UIManager {
   private pointerZone!: HTMLDivElement
   private canvasBackground!: HTMLDivElement
   private canvasContainer!: HTMLDivElement
-  private image: HTMLImageElement
+  private image!: HTMLImageElement
 
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
@@ -1572,6 +2056,8 @@ class UIManager {
       'setBrushPreviewGradientVisibility',
       (isVisible: boolean) => this.setBrushPreviewGradientVisibility(isVisible)
     )
+
+    this.messageBroker.subscribe('updateCursor', () => this.updateCursor())
   }
 
   addPullTopics() {
@@ -1580,6 +2066,7 @@ class UIManager {
       async () => this.maskCanvas
     )
     this.messageBroker.createPullTopic('maskCtx', async () => this.maskCtx)
+    this.messageBroker.createPullTopic('imageCtx', async () => this.imageCtx)
     this.messageBroker.createPullTopic('imgCanvas', async () => this.imgCanvas)
     this.messageBroker.createPullTopic(
       'screenToCanvas',
@@ -1649,11 +2136,18 @@ class UIManager {
     canvasContainer.appendChild(canvas_background)
 
     // prepare content
-    this.imgCanvas = imgCanvas
-    this.maskCanvas = maskCanvas
-    this.canvasContainer = canvasContainer
-    this.canvasBackground = canvas_background
-    this.maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true })
+    this.imgCanvas = imgCanvas!
+    this.maskCanvas = maskCanvas!
+    this.canvasContainer = canvasContainer!
+    this.canvasBackground = canvas_background!
+    let maskCtx = maskCanvas!.getContext('2d', { willReadFrequently: true })
+    if (maskCtx) {
+      this.maskCtx = maskCtx
+    }
+    let imgCtx = imgCanvas!.getContext('2d', { willReadFrequently: true })
+    if (imgCtx) {
+      this.imageCtx = imgCtx
+    }
     this.setEventHandler()
 
     //remove styling and move to css file
@@ -1904,6 +2398,12 @@ class UIManager {
     )
     side_panel_paint_bucket_settings_title.innerText = 'Paint Bucket Settings'
 
+    var side_panel_paint_bucket_settings_container =
+      document.createElement('div')
+    side_panel_paint_bucket_settings_container.classList.add(
+      'maskEditor_sidePanel_paintBucket_Container'
+    )
+
     var side_panel_paint_bucket_settings_tolerance_title =
       document.createElement('span')
     side_panel_paint_bucket_settings_tolerance_title.classList.add(
@@ -1938,7 +2438,10 @@ class UIManager {
           (event.target as HTMLInputElement)!.value
         )
 
-        this.messageBroker.publish('setTolerance', paintBucketTolerance)
+        this.messageBroker.publish(
+          'setPaintBucketTolerance',
+          paintBucketTolerance
+        )
       }
     )
 
@@ -1950,6 +2453,203 @@ class UIManager {
     )
     side_panel_paint_bucket_settings.appendChild(
       side_panel_paint_bucket_settings_tolerance_input
+    )
+
+    /// color select settings
+
+    var side_panel_color_select_settings = document.createElement('div')
+    side_panel_color_select_settings.id =
+      'maskEditor_sidePanelColorSelectSettings'
+    side_panel_color_select_settings.style.display = 'none'
+    this.colorSelectSettingsHTML = side_panel_color_select_settings
+
+    var side_panel_color_select_settings_title = document.createElement('h3')
+    side_panel_color_select_settings_title.classList.add(
+      'maskEditor_sidePanelTitle'
+    )
+    side_panel_color_select_settings_title.innerText = 'Color Select Settings'
+
+    var side_panel_color_select_container_tolerance =
+      document.createElement('div')
+    side_panel_color_select_container_tolerance.id =
+      'maskEditor_sidePanel_colorSelect_tolerance_container'
+
+    var side_panel_color_select_settings_tolerance_title =
+      document.createElement('span')
+    side_panel_color_select_settings_tolerance_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_settings_tolerance_title.innerText = 'Tolerance'
+
+    var side_panel_color_select_settings_tolerance_input =
+      document.createElement('input')
+    side_panel_color_select_settings_tolerance_input.setAttribute(
+      'type',
+      'range'
+    )
+
+    var tolerance = await this.messageBroker.pull('getTolerance')
+
+    side_panel_color_select_settings_tolerance_input.setAttribute('min', '0')
+    side_panel_color_select_settings_tolerance_input.setAttribute('max', '255')
+    side_panel_color_select_settings_tolerance_input.setAttribute(
+      'value',
+      String(tolerance)
+    )
+
+    side_panel_color_select_settings_tolerance_input.classList.add(
+      'maskEditor_sidePanelBrushRange'
+    )
+
+    side_panel_color_select_settings_tolerance_input.addEventListener(
+      'input',
+      (event) => {
+        var colorSelectTolerance = parseInt(
+          (event.target as HTMLInputElement)!.value
+        )
+
+        this.messageBroker.publish(
+          'setColorSelectTolerance',
+          colorSelectTolerance
+        )
+      }
+    )
+
+    side_panel_color_select_container_tolerance.appendChild(
+      side_panel_color_select_settings_tolerance_title
+    )
+    side_panel_color_select_container_tolerance.appendChild(
+      side_panel_color_select_settings_tolerance_input
+    )
+
+    var side_panel_color_select_container_live_preview =
+      document.createElement('div')
+    side_panel_color_select_container_live_preview.classList.add(
+      'maskEditor_sidePanel_colorSelect_Container'
+    )
+
+    var side_panel_color_select_live_preview_title =
+      document.createElement('span')
+    side_panel_color_select_live_preview_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_live_preview_title.innerText = 'Live Preview'
+
+    var side_panel_color_select_live_preview_select =
+      document.createElement('input')
+    side_panel_color_select_live_preview_select.setAttribute('type', 'checkbox')
+    side_panel_color_select_live_preview_select.id =
+      'maskEditor_sidePanelVisibilityToggle'
+    side_panel_color_select_live_preview_select.checked = false
+
+    side_panel_color_select_live_preview_select.addEventListener(
+      'change',
+      (event) => {
+        this.messageBroker.publish(
+          'setLivePreview',
+          (event.target as HTMLInputElement)!.checked
+        )
+      }
+    )
+
+    side_panel_color_select_container_live_preview.appendChild(
+      side_panel_color_select_live_preview_title
+    )
+
+    side_panel_color_select_container_live_preview.appendChild(
+      side_panel_color_select_live_preview_select
+    )
+
+    var side_panel_color_select_container_method = document.createElement('div')
+    side_panel_color_select_container_method.classList.add(
+      'maskEditor_sidePanel_colorSelect_Container'
+    )
+
+    var side_panel_color_select_method_title = document.createElement('span')
+    side_panel_color_select_method_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_method_title.innerText = 'Method'
+
+    var side_panel_color_select_method_select = document.createElement('select')
+    side_panel_color_select_method_select.id =
+      'maskEditor_sidePanelColorSelectMethodSelect'
+    const method_options = Object.values(ColorComparisonMethod)
+
+    method_options.forEach((option) => {
+      var option_element = document.createElement('option')
+      option_element.value = option
+      option_element.innerText = option
+      side_panel_color_select_method_select.appendChild(option_element)
+    })
+
+    side_panel_color_select_method_select.addEventListener('change', (e) => {
+      const selectedValue = (e.target as HTMLSelectElement)
+        .value as ColorComparisonMethod
+      this.messageBroker.publish('setColorComparisonMethod', selectedValue)
+    })
+
+    side_panel_color_select_container_method.appendChild(
+      side_panel_color_select_method_title
+    )
+    side_panel_color_select_container_method.appendChild(
+      side_panel_color_select_method_select
+    )
+
+    var side_panel_color_select_container_whole_image =
+      document.createElement('div')
+    side_panel_color_select_container_whole_image.classList.add(
+      'maskEditor_sidePanel_colorSelect_Container'
+    )
+
+    var side_panel_color_select_whole_image_title =
+      document.createElement('span')
+    side_panel_color_select_whole_image_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_whole_image_title.innerText = 'Apply to Whole Image'
+
+    var side_panel_color_select_whole_image_select =
+      document.createElement('input')
+    side_panel_color_select_whole_image_select.setAttribute('type', 'checkbox')
+    side_panel_color_select_whole_image_select.id =
+      'maskEditor_sidePanelVisibilityToggle'
+
+    side_panel_color_select_whole_image_select.addEventListener(
+      'change',
+      (event) => {
+        this.messageBroker.publish(
+          'setWholeImage',
+          (event.target as HTMLInputElement)!.checked
+        )
+      }
+    )
+
+    side_panel_color_select_container_whole_image.appendChild(
+      side_panel_color_select_whole_image_title
+    )
+    side_panel_color_select_container_whole_image.appendChild(
+      side_panel_color_select_whole_image_select
+    )
+
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_tolerance
+    )
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_live_preview
+    )
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_whole_image
+    )
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_method
+    )
+
+    side_panel_color_select_settings.appendChild(
+      side_panel_color_select_settings_title
+    )
+    side_panel_color_select_settings.appendChild(
+      side_panel_paint_bucket_settings_container
     )
 
     /// image layer settings
@@ -2125,7 +2825,8 @@ class UIManager {
     var side_panel_image_layer_image = document.createElement('img')
     side_panel_image_layer_image.id = 'maskEditor_sidePanelImageLayerImage'
     side_panel_image_layer_image.src =
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
+      ''
     this.sidebarImage = side_panel_image_layer_image
 
     side_panel_image_layer_image_container.appendChild(
@@ -2159,6 +2860,7 @@ class UIManager {
 
     side_panel.appendChild(side_panel_brush_settings)
     side_panel.appendChild(side_panel_paint_bucket_settings)
+    side_panel.appendChild(side_panel_color_select_settings)
     side_panel.appendChild(side_panel_separator1)
     side_panel.appendChild(side_panel_image_layer_settings)
 
@@ -2285,12 +2987,12 @@ class UIManager {
         } else {
           toolElement.classList.add('maskEditor_toolPanelContainerSelected')
           this.brushSettingsHTML.style.display = 'flex'
+          this.colorSelectSettingsHTML.style.display = 'none'
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
       this.messageBroker.publish('setTool', Tools.Pen)
       this.pointerZone.style.cursor = 'none'
-      this.brush.style.opacity = '1'
     })
 
     var toolPanel_brushToolIndicator = document.createElement('div')
@@ -2322,12 +3024,12 @@ class UIManager {
         } else {
           toolElement.classList.add('maskEditor_toolPanelContainerSelected')
           this.brushSettingsHTML.style.display = 'flex'
+          this.colorSelectSettingsHTML.style.display = 'none'
           this.paintBucketSettingsHTML.style.display = 'none'
         }
       }
       this.messageBroker.publish('setTool', Tools.Eraser)
       this.pointerZone.style.cursor = 'none'
-      this.brush.style.opacity = '1'
     })
 
     var toolPanel_eraserToolIndicator = document.createElement('div')
@@ -2359,11 +3061,13 @@ class UIManager {
         } else {
           toolElement.classList.add('maskEditor_toolPanelContainerSelected')
           this.brushSettingsHTML.style.display = 'none'
+          this.colorSelectSettingsHTML.style.display = 'none'
           this.paintBucketSettingsHTML.style.display = 'flex'
         }
       }
       this.messageBroker.publish('setTool', Tools.PaintBucket)
-      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+      this.pointerZone.style.cursor =
+        "url('/cursor/paintBucket.png') 30 25, auto"
       this.brush.style.opacity = '0'
     })
 
@@ -2376,9 +3080,48 @@ class UIManager {
       toolPanel_paintBucketToolIndicator
     )
 
+    //color select tool
+
+    var toolPanel_colorSelectToolContainer = document.createElement('div')
+    toolPanel_colorSelectToolContainer.classList.add(
+      'maskEditor_toolPanelContainer'
+    )
+    toolPanel_colorSelectToolContainer.innerHTML = `
+    <svg viewBox="0 0 44 44">
+      <path class="cls-1" d="M30.29,13.72c-1.09-1.1-2.85-1.09-3.94,0l-2.88,2.88-.75-.75c-.2-.19-.51-.19-.71,0-.19.2-.19.51,0,.71l1.4,1.4-9.59,9.59c-.35.36-.54.82-.54,1.32,0,.14,0,.28.05.41-.05.04-.1.08-.15.13-.39.39-.39,1.01,0,1.4.38.39,1.01.39,1.4,0,.04-.04.08-.09.11-.13.14.04.3.06.45.06.5,0,.97-.19,1.32-.55l9.59-9.59,1.38,1.38c.1.09.22.14.35.14s.26-.05.35-.14c.2-.2.2-.52,0-.71l-.71-.72,2.88-2.89c1.08-1.08,1.08-2.85-.01-3.94ZM19.43,25.82h-2.46l7.15-7.15,1.23,1.23-5.92,5.92Z"/>
+    </svg>
+    `
+    toolElements.push(toolPanel_colorSelectToolContainer)
+    toolPanel_colorSelectToolContainer.addEventListener('click', () => {
+      this.messageBroker.publish('setTool', 'colorSelect')
+      for (let toolElement of toolElements) {
+        if (toolElement != toolPanel_colorSelectToolContainer) {
+          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
+        } else {
+          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+          this.brushSettingsHTML.style.display = 'none'
+          this.paintBucketSettingsHTML.style.display = 'none'
+          this.colorSelectSettingsHTML.style.display = 'flex'
+        }
+      }
+      this.messageBroker.publish('setTool', Tools.ColorSelect)
+      this.pointerZone.style.cursor =
+        "url('/cursor/colorSelect.png') 15 25, auto"
+      this.brush.style.opacity = '0'
+    })
+
+    var toolPanel_colorSelectToolIndicator = document.createElement('div')
+    toolPanel_colorSelectToolIndicator.classList.add(
+      'maskEditor_toolPanelIndicator'
+    )
+    toolPanel_colorSelectToolContainer.appendChild(
+      toolPanel_colorSelectToolIndicator
+    )
+
     pen_tool_panel.appendChild(toolPanel_brushToolContainer)
     pen_tool_panel.appendChild(toolPanel_eraserToolContainer)
     pen_tool_panel.appendChild(toolPanel_paintBucketToolContainer)
+    pen_tool_panel.appendChild(toolPanel_colorSelectToolContainer)
 
     var pen_tool_panel_change_tool_button = document.createElement('button')
     pen_tool_panel_change_tool_button.id =
@@ -2430,15 +3173,7 @@ class UIManager {
     pointer_zone.addEventListener(
       'pointerenter',
       async (event: PointerEvent) => {
-        let currentTool = await this.messageBroker.pull('currentTool')
-
-        if (currentTool == Tools.PaintBucket) {
-          this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
-          this.brush.style.opacity = '0'
-        } else {
-          this.pointerZone.style.cursor = 'none'
-          this.brush.style.opacity = '1'
-        }
+        this.updateCursor()
       }
     )
 
@@ -2500,23 +3235,26 @@ class UIManager {
     imgCtx!.clearRect(0, 0, this.imgCanvas.width, this.imgCanvas.height)
     maskCtx.clearRect(0, 0, this.maskCanvas.width, this.maskCanvas.height)
 
-    // image load
-    const filepath = ComfyApp.clipspace.images
-
     const alpha_url = new URL(
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+      ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
+        ''
     )
-
-    console.log()
-
     alpha_url.searchParams.delete('channel')
     alpha_url.searchParams.delete('preview')
     alpha_url.searchParams.set('channel', 'a')
-    let mask_image: HTMLImageElement = await loadImage(alpha_url)
+    let mask_image: HTMLImageElement = await this.loadImage(alpha_url)
 
     // original image load
+    if (
+      !ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src
+    ) {
+      throw new Error(
+        'Unable to access image source - clipspace or image is null'
+      )
+    }
+
     const rgb_url = new URL(
-      ComfyApp.clipspace.imgs[ComfyApp.clipspace['selectedIndex']].src
+      ComfyApp.clipspace.imgs[ComfyApp.clipspace.selectedIndex].src
     )
     rgb_url.searchParams.delete('channel')
     rgb_url.searchParams.set('channel', 'rgb')
@@ -2528,8 +3266,6 @@ class UIManager {
       img.onerror = reject
       img.src = rgb_url.toString()
     })
-
-    const sidePanelWidth = this.sidePanel.clientWidth
 
     maskCanvas.width = this.image.width
     maskCanvas.height = this.image.height
@@ -2554,12 +3290,40 @@ class UIManager {
     })
 
     imgCtx!.drawImage(orig_image, 0, 0, orig_image.width, orig_image.height)
-    await prepare_mask(
+    await this.prepare_mask(
       mask_image,
       this.maskCanvas,
       maskCtx!,
       await this.getMaskColor()
     )
+  }
+
+  private async prepare_mask(
+    image: HTMLImageElement,
+    maskCanvas: HTMLCanvasElement,
+    maskCtx: CanvasRenderingContext2D,
+    maskColor: { r: number; g: number; b: number }
+  ) {
+    // paste mask data into alpha channel
+    maskCtx.drawImage(image, 0, 0, maskCanvas.width, maskCanvas.height)
+    const maskData = maskCtx.getImageData(
+      0,
+      0,
+      maskCanvas.width,
+      maskCanvas.height
+    )
+
+    // invert mask
+    for (let i = 0; i < maskData.data.length; i += 4) {
+      const alpha = maskData.data[i + 3]
+      maskData.data[i] = maskColor.r
+      maskData.data[i + 1] = maskColor.g
+      maskData.data[i + 2] = maskColor.b
+      maskData.data[i + 3] = 255 - alpha
+    }
+
+    maskCtx.globalCompositeOperation = 'source-over'
+    maskCtx.putImageData(maskData, 0, 0)
   }
 
   private async updateMaskColor() {
@@ -2601,6 +3365,19 @@ class UIManager {
         opacity: this.mask_opacity
       }
     }
+  }
+
+  private loadImage(imagePath: URL): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const image = new Image() as HTMLImageElement
+      image.onload = function () {
+        resolve(image)
+      }
+      image.onerror = function (error) {
+        reject(error)
+      }
+      image.src = imagePath.href
+    })
   }
 
   async updateBrushPreview() {
@@ -2701,10 +3478,9 @@ class UIManager {
   }
 
   handlePaintBucketCursor(isPaintBucket: boolean) {
-    console.log('paint bucket cursor')
-
     if (isPaintBucket) {
-      this.pointerZone.style.cursor = "url('/cursor/paintBucket.png'), auto"
+      this.pointerZone.style.cursor =
+        "url('/cursor/paintBucket.png') 30 25, auto"
     } else {
       this.pointerZone.style.cursor = 'none'
     }
@@ -2724,6 +3500,25 @@ class UIManager {
 
   setBrushPreviewGradientVisibility(visible: boolean) {
     this.brushPreviewGradient.style.display = visible ? 'block' : 'none'
+  }
+
+  async updateCursor() {
+    const currentTool = await this.messageBroker.pull('currentTool')
+    if (currentTool === Tools.PaintBucket) {
+      this.pointerZone.style.cursor =
+        "url('/cursor/paintBucket.png') 30 25, auto"
+      this.setBrushOpacity(0)
+    } else if (currentTool === Tools.ColorSelect) {
+      this.pointerZone.style.cursor =
+        "url('/cursor/colorSelect.png') 15 25, auto"
+      this.setBrushOpacity(0)
+    } else {
+      this.pointerZone.style.cursor = 'none'
+      this.setBrushOpacity(1)
+    }
+
+    this.updateBrushPreview()
+    this.setBrushPreviewGradientVisibility(false)
   }
 }
 
@@ -2774,6 +3569,10 @@ class ToolManager {
 
   setTool(tool: Tools) {
     this.currentTool = tool
+
+    if (tool != Tools.ColorSelect) {
+      this.messageBroker.publish('clearLastPoint')
+    }
   }
 
   getCurrentTool() {
@@ -2795,7 +3594,6 @@ class ToolManager {
 
     //paint bucket
     if (this.currentTool === Tools.PaintBucket && event.button === 0) {
-      console.log('paint bucket')
       const offset = { x: event.offsetX, y: event.offsetY }
       const coords_canvas = await this.messageBroker.pull(
         'screenToCanvas',
@@ -2806,6 +3604,16 @@ class ToolManager {
       return
     }
 
+    if (this.currentTool === Tools.ColorSelect && event.button === 0) {
+      const offset = { x: event.offsetX, y: event.offsetY }
+      const coords_canvas = await this.messageBroker.pull(
+        'screenToCanvas',
+        offset
+      )
+      this.messageBroker.publish('colorSelectFill', coords_canvas)
+      return
+    }
+
     // (brush resize/change hardness) Check for alt + right mouse button
     if (event.altKey && event.button === 2) {
       this.isAdjustingBrush = true
@@ -2813,8 +3621,9 @@ class ToolManager {
       return
     }
 
+    var isDrawingTool = [Tools.Pen, Tools.Eraser].includes(this.currentTool)
     //drawing
-    if ([0, 2].includes(event.button)) {
+    if ([0, 2].includes(event.button) && isDrawingTool) {
       this.messageBroker.publish('drawStart', event)
       return
     }
@@ -2835,8 +3644,10 @@ class ToolManager {
       return
     }
 
-    //prevent drawing with paint bucket tool
-    if (this.currentTool === Tools.PaintBucket) return
+    //prevent drawing with other tools
+
+    var isDrawingTool = [Tools.Pen, Tools.Eraser].includes(this.currentTool)
+    if (!isDrawingTool) return
 
     // alt + right mouse button hold brush adjustment
     if (
@@ -2858,17 +3669,8 @@ class ToolManager {
 
   private handlePointerUp(event: PointerEvent) {
     this.messageBroker.publish('panCursor', false)
-    if (this.currentTool != Tools.PaintBucket) {
-      this.messageBroker.publish('paintBucketCursor', false)
-      this.messageBroker.publish('setBrushVisibility', true)
-    }
-    this.messageBroker.publish('updateBrushPreview')
-    this.messageBroker.publish('setBrushPreviewGradientVisibility', false)
     if (event.pointerType === 'touch') return
-    this.messageBroker.publish(
-      'paintBucketCursor',
-      this.currentTool === Tools.PaintBucket
-    )
+    this.messageBroker.publish('updateCursor')
     this.isAdjustingBrush = false
     this.messageBroker.publish('drawEnd', event)
     this.mouseDownPoint = null
@@ -2900,6 +3702,7 @@ class PanAndZoomManager {
   initialPan: Offset = { x: 0, y: 0 }
 
   canvasContainer: HTMLElement | null = null
+  maskCanvas: HTMLCanvasElement | null = null
 
   image: HTMLImageElement | null = null
 
@@ -2997,7 +3800,7 @@ class PanAndZoomManager {
     }
   }
 
-  handleTouchMove(event: TouchEvent) {
+  async handleTouchMove(event: TouchEvent) {
     event.preventDefault()
     if ((event.touches[0] as any).touchType === 'stylus') return
 
@@ -3027,9 +3830,10 @@ class PanAndZoomManager {
       }
 
       // Get touch position relative to the container
-      const rect = this.maskEditor.uiManager
-        .getMaskCanvas()
-        .getBoundingClientRect()
+      if (this.maskCanvas === null) {
+        this.maskCanvas = await this.messageBroker.pull('maskCanvas')
+      }
+      const rect = this.maskCanvas!.getBoundingClientRect()
       const touchX = midpoint.x - rect.left
       const touchY = midpoint.y - rect.top
 
@@ -3082,7 +3886,7 @@ class PanAndZoomManager {
     }
   }
 
-  private handleSingleTouchPan(touch: Touch) {
+  private async handleSingleTouchPan(touch: Touch) {
     if (this.lastTouchPoint === null) {
       this.lastTouchPoint = { x: touch.clientX, y: touch.clientY }
       return
@@ -3094,7 +3898,7 @@ class PanAndZoomManager {
     this.pan_offset.x += deltaX
     this.pan_offset.y += deltaY
 
-    this.maskEditor.panAndZoomManager.invalidatePanZoom()
+    await this.invalidatePanZoom()
 
     this.lastTouchPoint = { x: touch.clientX, y: touch.clientY }
   }
@@ -3113,6 +3917,9 @@ class PanAndZoomManager {
   }
 
   async zoom(event: WheelEvent) {
+    // Store original cursor position
+    const cursorPoint = { x: event.clientX, y: event.clientY }
+
     // zoom canvas
     const oldZoom = this.zoom_ratio
     const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9
@@ -3124,25 +3931,32 @@ class PanAndZoomManager {
 
     const maskCanvas = await this.messageBroker.pull('maskCanvas')
 
-    const coords = { x: event.clientX, y: event.clientY }
-    const cursorPoint = await this.messageBroker.pull('screenToCanvas', coords)
-
     // Get mouse position relative to the container
     const rect = maskCanvas.getBoundingClientRect()
-    const mouseX = event.clientX - rect.left
-    const mouseY = event.clientY - rect.top
+    const mouseX = cursorPoint.x - rect.left
+    const mouseY = cursorPoint.y - rect.top
 
     // Calculate new pan position
     const scaleFactor = newZoom / oldZoom
     this.pan_offset.x += mouseX - mouseX * scaleFactor
     this.pan_offset.y += mouseY - mouseY * scaleFactor
-    this.invalidatePanZoom()
+
+    // Update pan and zoom immediately
+    await this.invalidatePanZoom()
 
     // Update cursor position with new pan values
-    this.messageBroker.publish('updateBrushPreview')
+    this.updateCursorPosition(cursorPoint)
+
+    // Update brush preview after pan/zoom is complete
+    requestAnimationFrame(() => {
+      this.messageBroker.publish('updateBrushPreview')
+    })
   }
 
-  async initializeCanvasPanZoom(image, rootElement) {
+  async initializeCanvasPanZoom(
+    image: HTMLImageElement,
+    rootElement: HTMLElement
+  ) {
     // Get side panel width
     let sidePanelWidth = 220
     let topBarHeight = 44
@@ -3185,26 +3999,37 @@ class PanAndZoomManager {
 
   //probably move to PanZoomManager
   async invalidatePanZoom() {
-    let raw_width = this.image.width * this.zoom_ratio
-    let raw_height = this.image.height * this.zoom_ratio
-    if (this.pan_offset.x + raw_width < 10) {
-      this.pan_offset.x = 10 - raw_width
+    // Single validation check upfront
+    if (
+      !this.image?.width ||
+      !this.image?.height ||
+      !this.pan_offset ||
+      !this.zoom_ratio
+    ) {
+      console.warn('Missing required properties for pan/zoom')
+      return
     }
-    if (this.pan_offset.y + raw_height < 10) {
-      this.pan_offset.y = 10 - raw_height
-    }
-    let width = `${raw_width}px`
-    let height = `${raw_height}px`
-    let left = `${this.pan_offset.x}px`
-    let top = `${this.pan_offset.y}px`
 
-    if (this.canvasContainer === null)
-      this.canvasContainer = await this.messageBroker.pull('getCanvasContainer')
+    // Now TypeScript knows these are non-null
+    const raw_width = this.image.width * this.zoom_ratio
+    const raw_height = this.image.height * this.zoom_ratio
 
-    this.canvasContainer.style.width = width
-    this.canvasContainer.style.height = height
-    this.canvasContainer.style.left = left
-    this.canvasContainer.style.top = top
+    // Adjust pan offset
+    this.pan_offset.x = Math.max(10 - raw_width, this.pan_offset.x)
+    this.pan_offset.y = Math.max(10 - raw_height, this.pan_offset.y)
+
+    // Get canvas container
+    this.canvasContainer ??=
+      await this.messageBroker?.pull('getCanvasContainer')
+    if (!this.canvasContainer) return
+
+    // Apply styles
+    Object.assign(this.canvasContainer.style, {
+      width: `${raw_width}px`,
+      height: `${raw_height}px`,
+      left: `${this.pan_offset.x}px`,
+      top: `${this.pan_offset.y}px`
+    })
   }
 
   private handlePanStart(event: PointerEvent) {
@@ -3219,6 +4044,8 @@ class PanAndZoomManager {
   }
 
   private handlePanMove(event: PointerEvent) {
+    if (this.mouseDownPoint === null) throw new Error('mouseDownPoint is null')
+
     let deltaX = this.mouseDownPoint.x - event.clientX
     let deltaY = this.mouseDownPoint.y - event.clientY
 
@@ -3266,7 +4093,7 @@ class MessageBroker {
     this.createPushTopic('screenToCanvas')
     this.createPushTopic('isKeyPressed')
     this.createPushTopic('isCombinationPressed')
-    this.createPushTopic('setTolerance')
+    this.createPushTopic('setPaintBucketTolerance')
     this.createPushTopic('setBrushSize')
     this.createPushTopic('setBrushHardness')
     this.createPushTopic('setBrushOpacity')
@@ -3283,6 +4110,13 @@ class MessageBroker {
     this.createPushTopic('handleTouchStart')
     this.createPushTopic('handleTouchMove')
     this.createPushTopic('handleTouchEnd')
+    this.createPushTopic('colorSelectFill')
+    this.createPushTopic('setColorSelectTolerance')
+    this.createPushTopic('setLivePreview')
+    this.createPushTopic('updateCursor')
+    this.createPushTopic('setColorComparisonMethod')
+    this.createPushTopic('clearLastPoint')
+    this.createPushTopic('setWholeImage')
   }
 
   /**
@@ -3434,8 +4268,8 @@ class KeyboardManager {
     if (!this.keysDown.includes(event.key)) {
       this.keysDown.push(event.key)
     }
-    if (this.redoCombinationPressed()) return
-    this.undoCombinationPressed()
+    //if (this.redoCombinationPressed()) return
+    //this.undoCombinationPressed()
   }
 
   private handleKeyUp(event: KeyboardEvent) {
@@ -3449,16 +4283,16 @@ class KeyboardManager {
   // combinations
 
   private undoCombinationPressed() {
-    const combination = ['control', 'z']
-    const keysDownLower = this.keysDown.map(key => key.toLowerCase())
+    const combination = ['ctrl', 'z']
+    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
     const result = combination.every((key) => keysDownLower.includes(key))
     if (result) this.messageBroker.publish('undo')
     return result
   }
 
   private redoCombinationPressed() {
-    const combination = ['control', 'shift', 'z']
-    const keysDownLower = this.keysDown.map(key => key.toLowerCase())
+    const combination = ['ctrl', 'shift', 'z']
+    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
     const result = combination.every((key) => keysDownLower.includes(key))
     if (result) this.messageBroker.publish('redo')
     return result
@@ -3467,22 +4301,52 @@ class KeyboardManager {
 
 app.registerExtension({
   name: 'Comfy.MaskEditor',
+  settings: [
+    {
+      id: 'Comfy.MaskEditor.UseNewEditor',
+      category: ['Comfy', 'Masking'],
+      name: 'Use new mask editor',
+      tooltip: 'Switch to the new mask editor interface',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    }
+  ],
   init(app) {
-    ComfyApp.open_maskeditor = function () {
-      const dlg = MaskEditorDialog.getInstance()
-      if (!dlg.isOpened()) {
-        dlg.show()
+    // Create function before assignment
+    function openMaskEditor(): void {
+      const useNewEditor = app.extensionManager.setting.get(
+        'Comfy.MaskEditor.UseNewEditor'
+      )
+      if (useNewEditor) {
+        const dlg = MaskEditorDialog.getInstance() as any
+        if (dlg?.isOpened && !dlg.isOpened()) {
+          dlg.show()
+        }
+      } else {
+        const dlg = MaskEditorDialogOld.getInstance() as any
+        if (dlg?.isOpened && !dlg.isOpened()) {
+          dlg.show()
+        }
       }
     }
 
-    const context_predicate = () =>
-      ComfyApp.clipspace &&
-      ComfyApp.clipspace.imgs &&
-      ComfyApp.clipspace.imgs.length > 0
+    // Assign the created function
+    ;(ComfyApp as any).open_maskeditor = openMaskEditor
+
+    // Ensure boolean return type
+    const context_predicate = (): boolean => {
+      return !!(
+        ComfyApp.clipspace &&
+        ComfyApp.clipspace.imgs &&
+        ComfyApp.clipspace.imgs.length > 0
+      )
+    }
+
     ClipspaceDialog.registerButton(
       'MaskEditor',
       context_predicate,
-      ComfyApp.open_maskeditor
+      openMaskEditor
     )
   }
 })
