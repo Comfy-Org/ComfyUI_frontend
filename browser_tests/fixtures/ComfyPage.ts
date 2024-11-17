@@ -204,13 +204,15 @@ export class ComfyPage {
     }
   }
 
-  async setup() {
+  async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {
     await this.goto()
-    await this.page.evaluate((id) => {
-      localStorage.clear()
-      sessionStorage.clear()
-      localStorage.setItem('Comfy.userId', id)
-    }, this.id)
+    if (clearStorage) {
+      await this.page.evaluate((id) => {
+        localStorage.clear()
+        sessionStorage.clear()
+        localStorage.setItem('Comfy.userId', id)
+      }, this.id)
+    }
     await this.goto()
 
     // Unify font for consistent screenshots.
@@ -314,9 +316,9 @@ export class ComfyPage {
     }, settingId)
   }
 
-  async reload() {
+  async reload({ clearStorage = true }: { clearStorage?: boolean } = {}) {
     await this.page.reload({ timeout: 15000 })
-    await this.setup()
+    await this.setup({ clearStorage })
   }
 
   async goto() {
