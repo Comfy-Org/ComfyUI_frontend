@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
@@ -8,6 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
 
@@ -21,7 +21,7 @@ async function uploadFile(
   try {
     const body = new FormData()
     body.append('image', file)
-    body.append('subfolder', 'mesh')
+    body.append('subfolder', '3d')
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -53,7 +53,7 @@ async function uploadFile(
           if (mtlFile) {
             const mtlFormData = new FormData()
             mtlFormData.append('image', mtlFile)
-            mtlFormData.append('subfolder', 'mesh')
+            mtlFormData.append('subfolder', '3d')
 
             await api.fetchApi('/upload/image', {
               method: 'POST',
@@ -86,6 +86,7 @@ class Load3d {
   objLoader: OBJLoader
   mtlLoader: MTLLoader
   fbxLoader: FBXLoader
+  stlLoader: STLLoader
   currentModel: THREE.Object3D | null = null
   currentAnimation: THREE.AnimationMixer | null = null
   animationActions: THREE.AnimationAction[] = []
@@ -95,6 +96,13 @@ class Load3d {
   gridHelper: THREE.GridHelper
   lights: THREE.Light[] = []
   clock: THREE.Clock
+  normalMaterial: THREE.MeshNormalMaterial
+  standardMaterial: THREE.MeshStandardMaterial
+  wireframeMaterial: THREE.MeshBasicMaterial
+  originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]> =
+    new WeakMap()
+
+  materialMode: 'original' | 'normal' | 'wireframe' = 'original'
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -136,6 +144,7 @@ class Load3d {
     this.objLoader = new OBJLoader()
     this.mtlLoader = new MTLLoader()
     this.fbxLoader = new FBXLoader()
+    this.stlLoader = new STLLoader()
     this.clock = new THREE.Clock()
 
     this.setupLights()
@@ -144,11 +153,78 @@ class Load3d {
     this.gridHelper.position.set(0, 0, 0)
     this.scene.add(this.gridHelper)
 
+    this.normalMaterial = new THREE.MeshNormalMaterial({
+      flatShading: false,
+      side: THREE.DoubleSide,
+      normalScale: new THREE.Vector2(1, 1),
+      transparent: false,
+      opacity: 1.0
+    })
+
+    this.wireframeMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      wireframe: true,
+      transparent: false,
+      opacity: 1.0
+    })
+
+    this.standardMaterial = this.createSTLMaterial()
+
     this.animate()
 
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  setMaterialMode(mode: 'original' | 'normal' | 'wireframe') {
+    this.materialMode = mode
+
+    if (this.currentModel) {
+      this.currentModel.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          switch (mode) {
+            case 'normal':
+              if (!this.originalMaterials.has(child)) {
+                this.originalMaterials.set(child, child.material)
+              }
+              child.material = new THREE.MeshNormalMaterial({
+                flatShading: false,
+                side: THREE.DoubleSide,
+                normalScale: new THREE.Vector2(1, 1),
+                transparent: false,
+                opacity: 1.0
+              })
+              child.geometry.computeVertexNormals()
+              break
+
+            case 'wireframe':
+              if (!this.originalMaterials.has(child)) {
+                this.originalMaterials.set(child, child.material)
+              }
+              child.material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: false,
+                opacity: 1.0
+              })
+              break
+
+            case 'original':
+              const originalMaterial = this.originalMaterials.get(child)
+              if (originalMaterial) {
+                child.material = originalMaterial
+              } else {
+                child.material = this.standardMaterial
+              }
+              break
+          }
+        }
+      })
+
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace
+      this.renderer.render(this.scene, this.activeCamera)
+    }
   }
 
   setupLights() {
@@ -321,6 +397,9 @@ class Load3d {
     this.controls.update()
 
     this.renderer.render(this.scene, this.activeCamera)
+
+    this.materialMode = 'original'
+    this.originalMaterials = new WeakMap()
   }
 
   toggleAnimation(play?: boolean) {
@@ -358,16 +437,33 @@ class Load3d {
 
       if (!fileExtension) {
         useToastStore().addAlert('Could not determine file type')
-
         return
       }
 
       let model: THREE.Object3D | null = null
 
       switch (fileExtension) {
+        case 'stl':
+          const geometry = await this.stlLoader.loadAsync(url)
+          geometry.computeVertexNormals()
+
+          const mesh = new THREE.Mesh(geometry, this.standardMaterial)
+
+          const group = new THREE.Group()
+          group.add(mesh)
+
+          model = group
+          break
+
         case 'fbx':
           const fbxModel = await this.fbxLoader.loadAsync(url)
           model = fbxModel
+
+          fbxModel.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              this.originalMaterials.set(child, child.material)
+            }
+          })
 
           if (fbxModel.animations.length > 0) {
             this.currentAnimation = new THREE.AnimationMixer(fbxModel)
@@ -382,24 +478,39 @@ class Load3d {
           break
 
         case 'obj':
-          const mtlUrl = url.replace(/\.obj([^.]*$)/, '.mtl$1')
-          try {
-            const materials = await this.mtlLoader.loadAsync(mtlUrl)
-            materials.preload()
-            this.objLoader.setMaterials(materials)
-          } catch (e) {
-            console.log(
-              'No MTL file found or error loading it, continuing without materials'
-            )
+          if (this.materialMode === 'original') {
+            const mtlUrl = url.replace(/\.obj([^.]*$)/, '.mtl$1')
+            try {
+              const materials = await this.mtlLoader.loadAsync(mtlUrl)
+              materials.preload()
+              this.objLoader.setMaterials(materials)
+            } catch (e) {
+              console.log(
+                'No MTL file found or error loading it, continuing without materials'
+              )
+            }
           }
 
           model = await this.objLoader.loadAsync(url)
+
+          model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              this.originalMaterials.set(child, child.material)
+            }
+          })
           break
 
         case 'gltf':
         case 'glb':
           const gltf = await this.gltfLoader.loadAsync(url)
           model = gltf.scene
+
+          gltf.scene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.geometry.computeVertexNormals()
+              this.originalMaterials.set(child, child.material)
+            }
+          })
           break
 
         default:
@@ -427,6 +538,10 @@ class Load3d {
 
         this.scene.add(model)
 
+        if (this.materialMode !== 'original') {
+          this.setMaterialMode(this.materialMode)
+        }
+
         const distance = Math.max(size.x, size.z) * 2
         const height = size.y * 2
 
@@ -450,6 +565,10 @@ class Load3d {
 
         this.controls.target.set(0, size.y / 2, 0)
         this.controls.update()
+
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+        this.renderer.toneMappingExposure = 1
 
         this.handleResize()
       }
@@ -529,6 +648,16 @@ class Load3d {
       } catch (error) {
         reject(error)
       }
+    })
+  }
+
+  createSTLMaterial() {
+    return new THREE.MeshStandardMaterial({
+      color: 0x808080,
+      metalness: 0.1,
+      roughness: 0.8,
+      flatShading: false,
+      side: THREE.DoubleSide
     })
   }
 
@@ -629,13 +758,13 @@ app.registerExtension({
             load3d.remove()
           }
 
-          containerToLoad3D.delete(container)
+          containerToLoad3D.delete(container.id)
 
-          origOnRemoved?.apply(this, arguments)
+          origOnRemoved?.apply(this, [])
         }
 
         node.onDrawBackground = function () {
-          load3d.renderer.domElement.hidden = this.flags.collapsed
+          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
         return {
@@ -689,6 +818,12 @@ app.registerExtension({
         const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
 
         load3d.loadModel(modelUrl, filename)
+
+        const material = node.widgets.find(
+          (w: IWidget) => w.name === 'material'
+        )
+
+        load3d.setMaterialMode(material.value)
       }
     }
 
@@ -721,6 +856,14 @@ app.registerExtension({
     view.callback = (value: 'front' | 'top' | 'right' | 'isometric') => {
       load3d.setViewPosition(value)
     }
+
+    const material = node.widgets.find((w: IWidget) => w.name === 'material')
+
+    material.callback = (value: 'original' | 'normal' | 'wireframe') => {
+      load3d.setMaterialMode(value)
+    }
+
+    load3d.setMaterialMode(material.value)
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
 
@@ -774,7 +917,7 @@ app.registerExtension({
 
     const fileInput = document.createElement('input')
     fileInput.type = 'file'
-    fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx'
+    fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
     fileInput.style.display = 'none'
     fileInput.onchange = () => {
       if (fileInput.files?.length) {
