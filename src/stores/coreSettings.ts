@@ -25,15 +25,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'default'
   },
   {
-    id: 'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger',
-    category: ['Comfy', 'Node Search Box', 'LinkReleaseTrigger'],
-    name: 'Trigger on link release',
-    type: 'hidden',
-    options: Object.values(LinkReleaseTriggerMode),
-    defaultValue: LinkReleaseTriggerMode.ALWAYS,
-    deprecated: true
-  },
-  {
     id: 'Comfy.LinkRelease.Action',
     category: ['LiteGraph', 'LinkRelease', 'Action'],
     name: 'Action on link release (No modifier)',

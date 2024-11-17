@@ -484,11 +484,6 @@ const zSettings = z.record(z.any()).and(
         zBookmarkCustomization
       ),
       'Comfy.NodeInputConversionSubmenus': z.boolean(),
-      'Comfy.NodeSearchBoxImpl.LinkReleaseTrigger': z.enum([
-        'always',
-        'hold shift',
-        'NOT hold shift'
-      ]),
       'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
       'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
