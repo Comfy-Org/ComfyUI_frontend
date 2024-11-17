@@ -1,6 +1,7 @@
 import '@comfyorg/litegraph'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import type { LLink } from '@comfyorg/litegraph'
+import type { NodeId } from './comfyWorkflow'
 
 /**
  *  ComfyUI extensions of litegraph
@@ -22,10 +23,21 @@ declare module '@comfyorg/litegraph' {
      * Callback fired on each node after the graph is configured
      */
     onAfterGraphConfigured?(): void
+    onGraphConfigured?(): void
+    onExecuted?(output: any): void
     onNodeCreated?(this: LGraphNode): void
     setInnerNodes?(nodes: LGraphNode[]): void
+    // TODO: Requires several coercion changes to runtime code.
+    getInnerNodes?() // : LGraphNode[]
+    convertToNodes?(): LGraphNode[]
+    recreate?(): Promise<LGraphNode>
+    refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
     applyToGraph?(extraLinks?: LLink[]): void
     updateLink?(link: LLink): LLink | null
+    onExecutionStart?(): unknown
+
+    index?: number
+    runningInternalNodeId?: NodeId
 
     comfyClass?: string
 
@@ -38,7 +50,7 @@ declare module '@comfyorg/litegraph' {
       name: string,
       type: string,
       element: HTMLElement,
-      options: Record<string, any>
+      options?: Record<string, any>
     ): DOMWidget
   }
 

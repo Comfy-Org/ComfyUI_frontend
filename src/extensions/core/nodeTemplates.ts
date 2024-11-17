@@ -5,6 +5,7 @@ import { ComfyDialog, $el } from '../../scripts/ui'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { useToastStore } from '@/stores/toastStore'
+import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -414,8 +415,14 @@ app.registerExtension({
             clipboardAction(async () => {
               const data = JSON.parse(t.data)
               await GroupNodeConfig.registerFromWorkflow(data.groupNodes, {})
-              localStorage.setItem('litegrapheditor_clipboard', t.data)
-              app.canvas.pasteFromClipboard()
+
+              // Check for old clipboard format
+              if (!data.reroutes) {
+                deserialiseAndCreate(t.data, app.canvas)
+              } else {
+                localStorage.setItem('litegrapheditor_clipboard', t.data)
+                app.canvas.pasteFromClipboard()
+              }
             })
           }
         }

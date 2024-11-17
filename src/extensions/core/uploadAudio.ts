@@ -36,7 +36,7 @@ function getResourceURL(
 
 async function uploadFile(
   audioWidget: IWidget,
-  audioUIWidget: DOMWidget<HTMLAudioElement>,
+  audioUIWidget: DOMWidget<HTMLAudioElement, string>,
   file: File,
   updateNode: boolean,
   pasted: boolean = false
@@ -94,12 +94,10 @@ app.registerExtension({
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
 
-        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.addDOMWidget(
-          inputName,
-          /* name=*/ 'audioUI',
-          audio,
-          { serialize: false }
-        )
+        const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
+          node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio, {
+            serialize: false
+          })
 
         const isOutputNode = node.constructor.nodeData.output_node
         if (isOutputNode) {
@@ -107,7 +105,7 @@ app.registerExtension({
           audioUIWidget.element.classList.add('empty-audio-widget')
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
-          node.onExecuted = function (message) {
+          node.onExecuted = function (message: any) {
             onExecuted?.apply(this, arguments)
             const audios = message.audio
             if (!audios) return
@@ -128,7 +126,7 @@ app.registerExtension({
       if ('audio' in output) {
         const audioUIWidget = node.widgets.find(
           (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement>
+        ) as unknown as DOMWidget<HTMLAudioElement, string>
         const audio = output.audio[0]
         audioUIWidget.element.src = api.apiURL(
           getResourceURL(audio.subfolder, audio.filename, audio.type)
@@ -153,9 +151,9 @@ app.registerExtension({
         const audioWidget: IWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audio'
         )
-        const audioUIWidget: DOMWidget<HTMLAudioElement> = node.widgets.find(
+        const audioUIWidget = node.widgets.find(
           (w: IWidget) => w.name === 'audioUI'
-        )
+        ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
           audioUIWidget.element.src = api.apiURL(

@@ -2,10 +2,11 @@
 import { api } from './api'
 import './domWidget'
 import type { ComfyApp } from './app'
-import type { IWidget, LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode } from '@comfyorg/litegraph'
 import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import type { IWidget } from '@comfyorg/litegraph'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,

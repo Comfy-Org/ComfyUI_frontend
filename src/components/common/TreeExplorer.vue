@@ -1,6 +1,6 @@
 <template>
   <Tree
-    class="tree-explorer"
+    class="tree-explorer py-0 px-2 2xl:px-4"
     :class="props.class"
     v-model:expandedKeys="expandedKeys"
     v-model:selectionKeys="selectionKeys"

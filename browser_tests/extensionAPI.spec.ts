@@ -48,7 +48,7 @@ test.describe('Topbar commands', () => {
       })
     })
 
-    const menuItem: Locator = await comfyPage.menu.topbar.getMenuItem('ext')
+    const menuItem = comfyPage.menu.topbar.getMenuItem('ext')
     expect(await menuItem.count()).toBe(0)
   })
 

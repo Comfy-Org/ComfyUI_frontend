@@ -1,6 +1,10 @@
 // @ts-strict-ignore
 import { ComfyLogging } from './logging'
-import { ComfyWidgetConstructor, ComfyWidgets, initWidgets } from './widgets'
+import {
+  type ComfyWidgetConstructor,
+  ComfyWidgets,
+  initWidgets
+} from './widgets'
 import { ComfyUI, $el } from './ui'
 import { api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -11,7 +15,6 @@ import {
   importA1111,
   getLatentMetadata
 } from './pnginfo'
-import { addDomClippingSetting } from './domWidget'
 import { createImageHost, calculateImageGrid } from './ui/imagePreview'
 import { DraggableList } from './ui/draggableList'
 import { applyTextReplacements, addStylesheet } from './utils'
@@ -60,6 +63,8 @@ import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -142,7 +147,6 @@ export class ComfyApp {
   storageLocation: StorageLocation
   multiUserServer: boolean
   ctx: CanvasRenderingContext2D
-  widgets: Record<string, ComfyWidgetConstructor>
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
@@ -165,6 +169,16 @@ export class ComfyApp {
    */
   get shiftDown(): boolean {
     return useWorkspaceStore().shiftDown
+  }
+
+  /**
+   * @deprecated Use useWidgetStore().widgets instead
+   */
+  get widgets(): Record<string, ComfyWidgetConstructor> {
+    if (this.vueAppReady) {
+      return useWidgetStore().widgets
+    }
+    return ComfyWidgets
   }
 
   constructor() {
@@ -1213,7 +1227,8 @@ export class ComfyApp {
     const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
     LGraphCanvas.prototype.processMouseDown = function (e) {
       // prepare for ctrl+shift drag: zoom start
-      if (e.ctrlKey && e.shiftKey && e.buttons) {
+      const useFastZoom = useSettingStore().get('Comfy.Graph.CtrlShiftZoom')
+      if (useFastZoom && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
         self.zoom_drag_start = [e.x, e.y, this.ds.scale]
         return
       }
@@ -1551,20 +1566,14 @@ export class ComfyApp {
       }
       const node = this.graph.getNodeById(detail.display_node || detail.node)
       if (node) {
-        // @ts-expect-error
-        if (node.onExecuted)
-          // @ts-expect-error
-          node.onExecuted(detail.output)
+        if (node.onExecuted) node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', ({ detail }) => {
       this.lastExecutionError = null
       this.graph.nodes.forEach((node) => {
-        // @ts-expect-error
-        if (node.onExecutionStart)
-          // @ts-expect-error
-          node.onExecutionStart()
+        if (node.onExecutionStart) node.onExecutionStart()
       })
     })
 
@@ -1653,7 +1662,6 @@ export class ComfyApp {
     app.graph.onConfigure = function () {
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
       for (const node of app.graph.nodes) {
-        // @ts-expect-error
         node.onGraphConfigured?.()
       }
 
@@ -1784,6 +1792,8 @@ export class ComfyApp {
    */
   async setup(canvasEl: HTMLCanvasElement) {
     this.canvasEl = canvasEl
+    // Show menu container for GraphView.
+    this.ui.menuContainer.style.display = 'block'
     await this.#setUser()
 
     this.resizeCanvas()
@@ -1794,7 +1804,6 @@ export class ComfyApp {
     ])
     await this.#loadExtensions()
 
-    addDomClippingSetting()
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
@@ -1918,7 +1927,6 @@ export class ComfyApp {
     const nodeDefArray: ComfyNodeDef[] = Object.values(allNodeDefs)
     this.#invokeExtensions('beforeRegisterVueAppNodeDefs', nodeDefArray, this)
     nodeDefStore.updateNodeDefs(nodeDefArray)
-    nodeDefStore.widgets = this.widgets
   }
 
   /**
@@ -1936,7 +1944,11 @@ export class ComfyApp {
     }
   }
 
-  getWidgetType(inputData, inputName) {
+  /**
+   * Remove the impl after groupNode jest tests are removed.
+   * @deprecated Use useWidgetStore().getWidgetType instead
+   */
+  getWidgetType(inputData, inputName: string) {
     const type = inputData[0]
 
     if (Array.isArray(type)) {
@@ -2090,13 +2102,6 @@ export class ComfyApp {
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
     await this.#invokeExtensionsAsync('addCustomNodeDefs', defs)
 
-    // Generate list of known widgets
-    this.widgets = Object.assign(
-      {},
-      ComfyWidgets,
-      ...(await this.#invokeExtensionsAsync('getCustomWidgets')).filter(Boolean)
-    )
-
     // Register a node for each definition
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
@@ -2117,8 +2122,14 @@ export class ComfyApp {
         continue
       }
 
-      localStorage.setItem('litegrapheditor_clipboard', template.data)
-      app.canvas.pasteFromClipboard()
+      // Check for old clipboard format
+      const data = JSON.parse(template.data)
+      if (!data.reroutes) {
+        deserialiseAndCreate(template.data, app.canvas)
+      } else {
+        localStorage.setItem('litegrapheditor_clipboard', template.data)
+        app.canvas.pasteFromClipboard()
+      }
 
       // Move mouse position down to paste the next template below
 
@@ -2394,8 +2405,8 @@ export class ComfyApp {
         }
       }
 
-      const innerNodes = outerNode['getInnerNodes']
-        ? outerNode['getInnerNodes']()
+      const innerNodes = outerNode.getInnerNodes
+        ? outerNode.getInnerNodes()
         : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2413,8 +2424,8 @@ export class ComfyApp {
     for (const outerNode of graph.computeExecutionOrder(false)) {
       const skipNode = outerNode.mode === 2 || outerNode.mode === 4
       const innerNodes =
-        !skipNode && outerNode['getInnerNodes']
-          ? outerNode['getInnerNodes']()
+        !skipNode && outerNode.getInnerNodes
+          ? outerNode.getInnerNodes()
           : [outerNode]
       for (const node of innerNodes) {
         if (node.isVirtualNode) {
@@ -2880,7 +2891,6 @@ export class ComfyApp {
     for (let nodeNum in this.graph.nodes) {
       const node = this.graph.nodes[nodeNum]
       const def = defs[node.type]
-      // @ts-expect-error
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
 

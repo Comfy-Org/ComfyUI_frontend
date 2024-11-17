@@ -38,12 +38,14 @@ const zModelFile = z.object({
   directory: z.string()
 })
 
-const zGraphState = z.object({
-  lastGroupid: z.number().optional(),
-  lastNodeId: z.number().optional(),
-  lastLinkId: z.number().optional(),
-  lastRerouteId: z.number().optional()
-})
+const zGraphState = z
+  .object({
+    lastGroupid: z.number().optional(),
+    lastNodeId: z.number().optional(),
+    lastLinkId: z.number().optional(),
+    lastRerouteId: z.number().optional()
+  })
+  .passthrough()
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
@@ -54,22 +56,34 @@ const zComfyLink = z.tuple([
   zDataType // Data type
 ])
 
-const zComfyLinkObject = z.object({
-  id: z.number(),
-  origin_id: zNodeId,
-  origin_slot: zSlotIndex,
-  target_id: zNodeId,
-  target_slot: zSlotIndex,
-  type: zDataType,
-  parentId: z.number().optional()
-})
+/** Extension to 0.4 schema (links as arrays): parent reroute ID */
+const zComfyLinkExtension = z
+  .object({
+    id: z.number(),
+    parentId: z.number()
+  })
+  .passthrough()
 
-const zReroute = z.object({
-  id: z.number(),
-  parentId: z.number().optional(),
-  pos: zVector2,
-  linkIds: z.array(z.number()).nullish()
-})
+const zComfyLinkObject = z
+  .object({
+    id: z.number(),
+    origin_id: zNodeId,
+    origin_slot: zSlotIndex,
+    target_id: zNodeId,
+    target_slot: zSlotIndex,
+    type: zDataType,
+    parentId: z.number().optional()
+  })
+  .passthrough()
+
+const zReroute = z
+  .object({
+    id: z.number(),
+    parentId: z.number().optional(),
+    pos: zVector2,
+    linkIds: z.array(z.number()).nullish()
+  })
+  .passthrough()
 
 const zNodeOutput = z
   .object({
@@ -164,10 +178,13 @@ const zConfig = z
 const zExtra = z
   .object({
     ds: zDS.optional(),
-    info: zInfo.optional()
+    info: zInfo.optional(),
+    linkExtensions: z.array(zComfyLinkExtension).optional(),
+    reroutes: z.array(zReroute).optional()
   })
   .passthrough()
 
+/** Schema version 0.4 */
 export const zComfyWorkflow = z
   .object({
     last_node_id: zNodeId,
@@ -182,9 +199,10 @@ export const zComfyWorkflow = z
   })
   .passthrough()
 
+/** Schema version 1 */
 const zComfyWorkflow1 = z
   .object({
-    version: z.number(),
+    version: z.literal(1),
     config: zConfig.optional().nullable(),
     state: zGraphState,
     groups: z.array(zGroup).optional(),

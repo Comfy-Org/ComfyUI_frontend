@@ -1,6 +1,11 @@
 <template>
-  <div class="comfy-vue-node-search-container">
-    <div class="comfy-vue-node-preview-container" v-if="enableNodePreview">
+  <div
+    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96 pointer-events-auto"
+  >
+    <div
+      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
+      v-if="enableNodePreview"
+    >
       <NodePreview
         :nodeDef="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
@@ -11,10 +16,10 @@
     <Button
       icon="pi pi-filter"
       severity="secondary"
-      class="_filter-button"
+      class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
     />
-    <Dialog v-model:visible="nodeSearchFilterVisible" class="_dialog">
+    <Dialog v-model:visible="nodeSearchFilterVisible" class="min-w-96">
       <template #header>
         <h3>Add node filter condition</h3>
       </template>
@@ -25,7 +30,7 @@
 
     <AutoCompletePlus
       :model-value="props.filters"
-      class="comfy-vue-node-search-box"
+      class="comfy-vue-node-search-box z-10 flex-grow"
       scrollHeight="40vh"
       :placeholder="placeholder"
       :input-id="inputId"
@@ -148,31 +153,3 @@ const setHoverSuggestion = (index: number) => {
   hoveredSuggestion.value = value
 }
 </script>
-
-<style scoped>
-.comfy-vue-node-search-container {
-  @apply flex justify-center items-center w-full min-w-96;
-}
-
-.comfy-vue-node-search-container * {
-  pointer-events: auto;
-}
-
-.comfy-vue-node-preview-container {
-  position: absolute;
-  left: -350px;
-  top: 50px;
-}
-
-.comfy-vue-node-search-box {
-  @apply z-10 flex-grow;
-}
-
-._filter-button {
-  z-index: 10;
-}
-
-._dialog {
-  @apply min-w-96;
-}
-</style>

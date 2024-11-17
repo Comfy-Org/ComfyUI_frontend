@@ -178,9 +178,8 @@ describe('useWorkflowStore', () => {
         } as any)
 
       // Perform rename
-      const newName = 'renamed.json'
       const newPath = 'workflows/dir/renamed.json'
-      await store.renameWorkflow(workflow, newName)
+      await store.renameWorkflow(workflow, newPath)
 
       // Check that bookmark was transferred
       expect(bookmarkStore.isBookmarked(newPath)).toBe(true)

@@ -5,6 +5,7 @@ import {
   LinkReleaseTriggerMode
 } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
+import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
@@ -373,9 +374,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
-    defaultValue: 'Disabled',
-    name: 'Use new menu and workflow management.',
-    experimental: true,
+    defaultValue: 'Top',
+    name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {
@@ -476,5 +476,57 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.3.29'
+  },
+  {
+    id: 'Comfy.Node.BypassAllLinksOnDelete',
+    name: 'Keep all links when deleting nodes',
+    tooltip:
+      'When deleting a node, attempt to reconnect all of its input and output links (bypassing the deleted node)',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.40'
+  },
+  {
+    id: 'Comfy.Node.MiddleClickRerouteNode',
+    name: 'Middle-click creates a new Reroute node',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.RerouteBeta',
+    name: 'Opt-in to the reroute beta test',
+    tooltip:
+      'Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden.',
+    experimental: true,
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.Graph.LinkMarkers',
+    name: 'Link midpoint markers',
+    defaultValue: LinkMarkerShape.Circle,
+    type: 'combo',
+    options: [
+      { value: LinkMarkerShape.None, text: 'None' },
+      { value: LinkMarkerShape.Circle, text: 'Circle' },
+      { value: LinkMarkerShape.Arrow, text: 'Arrow' }
+    ],
+    versionAdded: '1.3.42'
+  },
+  {
+    id: 'Comfy.DOMClippingEnabled',
+    category: ['Comfy', 'Node', 'DOMClippingEnabled'],
+    name: 'Enable DOM element clipping (enabling may reduce performance)',
+    type: 'boolean',
+    defaultValue: true
+  },
+  {
+    id: 'Comfy.Graph.CtrlShiftZoom',
+    name: 'Enable fast-zoom shortcut (Ctrl + Shift + Drag)',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.4.0'
   }
 ]

@@ -3,6 +3,9 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from './fixtures/ComfyPage'
+import type { useWorkspaceStore } from '../src/stores/workspaceStore'
+
+type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -19,37 +22,69 @@ test.describe('Change Tracker', () => {
   test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.setupWorkflowsDirectory({})
     })
 
-    // Flaky https://github.com/Comfy-Org/ComfyUI_frontend/pull/1481
-    // The collapse can be recognized as several changes.
-    test.skip('Can undo multiple operations', async ({ comfyPage }) => {
+    test('Can undo multiple operations', async ({ comfyPage }) => {
       function isModified() {
         return comfyPage.page.evaluate(async () => {
-          return window['app'].extensionManager.workflow.activeWorkflow
-            .isModified
+          return !!(window['app'].extensionManager as WorkspaceStore).workflow
+            .activeWorkflow?.isModified
         })
       }
 
+      function getUndoQueueSize() {
+        return comfyPage.page.evaluate(() => {
+          const workflow = (window['app'].extensionManager as WorkspaceStore)
+            .workflow.activeWorkflow
+          return workflow?.changeTracker.undoQueue.length
+        })
+      }
+
+      function getRedoQueueSize() {
+        return comfyPage.page.evaluate(() => {
+          const workflow = (window['app'].extensionManager as WorkspaceStore)
+            .workflow.activeWorkflow
+          return workflow?.changeTracker.redoQueue.length
+        })
+      }
+      expect(await getUndoQueueSize()).toBe(0)
+      expect(await getRedoQueueSize()).toBe(0)
+
+      // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
+      expect(await comfyPage.getToastErrorCount()).toBe(0)
       expect(await isModified()).toBe(false)
+
+      // TODO(huchenlei): Investigate why saving the workflow is causing the
+      // undo queue to be triggered.
+      expect(await getUndoQueueSize()).toBe(1)
+      expect(await getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.getFirstNodeRef())!
       await node.click('collapse')
       await expect(node).toBeCollapsed()
       expect(await isModified()).toBe(true)
+      expect(await getUndoQueueSize()).toBe(2)
+      expect(await getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlB()
       await expect(node).toBeBypassed()
       expect(await isModified()).toBe(true)
+      expect(await getUndoQueueSize()).toBe(3)
+      expect(await getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeBypassed()
       expect(await isModified()).toBe(true)
+      expect(await getUndoQueueSize()).toBe(2)
+      expect(await getRedoQueueSize()).toBe(1)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeCollapsed()
       expect(await isModified()).toBe(false)
+      expect(await getUndoQueueSize()).toBe(1)
+      expect(await getRedoQueueSize()).toBe(2)
     })
   })
 
@@ -77,7 +112,7 @@ test.describe('Change Tracker', () => {
     await expect(node).not.toBeCollapsed()
 
     // Run again, but within a change transaction
-    beforeChange(comfyPage)
+    await beforeChange(comfyPage)
 
     await node.click('collapse')
     await comfyPage.ctrlB()
@@ -85,7 +120,7 @@ test.describe('Change Tracker', () => {
     await expect(node).toBeBypassed()
 
     // End transaction
-    afterChange(comfyPage)
+    await afterChange(comfyPage)
 
     // Ensure undo reverts both changes
     await comfyPage.ctrlZ()
@@ -93,7 +128,7 @@ test.describe('Change Tracker', () => {
     await expect(node).not.toBeCollapsed()
   })
 
-  test('Can group multiple transaction calls into a single one', async ({
+  test('Can nest multiple change transactions without adding undo steps', async ({
     comfyPage
   }) => {
     const node = (await comfyPage.getFirstNodeRef())!

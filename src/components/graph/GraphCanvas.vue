@@ -1,7 +1,10 @@
 <template>
   <teleport to=".graph-canvas-container">
+    <!-- Load splitter overlay only after comfyApp is ready. -->
+    <!-- If load immediately, the top-level splitter stateKey won't be correctly
+    synced with the stateStorage (localStorage). -->
     <LiteGraphCanvasSplitterOverlay
-      v-if="betaMenuEnabled && !workspaceStore.focusMode"
+      v-if="comfyAppReady && betaMenuEnabled && !workspaceStore.focusMode"
     >
       <template #side-bar-panel>
         <SideToolbar />
@@ -99,6 +102,18 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LGraphNode.keepAllLinksOnBypass = settingStore.get(
+    'Comfy.Node.BypassAllLinksOnDelete'
+  )
+})
+
+watchEffect(() => {
+  LiteGraph.middle_click_slot_add_default_node = settingStore.get(
+    'Comfy.Node.MiddleClickRerouteNode'
+  )
+})
+
+watchEffect(() => {
   nodeDefStore.showDeprecated = settingStore.get('Comfy.Node.ShowDeprecated')
 })
 
@@ -125,6 +140,24 @@ watchEffect(() => {
   if (canvasStore.canvas) {
     canvasStore.canvas.links_render_mode = linkRenderMode
     canvasStore.canvas.setDirty(/* fg */ false, /* bg */ true)
+  }
+})
+
+watchEffect(() => {
+  const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.linkMarkerShape = linkMarkerShape
+    canvas.setDirty(false, true)
+  }
+})
+
+watchEffect(() => {
+  const reroutesEnabled = settingStore.get('Comfy.RerouteBeta')
+  const { canvas } = canvasStore
+  if (canvas) {
+    canvas.reroutesEnabled = reroutesEnabled
+    canvas.setDirty(false, true)
   }
 })
 
@@ -207,6 +240,7 @@ usePragmaticDroppable(() => canvasRef.value, {
   }
 })
 
+const comfyAppReady = ref(false)
 onMounted(async () => {
   // Backward compatible
   // Assign all properties of lg to window
@@ -228,11 +262,13 @@ onMounted(async () => {
   ChangeTracker.init(comfyApp)
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
+  canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
 
   window['app'] = comfyApp
   window['graph'] = comfyApp.graph
 
+  comfyAppReady.value = true
   emit('ready')
 })
 </script>
