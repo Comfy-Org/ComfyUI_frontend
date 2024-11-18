@@ -11,6 +11,7 @@
         severity="secondary"
         @click="outputFilterPopup.toggle($event)"
         v-tooltip="$t(`sideToolbar.queueTab.filter`)"
+        :class="{ 'text-yellow-500': anyFilter }"
       />
       <Button
         :icon="
@@ -149,6 +150,7 @@ const hideCached = computed<boolean>(
 const hideCanceled = computed<boolean>(
   () => settingStore.get(SETTING_FILTER)?.hideCanceled
 )
+const anyFilter = computed(() => hideCanceled.value || hideCached.value)
 
 watch(hideCached, () => {
   updateVisibleTasks()
