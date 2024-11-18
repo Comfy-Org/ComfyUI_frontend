@@ -9,6 +9,9 @@ module.exports = async function () {
   const { nop } = require('../utils/nopProxy')
   global.enableWebGLCanvas = nop
 
+  global.window.HTMLElement.prototype.hasPointerCapture = jest.fn(() => true)
+  global.window.HTMLElement.prototype.setPointerCapture = jest.fn()
+
   HTMLCanvasElement.prototype.getContext = nop
 
   localStorage['Comfy.Settings.Comfy.Logging.Enabled'] = 'false'
