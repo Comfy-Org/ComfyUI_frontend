@@ -62,7 +62,6 @@ test.describe('Change Tracker', () => {
       expect(await getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.getFirstNodeRef())!
-      await node.click('title')
       await node.click('collapse')
       await expect(node).toBeCollapsed()
       expect(await isModified()).toBe(true)
@@ -99,7 +98,6 @@ test.describe('Change Tracker', () => {
 
     // Make changes outside set
     // Bypass + collapse node
-    await node.click('title')
     await node.click('collapse')
     await comfyPage.ctrlB()
     await expect(node).toBeCollapsed()
@@ -112,10 +110,6 @@ test.describe('Change Tracker', () => {
     await comfyPage.ctrlZ()
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBeCollapsed()
-
-    // Prevent clicks registering a double-click
-    await comfyPage.clickEmptySpace()
-    await node.click('title')
 
     // Run again, but within a change transaction
     await beforeChange(comfyPage)
@@ -158,7 +152,6 @@ test.describe('Change Tracker', () => {
     const multipleChanges = async () => {
       await beforeChange(comfyPage)
       // Call other actions that uses begin/endChange
-      await node.click('title')
       await collapse()
       await bypassAndPin()
       await afterChange(comfyPage)
