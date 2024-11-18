@@ -150,14 +150,17 @@ const hideCached = computed<boolean>(
 const hideCanceled = computed<boolean>(
   () => settingStore.get(SETTING_FILTER)?.hideCanceled
 )
-const anyFilter = computed(() => hideCanceled.value || hideCached.value)
-
-watch(hideCached, () => {
-  updateVisibleTasks()
-})
-watch(hideCanceled, () => {
-  updateVisibleTasks()
-})
+const hideNodeTypes = computed<string[]>(
+  () => settingStore.get(SETTING_FILTER)?.hideNodeTypes ?? []
+)
+const anyFilter = computed(
+  () => hideCanceled.value || hideCached.value || hideNodeTypes.value?.length
+)
+for (const setting of [hideCached, hideCanceled, hideNodeTypes]) {
+  watch(setting, () => {
+    updateVisibleTasks()
+  })
+}
 
 const outputFilterPopup = ref(null)
 

@@ -164,6 +164,7 @@ export class ComfyNodeDefImpl {
   input: ComfyInputsSpec
   output: ComfyOutputsSpec
   nodeSource: NodeSource
+  isOutputNode: boolean
 
   constructor(obj: ComfyNodeDef) {
     this.name = obj.name
@@ -177,6 +178,7 @@ export class ComfyNodeDefImpl {
     this.input = new ComfyInputsSpec(obj.input ?? {})
     this.output = ComfyNodeDefImpl.transformOutputSpec(obj)
     this.nodeSource = getNodeSource(obj.python_module)
+    this.isOutputNode = obj.output_node === true
   }
 
   private static transformOutputSpec(obj: any): ComfyOutputsSpec {
