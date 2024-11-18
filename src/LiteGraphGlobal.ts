@@ -51,6 +51,7 @@ export class LiteGraphGlobal {
 
     WIDGET_BGCOLOR = "#222"
     WIDGET_OUTLINE_COLOR = "#666"
+    WIDGET_ADVANCED_OUTLINE_COLOR = "rgba(56, 139, 253, 0.8)"
     WIDGET_TEXT_COLOR = "#DDD"
     WIDGET_SECONDARY_TEXT_COLOR = "#999"
 

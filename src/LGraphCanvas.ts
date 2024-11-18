@@ -5665,7 +5665,6 @@ export class LGraphCanvas {
         const show_text = this.ds.scale > 0.5
         ctx.save()
         ctx.globalAlpha = this.editor_alpha
-        const outline_color = LiteGraph.WIDGET_OUTLINE_COLOR
         const background_color = LiteGraph.WIDGET_BGCOLOR
         const text_color = LiteGraph.WIDGET_TEXT_COLOR
         const secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR
@@ -5675,6 +5674,7 @@ export class LGraphCanvas {
             const w = widgets[i]
             if (w.hidden || (w.advanced && !node.showAdvanced)) continue
             const y = w.y || posY
+            const outline_color = w.advanced ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR : LiteGraph.WIDGET_OUTLINE_COLOR
 
             if (w === this.link_over_widget) {
                 ctx.fillStyle = this.default_connection_color_byType[this.link_over_widget_type] ||
