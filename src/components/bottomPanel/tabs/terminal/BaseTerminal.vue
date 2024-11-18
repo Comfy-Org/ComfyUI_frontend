@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits, Ref } from 'vue'
+import { ref, Ref } from 'vue'
 import { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 
 const emit = defineEmits<{
