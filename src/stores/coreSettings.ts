@@ -211,7 +211,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Queue.Filter',
     name: 'Queue output filters',
     type: 'hidden',
-    defaultValue: {}
+    defaultValue: {
+      hideCanceled: false,
+      hideCached: false
+    },
+    versionAdded: '1.4.3'
   },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
