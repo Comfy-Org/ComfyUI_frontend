@@ -178,6 +178,15 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  LiteGraph.CANVAS_GRID_SIZE = settingStore.get('Comfy.SnapToGrid.GridSize')
+})
+
+watchEffect(() => {
+  comfyApp.graph.config.alwaysSnapToGrid =
+    settingStore.get('pysssss.SnapToGrid')
+})
+
+watchEffect(() => {
   if (!canvasStore.canvas) return
 
   if (canvasStore.canvas.state.draggingCanvas) {
