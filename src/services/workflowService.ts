@@ -63,17 +63,33 @@ export const workflowService = {
 
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const newKey = newPath.substring(ComfyWorkflow.basePath.length)
+    const workflowStore = useWorkflowStore()
+    const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
+
+    if (existingWorkflow) {
+      const res = (await ComfyAsyncDialog.prompt({
+        title: 'Overwrite existing file?',
+        message: `"${newPath}" already exists. Do you want to overwrite it?`,
+        actions: ['Yes', 'No']
+      })) as 'Yes' | 'No'
+
+      if (res === 'Yes') {
+        await this.deleteWorkflow(existingWorkflow)
+      } else {
+        return
+      }
+    }
 
     if (workflow.isTemporary) {
       await this.renameWorkflow(workflow, newPath)
-      await useWorkflowStore().saveWorkflow(workflow)
+      await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = useWorkflowStore().createTemporary(
+      const tempWorkflow = workflowStore.createTemporary(
         newKey,
         workflow.activeState as ComfyWorkflowJSON
       )
       await this.openWorkflow(tempWorkflow)
-      await useWorkflowStore().saveWorkflow(tempWorkflow)
+      await workflowStore.saveWorkflow(tempWorkflow)
     }
   },
 
