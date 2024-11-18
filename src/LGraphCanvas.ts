@@ -2650,7 +2650,7 @@ export class LGraphCanvas {
                 const deltaX = delta[0] / this.ds.scale
                 const deltaY = delta[1] / this.ds.scale
                 for (const item of allItems) {
-                    if (!item.pinned) item.move(deltaX, deltaY, true)
+                    item.move(deltaX, deltaY, true)
                 }
 
                 this.#dirty()

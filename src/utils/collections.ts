@@ -1,18 +1,20 @@
-import type { Parent, Positionable } from "../interfaces"
+import type { Positionable } from "../interfaces"
 import { LGraphNode } from "@/LGraphNode"
 
 /**
- * Creates a flat set of all items by recursively iterating through all child items.
+ * Creates a flat set of all positionable items by recursively iterating through all child items.
+ * 
+ * Does not include or recurse into pinned items.
  * @param items The original set of items to iterate through
- * @returns All items in the original set, and recursively, their children
+ * @returns All unpinned items in the original set, and recursively, their children
  */
-export function getAllNestedItems<TParent extends Parent<TParent>>(items: ReadonlySet<TParent>): Set<TParent> {
-    const allItems = new Set<TParent>()
+export function getAllNestedItems(items: ReadonlySet<Positionable>): Set<Positionable> {
+    const allItems = new Set<Positionable>()
     items?.forEach(x => addRecursively(x, allItems))
     return allItems
 
-    function addRecursively(item: TParent, flatSet: Set<TParent>): void {
-        if (flatSet.has(item)) return
+    function addRecursively(item: Positionable, flatSet: Set<Positionable>): void {
+        if (flatSet.has(item) || item.pinned) return
         flatSet.add(item)
         item.children?.forEach(x => addRecursively(x, flatSet))
     }
