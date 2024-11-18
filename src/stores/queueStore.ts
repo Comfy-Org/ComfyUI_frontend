@@ -30,6 +30,7 @@ export class ResultItemImpl {
   filename: string
   subfolder: string
   type: string
+  cached: boolean
 
   nodeId: NodeId
   // 'audio' | 'images' | ...
@@ -43,6 +44,7 @@ export class ResultItemImpl {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
     this.type = obj.type ?? ''
+    this.cached = obj.cached
 
     this.nodeId = obj.nodeId
     this.mediaType = obj.mediaType
@@ -149,6 +151,13 @@ export class TaskItemImpl {
     if (!this.outputs) {
       return []
     }
+
+    const cachedEntries = new Set(
+      this.status?.messages?.find((message) => {
+        return message[0] === 'execution_cached'
+      })?.[1].nodes
+    )
+
     return Object.entries(this.outputs).flatMap(([nodeId, nodeOutputs]) =>
       Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
         (items as ResultItem[]).map(
@@ -156,7 +165,8 @@ export class TaskItemImpl {
             new ResultItemImpl({
               ...item,
               nodeId,
-              mediaType
+              mediaType,
+              cached: cachedEntries.has(nodeId)
             })
         )
       )

@@ -126,7 +126,12 @@ const messages = {
         backToAllTasks: 'Back to All Tasks',
         containImagePreview: 'Fill Image Preview',
         coverImagePreview: 'Fit Image Preview',
-        clearPendingTasks: 'Clear Pending Tasks'
+        clearPendingTasks: 'Clear Pending Tasks',
+        filter: 'Filter Outputs',
+        filters: {
+          hideCached: 'Hide Cached',
+          hideCanceled: 'Hide Canceled'
+        }
       }
     },
     menu: {

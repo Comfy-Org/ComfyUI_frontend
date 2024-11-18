@@ -506,6 +506,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Validation.Workflows': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
+      'Comfy.Queue.ShowFlatList': z.boolean(),
+      'Comfy.Queue.Filter': z.object({}).passthrough(),
       'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
       'Comfy.Window.UnloadConfirmation': z.boolean(),
