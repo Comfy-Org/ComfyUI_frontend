@@ -173,7 +173,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: '`',
       ctrl: true
     },
-    commandId: 'Workspace.ToggleBottomPanelTab.integrated-terminal'
+    commandId: 'Workspace.ToggleBottomPanelTab.logs-terminal'
   },
   {
     combo: {
