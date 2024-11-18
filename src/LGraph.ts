@@ -1,4 +1,4 @@
-import type { Dictionary, IContextMenuValue, LinkNetwork, ISlotType, MethodNames, Point, LinkSegment } from "./interfaces"
+import type { Dictionary, IContextMenuValue, LinkNetwork, ISlotType, MethodNames, Point, LinkSegment, Positionable } from "./interfaces"
 import type { ISerialisedGraph, Serialisable, SerialisableGraph, SerialisableReroute } from "./types/serialisation"
 import { Reroute, RerouteId } from "./Reroute"
 import { LGraphEventMode } from "./types/globalEnums"
@@ -9,6 +9,7 @@ import { type NodeId, LGraphNode } from "./LGraphNode"
 import { type LinkId, LLink } from "./LLink"
 import { MapProxyHandler } from "./MapProxyHandler"
 import { isSortaInsideOctagon } from "./measure"
+import { getAllNestedItems } from "./utils/collections"
 
 interface IGraphInput {
     name: string
@@ -24,6 +25,26 @@ export interface LGraphState {
 }
 
 type ParamsArray<T extends Record<any, any>, K extends MethodNames<T>> = Parameters<T[K]>[1] extends undefined ? Parameters<T[K]> | Parameters<T[K]>[0] : Parameters<T[K]>
+
+/** Configuration used by {@link LGraph} `config`. */
+export interface LGraphConfig {
+    /** @deprecated Legacy config - unused */
+    align_to_grid?: any
+    /**
+     * When set to a positive number, when nodes are moved their positions will
+     * be rounded to the nearest multiple of this value.  Half up.
+     * Default: `undefined` 
+     * @todo Not implemented - see {@link LiteGraph.CANVAS_GRID_SIZE}
+     */
+    snapToGrid?: number
+    /**
+     * If `true`, items always snap to the grid - modifier keys are ignored.
+     * When {@link snapToGrid} is falsy, a value of `1` is used.
+     * Default: `false`
+     */
+    alwaysSnapToGrid?: boolean
+    links_ontop?: any
+}
 
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
@@ -81,7 +102,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     filter?: string
     _subgraph_node?: LGraphNode
     /** Must contain serialisable values, e.g. primitive types */
-    config: { align_to_grid?: any; links_ontop?: any }
+    config: LGraphConfig
     vars: Dictionary<unknown>
     nodes_executing: boolean[]
     nodes_actioning: (string | boolean)[]
@@ -710,6 +731,12 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         if (!node) return
         const { state } = this
 
+        // Ensure created items are snapped
+        if (this.config.alwaysSnapToGrid) {
+            const snapTo = this.getSnapToGridSize()
+            if (snapTo) node.snapToGrid(snapTo)
+        }
+
         // LEGACY: This was changed from constructor === LGraphGroup
         //groups
         if (node instanceof LGraphGroup) {
@@ -959,6 +986,36 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
             if (isSortaInsideOctagon(x - pos[0], y - pos[1], 20))
                 return reroute
         }
+    }
+
+    /**
+     * Snaps the provided items to a grid.
+     * 
+     * Item positions are reounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
+     * 
+     * When {@link config}.{@link LGraphConfig.alwaysSnapToGrid alwaysSnapToGrid} is enabled
+     * and the grid size is falsy, a default of 1 is used.
+     * @param items The items to snap to the grid
+     * @todo Currently only snaps nodes.
+     */
+    snapToGrid(items: Set<Positionable>): void {
+        const snapTo = this.getSnapToGridSize()
+        if (!snapTo) return
+
+        getAllNestedItems(items).forEach(item => {
+            if (!item.pinned) item.snapToGrid(snapTo)
+        })
+    }
+
+    /**
+     * Finds the size of the grid that items should be snapped to when moved.
+     * @returns The size of the grid that items should be snapped to
+     */
+    getSnapToGridSize(): number {
+        // Default to 1 when always snapping
+        return this.config.alwaysSnapToGrid
+            ? LiteGraph.CANVAS_GRID_SIZE || 1
+            : LiteGraph.CANVAS_GRID_SIZE
     }
 
     /**

@@ -8,14 +8,14 @@ import type { LGraph } from "./LGraph"
 import type { ContextMenu } from "./ContextMenu"
 import { CanvasItem, EaseFunction, LGraphEventMode, LinkDirection, LinkMarkerShape, LinkRenderType, RenderShape, TitleMode } from "./types/globalEnums"
 import { LGraphGroup } from "./LGraphGroup"
-import { distance, overlapBounding, isPointInRect, findPointOnCurve, containsRect, isInRectangle, createBounds, isInRect } from "./measure"
+import { distance, overlapBounding, isPointInRect, findPointOnCurve, containsRect, isInRectangle, createBounds, isInRect, snapPoint } from "./measure"
 import { drawSlot, LabelPosition } from "./draw"
 import { DragAndScale } from "./DragAndScale"
 import { LinkReleaseContextExtended, LiteGraph, clamp } from "./litegraph"
 import { stringOrEmpty, stringOrNull } from "./strings"
 import { alignNodes, distributeNodes, getBoundaryNodes } from "./utils/arrange"
 import { Reroute, type RerouteId } from "./Reroute"
-import { getAllNestedItems } from "./utils/collections"
+import { getAllNestedItems, findFirstNode } from "./utils/collections"
 import { CanvasPointer } from "./CanvasPointer"
 
 interface IShowSearchOptions {
@@ -382,6 +382,12 @@ export class LGraphCanvas {
     SELECTED_NODE: LGraphNode
     /** @deprecated Panels */
     NODEPANEL_IS_OPEN: boolean
+
+    /** Once per frame check of snap to grid value.  @todo Update on change. */
+    #snapToGrid?: number
+    /** Set on keydown, keyup. @todo */
+    #shiftDown: boolean = false
+
     getMenuOptions?(): IContextMenuValue[]
     getExtraMenuOptions?(canvas: LGraphCanvas, options: IContextMenuValue[]): IContextMenuValue[]
     static active_node: LGraphNode
@@ -1834,12 +1840,19 @@ export class LGraphCanvas {
                 cloned.pos[0] += 5
                 cloned.pos[1] += 5
 
-                graph.add(cloned, false)
                 if (this.allow_dragnodes) {
+                    pointer.onDragStart = (pointer) => {
+                        graph.add(cloned, false)
+                        this.#startDraggingItems(cloned, pointer)
+                    }
+                    pointer.onDragEnd = (e) => this.#processDraggedItems(e)
+                } else {
+                    // TODO: Check if before/after change are necessary here.
                     graph.beforeChange()
-                    this.isDragging = true
+                    graph.add(cloned, false)
+                    graph.afterChange()
                 }
-                this.processSelect(cloned, e)
+
                 return
             }
         }
@@ -1874,11 +1887,8 @@ export class LGraphCanvas {
 
                     pointer.onClick = () => this.processSelect(reroute, e)
                     if (!pointer.onDragStart) {
-                        pointer.onDragStart = () => {
-                            this.processSelect(reroute, e, true)
-                            this.isDragging = true
-                        }
-                        pointer.finally = () => this.isDragging = false
+                        pointer.onDragStart = (pointer) => this.#startDraggingItems(reroute, pointer, true)
+                        pointer.onDragEnd = (e) => this.#processDraggedItems(e)
                     }
                     return
                 }
@@ -1912,17 +1922,9 @@ export class LGraphCanvas {
 
                         return
                     } else if (this.reroutesEnabled && e.altKey && !e.shiftKey) {
-                        pointer.finally = () => {
-                            this.emitAfterChange()
-                            this.isDragging = false
-                        }
-
-                        this.emitBeforeChange()
                         const newReroute = graph.createReroute([x, y], linkSegment)
-                        pointer.onDragStart = () => {
-                            this.processSelect(newReroute, e)
-                            this.isDragging = true
-                        }
+                        pointer.onDragStart = (pointer) => this.#startDraggingItems(newReroute, pointer)
+                        pointer.onDragEnd = (e) => this.#processDraggedItems(e)
                         return
                     }
                 } else if (isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)) {
@@ -1951,12 +1953,11 @@ export class LGraphCanvas {
                     const headerHeight = f * 1.4
                     if (isInRectangle(x, y, group.pos[0], group.pos[1], group.size[0], headerHeight)) {
                         // In title bar
-                        pointer.onDragStart = () => {
+                        pointer.onDragStart = (pointer) => {
                             group.recomputeInsideNodes()
-                            this.processSelect(group, e, true)
-                            this.isDragging = true
+                            this.#startDraggingItems(group, pointer, true)
                         }
-                        pointer.finally = () => this.isDragging = false
+                        pointer.onDragEnd = (e) => this.#processDraggedItems(e)
                     }
                 }
 
@@ -2183,12 +2184,8 @@ export class LGraphCanvas {
                 return
 
             // Drag node
-            pointer.onDragStart = () => {
-                graph.beforeChange()
-                this.processSelect(node, e, true)
-                this.isDragging = true
-            }
-            pointer.finally = () => this.isDragging = false
+            pointer.onDragStart = (pointer) => this.#startDraggingItems(node, pointer, true)
+            pointer.onDragEnd = (e) => this.#processDraggedItems(e)
         }
 
         this.dirty_canvas = true
@@ -2687,6 +2684,45 @@ export class LGraphCanvas {
         e.preventDefault()
         return
     }
+
+    /**
+     * Start dragging an item, optionally including all other selected items.
+     * 
+     * ** This function sets the {@link CanvasPointer.finally}() callback. **
+     * @param item The item that the drag event started on
+     * @param pointer The pointer event that initiated the drag, e.g. pointerdown
+     * @param sticky If `true`, the item is added to the selection - see {@link processSelect}
+     */
+    #startDraggingItems(item: Positionable, pointer: CanvasPointer, sticky = false): void {
+        this.emitBeforeChange()
+        this.graph.beforeChange()
+        // Ensure that dragging is properly cleaned up, on success or failure.
+        pointer.finally = () => {
+            this.isDragging = false
+            this.graph.afterChange()
+            this.emitAfterChange()
+        }
+
+        this.processSelect(item, pointer.eDown, sticky)
+        this.isDragging = true
+    }
+
+    /**
+     * Handles shared clean up and placement after items have been dragged.
+     * @param e The event that completed the drag, e.g. pointerup, pointermove
+     */
+    #processDraggedItems(e: CanvasPointerEvent): void {
+        const { graph } = this
+        if (e.shiftKey || graph.config.alwaysSnapToGrid)
+            graph.snapToGrid(this.selectedItems)
+
+        this.dirty_canvas = true
+        this.dirty_bgcanvas = true
+
+        // TODO: Replace legacy behaviour: callbacks were never extended for multiple items
+        this.onNodeMoved?.(findFirstNode(this.selectedItems))
+    }
+
     /**
      * Called when a mouse up event has to be processed
      **/
@@ -2730,25 +2766,6 @@ export class LGraphCanvas {
             //left button
             this.selected_group = null
 
-            // Deprecated - old API for backwards compat
-            if (this.isDragging && this.selectedItems.size === 1) {
-                const val = this.selectedItems.values().next().value
-                if (val instanceof LGraphNode) {
-                    this.onNodeMoved?.(val)
-                    graph.afterChange(val)
-                }
-            }
-            if (this.isDragging && LiteGraph.always_round_positions) {
-                const selected = this.selectedItems
-                const allItems = getAllNestedItems(selected)
-
-                allItems.forEach(x => {
-                    x.pos[0] = Math.round(x.pos[0])
-                    x.pos[1] = Math.round(x.pos[1])
-                })
-                this.dirty_canvas = true
-                this.dirty_bgcanvas = true
-            }
             this.isDragging = false
 
             const x = e.canvasX
@@ -2988,6 +3005,7 @@ export class LGraphCanvas {
      * process a key event
      **/
     processKey(e: KeyboardEvent): boolean | null {
+        this.#shiftDown = e.shiftKey
         if (!this.graph) return
 
         let block_default = false
@@ -3812,6 +3830,11 @@ export class LGraphCanvas {
             ctx.clip()
         }
 
+        // TODO: Set snapping value when changed instead of once per frame
+        this.#snapToGrid = this.#shiftDown || this.graph.config.alwaysSnapToGrid
+            ? this.graph.getSnapToGridSize()
+            : undefined
+
         //clear
         //canvas.width = canvas.width;
         if (this.clear_background) {
@@ -3844,18 +3867,23 @@ export class LGraphCanvas {
 
             //draw nodes
             const visible_nodes = this.visible_nodes
+            const drawSnapGuides = this.#snapToGrid && this.isDragging
 
             for (let i = 0; i < visible_nodes.length; ++i) {
                 const node = visible_nodes[i]
 
-                //transform coords system
                 ctx.save()
+
+                // Draw snap shadow
+                if (drawSnapGuides && this.selectedItems.has(node))
+                    this.drawSnapGuide(ctx, node)
+
+                // Localise co-ordinates to node position
                 ctx.translate(node.pos[0], node.pos[1])
 
-                //Draw
+                // Draw
                 this.drawNode(node, ctx)
 
-                //Restore
                 ctx.restore()
             }
 
@@ -4673,14 +4701,13 @@ export class LGraphCanvas {
         bgcolor: CanvasColour,
         selected: boolean
     ): void {
-        //bg rect
+        // Rendering options
         ctx.strokeStyle = fgcolor
         ctx.fillStyle = bgcolor
 
         const title_height = LiteGraph.NODE_TITLE_HEIGHT
         const low_quality = this.ds.scale < 0.5
 
-        //render node area depending on shape
         const shape = node._shape || node.constructor.shape || RenderShape.ROUND
         const title_mode = node.constructor.title_mode
 
@@ -4696,8 +4723,7 @@ export class LGraphCanvas {
 
         const old_alpha = ctx.globalAlpha
 
-        //full node shape
-        //if(node.flags.collapsed)
+        // Draw node background (shape)
         {
             ctx.beginPath()
             if (shape == RenderShape.BOX || low_quality) {
@@ -5004,9 +5030,59 @@ export class LGraphCanvas {
         ctx.globalAlpha = 1
     }
 
+    /**
+     * Draws a snap guide for a {@link Positionable} item.
+     * 
+     * Initial design was a simple white rectangle representing the location the
+     * item would land if dropped.
+     * @param ctx The 2D canvas context to draw on
+     * @param item The item to draw a snap guide for
+     * @param snapTo The grid size to snap to
+     * @todo Update to align snapping with boundingRect
+     * @todo Shapes
+     */
+    drawSnapGuide(ctx: CanvasRenderingContext2D, item: Positionable, shape = RenderShape.ROUND) {
+        const snapGuide = LGraphCanvas.#temp
+        snapGuide.set(item.boundingRect)
+
+        // Not all items have pos equal to top-left of bounds
+        const { pos } = item
+        const offsetX = pos[0] - snapGuide[0]
+        const offsetY = pos[1] - snapGuide[1]
+
+        // Normalise boundingRect to pos to snap
+        snapGuide[0] += offsetX
+        snapGuide[1] += offsetY
+        snapPoint(snapGuide, this.#snapToGrid)
+        snapGuide[0] -= offsetX
+        snapGuide[1] -= offsetY
+
+        const { globalAlpha } = ctx
+        ctx.globalAlpha = 1
+        ctx.beginPath()
+        const [x, y, w, h] = snapGuide
+        if (shape === RenderShape.CIRCLE) {
+            const midX = x + (w * 0.5)
+            const midY = y + (h * 0.5)
+            const radius = Math.min(w * 0.5, h * 0.5)
+            ctx.arc(midX, midY, radius, 0, Math.PI * 2)
+        } else {
+            ctx.rect(x, y, w, h)
+        }
+
+        ctx.lineWidth = 0.5
+        ctx.strokeStyle = "#FFFFFF66"
+        ctx.fillStyle = "#FFFFFF22"
+        ctx.fill()
+        ctx.stroke()
+        ctx.globalAlpha = globalAlpha
+    }
+
     drawConnections(ctx: CanvasRenderingContext2D): void {
         const rendered = this.renderedPaths
         rendered.clear()
+        const visibleReroutes: Reroute[] = []
+
         const now = LiteGraph.getTime()
         const visible_area = this.visible_area
         LGraphCanvas.#margin_area[0] = visible_area[0] - 20
@@ -5079,8 +5155,13 @@ export class LGraphCanvas {
                     for (let j = 0; j < l; j++) {
                         const reroute = reroutes[j]
 
+                        // Only render once
                         if (!rendered.has(reroute)) {
                             rendered.add(reroute)
+                            visibleReroutes.push(reroute)
+                            reroute._colour = link.color ||
+                                LGraphCanvas.link_type_colors[link.type] ||
+                                this.default_link_color
 
                             const prevReroute = this.graph.reroutes.get(reroute.parentId)
                             const startPos = prevReroute?.pos ?? start_node_slotpos
@@ -5123,12 +5204,6 @@ export class LGraphCanvas {
                         end_dir,
                         { startControl },
                     )
-
-                    // Render the reroute circles
-                    const defaultColor = LGraphCanvas.link_type_colors[link.type] || this.default_link_color
-                    for (const reroute of reroutes) {
-                        reroute.draw(ctx, link.color || defaultColor)
-                    }
                 } else {
                     this.renderLink(
                         ctx,
@@ -5163,6 +5238,13 @@ export class LGraphCanvas {
                     ctx.globalAlpha = tmp
                 }
             }
+        }
+
+        // Render the reroute circles
+        for (const reroute of visibleReroutes) {
+            if (this.#snapToGrid && this.isDragging && this.selectedItems.has(reroute))
+                this.drawSnapGuide(ctx, reroute, RenderShape.CIRCLE)
+            reroute.draw(ctx)
         }
         ctx.globalAlpha = 1
     }
@@ -5834,6 +5916,7 @@ export class LGraphCanvas {
 
         ctx.save()
         ctx.globalAlpha = 0.5 * this.editor_alpha
+        const drawSnapGuides = this.#snapToGrid && this.isDragging
 
         for (let i = 0; i < groups.length; ++i) {
             const group = groups[i]
@@ -5841,6 +5924,10 @@ export class LGraphCanvas {
             if (!overlapBounding(this.visible_area, group._bounding)) {
                 continue
             } //out of the visible area
+
+            // Draw snap shadow
+            if (drawSnapGuides && this.selectedItems.has(group))
+                this.drawSnapGuide(ctx, group)
 
             group.draw(this, ctx)
         }

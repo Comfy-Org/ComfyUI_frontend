@@ -132,8 +132,6 @@ export class LiteGraphGlobal {
     ctrl_alt_click_do_break_link = true // [true!] who accidentally ctrl-alt-clicks on an in/output? nobody! that's who!
     snaps_for_comfy = true // [true!] snaps links when dragging connections over valid targets
     snap_highlights_node = true // [true!] renders a partial border to highlight when a dragged link is snapped to a node
-    /** After moving items on the canvas, their positions will be rounded.  Effectively "snap to grid" with a grid size of 1. */
-    always_round_positions = false
 
     search_hide_on_mouse_leave = true // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
     search_filter_enabled = false // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]

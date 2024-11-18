@@ -134,7 +134,6 @@ LiteGraphGlobal {
   "allow_multi_output_for_events": true,
   "allow_scripts": false,
   "alt_drag_do_clone_nodes": false,
-  "always_round_positions": false,
   "auto_load_slot_types": false,
   "auto_sort_node_types": false,
   "catch_exceptions": true,

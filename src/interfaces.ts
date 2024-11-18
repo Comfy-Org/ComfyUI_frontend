@@ -43,6 +43,15 @@ export interface Positionable extends Parent<Positionable> {
     move(deltaX: number, deltaY: number, skipChildren?: boolean): void
 
     /**
+     * Snaps this item to a grid.
+     * 
+     * Position values are rounded to the nearest multiple of {@link snapTo}.
+     * @param snapTo The size of the grid to align to
+     * @returns `true` if it moved, or `false` if the snap was rejected (e.g. `pinned`)
+     */
+    snapToGrid(snapTo: number): boolean
+    
+    /**
      * Cached position & size as `x, y, width, height`.
      * @readonly See {@link move}
      */

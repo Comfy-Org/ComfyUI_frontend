@@ -68,8 +68,11 @@ export class CanvasPointer {
   /** The last pointerup event for the primary button */
   eUp: CanvasPointerEvent | null = null
 
-  /** If set, as soon as the mouse moves outside the click drift threshold, this action is run once. */
-  onDragStart?(): unknown
+  /**
+   * If set, as soon as the mouse moves outside the click drift threshold, this action is run once.
+   * @param pointer This pointer instance.  Permits actions such as late binding of the finally() callback.
+   */
+  onDragStart?(pointer: this): unknown
 
   /**
    * Called on pointermove whilst dragging.
@@ -232,7 +235,7 @@ export class CanvasPointer {
 
   #setDragStarted(): void {
     this.dragStarted = true
-    this.onDragStart?.()
+    this.onDragStart?.(this)
     delete this.onDragStart
   }
 

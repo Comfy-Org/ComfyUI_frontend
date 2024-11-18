@@ -31,7 +31,7 @@ export default defineConfig({
     alias: { '@': '/src' },
   },
   test: {
-    alias: { '@': '../src' },
+    alias: { '@/': path.resolve(__dirname, './src/') },
     environment: 'jsdom',
   },
 })

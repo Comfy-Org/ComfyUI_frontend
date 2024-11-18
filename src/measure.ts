@@ -311,3 +311,18 @@ export function createBounds(objects: Iterable<Positionable>, padding: number = 
         bounds[3] - bounds[1] + (2 * padding)
     ]
 }
+
+/**
+ * Snaps the provided {@link Point} or {@link Rect} ({@link pos}) to a grid of size {@link snapTo}.
+ * @param pos The point that will be snapped
+ * @param snapTo The value to round up/down by (multiples thereof)
+ * @returns `true` if snapTo is truthy, otherwise `false`
+ * @remarks `NaN` propagates through this function and does not affect return value.
+ */
+export function snapPoint(pos: Point | Rect, snapTo: number): boolean {
+    if (!snapTo) return false
+
+    pos[0] = snapTo * Math.round(pos[0] / snapTo)
+    pos[1] = snapTo * Math.round(pos[1] / snapTo)
+    return true
+}

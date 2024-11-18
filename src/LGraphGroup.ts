@@ -3,7 +3,7 @@ import type { LGraph } from "./LGraph"
 import type { ISerialisedGroup } from "./types/serialisation"
 import { LiteGraph } from "./litegraph"
 import { LGraphCanvas } from "./LGraphCanvas"
-import { containsCentre, containsRect, isInRectangle, isPointInRect, createBounds } from "./measure"
+import { containsCentre, containsRect, isInRectangle, isPointInRect, createBounds, snapPoint } from "./measure"
 import { LGraphNode } from "./LGraphNode"
 import { RenderShape, TitleMode } from "./types/globalEnums"
 
@@ -192,6 +192,11 @@ export class LGraphGroup implements Positionable, IPinnable {
         }
     }
 
+    /** @inheritdoc */
+    snapToGrid(snapTo: number): boolean {
+        return this.pinned ? false : snapPoint(this.pos, snapTo)
+    }
+
     recomputeInsideNodes(): void {
         const { nodes, reroutes, groups } = this.graph
         const children = this._children
@@ -233,8 +238,8 @@ export class LGraphGroup implements Positionable, IPinnable {
      * @param padding Value in graph units to add to all sides of the group.  Default: 10
      */
     resizeTo(objects: Iterable<Positionable>, padding: number = 10): void {
-        const boundingBox = createBounds(objects, padding);
-        if(boundingBox === null) return
+        const boundingBox = createBounds(objects, padding)
+        if (boundingBox === null) return
 
         this.pos[0] = boundingBox[0]
         this.pos[1] = boundingBox[1] - this.titleHeight

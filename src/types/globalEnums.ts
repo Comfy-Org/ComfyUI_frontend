@@ -6,13 +6,19 @@ export enum NodeSlotType {
 
 /** Shape that an object will render as - used by nodes and slots */
 export enum RenderShape {
+    /** Rectangle with square corners */
     BOX = 1,
+    /** Rounded rectangle */
     ROUND = 2,
+    /** Circle is circle */
     CIRCLE = 3,
+    /** Two rounded corners: top left & bottom right */
     CARD = 4,
+    /** Slot shape: Arrow */
     ARROW = 5,
-    /** intended for slot arrays */
+    /** Slot shape: Grid */
     GRID = 6,
+    /** Slot shape: Hollow circle  */
     HollowCircle = 7,
 }
 
