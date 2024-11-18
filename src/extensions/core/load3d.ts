@@ -39,7 +39,9 @@ async function uploadFile(
 
       if (updateNode) {
         modelWidget.value = path
-        const modelUrl = api.apiURL(getResourceURL(...splitFilePath(path)))
+        const modelUrl = api.apiURL(
+          getResourceURL(...splitFilePath(path), 'input')
+        )
         await load3d.loadModel(modelUrl, file.name)
       }
 
@@ -103,6 +105,9 @@ class Load3d {
     new WeakMap()
 
   materialMode: 'original' | 'normal' | 'wireframe' = 'original'
+  currentUpDirection: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z' =
+    'original'
+  originalRotation: THREE.Euler | null = null
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -175,6 +180,46 @@ class Load3d {
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  setUpDirection(
+    direction: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+  ) {
+    if (!this.currentModel) return
+
+    if (!this.originalRotation && this.currentModel.rotation) {
+      this.originalRotation = this.currentModel.rotation.clone()
+    }
+
+    this.currentUpDirection = direction
+
+    if (this.originalRotation) {
+      this.currentModel.rotation.copy(this.originalRotation)
+    }
+
+    switch (direction) {
+      case 'original':
+        break
+      case '-x':
+        this.currentModel.rotation.z = Math.PI / 2
+        break
+      case '+x':
+        this.currentModel.rotation.z = -Math.PI / 2
+        break
+      case '-y':
+        this.currentModel.rotation.x = Math.PI
+        break
+      case '+y':
+        break
+      case '-z':
+        this.currentModel.rotation.x = Math.PI / 2
+        break
+      case '+z':
+        this.currentModel.rotation.x = -Math.PI / 2
+        break
+    }
+
+    this.renderer.render(this.scene, this.activeCamera)
   }
 
   setMaterialMode(mode: 'original' | 'normal' | 'wireframe') {
@@ -366,6 +411,7 @@ class Load3d {
     })
 
     this.currentModel = null
+    this.originalRotation = null
 
     const defaultDistance = 10
     this.perspectiveCamera.position.set(
@@ -540,6 +586,10 @@ class Load3d {
 
         if (this.materialMode !== 'original') {
           this.setMaterialMode(this.materialMode)
+        }
+
+        if (this.currentUpDirection !== 'original') {
+          this.setUpDirection(this.currentUpDirection)
         }
 
         const distance = Math.max(size.x, size.z) * 2
@@ -729,6 +779,95 @@ function getResourceURL(
 
 const containerToLoad3D = new Map()
 
+function configureLoad3D(
+  load3d: Load3d,
+  loadFolder: 'input' | 'output',
+  modelWidget: IWidget,
+  showGrid: IWidget,
+  cameraType: IWidget,
+  view: IWidget,
+  material: IWidget,
+  bgColor: IWidget,
+  lightIntensity: IWidget,
+  upDirection: IWidget
+) {
+  const onModelWidgetUpdate = () => {
+    if (modelWidget.value) {
+      const filename = modelWidget.value as string
+      const modelUrl = api.apiURL(
+        getResourceURL(...splitFilePath(filename), loadFolder)
+      )
+
+      load3d.loadModel(modelUrl, filename)
+
+      load3d.setMaterialMode(
+        material.value as 'original' | 'normal' | 'wireframe'
+      )
+
+      load3d.setUpDirection(
+        upDirection.value as
+          | 'original'
+          | '-x'
+          | '+x'
+          | '-y'
+          | '+y'
+          | '-z'
+          | '+z'
+      )
+    }
+  }
+
+  if (modelWidget.value) {
+    onModelWidgetUpdate()
+  }
+
+  modelWidget.callback = onModelWidgetUpdate
+
+  load3d.toggleGrid(showGrid.value as boolean)
+
+  showGrid.callback = (value: boolean) => {
+    load3d.toggleGrid(value)
+  }
+
+  load3d.toggleCamera(cameraType.value as 'perspective' | 'orthographic')
+
+  cameraType.callback = (value: 'perspective' | 'orthographic') => {
+    load3d.toggleCamera(value)
+  }
+
+  view.callback = (value: 'front' | 'top' | 'right' | 'isometric') => {
+    load3d.setViewPosition(value)
+  }
+
+  material.callback = (value: 'original' | 'normal' | 'wireframe') => {
+    load3d.setMaterialMode(value)
+  }
+
+  load3d.setMaterialMode(material.value as 'original' | 'normal' | 'wireframe')
+
+  load3d.setBackgroundColor(bgColor.value as string)
+
+  bgColor.callback = (value: string) => {
+    load3d.setBackgroundColor(value)
+  }
+
+  load3d.setLightIntensity(lightIntensity.value as number)
+
+  lightIntensity.callback = (value: number) => {
+    load3d.setLightIntensity(value)
+  }
+
+  upDirection.callback = (
+    value: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+  ) => {
+    load3d.setUpDirection(value)
+  }
+
+  load3d.setUpDirection(
+    upDirection.value as 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+  )
+}
+
 app.registerExtension({
   name: 'Comfy.Load3D',
 
@@ -812,76 +951,38 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const onModelWidgetUpdate = () => {
-      if (modelWidget.value) {
-        const filename = modelWidget.value
-        const modelUrl = api.apiURL(getResourceURL(...splitFilePath(filename)))
-
-        load3d.loadModel(modelUrl, filename)
-
-        const material = node.widgets.find(
-          (w: IWidget) => w.name === 'material'
-        )
-
-        load3d.setMaterialMode(material.value)
-      }
-    }
-
-    if (modelWidget.value) {
-      onModelWidgetUpdate()
-    }
-
-    modelWidget.callback = onModelWidgetUpdate
-
     const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
-
-    load3d.toggleGrid(showGrid.value)
-
-    showGrid.callback = (value: boolean) => {
-      load3d.toggleGrid(value)
-    }
 
     const cameraType = node.widgets.find(
       (w: IWidget) => w.name === 'camera_type'
     )
 
-    load3d.toggleCamera(cameraType.value)
-
-    cameraType.callback = (value: 'perspective' | 'orthographic') => {
-      load3d.toggleCamera(value)
-    }
-
     const view = node.widgets.find((w: IWidget) => w.name === 'view')
-
-    view.callback = (value: 'front' | 'top' | 'right' | 'isometric') => {
-      load3d.setViewPosition(value)
-    }
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    material.callback = (value: 'original' | 'normal' | 'wireframe') => {
-      load3d.setMaterialMode(value)
-    }
-
-    load3d.setMaterialMode(material.value)
-
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
-    load3d.setBackgroundColor(bgColor.value)
-
-    bgColor.callback = (value: string) => {
-      load3d.setBackgroundColor(value)
-    }
 
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
 
-    load3d.setLightIntensity(lightIntensity.value)
+    const upDirection = node.widgets.find(
+      (w: IWidget) => w.name === 'up_direction'
+    )
 
-    lightIntensity.callback = (value: number) => {
-      load3d.setLightIntensity(value)
-    }
+    configureLoad3D(
+      load3d,
+      'input',
+      modelWidget,
+      showGrid,
+      cameraType,
+      view,
+      material,
+      bgColor,
+      lightIntensity,
+      upDirection
+    )
 
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
@@ -954,6 +1055,126 @@ app.registerExtension({
     node.addWidget('button', 'Play/Pause Animation', 'toggle_animation', () => {
       load3d.toggleAnimation()
     })
+
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
+  }
+})
+
+app.registerExtension({
+  name: 'Comfy.Preview3D',
+
+  getCustomWidgets(app) {
+    return {
+      PREVIEW_3D(node, inputName) {
+        let load3dNode = app.graph._nodes.filter((wi) => wi.type == 'Preview3D')
+
+        const container = document.createElement('div')
+        container.id = `comfy-preview-3d-${load3dNode.length}`
+        container.classList.add('comfy-preview-3d')
+
+        const load3d = new Load3d(container)
+
+        containerToLoad3D.set(container.id, load3d)
+
+        node.onResize = function () {
+          if (load3d) {
+            load3d.handleResize()
+          }
+        }
+
+        const origOnRemoved = node.onRemoved
+
+        node.onRemoved = function () {
+          if (load3d) {
+            load3d.remove()
+          }
+
+          containerToLoad3D.delete(container.id)
+
+          origOnRemoved?.apply(this, [])
+        }
+
+        node.onDrawBackground = function () {
+          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+        }
+
+        return {
+          widget: node.addDOMWidget(inputName, 'PREVIEW_3D', container)
+        }
+      }
+    }
+  },
+
+  init() {
+    const style = document.createElement('style')
+
+    style.innerText = `
+        .comfy-preview-3d {
+          display: flex;
+          flex-direction: column;
+          background: transparent;
+          flex: 1;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .comfy-preview-3d canvas {
+          width: 100% !important;
+          height: 100% !important;
+        }
+      `
+    document.head.appendChild(style)
+  },
+
+  async nodeCreated(node) {
+    if (node.constructor.comfyClass !== 'Preview3D') return
+
+    const [oldWidth, oldHeight] = node.size
+
+    await nextTick()
+
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
+
+    const container = sceneWidget.element
+
+    const load3d = containerToLoad3D.get(container.id)
+
+    const modelWidget = node.widgets.find(
+      (w: IWidget) => w.name === 'model_file'
+    )
+
+    const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
+
+    const cameraType = node.widgets.find(
+      (w: IWidget) => w.name === 'camera_type'
+    )
+
+    const view = node.widgets.find((w: IWidget) => w.name === 'view')
+
+    const material = node.widgets.find((w: IWidget) => w.name === 'material')
+
+    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
+
+    const lightIntensity = node.widgets.find(
+      (w: IWidget) => w.name === 'light_intensity'
+    )
+
+    const upDirection = node.widgets.find(
+      (w: IWidget) => w.name === 'up_direction'
+    )
+
+    configureLoad3D(
+      load3d,
+      'output',
+      modelWidget,
+      showGrid,
+      cameraType,
+      view,
+      material,
+      bgColor,
+      lightIntensity,
+      upDirection
+    )
 
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
