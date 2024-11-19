@@ -457,7 +457,7 @@ test.describe('Menu', () => {
       ).toEqual(['workflow5.json'])
 
       await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
-      await comfyPage.confirmDialog('Yes')
+      await comfyPage.confirmDialog('Overwrite existing file?', 'Yes')
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       ).toEqual(['workflow5.json'])
@@ -477,7 +477,7 @@ test.describe('Menu', () => {
       )
 
       await topbar.saveWorkflowAs('workflow1.json')
-      await comfyPage.confirmDialog('Yes')
+      await comfyPage.confirmDialog('Overwrite existing file?', 'Yes')
       // The old workflow1.json should be deleted and the new one should be saved.
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
