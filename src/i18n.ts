@@ -47,7 +47,9 @@ const messages = {
           systemInfo: 'Operating system and app version',
           personalInformation: 'Personal information',
           workflowContent: 'Workflow content',
-          fileSystemInformation: 'File system information'
+          fileSystemInformation: 'File system information',
+          workflowContents: 'Workflow contents',
+          customNodeConfigurations: 'Custom node configurations'
         }
       }
     },
