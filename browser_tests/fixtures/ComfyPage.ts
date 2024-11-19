@@ -738,15 +738,17 @@ export class ComfyPage {
   }
 
   async confirmDialog(text: string = 'Yes') {
-    await this.page.locator('.comfy-modal-content').waitFor({
-      state: 'visible'
-    })
+    // Wait for any modal content to be visible
+    await expect(this.page.locator('.comfy-modal-content')).toBeVisible()
+
     await this.page
-      .locator('.comfy-modal-content .comfyui-button', { hasText: text })
+      .locator('.comfy-modal-content:visible .comfyui-button', {
+        hasText: text
+      })
       .click()
-    await this.page.locator('.comfy-modal-content').waitFor({
-      state: 'hidden'
-    })
+
+    // Wait for all modal content to be hidden
+    await expect(this.page.locator('.comfy-modal-content')).toBeHidden()
   }
 
   async convertAllNodesToGroupNode(groupNodeName: string) {
