@@ -93,10 +93,4 @@
     "vue-router": "^4.4.3",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
-  },
-  "lint-staged": {
-    "./**/*.{js,ts,tsx,vue}": [
-      "prettier --write"
-    ]
-  }
-}
+  }}
