@@ -20,7 +20,7 @@ jobs:
       run: |
         npm run test:generate
         npm run test:generate:examples
-        npm test -- --verbose
+        npm run test:jest:fast -- --verbose
       working-directory: ComfyUI_frontend
 
   playwright-tests-chromium:
