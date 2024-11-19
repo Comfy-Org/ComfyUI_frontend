@@ -1,6 +1,4 @@
 export default {
-  // '*.css': stagedFiles => `prettier --write ${stagedFiles.join(' ')}`,
-
   './**/*.js': (stagedFiles) => formatFiles(stagedFiles),
 
   './**/*.{ts,tsx,vue}': (stagedFiles) => [
@@ -11,8 +9,5 @@ export default {
 }
 
 function formatFiles(fileNames) {
-  return [
-    `prettier --write ${fileNames.join(' ')}`
-    // `eslint --fix ${fileNames.join(' ')}`,
-  ]
+  return [`prettier --write ${fileNames.join(' ')}`]
 }
