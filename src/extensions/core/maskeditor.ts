@@ -71,7 +71,7 @@ var styles = `
     transition: background-color 0.1s;
   }
   .maskEditor_sidePanelIconButton:hover {
-    background-color: var(--p-surface-800);
+    background-color: rgba(0, 0, 0, 0.2);
   }
   #maskEditor_sidePanelBrushSettings {
     display: flex;
@@ -93,7 +93,7 @@ var styles = `
     height: 50px;
     border: 1px solid var(--border-color);
     pointer-events: auto;
-    background: var(--p-surface-800);
+    background: rgba(0, 0, 0, 0.2);
   }
   #maskEditor_sidePanelBrushShapeCircle {
     width: 35px;
@@ -189,7 +189,7 @@ var styles = `
     display: flex;
     justify-content: center;
     align-items: center;
-    fill: white;
+    fill: var(--input-text);
   }
   .maskEditor_sidePanelLayerIconContainer svg {
     width: 30px;
@@ -207,7 +207,7 @@ var styles = `
     width: 80px;
     height: 30px;
     border: 1px solid var(--border-color);
-    background-color: var(--p-surface-800);
+    background-color: rgba(0, 0, 0, 0.2);
     color: var(--input-text);
     font-family: sans-serif;
     font-size: 15px;
@@ -226,7 +226,7 @@ var styles = `
     width: 180px;
     height: 30px;
     border: none;
-    background: var(--p-surface-800);
+    background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     color: var(--input-text);
     font-family: sans-serif;
@@ -246,7 +246,7 @@ var styles = `
     width: 85px;
     height: 30px;
     border: none;
-    background: var(--p-surface-800);
+    background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     color: var(--input-text);
     font-family: sans-serif;
@@ -369,10 +369,11 @@ var styles = `
   }
   #maskEditor_topBarButtonContainer {
     display: flex;
-    gap: 0.5rem;
+    gap: 10px;
     margin-right: 0.5rem;
     position: absolute;
-    right: 0;
+    right: 10px;
+    width: 180px;
   }
   #maskEditor_topBarShortcutsContainer {
     display: flex;
@@ -389,14 +390,14 @@ var styles = `
   }
 
   .maskEditor_topPanelButton {
-    border: none;
-    background: var(--p-surface-800);
+    height: 30px;
+    background: rgba(0, 0, 0, 0.2);
     border: 1px solid var(--border-color);
     color: var(--input-text);
     font-family: sans-serif;
-    font-size: 15px;
     pointer-events: auto;
     transition: background-color 0.1s;
+    width: 53.3px;
   }
   #maskEditor_topPanelButton:hover {
     background-color: var(--p-overlaybadge-outline-color);
@@ -410,7 +411,6 @@ var styles = `
     display: flex;
     flex-direction: column;
     position: relative;
-    gap: 10px;
   }
 
   .maskEditor_sidePanel_colorSelect_Container {
@@ -418,6 +418,7 @@ var styles = `
     width: 180px;
     align-items: center;
     gap: 5px;
+    height: 30px;
   }
   
   #maskEditor_sidePanelVisibilityToggle {
@@ -428,6 +429,10 @@ var styles = `
   #maskEditor_sidePanelColorSelectMethodSelect {
     position: absolute;
     right: 0;
+    height: 30px;
+    border-radius: 0;
+    border: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.2);
   }
 
   #maskEditor_sidePanelVisibilityToggle {
@@ -435,10 +440,11 @@ var styles = `
     right: 0;
   }
 
-  #maskEditor_sidePanel_colorSelect_tolerance_container {
+  .maskEditor_sidePanel_colorSelect_tolerance_container {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-bottom: 10px;
   }
 `
 
@@ -1177,6 +1183,8 @@ class ColorSelectTool {
   private colorComparisonMethod: ColorComparisonMethod =
     ColorComparisonMethod.Simple
   private applyWholeImage: boolean = false
+  private maskBoundry: boolean = false
+  private maskTolerance: number = 0
 
   constructor(maskEditor: MaskEditorDialog) {
     this.maskEditor = maskEditor
@@ -1216,6 +1224,14 @@ class ColorSelectTool {
     this.messageBroker.subscribe('setWholeImage', (applyWholeImage: boolean) =>
       this.setApplyWholeImage(applyWholeImage)
     )
+
+    this.messageBroker.subscribe('setMaskBoundary', (maskBoundry: boolean) =>
+      this.setMaskBoundary(maskBoundry)
+    )
+
+    this.messageBroker.subscribe('setMaskTolerance', (maskTolerance: number) =>
+      this.setMaskTolerance(maskTolerance)
+    )
   }
 
   private async addPullTopics() {
@@ -1232,6 +1248,10 @@ class ColorSelectTool {
       g: this.imageData![index + 1],
       b: this.imageData![index + 2]
     }
+  }
+
+  private getMaskAlpha(x: number, y: number): number {
+    return this.maskData![(y * this.width! + x) * 4 + 3]
   }
 
   private isPixelInRange(
@@ -1276,11 +1296,12 @@ class ColorSelectTool {
     const satDiff = Math.abs(pixelHSL.s - targetHSL.s)
     const lightDiff = Math.abs(pixelHSL.l - targetHSL.l)
 
-    return (
-      hueDiff <= (this.tolerance / 255) * 360 &&
-      satDiff <= (this.tolerance / 255) * 100 &&
-      lightDiff <= (this.tolerance / 255) * 200
-    ) // More lenient with lightness
+    const distance = Math.sqrt(
+      Math.pow((hueDiff / 360) * 255, 2) +
+        Math.pow((satDiff / 100) * 255, 2) +
+        Math.pow((lightDiff / 100) * 255, 2)
+    )
+    return distance <= this.tolerance
   }
 
   private rgbToHSL(
@@ -1337,7 +1358,8 @@ class ColorSelectTool {
         Math.pow(pixelLab.b - targetLab.b, 2)
     )
 
-    return deltaE <= this.tolerance
+    const normalizedDeltaE = (deltaE / 100) * 255
+    return normalizedDeltaE <= this.tolerance
   }
 
   private rgbToLab(rgb: { r: number; g: number; b: number }): {
@@ -1449,6 +1471,7 @@ class ColorSelectTool {
       }
 
       const pixel = this.getPixel(startX, startY)
+
       const stack: Array<[number, number]> = []
       const visited = new Uint8Array(this.width * this.height)
 
@@ -1475,28 +1498,48 @@ class ColorSelectTool {
           !visited[y * this.width + (x - 1)] &&
           this.isPixelInRange(this.getPixel(x - 1, y), pixel)
         ) {
-          stack.push([x - 1, y])
+          if (
+            !this.maskBoundry ||
+            255 - this.getMaskAlpha(x - 1, y) > this.maskTolerance
+          ) {
+            stack.push([x - 1, y])
+          }
         }
         if (
           x < this.width - 1 &&
           !visited[y * this.width + (x + 1)] &&
           this.isPixelInRange(this.getPixel(x + 1, y), pixel)
         ) {
-          stack.push([x + 1, y])
+          if (
+            !this.maskBoundry ||
+            255 - this.getMaskAlpha(x + 1, y) > this.maskTolerance
+          ) {
+            stack.push([x + 1, y])
+          }
         }
         if (
           y > 0 &&
           !visited[(y - 1) * this.width + x] &&
           this.isPixelInRange(this.getPixel(x, y - 1), pixel)
         ) {
-          stack.push([x, y - 1])
+          if (
+            !this.maskBoundry ||
+            255 - this.getMaskAlpha(x, y - 1) > this.maskTolerance
+          ) {
+            stack.push([x, y - 1])
+          }
         }
         if (
           y < this.height - 1 &&
           !visited[(y + 1) * this.width + x] &&
           this.isPixelInRange(this.getPixel(x, y + 1), pixel)
         ) {
-          stack.push([x, y + 1])
+          if (
+            !this.maskBoundry ||
+            255 - this.getMaskAlpha(x, y + 1) > this.maskTolerance
+          ) {
+            stack.push([x, y + 1])
+          }
         }
       }
     }
@@ -1534,6 +1577,14 @@ class ColorSelectTool {
 
   setApplyWholeImage(applyWholeImage: boolean): void {
     this.applyWholeImage = applyWholeImage
+  }
+
+  setMaskBoundary(maskBoundry: boolean): void {
+    this.maskBoundry = maskBoundry
+  }
+
+  setMaskTolerance(maskTolerance: number): void {
+    this.maskTolerance = maskTolerance
   }
 }
 
@@ -2471,8 +2522,9 @@ class UIManager {
 
     var side_panel_color_select_container_tolerance =
       document.createElement('div')
-    side_panel_color_select_container_tolerance.id =
+    side_panel_color_select_container_tolerance.classList.add(
       'maskEditor_sidePanel_colorSelect_tolerance_container'
+    )
 
     var side_panel_color_select_settings_tolerance_title =
       document.createElement('span')
@@ -2618,11 +2670,97 @@ class UIManager {
     side_panel_color_select_whole_image_select.addEventListener(
       'change',
       (event) => {
-        this.messageBroker.publish(
-          'setWholeImage',
-          (event.target as HTMLInputElement)!.checked
-        )
+        var value = (event.target as HTMLInputElement)!.checked
+        this.messageBroker.publish('setWholeImage', value)
+        if (value) {
+          this.messageBroker.publish('setMaskBoundary', false)
+          side_panel_color_select_mask_boundary_select.disabled = true
+        } else {
+          side_panel_color_select_mask_boundary_select.disabled = false
+        }
       }
+    )
+
+    var side_panel_color_select_container_mask_boundary =
+      document.createElement('div')
+    side_panel_color_select_container_mask_boundary.classList.add(
+      'maskEditor_sidePanel_colorSelect_Container'
+    )
+
+    var side_panel_color_select_mask_boundary_title =
+      document.createElement('span')
+    side_panel_color_select_mask_boundary_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_mask_boundary_title.innerText = 'Stop at mask'
+
+    var side_panel_color_select_mask_boundary_select =
+      document.createElement('input')
+    side_panel_color_select_mask_boundary_select.setAttribute(
+      'type',
+      'checkbox'
+    )
+    side_panel_color_select_mask_boundary_select.id =
+      'maskEditor_sidePanelVisibilityToggle'
+
+    side_panel_color_select_mask_boundary_select.addEventListener(
+      'change',
+      (event) => {
+        var value = (event.target as HTMLInputElement)!.checked
+        this.messageBroker.publish('setMaskBoundary', value)
+        if (value) {
+          this.messageBroker.publish('setWholeImage', false)
+          side_panel_color_select_whole_image_select.disabled = true
+        } else {
+          side_panel_color_select_whole_image_select.disabled = false
+        }
+      }
+    )
+
+    side_panel_color_select_container_mask_boundary.appendChild(
+      side_panel_color_select_mask_boundary_title
+    )
+    side_panel_color_select_container_mask_boundary.appendChild(
+      side_panel_color_select_mask_boundary_select
+    )
+
+    var side_panel_color_select_container_mask_tolerance =
+      document.createElement('div')
+    side_panel_color_select_container_mask_tolerance.classList.add(
+      'maskEditor_sidePanel_colorSelect_tolerance_container'
+    )
+
+    var side_panel_color_select_mask_tolerance_title =
+      document.createElement('span')
+    side_panel_color_select_mask_tolerance_title.classList.add(
+      'maskEditor_sidePanelSubTitle'
+    )
+    side_panel_color_select_mask_tolerance_title.innerText = 'Mask Tolerance'
+
+    var side_panel_color_select_mask_tolerance_input =
+      document.createElement('input')
+    side_panel_color_select_mask_tolerance_input.setAttribute('type', 'range')
+    side_panel_color_select_mask_tolerance_input.setAttribute('min', '0')
+    side_panel_color_select_mask_tolerance_input.setAttribute('max', '255')
+    side_panel_color_select_mask_tolerance_input.setAttribute('value', '0')
+    side_panel_color_select_mask_tolerance_input.classList.add(
+      'maskEditor_sidePanelBrushRange'
+    )
+
+    side_panel_color_select_mask_tolerance_input.addEventListener(
+      'input',
+      (event) => {
+        var maskTolerance = parseInt((event.target as HTMLInputElement)!.value)
+
+        this.messageBroker.publish('setMaskTolerance', maskTolerance)
+      }
+    )
+
+    side_panel_color_select_container_mask_tolerance.appendChild(
+      side_panel_color_select_mask_tolerance_title
+    )
+    side_panel_color_select_container_mask_tolerance.appendChild(
+      side_panel_color_select_mask_tolerance_input
     )
 
     side_panel_color_select_container_whole_image.appendChild(
@@ -2643,6 +2781,12 @@ class UIManager {
     )
     side_panel_paint_bucket_settings_container.appendChild(
       side_panel_color_select_container_method
+    )
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_mask_boundary
+    )
+    side_panel_paint_bucket_settings_container.appendChild(
+      side_panel_color_select_container_mask_tolerance
     )
 
     side_panel_color_select_settings.appendChild(
@@ -4117,6 +4261,8 @@ class MessageBroker {
     this.createPushTopic('setColorComparisonMethod')
     this.createPushTopic('clearLastPoint')
     this.createPushTopic('setWholeImage')
+    this.createPushTopic('setMaskBoundary')
+    this.createPushTopic('setMaskTolerance')
   }
 
   /**
