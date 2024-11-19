@@ -379,7 +379,9 @@ test.describe('Menu', () => {
       // Open the sidebar
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
+    })
 
+    test.afterEach(async ({ comfyPage }) => {
       await comfyPage.setupWorkflowsDirectory({})
     })
 
@@ -450,6 +452,43 @@ test.describe('Menu', () => {
       ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
+    test('Can save workflow as with same name', async ({ comfyPage }) => {
+      await comfyPage.menu.topbar.saveWorkflow('workflow5.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['workflow5.json'])
+
+      await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
+      await comfyPage.confirmDialog('Overwrite existing file?', 'Yes')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['workflow5.json'])
+    })
+
+    test('Can overwrite other workflows with save as', async ({
+      comfyPage
+    }) => {
+      const topbar = comfyPage.menu.topbar
+      await topbar.saveWorkflow('workflow1.json')
+      await topbar.saveWorkflowAs('workflow2.json')
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['workflow1.json', 'workflow2.json'])
+      expect(await comfyPage.menu.workflowsTab.getActiveWorkflowName()).toEqual(
+        'workflow2.json'
+      )
+
+      await topbar.saveWorkflowAs('workflow1.json')
+      await comfyPage.confirmDialog('Overwrite existing file?', 'Yes')
+      // The old workflow1.json should be deleted and the new one should be saved.
+      expect(
+        await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
+      ).toEqual(['workflow2.json', 'workflow1.json'])
+      expect(await comfyPage.menu.workflowsTab.getActiveWorkflowName()).toEqual(
+        'workflow1.json'
+      )
+    })
+
     test('Does not report warning when switching between opened workflows', async ({
       comfyPage
     }) => {
@@ -475,7 +514,7 @@ test.describe('Menu', () => {
         `tempWorkflow-${test.info().title}`
       )
       const closeButton = comfyPage.page.locator(
-        '.comfyui-workflows-open .p-button-icon.pi-times'
+        '.comfyui-workflows-open .close-workflow-button'
       )
       await closeButton.click()
       expect(
