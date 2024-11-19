@@ -2295,7 +2295,6 @@ export class LGraphCanvas {
 
                     // Left/right arrows
                     if (delta) {
-                        console.warn("DELTA", delta)
                         let index = -1
                         this.last_mouseclick = 0 //avoids dobl click event
                         index = typeof values === "object"
@@ -2309,9 +2308,11 @@ export class LGraphCanvas {
                         widget.value = Array.isArray(values)
                             ? values[index]
                             : index
+
+                        if (oldValue != widget.value) setWidgetValue(this, node, widget, widget.value)
+                        this.dirty_canvas = true
                         return
                     }
-                    console.warn("MENU", delta)
                     const text_values = values != values_list ? Object.values(values) : values
                     new LiteGraph.ContextMenu(text_values, {
                         scale: Math.max(1, this.ds.scale),
@@ -2328,11 +2329,6 @@ export class LGraphCanvas {
                         }
                     })
                 }
-
-                // TODO: setTimeout why
-                if (oldValue != widget.value)
-                    setTimeout(() => setWidgetValue(this, node, widget, widget.value), 20)
-                this.dirty_canvas = true
                 break
             }
             case "toggle":
