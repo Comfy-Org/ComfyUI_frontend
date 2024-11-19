@@ -54,6 +54,7 @@
                 </template>
                 <template #actions="{ node }">
                   <Button
+                    class="close-workflow-button"
                     icon="pi pi-times"
                     text
                     :severity="

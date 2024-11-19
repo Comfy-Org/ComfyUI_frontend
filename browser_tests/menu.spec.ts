@@ -475,7 +475,7 @@ test.describe('Menu', () => {
         `tempWorkflow-${test.info().title}`
       )
       const closeButton = comfyPage.page.locator(
-        '.comfyui-workflows-open .p-button-icon.pi-times'
+        '.comfyui-workflows-open .close-workflow-button'
       )
       await closeButton.click()
       expect(
