@@ -379,7 +379,9 @@ test.describe('Menu', () => {
       // Open the sidebar
       const tab = comfyPage.menu.workflowsTab
       await tab.open()
+    })
 
+    test.afterEach(async ({ comfyPage }) => {
       await comfyPage.setupWorkflowsDirectory({})
     })
 
