@@ -1,7 +1,7 @@
 {
   "name": "comfyui-frontend",
   "private": true,
-  "version": "1.4.2",
+  "version": "1.4.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -93,4 +93,5 @@
     "vue-router": "^4.4.3",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
-  }}
+  }
+}
