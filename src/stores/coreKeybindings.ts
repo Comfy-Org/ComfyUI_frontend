@@ -59,7 +59,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 's',
       ctrl: true
     },
-    commandId: 'Comfy.ExportWorkflow'
+    commandId: 'Comfy.SaveWorkflow'
   },
   {
     combo: {
