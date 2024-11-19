@@ -85,6 +85,8 @@ onMounted(async () => {
   appData.value = paths.appData
   appPath.value = paths.appPath
   installPath.value = paths.defaultInstallPath
+
+  await validatePath(paths.defaultInstallPath)
 })
 
 const validatePath = async (path: string) => {
