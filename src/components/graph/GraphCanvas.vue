@@ -182,9 +182,9 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
   if (comfyApp.graph?.config) {
-    comfyApp.graph.config.alwaysSnapToGrid =
-      settingStore.get('pysssss.SnapToGrid')
+    comfyApp.graph.config.alwaysSnapToGrid = alwaysSnapToGrid
   }
 })
 
