@@ -103,6 +103,12 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .allInnerTexts()
   }
 
+  async getActiveWorkflowName() {
+    return await this.page
+      .locator('.comfyui-workflows-open .p-tree-node-selected .node-label')
+      .innerText()
+  }
+
   async getTopLevelSavedWorkflowNames() {
     return await this.page
       .locator('.comfyui-workflows-browse .node-label')

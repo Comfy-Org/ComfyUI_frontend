@@ -737,6 +737,18 @@ export class ComfyPage {
     )
   }
 
+  async confirmDialog(text: string = 'Yes') {
+    await this.page.locator('.comfy-modal-content').waitFor({
+      state: 'visible'
+    })
+    await this.page
+      .locator('.comfy-modal-content .comfyui-button', { hasText: text })
+      .click()
+    await this.page.locator('.comfy-modal-content').waitFor({
+      state: 'hidden'
+    })
+  }
+
   async convertAllNodesToGroupNode(groupNodeName: string) {
     this.page.on('dialog', async (dialog) => {
       await dialog.accept(groupNodeName)
