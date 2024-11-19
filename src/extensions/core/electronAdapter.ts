@@ -22,6 +22,21 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
             )
           }
         }
+      },
+      {
+        id: 'Comfy-Desktop.SendStatistics',
+        category: ['Comfy-Desktop', 'General', 'Send Statistics'],
+        name: 'Send anonymous usage statistics',
+        type: 'boolean',
+        defaultValue: true,
+        onChange(newValue, oldValue) {
+          if (oldValue !== undefined && newValue !== oldValue) {
+            electronAPI.restartApp(
+              'Restart ComfyUI to apply changes.',
+              1500 // add delay to allow changes to take effect before restarting.
+            )
+          }
+        }
       }
     ],
 
