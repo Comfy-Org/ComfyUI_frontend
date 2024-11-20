@@ -16,15 +16,16 @@ import {
 } from '@comfyorg/comfyui-electron-types'
 import { electronAPI } from '@/utils/envUtil'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { Terminal } from '@xterm/xterm'
 
 const electron = electronAPI()
 
 const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
-const logs = ref<string[]>([])
+let xterm: Terminal | undefined
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
   status.value = newStatus
-  logs.value = [] // Clear logs when status changes
+  xterm?.clear()
 }
 
 const terminalCreated = (
@@ -35,6 +36,10 @@ const terminalCreated = (
   electron.onLogMessage((message: string) => {
     terminal.write(message)
   })
+
+  terminal.options.cursorBlink = false
+  terminal.options.disableStdin = true
+  terminal.options.cursorInactiveStyle = 'block'
 }
 
 onMounted(() => {
@@ -42,3 +47,10 @@ onMounted(() => {
   electron.onProgressUpdate(updateProgress)
 })
 </script>
+
+<style scoped>
+:deep(.xterm-helper-textarea) {
+  /* Hide this as it moves all over when uv is running */
+  display: none;
+}
+</style>
