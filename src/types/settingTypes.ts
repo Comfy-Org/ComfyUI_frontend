@@ -29,15 +29,9 @@ export interface Setting {
   render: () => HTMLElement
 }
 
-export interface SettingParams {
+export interface SettingParams extends SettingItem {
   id: keyof Settings
-  name: string
-  type: SettingInputType | SettingCustomRenderer
-  defaultValue: any
   onChange?: (newValue: any, oldValue?: any) => void
-  attrs?: any
-  tooltip?: string
-  options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
   // default category from id.
@@ -51,4 +45,16 @@ export interface SettingParams {
   versionAdded?: string
   // Version of the setting when it was last modified
   versionModified?: string
+}
+
+/**
+ * The base setting item for rendering in the setting dialog.
+ */
+export interface SettingItem {
+  name: string
+  type: SettingInputType | SettingCustomRenderer
+  tooltip?: string
+  defaultValue: any
+  attrs?: Record<string, any>
+  options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
 }

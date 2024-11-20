@@ -1,105 +1,34 @@
 <template>
-  <div class="setting-label flex flex-grow items-center">
-    <span class="text-[var(--p-text-muted-color)]">
+  <GeneralSettingItem
+    :setting="setting"
+    :id="setting.id"
+    :settingValue="settingValue"
+    @update:settingValue="updateSettingValue"
+  >
+    <template #name-prefix>
       <Tag v-if="setting.experimental" :value="$t('experimental')" />
       <Tag
         v-if="setting.deprecated"
         :value="$t('deprecated')"
         severity="danger"
       />
-      {{ setting.name }}
-      <i
-        v-if="setting.tooltip"
-        class="pi pi-info-circle bg-transparent"
-        v-tooltip="setting.tooltip"
-      />
-    </span>
-  </div>
-  <div class="setting-input flex justify-end">
-    <component
-      :is="markRaw(getSettingComponent(setting))"
-      :id="setting.id"
-      :modelValue="settingStore.get(setting.id)"
-      @update:modelValue="updateSetting(setting, $event)"
-      v-bind="getSettingAttrs(setting)"
-    />
-  </div>
+    </template>
+  </GeneralSettingItem>
 </template>
 
 <script setup lang="ts">
+import GeneralSettingItem from '@/components/common/GeneralSettingItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
-import { markRaw, type Component } from 'vue'
-import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
-import ToggleSwitch from 'primevue/toggleswitch'
-import CustomSettingValue from '@/components/dialog/content/setting/CustomSettingValue.vue'
-import InputSlider from '@/components/common/InputSlider.vue'
+import { computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   setting: SettingParams
 }>()
 
 const settingStore = useSettingStore()
-const updateSetting = (setting: SettingParams, value: any) => {
-  settingStore.set(setting.id, value)
-}
-
-function getSettingAttrs(setting: SettingParams) {
-  const attrs = { ...(setting.attrs || {}) }
-  const settingType = setting.type
-  if (typeof settingType === 'function') {
-    attrs['renderFunction'] = () =>
-      settingType(
-        setting.name,
-        (v) => updateSetting(setting, v),
-        settingStore.get(setting.id),
-        setting.attrs
-      )
-  }
-  switch (setting.type) {
-    case 'combo':
-      attrs['options'] =
-        typeof setting.options === 'function'
-          ? setting.options(settingStore.get(setting.id))
-          : setting.options
-      if (typeof setting.options[0] !== 'string') {
-        attrs['optionLabel'] = 'text'
-        attrs['optionValue'] = 'value'
-      }
-      break
-  }
-  return attrs
-}
-
-function getSettingComponent(setting: SettingParams): Component {
-  if (typeof setting.type === 'function') {
-    return CustomSettingValue
-  }
-  switch (setting.type) {
-    case 'boolean':
-      return ToggleSwitch
-    case 'number':
-      return InputNumber
-    case 'slider':
-      return InputSlider
-    case 'combo':
-      return Select
-    default:
-      return InputText
-  }
+const settingValue = computed(() => settingStore.get(props.setting.id))
+const updateSettingValue = (value: any) => {
+  settingStore.set(props.setting.id, value)
 }
 </script>
-
-<style scoped>
-.setting-input :deep(.input-slider) .p-inputnumber input,
-.setting-input :deep(.input-slider) .slider-part {
-  @apply w-20;
-}
-
-.setting-input :deep(.p-inputtext),
-.setting-input :deep(.p-select) {
-  @apply w-44;
-}
-</style>
