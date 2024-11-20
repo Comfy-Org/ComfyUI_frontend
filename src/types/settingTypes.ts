@@ -29,7 +29,7 @@ export interface Setting {
   render: () => HTMLElement
 }
 
-export interface SettingParams extends SettingItem {
+export interface SettingParams extends FormItem {
   id: keyof Settings
   onChange?: (newValue: any, oldValue?: any) => void
   // By default category is id.split('.'). However, changing id to assign
@@ -48,9 +48,9 @@ export interface SettingParams extends SettingItem {
 }
 
 /**
- * The base setting item for rendering in the setting dialog.
+ * The base form item for rendering in a form.
  */
-export interface SettingItem {
+export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer
   tooltip?: string

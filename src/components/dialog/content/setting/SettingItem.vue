@@ -1,9 +1,9 @@
 <template>
-  <GeneralSettingItem
-    :setting="setting"
+  <FormItem
+    :item="setting"
     :id="setting.id"
-    :settingValue="settingValue"
-    @update:settingValue="updateSettingValue"
+    :formValue="settingValue"
+    @update:formValue="updateSettingValue"
   >
     <template #name-prefix>
       <Tag v-if="setting.experimental" :value="$t('experimental')" />
@@ -13,11 +13,11 @@
         severity="danger"
       />
     </template>
-  </GeneralSettingItem>
+  </FormItem>
 </template>
 
 <script setup lang="ts">
-import GeneralSettingItem from '@/components/common/GeneralSettingItem.vue'
+import FormItem from '@/components/common/FormItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
 import { computed } from 'vue'
