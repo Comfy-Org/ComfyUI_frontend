@@ -59,7 +59,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 's',
       ctrl: true
     },
-    commandId: 'Comfy.ExportWorkflow'
+    commandId: 'Comfy.SaveWorkflow'
   },
   {
     combo: {
@@ -180,5 +180,16 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'f'
     },
     commandId: 'Workspace.ToggleFocusMode'
+  }
+]
+
+export const DEPRECATED_KEYBINDINGS: Keybinding[] = [
+  // Ctrl+S is now used for saving the workflow after v1.4.6.
+  {
+    combo: {
+      key: 's',
+      ctrl: true
+    },
+    commandId: 'Comfy.ExportWorkflow'
   }
 ]
