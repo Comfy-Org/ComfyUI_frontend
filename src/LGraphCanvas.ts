@@ -2472,7 +2472,6 @@ export class LGraphCanvas {
         this.graph_mouse[1] = e.canvasY
 
         if (e.isPrimary) this.pointer.move(e)
-        this.link_over_widget = null
 
         if (this.block_click) {
             e.preventDefault()
