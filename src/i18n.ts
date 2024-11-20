@@ -53,6 +53,18 @@ const messages = {
         }
       }
     },
+    serverStart: {
+      reinstall: 'Reinstall',
+      reportIssue: 'Report Issue',
+      openLogs: 'Open Logs',
+      process: {
+        'initial-state': 'Loading...',
+        'python-setup': 'Setting up Python Environment...',
+        'starting-server': 'Starting ComfyUI server...',
+        ready: 'Finishing...',
+        error: 'Unable to start ComfyUI'
+      }
+    },
     firstTimeUIMessage:
       'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',
     download: 'Download',
