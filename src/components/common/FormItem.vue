@@ -43,25 +43,25 @@ const props = withDefaults(
   }
 )
 
-function getFormAttrs(form: FormItem) {
-  const attrs = { ...(form.attrs || {}) }
-  const formType = form.type
-  if (typeof formType === 'function') {
+function getFormAttrs(item: FormItem) {
+  const attrs = { ...(item.attrs || {}) }
+  const inputType = item.type
+  if (typeof inputType === 'function') {
     attrs['renderFunction'] = () =>
-      formType(
+      inputType(
         props.item.name,
         (v: any) => (formValue.value = v),
         formValue.value,
-        form.attrs
+        item.attrs
       )
   }
-  switch (form.type) {
+  switch (item.type) {
     case 'combo':
       attrs['options'] =
-        typeof form.options === 'function'
-          ? form.options(formValue.value)
-          : form.options
-      if (typeof form.options[0] !== 'string') {
+        typeof item.options === 'function'
+          ? item.options(formValue.value)
+          : item.options
+      if (typeof item.options[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
       }
@@ -70,11 +70,11 @@ function getFormAttrs(form: FormItem) {
   return attrs
 }
 
-function getFormComponent(form: FormItem): Component {
-  if (typeof form.type === 'function') {
+function getFormComponent(item: FormItem): Component {
+  if (typeof item.type === 'function') {
     return CustomFormValue
   }
-  switch (form.type) {
+  switch (item.type) {
     case 'boolean':
       return ToggleSwitch
     case 'number':

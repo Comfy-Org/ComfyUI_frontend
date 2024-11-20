@@ -31,6 +31,7 @@ export interface Setting {
 
 export interface SettingParams extends FormItem {
   id: keyof Settings
+  defaultValue: any
   onChange?: (newValue: any, oldValue?: any) => void
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
@@ -54,7 +55,6 @@ export interface FormItem {
   name: string
   type: SettingInputType | SettingCustomRenderer
   tooltip?: string
-  defaultValue: any
   attrs?: Record<string, any>
   options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
 }
