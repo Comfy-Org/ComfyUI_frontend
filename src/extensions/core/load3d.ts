@@ -100,10 +100,11 @@ class Load3d {
   normalMaterial: THREE.MeshNormalMaterial
   standardMaterial: THREE.MeshStandardMaterial
   wireframeMaterial: THREE.MeshBasicMaterial
+  depthMaterial: THREE.MeshDepthMaterial
   originalMaterials: WeakMap<THREE.Mesh, THREE.Material | THREE.Material[]> =
     new WeakMap()
 
-  materialMode: 'original' | 'normal' | 'wireframe' = 'original'
+  materialMode: 'original' | 'normal' | 'wireframe' | 'depth' = 'original'
   currentUpDirection: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z' =
     'original'
   originalRotation: THREE.Euler | null = null
@@ -172,6 +173,11 @@ class Load3d {
       opacity: 1.0
     })
 
+    this.depthMaterial = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.BasicDepthPacking,
+      side: THREE.DoubleSide
+    })
+
     this.standardMaterial = this.createSTLMaterial()
 
     this.animate()
@@ -221,13 +227,63 @@ class Load3d {
     this.renderer.render(this.scene, this.activeCamera)
   }
 
-  setMaterialMode(mode: 'original' | 'normal' | 'wireframe') {
+  setMaterialMode(mode: 'original' | 'normal' | 'wireframe' | 'depth') {
     this.materialMode = mode
 
     if (this.currentModel) {
+      if (mode === 'depth') {
+        this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace
+      } else {
+        this.renderer.outputColorSpace = THREE.SRGBColorSpace
+      }
+
       this.currentModel.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           switch (mode) {
+            case 'depth':
+              if (!this.originalMaterials.has(child)) {
+                this.originalMaterials.set(child, child.material)
+              }
+              const depthMat = new THREE.MeshDepthMaterial({
+                depthPacking: THREE.BasicDepthPacking,
+                side: THREE.DoubleSide
+              })
+
+              depthMat.onBeforeCompile = (shader) => {
+                shader.uniforms.cameraType = {
+                  value:
+                    this.activeCamera instanceof THREE.OrthographicCamera
+                      ? 1.0
+                      : 0.0
+                }
+
+                shader.fragmentShader = `
+                  uniform float cameraType;
+                  ${shader.fragmentShader}
+                `
+
+                shader.fragmentShader = shader.fragmentShader.replace(
+                  /gl_FragColor\s*=\s*vec4\(\s*vec3\(\s*1.0\s*-\s*fragCoordZ\s*\)\s*,\s*opacity\s*\)\s*;/,
+                  `
+                    float depth = 1.0 - fragCoordZ;
+                    if (cameraType > 0.5) {
+                      depth = pow(depth, 400.0);
+                    } else {
+                      depth = pow(depth, 0.6);
+                    }
+                    gl_FragColor = vec4(vec3(depth), opacity);
+                  `
+                )
+              }
+
+              depthMat.customProgramCacheKey = () => {
+                return this.activeCamera instanceof THREE.OrthographicCamera
+                  ? 'ortho'
+                  : 'persp'
+              }
+
+              child.material = depthMat
+              break
             case 'normal':
               if (!this.originalMaterials.has(child)) {
                 this.originalMaterials.set(child, child.material)
@@ -266,7 +322,6 @@ class Load3d {
         }
       })
 
-      this.renderer.outputColorSpace = THREE.SRGBColorSpace
       this.renderer.render(this.scene, this.activeCamera)
     }
   }
@@ -303,6 +358,8 @@ class Load3d {
   }
 
   toggleCamera(cameraType?: 'perspective' | 'orthographic') {
+    const oldCamera = this.activeCamera
+
     const position = this.activeCamera.position.clone()
     const rotation = this.activeCamera.rotation.clone()
     const target = this.controls.target.clone()
@@ -327,6 +384,10 @@ class Load3d {
 
     this.activeCamera.position.copy(position)
     this.activeCamera.rotation.copy(rotation)
+
+    if (this.materialMode === 'depth' && oldCamera !== this.activeCamera) {
+      this.setMaterialMode('depth')
+    }
 
     this.controls.object = this.activeCamera
     this.controls.target.copy(target)
@@ -440,6 +501,7 @@ class Load3d {
 
     this.materialMode = 'original'
     this.originalMaterials = new WeakMap()
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
   }
 
   remove() {
