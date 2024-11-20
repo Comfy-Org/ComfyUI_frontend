@@ -1,6 +1,18 @@
 <template>
   <SidebarTabTemplate :title="$t('sideToolbar.queue')">
     <template #tool-buttons>
+      <Popover ref="outputFilterPopup">
+        <OutputFilters />
+      </Popover>
+
+      <Button
+        icon="pi pi-filter"
+        text
+        severity="secondary"
+        @click="outputFilterPopup.toggle($event)"
+        v-tooltip="$t(`sideToolbar.queueTab.filter`)"
+        :class="{ 'text-yellow-500': anyFilter }"
+      />
       <Button
         :icon="
           imageFit === 'cover'
@@ -99,6 +111,7 @@ import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
+import Popover from 'primevue/popover'
 import ProgressSpinner from 'primevue/progressspinner'
 import TaskItem from './queue/TaskItem.vue'
 import ResultGallery from './queue/ResultGallery.vue'
@@ -111,7 +124,9 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { app } from '@/scripts/app'
 
-const IMAGE_FIT = 'Comfy.Queue.ImageFit'
+const SETTING_FIT = 'Comfy.Queue.ImageFit'
+const SETTING_FLAT = 'Comfy.Queue.ShowFlatList'
+const SETTING_FILTER = 'Comfy.Queue.Filter'
 const confirm = useConfirm()
 const toast = useToast()
 const queueStore = useQueueStore()
@@ -120,7 +135,7 @@ const commandStore = useCommandStore()
 const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
-const isExpanded = ref(false)
+const isExpanded = computed<boolean>(() => settingStore.get(SETTING_FLAT))
 const visibleTasks = ref<TaskItemImpl[]>([])
 const scrollContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
@@ -128,7 +143,23 @@ const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
 const isInFolderView = computed(() => folderTask.value !== null)
-const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
+const imageFit = computed<string>(() => settingStore.get(SETTING_FIT))
+const hideCached = computed<boolean>(
+  () => settingStore.get(SETTING_FILTER)?.hideCached
+)
+const hideCanceled = computed<boolean>(
+  () => settingStore.get(SETTING_FILTER)?.hideCanceled
+)
+const anyFilter = computed(() => hideCanceled.value || hideCached.value)
+
+watch(hideCached, () => {
+  updateVisibleTasks()
+})
+watch(hideCanceled, () => {
+  updateVisibleTasks()
+})
+
+const outputFilterPopup = ref(null)
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
@@ -149,9 +180,31 @@ const allGalleryItems = computed(() =>
   })
 )
 
+const filterTasks = (tasks: TaskItemImpl[]) =>
+  tasks
+    .filter((t) => {
+      if (
+        hideCanceled.value &&
+        t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
+      ) {
+        return false
+      }
+
+      if (
+        hideCached.value &&
+        t.flatOutputs?.length &&
+        t.flatOutputs.every((o) => o.cached)
+      ) {
+        return false
+      }
+
+      return true
+    })
+    .slice(0, ITEMS_PER_PAGE)
+
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
-  const newTasks = allTasks.value.slice(
+  const newTasks = filterTasks(allTasks.value).slice(
     currentLength,
     currentLength + ITEMS_PER_PAGE
   )
@@ -186,11 +239,11 @@ useResizeObserver(scrollContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+  visibleTasks.value = filterTasks(allTasks.value)
 }
 
 const toggleExpanded = () => {
-  isExpanded.value = !isExpanded.value
+  settingStore.set(SETTING_FLAT, !isExpanded.value)
   updateVisibleTasks()
 }
 
@@ -291,7 +344,10 @@ const exitFolderView = () => {
 }
 
 const toggleImageFit = () => {
-  settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
+  settingStore.set(
+    SETTING_FIT,
+    imageFit.value === 'cover' ? 'contain' : 'cover'
+  )
 }
 
 onMounted(() => {

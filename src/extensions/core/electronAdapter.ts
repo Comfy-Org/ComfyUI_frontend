@@ -5,6 +5,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
+
+  const onChangeRestartApp = (newValue: string, oldValue: string) => {
+    // Add a delay to allow changes to take effect before restarting.
+    if (oldValue !== undefined && newValue !== oldValue) {
+      electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
+    }
+  }
+
   app.registerExtension({
     name: 'Comfy.ElectronAdapter',
     settings: [
@@ -14,14 +22,23 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         name: 'Automatically check for updates',
         type: 'boolean',
         defaultValue: true,
-        onChange(newValue, oldValue) {
-          if (oldValue !== undefined && newValue !== oldValue) {
-            electronAPI.restartApp(
-              'Restart ComfyUI to apply changes.',
-              1500 // add delay to allow changes to take effect before restarting.
-            )
-          }
-        }
+        onChange: onChangeRestartApp
+      },
+      {
+        id: 'Comfy-Desktop.SendStatistics',
+        category: ['Comfy-Desktop', 'General', 'Send Statistics'],
+        name: 'Send anonymous usage statistics',
+        type: 'boolean',
+        defaultValue: true,
+        onChange: onChangeRestartApp
+      },
+      {
+        id: 'Comfy-Desktop.ComfyServer.ExtraLaunchArgs',
+        category: ['Comfy-Desktop', 'ComfyUI Server'],
+        name: 'Extra launch arguments passed to the ComfyUI main.py script',
+        type: 'text',
+        defaultValue: '',
+        onChange: onChangeRestartApp
       }
     ],
 

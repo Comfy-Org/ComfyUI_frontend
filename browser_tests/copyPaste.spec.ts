@@ -24,19 +24,19 @@ test.describe('Copy Paste', () => {
 
   test('Can copy and paste widget value', async ({ comfyPage }) => {
     // Copy width value (512) from empty latent node to KSampler's seed.
-    // Empty latent node's width
-    await comfyPage.canvas.click({
-      position: {
-        x: 718,
-        y: 643
-      }
-    })
-    await comfyPage.ctrlC(null)
     // KSampler's seed
     await comfyPage.canvas.click({
       position: {
         x: 1005,
         y: 281
+      }
+    })
+    await comfyPage.ctrlC(null)
+    // Empty latent node's width
+    await comfyPage.canvas.click({
+      position: {
+        x: 718,
+        y: 643
       }
     })
     await comfyPage.ctrlV(null)

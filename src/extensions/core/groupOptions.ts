@@ -4,6 +4,7 @@ import { app } from '../../scripts/app'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 import type { LGraphNode } from '@comfyorg/litegraph'
+import { useSettingStore } from '@/stores/settingStore'
 
 function setNodeMode(node: LGraphNode, mode: number) {
   node.mode = mode
@@ -11,7 +12,8 @@ function setNodeMode(node: LGraphNode, mode: number) {
 }
 
 function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {
-  group.resizeTo([...group.children, ...items])
+  const padding = useSettingStore().get('Comfy.GroupSelectedNodes.Padding')
+  group.resizeTo([...group.children, ...items], padding)
 }
 
 app.registerExtension({
@@ -76,7 +78,10 @@ app.registerExtension({
         content: 'Fit Group To Nodes',
         callback: () => {
           group.recomputeInsideNodes()
-          group.resizeTo(group.children)
+          const padding = useSettingStore().get(
+            'Comfy.GroupSelectedNodes.Padding'
+          )
+          group.resizeTo(group.children, padding)
           this.graph.change()
         }
       })

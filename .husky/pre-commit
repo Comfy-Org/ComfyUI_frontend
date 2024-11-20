@@ -3,4 +3,3 @@ if [[ "$OS" == "Windows_NT" ]]; then
 else
   npx lint-staged
 fi
-npm run typecheck

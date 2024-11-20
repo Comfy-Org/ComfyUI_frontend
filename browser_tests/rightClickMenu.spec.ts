@@ -36,7 +36,7 @@ test.describe('Canvas Right Click Menu', () => {
       await dialog.accept('GroupNode2CLIP')
     })
     await comfyPage.rightClickCanvas()
-    await comfyPage.page.getByText('Convert to Group Node').click()
+    await comfyPage.clickContextMenuItem('Convert to Group Node')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-node-group-node.png'

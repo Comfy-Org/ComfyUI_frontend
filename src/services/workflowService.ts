@@ -63,17 +63,36 @@ export const workflowService = {
 
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const newKey = newPath.substring(ComfyWorkflow.basePath.length)
+    const workflowStore = useWorkflowStore()
+    const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
+
+    if (existingWorkflow) {
+      const res = (await ComfyAsyncDialog.prompt({
+        title: 'Overwrite existing file?',
+        message: `"${newPath}" already exists. Do you want to overwrite it?`,
+        actions: ['Yes', 'No']
+      })) as 'Yes' | 'No'
+
+      if (res === 'No') return
+
+      if (existingWorkflow.path === workflow.path) {
+        await this.saveWorkflow(workflow)
+        return
+      }
+      const deleted = await this.deleteWorkflow(existingWorkflow)
+      if (!deleted) return
+    }
 
     if (workflow.isTemporary) {
       await this.renameWorkflow(workflow, newPath)
-      await useWorkflowStore().saveWorkflow(workflow)
+      await workflowStore.saveWorkflow(workflow)
     } else {
-      const tempWorkflow = useWorkflowStore().createTemporary(
+      const tempWorkflow = workflowStore.createTemporary(
         newKey,
         workflow.activeState as ComfyWorkflowJSON
       )
       await this.openWorkflow(tempWorkflow)
-      await useWorkflowStore().saveWorkflow(tempWorkflow)
+      await workflowStore.saveWorkflow(tempWorkflow)
     }
   },
 
@@ -131,9 +150,9 @@ export const workflowService = {
   async closeWorkflow(
     workflow: ComfyWorkflow,
     options: { warnIfUnsaved: boolean } = { warnIfUnsaved: true }
-  ): Promise<void> {
+  ): Promise<boolean> {
     if (!workflow.isLoaded) {
-      return
+      return true
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
@@ -146,7 +165,7 @@ export const workflowService = {
       if (res === 'Yes') {
         await this.saveWorkflow(workflow)
       } else if (res === 'Cancel') {
-        return
+        return false
       }
     }
 
@@ -161,18 +180,26 @@ export const workflowService = {
     }
 
     await workflowStore.closeWorkflow(workflow)
+    return true
   },
 
   async renameWorkflow(workflow: ComfyWorkflow, newPath: string) {
     await useWorkflowStore().renameWorkflow(workflow, newPath)
   },
 
-  async deleteWorkflow(workflow: ComfyWorkflow) {
+  /**
+   * Delete a workflow
+   * @param workflow The workflow to delete
+   * @returns true if the workflow was deleted, false if the user cancelled
+   */
+  async deleteWorkflow(workflow: ComfyWorkflow): Promise<boolean> {
     const workflowStore = useWorkflowStore()
     if (workflowStore.isOpen(workflow)) {
-      await this.closeWorkflow(workflow)
+      const closed = await this.closeWorkflow(workflow)
+      if (!closed) return false
     }
     await workflowStore.deleteWorkflow(workflow)
+    return true
   },
 
   /**

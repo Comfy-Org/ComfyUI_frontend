@@ -8,7 +8,9 @@ import {
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 import { isElectron } from './utils/envUtil'
 
-const isFileProtocol = () => window.location.protocol === 'file:'
+const isFileProtocol = window.location.protocol === 'file:'
+const basePath = isElectron() ? '/' : window.location.pathname
+
 const guardElectronAccess = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
@@ -22,12 +24,12 @@ const guardElectronAccess = (
 }
 
 const router = createRouter({
-  history: isFileProtocol()
+  history: isFileProtocol
     ? createWebHashHistory()
     : // Base path must be specified to ensure correct relative paths
       // Example: For URL 'http://localhost:7801/ComfyBackendDirect',
       // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
-      createWebHistory(window.location.pathname),
+      createWebHistory(basePath),
   routes: [
     {
       path: '/',

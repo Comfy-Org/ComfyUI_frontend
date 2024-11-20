@@ -44,7 +44,7 @@ app.registerExtension({
             lastTouch = getMultiTouchCenter(e)
 
             touchDist = getMultiTouchPos(e)
-            app.canvas.pointer_is_down = false
+            app.canvas.pointer.isDown = false
           }
         }
       },
@@ -78,7 +78,7 @@ app.registerExtension({
         touchTime = null
         if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
-          app.canvas.pointer_is_down = false
+          app.canvas.pointer.isDown = false
           touchZooming = true
 
           LiteGraph.closeAllContextMenus(window)
@@ -137,7 +137,7 @@ LGraphCanvas.prototype.processMouseDown = function (e) {
   if (touchZooming || touchCount) {
     return
   }
-  app.canvas.pointer_is_down = false // Prevent context menu from opening on second tap
+  app.canvas.pointer.isDown = false // Prevent context menu from opening on second tap
   return processMouseDown.apply(this, arguments)
 }
 
