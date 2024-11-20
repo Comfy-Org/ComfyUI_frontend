@@ -1,13 +1,29 @@
 <template>
   <div
-    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto">
+    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
+  >
     <h2 class="text-2xl font-bold">{{ t(`serverStart.process.${status}`) }}</h2>
-    <div v-if="status == ProgressStatus.ERROR" class="flex items-center my-4 gap-2">
-      <Button icon="pi pi-flag" severity="secondary" :label="t('serverStart.reportIssue')"
-        @click="reportIssue" />
-      <Button icon="pi pi-file" severity="secondary" :label="t('serverStart.openLogs')"
-        @click="openLogs" />
-      <Button icon="pi pi-refresh" :label="t('serverStart.reinstall')" @click="reinstall" />
+    <div
+      v-if="status == ProgressStatus.ERROR"
+      class="flex items-center my-4 gap-2"
+    >
+      <Button
+        icon="pi pi-flag"
+        severity="secondary"
+        :label="t('serverStart.reportIssue')"
+        @click="reportIssue"
+      />
+      <Button
+        icon="pi pi-file"
+        severity="secondary"
+        :label="t('serverStart.openLogs')"
+        @click="openLogs"
+      />
+      <Button
+        icon="pi pi-refresh"
+        :label="t('serverStart.reinstall')"
+        @click="reinstall"
+      />
     </div>
     <BaseTerminal @created="terminalCreated" />
   </div>
@@ -17,9 +33,7 @@
 import Button from 'primevue/button'
 import { ref, onMounted, Ref } from 'vue'
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
-import {
-  ProgressStatus
-} from '@comfyorg/comfyui-electron-types'
+import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
 import { electronAPI } from '@/utils/envUtil'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { Terminal } from '@xterm/xterm'
@@ -28,7 +42,7 @@ import { useI18n } from 'vue-i18n'
 const electron = electronAPI()
 const { t } = useI18n()
 
-const status = ref<ProgressStatus>(ProgressStatus.ERROR)
+const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
 let xterm: Terminal | undefined
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
