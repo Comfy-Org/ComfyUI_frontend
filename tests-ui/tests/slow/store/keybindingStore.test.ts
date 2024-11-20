@@ -126,14 +126,14 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybinding(keybinding2.combo)).toEqual(keybinding2)
   })
 
-  it('should throw an error when unsetting non-existent keybindings', () => {
+  it('should not throw an error when unsetting non-existent keybindings', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
       combo: { key: 'H', alt: true, shift: true }
     })
 
-    expect(() => store.unsetKeybinding(keybinding)).toThrow()
+    expect(() => store.unsetKeybinding(keybinding)).not.toThrow()
   })
 
   it('should remove unset keybinding when adding back a default keybinding', () => {

@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
 import { useSettingStore } from './settingStore'
-import { CORE_KEYBINDINGS } from './coreKeybindings'
+import { CORE_KEYBINDINGS, DEPRECATED_KEYBINDINGS } from './coreKeybindings'
 import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
@@ -215,6 +215,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addKeybinding(userKeybindings, keybinding, { existOk: true })
   }
 
+  const deprecatedKeybindings = DEPRECATED_KEYBINDINGS.map(
+    (k) => new KeybindingImpl(k)
+  )
   function unsetKeybinding(keybinding: KeybindingImpl) {
     const serializedCombo = keybinding.combo.serialize()
     if (!(serializedCombo in keybindingByKeyCombo.value)) {
@@ -231,7 +234,13 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return
     }
 
-    throw new Error(`NOT_REACHED`)
+    if (deprecatedKeybindings.some((k) => k.equals(keybinding))) {
+      return
+    }
+
+    console.warn(
+      `Trying to unset non-exist keybinding: ${JSON.stringify(keybinding)}`
+    )
   }
 
   /**
