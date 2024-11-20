@@ -17,6 +17,7 @@
 </template>
 
 <script setup lang="ts">
+import Tag from 'primevue/tag'
 import FormItem from '@/components/common/FormItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { SettingParams } from '@/types/settingTypes'
