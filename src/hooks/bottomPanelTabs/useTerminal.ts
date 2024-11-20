@@ -1,14 +1,16 @@
 import { FitAddon } from '@xterm/addon-fit'
 import { Terminal } from '@xterm/xterm'
 import { debounce } from 'lodash'
-import { onMounted, onUnmounted, Ref } from 'vue'
+import { markRaw, onMounted, onUnmounted, Ref } from 'vue'
 import '@xterm/xterm/css/xterm.css'
 
 export function useTerminal(element: Ref<HTMLElement>) {
   const fitAddon = new FitAddon()
-  const terminal = new Terminal({
-    convertEol: true
-  })
+  const terminal = markRaw(
+    new Terminal({
+      convertEol: true
+    })
+  )
   terminal.loadAddon(fitAddon)
 
   onMounted(async () => {

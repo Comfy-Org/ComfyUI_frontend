@@ -32,6 +32,8 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
+  xterm = terminal
+
   useAutoSize(root, true, true)
   electron.onLogMessage((message: string) => {
     terminal.write(message)
