@@ -97,7 +97,7 @@ const messages = {
     error: 'Error',
     loading: 'Loading',
     findIssues: 'Find Issues',
-    reportIssue: 'Report Issue',
+    reportIssue: 'Send Report',
     reportSent: 'Report Submitted',
     copyToClipboard: 'Copy to Clipboard',
     openNewIssue: 'Open New Issue',
