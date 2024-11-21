@@ -182,10 +182,7 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
-  const alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
-  if (comfyApp.graph?.config) {
-    comfyApp.graph.config.alwaysSnapToGrid = alwaysSnapToGrid
-  }
+  LiteGraph.alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
 })
 
 watchEffect(() => {
