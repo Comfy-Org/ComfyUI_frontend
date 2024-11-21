@@ -1,18 +1,18 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite'
-import path from 'path'
-import dts from 'vite-plugin-dts'
+import { defineConfig } from "vite"
+import path from "path"
+import dts from "vite-plugin-dts"
 
 export default defineConfig({
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/litegraph'),
-      name: 'litegraph.js',
-      fileName: (format) => `litegraph.${format}.js`,
-      formats: ['es', 'umd']
+      entry: path.resolve(__dirname, "src/litegraph"),
+      name: "litegraph.js",
+      fileName: format => `litegraph.${format}.js`,
+      formats: ["es", "umd"],
     },
     sourcemap: true,
-    target: ['es2022'],
+    target: ["es2022"],
   },
   esbuild: {
     minifyIdentifiers: false,
@@ -20,18 +20,18 @@ export default defineConfig({
   },
   plugins: [
     dts({
-      entryRoot: 'src',
+      entryRoot: "src",
       insertTypesEntry: true,
-      include: ['src/**/*.ts'],
-      outDir: 'dist',
-      aliasesExclude: ['@'],
+      include: ["src/**/*.ts"],
+      outDir: "dist",
+      aliasesExclude: ["@"],
     }),
   ],
   resolve: {
-    alias: { '@': '/src' },
+    alias: { "@": "/src" },
   },
   test: {
-    alias: { '@/': path.resolve(__dirname, './src/') },
-    environment: 'jsdom',
+    alias: { "@/": path.resolve(__dirname, "./src/") },
+    environment: "jsdom",
   },
 })

@@ -4,23 +4,23 @@ export enum BadgePosition {
 }
 
 export interface LGraphBadgeOptions {
-  text: string;
-  fgColor?: string;
-  bgColor?: string;
-  fontSize?: number;
-  padding?: number;
-  height?: number;
-  cornerRadius?: number;
+  text: string
+  fgColor?: string
+  bgColor?: string
+  fontSize?: number
+  padding?: number
+  height?: number
+  cornerRadius?: number
 }
 
 export class LGraphBadge {
-  text: string;
-  fgColor: string;
-  bgColor: string;
-  fontSize: number;
-  padding: number;
-  height: number;
-  cornerRadius: number;
+  text: string
+  fgColor: string
+  bgColor: string
+  fontSize: number
+  padding: number
+  height: number
+  cornerRadius: number
 
   constructor({
     text,
@@ -31,27 +31,27 @@ export class LGraphBadge {
     height = 20,
     cornerRadius = 5,
   }: LGraphBadgeOptions) {
-    this.text = text;
-    this.fgColor = fgColor;
-    this.bgColor = bgColor;
-    this.fontSize = fontSize;
-    this.padding = padding;
-    this.height = height;
-    this.cornerRadius = cornerRadius;
+    this.text = text
+    this.fgColor = fgColor
+    this.bgColor = bgColor
+    this.fontSize = fontSize
+    this.padding = padding
+    this.height = height
+    this.cornerRadius = cornerRadius
   }
 
   get visible() {
-    return this.text.length > 0;
+    return this.text.length > 0
   }
 
   getWidth(ctx: CanvasRenderingContext2D) {
-    if (!this.visible) return 0;
+    if (!this.visible) return 0
 
-    ctx.save();
-    ctx.font = `${this.fontSize}px sans-serif`;
-    const textWidth = ctx.measureText(this.text).width;
-    ctx.restore();
-    return textWidth + this.padding * 2;
+    ctx.save()
+    ctx.font = `${this.fontSize}px sans-serif`
+    const textWidth = ctx.measureText(this.text).width
+    ctx.restore()
+    return textWidth + this.padding * 2
   }
 
   draw(
@@ -59,32 +59,32 @@ export class LGraphBadge {
     x: number,
     y: number,
   ): void {
-    if (!this.visible) return;
+    if (!this.visible) return
 
-    ctx.save();
-    ctx.font = `${this.fontSize}px sans-serif`;
-    const badgeWidth = this.getWidth(ctx);
-    const badgeX = 0;
+    ctx.save()
+    ctx.font = `${this.fontSize}px sans-serif`
+    const badgeWidth = this.getWidth(ctx)
+    const badgeX = 0
 
     // Draw badge background
-    ctx.fillStyle = this.bgColor;
-    ctx.beginPath();
+    ctx.fillStyle = this.bgColor
+    ctx.beginPath()
     if (ctx.roundRect) {
-      ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius);
+      ctx.roundRect(x + badgeX, y, badgeWidth, this.height, this.cornerRadius)
     } else {
       // Fallback for browsers that don't support roundRect
-      ctx.rect(x + badgeX, y, badgeWidth, this.height);
+      ctx.rect(x + badgeX, y, badgeWidth, this.height)
     }
-    ctx.fill();
+    ctx.fill()
 
     // Draw badge text
-    ctx.fillStyle = this.fgColor;
+    ctx.fillStyle = this.fgColor
     ctx.fillText(
       this.text,
       x + badgeX + this.padding,
-      y + this.height - this.padding
-    );
+      y + this.height - this.padding,
+    )
 
-    ctx.restore();
+    ctx.restore()
   }
 }

@@ -4,7 +4,7 @@
  * @returns String(value) or null
  */
 export function stringOrNull(value: unknown): string | null {
-    return value == null ? null : String(value)
+  return value == null ? null : String(value)
 }
 
 /**
@@ -13,5 +13,5 @@ export function stringOrNull(value: unknown): string | null {
  * @returns String(value) or ""
  */
 export function stringOrEmpty(value: unknown): string {
-    return value == null ? "" : String(value)
+  return value == null ? "" : String(value)
 }

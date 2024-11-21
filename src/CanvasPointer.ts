@@ -29,10 +29,12 @@ export class CanvasPointer {
   static get maxClickDrift() {
     return this.#maxClickDrift
   }
+
   static set maxClickDrift(value) {
     this.#maxClickDrift = value
     this.#maxClickDrift2 = value * value
   }
+
   static #maxClickDrift = 6
   /** {@link maxClickDrift} squared.  Used to calculate click drift without `sqrt`. */
   static #maxClickDrift2 = this.#maxClickDrift ** 2
@@ -107,6 +109,7 @@ export class CanvasPointer {
   get finally() {
     return this.#finally
   }
+
   set finally(value) {
     try {
       this.#finally?.()
@@ -114,6 +117,7 @@ export class CanvasPointer {
       this.#finally = value
     }
   }
+
   #finally?: () => unknown
 
   constructor(element: Element) {
