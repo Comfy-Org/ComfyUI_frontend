@@ -20,6 +20,7 @@
     </template>
 
     <div class="action-container">
+      <ReportIssueButton v-if="showSendError" :error="props.error" />
       <FindIssueButton
         :errorMessage="props.error.exception_message"
         :repoOwner="repoOwner"
@@ -44,9 +45,11 @@ import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
+import ReportIssueButton from '@/components/dialog/content/error/ReportIssueButton.vue'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { isElectron } from '@/utils/envUtil'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage
@@ -59,6 +62,7 @@ const reportOpen = ref(false)
 const showReport = () => {
   reportOpen.value = true
 }
+const showSendError = isElectron()
 
 const toast = useToast()
 const { copy, isSupported } = useClipboard()
