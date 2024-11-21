@@ -71,6 +71,14 @@
               </template>
             </Suspense>
           </TabPanel>
+          <TabPanel key="server-config" value="Server-Config">
+            <Suspense>
+              <ServerConfigPanel />
+              <template #fallback>
+                <div>Loading server config panel...</div>
+              </template>
+            </Suspense>
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </ScrollPanel>
@@ -100,6 +108,9 @@ const KeybindingPanel = defineAsyncComponent(
 const ExtensionPanel = defineAsyncComponent(
   () => import('./setting/ExtensionPanel.vue')
 )
+const ServerConfigPanel = defineAsyncComponent(
+  () => import('./setting/ServerConfigPanel.vue')
+)
 
 interface ISettingGroup {
   label: string
@@ -124,6 +135,12 @@ const extensionPanelNode: SettingTreeNode = {
   children: []
 }
 
+const serverConfigPanelNode: SettingTreeNode = {
+  key: 'server-config',
+  label: 'Server-Config',
+  children: []
+}
+
 const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
   const settingStore = useSettingStore()
   const showExtensionPanel = settingStore.get('Comfy.Settings.ExtensionPanel')
@@ -136,6 +153,7 @@ const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
   keybindingPanelNode,
   ...extensionPanelNodeList.value,
+  serverConfigPanelNode,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)

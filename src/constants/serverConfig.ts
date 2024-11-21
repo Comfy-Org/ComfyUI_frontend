@@ -11,6 +11,7 @@ import {
 } from '@/types/serverArgs'
 
 export interface ServerConfig<T> extends FormItem {
+  id: string
   defaultValue: T
   category?: string[]
   // Override the default value getter with a custom function.
@@ -20,93 +21,56 @@ export interface ServerConfig<T> extends FormItem {
 export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   // Network settings
   {
-    name: 'listen',
+    id: 'listen',
+    name: 'Host: The IP address to listen on',
     category: ['network'],
     type: 'text',
-    defaultValue: '127.0.0.1',
-    tooltip: 'The IP address to listen on'
+    defaultValue: '127.0.0.1'
   },
   {
-    name: 'port',
-    category: ['network'],
-    type: 'number',
-    defaultValue: 8188,
-    tooltip: 'The port to listen on'
-  },
-  {
-    name: 'tls-keyfile',
-    category: ['network'],
-    type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Path to TLS key file for HTTPS'
-  },
-  {
-    name: 'tls-certfile',
-    category: ['network'],
-    type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Path to TLS certificate file for HTTPS'
-  },
-  {
-    name: 'enable-cors-header',
-    category: ['network'],
-    type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Enable CORS header. Use "*" for all origins or specify domain'
-  },
-  {
-    name: 'max-upload-size',
+    id: 'port',
+    name: 'Port: The port to listen on',
     category: ['network'],
     type: 'number',
-    defaultValue: 100,
-    tooltip: 'Maximum upload size in MB'
-  },
-
-  // Directory settings
-  {
-    name: 'extra-model-paths-config',
-    category: ['directory'],
-    type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Additional paths to search for models'
+    defaultValue: 8188
   },
   {
-    name: 'output-directory',
-    category: ['directory'],
+    id: 'tls-keyfile',
+    name: 'TLS Key File: Path to TLS key file for HTTPS',
+    category: ['network'],
     type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Directory for output files'
+    defaultValue: undefined
   },
   {
-    name: 'temp-directory',
-    category: ['directory'],
+    id: 'tls-certfile',
+    name: 'TLS Certificate File: Path to TLS certificate file for HTTPS',
+    category: ['network'],
     type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Directory for temporary files'
+    defaultValue: undefined
   },
   {
-    name: 'input-directory',
-    category: ['directory'],
+    id: 'enable-cors-header',
+    name: 'Enable CORS header: Use "*" for all origins or specify domain',
+    category: ['network'],
     type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Directory for input files'
+    defaultValue: undefined
   },
   {
-    name: 'user-directory',
-    category: ['directory'],
-    type: 'text',
-    defaultValue: undefined,
-    tooltip: 'Directory for user files'
+    id: 'max-upload-size',
+    name: 'Maximum upload size (MB)',
+    category: ['network'],
+    type: 'number',
+    defaultValue: 100
   },
 
   // Launch behavior
   {
-    name: 'auto-launch',
+    id: 'auto-launch',
+    name: 'Automatically opens in the browser on startup',
     category: ['launch'],
     type: 'combo',
     options: Object.values(AutoLaunch),
     defaultValue: AutoLaunch.Auto,
-    tooltip: 'Automatically launch the server',
     getValue: (value: AutoLaunch) => {
       switch (value) {
         case AutoLaunch.Auto:
@@ -125,19 +89,19 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // CUDA settings
   {
-    name: 'cuda-device',
+    id: 'cuda-device',
+    name: 'CUDA device index to use',
     category: ['CUDA'],
     type: 'number',
-    defaultValue: undefined,
-    tooltip: 'CUDA device index to use'
+    defaultValue: undefined
   },
   {
-    name: 'cuda-malloc',
+    id: 'cuda-malloc',
+    name: 'Use CUDA malloc for memory allocation',
     category: ['CUDA'],
     type: 'combo',
     options: Object.values(CudaMalloc),
     defaultValue: CudaMalloc.Auto,
-    tooltip: 'Use CUDA malloc for memory allocation',
     getValue: (value: CudaMalloc) => {
       switch (value) {
         case CudaMalloc.Auto:
@@ -156,7 +120,8 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // Precision settings
   {
-    name: 'global-precision',
+    id: 'global-precision',
+    name: 'Global floating point precision',
     category: ['inference'],
     type: 'combo',
     options: [
@@ -186,7 +151,8 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // UNET precision
   {
-    name: 'unet-precision',
+    id: 'unet-precision',
+    name: 'UNET precision',
     category: ['inference'],
     type: 'combo',
     options: [
@@ -212,7 +178,8 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // VAE settings
   {
-    name: 'vae-precision',
+    id: 'vae-precision',
+    name: 'VAE precision',
     category: ['inference'],
     type: 'combo',
     options: [
@@ -235,16 +202,17 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     }
   },
   {
-    name: 'cpu-vae',
+    id: 'cpu-vae',
+    name: 'Run VAE on CPU',
     category: ['inference'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Run VAE on CPU'
+    defaultValue: false
   },
 
   // Text Encoder settings
   {
-    name: 'text-encoder-precision',
+    id: 'text-encoder-precision',
+    name: 'Text Encoder precision',
     category: ['inference'],
     type: 'combo',
     options: [
@@ -270,69 +238,68 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // Memory and performance settings
   {
-    name: 'force-channels-last',
+    id: 'force-channels-last',
+    name: 'Force channels-last memory format',
     category: ['memory'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Force channels-last memory format'
+    defaultValue: false
   },
   {
-    name: 'directml',
+    id: 'directml',
+    name: 'DirectML device index',
     category: ['memory'],
     type: 'number',
-    defaultValue: undefined,
-    tooltip: 'DirectML device index'
+    defaultValue: undefined
   },
   {
-    name: 'disable-ipex-optimize',
+    id: 'disable-ipex-optimize',
+    name: 'Disable IPEX optimization',
     category: ['memory'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Disable IPEX optimization'
+    defaultValue: false
   },
 
   // Preview settings
   {
-    name: 'preview-method',
+    id: 'preview-method',
+    name: 'Method used for latent previews',
     category: ['preview'],
     type: 'combo',
     options: Object.values(LatentPreviewMethod),
-    defaultValue: LatentPreviewMethod.NoPreviews,
-    tooltip: 'Method used for latent previews'
+    defaultValue: LatentPreviewMethod.NoPreviews
   },
   {
-    name: 'preview-size',
+    id: 'preview-size',
+    name: 'Size of preview images',
     category: ['preview'],
     type: 'number',
-    defaultValue: 512,
-    tooltip: 'Size of preview images'
+    defaultValue: 512
   },
 
   // Cache settings
   {
-    name: 'cache-classic',
+    id: 'cache-classic',
+    name: 'Use classic cache system',
     category: ['Cache'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Use classic cache system'
+    defaultValue: false
   },
   {
-    name: 'cache-lru',
+    id: 'cache-lru',
+    name: 'Use LRU caching with a maximum of N node results cached. May use more RAM/VRAM (0 to disable).',
     category: ['Cache'],
     type: 'number',
-    defaultValue: 0,
-    tooltip:
-      'Use LRU caching with a maximum of N node results cached. May use more RAM/VRAM (0 to disable).'
+    defaultValue: 0
   },
 
   // Attention settings
   {
-    name: 'cross-attention-method',
+    id: 'cross-attention-method',
+    name: 'Cross attention method',
     category: ['attention'],
     type: 'combo',
     options: Object.values(CrossAttentionMethod),
     defaultValue: CrossAttentionMethod.Auto,
-    tooltip: 'Cross attention method',
     getValue: (value: CrossAttentionMethod) => {
       switch (value) {
         case CrossAttentionMethod.Auto:
@@ -345,34 +312,34 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     }
   },
   {
-    name: 'disable-xformers',
+    id: 'disable-xformers',
+    name: 'Disable xFormers optimization',
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Disable xFormers optimization'
+    defaultValue: false
   },
   {
-    name: 'force-upcast-attention',
+    id: 'force-upcast-attention',
+    name: 'Force attention upcast',
     category: ['attention'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Force attention upcast'
+    defaultValue: false
   },
   {
-    name: 'dont-upcast-attention',
+    id: 'dont-upcast-attention',
+    name: 'Prevent attention upcast',
     category: ['attention'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Prevent attention upcast'
+    defaultValue: false
   },
 
   // VRAM management
   {
-    name: 'vram-management',
+    id: 'vram-management',
+    name: 'VRAM management mode',
     category: ['memory'],
     type: 'combo',
     options: Object.values(VramManagement),
     defaultValue: VramManagement.Auto,
-    tooltip: 'VRAM management mode',
     getValue: (value: VramManagement) => {
       switch (value) {
         case VramManagement.Auto:
@@ -385,7 +352,8 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     }
   },
   {
-    name: 'reserve-vram',
+    id: 'reserve-vram',
+    name: 'Reserved VRAM (GB)',
     category: ['memory'],
     type: 'number',
     defaultValue: undefined,
@@ -395,76 +363,63 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // Misc settings
   {
-    name: 'default-hashing-function',
+    id: 'default-hashing-function',
+    name: 'Default hashing function for model files',
+    category: ['misc'],
     type: 'combo',
     options: Object.values(HashFunction),
-    defaultValue: HashFunction.SHA256,
-    tooltip: 'Default hashing function for model files'
+    defaultValue: HashFunction.SHA256
   },
   {
-    name: 'disable-smart-memory',
+    id: 'disable-smart-memory',
+    name: 'Force ComfyUI to agressively offload to regular ram instead of keeping models in vram when it can.',
+    category: ['memory'],
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'deterministic',
+    name: 'Make pytorch use slower deterministic algorithms when it can.',
+    category: ['misc'],
     type: 'boolean',
     defaultValue: false,
-    tooltip:
-      'Force ComfyUI to agressively offload to regular ram instead of keeping models in vram when it can.'
+    tooltip: 'Note that this might not make images deterministic in all cases.'
   },
   {
-    name: 'deterministic',
+    id: 'fast',
+    name: 'Enable some untested and potentially quality deteriorating optimizations.',
+    category: ['misc'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip:
-      'Make pytorch use slower deterministic algorithms when it can. Note that this might not make images deterministic in all cases.'
+    defaultValue: false
   },
   {
-    name: 'fast',
+    id: 'dont-print-server',
+    name: "Don't print server output to console.",
+    category: ['misc'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip:
-      'Enable some untested and potentially quality deteriorating optimizations.'
+    defaultValue: false
   },
   {
-    name: 'dont-print-server',
+    id: 'disable-metadata',
+    name: 'Disable saving prompt metadata in files.',
+    category: ['misc'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: "Don't print server output to console."
+    defaultValue: false
   },
   {
-    name: 'quick-test-for-ci',
+    id: 'disable-all-custom-nodes',
+    name: 'Disable loading all custom nodes.',
+    category: ['misc'],
     type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Quick test mode for CI'
+    defaultValue: false
   },
   {
-    name: 'windows-standalone-build',
-    type: 'boolean',
-    defaultValue: false,
-    tooltip:
-      'Windows standalone build: Enable convenient things that most people using the standalone windows build will probably enjoy (like auto opening the page on startup)'
-  },
-  {
-    name: 'disable-metadata',
-    type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Disable saving prompt metadata in files.'
-  },
-  {
-    name: 'disable-all-custom-nodes',
-    type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Disable loading all custom nodes.'
-  },
-  {
-    name: 'multi-user',
-    type: 'boolean',
-    defaultValue: false,
-    tooltip: 'Enable multi-user mode'
-  },
-  {
-    name: 'log-level',
+    id: 'log-level',
+    name: 'Logging verbosity level',
+    category: ['misc'],
     type: 'combo',
     options: Object.values(LogLevel),
     defaultValue: LogLevel.INFO,
-    tooltip: 'Logging verbosity level',
     getValue: (value: LogLevel) => {
       return {
         verbose: value
@@ -474,7 +429,9 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
 
   // Frontend settings
   {
-    name: 'front-end-version',
+    id: 'front-end-version',
+    name: 'Frontend implementation',
+    category: ['frontend'],
     type: 'text',
     defaultValue: 'comfyanonymous/ComfyUI@latest',
     tooltip: `Specifies the version of the frontend to be used. This command needs internet connectivity to query and
