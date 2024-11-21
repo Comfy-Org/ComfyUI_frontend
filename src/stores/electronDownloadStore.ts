@@ -1,13 +1,13 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { isElectron, electronAPI } from '@/utils/envUtil'
+import { DownloadState, DownloadStatus } from '@comfyorg/comfyui-electron-types'
 
-export interface ElectronDownload {
-  url: string
-  status: 'paused' | 'in_progress' | 'cancelled'
-  progress: number
-  savePath: string
-  filename: string
+export interface ElectronDownload
+  extends Pick<DownloadState, 'url' | 'filename'> {
+  progress?: number
+  savePath?: string
+  status?: DownloadStatus
 }
 
 /** Electron donwloads store handler */
@@ -20,15 +20,14 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
   const initialize = async () => {
     if (isElectron()) {
-      const allDownloads: ElectronDownload[] =
-        (await DownloadManager.getAllDownloads()) as unknown as ElectronDownload[]
+      const allDownloads = await DownloadManager.getAllDownloads()
 
       for (const download of allDownloads) {
         downloads.value.push(download)
       }
 
       // ToDO: replace with ElectronDownload type
-      DownloadManager.onDownloadProgress((data: any) => {
+      DownloadManager.onDownloadProgress((data) => {
         if (!findByUrl(data.url)) {
           downloads.value.push(data)
         }
@@ -51,8 +50,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     url,
     savePath,
     filename
-  }: Pick<ElectronDownload, 'url' | 'savePath' | 'filename'>) =>
-    DownloadManager.startDownload(url, savePath, filename)
+  }: {
+    url: string
+    savePath: string
+    filename: string
+  }) => DownloadManager.startDownload(url, savePath, filename)
   const pause = (url: string) => DownloadManager.pauseDownload(url)
   const resume = (url: string) => DownloadManager.resumeDownload(url)
   const cancel = (url: string) => DownloadManager.cancelDownload(url)
