@@ -49,9 +49,9 @@ var styles = `
     background: var(--comfy-menu-bg);
     height: 100%;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    overflow-y: scroll;
+    overflow-y: hidden;
+    width: 220px;
   }
   #maskEditor_sidePanelShortcuts {
     display: flex;
@@ -98,11 +98,11 @@ var styles = `
   #maskEditor_sidePanelBrushShapeCircle {
     width: 35px;
     height: 35px;
-    margin: 5px;
     border-radius: 50%;
     border: 1px solid var(--border-color);
     pointer-events: auto;
     transition: background 0.1s;
+    margin-left: 7.5px;
   }
   .maskEditor_sidePanelBrushRange {
     width: 180px;
@@ -136,9 +136,7 @@ var styles = `
     background: var(--p-surface-700);
     height: 3px;
   }
-  #maskEditor_sidePanelBrushShapeCircle:hover {
-    background: var(--p-overlaybadge-outline-color);
-  }
+
   #maskEditor_sidePanelBrushShapeSquare {
     width: 35px;
     height: 35px;
@@ -147,15 +145,23 @@ var styles = `
     pointer-events: auto;
     transition: background 0.1s;
   }
-  #maskEditor_sidePanelBrushShapeSquare:hover {
-    background: var(--p-overlaybadge-outline-color);
+
+  .maskEditor_brushShape_dark {
+    background: transparent;
   }
-  .maskEditor_sidePanelSubTitle {
-    text-align: center;
-    font-size: 12px;
-    font-family: sans-serif;
-    color: var(--descrip-text);
+
+  .maskEditor_brushShape_dark:hover {
+    background: var(--p-surface-900);
   }
+
+  .maskEditor_brushShape_light {
+    background: transparent;
+  }
+
+  .maskEditor_brushShape_light:hover {
+    background: var(--comfy-menu-bg);
+  }
+
   #maskEditor_sidePanelImageLayerSettings {
     display: flex;
     flex-direction: column;
@@ -217,10 +223,6 @@ var styles = `
   #maskEditor_sidePanelClearCanvasButton:hover {
     background-color: var(--p-overlaybadge-outline-color);
     border: none;
-  }
-  #maskEditor_sidePanelImageLayerImage {
-    max-height: 90%;
-    max-width: 50px;
   }
   #maskEditor_sidePanelClearCanvasButton {
     width: 180px;
@@ -372,15 +374,15 @@ var styles = `
     gap: 10px;
     margin-right: 0.5rem;
     position: absolute;
-    right: 10px;
-    width: 180px;
+    right: 0;
+    width: 200px;
   }
   #maskEditor_topBarShortcutsContainer {
     display: flex;
   }
 
   .maskEditor_topPanelIconButton {
-    width: 30px;
+    width: 53.3px;
     height: 30px;
     pointer-events: auto;
     display: flex;
@@ -389,19 +391,39 @@ var styles = `
     transition: background-color 0.1s;
   }
 
-  .maskEditor_topPanelButton {
+  .maskEditor_topPanelButton_dark {
     height: 30px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid var(--border-color);
+    background: var(--p-surface-800);
+    border: 1px solid var(--p-form-field-border-color);
+    border-radius: 10px;
     color: var(--input-text);
     font-family: sans-serif;
     pointer-events: auto;
-    transition: background-color 0.1s;
-    width: 53.3px;
+    transition: 0.1s;
+    width: 60px;
   }
-  #maskEditor_topPanelButton:hover {
-    background-color: var(--p-overlaybadge-outline-color);
+
+  .maskEditor_topPanelButton_dark:hover {
+    background-color: var(--p-surface-900);
   }
+
+  .maskEditor_topPanelButton_light {
+    height: 30px;
+    background: var(--comfy-menu-bg);
+    border: 1px solid var(--p-form-field-border-color);
+    border-radius: 10px;
+    color: var(--input-text);
+    font-family: sans-serif;
+    pointer-events: auto;
+    transition: 0.1s;
+    width: 60px;
+  }
+
+  .maskEditor_topPanelButton_light:hover {
+    background-color: var(--p-surface-300);
+  }
+
+
   #maskEditor_sidePanelColorSelectSettings {
     flex-direction: column;
   }
@@ -446,6 +468,195 @@ var styles = `
     gap: 10px;
     margin-bottom: 10px;
   }
+
+  .maskEditor_sidePanelContainerColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .maskEditor_sidePanelContainerRow {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    min-height: 24px;
+    position: relative;
+  }
+
+  .maskEditor_accent_bg_dark {
+    background: var(--p-surface-800);
+  }
+
+  .maskEditor_accent_bg_very_dark {
+    background: var(--p-surface-900);
+  }
+
+  .maskEditor_accent_bg_light {
+    background: var(--p-surface-300);
+  }
+
+  .maskEditor_accent_bg_very_light {
+    background: var(--comfy-menu-bg);
+  }
+
+  #maskEditor_paintBucketSettings {
+    display: none;
+  }
+
+  #maskEditor_colorSelectSettings {
+    display: none;
+  }
+
+  .maskEditor_sidePanelToggleContainer {
+    cursor: pointer;
+    display: inline-block;
+    position: absolute;
+    right: 0;
+  }
+
+  .maskEditor_toggle_bg_dark {
+    background: var(--p-surface-700);
+  }
+
+  .maskEditor_toggle_bg_light {
+    background: var(--p-surface-300);
+  }
+
+  .maskEditor_sidePanelToggleSwitch {
+    display: inline-block;
+    border-radius: 16px;
+    width: 40px;
+    height: 24px;
+    position: relative;
+    vertical-align: middle;
+    transition: background 0.25s;
+  }
+  .maskEditor_sidePanelToggleSwitch:before, .maskEditor_sidePanelToggleSwitch:after {
+    content: "";
+  }
+  .maskEditor_sidePanelToggleSwitch:before {
+    display: block;
+    background: linear-gradient(to bottom, #fff 0%, #eee 100%);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    transition: ease 0.2s;
+  }
+  .maskEditor_sidePanelToggleContainer:hover .maskEditor_sidePanelToggleSwitch:before {
+    background: linear-gradient(to bottom, #fff 0%, #fff 100%);
+  }
+  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_sidePanelToggleSwitch {
+    background: var(--p-button-text-primary-color);
+  }
+  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_toggle_bg_dark:before {
+    background: var(--p-surface-900);
+  }
+  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_toggle_bg_light:before {
+    background: var(--comfy-menu-bg);
+  }
+  .maskEditor_sidePanelToggleCheckbox:checked + .maskEditor_sidePanelToggleSwitch:before {
+    left: 20px;
+  }
+
+  .maskEditor_sidePanelToggleCheckbox {
+    position: absolute;
+    visibility: hidden;
+  }
+
+  .maskEditor_sidePanelDropdown_dark {
+    border: 1px solid var(--p-form-field-border-color);
+    background: var(--p-surface-900);
+    height: 24px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+
+  .maskEditor_sidePanelDropdown_dark option {
+    background: var(--p-surface-900);
+  }
+
+  .maskEditor_sidePanelDropdown_dark:focus {
+    outline: 1px solid var(--p-button-text-primary-color);
+  }
+
+  .maskEditor_sidePanelDropdown_dark option:hover {
+    background: white;
+  }
+  .maskEditor_sidePanelDropdown_dark option:active {
+    background: var(--p-highlight-background);
+  }
+
+  .maskEditor_sidePanelDropdown_light {
+    border: 1px solid var(--p-form-field-border-color);
+    background: var(--comfy-menu-bg);
+    height: 24px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+
+  .maskEditor_sidePanelDropdown_light option {
+    background: var(--comfy-menu-bg);
+  }
+
+  .maskEditor_sidePanelDropdown_light:focus {
+    outline: 1px solid var(--p-surface-300);
+  }
+
+  .maskEditor_sidePanelDropdown_light option:hover {
+    background: white;
+  }
+  .maskEditor_sidePanelDropdown_light option:active {
+    background: var(--p-surface-300);
+  }
+
+  .maskEditor_layerRow {
+    height: 50px;
+    width: 200px;
+    border-radius: 10px;
+  }
+
+  .maskEditor_sidePanelLayerPreviewContainer {
+    width: 40px;
+    height: 30px;
+  }
+
+  .maskEditor_sidePanelLayerPreviewContainer > svg{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    fill: var(--p-surface-100);
+  }
+
+  #maskEditor_sidePanelImageLayerImage {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .maskEditor_sidePanelSubTitle {
+    text-align: left;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: var(--descrip-text);
+  }
+
+  .maskEditor_containerDropdown {
+    position: absolute;
+    right: 0;
+  }
+
+  .maskEditor_sidePanelLayerCheckbox {
+    margin-left: 15px;
+  }
+
 `
 
 var styleSheet = document.createElement('style')
@@ -606,9 +817,7 @@ class MaskEditorDialog extends ComfyDialog {
     await this.canvasHistory.saveInitialState()
     this.isOpen = true
     if (ComfyApp.clipspace && ComfyApp.clipspace.imgs) {
-      const src =
-        ComfyApp.clipspace?.imgs[ComfyApp.clipspace['selectedIndex']].src
-      this.uiManager.setSidebarImage(src)
+      this.uiManager.setSidebarImage()
     }
     this.keyboardManager.addListeners()
   }
@@ -775,7 +984,7 @@ class MaskEditorDialog extends ComfyDialog {
     formData.append('type', 'input')
     formData.append('subfolder', 'clipspace')
 
-    this.uiManager.setSaveButtonText('Saving...')
+    this.uiManager.setSaveButtonText('Saving')
     this.uiManager.setSaveButtonEnabled(false)
     this.keyboardManager.removeListeners()
 
@@ -1595,6 +1804,7 @@ class BrushTool {
   isDrawing: boolean = false
   isDrawingLine: boolean = false
   lineStartPoint: Point | null = null
+  smoothingPrecision: number = 10
   smoothingCordsArray: Point[] = []
   smoothingLastDrawTime!: Date
   maskCtx: CanvasRenderingContext2D | null = null
@@ -1635,6 +1845,10 @@ class BrushTool {
     )
     this.messageBroker.subscribe('setBrushShape', (type: BrushShape) =>
       this.setBrushType(type)
+    )
+    this.messageBroker.subscribe(
+      'setBrushSmoothingPrecision',
+      (precision: number) => this.setBrushSmoothingPrecision(precision)
     )
     //brush adjustment
     this.messageBroker.subscribe(
@@ -1781,7 +1995,9 @@ class BrushTool {
       const dy = point.y - this.smoothingCordsArray[0].y
       const distance = Math.sqrt(dx * dx + dy * dy)
       const step = 5
-      const steps = Math.ceil(distance / step)
+      const steps = Math.ceil(
+        (distance / step) * (this.smoothingPrecision / 10)
+      )
       // Generate interpolated points
       const interpolatedPoints = this.calculateCubicSplinePoints(
         this.smoothingCordsArray,
@@ -2045,6 +2261,11 @@ class BrushTool {
   private setBrushType(type: BrushShape) {
     this.brushSettings.type = type
   }
+
+  private setBrushSmoothingPrecision(precision: number) {
+    console.log('precision', precision)
+    //  this.brushSettings.smoothingPrecision = precision
+  }
 }
 
 class UIManager {
@@ -2070,6 +2291,8 @@ class UIManager {
   private canvasBackground!: HTMLDivElement
   private canvasContainer!: HTMLDivElement
   private image!: HTMLImageElement
+  private imageURL!: URL
+  private darkMode: boolean = true
 
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
@@ -2133,6 +2356,7 @@ class UIManager {
   }
 
   async setlayout() {
+    this.detectLightMode()
     var user_ui = await this.createUI()
     var canvasContainer = this.createBackgroundUI()
 
@@ -2245,775 +2469,517 @@ class UIManager {
   }
 
   private async createSidePanel() {
-    var side_panel_container = document.createElement('div')
-    side_panel_container.id = 'maskEditor_sidePanelContainer'
-    this.sidePanel = side_panel_container
-
-    //side panel
-
-    var side_panel = document.createElement('div')
+    const side_panel = this.createContainer(true)
     side_panel.id = 'maskEditor_sidePanel'
-    /// brush settings
 
-    var side_panel_brush_settings = document.createElement('div')
-    side_panel_brush_settings.id = 'maskEditor_sidePanelBrushSettings'
-    this.brushSettingsHTML = side_panel_brush_settings
+    const brush_settings = await this.createBrushSettings()
+    brush_settings.id = 'maskEditor_brushSettings'
+    this.brushSettingsHTML = brush_settings
 
-    var side_panel_brush_settings_title = document.createElement('h3')
-    side_panel_brush_settings_title.classList.add('maskEditor_sidePanelTitle')
-    side_panel_brush_settings_title.innerText = 'Brush Settings'
+    const paint_bucket_settings = await this.createPaintBucketSettings()
+    paint_bucket_settings.id = 'maskEditor_paintBucketSettings'
+    this.paintBucketSettingsHTML = paint_bucket_settings
 
-    var side_panel_brush_settings_brush_shape_title =
-      document.createElement('span')
-    side_panel_brush_settings_brush_shape_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_brush_settings_brush_shape_title.innerText = 'Brush Shape'
+    const color_select_settings = await this.createColorSelectSettings()
+    color_select_settings.id = 'maskEditor_colorSelectSettings'
+    this.colorSelectSettingsHTML = color_select_settings
 
-    var side_panel_brush_settings_brush_shape_container =
-      document.createElement('div')
-    side_panel_brush_settings_brush_shape_container.id =
-      'maskEditor_sidePanelBrushShapeContainer'
+    const image_layer_settings = await this.createImageLayerSettings()
 
-    const side_panel_brush_settings_brush_shape_circle =
-      document.createElement('div')
-    side_panel_brush_settings_brush_shape_circle.id =
-      'maskEditor_sidePanelBrushShapeCircle'
-    side_panel_brush_settings_brush_shape_circle.style.background =
-      'var(--p-button-text-primary-color)'
-    side_panel_brush_settings_brush_shape_circle.addEventListener(
-      'click',
-      () => {
-        this.messageBroker.publish('setBrushShape', BrushShape.Arc)
-        this.setBrushBorderRadius()
-        side_panel_brush_settings_brush_shape_circle.style.background =
-          'var(--p-button-text-primary-color)'
-        side_panel_brush_settings_brush_shape_square.style.background = ''
-      }
-    )
+    const separator = this.createSeparator()
 
-    const side_panel_brush_settings_brush_shape_square =
-      document.createElement('div')
-    side_panel_brush_settings_brush_shape_square.id =
-      'maskEditor_sidePanelBrushShapeSquare'
-    side_panel_brush_settings_brush_shape_square.style.background = ''
-    side_panel_brush_settings_brush_shape_square.addEventListener(
-      'click',
-      () => {
-        this.messageBroker.publish('setBrushShape', BrushShape.Rect)
-        this.setBrushBorderRadius()
-        side_panel_brush_settings_brush_shape_square.style.background =
-          'var(--p-button-text-primary-color)'
-        side_panel_brush_settings_brush_shape_circle.style.background = ''
-      }
-    )
+    side_panel.appendChild(brush_settings)
+    side_panel.appendChild(paint_bucket_settings)
+    side_panel.appendChild(color_select_settings)
+    side_panel.appendChild(separator)
+    side_panel.appendChild(image_layer_settings)
 
-    side_panel_brush_settings_brush_shape_container.appendChild(
-      side_panel_brush_settings_brush_shape_circle
-    )
-    side_panel_brush_settings_brush_shape_container.appendChild(
-      side_panel_brush_settings_brush_shape_square
-    )
+    return side_panel
+  }
 
-    var side_panel_brush_settings_thickness_title =
-      document.createElement('span')
-    side_panel_brush_settings_thickness_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_brush_settings_thickness_title.innerText = 'Thickness'
+  private async createBrushSettings() {
+    const shapeColor = this.darkMode
+      ? 'maskEditor_brushShape_dark'
+      : 'maskEditor_brushShape_light'
+    const brush_settings_container = this.createContainer(true)
 
-    var side_panel_brush_settings_thickness_input =
-      document.createElement('input')
-    side_panel_brush_settings_thickness_input.setAttribute('type', 'range')
-    side_panel_brush_settings_thickness_input.setAttribute('min', '1')
-    side_panel_brush_settings_thickness_input.setAttribute('max', '100')
-    side_panel_brush_settings_thickness_input.setAttribute('value', '10')
+    const brush_settings_title = this.createHeadline('Brush Settings')
 
-    side_panel_brush_settings_thickness_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
+    const brush_shape_outer_container = this.createContainer(true)
 
-    side_panel_brush_settings_thickness_input.addEventListener(
-      'input',
-      (event) => {
-        this.messageBroker.publish(
-          'setBrushSize',
-          parseInt(side_panel_brush_settings_thickness_input.value)
-        )
+    const brush_shape_title = this.createContainerTitle('Brush Shape')
+
+    const brush_shape_container = this.createContainer(false)
+
+    const accentColor = this.darkMode
+      ? 'maskEditor_accent_bg_dark'
+      : 'maskEditor_accent_bg_light'
+
+    brush_shape_container.classList.add(accentColor)
+    brush_shape_container.classList.add('maskEditor_layerRow')
+
+    const circle_shape = document.createElement('div')
+    circle_shape.id = 'maskEditor_sidePanelBrushShapeCircle'
+    circle_shape.classList.add(shapeColor)
+    circle_shape.style.background = 'var(--p-button-text-primary-color)'
+    circle_shape.addEventListener('click', () => {
+      this.messageBroker.publish('setBrushShape', BrushShape.Arc)
+      this.setBrushBorderRadius()
+      circle_shape.style.background = 'var(--p-button-text-primary-color)'
+      square_shape.style.background = ''
+    })
+
+    const square_shape = document.createElement('div')
+    square_shape.id = 'maskEditor_sidePanelBrushShapeSquare'
+    square_shape.classList.add(shapeColor)
+    square_shape.style.background = ''
+    square_shape.addEventListener('click', () => {
+      this.messageBroker.publish('setBrushShape', BrushShape.Rect)
+      this.setBrushBorderRadius()
+      square_shape.style.background = 'var(--p-button-text-primary-color)'
+      circle_shape.style.background = ''
+    })
+
+    brush_shape_container.appendChild(circle_shape)
+    brush_shape_container.appendChild(square_shape)
+
+    brush_shape_outer_container.appendChild(brush_shape_title)
+    brush_shape_outer_container.appendChild(brush_shape_container)
+
+    const thicknesSliderObj = this.createSlider(
+      'Thickness',
+      1,
+      100,
+      1,
+      10,
+      (event, value) => {
+        this.messageBroker.publish('setBrushSize', parseInt(value))
         this.updateBrushPreview()
       }
     )
+    this.brushSizeSlider = thicknesSliderObj.slider
 
-    this.brushSizeSlider = side_panel_brush_settings_thickness_input
-
-    var side_panel_brush_settings_opacity_title = document.createElement('span')
-    side_panel_brush_settings_opacity_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_brush_settings_opacity_title.innerText = 'Opacity'
-
-    var side_panel_brush_settings_opacity_input =
-      document.createElement('input')
-    side_panel_brush_settings_opacity_input.setAttribute('type', 'range')
-    side_panel_brush_settings_opacity_input.setAttribute('min', '0.1')
-    side_panel_brush_settings_opacity_input.setAttribute('max', '1')
-    side_panel_brush_settings_opacity_input.setAttribute('step', '0.01')
-    side_panel_brush_settings_opacity_input.setAttribute('value', '0.7')
-
-    side_panel_brush_settings_opacity_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_brush_settings_opacity_input.addEventListener(
-      'input',
-      (event) => {
-        this.messageBroker.publish(
-          'setBrushOpacity',
-          parseFloat(side_panel_brush_settings_opacity_input.value)
-        )
+    const opacitySliderObj = this.createSlider(
+      'Opacity',
+      0.1,
+      1,
+      0.01,
+      0.7,
+      (event, value) => {
+        this.messageBroker.publish('setBrushOpacity', parseFloat(value))
         this.updateBrushPreview()
       }
     )
+    this.brushOpacitySlider = opacitySliderObj.slider
 
-    this.brushOpacitySlider = side_panel_brush_settings_opacity_input
-
-    var side_panel_brush_settings_hardness_title =
-      document.createElement('span')
-    side_panel_brush_settings_hardness_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_brush_settings_hardness_title.innerText = 'Hardness'
-
-    var side_panel_brush_settings_hardness_input =
-      document.createElement('input')
-    side_panel_brush_settings_hardness_input.setAttribute('type', 'range')
-    side_panel_brush_settings_hardness_input.setAttribute('min', '0')
-    side_panel_brush_settings_hardness_input.setAttribute('max', '1')
-    side_panel_brush_settings_hardness_input.setAttribute('step', '0.01')
-    side_panel_brush_settings_hardness_input.setAttribute('value', '1')
-
-    side_panel_brush_settings_hardness_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_brush_settings_hardness_input.addEventListener(
-      'input',
-      (event) => {
-        this.messageBroker.publish(
-          'setBrushHardness',
-          parseFloat(side_panel_brush_settings_hardness_input.value)
-        )
+    const hardnessSliderObj = this.createSlider(
+      'Hardness',
+      0,
+      1,
+      0.01,
+      1,
+      (event, value) => {
+        this.messageBroker.publish('setBrushHardness', parseFloat(value))
         this.updateBrushPreview()
       }
     )
+    this.brushHardnessSlider = hardnessSliderObj.slider
 
-    this.brushHardnessSlider = side_panel_brush_settings_hardness_input
-
-    side_panel_brush_settings.appendChild(side_panel_brush_settings_title)
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_brush_shape_title
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_brush_shape_container
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_thickness_title
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_thickness_input
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_opacity_title
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_opacity_input
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_hardness_title
-    )
-    side_panel_brush_settings.appendChild(
-      side_panel_brush_settings_hardness_input
+    const brushSmoothingPrecisionSliderObj = this.createSlider(
+      'Smoothing Precision',
+      1,
+      100,
+      1,
+      10,
+      (event, value) => {
+        this.messageBroker.publish(
+          'setBrushSmoothingPrecision',
+          parseInt(value)
+        )
+      }
     )
 
-    /// paint bucket settings
-
-    var side_panel_paint_bucket_settings = document.createElement('div')
-    side_panel_paint_bucket_settings.id =
-      'maskEditor_sidePanelPaintBucketSettings'
-    side_panel_paint_bucket_settings.style.display = 'none'
-    this.paintBucketSettingsHTML = side_panel_paint_bucket_settings
-
-    var side_panel_paint_bucket_settings_title = document.createElement('h3')
-    side_panel_paint_bucket_settings_title.classList.add(
-      'maskEditor_sidePanelTitle'
-    )
-    side_panel_paint_bucket_settings_title.innerText = 'Paint Bucket Settings'
-
-    var side_panel_paint_bucket_settings_container =
-      document.createElement('div')
-    side_panel_paint_bucket_settings_container.classList.add(
-      'maskEditor_sidePanel_paintBucket_Container'
+    brush_settings_container.appendChild(brush_settings_title)
+    brush_settings_container.appendChild(brush_shape_outer_container)
+    brush_settings_container.appendChild(thicknesSliderObj.container)
+    brush_settings_container.appendChild(opacitySliderObj.container)
+    brush_settings_container.appendChild(hardnessSliderObj.container)
+    brush_settings_container.appendChild(
+      brushSmoothingPrecisionSliderObj.container
     )
 
-    var side_panel_paint_bucket_settings_tolerance_title =
-      document.createElement('span')
-    side_panel_paint_bucket_settings_tolerance_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_paint_bucket_settings_tolerance_title.innerText = 'Tolerance'
+    return brush_settings_container
+  }
 
-    var side_panel_paint_bucket_settings_tolerance_input =
-      document.createElement('input')
-    side_panel_paint_bucket_settings_tolerance_input.setAttribute(
-      'type',
-      'range'
+  private async createPaintBucketSettings() {
+    const paint_bucket_settings_container = this.createContainer(true)
+
+    const paint_bucket_settings_title = this.createHeadline(
+      'Paint Bucket Settings'
+    )
+
+    const tolerance = await this.messageBroker.pull('getTolerance')
+    const paintBucketToleranceSliderObj = this.createSlider(
+      'Tolerance',
+      0,
+      255,
+      1,
+      tolerance,
+      (event, value) => {
+        this.messageBroker.publish('setPaintBucketTolerance', parseInt(value))
+      }
+    )
+
+    paint_bucket_settings_container.appendChild(paint_bucket_settings_title)
+    paint_bucket_settings_container.appendChild(
+      paintBucketToleranceSliderObj.container
+    )
+
+    return paint_bucket_settings_container
+  }
+
+  private async createColorSelectSettings() {
+    const color_select_settings_container = this.createContainer(true)
+
+    const color_select_settings_title = this.createHeadline(
+      'Color Select Settings'
     )
 
     var tolerance = await this.messageBroker.pull('getTolerance')
-
-    side_panel_paint_bucket_settings_tolerance_input.setAttribute('min', '0')
-    side_panel_paint_bucket_settings_tolerance_input.setAttribute('max', '255')
-    side_panel_paint_bucket_settings_tolerance_input.setAttribute(
-      'value',
-      String(tolerance)
-    )
-
-    side_panel_paint_bucket_settings_tolerance_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_paint_bucket_settings_tolerance_input.addEventListener(
-      'input',
-      (event) => {
-        var paintBucketTolerance = parseInt(
-          (event.target as HTMLInputElement)!.value
-        )
-
-        this.messageBroker.publish(
-          'setPaintBucketTolerance',
-          paintBucketTolerance
-        )
+    const colorSelectToleranceSliderObj = this.createSlider(
+      'Tolerance',
+      0,
+      255,
+      1,
+      tolerance,
+      (event, value) => {
+        this.messageBroker.publish('setColorSelectTolerance', parseInt(value))
       }
     )
 
-    side_panel_paint_bucket_settings.appendChild(
-      side_panel_paint_bucket_settings_title
-    )
-    side_panel_paint_bucket_settings.appendChild(
-      side_panel_paint_bucket_settings_tolerance_title
-    )
-    side_panel_paint_bucket_settings.appendChild(
-      side_panel_paint_bucket_settings_tolerance_input
-    )
-
-    /// color select settings
-
-    var side_panel_color_select_settings = document.createElement('div')
-    side_panel_color_select_settings.id =
-      'maskEditor_sidePanelColorSelectSettings'
-    side_panel_color_select_settings.style.display = 'none'
-    this.colorSelectSettingsHTML = side_panel_color_select_settings
-
-    var side_panel_color_select_settings_title = document.createElement('h3')
-    side_panel_color_select_settings_title.classList.add(
-      'maskEditor_sidePanelTitle'
-    )
-    side_panel_color_select_settings_title.innerText = 'Color Select Settings'
-
-    var side_panel_color_select_container_tolerance =
-      document.createElement('div')
-    side_panel_color_select_container_tolerance.classList.add(
-      'maskEditor_sidePanel_colorSelect_tolerance_container'
-    )
-
-    var side_panel_color_select_settings_tolerance_title =
-      document.createElement('span')
-    side_panel_color_select_settings_tolerance_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_settings_tolerance_title.innerText = 'Tolerance'
-
-    var side_panel_color_select_settings_tolerance_input =
-      document.createElement('input')
-    side_panel_color_select_settings_tolerance_input.setAttribute(
-      'type',
-      'range'
-    )
-
-    var tolerance = await this.messageBroker.pull('getTolerance')
-
-    side_panel_color_select_settings_tolerance_input.setAttribute('min', '0')
-    side_panel_color_select_settings_tolerance_input.setAttribute('max', '255')
-    side_panel_color_select_settings_tolerance_input.setAttribute(
-      'value',
-      String(tolerance)
-    )
-
-    side_panel_color_select_settings_tolerance_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_color_select_settings_tolerance_input.addEventListener(
-      'input',
-      (event) => {
-        var colorSelectTolerance = parseInt(
-          (event.target as HTMLInputElement)!.value
-        )
-
-        this.messageBroker.publish(
-          'setColorSelectTolerance',
-          colorSelectTolerance
-        )
+    const livePreviewToggle = this.createToggle(
+      'Live Preview',
+      (event, value) => {
+        this.messageBroker.publish('setLivePreview', value)
       }
     )
 
-    side_panel_color_select_container_tolerance.appendChild(
-      side_panel_color_select_settings_tolerance_title
-    )
-    side_panel_color_select_container_tolerance.appendChild(
-      side_panel_color_select_settings_tolerance_input
-    )
-
-    var side_panel_color_select_container_live_preview =
-      document.createElement('div')
-    side_panel_color_select_container_live_preview.classList.add(
-      'maskEditor_sidePanel_colorSelect_Container'
-    )
-
-    var side_panel_color_select_live_preview_title =
-      document.createElement('span')
-    side_panel_color_select_live_preview_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_live_preview_title.innerText = 'Live Preview'
-
-    var side_panel_color_select_live_preview_select =
-      document.createElement('input')
-    side_panel_color_select_live_preview_select.setAttribute('type', 'checkbox')
-    side_panel_color_select_live_preview_select.id =
-      'maskEditor_sidePanelVisibilityToggle'
-    side_panel_color_select_live_preview_select.checked = false
-
-    side_panel_color_select_live_preview_select.addEventListener(
-      'change',
-      (event) => {
-        this.messageBroker.publish(
-          'setLivePreview',
-          (event.target as HTMLInputElement)!.checked
-        )
-      }
-    )
-
-    side_panel_color_select_container_live_preview.appendChild(
-      side_panel_color_select_live_preview_title
-    )
-
-    side_panel_color_select_container_live_preview.appendChild(
-      side_panel_color_select_live_preview_select
-    )
-
-    var side_panel_color_select_container_method = document.createElement('div')
-    side_panel_color_select_container_method.classList.add(
-      'maskEditor_sidePanel_colorSelect_Container'
-    )
-
-    var side_panel_color_select_method_title = document.createElement('span')
-    side_panel_color_select_method_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_method_title.innerText = 'Method'
-
-    var side_panel_color_select_method_select = document.createElement('select')
-    side_panel_color_select_method_select.id =
-      'maskEditor_sidePanelColorSelectMethodSelect'
-    const method_options = Object.values(ColorComparisonMethod)
-
-    method_options.forEach((option) => {
-      var option_element = document.createElement('option')
-      option_element.value = option
-      option_element.innerText = option
-      side_panel_color_select_method_select.appendChild(option_element)
-    })
-
-    side_panel_color_select_method_select.addEventListener('change', (e) => {
-      const selectedValue = (e.target as HTMLSelectElement)
-        .value as ColorComparisonMethod
-      this.messageBroker.publish('setColorComparisonMethod', selectedValue)
-    })
-
-    side_panel_color_select_container_method.appendChild(
-      side_panel_color_select_method_title
-    )
-    side_panel_color_select_container_method.appendChild(
-      side_panel_color_select_method_select
-    )
-
-    var side_panel_color_select_container_whole_image =
-      document.createElement('div')
-    side_panel_color_select_container_whole_image.classList.add(
-      'maskEditor_sidePanel_colorSelect_Container'
-    )
-
-    var side_panel_color_select_whole_image_title =
-      document.createElement('span')
-    side_panel_color_select_whole_image_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_whole_image_title.innerText = 'Apply to Whole Image'
-
-    var side_panel_color_select_whole_image_select =
-      document.createElement('input')
-    side_panel_color_select_whole_image_select.setAttribute('type', 'checkbox')
-    side_panel_color_select_whole_image_select.id =
-      'maskEditor_sidePanelVisibilityToggle'
-
-    side_panel_color_select_whole_image_select.addEventListener(
-      'change',
-      (event) => {
-        var value = (event.target as HTMLInputElement)!.checked
+    const wholeImageToggle = this.createToggle(
+      'Apply to Whole Image',
+      (event, value) => {
         this.messageBroker.publish('setWholeImage', value)
-        if (value) {
-          this.messageBroker.publish('setMaskBoundary', false)
-          side_panel_color_select_mask_boundary_select.disabled = true
-        } else {
-          side_panel_color_select_mask_boundary_select.disabled = false
-        }
       }
     )
 
-    var side_panel_color_select_container_mask_boundary =
-      document.createElement('div')
-    side_panel_color_select_container_mask_boundary.classList.add(
-      'maskEditor_sidePanel_colorSelect_Container'
+    const methodOptions = Object.values(ColorComparisonMethod)
+    const methodSelect = this.createDropdown(
+      'Method',
+      methodOptions,
+      (event, value) => {
+        this.messageBroker.publish('setColorComparisonMethod', value)
+      }
     )
 
-    var side_panel_color_select_mask_boundary_title =
-      document.createElement('span')
-    side_panel_color_select_mask_boundary_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_mask_boundary_title.innerText = 'Stop at mask'
-
-    var side_panel_color_select_mask_boundary_select =
-      document.createElement('input')
-    side_panel_color_select_mask_boundary_select.setAttribute(
-      'type',
-      'checkbox'
-    )
-    side_panel_color_select_mask_boundary_select.id =
-      'maskEditor_sidePanelVisibilityToggle'
-
-    side_panel_color_select_mask_boundary_select.addEventListener(
-      'change',
-      (event) => {
-        var value = (event.target as HTMLInputElement)!.checked
+    const maskBoundaryToggle = this.createToggle(
+      'Stop at mask',
+      (event, value) => {
         this.messageBroker.publish('setMaskBoundary', value)
-        if (value) {
-          this.messageBroker.publish('setWholeImage', false)
-          side_panel_color_select_whole_image_select.disabled = true
-        } else {
-          side_panel_color_select_whole_image_select.disabled = false
-        }
       }
     )
 
-    side_panel_color_select_container_mask_boundary.appendChild(
-      side_panel_color_select_mask_boundary_title
-    )
-    side_panel_color_select_container_mask_boundary.appendChild(
-      side_panel_color_select_mask_boundary_select
-    )
-
-    var side_panel_color_select_container_mask_tolerance =
-      document.createElement('div')
-    side_panel_color_select_container_mask_tolerance.classList.add(
-      'maskEditor_sidePanel_colorSelect_tolerance_container'
-    )
-
-    var side_panel_color_select_mask_tolerance_title =
-      document.createElement('span')
-    side_panel_color_select_mask_tolerance_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_color_select_mask_tolerance_title.innerText = 'Mask Tolerance'
-
-    var side_panel_color_select_mask_tolerance_input =
-      document.createElement('input')
-    side_panel_color_select_mask_tolerance_input.setAttribute('type', 'range')
-    side_panel_color_select_mask_tolerance_input.setAttribute('min', '0')
-    side_panel_color_select_mask_tolerance_input.setAttribute('max', '255')
-    side_panel_color_select_mask_tolerance_input.setAttribute('value', '0')
-    side_panel_color_select_mask_tolerance_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_color_select_mask_tolerance_input.addEventListener(
-      'input',
-      (event) => {
-        var maskTolerance = parseInt((event.target as HTMLInputElement)!.value)
-
-        this.messageBroker.publish('setMaskTolerance', maskTolerance)
+    const maskToleranceSliderObj = this.createSlider(
+      'Mask Tolerance',
+      0,
+      255,
+      1,
+      0,
+      (event, value) => {
+        this.messageBroker.publish('setMaskTolerance', parseInt(value))
       }
     )
 
-    side_panel_color_select_container_mask_tolerance.appendChild(
-      side_panel_color_select_mask_tolerance_title
+    color_select_settings_container.appendChild(color_select_settings_title)
+    color_select_settings_container.appendChild(
+      colorSelectToleranceSliderObj.container
     )
-    side_panel_color_select_container_mask_tolerance.appendChild(
-      side_panel_color_select_mask_tolerance_input
-    )
-
-    side_panel_color_select_container_whole_image.appendChild(
-      side_panel_color_select_whole_image_title
-    )
-    side_panel_color_select_container_whole_image.appendChild(
-      side_panel_color_select_whole_image_select
+    color_select_settings_container.appendChild(livePreviewToggle)
+    color_select_settings_container.appendChild(wholeImageToggle)
+    color_select_settings_container.appendChild(methodSelect)
+    color_select_settings_container.appendChild(maskBoundaryToggle)
+    color_select_settings_container.appendChild(
+      maskToleranceSliderObj.container
     )
 
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_tolerance
-    )
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_live_preview
-    )
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_whole_image
-    )
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_method
-    )
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_mask_boundary
-    )
-    side_panel_paint_bucket_settings_container.appendChild(
-      side_panel_color_select_container_mask_tolerance
-    )
+    return color_select_settings_container
+  }
 
-    side_panel_color_select_settings.appendChild(
-      side_panel_color_select_settings_title
+  private async createImageLayerSettings() {
+    const accentColor = this.darkMode
+      ? 'maskEditor_accent_bg_dark'
+      : 'maskEditor_accent_bg_light'
+
+    const image_layer_settings_container = this.createContainer(true)
+
+    const image_layer_settings_title = this.createHeadline('Layers')
+
+    const mask_layer_title = this.createContainerTitle('Mask Layer')
+
+    const mask_layer_container = this.createContainer(false)
+    mask_layer_container.classList.add(accentColor)
+    mask_layer_container.classList.add('maskEditor_layerRow')
+
+    const mask_layer_visibility_checkbox = document.createElement('input')
+    mask_layer_visibility_checkbox.setAttribute('type', 'checkbox')
+    mask_layer_visibility_checkbox.checked = true
+    mask_layer_visibility_checkbox.classList.add(
+      'maskEditor_sidePanelLayerCheckbox'
     )
-    side_panel_color_select_settings.appendChild(
-      side_panel_paint_bucket_settings_container
-    )
-
-    /// image layer settings
-
-    var side_panel_image_layer_settings = document.createElement('div')
-    side_panel_image_layer_settings.id =
-      'maskEditor_sidePanelImageLayerSettings'
-
-    var side_panel_image_layer_settings_title = document.createElement('h3')
-    side_panel_image_layer_settings_title.classList.add(
-      'maskEditor_sidePanelTitle'
-    )
-    side_panel_image_layer_settings_title.innerText = 'Layers'
-
-    //// mask layer
-
-    var side_panel_mask_layer_title = document.createElement('span')
-    side_panel_mask_layer_title.classList.add('maskEditor_sidePanelSubTitle')
-    side_panel_mask_layer_title.innerText = 'Mask Layer'
-
-    var side_panel_mask_layer = document.createElement('div')
-    side_panel_mask_layer.classList.add('maskEditor_sidePanelLayer')
-
-    var side_panel_mask_layer_visibility_container =
-      document.createElement('div')
-    side_panel_mask_layer_visibility_container.classList.add(
-      'maskEditor_sidePanelLayerVisibilityContainer'
-    )
-
-    var side_panel_mask_layer_visibility_toggle =
-      document.createElement('input')
-    side_panel_mask_layer_visibility_toggle.setAttribute('type', 'checkbox')
-    side_panel_mask_layer_visibility_toggle.classList.add(
-      'maskEditor_sidePanelVisibilityToggle'
-    )
-    side_panel_mask_layer_visibility_toggle.checked = true
-
-    side_panel_mask_layer_visibility_toggle.addEventListener(
-      'change',
-      (event) => {
-        if (!(event.target as HTMLInputElement)!.checked) {
-          this.maskCanvas.style.opacity = '0'
-        } else {
-          this.maskCanvas.style.opacity = String(this.mask_opacity) //change name
-        }
+    mask_layer_visibility_checkbox.addEventListener('change', (event) => {
+      if (!(event.target as HTMLInputElement)!.checked) {
+        this.maskCanvas.style.opacity = '0'
+      } else {
+        this.maskCanvas.style.opacity = String(this.mask_opacity) //change name
       }
-    )
+    })
 
-    side_panel_mask_layer_visibility_container.appendChild(
-      side_panel_mask_layer_visibility_toggle
+    var mask_layer_image_container = document.createElement('div')
+    mask_layer_image_container.classList.add(
+      'maskEditor_sidePanelLayerPreviewContainer'
     )
-
-    var side_panel_mask_layer_icon_container = document.createElement('div')
-    side_panel_mask_layer_icon_container.classList.add(
-      'maskEditor_sidePanelLayerIconContainer'
-    )
-    side_panel_mask_layer_icon_container.innerHTML =
+    mask_layer_image_container.innerHTML =
       '<svg viewBox="0 0 20 20" style="">   <path class="cls-1" d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19,1.9-2.24,2.24Z"/> </svg>'
-
-    var side_panel_mask_layer_blending_container = document.createElement('div')
-    side_panel_mask_layer_blending_container.id =
-      'maskEditor_sidePanelMaskLayerBlendingContainer'
 
     var blending_options = ['black', 'white', 'negative']
 
-    var side_panel_mask_layer_blending_select = document.createElement('select')
-    side_panel_mask_layer_blending_select.id =
-      'maskEditor_sidePanelMaskLayerBlendingSelect'
+    const sidePanelDropdownAccent = this.darkMode
+      ? 'maskEditor_sidePanelDropdown_dark'
+      : 'maskEditor_sidePanelDropdown_light'
+
+    var mask_layer_dropdown = document.createElement('select')
+    mask_layer_dropdown.classList.add(sidePanelDropdownAccent)
+    mask_layer_dropdown.classList.add(sidePanelDropdownAccent)
     blending_options.forEach((option) => {
       var option_element = document.createElement('option')
       option_element.value = option
       option_element.innerText = option
-      side_panel_mask_layer_blending_select.appendChild(option_element)
+      mask_layer_dropdown.appendChild(option_element)
 
       if (option == this.maskBlendMode) {
         option_element.selected = true
       }
     })
 
-    side_panel_mask_layer_blending_select.addEventListener(
-      'change',
-      (event) => {
-        const selectedValue = (event.target as HTMLSelectElement)
-          .value as MaskBlendMode
-        this.maskBlendMode = selectedValue
-        this.updateMaskColor()
-      }
-    )
-
-    side_panel_mask_layer_blending_container.appendChild(
-      side_panel_mask_layer_blending_select
-    )
-
-    side_panel_mask_layer.appendChild(
-      side_panel_mask_layer_visibility_container
-    )
-    side_panel_mask_layer.appendChild(side_panel_mask_layer_icon_container)
-    side_panel_mask_layer.appendChild(side_panel_mask_layer_blending_container)
-
-    var side_panel_mask_layer_opacity_title = document.createElement('span')
-    side_panel_mask_layer_opacity_title.classList.add(
-      'maskEditor_sidePanelSubTitle'
-    )
-    side_panel_mask_layer_opacity_title.innerText = 'Mask Opacity'
-
-    var side_panel_mask_layer_opacity_input = document.createElement('input')
-    side_panel_mask_layer_opacity_input.setAttribute('type', 'range')
-    side_panel_mask_layer_opacity_input.setAttribute('min', '0.0')
-    side_panel_mask_layer_opacity_input.setAttribute('max', '1.0')
-    side_panel_mask_layer_opacity_input.setAttribute('step', '0.01')
-    side_panel_mask_layer_opacity_input.setAttribute(
-      'value',
-      String(this.mask_opacity)
-    )
-    side_panel_mask_layer_opacity_input.classList.add(
-      'maskEditor_sidePanelBrushRange'
-    )
-
-    side_panel_mask_layer_opacity_input.addEventListener('input', (event) => {
-      this.mask_opacity = parseFloat((event.target as HTMLInputElement)!.value)
-      this.maskCanvas.style.opacity = String(this.mask_opacity)
-
-      if (this.mask_opacity == 0) {
-        side_panel_mask_layer_visibility_toggle.checked = false
-      } else {
-        side_panel_mask_layer_visibility_toggle.checked = true
-      }
+    mask_layer_dropdown.addEventListener('change', (event) => {
+      const selectedValue = (event.target as HTMLSelectElement)
+        .value as MaskBlendMode
+      this.maskBlendMode = selectedValue
+      this.updateMaskColor()
     })
 
-    //// image layer
+    mask_layer_container.appendChild(mask_layer_visibility_checkbox)
+    mask_layer_container.appendChild(mask_layer_image_container)
+    mask_layer_container.appendChild(mask_layer_dropdown)
 
-    var side_panel_image_layer_title = document.createElement('span')
-    side_panel_image_layer_title.classList.add('maskEditor_sidePanelSubTitle')
-    side_panel_image_layer_title.innerText = 'Image Layer'
+    const mask_layer_opacity_sliderObj = this.createSlider(
+      'Mask Opacity',
+      0.0,
+      1.0,
+      0.01,
+      this.mask_opacity,
+      (event, value) => {
+        this.mask_opacity = parseFloat(value)
+        this.maskCanvas.style.opacity = String(this.mask_opacity)
 
-    var side_panel_image_layer = document.createElement('div')
-    side_panel_image_layer.classList.add('maskEditor_sidePanelLayer')
-
-    var side_panel_image_layer_visibility_container =
-      document.createElement('div')
-    side_panel_image_layer_visibility_container.classList.add(
-      'maskEditor_sidePanelLayerVisibilityContainer'
-    )
-
-    var side_panel_image_layer_visibility_toggle =
-      document.createElement('input')
-    side_panel_image_layer_visibility_toggle.setAttribute('type', 'checkbox')
-    side_panel_image_layer_visibility_toggle.classList.add(
-      'maskEditor_sidePanelVisibilityToggle'
-    )
-    side_panel_image_layer_visibility_toggle.checked = true
-
-    side_panel_image_layer_visibility_toggle.addEventListener(
-      'change',
-      (event) => {
-        if (!(event.target as HTMLInputElement)!.checked) {
-          this.imgCanvas.style.opacity = '0'
+        if (this.mask_opacity == 0) {
+          mask_layer_visibility_checkbox.checked = false
         } else {
-          this.imgCanvas.style.opacity = '1'
+          mask_layer_visibility_checkbox.checked = true
         }
       }
     )
+    this.maskOpacitySlider = mask_layer_opacity_sliderObj.slider
 
-    side_panel_image_layer_visibility_container.appendChild(
-      side_panel_image_layer_visibility_toggle
+    const image_layer_title = this.createContainerTitle('Image Layer')
+
+    const image_layer_container = this.createContainer(false)
+    image_layer_container.classList.add(accentColor)
+    image_layer_container.classList.add('maskEditor_layerRow')
+
+    const image_layer_visibility_checkbox = document.createElement('input')
+    image_layer_visibility_checkbox.setAttribute('type', 'checkbox')
+    image_layer_visibility_checkbox.classList.add(
+      'maskEditor_sidePanelLayerCheckbox'
+    )
+    image_layer_visibility_checkbox.checked = true
+    image_layer_visibility_checkbox.addEventListener('change', (event) => {
+      if (!(event.target as HTMLInputElement)!.checked) {
+        this.imgCanvas.style.opacity = '0'
+      } else {
+        this.imgCanvas.style.opacity = '1'
+      }
+    })
+
+    const image_layer_image_container = document.createElement('div')
+    image_layer_image_container.classList.add(
+      'maskEditor_sidePanelLayerPreviewContainer'
     )
 
-    var side_panel_image_layer_image_container = document.createElement('div')
-    side_panel_image_layer_image_container.classList.add(
-      'maskEditor_sidePanelLayerIconContainer'
-    )
-
-    var side_panel_image_layer_image = document.createElement('img')
-    side_panel_image_layer_image.id = 'maskEditor_sidePanelImageLayerImage'
-    side_panel_image_layer_image.src =
+    const image_layer_image = document.createElement('img')
+    image_layer_image.id = 'maskEditor_sidePanelImageLayerImage'
+    image_layer_image.src =
       ComfyApp.clipspace?.imgs?.[ComfyApp.clipspace?.selectedIndex ?? 0]?.src ??
       ''
-    this.sidebarImage = side_panel_image_layer_image
+    this.sidebarImage = image_layer_image
 
-    side_panel_image_layer_image_container.appendChild(
-      side_panel_image_layer_image
+    image_layer_image_container.appendChild(image_layer_image)
+
+    image_layer_container.appendChild(image_layer_visibility_checkbox)
+    image_layer_container.appendChild(image_layer_image_container)
+
+    image_layer_settings_container.appendChild(image_layer_settings_title)
+    image_layer_settings_container.appendChild(mask_layer_title)
+    image_layer_settings_container.appendChild(mask_layer_container)
+    image_layer_settings_container.appendChild(
+      mask_layer_opacity_sliderObj.container
     )
+    image_layer_settings_container.appendChild(image_layer_title)
+    image_layer_settings_container.appendChild(image_layer_container)
 
-    side_panel_image_layer.appendChild(
-      side_panel_image_layer_visibility_container
-    )
-    side_panel_image_layer.appendChild(side_panel_image_layer_image_container)
+    return image_layer_settings_container
+  }
 
-    side_panel_image_layer_settings.appendChild(
-      side_panel_image_layer_settings_title
-    )
-    side_panel_image_layer_settings.appendChild(side_panel_mask_layer_title)
-    side_panel_image_layer_settings.appendChild(side_panel_mask_layer)
-    side_panel_image_layer_settings.appendChild(
-      side_panel_mask_layer_opacity_title
-    )
-    side_panel_image_layer_settings.appendChild(
-      side_panel_mask_layer_opacity_input
-    )
-    side_panel_image_layer_settings.appendChild(side_panel_image_layer_title)
-    side_panel_image_layer_settings.appendChild(side_panel_image_layer)
+  private createHeadline(title: string) {
+    var headline = document.createElement('h3')
+    headline.classList.add('maskEditor_sidePanelTitle')
+    headline.innerText = title
 
-    const side_panel_separator1 = document.createElement('div')
-    side_panel_separator1.classList.add('maskEditor_sidePanelSeparator')
+    return headline
+  }
 
-    const side_panel_separator2 = document.createElement('div')
-    side_panel_separator2.classList.add('maskEditor_sidePanelSeparator')
+  private createContainer(flexDirection: boolean) {
+    var container = document.createElement('div')
+    if (flexDirection) {
+      container.classList.add('maskEditor_sidePanelContainerColumn')
+    } else {
+      container.classList.add('maskEditor_sidePanelContainerRow')
+    }
 
-    side_panel.appendChild(side_panel_brush_settings)
-    side_panel.appendChild(side_panel_paint_bucket_settings)
-    side_panel.appendChild(side_panel_color_select_settings)
-    side_panel.appendChild(side_panel_separator1)
-    side_panel.appendChild(side_panel_image_layer_settings)
+    return container
+  }
 
-    side_panel_container.appendChild(side_panel)
+  private createContainerTitle(title: string) {
+    var container_title = document.createElement('span')
+    container_title.classList.add('maskEditor_sidePanelSubTitle')
+    container_title.innerText = title
 
-    return side_panel_container
+    return container_title
+  }
+
+  private createSlider(
+    title: string,
+    min: number,
+    max: number,
+    step: number,
+    value: number,
+    callback: (event: Event, value: string) => void
+  ) {
+    var slider_container = this.createContainer(true)
+    var slider_title = this.createContainerTitle(title)
+
+    var slider = document.createElement('input')
+    slider.classList.add('maskEditor_sidePanelBrushRange')
+    slider.setAttribute('type', 'range')
+    slider.setAttribute('min', String(min))
+    slider.setAttribute('max', String(max))
+    slider.setAttribute('step', String(step))
+    slider.setAttribute('value', String(value))
+    slider.addEventListener('input', (event) => {
+      callback(event, (event.target as HTMLInputElement).value)
+    })
+    slider_container.appendChild(slider_title)
+    slider_container.appendChild(slider)
+
+    return { container: slider_container, slider: slider }
+  }
+
+  private createToggle(
+    title: string,
+    callback: (event: Event, value: boolean) => void
+  ) {
+    var outer_Container = this.createContainer(false)
+    var toggle_title = this.createContainerTitle(title)
+
+    var toggle_container = document.createElement('label')
+    toggle_container.classList.add('maskEditor_sidePanelToggleContainer')
+
+    var toggle_checkbox = document.createElement('input')
+    toggle_checkbox.setAttribute('type', 'checkbox')
+    toggle_checkbox.classList.add('maskEditor_sidePanelToggleCheckbox')
+    toggle_checkbox.addEventListener('change', (event) => {
+      callback(event, (event.target as HTMLInputElement).checked)
+    })
+
+    var toggleAccentColor = this.darkMode
+      ? 'maskEditor_toggle_bg_dark'
+      : 'maskEditor_toggle_bg_light'
+
+    var toggle_switch = document.createElement('div')
+    toggle_switch.classList.add('maskEditor_sidePanelToggleSwitch')
+    toggle_switch.classList.add(toggleAccentColor)
+
+    toggle_container.appendChild(toggle_checkbox)
+    toggle_container.appendChild(toggle_switch)
+
+    outer_Container.appendChild(toggle_title)
+    outer_Container.appendChild(toggle_container)
+
+    return outer_Container
+  }
+
+  private createDropdown(
+    title: string,
+    options: string[],
+    callback: (event: Event, value: string) => void
+  ) {
+    const sidePanelDropdownAccent = this.darkMode
+      ? 'maskEditor_sidePanelDropdown_dark'
+      : 'maskEditor_sidePanelDropdown_light'
+    var dropdown_container = this.createContainer(false)
+    var dropdown_title = this.createContainerTitle(title)
+
+    var dropdown = document.createElement('select')
+    dropdown.classList.add(sidePanelDropdownAccent)
+    dropdown.classList.add('maskEditor_containerDropdown')
+
+    options.forEach((option) => {
+      var option_element = document.createElement('option')
+      option_element.value = option
+      option_element.innerText = option
+      dropdown.appendChild(option_element)
+    })
+
+    dropdown.addEventListener('change', (event) => {
+      callback(event, (event.target as HTMLSelectElement).value)
+    })
+
+    dropdown_container.appendChild(dropdown_title)
+    dropdown_container.appendChild(dropdown)
+
+    return dropdown_container
+  }
+
+  private createSeparator() {
+    var separator = document.createElement('div')
+    separator.classList.add('maskEditor_sidePanelSeparator')
+
+    return separator
   }
 
   private async createTopBar() {
+    const buttonAccentColor = this.darkMode
+      ? 'maskEditor_topPanelButton_dark'
+      : 'maskEditor_topPanelButton_light'
+
     var top_bar = document.createElement('div')
     top_bar.id = 'maskEditor_topBar'
 
@@ -3057,7 +3023,7 @@ class UIManager {
 
     var top_bar_clear_button = document.createElement('button')
     top_bar_clear_button.id = 'maskEditor_topBarClearButton'
-    top_bar_clear_button.classList.add('maskEditor_topPanelButton')
+    top_bar_clear_button.classList.add(buttonAccentColor)
     top_bar_clear_button.innerText = 'Clear'
 
     top_bar_clear_button.addEventListener('click', () => {
@@ -3072,7 +3038,7 @@ class UIManager {
 
     var top_bar_save_button = document.createElement('button')
     top_bar_save_button.id = 'maskEditor_topBarSaveButton'
-    top_bar_save_button.classList.add('maskEditor_topPanelButton')
+    top_bar_save_button.classList.add(buttonAccentColor)
     top_bar_save_button.innerText = 'Save'
     this.saveButton = top_bar_save_button
 
@@ -3082,7 +3048,7 @@ class UIManager {
 
     var top_bar_cancel_button = document.createElement('button')
     top_bar_cancel_button.id = 'maskEditor_topBarCancelButton'
-    top_bar_cancel_button.classList.add('maskEditor_topPanelButton')
+    top_bar_cancel_button.classList.add(buttonAccentColor)
     top_bar_cancel_button.innerText = 'Cancel'
 
     top_bar_cancel_button.addEventListener('click', () => {
@@ -3099,6 +3065,8 @@ class UIManager {
 
     return top_bar
   }
+
+  //----------------
 
   private createToolPanel() {
     var pen_tool_panel = document.createElement('div')
@@ -3400,6 +3368,8 @@ class UIManager {
     const rgb_url = new URL(
       ComfyApp.clipspace.imgs[ComfyApp.clipspace.selectedIndex].src
     )
+    this.imageURL = rgb_url
+    console.log(rgb_url)
     rgb_url.searchParams.delete('channel')
     rgb_url.searchParams.set('channel', 'rgb')
     this.image = new Image()
@@ -3511,6 +3481,10 @@ class UIManager {
     }
   }
 
+  private detectLightMode() {
+    this.darkMode = document.body.classList.contains('dark-theme')
+  }
+
   private loadImage(imagePath: URL): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const image = new Image() as HTMLImageElement
@@ -3564,8 +3538,8 @@ class UIManager {
     return this.maskBlendMode
   }
 
-  setSidebarImage(src: string) {
-    this.sidebarImage.src = src
+  setSidebarImage() {
+    this.sidebarImage.src = this.imageURL.href
   }
 
   async getMaskColor() {
@@ -4263,6 +4237,7 @@ class MessageBroker {
     this.createPushTopic('setWholeImage')
     this.createPushTopic('setMaskBoundary')
     this.createPushTopic('setMaskTolerance')
+    this.createPushTopic('setBrushSmoothingPrecision')
   }
 
   /**
