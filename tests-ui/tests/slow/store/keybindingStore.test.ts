@@ -160,4 +160,76 @@ describe('useKeybindingStore', () => {
       defaultKeybinding
     )
   })
+
+  it('Should accept same keybinding from default and user', () => {
+    const store = useKeybindingStore()
+    const keybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'J', ctrl: true }
+    })
+    // Add default keybinding.
+    // This can happen when we change default keybindings.
+    store.addDefaultKeybinding(keybinding)
+    // Add user keybinding.
+    store.addUserKeybinding(keybinding)
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
+  })
+
+  it('Should keep previously customized keybindings after default keybindings change', () => {
+    // Initially command 'foo' was bound to 'K, Ctrl'. User unset it and bound the
+    // command to 'A, Ctrl'.
+    // Now we change the default keybindings of 'foo' to 'A, Ctrl'.
+    // The user customized keybinding should be kept.
+    const store = useKeybindingStore()
+
+    const userUnsetKeybindings = [
+      new KeybindingImpl({
+        commandId: 'foo',
+        combo: { key: 'K', ctrl: true }
+      })
+    ]
+
+    const userNewKeybindings = [
+      new KeybindingImpl({
+        commandId: 'foo',
+        combo: { key: 'A', ctrl: true }
+      })
+    ]
+
+    const newCoreKeybindings = [
+      new KeybindingImpl({
+        commandId: 'foo',
+        combo: { key: 'A', ctrl: true }
+      })
+    ]
+
+    for (const keybinding of newCoreKeybindings) {
+      store.addDefaultKeybinding(keybinding)
+    }
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+      userNewKeybindings[0]
+    )
+
+    for (const keybinding of userUnsetKeybindings) {
+      store.unsetKeybinding(keybinding)
+    }
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+      userNewKeybindings[0]
+    )
+
+    for (const keybinding of userNewKeybindings) {
+      store.addUserKeybinding(keybinding)
+    }
+
+    expect(store.keybindings).toHaveLength(1)
+    expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
+      userNewKeybindings[0]
+    )
+  })
 })
