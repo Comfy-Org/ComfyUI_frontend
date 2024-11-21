@@ -2,9 +2,10 @@
   <Button
     @click="reportIssue"
     :label="$t('reportIssue')"
-    severity="secondary"
+    :severity="submitted ? 'success' : 'secondary'"
     :icon="icon"
     :disabled="submitted"
+    v-tooltip="$t('reportIssueTooltip')"
   >
   </Button>
 </template>
@@ -19,9 +20,6 @@ import { electronAPI } from '@/utils/envUtil'
 
 const { error } = defineProps<{
   error: ExecutionErrorWsMessage
-}>()
-const emit = defineEmits<{
-  close: []
 }>()
 
 const { t } = useI18n()

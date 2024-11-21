@@ -98,6 +98,7 @@ const messages = {
     loading: 'Loading',
     findIssues: 'Find Issues',
     reportIssue: 'Send Report',
+    reportIssueTooltip: 'Submit the error report to Comfy Org',
     reportSent: 'Report Submitted',
     copyToClipboard: 'Copy to Clipboard',
     openNewIssue: 'Open New Issue',
