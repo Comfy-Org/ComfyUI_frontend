@@ -150,10 +150,7 @@ export default defineConfig({
     rollupOptions: {
       // Disabling tree-shaking
       // Prevent vite remove unused exports
-      treeshake: false,
-      external: [
-        'electron'
-      ]
+      treeshake: false
     }
   },
 

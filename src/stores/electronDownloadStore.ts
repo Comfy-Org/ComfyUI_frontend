@@ -1,7 +1,10 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { isElectron, electronAPI } from '@/utils/envUtil'
-import { DownloadState, DownloadStatus } from '@comfyorg/comfyui-electron-types'
+import type {
+  DownloadState,
+  DownloadStatus
+} from '@comfyorg/comfyui-electron-types'
 
 export interface ElectronDownload
   extends Pick<DownloadState, 'url' | 'filename'> {
