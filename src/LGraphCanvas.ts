@@ -175,13 +175,9 @@ interface ClipboardPasteResult {
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
- *
- * @param {HTMLCanvas} canvas the canvas where you want to render (it accepts a selector in string format or the canvas element itself)
- * @param {LGraph} graph [optional]
- * @param {Object} options [optional] { skip_rendering, autoresize, viewport }
  */
 export class LGraphCanvas {
-  /* Interaction */
+  // Optimised buffers used during rendering
   static #temp = new Float32Array(4)
   static #temp_vec2 = new Float32Array(2)
   static #tmp_area = new Float32Array(4)
@@ -510,7 +506,7 @@ export class LGraphCanvas {
     this.options = options
 
     // if(graph === undefined)
-    //	throw ("No graph assigned");
+    // throw ("No graph assigned");
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
     this.ds = new DragAndScale()
@@ -644,8 +640,8 @@ export class LGraphCanvas {
   /**
    * @deprecated Functionality moved to {@link getBoundaryNodes}.  The new function returns null on failure, instead of an object with all null properties.
    * Determines the furthest nodes in each direction
-   * @param {Dictionary<LGraphNode>} nodes the nodes to from which boundary nodes will be extracted
-   * @return {{left: LGraphNode, top: LGraphNode, right: LGraphNode, bottom: LGraphNode}}
+   * @param nodes the nodes to from which boundary nodes will be extracted
+   * @returns
    */
   static getBoundaryNodes(
     nodes: LGraphNode[] | Dictionary<LGraphNode>,
@@ -663,9 +659,9 @@ export class LGraphCanvas {
 
   /**
    * @deprecated Functionality moved to {@link alignNodes}.  The new function does not set dirty canvas.
-   * @param {Dictionary<LGraphNode>} nodes a list of nodes
-   * @param {"top"|"bottom"|"left"|"right"} direction Direction to align the nodes
-   * @param {LGraphNode?} align_to Node to align to (if null, align to the furthest node in the given direction)
+   * @param nodes a list of nodes
+   * @param direction Direction to align the nodes
+   * @param align_to Node to align to (if null, align to the furthest node in the given direction)
    */
   static alignNodes(
     nodes: Dictionary<LGraphNode>,
@@ -1584,8 +1580,7 @@ export class LGraphCanvas {
 
   /**
    * assigns a graph, you can reassign graphs to the same canvas
-   *
-   * @param {LGraph} graph
+   * @param graph
    */
   setGraph(graph: LGraph, skip_clear: boolean): void {
     if (this.graph == graph) return
@@ -1606,9 +1601,7 @@ export class LGraphCanvas {
   }
 
   /**
-   * returns the top level graph (in case there are subgraphs open on the canvas)
-   *
-   * @return {LGraph} graph
+   * @returns the top level graph (in case there are subgraphs open on the canvas)
    */
   getTopGraph(): LGraph {
     return this._graph_stack.length
@@ -1617,8 +1610,7 @@ export class LGraphCanvas {
   }
 
   /**
-   * returns the visually active graph (in case there are more in the stack)
-   * @return {LGraph} the active graph
+   * @returns the visually active graph (in case there are more in the stack)
    */
   getCurrentGraph(): LGraph {
     return this.graph
@@ -1644,7 +1636,6 @@ export class LGraphCanvas {
   /**
    * Sets the current HTML canvas element.
    * Calls bindEvents to add input event listeners, and (re)creates the background canvas.
-   *
    * @param canvas The canvas element to assign, or its HTML element ID.  If null or undefined, the current reference is cleared.
    * @param skip_events If true, events on the previous canvas will not be removed.  Has no effect on the first invocation.
    */
@@ -1708,7 +1699,7 @@ export class LGraphCanvas {
 
   /**
    * binds mouse, keyboard, touch and drag events to the canvas
-   **/
+   */
   bindEvents(): void {
     if (this._events_binded) {
       console.warn("LGraphCanvas: events already binded")
@@ -1763,7 +1754,7 @@ export class LGraphCanvas {
 
   /**
    * unbinds mouse events from the canvas
-   **/
+   */
   unbindEvents(): void {
     if (!this._events_binded) {
       console.warn("LGraphCanvas: no events binded")
@@ -1804,7 +1795,7 @@ export class LGraphCanvas {
   /**
    * this function allows to render the canvas using WebGL instead of Canvas2D
    * this is useful if you plant to render 3D objects inside your nodes, it uses litegl.js for webgl and canvas2DtoWebGL to emulate the Canvas2D calls in webGL
-   **/
+   */
   enableWebGL(): void {
     // TODO: Delete or move all webgl to a module and never load it.
     // @ts-expect-error
@@ -1836,7 +1827,6 @@ export class LGraphCanvas {
    * Ensures the canvas will be redrawn on the next frame by setting the dirty flag(s).
    * Without parameters, this function does nothing.
    * @todo Impl. `setDirty()` or similar as shorthand to redraw everything.
-   *
    * @param fgcanvas If true, marks the foreground canvas as dirty (nodes and anything drawn on top of them).  Default: false
    * @param bgcanvas If true, mark the background canvas as dirty (background, groups, links).  Default: false
    */
@@ -1853,8 +1843,7 @@ export class LGraphCanvas {
 
   /**
    * Used to attach the canvas in a popup
-   *
-   * @return {window} returns the window where the canvas is attached (the DOM root node)
+   * @returns returns the window where the canvas is attached (the DOM root node)
    */
   getCanvasWindow(): Window {
     if (!this.canvas) return window
@@ -1952,8 +1941,8 @@ export class LGraphCanvas {
    * Clears highlight and mouse-over information from nodes that should not have it.
    *
    * Intended to be called when the pointer moves away from a node.
-   * @param {LGraphNode} node The node that the mouse is now over
-   * @param {MouseEvent} e MouseEvent that is triggering this
+   * @param node The node that the mouse is now over
+   * @param e MouseEvent that is triggering this
    */
   updateMouseOverNodes(node: LGraphNode, e: CanvasMouseEvent): void {
     const nodes = this.graph._nodes
@@ -2266,8 +2255,8 @@ export class LGraphCanvas {
 
   /**
    * Processes a pointerdown event inside the bounds of a node.  Part of {@link processMouseDown}.
-   * @param ctrlOrMeta Ctrl or meta key is pressed
    * @param e The pointerdown event
+   * @param ctrlOrMeta Ctrl or meta key is pressed
    * @param node The node to process a click event for
    */
   #processNodeClick(
@@ -2734,7 +2723,7 @@ export class LGraphCanvas {
 
   /**
    * Called when a mouse move event has to be processed
-   **/
+   */
   processMouseMove(e: PointerEvent): void {
     if (this.autoresize) this.resize()
 
@@ -3042,7 +3031,7 @@ export class LGraphCanvas {
 
   /**
    * Called when a mouse up event has to be processed
-   **/
+   */
   processMouseUp(e: PointerEvent): void {
     // early exit for extra pointer
     if (e.isPrimary === false) return
@@ -3219,7 +3208,7 @@ export class LGraphCanvas {
 
   /**
    * Called when a mouse wheel event has to be processed
-   **/
+   */
   processMouseWheel(e: WheelEvent): void {
     if (!this.graph || !this.allow_dragcanvas) return
 
@@ -3247,7 +3236,7 @@ export class LGraphCanvas {
 
   /**
    * returns the INDEX if a position (in graph space) is on top of a node input slot
-   **/
+   */
   isOverNodeInput(
     node: LGraphNode,
     canvasx: number,
@@ -3296,7 +3285,7 @@ export class LGraphCanvas {
 
   /**
    * returns the INDEX if a position (in graph space) is on top of a node output slot
-   **/
+   */
   isOverNodeOutput(
     node: LGraphNode,
     canvasx: number,
@@ -3340,7 +3329,7 @@ export class LGraphCanvas {
 
   /**
    * process a key event
-   **/
+   */
   processKey(e: KeyboardEvent): boolean | null {
     this.#shiftDown = e.shiftKey
     if (!this.graph) return
@@ -3365,10 +3354,8 @@ export class LGraphCanvas {
         this.node_panel?.close()
         this.options_panel?.close()
         block_default = true
-      }
-
-      // select all Control A
-      else if (e.keyCode == 65 && e.ctrlKey) {
+      } else if (e.keyCode == 65 && e.ctrlKey) {
+        // select all Control A
         this.selectItems()
         block_default = true
       } else if (e.keyCode === 67 && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
@@ -3380,10 +3367,8 @@ export class LGraphCanvas {
       } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
         // paste
         this.pasteFromClipboard(e.shiftKey)
-      }
-
-      // delete or backspace
-      else if (e.keyCode == 46 || e.keyCode == 8) {
+      } else if (e.keyCode == 46 || e.keyCode == 8) {
+        // delete or backspace
         // @ts-expect-error
         if (e.target.localName != "input" && e.target.localName != "textarea") {
           this.deleteSelected()
@@ -3643,7 +3628,7 @@ export class LGraphCanvas {
 
   /**
    * process a item drop event on top the canvas
-   **/
+   */
   processDrop(e: DragEvent): boolean {
     e.preventDefault()
     this.adjustMouseEvent(e)
@@ -3909,7 +3894,7 @@ export class LGraphCanvas {
   /**
    * selects several nodes (or adds them to the current selection)
    * @deprecated See {@link LGraphCanvas.selectItems}
-   **/
+   */
   selectNodes(nodes?: LGraphNode[], add_to_current_selection?: boolean): void {
     this.selectItems(nodes, add_to_current_selection)
   }
@@ -3967,7 +3952,6 @@ export class LGraphCanvas {
 
   /**
    * Deletes all selected items from the graph.
-   *
    * @todo Refactor deletion task to LGraph.  Selection is a canvas property, delete is a graph action.
    */
   deleteSelected(): void {
@@ -4002,14 +3986,14 @@ export class LGraphCanvas {
   /**
    * deletes all nodes in the current selection from the graph
    * @deprecated See {@link LGraphCanvas.deleteSelected}
-   **/
+   */
   deleteSelectedNodes(): void {
     this.deleteSelected()
   }
 
   /**
    * centers the camera on a given node
-   **/
+   */
   centerOnNode(node: LGraphNode): void {
     const dpi = window?.devicePixelRatio || 1
     this.ds.offset[0] =
@@ -4025,7 +4009,7 @@ export class LGraphCanvas {
 
   /**
    * adds some useful properties to a mouse event, like the position in graph coordinates
-   **/
+   */
   adjustMouseEvent<T extends MouseEvent>(
     e: T & Partial<ICanvasPosition & IDeltaPosition>,
   ): asserts e is T & CanvasMouseEvent {
@@ -4057,7 +4041,7 @@ export class LGraphCanvas {
 
   /**
    * changes the zoom level of the graph (default is 1), you can pass also a place used to pivot the zoom
-   **/
+   */
   setZoom(value: number, zooming_center: Point) {
     this.ds.changeScale(value, zooming_center)
     this.#dirty()
@@ -4065,7 +4049,7 @@ export class LGraphCanvas {
 
   /**
    * converts a coordinate from graph coordinates to canvas2D coordinates
-   **/
+   */
   convertOffsetToCanvas(pos: Point, out: Point): Point {
     // @ts-expect-error Unused param
     return this.ds.convertOffsetToCanvas(pos, out)
@@ -4073,7 +4057,7 @@ export class LGraphCanvas {
 
   /**
    * converts a coordinate from Canvas2D coordinates to graph space
-   **/
+   */
   convertCanvasToOffset(pos: Point, out?: Point): Point {
     return this.ds.convertCanvasToOffset(pos, out)
   }
@@ -4090,7 +4074,7 @@ export class LGraphCanvas {
 
   /**
    * brings a node to front (above all other nodes)
-   **/
+   */
   bringToFront(node: LGraphNode): void {
     const i = this.graph._nodes.indexOf(node)
     if (i == -1) return
@@ -4101,7 +4085,7 @@ export class LGraphCanvas {
 
   /**
    * sends a node to the back (below all other nodes)
-   **/
+   */
   sendToBack(node: LGraphNode): void {
     const i = this.graph._nodes.indexOf(node)
     if (i == -1) return
@@ -4114,7 +4098,7 @@ export class LGraphCanvas {
    * Determines which nodes are visible and populates {@link out} with the results.
    * @param nodes The list of nodes to check - if falsy, all nodes in the graph will be checked
    * @param out Array to write visible nodes into - if falsy, a new array is created instead
-   * @returns {LGraphNode[]} Array passed ({@link out}), or a new array containing all visible nodes
+   * @returns Array passed ({@link out}), or a new array containing all visible nodes
    */
   computeVisibleNodes(nodes?: LGraphNode[], out?: LGraphNode[]): LGraphNode[] {
     const visible_nodes = out || []
@@ -4133,7 +4117,7 @@ export class LGraphCanvas {
 
   /**
    * renders the whole canvas content, by rendering in two separated canvas, one containing the background grid and the connections, and one containing the nodes)
-   **/
+   */
   draw(force_canvas?: boolean, force_bgcanvas?: boolean): void {
     if (!this.canvas || this.canvas.width == 0 || this.canvas.height == 0) return
 
@@ -4166,7 +4150,7 @@ export class LGraphCanvas {
 
   /**
    * draws the front canvas (the one containing all the nodes)
-   **/
+   */
   drawFrontCanvas(): void {
     this.dirty_canvas = false
 
@@ -4481,7 +4465,7 @@ export class LGraphCanvas {
 
   /**
    * draws some useful stats in the corner of the canvas
-   **/
+   */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     x = x || 10
     y = y || this.canvas.offsetHeight - 80
@@ -4506,7 +4490,7 @@ export class LGraphCanvas {
 
   /**
    * draws the back canvas (the one containing the background and the connections)
-   **/
+   */
   drawBackCanvas(): void {
     const canvas = this.bgcanvas
     if (
@@ -4669,7 +4653,7 @@ export class LGraphCanvas {
 
   /**
    * draws the given node inside the canvas
-   **/
+   */
   drawNode(node: LGraphNode, ctx: CanvasRenderingContext2D): void {
     this.current_node = node
 
@@ -5043,7 +5027,6 @@ export class LGraphCanvas {
    * @param fgcolor Foreground colour - used for text
    * @param bgcolor Background colour of the node
    * @param selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the selected property of the node.
-   * @param mouse_over Deprecated
    */
   drawNodeShape(
     node: LGraphNode,
@@ -5330,15 +5313,6 @@ export class LGraphCanvas {
 
   /**
    * Draws the selection bounding of an area.
-   * @param {CanvasRenderingContext2D} ctx
-   * @param {Vector4} area
-   * @param {{
-   *   shape: LiteGraph.Shape,
-   *   title_height: number,
-   *   title_mode: LiteGraph.TitleMode,
-   *   fgcolor: string,
-   *   padding: number,
-   * }} options
    */
   drawSelectionBounding(
     ctx: CanvasRenderingContext2D,
@@ -5417,7 +5391,7 @@ export class LGraphCanvas {
    * item would land if dropped.
    * @param ctx The 2D canvas context to draw on
    * @param item The item to draw a snap guide for
-   * @param snapTo The grid size to snap to
+   * @param shape The shape of the snap guide to draw
    * @todo Update to align snapping with boundingRect
    * @todo Shapes
    */
@@ -5647,15 +5621,14 @@ export class LGraphCanvas {
   /**
    * draws a link between two points
    * @param ctx Canvas 2D rendering context
-   * @param {vec2} a start pos
-   * @param {vec2} b end pos
-   * @param {Object} link the link object with all the link info
-   * @param {boolean} skip_border ignore the shadow of the link
-   * @param {boolean} flow show flow animation (for events)
-   * @param {string} color the color for the link
-   * @param {LinkDirection} start_dir the direction enum
-   * @param {LinkDirection} end_dir the direction enum
-   * @param {number} num_sublines number of sublines (useful to represent vec3 or rgb)
+   * @param a start pos
+   * @param b end pos
+   * @param link the link object with all the link info
+   * @param skip_border ignore the shadow of the link
+   * @param flow show flow animation (for events)
+   * @param color the color for the link
+   * @param start_dir the direction enum
+   * @param end_dir the direction enum
    */
   renderLink(
     ctx: CanvasRenderingContext2D,
@@ -6036,7 +6009,7 @@ export class LGraphCanvas {
 
   /**
    * draws the widgets stored inside a node
-   **/
+   */
   drawNodeWidgets(
     node: LGraphNode,
     posY: number,
@@ -6304,7 +6277,7 @@ export class LGraphCanvas {
 
   /**
    * draws every group area in the background
-   **/
+   */
   drawGroups(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): void {
     if (!this.graph) return
 
@@ -6342,7 +6315,7 @@ export class LGraphCanvas {
   /**
    * resizes the canvas to a given size, if no size is passed, then it tries to fill the parentNode
    * @todo Remove or rewrite
-   **/
+   */
   resize(width?: number, height?: number): void {
     if (!width && !height) {
       const parent = this.canvas.parentElement
@@ -6363,7 +6336,6 @@ export class LGraphCanvas {
 
   /**
    * Determines the furthest nodes in each direction for the currently selected nodes
-   * @return {{left: LGraphNode, top: LGraphNode, right: LGraphNode, bottom: LGraphNode}}
    */
   boundaryNodesForSelection(): NullableProperties<IBoundaryNodes> {
     return LGraphCanvas.getBoundaryNodes(this.selected_nodes)
@@ -7543,8 +7515,8 @@ export class LGraphCanvas {
     } else if (options.event) {
       offsetx += options.event.clientX
       offsety += options.event.clientY
-    } // centered
-    else {
+    } else {
+      // centered
       offsetx += this.canvas.width * 0.5
       offsety += this.canvas.height * 0.5
     }
@@ -8277,7 +8249,6 @@ export class LGraphCanvas {
   /**
    * Starts an animation to fit the view around the specified selection of nodes.
    * @param bounds The bounds to animate the view to, defined by a rectangle.
-   * @param animationParameters Various parameters for the camera movement animation.
    */
   animateToBounds(
     bounds: ReadOnlyRect,
@@ -8357,5 +8328,6 @@ export type AnimationOptions = {
   duration?: number
   /** Relative target zoom level. 1 means the view is fit exactly on the bounding box. */
   zoom?: number
+  /** The animation easing function (curve) */
   easing?: EaseFunction
 }

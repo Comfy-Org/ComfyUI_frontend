@@ -96,8 +96,8 @@ flags object:
 supported callbacks:
     + onAdded: when added to graph (warning: this is called BEFORE the node is configured when loading)
     + onRemoved: when removed from graph
-    + onStart:	when the graph starts playing
-    + onStop:	when the graph stops playing
+    + onStart: when the graph starts playing
+    + onStop: when the graph stops playing
     + onDrawForeground: render the inside widgets inside the node
     + onDrawBackground: render the background area inside the node (only in edit mode)
     + onMouseDown
@@ -126,14 +126,16 @@ supported callbacks:
     + getExtraMenuOptions: to add option to context menu
 */
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface LGraphNode {
   constructor: LGraphNodeConstructor
 }
 
 /**
  * Base Class for all the node type classes
- * @param {String} name a name for the node
+ * @param {string} name a name for the node
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class LGraphNode implements Positionable, IPinnable {
   // Static properties used by dynamic child classes
   static title?: string
@@ -515,8 +517,8 @@ export class LGraphNode implements Positionable, IPinnable {
         } else {
           this[j] = LiteGraph.cloneObject(info[j], this[j])
         }
-      } // value
-      else {
+      } else {
+        // value
         this[j] = info[j]
       }
     }
@@ -678,8 +680,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * sets the value of a property
-   * @param {String} name
-   * @param {*} value
+   * @param name
+   * @param value
    */
   setProperty(name: string, value: TWidgetValue): void {
     this.properties ||= {}
@@ -707,15 +709,15 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * sets the output data
-   * @param {number} slot
-   * @param {*} data
+   * @param slot
+   * @param data
    */
   setOutputData(slot: number, data: unknown): void {
     if (!this.outputs) return
 
     // this maybe slow and a niche case
     // if(slot && slot.constructor === String)
-    //	slot = this.findOutputSlot(slot);
+    // slot = this.findOutputSlot(slot);
     if (slot == -1 || slot >= this.outputs.length) return
 
     const output_info = this.outputs[slot]
@@ -736,8 +738,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * sets the output data type, useful when you want to be able to overwrite the data type
-   * @param {number} slot
-   * @param {String} datatype
    */
   setOutputDataType(slot: number, type: ISlotType): void {
     if (!this.outputs) return
@@ -758,9 +758,9 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Retrieves the input data (data traveling through the connection) from one slot
-   * @param {number} slot
-   * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
-   * @return {*} data or if it is not connected returns undefined
+   * @param slot
+   * @param force_update if set to true it will force the connected node of this slot to output data into this link
+   * @returns data or if it is not connected returns undefined
    */
   getInputData(slot: number, force_update?: boolean): unknown {
     if (!this.inputs) return
@@ -789,8 +789,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Retrieves the input data type (in case this supports multiple input types)
-   * @param {number} slot
-   * @return {String} datatype in string format
+   * @param slot
+   * @returns datatype in string format
    */
   getInputDataType(slot: number): ISlotType {
     if (!this.inputs) return null
@@ -812,9 +812,9 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Retrieves the input data from one slot using its name instead of slot number
-   * @param {String} slot_name
-   * @param {boolean} force_update if set to true it will force the connected node of this slot to output data into this link
-   * @return {*} data or if it is not connected returns null
+   * @param slot_name
+   * @param force_update if set to true it will force the connected node of this slot to output data into this link
+   * @returns data or if it is not connected returns null
    */
   getInputDataByName(slot_name: string, force_update: boolean): unknown {
     const slot = this.findInputSlot(slot_name)
@@ -825,8 +825,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you if there is a connection in one input slot
-   * @param {number} slot
-   * @return {boolean}
+   * @param slot The 0-based index of the input to check
+   * @returns `true` if the input slot has a link ID (does not perform validation)
    */
   isInputConnected(slot: number): boolean {
     if (!this.inputs) return false
@@ -835,8 +835,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you info about an input connection (which node, type, etc)
-   * @param {number} slot
-   * @return {Object} object or null { link: id, name: string, type: string or 0 }
+   * @returns object or null { link: id, name: string, type: string or 0 }
    */
   getInputInfo(slot: number): INodeInputSlot {
     return !this.inputs || !(slot < this.inputs.length)
@@ -846,8 +845,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Returns the link info in the connection of an input slot
-   * @param {number} slot
-   * @return {LLink} object or null
+   * @returns object or null
    */
   getInputLink(slot: number): LLink | null {
     if (!this.inputs) return null
@@ -860,8 +858,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns the node connected in the input slot
-   * @param {number} slot
-   * @return {LGraphNode} node or null
+   * @returns node or null
    */
   getInputNode(slot: number): LGraphNode {
     if (!this.inputs) return null
@@ -878,8 +875,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns the value of an input with this name, otherwise checks if there is a property with that name
-   * @param {string} name
-   * @return {*} value
+   * @returns value
    */
   getInputOrProperty(name: string): unknown {
     if (!this.inputs || !this.inputs.length) {
@@ -898,8 +894,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you the last output data that went in that slot
-   * @param {number} slot
-   * @return {Object}  object or null
+   * @returns object or null
    */
   getOutputData(slot: number): unknown {
     if (!this.outputs) return null
@@ -911,8 +906,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you info about an output connection (which node, type, etc)
-   * @param {number} slot
-   * @return {Object}  object or null { name: string, type: string, links: [ ids of links in number ] }
+   * @returns object or null { name: string, type: string, links: [ ids of links in number ] }
    */
   getOutputInfo(slot: number): INodeOutputSlot {
     return !this.outputs || !(slot < this.outputs.length)
@@ -922,8 +916,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you if there is a connection in one output slot
-   * @param {number} slot
-   * @return {boolean}
    */
   isOutputConnected(slot: number): boolean {
     if (!this.outputs) return false
@@ -932,7 +924,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * tells you if there is any connection in the output slots
-   * @return {boolean}
    */
   isAnyOutputConnected(): boolean {
     if (!this.outputs) return false
@@ -947,8 +938,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * retrieves all the nodes connected to this output slot
-   * @param {number} slot
-   * @return {array}
    */
   getOutputNodes(slot: number): LGraphNode[] {
     if (!this.outputs || this.outputs.length == 0) return null
@@ -1039,8 +1028,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Triggers the node code execution, place a boolean/counter to mark the node as being executed
-   * @param {*} param
-   * @param {*} options
    */
   doExecute(param?: unknown, options?: { action_call?: any }): void {
     options = options || {}
@@ -1065,8 +1052,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Triggers an action, wrapped by logics to control execution flow
-   * @param {String} action name
-   * @param {*} param
+   * @param action name
    */
   actionDo(
     action: string,
@@ -1094,8 +1080,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Triggers an event in this node, this will trigger any output with the same name
-   * @param {String} event name ( "on_play", ... ) if action is equivalent to false then the event is send to all
-   * @param {*} param
+   * @param action name ( "on_play", ... ) if action is equivalent to false then the event is send to all
    */
   trigger(
     action: string,
@@ -1122,9 +1107,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Triggers a slot event in this node: cycle output slots and launch execute/action on connected nodes
-   * @param {Number} slot the index of the output slot
-   * @param {*} param
-   * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
+   * @param slot the index of the output slot
+   * @param link_id [optional] in case you want to trigger and specific output link in a slot
    */
   triggerSlot(
     slot: number,
@@ -1186,8 +1170,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * clears the trigger slot animation
-   * @param {Number} slot the index of the output slot
-   * @param {Number} link_id [optional] in case you want to trigger and specific output link in a slot
+   * @param slot the index of the output slot
+   * @param link_id [optional] in case you want to trigger and specific output link in a slot
    */
   clearTriggeredSlot(slot: number, link_id: number): void {
     if (!this.outputs) return
@@ -1214,7 +1198,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * changes node size and triggers callback
-   * @param {vec2} size
    */
   setSize(size: Size): void {
     this.size = size
@@ -1223,10 +1206,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add a new property to this node
-   * @param {string} name
-   * @param {*} default_value
-   * @param {string} type string defining the output type ("vec3","number",...)
-   * @param {Object} extra_info this can be used to have special properties of the property (like values, etc)
+   * @param type string defining the output type ("vec3","number",...)
+   * @param extra_info this can be used to have special properties of the property (like values, etc)
    */
   addProperty(
     name: string,
@@ -1253,9 +1234,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add a new output slot to use in this node
-   * @param {string} name
-   * @param {string} type string defining the output type ("vec3","number",...)
-   * @param {Object} extra_info this can be used to have special properties of an output (label, special color, position, etc)
+   * @param type string defining the output type ("vec3","number",...)
+   * @param extra_info this can be used to have special properties of an output (label, special color, position, etc)
    */
   addOutput(
     name?: string,
@@ -1283,7 +1263,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add a new output slot to use in this node
-   * @param {Array} array of triplets like [[name,type,extra_info],[...]]
+   * @param array of triplets like [[name,type,extra_info],[...]]
    */
   addOutputs(array: [string, ISlotType, Record<string, unknown>][]): void {
     for (let i = 0; i < array.length; ++i) {
@@ -1309,7 +1289,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * remove an existing output slot
-   * @param {number} slot
    */
   removeOutput(slot: number): void {
     this.disconnectOutput(slot)
@@ -1333,9 +1312,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add a new input slot to use in this node
-   * @param {string} name
-   * @param {string} type string defining the input type ("vec3","number",...), it its a generic one use 0
-   * @param {Object} extra_info this can be used to have special properties of an input (label, color, position, etc)
+   * @param type string defining the input type ("vec3","number",...), it its a generic one use 0
+   * @param extra_info this can be used to have special properties of an input (label, color, position, etc)
    */
   addInput(name: string, type: ISlotType, extra_info?: object): INodeInputSlot {
     type = type || 0
@@ -1359,7 +1337,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add several new input slots in this node
-   * @param {Array} array of triplets like [[name,type,extra_info],[...]]
+   * @param array of triplets like [[name,type,extra_info],[...]]
    */
   addInputs(array: [string, ISlotType, Record<string, unknown>][]): void {
     for (let i = 0; i < array.length; ++i) {
@@ -1385,7 +1363,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * remove an existing input slot
-   * @param {number} slot
    */
   removeInput(slot: number): void {
     this.disconnectInput(slot)
@@ -1405,10 +1382,9 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * add an special connection to this node (used for special kinds of graphs)
-   * @param {string} name
-   * @param {string} type string defining the input type ("vec3","number",...)
-   * @param {[x,y]} pos position of the connection inside the node
-   * @param {string} direction if is input or output
+   * @param type string defining the input type ("vec3","number",...)
+   * @param pos position of the connection inside the node
+   * @param direction if is input or output
    */
   addConnection(name: string, type: string, pos: Point, direction: string) {
     const o = {
@@ -1424,8 +1400,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * computes the minimum size of a node according to its inputs and output slots
-   * @param out
-   * @return the total size
+   * @returns the total size
    */
   computeSize(out?: Size): Size {
     const ctorSize = this.constructor.size
@@ -1522,9 +1497,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns all the info available about a property of this node.
-   *
-   * @param {String} property name of the property
-   * @return {Object} the object with all the available info
+   * @param property name of the property
+   * @returns the object with all the available info
    */
   getPropertyInfo(property: string) {
     let info = null
@@ -1560,13 +1534,12 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Defines a widget inside the node, it will be rendered on top of the node, you can control lots of properties
-   *
-   * @param {String} type the widget type (could be "number","string","combo"
-   * @param {String} name the text to show on the widget
-   * @param {String} value the default value
-   * @param {Function|String} callback function to call when it changes (optionally, it can be the name of the property to modify)
-   * @param {Object} options the object that contains special properties of this widget
-   * @return {Object} the created widget object
+   * @param type the widget type (could be "number","string","combo"
+   * @param name the text to show on the widget
+   * @param value the default value
+   * @param callback function to call when it changes (optionally, it can be the name of the property to modify)
+   * @param options the object that contains special properties of this widget
+   * @returns the created widget object
    */
   addWidget(
     type: string,
@@ -1666,7 +1639,7 @@ export class LGraphNode implements Positionable, IPinnable {
    * @param out {Float32Array[4]?} [optional] a place to store the output, to free garbage
    * @param includeExternal {boolean?} [optional] set to true to
    * include the shadow and connection points in the bounding calculation
-   * @return {Float32Array[4]} the bounding box in format of [topleft_cornerx, topleft_cornery, width, height]
+   * @returns the bounding box in format of [topleft_cornerx, topleft_cornery, width, height]
    */
   getBounding(out?: Rect, includeExternal?: boolean): Rect {
     out ||= new Float32Array(4)
@@ -1702,9 +1675,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * checks if a point is inside the shape of a node
-   * @param {number} x
-   * @param {number} y
-   * @return {boolean}
    */
   isPointInside(x: number, y: number): boolean {
     return isInRect(x, y, this.boundingRect)
@@ -1802,7 +1772,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Returns the input slot with a given name (used for dynamic slots), -1 if not found
-   * @param name the name of the slot
+   * @param name the name of the slot to find
    * @param returnObj if the obj itself wanted
    * @returns the slot (-1 if not found)
    */
@@ -1821,9 +1791,9 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns the output slot with a given name (used for dynamic slots), -1 if not found
-   * @param {string} name the name of the slot
-   * @param {boolean} returnObj if the obj itself wanted
-   * @return {number | INodeOutputSlot} the slot (-1 if not found)
+   * @param name the name of the slot to find
+   * @param returnObj if the obj itself wanted
+   * @returns the slot (-1 if not found)
    */
   findOutputSlot<TReturn extends false>(name: string, returnObj?: TReturn): number
   findOutputSlot<TReturn extends true>(name: string, returnObj?: TReturn): INodeOutputSlot
@@ -1840,8 +1810,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Finds the first free input slot.
-   * @param {object} optsIn
-   * @return The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
+   * @param optsIn
+   * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
   findInputSlotFree<TReturn extends false>(
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
@@ -1855,8 +1825,8 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Finds the first free output slot.
-   * @param {object} optsIn
-   * @return The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
+   * @param optsIn
+   * @returns The index of the first matching slot, the slot itself if returnObj is true, or -1 if not found.
    */
   findOutputSlotFree<TReturn extends false>(
     optsIn?: FindFreeSlotOptions & { returnObj?: TReturn },
@@ -1871,7 +1841,6 @@ export class LGraphNode implements Positionable, IPinnable {
   /**
    * Finds the next free slot
    * @param slots The slots to search, i.e. this.inputs or this.outputs
-   * @param options Options
    */
   #findFreeSlot<TSlot extends INodeInputSlot | INodeOutputSlot>(
     slots: TSlot[],
@@ -1956,11 +1925,11 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns the output (or input) slot with a given type, -1 if not found
-   * @param {boolean} input uise inputs instead of outputs
-   * @param {string} type the type of the slot
-   * @param {boolean} returnObj if the obj itself wanted
-   * @param {boolean} preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
-   * @return {number_or_object} the slot (-1 if not found)
+   * @param input uise inputs instead of outputs
+   * @param type the type of the slot to find
+   * @param returnObj if the obj itself wanted
+   * @param preferFreeSlot if we want a free slot (if not found, will return the first of the type anyway)
+   * @returns the slot (-1 if not found)
    */
   findSlotByType<TSlot extends true | false, TReturn extends false>(
     input: TSlot,
@@ -2067,7 +2036,6 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Determines the slot index to connect to when attempting to connect by type.
-   *
    * @param findInputs If true, searches for an input.  Otherwise, an output.
    * @param node The node at the other end of the connection.
    * @param slotType The type of slot at the other end of the connection.
@@ -2127,10 +2095,10 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * connect this node output to the input of another node BY TYPE
-   * @param {number} slot (could be the number of the slot or the string with the name of the slot)
-   * @param {LGraphNode} target_node the target node
-   * @param {string} target_slotType the input slot type of the target node
-   * @return {Object} the link_info is created, otherwise null
+   * @param slot (could be the number of the slot or the string with the name of the slot)
+   * @param target_node the target node
+   * @param target_slotType the input slot type of the target node
+   * @returns the link_info is created, otherwise null
    */
   connectByType(
     slot: number | string,
@@ -2153,11 +2121,10 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * connect this node input to the output of another node BY TYPE
-   * @method connectByType
-   * @param {number | string} slot (could be the number of the slot or the string with the name of the slot)
-   * @param {LGraphNode} source_node the target node
-   * @param {string} source_slotType the output slot type of the target node
-   * @return {Object} the link_info is created, otherwise null
+   * @param slot (could be the number of the slot or the string with the name of the slot)
+   * @param source_node the target node
+   * @param source_slotType the output slot type of the target node
+   * @returns the link_info is created, otherwise null
    */
   connectByTypeOutput(
     slot: number | string,
@@ -2185,10 +2152,10 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Connect an output of this node to an input of another node
-   * @param {number | string} slot (could be the number of the slot or the string with the name of the slot)
-   * @param {LGraphNode} target_node the target node
-   * @param {number | string} target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
-   * @return {Object} the link_info is created, otherwise null
+   * @param slot (could be the number of the slot or the string with the name of the slot)
+   * @param target_node the target node
+   * @param target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
+   * @returns the link_info is created, otherwise null
    */
   connect(
     slot: number | string,
@@ -2371,10 +2338,10 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * disconnect one output to an specific node
-   * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
-   * @param {LGraphNode} target_node the target node to which this slot is connected [Optional,
+   * @param slot (could be the number of the slot or the string with the name of the slot)
+   * @param target_node the target node to which this slot is connected [Optional,
    * if not target_node is specified all nodes will be disconnected]
-   * @return {boolean} if it was disconnected successfully
+   * @returns if it was disconnected successfully
    */
   disconnectOutput(slot: string | number, target_node?: LGraphNode): boolean {
     if (typeof slot === "string") {
@@ -2434,8 +2401,8 @@ export class LGraphNode implements Positionable, IPinnable {
           break
         }
       }
-    } // all the links in this output slot
-    else {
+    } else {
+      // all the links in this output slot
       for (let i = 0, l = output.links.length; i < l; i++) {
         const link_id = output.links[i]
         const link_info = graph._links.get(link_id)
@@ -2484,7 +2451,7 @@ export class LGraphNode implements Positionable, IPinnable {
    * Disconnect one input
    * @param slot Input slot index, or the name of the slot
    * @param keepReroutes If `true`, reroutes will not be garbage collected.
-   * @return true if disconnected successfully or already disconnected, otherwise false
+   * @returns true if disconnected successfully or already disconnected, otherwise false
    */
   disconnectInput(slot: number | string, keepReroutes?: boolean): boolean {
     // Allow search by string
@@ -2555,11 +2522,11 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * returns the center of a connection point in canvas coords
-   * @param {boolean} is_input true if if a input slot, false if it is an output
-   * @param {number_or_string} slot (could be the number of the slot or the string with the name of the slot)
-   * @param {vec2} out [optional] a place to store the output, to free garbage
-   * @return {[x,y]} the position
-   **/
+   * @param is_input true if if a input slot, false if it is an output
+   * @param slot_number (could be the number of the slot or the string with the name of the slot)
+   * @param out [optional] a place to store the output, to free garbage
+   * @returns the position
+   */
   getConnectionPos(is_input: boolean, slot_number: number, out?: Point): Point {
     out ||= new Float32Array(2)
 
@@ -2697,7 +2664,7 @@ export class LGraphNode implements Positionable, IPinnable {
 
   /**
    * Toggle node collapse (makes it smaller on the canvas)
-   **/
+   */
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
     this.graph._version++
@@ -2729,7 +2696,7 @@ export class LGraphNode implements Positionable, IPinnable {
   /**
    * Prevents the node being accidentally moved or resized by mouse interaction.
    * Toggles pinned state if no value is provided.
-   **/
+   */
   pin(v?: boolean): void {
     this.graph._version++
     this.flags.pinned = v === undefined
@@ -2791,7 +2758,6 @@ export class LGraphNode implements Positionable, IPinnable {
    *
    * If {@link flags}.{@link INodeFlags.keepAllLinksOnBypass keepAllLinksOnBypass} is `undefined`, it will fall back to
    * the static {@link keepAllLinksOnBypass}.
-   *
    * @returns `true` if any new links were established, otherwise `false`.
    * @todo Decision: Change API to return array of new links instead?
    */

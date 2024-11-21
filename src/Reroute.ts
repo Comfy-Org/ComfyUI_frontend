@@ -274,8 +274,6 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
   /**
    * Renders the reroute on the canvas.
    * @param ctx Canvas context to draw on
-   * @param colour Reroute colour (typically link colour)
-   *
    * @remarks Leaves {@link ctx}.fillStyle, strokeStyle, and lineWidth dirty (perf.).
    */
   draw(ctx: CanvasRenderingContext2D): void {

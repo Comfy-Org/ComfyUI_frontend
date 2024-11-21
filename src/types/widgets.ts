@@ -27,7 +27,6 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
 
 /**
  * A widget for a node.
- * @typescript
  * All types are based on IBaseWidget - additions can be made there or directly on individual types.
  *
  * Implemented as a discriminative union of widget types, so this type itself cannot be extended.

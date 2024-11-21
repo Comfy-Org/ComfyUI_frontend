@@ -42,6 +42,7 @@ export class LGraphGroup implements Positionable, IPinnable {
     LGraphGroup.minWidth,
     LGraphGroup.minHeight,
   ])
+
   _pos: Point = this._bounding.subarray(0, 2)
   _size: Size = this._bounding.subarray(2, 4)
   /** @deprecated See {@link _children} */
@@ -107,7 +108,7 @@ export class LGraphGroup implements Positionable, IPinnable {
   /**
    * Prevents the group being accidentally moved or resized by mouse interaction.
    * Toggles pinned state if no value is provided.
-   **/
+   */
   pin(value?: boolean): void {
     const newState = value === undefined ? !this.pinned : value
 
@@ -142,8 +143,8 @@ export class LGraphGroup implements Positionable, IPinnable {
 
   /**
    * Draws the group on the canvas
-   * @param {LGraphCanvas} graphCanvas
-   * @param {CanvasRenderingContext2D} ctx
+   * @param graphCanvas
+   * @param ctx
    */
   draw(graphCanvas: LGraphCanvas, ctx: CanvasRenderingContext2D): void {
     const { padding, resizeLength, defaultColour } = LGraphGroup
@@ -269,9 +270,8 @@ export class LGraphGroup implements Positionable, IPinnable {
 
   /**
    * Add nodes to the group and adjust the group's position and size accordingly
-   * @param {LGraphNode[]} nodes - The nodes to add to the group
-   * @param {number} [padding=10] - The padding around the group
-   * @returns {void}
+   * @param nodes The nodes to add to the group
+   * @param padding The padding around the group
    */
   addNodes(nodes: LGraphNode[], padding: number = 10): void {
     if (!this._nodes && nodes.length === 0) return

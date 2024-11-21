@@ -12,8 +12,7 @@ import { dist2 } from "./measure"
  * - {@link onDrag}
  * - {@link onDragEnd}
  * - {@link finally}
- *
- * @seealso
+ * @see
  * - {@link LGraphCanvas.processMouseDown}
  * - {@link LGraphCanvas.processMouseMove}
  * - {@link LGraphCanvas.processMouseUp}
@@ -222,7 +221,6 @@ export class CanvasPointer {
 
   /**
    * Checks whether the pointer is currently past the max click drift threshold.
-   * @param e The latest pointer event
    * @returns `true` if the latest pointer event is past the the click drift threshold
    */
   #isDoubleClick(): boolean {

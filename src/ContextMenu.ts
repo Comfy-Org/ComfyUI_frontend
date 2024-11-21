@@ -7,22 +7,16 @@ interface ContextMenuDivElement extends HTMLDivElement {
   closing_timer?: number
 }
 
+// TODO: Replace this pattern with something more modern.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface ContextMenu {
   constructor: new (...args: ConstructorParameters<typeof ContextMenu>) => ContextMenu
 }
 
 /**
  * ContextMenu from LiteGUI
- *
- * @class ContextMenu
- * @constructor
- * @param {Array} values (allows object { title: "Nice text", callback: function ... })
- * @param {Object} options [optional] Some options:\
- * - title: title to show on top of the menu
- * - callback: function to call when an option is clicked, it receives the item information
- * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
- * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class ContextMenu {
   options?: IContextMenuOptions
   parentMenu?: ContextMenu
@@ -30,8 +24,16 @@ export class ContextMenu {
   current_submenu?: ContextMenu
   lock?: boolean
 
-  // TODO: Interface for values requires functionality change - currently accepts
-  // an array of strings, functions, objects, nulls, or undefined.
+  /**
+   * @todo Interface for values requires functionality change - currently accepts
+   * an array of strings, functions, objects, nulls, or undefined.
+   * @param values (allows object { title: "Nice text", callback: function ... })
+   * @param options [optional] Some options:\
+   * - title: title to show on top of the menu
+   * - callback: function to call when an option is clicked, it receives the item information
+   * - ignore_item_callbacks: ignores the callback inside the item, it just calls the options.callback
+   * - event: you can pass a MouseEvent, this way the ContextMenu appears in that position
+   */
   constructor(values: (IContextMenuValue | string)[], options: IContextMenuOptions) {
     options ||= {}
     this.options = options

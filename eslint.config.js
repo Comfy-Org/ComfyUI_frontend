@@ -66,8 +66,14 @@ export default tseslint.config(
       // "@typescript-eslint/no-unsafe-function-type": "off",
 
       "@stylistic/max-len": [
-        "warn",
-        { code: 100, comments: 130, ignoreStrings: true },
+        "off",
+        {
+          code: 100,
+          comments: 130,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreComments: true,
+        },
       ],
 
       // "@stylistic/multiline-comment-style": ["warn", "starred-block"],

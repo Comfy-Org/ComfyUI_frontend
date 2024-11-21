@@ -68,9 +68,12 @@ export class LiteGraphGlobal {
   EVENT_LINK_COLOR = "#A86"
   CONNECTING_LINK_COLOR = "#AFA"
 
-  MAX_NUMBER_OF_NODES = 10000 // avoid infinite loops
-  DEFAULT_POSITION = [100, 100] // default node position
-  VALID_SHAPES = ["default", "box", "round", "card"] // ,"circle"
+  /** avoid infinite loops */
+  MAX_NUMBER_OF_NODES = 10000
+  /** default node position */
+  DEFAULT_POSITION = [100, 100]
+  /** ,"circle" */
+  VALID_SHAPES = ["default", "box", "round", "card"]
 
   // shapes are used for nodes but also for slots
   BOX_SHAPE = RenderShape.BOX
@@ -78,18 +81,23 @@ export class LiteGraphGlobal {
   CIRCLE_SHAPE = RenderShape.CIRCLE
   CARD_SHAPE = RenderShape.CARD
   ARROW_SHAPE = RenderShape.ARROW
-  GRID_SHAPE = RenderShape.GRID // intended for slot arrays
+  /** intended for slot arrays */
+  GRID_SHAPE = RenderShape.GRID
 
   // enums
   INPUT = NodeSlotType.INPUT
   OUTPUT = NodeSlotType.OUTPUT
 
   // TODO: -1 can lead to ambiguity in JS; these should be updated to a more explicit constant or Symbol.
-  EVENT = -1 as const // for outputs
-  ACTION = -1 as const // for inputs
+  /** for outputs */
+  EVENT = -1 as const
+  /** for inputs */
+  ACTION = -1 as const
 
-  NODE_MODES = ["Always", "On Event", "Never", "On Trigger"] // helper, will add "On Request" and more in the future
-  NODE_MODES_COLORS = ["#666", "#422", "#333", "#224", "#626"] // use with node_box_coloured_by_mode
+  /** helper, will add "On Request" and more in the future */
+  NODE_MODES = ["Always", "On Event", "Never", "On Trigger"]
+  /** use with node_box_coloured_by_mode */
+  NODE_MODES_COLORS = ["#666", "#422", "#333", "#224", "#626"]
   ALWAYS = LGraphEventMode.ALWAYS
   ON_EVENT = LGraphEventMode.ON_EVENT
   NEVER = LGraphEventMode.NEVER
@@ -101,7 +109,8 @@ export class LiteGraphGlobal {
   RIGHT = LinkDirection.RIGHT
   CENTER = LinkDirection.CENTER
 
-  LINK_RENDER_MODES = ["Straight", "Linear", "Spline"] // helper
+  /** helper */
+  LINK_RENDER_MODES = ["Straight", "Linear", "Spline"]
   HIDDEN_LINK = LinkRenderType.HIDDEN_LINK
   STRAIGHT_LINK = LinkRenderType.STRAIGHT_LINK
   LINEAR_LINK = LinkRenderType.LINEAR_LINK
@@ -112,63 +121,114 @@ export class LiteGraphGlobal {
   TRANSPARENT_TITLE = TitleMode.TRANSPARENT_TITLE
   AUTOHIDE_TITLE = TitleMode.AUTOHIDE_TITLE
 
-  VERTICAL_LAYOUT = "vertical" // arrange nodes vertically
+  /** arrange nodes vertically */
+  VERTICAL_LAYOUT = "vertical"
 
-  proxy = null // used to redirect calls
+  /** used to redirect calls */
+  proxy = null
   node_images_path = ""
 
   debug = false
   catch_exceptions = true
   throw_errors = true
   allow_scripts = false // if set to true some nodes like Formula would be allowed to evaluate code that comes from unsafe sources (like node configuration), which could lead to exploits
-  registered_node_types: Record<string, typeof LGraphNode> = {} // nodetypes by string
-  node_types_by_file_extension = {} // used for dropping files in the canvas
-  Nodes: Record<string, typeof LGraphNode> = {} // node types by classname
-  Globals = {} // used to store vars between graphs
+  /** nodetypes by string */
+  registered_node_types: Record<string, typeof LGraphNode> = {}
+  /** used for dropping files in the canvas */
+  node_types_by_file_extension = {}
+  /** node types by classname */
+  Nodes: Record<string, typeof LGraphNode> = {}
+  /** used to store vars between graphs */
+  Globals = {}
 
-  searchbox_extras = {} // used to add extra features to the search box
-  auto_sort_node_types = false // [true!] If set to true, will automatically sort node types / categories in the context menus
+  /** used to add extra features to the search box */
+  searchbox_extras = {}
+  /** [true!] If set to true, will automatically sort node types / categories in the context menus */
+  auto_sort_node_types = false
 
-  node_box_coloured_when_on = false // [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback
-  node_box_coloured_by_mode = false // [true!] nodebox based on node mode, visual feedback
+  /** [true!] this make the nodes box (top left circle) coloured when triggered (execute/action), visual feedback */
+  node_box_coloured_when_on = false
+  /** [true!] nodebox based on node mode, visual feedback */
+  node_box_coloured_by_mode = false
 
-  dialog_close_on_mouse_leave = false // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
+  /** [false on mobile] better true if not touch device, TODO add an helper/listener to close if false */
+  dialog_close_on_mouse_leave = false
   dialog_close_on_mouse_leave_delay = 500
 
-  shift_click_do_break_link_from = false // [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys
-  click_do_break_link_to = false // [false!]prefer false, way too easy to break links
-  ctrl_alt_click_do_break_link = true // [true!] who accidentally ctrl-alt-clicks on an in/output? nobody! that's who!
-  snaps_for_comfy = true // [true!] snaps links when dragging connections over valid targets
-  snap_highlights_node = true // [true!] renders a partial border to highlight when a dragged link is snapped to a node
+  /** [false!] prefer false if results too easy to break links - implement with ALT or TODO custom keys */
+  shift_click_do_break_link_from = false
+  /** [false!]prefer false, way too easy to break links */
+  click_do_break_link_to = false
+  /** [true!] who accidentally ctrl-alt-clicks on an in/output? nobody! that's who! */
+  ctrl_alt_click_do_break_link = true
+  /** [true!] snaps links when dragging connections over valid targets */
+  snaps_for_comfy = true
+  /** [true!] renders a partial border to highlight when a dragged link is snapped to a node */
+  snap_highlights_node = true
 
-  search_hide_on_mouse_leave = true // [false on mobile] better true if not touch device, TODO add an helper/listener to close if false
-  search_filter_enabled = false // [true!] enable filtering slots type in the search widget, !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
-  search_show_all_on_open = true // [true!] opens the results list when opening the search widget
+  /** [false on mobile] better true if not touch device, TODO add an helper/listener to close if false */
+  search_hide_on_mouse_leave = true
+  /**
+   * [true!] enable filtering slots type in the search widget
+   * !requires auto_load_slot_types or manual set registered_slot_[in/out]_types and slot_types_[in/out]
+   */
+  search_filter_enabled = false
+  /** [true!] opens the results list when opening the search widget */
+  search_show_all_on_open = true
 
-  auto_load_slot_types = false // [if want false, use true, run, get vars values to be statically set, than disable] nodes types and nodeclass association with node types need to be calculated, if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
+  /**
+   * [if want false, use true, run, get vars values to be statically set, than disable]
+   * nodes types and nodeclass association with node types need to be calculated,
+   * if dont want this, calculate once and set registered_slot_[in/out]_types and slot_types_[in/out]
+   */
+  auto_load_slot_types = false
 
   // set these values if not using auto_load_slot_types
-  registered_slot_in_types: Record<string, { nodes: string[] }> = {} // slot types for nodeclass
-  registered_slot_out_types: Record<string, { nodes: string[] }> = {} // slot types for nodeclass
-  slot_types_in: string[] = [] // slot types IN
-  slot_types_out: string[] = [] // slot types OUT
-  slot_types_default_in: Record<string, string[]> = {} // specify for each IN slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
-  slot_types_default_out: Record<string, string[]> = {} // specify for each OUT slot type a(/many) default node(s), use single string, array, or object (with node, title, parameters, ..) like for search
+  /** slot types for nodeclass */
+  registered_slot_in_types: Record<string, { nodes: string[] }> = {}
+  /** slot types for nodeclass */
+  registered_slot_out_types: Record<string, { nodes: string[] }> = {}
+  /** slot types IN */
+  slot_types_in: string[] = []
+  /** slot types OUT */
+  slot_types_out: string[] = []
+  /**
+   * specify for each IN slot type a(/many) default node(s), use single string, array, or object
+   * (with node, title, parameters, ..) like for search
+   */
+  slot_types_default_in: Record<string, string[]> = {}
+  /**
+   * specify for each OUT slot type a(/many) default node(s), use single string, array, or object
+   * (with node, title, parameters, ..) like for search
+   */
+  slot_types_default_out: Record<string, string[]> = {}
 
-  alt_drag_do_clone_nodes = false // [true!] very handy, ALT click to clone and drag the new node
+  /** [true!] very handy, ALT click to clone and drag the new node */
+  alt_drag_do_clone_nodes = false
 
-  do_add_triggers_slots = false // [true!] will create and connect event slots when using action/events connections, !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
+  /**
+   * [true!] will create and connect event slots when using action/events connections,
+   * !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
+   */
+  do_add_triggers_slots = false
 
-  allow_multi_output_for_events = true // [false!] being events, it is strongly reccomended to use them sequentially, one by one
+  /** [false!] being events, it is strongly reccomended to use them sequentially, one by one */
+  allow_multi_output_for_events = true
 
-  middle_click_slot_add_default_node = false // [true!] allows to create and connect a ndoe clicking with the third button (wheel)
+  /** [true!] allows to create and connect a ndoe clicking with the third button (wheel) */
+  middle_click_slot_add_default_node = false
 
-  release_link_on_empty_shows_menu = false // [true!] dragging a link to empty space will open a menu, add from list, search or defaults
+  /** [true!] dragging a link to empty space will open a menu, add from list, search or defaults */
+  release_link_on_empty_shows_menu = false
 
-  pointerevents_method = "pointer" // "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now)
+  /** "mouse"|"pointer" use mouse for retrocompatibility issues? (none found @ now) */
+  pointerevents_method = "pointer"
 
-  // TODO implement pointercancel, gotpointercapture, lostpointercapture, (pointerover, pointerout if necessary)
-  ctrl_shift_v_paste_connect_unselected_outputs = true // [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected with the inputs of the newly pasted nodes
+  /**
+   * [true!] allows ctrl + shift + v to paste nodes with the outputs of the unselected nodes connected
+   * with the inputs of the newly pasted nodes
+   */
+  ctrl_shift_v_paste_connect_unselected_outputs = true
 
   // if true, all newly created nodes/links will use string UUIDs for their id fields instead of integers.
   // use this if you must have node IDs that are unique across all graphs and subgraphs.
@@ -219,8 +279,8 @@ export class LiteGraphGlobal {
 
   /**
    * Register a node class so it can be listed when the user wants to create a new one
-   * @param {String} type name of the node and path
-   * @param {Class} base_class class containing the structure of a node
+   * @param type name of the node and path
+   * @param base_class class containing the structure of a node
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
     if (!base_class.prototype)
@@ -302,7 +362,7 @@ export class LiteGraphGlobal {
 
   /**
    * removes a node type from the system
-   * @param {String|Object} type name of the node or the node constructor itself
+   * @param type name of the node or the node constructor itself
    */
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class = typeof type === "string"
@@ -318,8 +378,8 @@ export class LiteGraphGlobal {
 
   /**
    * Save a slot type and his node
-   * @param {String|Object} type name of the node or the node constructor itself
-   * @param {String} slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
+   * @param type name of the node or the node constructor itself
+   * @param slot_type name of the slot type (variable type), eg. string, number, array, boolean, ..
    */
   registerNodeAndSlotType(
     type: LGraphNode,
@@ -371,12 +431,12 @@ export class LiteGraphGlobal {
    * Create a new nodetype by passing a function, it wraps it with a proper class and
    * generates inputs according to the parameters of the function.
    * Useful to wrap simple methods that do not require properties, and that only process some input to generate an output.
-   * @param {String} name node name with namespace (p.e.: 'math/sum')
-   * @param {Function} func
-   * @param {Array} param_types [optional] an array containing the type of every parameter,
+   * @param name node name with namespace (p.e.: 'math/sum')
+   * @param func
+   * @param param_types [optional] an array containing the type of every parameter,
    * otherwise parameters will accept any type
-   * @param {String} return_type [optional] string with the return type, otherwise it will be generic
-   * @param {Object} properties [optional] properties to be configurable
+   * @param return_type [optional] string with the return type, otherwise it will be generic
+   * @param properties [optional] properties to be configurable
    */
   wrapFunctionAsNode(
     name: string,
@@ -423,7 +483,6 @@ export class LiteGraphGlobal {
   /**
    * Adds this method to all nodetypes, existing and to be created
    * (You can add it to LGraphNode.prototype but then existing node types wont have it)
-   * @param {Function} func
    */
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   addNodeMethod(name: string, func: Function): void {
@@ -438,9 +497,9 @@ export class LiteGraphGlobal {
 
   /**
    * Create a node of a given type with a name. The node is not attached to any graph yet.
-   * @param {String} type full name of the node class. p.e. "math/sin"
-   * @param {String} name a name to distinguish from other nodes
-   * @param {Object} options to set options
+   * @param type full name of the node class. p.e. "math/sin"
+   * @param title a name to distinguish from other nodes
+   * @param options to set options
    */
   createNode(
     type: string,
@@ -493,8 +552,8 @@ export class LiteGraphGlobal {
 
   /**
    * Returns a registered node type with a given name
-   * @param {String} type full name of the node class. p.e. "math/sin"
-   * @return {Class} the node class
+   * @param type full name of the node class. p.e. "math/sin"
+   * @returns the node class
    */
   getNodeType(type: string): typeof LGraphNode {
     return this.registered_node_types[type]
@@ -502,8 +561,8 @@ export class LiteGraphGlobal {
 
   /**
    * Returns a list of node types matching one category
-   * @param {String} category category name
-   * @return {Array} array with all the node classes
+   * @param category category name
+   * @returns array with all the node classes
    */
   getNodeTypesInCategory(category: string, filter: any) {
     const r = []
@@ -529,8 +588,8 @@ export class LiteGraphGlobal {
 
   /**
    * Returns a list with all the node type categories
-   * @param {String} filter only nodes with ctor.filter equal can be shown
-   * @return {Array} array with all the names of the categories
+   * @param filter only nodes with ctor.filter equal can be shown
+   * @returns array with all the names of the categories
    */
   getNodeTypesCategories(filter: string): string[] {
     const categories = { "": 1 }
@@ -606,9 +665,9 @@ export class LiteGraphGlobal {
 
   /**
    * Returns if the types of two slots are compatible (taking into account wildcards, etc)
-   * @param {String} type_a output
-   * @param {String} type_b input
-   * @return {Boolean} true if they can be connected
+   * @param type_a output
+   * @param type_b input
+   * @returns true if they can be connected
    */
   isValidConnection(type_a: ISlotType, type_b: ISlotType): boolean {
     if (type_a == "" || type_a === "*") type_a = 0
@@ -647,10 +706,9 @@ export class LiteGraphGlobal {
 
   /**
    * Register a string in the search box so when the user types it it will recommend this node
-   * @param {String} node_type the node recommended
-   * @param {String} description text to show next to it
-   * @param {Object} data it could contain info of how the node should be configured
-   * @return {Boolean} true if they can be connected
+   * @param node_type the node recommended
+   * @param description text to show next to it
+   * @param data it could contain info of how the node should be configured
    */
   registerSearchboxExtra(node_type: any, description: string, data: any): void {
     this.searchbox_extras[description.toLowerCase()] = {
@@ -662,11 +720,11 @@ export class LiteGraphGlobal {
 
   /**
    * Wrapper to load files (from url using fetch or from file using FileReader)
-   * @param {String|File|Blob} url the url of the file (or the file itself)
-   * @param {String} type an string to know how to fetch it: "text","arraybuffer","json","blob"
-   * @param {Function} on_complete callback(data)
-   * @param {Function} on_error in case of an error
-   * @return {FileReader|Promise} returns the object used to
+   * @param url the url of the file (or the file itself)
+   * @param type an string to know how to fetch it: "text","arraybuffer","json","blob"
+   * @param on_complete callback(data)
+   * @param on_error in case of an error
+   * @returns returns the object used to
    */
   fetchFile(
     url: string | URL | Request | Blob,
@@ -883,8 +941,8 @@ export class LiteGraphGlobal {
   }
 
   // Convert a hex value to its decimal value - the inputted hex must be in the
-  //	format of a hex triplet - the kind we use for HTML colours. The function
-  //	will return an array with three values.
+  // format of a hex triplet - the kind we use for HTML colours. The function
+  // will return an array with three values.
   hex2num(hex: string): number[] {
     if (hex.charAt(0) == "#") {
       hex = hex.slice(1)
@@ -904,7 +962,7 @@ export class LiteGraphGlobal {
   }
 
   // Give a array with three values as the argument and the function will return
-  //	the corresponding hex triplet.
+  // the corresponding hex triplet.
   num2hex(triplet: number[]): string {
     const hex_alphabets = "0123456789ABCDEF"
     let hex = "#"

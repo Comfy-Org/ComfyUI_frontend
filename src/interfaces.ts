@@ -94,7 +94,8 @@ export interface LinkSegment {
   path?: Path2D
   /** Centre point of the {@link path}.  Calculated during render only - can be inaccurate */
   readonly _pos: Float32Array
-  /** Y-forward along the {@link path} from its centre point, in radians.
+  /**
+   * Y-forward along the {@link path} from its centre point, in radians.
    * `undefined` if using circles for link centres.
    * Calculated during render only - can be inaccurate.
    */

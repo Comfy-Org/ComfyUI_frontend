@@ -66,9 +66,9 @@ export interface LGraphConfig {
 /**
  * LGraph is the class that contain a full graph. We instantiate one and add nodes to it, and then we can run the execution loop.
  * supported callbacks:
-    + onNodeAdded: when a new node is added to the graph
-    + onNodeRemoved: when a node inside this graph is removed
-    + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
+ * + onNodeAdded: when a new node is added to the graph
+ * + onNodeRemoved: when a node inside this graph is removed
+ * + onNodeConnectionChange: some connection has changed in the graph (connected or disconnected)
  */
 export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   static serialisedSchemaVersion = 1 as const
@@ -308,7 +308,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Attach Canvas to this graph
-   * @param {GraphCanvas} graph_canvas
    */
   attachCanvas(graphcanvas: LGraphCanvas): void {
     if (graphcanvas.constructor != LGraphCanvas)
@@ -324,7 +323,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Detach Canvas from this graph
-   * @param {GraphCanvas} graph_canvas
    */
   detachCanvas(graphcanvas: LGraphCanvas): void {
     if (!this.list_of_graphcanvas) return
@@ -338,7 +336,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Starts running this graph every interval milliseconds.
-   * @param {number} interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
+   * @param interval amount of milliseconds between executions, if 0 then it renders to the monitor refresh rate
    */
   start(interval?: number): void {
     if (this.status == LGraph.STATUS_RUNNING) return
@@ -403,9 +401,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Run N steps (cycles) of the graph
-   * @param {number} num number of steps to run, default is 1
-   * @param {Boolean} do_not_catch_errors [optional] if you want to try/catch errors
-   * @param {number} limit max number of nodes to execute (used to execute from start to a node)
+   * @param num number of steps to run, default is 1
+   * @param do_not_catch_errors [optional] if you want to try/catch errors
+   * @param limit max number of nodes to execute (used to execute from start to a node)
    */
   runStep(num: number, do_not_catch_errors: boolean, limit?: number): void {
     num = num || 1
@@ -524,8 +522,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
         // is a starting node
         S.push(node)
         if (set_level) node._level = 1
-      } // num of input links
-      else {
+      } else {
+        // num of input links
         if (set_level) node._level = 0
         remaining_links[node.id] = num
       }
@@ -625,7 +623,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Returns all the nodes that could affect this one (ancestors) by crawling all the inputs recursively.
    * It doesn't include the node itself
-   * @return {Array} an array with all the LGraphNodes that affect this node, in order of execution
+   * @returns an array with all the LGraphNodes that affect this node, in order of execution
    */
   getAncestors(node: LGraphNode): LGraphNode[] {
     const ancestors: LGraphNode[] = []
@@ -697,7 +695,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns the amount of time the graph has been running in milliseconds
-   * @return {number} number of milliseconds the graph has been running
+   * @returns number of milliseconds the graph has been running
    */
   getTime(): number {
     return this.globaltime
@@ -706,7 +704,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Returns the amount of time accumulated using the fixedtime_lapse var.
    * This is used in context where the time increments should be constant
-   * @return {number} number of milliseconds the graph has been running
+   * @returns number of milliseconds the graph has been running
    */
   getFixedTime(): number {
     return this.fixedtime
@@ -716,7 +714,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Returns the amount of time it took to compute the latest iteration.
    * Take into account that this number could be not correct
    * if the nodes are using graphical actions
-   * @return {number} number of milliseconds it took the last cycle
+   * @returns number of milliseconds it took the last cycle
    */
   getElapsedTime(): number {
     return this.elapsed_time
@@ -724,8 +722,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Sends an event to all the nodes, useful to trigger stuff
-   * @param {String} eventname the name of the event (function to be called)
-   * @param {Array} params parameters in array format
+   * @param eventname the name of the event (function to be called)
+   * @param params parameters in array format
    */
   sendEventToAllNodes(
     eventname: string,
@@ -783,7 +781,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Adds a new node instance to this graph
-   * @param {LGraphNode} node the instance of the node
+   * @param node the instance of the node
    */
   add(
     node: LGraphNode | LGraphGroup,
@@ -861,7 +859,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Removes a node from the graph
-   * @param {LGraphNode} node the instance of the node
+   * @param node the instance of the node
    */
   remove(node: LGraphNode | LGraphGroup): void {
     // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
@@ -935,7 +933,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns a node by its id.
-   * @param {Number} id
    */
   getNodeById(id: NodeId): LGraphNode | null {
     return id != null
@@ -945,8 +942,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns a list of nodes that matches a class
-   * @param {Class} classObject the class itself (not an string)
-   * @return {Array} a list with all the nodes of this type
+   * @param classObject the class itself (not an string)
+   * @returns a list with all the nodes of this type
    */
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   findNodesByClass(classObject: Function, result?: LGraphNode[]): LGraphNode[] {
@@ -961,8 +958,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns a list of nodes that matches a type
-   * @param {String} type the name of the node type
-   * @return {Array} a list with all the nodes of this type
+   * @param type the name of the node type
+   * @returns a list with all the nodes of this type
    */
   findNodesByType(type: string, result: LGraphNode[]): LGraphNode[] {
     const matchType = type.toLowerCase()
@@ -977,8 +974,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns the first node that matches a name in its title
-   * @param {String} name the name of the node to search
-   * @return {Node} the node or null
+   * @param title the name of the node to search
+   * @returns the node or null
    */
   findNodeByTitle(title: string): LGraphNode | null {
     for (let i = 0, l = this._nodes.length; i < l; ++i) {
@@ -990,8 +987,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns a list of nodes that matches a name
-   * @param {String} name the name of the node to search
-   * @return {Array} a list with all the nodes with this name
+   * @param title the name of the node to search
+   * @returns a list with all the nodes with this name
    */
   findNodesByTitle(title: string): LGraphNode[] {
     const result: LGraphNode[] = []
@@ -1004,10 +1001,10 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns the top-most node in this position of the canvas
-   * @param {number} x the x coordinate in canvas space
-   * @param {number} y the y coordinate in canvas space
-   * @param {Array} nodeList a list with all the nodes to search from, by default is all the nodes in the graph
-   * @return {LGraphNode} the node at this position or null
+   * @param x the x coordinate in canvas space
+   * @param y the y coordinate in canvas space
+   * @param nodeList a list with all the nodes to search from, by default is all the nodes in the graph
+   * @returns the node at this position or null
    */
   getNodeOnPos(
     x: number,
@@ -1027,7 +1024,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Returns the top-most group in that position
    * @param x The x coordinate in canvas space
    * @param y The y coordinate in canvas space
-   * @return The group or null
+   * @returns The group or null
    */
   getGroupOnPos(x: number, y: number): LGraphGroup | undefined {
     return this._groups.toReversed().find(g => g.isPointInside(x, y))
@@ -1037,7 +1034,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    * Returns the top-most group with a titlebar in the provided position.
    * @param x The x coordinate in canvas space
    * @param y The y coordinate in canvas space
-   * @return The group or null
+   * @returns The group or null
    */
   getGroupTitlebarOnPos(x: number, y: number): LGraphGroup | undefined {
     return this._groups.toReversed().find(g => g.isPointInTitlebar(x, y))
@@ -1065,7 +1062,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    *
    * When {@link config}.{@link LGraphConfig.alwaysSnapToGrid alwaysSnapToGrid} is enabled
    * and the grid size is falsy, a default of 1 is used.
-   * @param items The items to snap to the grid
+   * @param items The items to be snapped to the grid
    * @todo Currently only snaps nodes.
    */
   snapToGrid(items: Set<Positionable>): void {
@@ -1139,9 +1136,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Tell this graph it has a global graph input of this type
-   * @param {String} name
-   * @param {String} type
-   * @param {*} value [optional]
    */
   addInput(name: string, type: string, value?: unknown): void {
     const input = this.inputs[name]
@@ -1159,8 +1153,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Assign a data to the global graph input
-   * @param {String} name
-   * @param {*} data
    */
   setInputData(name: string, data: unknown): void {
     const input = this.inputs[name]
@@ -1170,8 +1162,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns the current value of a global graph input
-   * @param {String} name
-   * @return {*} the data
    */
   getInputData(name: string): unknown {
     const input = this.inputs[name]
@@ -1182,8 +1172,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Changes the name of a global graph input
-   * @param {String} old_name
-   * @param {String} new_name
    */
   renameInput(old_name: string, name: string): boolean | undefined {
     if (name == old_name) return
@@ -1205,8 +1193,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Changes the type of a global graph input
-   * @param {String} name
-   * @param {String} type
    */
   changeInputType(name: string, type: string): boolean | undefined {
     if (!this.inputs[name]) return false
@@ -1225,8 +1211,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Removes a global graph input
-   * @param {String} name
-   * @param {String} type
    */
   removeInput(name: string): boolean {
     if (!this.inputs[name]) return false
@@ -1241,9 +1225,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Creates a global graph output
-   * @param {String} name
-   * @param {String} type
-   * @param {*} value
    */
   addOutput(name: string, type: string, value: unknown): void {
     this.outputs[name] = { name: name, type: type, value: value }
@@ -1256,8 +1237,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Assign a data to the global output
-   * @param {String} name
-   * @param {String} value
    */
   setOutputData(name: string, value: unknown): void {
     const output = this.outputs[name]
@@ -1267,8 +1246,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Returns the current value of a global graph output
-   * @param {String} name
-   * @return {*} the data
    */
   getOutputData(name: string): unknown {
     const output = this.outputs[name]
@@ -1278,8 +1255,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Renames a global graph output
-   * @param {String} old_name
-   * @param {String} new_name
    */
   renameOutput(old_name: string, name: string): boolean | undefined {
     if (!this.outputs[old_name]) return false
@@ -1300,8 +1275,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Changes the type of a global graph output
-   * @param {String} name
-   * @param {String} type
    */
   changeOutputType(name: string, type: string): boolean | undefined {
     if (!this.outputs[name]) return false
@@ -1320,7 +1293,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Removes a global graph output
-   * @param {String} name
    */
   removeOutput(name: string): boolean {
     if (!this.outputs[name]) return false
@@ -1400,9 +1372,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Configures a reroute on the graph where ID is already known (probably deserialisation).
    * Creates the object if it does not exist.
-   * @param id Reroute ID
-   * @param pos Position in graph space
-   * @param linkIds IDs of links that pass through this reroute
+   * @param serialisedReroute See {@link SerialisableReroute}
    */
   setReroute({ id, parentId, pos, linkIds }: SerialisableReroute): Reroute {
     id ??= ++this.state.lastRerouteId
@@ -1417,9 +1387,8 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Creates a new reroute and adds it to the graph.
    * @param pos Position in graph space
-   * @param links The links that will use this reroute (e.g. if from an output with multiple outputs, and all will use it)
-   * @param afterRerouteId If set, this reroute will be shown after the specified ID.
-   * Otherwise, the reroute will be added as the last on the link.
+   * @param before The existing link segment (reroute, link) that will be after this reroute,
+   * going from the node output to input.
    * @returns The newly created reroute - typically ignored.
    */
   createReroute(pos: Point, before: LinkSegment): Reroute {
@@ -1467,7 +1436,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Destroys a link
-   * @param {Number} link_id
    */
   removeLink(link_id: LinkId): void {
     const link = this._links.get(link_id)
@@ -1482,8 +1450,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   /**
    * Creates a Object containing all the info about this graph, it can be serialized
    * @deprecated Use {@link asSerialisable}, which returns the newer schema version.
-   *
-   * @return {Object} value of the node
+   * @returns value of the node
    */
   serialize(option?: { sortNodes: boolean }): ISerialisedGraph {
     const { config, state, groups, nodes, reroutes, extra } = this.asSerialisable(option)
@@ -1549,8 +1516,9 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /**
    * Configure a graph from a JSON string
-   * @param {String} str configure a graph from a JSON string
-   * @param {Boolean} returns if there was any error parsing
+   * @param data The deserialised object to configure this graph from
+   * @param keep_old If `true`, the graph will not be cleared prior to
+   * adding the configuration.
    */
   configure(
     data: ISerialisedGraph | SerialisableGraph,

@@ -106,7 +106,7 @@ export interface ClipboardItems {
   links?: SerialisableLLink[]
 }
 
-/** */
+/** @deprecated */
 export interface IClipboardContents {
   nodes?: ISerialisedNode[]
   links?: TClipboardLink[]

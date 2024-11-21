@@ -92,7 +92,6 @@ export function isInRect(x: number, y: number, rect: ReadOnlyRect): boolean {
  * @deprecated
  * Use {@link isInRectangle} to match inclusive of top left.
  * This function returns a false negative when an integer point (e.g. pixel) is on the leftmost or uppermost edge of a rectangle.
- *
  * @param x Point x
  * @param y Point y
  * @param left Rect x
@@ -287,7 +286,8 @@ export function rotateLink(
  * {@link https://www.geeksforgeeks.org/orientation-3-ordered-points/}
  * @param lineStart The start point of the line
  * @param lineEnd The end point of the line
- * @param point The point to check
+ * @param x X co-ordinate of the point to check
+ * @param y Y co-ordinate of the point to check
  * @returns 0 if all three points are in a straight line, a negative value if
  * point is to the left of the projected line, or positive if the point is to
  * the right
@@ -303,7 +303,6 @@ export function getOrientation(
 }
 
 /**
- *
  * @param out The array to store the point in
  * @param a Start point
  * @param b End point
