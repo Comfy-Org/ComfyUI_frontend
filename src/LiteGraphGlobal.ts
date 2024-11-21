@@ -166,6 +166,21 @@ export class LiteGraphGlobal {
   /** [true!] renders a partial border to highlight when a dragged link is snapped to a node */
   snap_highlights_node = true
 
+  /**
+   * If `true`, items always snap to the grid - modifier keys are ignored.
+   * When {@link snapToGrid} is falsy, a value of `1` is used.
+   * Default: `false`
+   */
+  alwaysSnapToGrid?: boolean
+
+  /**
+   * When set to a positive number, when nodes are moved their positions will
+   * be rounded to the nearest multiple of this value.  Half up.
+   * Default: `undefined`
+   * @todo Not implemented - see {@link LiteGraph.CANVAS_GRID_SIZE}
+   */
+  snapToGrid?: number
+
   /** [false on mobile] better true if not touch device, TODO add an helper/listener to close if false */
   search_hide_on_mouse_leave = true
   /**

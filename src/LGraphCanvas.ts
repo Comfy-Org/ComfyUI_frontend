@@ -3019,7 +3019,7 @@ export class LGraphCanvas {
    */
   #processDraggedItems(e: CanvasPointerEvent): void {
     const { graph } = this
-    if (e.shiftKey || graph.config.alwaysSnapToGrid)
+    if (e.shiftKey || LiteGraph.alwaysSnapToGrid)
       graph.snapToGrid(this.selectedItems)
 
     this.dirty_canvas = true
@@ -4180,7 +4180,7 @@ export class LGraphCanvas {
     }
 
     // TODO: Set snapping value when changed instead of once per frame
-    this.#snapToGrid = this.#shiftDown || this.graph.config.alwaysSnapToGrid
+    this.#snapToGrid = this.#shiftDown || LiteGraph.alwaysSnapToGrid
       ? this.graph.getSnapToGridSize()
       : undefined
 

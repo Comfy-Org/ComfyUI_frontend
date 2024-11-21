@@ -47,19 +47,6 @@ type ParamsArray<T extends Record<any, any>, K extends MethodNames<T>> =
 export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
   align_to_grid?: any
-  /**
-   * When set to a positive number, when nodes are moved their positions will
-   * be rounded to the nearest multiple of this value.  Half up.
-   * Default: `undefined`
-   * @todo Not implemented - see {@link LiteGraph.CANVAS_GRID_SIZE}
-   */
-  snapToGrid?: number
-  /**
-   * If `true`, items always snap to the grid - modifier keys are ignored.
-   * When {@link snapToGrid} is falsy, a value of `1` is used.
-   * Default: `false`
-   */
-  alwaysSnapToGrid?: boolean
   links_ontop?: any
 }
 
@@ -791,7 +778,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     const { state } = this
 
     // Ensure created items are snapped
-    if (this.config.alwaysSnapToGrid) {
+    if (LiteGraph.alwaysSnapToGrid) {
       const snapTo = this.getSnapToGridSize()
       if (snapTo) node.snapToGrid(snapTo)
     }
@@ -1060,7 +1047,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    *
    * Item positions are reounded to the nearest multiple of {@link LiteGraph.CANVAS_GRID_SIZE}.
    *
-   * When {@link config}.{@link LGraphConfig.alwaysSnapToGrid alwaysSnapToGrid} is enabled
+   * When {@link LiteGraph.alwaysSnapToGrid} is enabled
    * and the grid size is falsy, a default of 1 is used.
    * @param items The items to be snapped to the grid
    * @todo Currently only snaps nodes.
@@ -1080,7 +1067,7 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
    */
   getSnapToGridSize(): number {
     // Default to 1 when always snapping
-    return this.config.alwaysSnapToGrid
+    return LiteGraph.alwaysSnapToGrid
       ? LiteGraph.CANVAS_GRID_SIZE || 1
       : LiteGraph.CANVAS_GRID_SIZE
   }
