@@ -23,42 +23,42 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'listen',
     name: 'Host: The IP address to listen on',
-    category: ['network'],
+    category: ['Network'],
     type: 'text',
     defaultValue: '127.0.0.1'
   },
   {
     id: 'port',
     name: 'Port: The port to listen on',
-    category: ['network'],
+    category: ['Network'],
     type: 'number',
     defaultValue: 8188
   },
   {
     id: 'tls-keyfile',
     name: 'TLS Key File: Path to TLS key file for HTTPS',
-    category: ['network'],
+    category: ['Network'],
     type: 'text',
     defaultValue: undefined
   },
   {
     id: 'tls-certfile',
     name: 'TLS Certificate File: Path to TLS certificate file for HTTPS',
-    category: ['network'],
+    category: ['Network'],
     type: 'text',
     defaultValue: undefined
   },
   {
     id: 'enable-cors-header',
     name: 'Enable CORS header: Use "*" for all origins or specify domain',
-    category: ['network'],
+    category: ['Network'],
     type: 'text',
     defaultValue: undefined
   },
   {
     id: 'max-upload-size',
     name: 'Maximum upload size (MB)',
-    category: ['network'],
+    category: ['Network'],
     type: 'number',
     defaultValue: 100
   },
@@ -67,7 +67,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'auto-launch',
     name: 'Automatically opens in the browser on startup',
-    category: ['launch'],
+    category: ['Launch'],
     type: 'combo',
     options: Object.values(AutoLaunch),
     defaultValue: AutoLaunch.Auto,
@@ -122,7 +122,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'global-precision',
     name: 'Global floating point precision',
-    category: ['inference'],
+    category: ['Inference'],
     type: 'combo',
     options: [
       FloatingPointPrecision.AUTO,
@@ -153,7 +153,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'unet-precision',
     name: 'UNET precision',
-    category: ['inference'],
+    category: ['Inference'],
     type: 'combo',
     options: [
       FloatingPointPrecision.AUTO,
@@ -180,7 +180,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'vae-precision',
     name: 'VAE precision',
-    category: ['inference'],
+    category: ['Inference'],
     type: 'combo',
     options: [
       FloatingPointPrecision.AUTO,
@@ -204,7 +204,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'cpu-vae',
     name: 'Run VAE on CPU',
-    category: ['inference'],
+    category: ['Inference'],
     type: 'boolean',
     defaultValue: false
   },
@@ -213,7 +213,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'text-encoder-precision',
     name: 'Text Encoder precision',
-    category: ['inference'],
+    category: ['Inference'],
     type: 'combo',
     options: [
       FloatingPointPrecision.AUTO,
@@ -240,21 +240,21 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'force-channels-last',
     name: 'Force channels-last memory format',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'directml',
     name: 'DirectML device index',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'number',
     defaultValue: undefined
   },
   {
     id: 'disable-ipex-optimize',
     name: 'Disable IPEX optimization',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'boolean',
     defaultValue: false
   },
@@ -263,7 +263,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'preview-method',
     name: 'Method used for latent previews',
-    category: ['preview'],
+    category: ['Preview'],
     type: 'combo',
     options: Object.values(LatentPreviewMethod),
     defaultValue: LatentPreviewMethod.NoPreviews
@@ -271,7 +271,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'preview-size',
     name: 'Size of preview images',
-    category: ['preview'],
+    category: ['Preview'],
     type: 'number',
     defaultValue: 512
   },
@@ -286,17 +286,18 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   },
   {
     id: 'cache-lru',
-    name: 'Use LRU caching with a maximum of N node results cached. May use more RAM/VRAM (0 to disable).',
+    name: 'Use LRU caching with a maximum of N node results cached. (0 to disable).',
     category: ['Cache'],
     type: 'number',
-    defaultValue: 0
+    defaultValue: 0,
+    tooltip: 'May use more RAM/VRAM.'
   },
 
   // Attention settings
   {
     id: 'cross-attention-method',
     name: 'Cross attention method',
-    category: ['attention'],
+    category: ['Attention'],
     type: 'combo',
     options: Object.values(CrossAttentionMethod),
     defaultValue: CrossAttentionMethod.Auto,
@@ -320,14 +321,14 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'force-upcast-attention',
     name: 'Force attention upcast',
-    category: ['attention'],
+    category: ['Attention'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'dont-upcast-attention',
     name: 'Prevent attention upcast',
-    category: ['attention'],
+    category: ['Attention'],
     type: 'boolean',
     defaultValue: false
   },
@@ -336,7 +337,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'vram-management',
     name: 'VRAM management mode',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'combo',
     options: Object.values(VramManagement),
     defaultValue: VramManagement.Auto,
@@ -354,7 +355,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'reserve-vram',
     name: 'Reserved VRAM (GB)',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'number',
     defaultValue: undefined,
     tooltip:
@@ -365,7 +366,6 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'default-hashing-function',
     name: 'Default hashing function for model files',
-    category: ['misc'],
     type: 'combo',
     options: Object.values(HashFunction),
     defaultValue: HashFunction.SHA256
@@ -373,14 +373,13 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'disable-smart-memory',
     name: 'Force ComfyUI to agressively offload to regular ram instead of keeping models in vram when it can.',
-    category: ['memory'],
+    category: ['Memory'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'deterministic',
     name: 'Make pytorch use slower deterministic algorithms when it can.',
-    category: ['misc'],
     type: 'boolean',
     defaultValue: false,
     tooltip: 'Note that this might not make images deterministic in all cases.'
@@ -388,35 +387,30 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'fast',
     name: 'Enable some untested and potentially quality deteriorating optimizations.',
-    category: ['misc'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'dont-print-server',
     name: "Don't print server output to console.",
-    category: ['misc'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'disable-metadata',
     name: 'Disable saving prompt metadata in files.',
-    category: ['misc'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'disable-all-custom-nodes',
     name: 'Disable loading all custom nodes.',
-    category: ['misc'],
     type: 'boolean',
     defaultValue: false
   },
   {
     id: 'log-level',
     name: 'Logging verbosity level',
-    category: ['misc'],
     type: 'combo',
     options: Object.values(LogLevel),
     defaultValue: LogLevel.INFO,
@@ -425,20 +419,5 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
         verbose: value
       }
     }
-  },
-
-  // Frontend settings
-  {
-    id: 'front-end-version',
-    name: 'Frontend implementation',
-    category: ['frontend'],
-    type: 'text',
-    defaultValue: 'comfyanonymous/ComfyUI@latest',
-    tooltip: `Specifies the version of the frontend to be used. This command needs internet connectivity to query and
-    download available frontend implementations from GitHub releases.
-
-    The version string should be in the format of:
-    [repoOwner]/[repoName]@[version]
-    where version is one of: "latest" or a valid version number (e.g. "1.0.0")`
   }
 ]
