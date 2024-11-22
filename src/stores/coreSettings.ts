@@ -624,5 +624,23 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.3.13'
+  },
+  {
+    id: 'Comfy.Server.ServerConfigValues',
+    name: 'Server config values for frontend display',
+    tooltip: 'Server config values used for frontend display only',
+    type: 'hidden',
+    // Mapping from server config id to value.
+    defaultValue: {} as Record<string, any>,
+    versionAdded: '1.4.8'
+  },
+  {
+    id: 'Comfy.Server.LaunchArgs',
+    name: 'Server launch arguments',
+    tooltip:
+      'These are the actual arguments that are passed to the server when it is launched.',
+    type: 'hidden',
+    defaultValue: {} as Record<string, string>,
+    versionAdded: '1.4.8'
   }
 ]
