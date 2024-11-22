@@ -71,6 +71,14 @@
               </template>
             </Suspense>
           </TabPanel>
+          <TabPanel key="server-config" value="Server-Config">
+            <Suspense>
+              <ServerConfigPanel />
+              <template #fallback>
+                <div>Loading server config panel...</div>
+              </template>
+            </Suspense>
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </ScrollPanel>
@@ -93,12 +101,16 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
+import { isElectron } from '@/utils/envUtil'
 
 const KeybindingPanel = defineAsyncComponent(
   () => import('./setting/KeybindingPanel.vue')
 )
 const ExtensionPanel = defineAsyncComponent(
   () => import('./setting/ExtensionPanel.vue')
+)
+const ServerConfigPanel = defineAsyncComponent(
+  () => import('./setting/ServerConfigPanel.vue')
 )
 
 interface ISettingGroup {
@@ -124,10 +136,24 @@ const extensionPanelNode: SettingTreeNode = {
   children: []
 }
 
+const serverConfigPanelNode: SettingTreeNode = {
+  key: 'server-config',
+  label: 'Server-Config',
+  children: []
+}
+
 const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
   const settingStore = useSettingStore()
   const showExtensionPanel = settingStore.get('Comfy.Settings.ExtensionPanel')
   return showExtensionPanel ? [extensionPanelNode] : []
+})
+
+/**
+ * Server config panel is only available in Electron. We might want to support
+ * it in the web version in the future.
+ */
+const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
+  return isElectron() ? [serverConfigPanelNode] : []
 })
 
 const settingStore = useSettingStore()
@@ -136,6 +162,7 @@ const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
   keybindingPanelNode,
   ...extensionPanelNodeList.value,
+  ...serverConfigPanelNodeList.value,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)

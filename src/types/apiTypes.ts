@@ -526,7 +526,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Settings.ExtensionPanel': z.boolean(),
       'Comfy.LinkRenderMode': z.number(),
       'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
-      'Comfy.Node.SnapHighlightsNode': z.boolean()
+      'Comfy.Node.SnapHighlightsNode': z.boolean(),
+      'Comfy.Server.ServerConfigValues': z.record(z.string(), z.any()),
+      'Comfy.Server.LaunchArgs': z.record(z.string(), z.string())
     })
     .optional()
 )

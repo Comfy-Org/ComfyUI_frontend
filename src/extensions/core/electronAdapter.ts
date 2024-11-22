@@ -31,14 +31,6 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         type: 'boolean',
         defaultValue: true,
         onChange: onChangeRestartApp
-      },
-      {
-        id: 'Comfy-Desktop.ComfyServer.ExtraLaunchArgs',
-        category: ['Comfy-Desktop', 'ComfyUI Server'],
-        name: 'Extra launch arguments passed to the ComfyUI main.py script',
-        type: 'text',
-        defaultValue: '',
-        onChange: onChangeRestartApp
       }
     ],
 
