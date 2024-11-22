@@ -2534,13 +2534,14 @@ export class LGraphCanvas {
           : 0
       pointer.onClick = (upEvent) => {
         // Left/right arrows
-        widget.value += delta * 0.1 * (widget.options.step || 1)
-        if (widget.options.min != null && widget.value < widget.options.min) {
-          widget.value = widget.options.min
+        let newValue = widget.value + delta * 0.1 * (widget.options.step || 1)
+        if (widget.options.min != null && newValue < widget.options.min) {
+          newValue = widget.options.min
         }
-        if (widget.options.max != null && widget.value > widget.options.max) {
-          widget.value = widget.options.max
+        if (widget.options.max != null && newValue > widget.options.max) {
+          newValue = widget.options.max
         }
+        if (newValue !== widget.value) setWidgetValue(this, node, widget, newValue)
 
         if (delta !== 0) return
 
@@ -2564,14 +2565,16 @@ export class LGraphCanvas {
         const x = eMove.canvasX - node.pos[0]
         if (delta && (x > -3 && x < width + 3)) return
 
-        if (eMove.deltaX) widget.value += eMove.deltaX * 0.1 * (widget.options.step || 1)
+        let newValue = widget.value
+        if (eMove.deltaX) newValue += eMove.deltaX * 0.1 * (widget.options.step || 1)
 
-        if (widget.options.min != null && widget.value < widget.options.min) {
-          widget.value = widget.options.min
+        if (widget.options.min != null && newValue < widget.options.min) {
+          newValue = widget.options.min
         }
-        if (widget.options.max != null && widget.value > widget.options.max) {
-          widget.value = widget.options.max
+        if (widget.options.max != null && newValue > widget.options.max) {
+          newValue = widget.options.max
         }
+        if (newValue !== widget.value) setWidgetValue(this, node, widget, newValue)
       }
       break
     }
@@ -2679,6 +2682,9 @@ export class LGraphCanvas {
         node.setProperty(widget.options.property, v)
       }
       widget.callback?.(widget.value, canvas, node, pos, e)
+
+      node.onWidgetChanged?.(widget.name, v, oldValue, widget)
+      node.graph._version++
     }
   }
 
