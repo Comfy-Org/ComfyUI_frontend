@@ -2947,8 +2947,17 @@ export class LGraphCanvas {
         }
 
         // Resize corner
-        if (this.canvas && !e.ctrlKey) {
-          if (node.inResizeCorner(e.canvasX, e.canvasY)) underPointer |= CanvasItem.ResizeSe
+        if (node.inResizeCorner(e.canvasX, e.canvasY)) {
+          underPointer |= CanvasItem.ResizeSe
+        } else {
+          // Legacy widget mouse callbacks for pointermove events
+          const widget = node.getWidgetOnPos(e.canvasX, e.canvasY)
+
+          if (widget?.mouse) {
+            const x = e.canvasX - node.pos[0]
+            const y = e.canvasY - node.pos[1]
+            this.dirty_canvas = widget.mouse(e, [x, y], node)
+          }
         }
       } else {
         // Not over a node

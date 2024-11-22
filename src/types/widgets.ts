@@ -1,6 +1,6 @@
 import { CanvasColour, Point, Size } from "../interfaces"
 import type { LGraphCanvas, LGraphNode } from "../litegraph"
-import type { CanvasMouseEvent } from "./events"
+import type { CanvasMouseEvent, CanvasPointerEvent } from "./events"
 
 export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown> {
   on?: string
@@ -135,7 +135,14 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
   onRemove?(): void
   beforeQueued?(): void
 
-  mouse?(event: CanvasMouseEvent, arg1: number[], node: LGraphNode): boolean
+  /**
+   * Simple callback for pointer events, allowing custom widgets to events relevant to them.
+   * @param event The pointer event that triggered this callback
+   * @param pointerOffset Offset of the pointer relative to {@link node.pos}
+   * @param node The node this widget belongs to
+   * @todo Expose CanvasPointer API to custom widgets
+   */
+  mouse?(event: CanvasPointerEvent, pointerOffset: Point, node: LGraphNode): boolean
   draw?(
     ctx: CanvasRenderingContext2D,
     node: LGraphNode,
