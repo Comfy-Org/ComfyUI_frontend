@@ -101,6 +101,7 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
+import { isElectron } from '@/utils/envUtil'
 
 const KeybindingPanel = defineAsyncComponent(
   () => import('./setting/KeybindingPanel.vue')
@@ -147,13 +148,21 @@ const extensionPanelNodeList = computed<SettingTreeNode[]>(() => {
   return showExtensionPanel ? [extensionPanelNode] : []
 })
 
+/**
+ * Server config panel is only available in Electron. We might want to support
+ * it in the web version in the future.
+ */
+const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
+  return isElectron() ? [serverConfigPanelNode] : []
+})
+
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const categories = computed<SettingTreeNode[]>(() => [
   ...(settingRoot.value.children || []),
   keybindingPanelNode,
   ...extensionPanelNodeList.value,
-  serverConfigPanelNode,
+  ...serverConfigPanelNodeList.value,
   aboutPanelNode
 ])
 const activeCategory = ref<SettingTreeNode | null>(null)
