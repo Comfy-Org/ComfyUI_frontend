@@ -165,4 +165,25 @@ describe('useServerConfigStore', () => {
     expect(store.launchArgs['test.config1']).toBe('custom1')
     expect(store.launchArgs['test.config2']).toBeUndefined()
   })
+
+  it('should not include nullish values in launch arguments', () => {
+    const configs: ServerConfig<any>[] = [
+      { ...dummyFormItem, id: 'test.config1', defaultValue: 'default1' },
+      { ...dummyFormItem, id: 'test.config2', defaultValue: 'default2' },
+      { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' }
+    ]
+
+    store.loadServerConfig(configs, {
+      'test.config1': undefined,
+      'test.config2': null,
+      'test.config3': ''
+    })
+
+    expect(Object.keys(store.launchArgs)).toHaveLength(0)
+    expect(Object.keys(store.serverConfigValues)).toEqual([
+      'test.config1',
+      'test.config2',
+      'test.config3'
+    ])
+  })
 })

@@ -29,7 +29,9 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
       serverConfigs.value.map((config) => {
         return [
           config.id,
-          config.value === config.defaultValue ? undefined : config.value
+          config.value === config.defaultValue || !config.value
+            ? undefined
+            : config.value
         ]
       })
     )
@@ -38,7 +40,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     return Object.assign(
       {},
       ...serverConfigs.value.map((config) => {
-        if (config.value === config.defaultValue) {
+        if (config.value === config.defaultValue || !config.value) {
           return {}
         }
         return config.getValue
