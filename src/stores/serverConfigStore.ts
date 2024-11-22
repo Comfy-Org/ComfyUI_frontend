@@ -38,6 +38,9 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     return Object.assign(
       {},
       ...serverConfigs.value.map((config) => {
+        if (config.value === config.defaultValue) {
+          return {}
+        }
         return config.getValue
           ? config.getValue(config.value)
           : { [config.id]: config.value }
