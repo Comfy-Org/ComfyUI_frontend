@@ -76,13 +76,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'd',
-      ctrl: true
-    },
-    commandId: 'Comfy.LoadDefaultWorkflow'
-  },
-  {
-    combo: {
       key: 'g',
       ctrl: true
     },
