@@ -272,8 +272,13 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     id: 'preview-size',
     name: 'Size of preview images',
     category: ['Preview'],
-    type: 'number',
-    defaultValue: 512
+    type: 'slider',
+    defaultValue: 512,
+    attrs: {
+      min: 128,
+      max: 2048,
+      step: 128
+    }
   },
 
   // Cache settings
