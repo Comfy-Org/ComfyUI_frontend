@@ -10,7 +10,15 @@ import _ from 'lodash'
 import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
-function clone<T>(obj: T): T {
+function clone(obj: any) {
+  try {
+    if (typeof structuredClone !== 'undefined') {
+      return structuredClone(obj)
+    }
+  } catch (error) {
+    // structuredClone is stricter than using JSON.parse/stringify so fallback to that
+  }
+
   return JSON.parse(JSON.stringify(obj))
 }
 
@@ -61,7 +69,7 @@ export class ChangeTracker {
     if (this.restoringState) return
 
     logger.debug('Reset State')
-    if (state) this.activeState = clone(state)
+    this.activeState = state ?? this.activeState
     this.initialState = clone(this.activeState)
   }
 
@@ -104,9 +112,9 @@ export class ChangeTracker {
   checkState() {
     if (!this.app.graph || this.changeCount) return
     // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-    const currentState = clone(this.app.graph.serialize()) as ComfyWorkflowJSON
+    const currentState = this.app.graph.serialize() as ComfyWorkflowJSON
     if (!this.activeState) {
-      this.activeState = currentState
+      this.activeState = clone(currentState)
       return
     }
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
@@ -116,7 +124,7 @@ export class ChangeTracker {
       }
       logger.debug('Diff detected. Undo queue length:', this.undoQueue.length)
 
-      this.activeState = currentState
+      this.activeState = clone(currentState)
       this.redoQueue.length = 0
       api.dispatchEvent(
         new CustomEvent('graphChanged', { detail: this.activeState })
