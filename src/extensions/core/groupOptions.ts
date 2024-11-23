@@ -21,9 +21,9 @@ app.registerExtension({
   name: 'Comfy.GroupOptions',
   commands: [
     {
-      id: 'LiteGraph.Group.FitGroupToNodes',
+      id: 'LiteGraph.Group.FitGroupToContents',
       icon: 'pi pi-expand',
-      label: 'Fit Group To Nodes',
+      label: 'Fit Group To Contents',
       versionAdded: '1.4.8',
       function: () => {
         const { canvas } = useCanvasStore()
