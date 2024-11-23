@@ -83,6 +83,10 @@ export class ChangeTracker {
   }
 
   updateModified() {
+    api.dispatchEvent(
+      new CustomEvent('graphChanged', { detail: this.activeState })
+    )
+
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -118,9 +122,6 @@ export class ChangeTracker {
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      api.dispatchEvent(
-        new CustomEvent('graphChanged', { detail: this.activeState })
-      )
       this.updateModified()
     }
   }
