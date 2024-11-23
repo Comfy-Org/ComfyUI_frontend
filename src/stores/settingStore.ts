@@ -16,7 +16,7 @@ import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from 'primevue/treenode'
 import type { ComfyExtension } from '@/types/comfy'
 import { buildTree } from '@/utils/treeUtil'
-import { CORE_SETTINGS } from '@/stores/coreSettings'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
 
 export interface SettingTreeNode extends TreeNode {
   data?: SettingParams

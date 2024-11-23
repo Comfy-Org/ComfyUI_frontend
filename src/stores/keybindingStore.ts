@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
 import { useSettingStore } from './settingStore'
-import { CORE_KEYBINDINGS } from './coreKeybindings'
+import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
