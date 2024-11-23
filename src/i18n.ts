@@ -33,18 +33,18 @@ const messages = {
         'Configure how ComfyUI behaves on your desktop. You can change these settings later.',
       settings: {
         autoUpdate: 'Automatic Updates',
-        allowMetrics: 'Usage Analytics',
+        allowMetrics: 'Crash Reports',
         autoUpdateDescription:
           "Automatically download and install updates when they become available. You'll always be notified before updates are installed.",
         allowMetricsDescription:
-          'Help improve ComfyUI by sending anonymous usage data. No personal information or workflow content will be collected.',
+          'Help improve ComfyUI by sending anonymous crash reports. No personal information or workflow content will be collected. This can be disabled at any time in the settings menu.',
         learnMoreAboutData: 'Learn more about data collection',
         dataCollectionDialog: {
           title: 'About Data Collection',
           whatWeCollect: 'What we collect:',
           whatWeDoNotCollect: "What we don't collect:",
-          errorReports: 'Error reports',
-          systemInfo: 'Operating system and app version',
+          errorReports: 'Error message and stack trace',
+          systemInfo: 'Hardware, OS type, and app version',
           personalInformation: 'Personal information',
           workflowContent: 'Workflow content',
           fileSystemInformation: 'File system information',
