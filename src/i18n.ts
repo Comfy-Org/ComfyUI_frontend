@@ -15,7 +15,7 @@ const messages = {
       failedToSelectDirectory: 'Failed to select directory',
       pathValidationFailed: 'Failed to validate path',
       installLocationDescription:
-        "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location. Please make sure the selected disk has enough space (~5GB) left.",
+        "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location. Please make sure the selected disk has enough space (~15GB) left.",
       installLocationTooltip:
         "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
       appDataLocationTooltip:
