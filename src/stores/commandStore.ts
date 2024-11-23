@@ -500,12 +500,7 @@ export const useCommandStore = defineStore('command', () => {
       label: 'Fit Group To Contents',
       versionAdded: '1.4.9',
       function: () => {
-        const { canvas } = useCanvasStore()
-        if (!canvas) {
-          console.error('Canvas not found')
-          return
-        }
-        for (const group of canvas.selectedItems) {
+        for (const group of app.canvas.selectedItems) {
           if (group instanceof LGraphGroup) {
             group.recomputeInsideNodes()
             const padding = useSettingStore().get(
