@@ -5,6 +5,7 @@ import { LGraphCanvas } from '@comfyorg/litegraph'
 import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { useSettingStore } from '@/stores/settingStore'
+import { useCanvasStore } from '@/stores/graphStore'
 
 function setNodeMode(node: LGraphNode, mode: number) {
   node.mode = mode
@@ -18,6 +19,27 @@ function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {
 
 app.registerExtension({
   name: 'Comfy.GroupOptions',
+  commands: [
+    {
+      id: 'LiteGraph.Group.FitGroupToNodes',
+      icon: 'pi pi-expand',
+      label: 'Fit Group To Nodes',
+      versionAdded: '1.4.8',
+      function: () => {
+        const { canvas } = useCanvasStore()
+        for (const group of canvas.selectedItems) {
+          if (group instanceof LGraphGroup) {
+            group.recomputeInsideNodes()
+            const padding = useSettingStore().get(
+              'Comfy.GroupSelectedNodes.Padding'
+            )
+            group.resizeTo(group.children, padding)
+            app.graph.change()
+          }
+        }
+      }
+    }
+  ],
   setup() {
     const orig = LGraphCanvas.prototype.getCanvasMenuOptions
     // graph_mouse
