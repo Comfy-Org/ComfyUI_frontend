@@ -18,7 +18,10 @@
       <div class="relative">
         <span
           class="status-indicator"
-          v-if="!workspaceStore.shiftDown && option.workflow.isModified"
+          v-if="
+            !workspaceStore.shiftDown &&
+            (option.workflow.isModified || !option.workflow.isPersisted)
+          "
           >•</span
         >
         <Button

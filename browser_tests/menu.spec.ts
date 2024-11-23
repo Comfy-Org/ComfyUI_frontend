@@ -393,8 +393,8 @@ test.describe('Menu', () => {
 
       await tab.newBlankWorkflowButton.click()
       expect(await tab.getOpenedWorkflowNames()).toEqual([
-        'Unsaved Workflow.json',
-        'Unsaved Workflow (2).json'
+        '*Unsaved Workflow.json',
+        '*Unsaved Workflow (2).json'
       ])
     })
 
