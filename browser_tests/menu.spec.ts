@@ -434,7 +434,7 @@ test.describe('Menu', () => {
       const openedWorkflow = tab.getOpenedItem('foo/bar')
       await tab.renameWorkflow(openedWorkflow, 'foo/baz')
       expect(await tab.getOpenedWorkflowNames()).toEqual([
-        'Unsaved Workflow.json',
+        '*Unsaved Workflow.json',
         'foo/baz.json'
       ])
     })
@@ -444,12 +444,12 @@ test.describe('Menu', () => {
       await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['Unsaved Workflow.json', 'workflow3.json'])
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json'])
 
       await comfyPage.menu.topbar.saveWorkflowAs('workflow4.json')
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
+      ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
     test('Can save workflow as with same name', async ({ comfyPage }) => {
@@ -471,6 +471,7 @@ test.describe('Menu', () => {
       const topbar = comfyPage.menu.topbar
       await topbar.saveWorkflow('workflow1.json')
       await topbar.saveWorkflowAs('workflow2.json')
+      await comfyPage.nextFrame()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       ).toEqual(['workflow1.json', 'workflow2.json'])
@@ -519,7 +520,7 @@ test.describe('Menu', () => {
       await closeButton.click()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['Unsaved Workflow.json'])
+      ).toEqual(['*Unsaved Workflow.json'])
     })
   })
 
