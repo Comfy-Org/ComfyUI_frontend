@@ -493,6 +493,24 @@ export const useCommandStore = defineStore('command', () => {
       function: () => {
         useWorkspaceStore().toggleFocusMode()
       }
+    },
+    {
+      id: 'Comfy.Graph.FitGroupToContents',
+      icon: 'pi pi-expand',
+      label: 'Fit Group To Contents',
+      versionAdded: '1.4.9',
+      function: () => {
+        for (const group of app.canvas.selectedItems) {
+          if (group instanceof LGraphGroup) {
+            group.recomputeInsideNodes()
+            const padding = useSettingStore().get(
+              'Comfy.GroupSelectedNodes.Padding'
+            )
+            group.resizeTo(group.children, padding)
+            app.graph.change()
+          }
+        }
+      }
     }
   ]
 

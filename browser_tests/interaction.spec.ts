@@ -320,6 +320,15 @@ test.describe('Node Interaction', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('group-selected-nodes.png')
   })
 
+  test('Can fit group to contents', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('oversized_group')
+    await comfyPage.ctrlA()
+    await comfyPage.nextFrame()
+    await comfyPage.executeCommand('Comfy.Graph.FitGroupToContents')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot('group-fit-to-contents.png')
+  })
+
   // Somehow this test fails on GitHub Actions. It works locally.
   // https://github.com/Comfy-Org/ComfyUI_frontend/pull/736
   test.skip('Can pin/unpin nodes with keyboard shortcut', async ({
