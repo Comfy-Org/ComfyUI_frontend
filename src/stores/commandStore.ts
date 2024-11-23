@@ -12,7 +12,7 @@ import { useQueueSettingsStore, useQueueStore } from './queueStore'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { ComfyExtension } from '@/types/comfy'
 import { LGraphGroup } from '@comfyorg/litegraph'
-import { useTitleEditorStore } from './graphStore'
+import { useCanvasStore, useTitleEditorStore } from './graphStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
 import { ComfyWorkflow, useWorkflowStore } from './workflowStore'
 import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
@@ -492,6 +492,29 @@ export const useCommandStore = defineStore('command', () => {
       versionAdded: '1.3.27',
       function: () => {
         useWorkspaceStore().toggleFocusMode()
+      }
+    },
+    {
+      id: 'Comfy.Graph.FitGroupToContents',
+      icon: 'pi pi-expand',
+      label: 'Fit Group To Contents',
+      versionAdded: '1.4.9',
+      function: () => {
+        const { canvas } = useCanvasStore()
+        if (!canvas) {
+          console.error('Canvas not found')
+          return
+        }
+        for (const group of canvas.selectedItems) {
+          if (group instanceof LGraphGroup) {
+            group.recomputeInsideNodes()
+            const padding = useSettingStore().get(
+              'Comfy.GroupSelectedNodes.Padding'
+            )
+            group.resizeTo(group.children, padding)
+            app.graph.change()
+          }
+        }
       }
     }
   ]
