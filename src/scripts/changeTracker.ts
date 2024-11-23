@@ -128,7 +128,7 @@ export class ChangeTracker {
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const prevState = source.pop()
     if (prevState) {
-      target.push(this.activeState!)
+      target.push(this.activeState)
       this.restoringState = true
       try {
         await this.app.loadGraphData(prevState, false, false, this.workflow, {
