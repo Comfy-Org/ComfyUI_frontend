@@ -18,8 +18,8 @@ export interface ServerConfig<T> extends FormItem {
   getValue?: (value: T) => Record<string, any>
 }
 
-export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
-  // Network settings
+export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
+  // We only need these settings in the web version. Desktop app manages them already.
   {
     id: 'listen',
     name: 'Host: The IP address to listen on',
@@ -33,7 +33,11 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     category: ['Network'],
     type: 'number',
     defaultValue: 8188
-  },
+  }
+]
+
+export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
+  // Network settings
   {
     id: 'tls-keyfile',
     name: 'TLS Key File: Path to TLS key file for HTTPS',
