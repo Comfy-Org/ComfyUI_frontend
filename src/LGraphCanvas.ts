@@ -2956,9 +2956,9 @@ export class LGraphCanvas {
         // Resize corner
         if (node.inResizeCorner(e.canvasX, e.canvasY)) {
           underPointer |= CanvasItem.ResizeSe
-        } else {
+        } else if (this.node_widget) {
           // Legacy widget mouse callbacks for pointermove events
-          const widget = node.getWidgetOnPos(e.canvasX, e.canvasY)
+          const widget = this.node_widget[1]
 
           if (widget?.mouse) {
             const x = e.canvasX - node.pos[0]
