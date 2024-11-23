@@ -56,9 +56,7 @@ test.describe('Change Tracker', () => {
       expect(await comfyPage.getToastErrorCount()).toBe(0)
       expect(await isModified()).toBe(false)
 
-      // TODO(huchenlei): Investigate why saving the workflow is causing the
-      // undo queue to be triggered.
-      expect(await getUndoQueueSize()).toBe(1)
+      expect(await getUndoQueueSize()).toBe(0)
       expect(await getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.getFirstNodeRef())!
@@ -66,25 +64,25 @@ test.describe('Change Tracker', () => {
       await node.click('collapse')
       await expect(node).toBeCollapsed()
       expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(2)
+      expect(await getUndoQueueSize()).toBe(1)
       expect(await getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlB()
       await expect(node).toBeBypassed()
       expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(3)
+      expect(await getUndoQueueSize()).toBe(2)
       expect(await getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeBypassed()
       expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(2)
+      expect(await getUndoQueueSize()).toBe(1)
       expect(await getRedoQueueSize()).toBe(1)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeCollapsed()
       expect(await isModified()).toBe(false)
-      expect(await getUndoQueueSize()).toBe(1)
+      expect(await getUndoQueueSize()).toBe(0)
       expect(await getRedoQueueSize()).toBe(2)
     })
   })

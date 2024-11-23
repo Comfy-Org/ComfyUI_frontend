@@ -11,7 +11,7 @@ test.describe('Browser tab title', () => {
       const workflowName = await comfyPage.page.evaluate(async () => {
         return window['app'].extensionManager.workflow.activeWorkflow.filename
       })
-      expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
+      expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
 
     // Failing on CI

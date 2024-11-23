@@ -394,7 +394,7 @@ test.describe('Menu', () => {
       await tab.newBlankWorkflowButton.click()
       expect(await tab.getOpenedWorkflowNames()).toEqual([
         '*Unsaved Workflow.json',
-        'Unsaved Workflow (2).json'
+        '*Unsaved Workflow (2).json'
       ])
     })
 
@@ -471,6 +471,7 @@ test.describe('Menu', () => {
       const topbar = comfyPage.menu.topbar
       await topbar.saveWorkflow('workflow1.json')
       await topbar.saveWorkflowAs('workflow2.json')
+      await comfyPage.nextFrame()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       ).toEqual(['workflow1.json', 'workflow2.json'])
@@ -519,7 +520,7 @@ test.describe('Menu', () => {
       await closeButton.click()
       expect(
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-      ).toEqual(['Unsaved Workflow.json'])
+      ).toEqual(['*Unsaved Workflow.json'])
     })
   })
 

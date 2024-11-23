@@ -26,7 +26,10 @@ const betaMenuEnabled = computed(
 
 const workflowStore = useWorkflowStore()
 const isUnsavedText = computed(() =>
-  workflowStore.activeWorkflow?.isModified ? ' *' : ''
+  workflowStore.activeWorkflow?.isModified ||
+  !workflowStore.activeWorkflow?.isPersisted
+    ? ' *'
+    : ''
 )
 const workflowNameText = computed(() => {
   const workflowName = workflowStore.activeWorkflow?.filename

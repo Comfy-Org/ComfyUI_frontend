@@ -50,7 +50,9 @@
             <template #node="{ node }">
               <TreeExplorerTreeNode :node="node">
                 <template #before-label="{ node }">
-                  <span v-if="node.data.isModified">*</span>
+                  <span v-if="node.data.isModified || !node.data.isPersisted"
+                    >*</span
+                  >
                 </template>
                 <template #actions="{ node }">
                   <Button
