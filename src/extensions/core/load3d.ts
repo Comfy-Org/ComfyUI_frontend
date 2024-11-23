@@ -13,12 +13,12 @@ import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
 
 async function uploadFile(
-  modelWidget: IWidget,
   load3d: Load3d,
   file: File,
-  updateNode: boolean,
   fileInput?: HTMLInputElement
 ) {
+  let uploadPath
+
   try {
     const body = new FormData()
     body.append('image', file)
@@ -32,19 +32,15 @@ async function uploadFile(
     if (resp.status === 200) {
       const data = await resp.json()
       let path = data.name
+
       if (data.subfolder) path = data.subfolder + '/' + path
 
-      if (!modelWidget?.options?.values?.includes(path)) {
-        modelWidget?.options?.values?.push(path)
-      }
+      uploadPath = path
 
-      if (updateNode) {
-        modelWidget.value = path
-        const modelUrl = api.apiURL(
-          getResourceURL(...splitFilePath(path), 'input')
-        )
-        await load3d.loadModel(modelUrl, file.name)
-      }
+      const modelUrl = api.apiURL(
+        getResourceURL(...splitFilePath(path), 'input')
+      )
+      await load3d.loadModel(modelUrl, file.name)
 
       const fileExt = file.name.split('.').pop()?.toLowerCase()
       if (fileExt === 'obj' && fileInput?.files) {
@@ -76,6 +72,8 @@ async function uploadFile(
       error instanceof Error ? error.message : 'Upload failed'
     )
   }
+
+  return uploadPath
 }
 
 class Load3d {
@@ -1111,6 +1109,48 @@ app.registerExtension({
           load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
+        const fileInput = document.createElement('input')
+        fileInput.type = 'file'
+        fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
+        fileInput.style.display = 'none'
+        fileInput.onchange = async () => {
+          if (fileInput.files?.length) {
+            const modelWidget = node.widgets?.find(
+              (w: IWidget) => w.name === 'model_file'
+            )
+            const uploadPath = await uploadFile(
+              load3d,
+              fileInput.files[0],
+              fileInput
+            ).catch((error) => {
+              console.error('File upload failed:', error)
+              useToastStore().addAlert('File upload failed')
+            })
+
+            if (uploadPath && modelWidget) {
+              if (!modelWidget.options?.values?.includes(uploadPath)) {
+                modelWidget.options?.values?.push(uploadPath)
+              }
+
+              modelWidget.value = uploadPath
+            }
+          }
+        }
+
+        node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
+          fileInput.click()
+        })
+
+        node.addWidget('button', 'clear', 'clear', () => {
+          load3d.clearModel()
+          const modelWidget = node.widgets?.find(
+            (w: IWidget) => w.name === 'model_file'
+          )
+          if (modelWidget) {
+            modelWidget.value = ''
+          }
+        })
+
         return {
           widget: node.addDOMWidget(inputName, 'LOAD_3D', container)
         }
@@ -1137,6 +1177,8 @@ app.registerExtension({
     if (node.constructor.comfyClass !== 'Load3D') return
 
     const [oldWidth, oldHeight] = node.size
+
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 600)])
 
     await nextTick()
 
@@ -1212,44 +1254,6 @@ app.registerExtension({
       const data = await resp.json()
       return `threed/${data.name} [temp]`
     }
-
-    const fileInput = document.createElement('input')
-    fileInput.type = 'file'
-    fileInput.accept = '.gltf,.glb,.obj,.mtl,.fbx,.stl'
-    fileInput.style.display = 'none'
-    fileInput.onchange = () => {
-      if (fileInput.files?.length) {
-        const modelWidget = node.widgets.find(
-          (w: IWidget) => w.name === 'model_file'
-        )
-        uploadFile(
-          modelWidget,
-          load3d,
-          fileInput.files[0],
-          true,
-          fileInput
-        ).catch((error) => {
-          console.error('File upload failed:', error)
-          useToastStore().addAlert('File upload failed')
-        })
-      }
-    }
-
-    node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
-      fileInput.click()
-    })
-
-    node.addWidget('button', 'clear', 'clear', () => {
-      load3d.clearModel()
-      const modelWidget = node.widgets.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-      if (modelWidget) {
-        modelWidget.value = ''
-      }
-    })
-
-    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
 })
 
@@ -1293,6 +1297,103 @@ app.registerExtension({
           load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
         }
 
+        const fileInput = document.createElement('input')
+        fileInput.type = 'file'
+        fileInput.accept = '.fbx,glb,gltf'
+        fileInput.style.display = 'none'
+        fileInput.onchange = async () => {
+          if (fileInput.files?.length) {
+            const modelWidget = node.widgets?.find(
+              (w: IWidget) => w.name === 'model_file'
+            )
+            const uploadPath = await uploadFile(
+              load3d,
+              fileInput.files[0],
+              fileInput
+            ).catch((error) => {
+              console.error('File upload failed:', error)
+              useToastStore().addAlert('File upload failed')
+            })
+
+            if (uploadPath && modelWidget) {
+              if (!modelWidget.options?.values?.includes(uploadPath)) {
+                modelWidget.options?.values?.push(uploadPath)
+              }
+
+              modelWidget.value = uploadPath
+            }
+          }
+        }
+
+        node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
+          fileInput.click()
+        })
+
+        node.addWidget('button', 'clear', 'clear', () => {
+          load3d.clearModel()
+          const modelWidget = node.widgets?.find(
+            (w: IWidget) => w.name === 'model_file'
+          )
+          if (modelWidget) {
+            modelWidget.value = ''
+          }
+
+          const animationSelect = node.widgets?.find(
+            (w: IWidget) => w.name === 'animation'
+          )
+
+          if (animationSelect) {
+            animationSelect.options.values = []
+            animationSelect.value = ''
+          }
+
+          const speedSelect = node.widgets?.find(
+            (w: IWidget) => w.name === 'animation_speed'
+          )
+
+          if (speedSelect) {
+            speedSelect.value = '1'
+          }
+        })
+
+        node.addWidget(
+          'button',
+          'Play/Pause Animation',
+          'toggle_animation',
+          () => {
+            load3d.toggleAnimation()
+          }
+        )
+
+        const animationSelect = node.addWidget(
+          'combo',
+          'animation',
+          '',
+          () => '',
+          {
+            values: []
+          }
+        ) as IWidget
+
+        animationSelect.callback = (value: string) => {
+          const names = load3d.getAnimationNames()
+          const index = names.indexOf(value)
+
+          if (index !== -1) {
+            const wasPlaying = load3d.isAnimationPlaying
+
+            if (wasPlaying) {
+              load3d.toggleAnimation(false)
+            }
+
+            load3d.updateSelectedAnimation(index)
+
+            if (wasPlaying) {
+              load3d.toggleAnimation(true)
+            }
+          }
+        }
+
         return {
           widget: node.addDOMWidget(inputName, 'LOAD_3D_ANIMATION', container)
         }
@@ -1319,6 +1420,8 @@ app.registerExtension({
     if (node.constructor.comfyClass !== 'Load3DAnimation') return
 
     const [oldWidth, oldHeight] = node.size
+
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 700)])
 
     await nextTick()
 
@@ -1352,29 +1455,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    const animationSelect = node.addWidget('combo', 'animation', '', () => '', {
-      values: []
-    }) as IWidget
-
-    animationSelect.callback = (value: number) => {
-      const names = load3d.getAnimationNames()
-      const index = names.indexOf(value)
-
-      if (index !== -1) {
-        const wasPlaying = load3d.isAnimationPlaying
-
-        if (wasPlaying) {
-          load3d.toggleAnimation(false)
-        }
-
-        load3d.updateSelectedAnimation(index)
-
-        if (wasPlaying) {
-          load3d.toggleAnimation(true)
-        }
-      }
-    }
-
     const speedSelect = node.widgets.find(
       (w: IWidget) => w.name === 'animation_speed'
     )
@@ -1400,6 +1480,11 @@ app.registerExtension({
       (load3d: Load3d) => {
         const animationLoad3d = load3d as Load3dAnimation
         const names = animationLoad3d.getAnimationNames()
+
+        const animationSelect = node.widgets.find(
+          (w: IWidget) => w.name === 'animation'
+        )
+
         animationSelect.options.values = names
         if (names.length) {
           animationSelect.value = names[0]
@@ -1438,56 +1523,6 @@ app.registerExtension({
       const data = await resp.json()
       return `threed/${data.name} [temp]`
     }
-
-    const fileInput = document.createElement('input')
-    fileInput.type = 'file'
-    fileInput.accept = '.fbx,glb,gltf'
-    fileInput.style.display = 'none'
-    fileInput.onchange = () => {
-      if (fileInput.files?.length) {
-        const modelWidget = node.widgets.find(
-          (w: IWidget) => w.name === 'model_file'
-        )
-        uploadFile(
-          modelWidget,
-          load3d,
-          fileInput.files[0],
-          true,
-          fileInput
-        ).catch((error) => {
-          console.error('File upload failed:', error)
-          useToastStore().addAlert('File upload failed')
-        })
-      }
-    }
-
-    node.addWidget('button', 'upload 3d model', 'upload3dmodel', () => {
-      fileInput.click()
-    })
-
-    node.addWidget('button', 'clear', 'clear', () => {
-      load3d.clearModel()
-      const modelWidget = node.widgets.find(
-        (w: IWidget) => w.name === 'model_file'
-      )
-      if (modelWidget) {
-        modelWidget.value = ''
-      }
-      if (animationSelect) {
-        animationSelect.options.values = []
-        animationSelect.value = ''
-      }
-
-      if (speedSelect) {
-        speedSelect.value = '1'
-      }
-    })
-
-    node.addWidget('button', 'Play/Pause Animation', 'toggle_animation', () => {
-      load3d.toggleAnimation()
-    })
-
-    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
 })
 
@@ -1556,6 +1591,8 @@ app.registerExtension({
 
     const [oldWidth, oldHeight] = node.size
 
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
+
     await nextTick()
 
     const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
@@ -1600,7 +1637,5 @@ app.registerExtension({
       lightIntensity,
       upDirection
     )
-
-    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
   }
 })
