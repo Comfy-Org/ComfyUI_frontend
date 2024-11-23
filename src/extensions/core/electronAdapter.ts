@@ -27,7 +27,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       {
         id: 'Comfy-Desktop.SendStatistics',
         category: ['Comfy-Desktop', 'General', 'Send Statistics'],
-        name: 'Send anonymous usage statistics',
+        name: 'Send anonymous crash reports',
         type: 'boolean',
         defaultValue: true,
         onChange: onChangeRestartApp
