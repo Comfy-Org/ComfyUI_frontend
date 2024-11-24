@@ -43,7 +43,7 @@ import { formatCamelCase } from '@/utils/formatUtil'
 import { useSettingStore } from '@/stores/settingStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { electronAPI } from '@/utils/envUtil'
 
@@ -71,7 +71,7 @@ const modifiedConfigs = computed<ModifiedConfig[]>(() => {
       const serverConfig = serverConfigById.value[key]
       const initialValue =
         initialServerConfigValues[key] ?? serverConfig?.defaultValue
-      return { key, initialValue, value: value ?? serverConfig?.defaultValue }
+      return { key, initialValue, value: value || serverConfig?.defaultValue }
     })
     .filter((config) => {
       return config.initialValue !== config.value
@@ -92,15 +92,12 @@ const restartApp = () => {
 onMounted(() => {
   serverConfigStore.loadServerConfig(
     SERVER_CONFIG_ITEMS,
-    settingStore.get('Comfy.Server.ServerConfigValues')
+    initialServerConfigValues
   )
 })
 
-watch(launchArgs, (newVal) => {
-  settingStore.set('Comfy.Server.LaunchArgs', newVal)
-})
-
-watch(serverConfigValues, (newVal) => {
-  settingStore.set('Comfy.Server.ServerConfigValues', newVal)
+onBeforeUnmount(() => {
+  settingStore.set('Comfy.Server.ServerConfigValues', serverConfigValues.value)
+  settingStore.set('Comfy.Server.LaunchArgs', launchArgs.value)
 })
 </script>
