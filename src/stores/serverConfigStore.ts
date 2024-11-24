@@ -66,6 +66,13 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
       })
     )
   })
+  const commandLineArgs = computed<string>(() => {
+    return Object.entries(launchArgs.value)
+      .map(([key, value]) => [`--${key}`, value])
+      .flat()
+      .filter((arg) => typeof arg === 'string' && arg.length > 0)
+      .join(' ')
+  })
 
   function loadServerConfig(
     configs: ServerConfig<any>[],
@@ -88,6 +95,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     serverConfigsByCategory,
     serverConfigValues,
     launchArgs,
+    commandLineArgs,
     revertChanges,
     loadServerConfig
   }
