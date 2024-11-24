@@ -275,11 +275,7 @@ var styles = `
     justify-content: center;
     align-items: center;
     position: relative;
-    transition: background-color border 0.2s;
-  }
-  .maskEditor_toolPanelContainer:hover {
-    background-color: var(--p-overlaybadge-outline-color);
-    border: none;
+    transition: background-color 0.2s;
   }
   .maskEditor_toolPanelContainerSelected svg {
     fill: var(--p-button-text-primary-color) !important;
@@ -292,6 +288,15 @@ var styles = `
     aspect-ratio: 1/1;
     fill: var(--p-button-text-secondary-color);
   }
+
+  .maskEditor_toolPanelContainerDark:hover {
+    background-color: var(--p-surface-800);
+  }
+
+  .maskEditor_toolPanelContainerLight:hover {
+    background-color: var(--p-surface-300);
+  }
+
   .maskEditor_toolPanelIndicator {
     display: none;
     height: 100%;
@@ -379,16 +384,56 @@ var styles = `
   }
   #maskEditor_topBarShortcutsContainer {
     display: flex;
+    gap: 10px;
+    margin-left: 5px;
   }
 
-  .maskEditor_topPanelIconButton {
-    width: 53.3px;
+  .maskEditor_topPanelIconButton_dark {
+    width: 50px;
     height: 30px;
     pointer-events: auto;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: background-color 0.1s;
+    background: var(--p-surface-800);
+    border: 1px solid var(--p-form-field-border-color);
+    border-radius: 10px;
+  }
+
+  .maskEditor_topPanelIconButton_dark:hover {
+      background-color: var(--p-surface-900);
+  }
+
+  .maskEditor_topPanelIconButton_dark svg {
+    width: 25px;
+    height: 25px;
+    pointer-events: none;
+    fill: var(--input-text);
+  }
+
+  .maskEditor_topPanelIconButton_light {
+    width: 50px;
+    height: 30px;
+    pointer-events: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.1s;
+    background: var(--comfy-menu-bg);
+    border: 1px solid var(--p-form-field-border-color);
+    border-radius: 10px;
+  }
+
+  .maskEditor_topPanelIconButton_light:hover {
+      background-color: var(--p-surface-300);
+  }
+
+  .maskEditor_topPanelIconButton_light svg {
+    width: 25px;
+    height: 25px;
+    pointer-events: none;
+    fill: var(--input-text);
   }
 
   .maskEditor_topPanelButton_dark {
@@ -655,6 +700,24 @@ var styles = `
 
   .maskEditor_sidePanelLayerCheckbox {
     margin-left: 15px;
+  }
+
+  .maskEditor_toolPanelZoomIndicator {
+    width: var(--sidebar-width);
+    height: var(--sidebar-width);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    color: var(--p-button-text-secondary-color);
+    position: absolute;
+    bottom: 0;
+    transition: background-color 0.2s;
+  }
+
+  #maskEditor_toolPanelDimensionsText {
+    font-size: 12px;
   }
 
 `
@@ -1229,6 +1292,8 @@ class PaintBucketTool {
     this.messageBroker.subscribe('paintBucketFill', (point: Point) =>
       this.floodFill(point)
     )
+
+    this.messageBroker.subscribe('invert', () => this.invertMask())
   }
 
   private addPullTopics() {
@@ -1373,6 +1438,48 @@ class PaintBucketTool {
 
   getTolerance(): number {
     return this.tolerance
+  }
+
+  //invert mask
+
+  private invertMask() {
+    const imageData = this.ctx.getImageData(
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height
+    )
+    const data = imageData.data
+
+    // Find first non-transparent pixel to get mask color
+    let maskR = 0,
+      maskG = 0,
+      maskB = 0
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 0) {
+        maskR = data[i]
+        maskG = data[i + 1]
+        maskB = data[i + 2]
+        break
+      }
+    }
+
+    // Process each pixel
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3]
+      // Invert alpha channel (0 becomes 255, 255 becomes 0)
+      data[i + 3] = 255 - alpha
+
+      // If this was originally transparent (now opaque), fill with mask color
+      if (alpha === 0) {
+        data[i] = maskR
+        data[i + 1] = maskG
+        data[i + 2] = maskB
+      }
+    }
+
+    this.ctx.putImageData(imageData, 0, 0)
+    this.messageBroker.publish('saveState')
   }
 }
 
@@ -1809,10 +1916,15 @@ class BrushTool {
   smoothingLastDrawTime!: Date
   maskCtx: CanvasRenderingContext2D | null = null
 
+  brushStrokeCanvas: HTMLCanvasElement | null = null
+  brushStrokeCtx: CanvasRenderingContext2D | null = null
+
   //brush adjustment
   isBrushAdjusting: boolean = false
   brushPreviewGradient: HTMLElement | null = null
   initialPoint: Point | null = null
+  useDominantAxis: boolean = false
+  brushAdjustmentSpeed: number = 1.0
 
   maskEditor: MaskEditorDialog
   messageBroker: MessageBroker
@@ -1822,6 +1934,13 @@ class BrushTool {
     this.messageBroker = maskEditor.getMessageBroker()
     this.createListeners()
     this.addPullTopics()
+
+    this.useDominantAxis = app.extensionManager.setting.get(
+      'Comfy.MaskEditor.UseDominantAxis'
+    )
+    this.brushAdjustmentSpeed = app.extensionManager.setting.get(
+      'Comfy.MaskEditor.BrushAdjustmentSpeed'
+    )
 
     this.brushSettings = {
       size: 10,
@@ -1860,7 +1979,7 @@ class BrushTool {
     )
     //drawing
     this.messageBroker.subscribe('drawStart', (event: PointerEvent) =>
-      this.start_drawing(event)
+      this.startDrawing(event)
     )
     this.messageBroker.subscribe('draw', (event: PointerEvent) =>
       this.handleDrawing(event)
@@ -1897,12 +2016,27 @@ class BrushTool {
     )
   }
 
-  private async start_drawing(event: PointerEvent) {
+  private async createBrushStrokeCanvas() {
+    if (this.brushStrokeCanvas !== null) {
+      return
+    }
+
+    const maskCanvas = await this.messageBroker.pull('maskCanvas')
+    const canvas = document.createElement('canvas')
+    canvas.width = maskCanvas.width
+    canvas.height = maskCanvas.height
+
+    this.brushStrokeCanvas = canvas
+    this.brushStrokeCtx = canvas.getContext('2d')!
+  }
+
+  private async startDrawing(event: PointerEvent) {
     this.isDrawing = true
     let compositionOp: CompositionOperation
     let currentTool = await this.messageBroker.pull('currentTool')
     let coords = { x: event.offsetX, y: event.offsetY }
     let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
+    await this.createBrushStrokeCanvas()
 
     //set drawing mode
     if (currentTool === Tools.Eraser || event.buttons == 2) {
@@ -1930,15 +2064,6 @@ class BrushTool {
     let coords = { x: event.offsetX, y: event.offsetY }
     let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
     let currentTool = await this.messageBroker.pull('currentTool')
-
-    /* move to draw
-    if (event instanceof PointerEvent && event.pointerType == 'pen') {
-      brush_size *= event.pressure
-      this.last_pressure = event.pressure
-    } else {
-      brush_size = this.brush_size //this is the problem with pen pressure
-    }
-    */
 
     if (diff > 20 && !this.isDrawing)
       requestAnimationFrame(() => {
@@ -2051,29 +2176,62 @@ class BrushTool {
 
   private async handleBrushAdjustment(event: PointerEvent) {
     const coords = { x: event.offsetX, y: event.offsetY }
+    const brushDeadZone = 5
     let coords_canvas = await this.messageBroker.pull('screenToCanvas', coords)
 
     const delta_x = coords_canvas.x - this.initialPoint!.x
     const delta_y = coords_canvas.y - this.initialPoint!.y
 
-    // Adjust brush size (horizontal movement)
+    const effectiveDeltaX = Math.abs(delta_x) < brushDeadZone ? 0 : delta_x
+    const effectiveDeltaY = Math.abs(delta_y) < brushDeadZone ? 0 : delta_y
+
+    // New dominant axis logic
+    let finalDeltaX = effectiveDeltaX
+    let finalDeltaY = effectiveDeltaY
+
+    console.log(this.useDominantAxis)
+
+    if (this.useDominantAxis) {
+      // New setting flag
+      const ratio = Math.abs(effectiveDeltaX) / Math.abs(effectiveDeltaY)
+      const threshold = 2.0 // Configurable threshold
+
+      if (ratio > threshold) {
+        finalDeltaY = 0 // X is dominant
+      } else if (ratio < 1 / threshold) {
+        finalDeltaX = 0 // Y is dominant
+      }
+    }
+
+    const cappedDeltaX = Math.max(-100, Math.min(100, finalDeltaX))
+    const cappedDeltaY = Math.max(-100, Math.min(100, finalDeltaY))
+
+    // Rest of the function remains the same
+    const sizeDelta = cappedDeltaX / 40
+    const hardnessDelta = cappedDeltaY / 800
+
     const newSize = Math.max(
       1,
-      Math.min(100, this.brushSettings.size! + delta_x / 10)
+      Math.min(
+        100,
+        this.brushSettings.size! +
+          (cappedDeltaX / 35) * this.brushAdjustmentSpeed
+      )
     )
 
-    // Adjust brush hardness (vertical movement)
     const newHardness = Math.max(
       0,
-      Math.min(1, this.brushSettings!.hardness - delta_y / 200)
+      Math.min(
+        1,
+        this.brushSettings!.hardness -
+          (cappedDeltaY / 4000) * this.brushAdjustmentSpeed
+      )
     )
 
     this.brushSettings.size = newSize
     this.brushSettings.hardness = newHardness
 
     this.messageBroker.publish('updateBrushPreview')
-
-    return
   }
 
   //helper functions
@@ -2263,8 +2421,8 @@ class BrushTool {
   }
 
   private setBrushSmoothingPrecision(precision: number) {
-    console.log('precision', precision)
-    //  this.brushSettings.smoothingPrecision = precision
+    //console.log('precision', precision)
+    this.smoothingPrecision = precision
   }
 }
 
@@ -2300,6 +2458,9 @@ class UIManager {
   private mask_opacity: number = 0.7
   private maskBlendMode: MaskBlendMode = MaskBlendMode.Black
 
+  private zoomTextHTML!: HTMLSpanElement
+  private dimensionsTextHTML!: HTMLSpanElement
+
   constructor(rootElement: HTMLElement, maskEditor: MaskEditorDialog) {
     this.rootElement = rootElement
     this.maskEditor = maskEditor
@@ -2332,6 +2493,10 @@ class UIManager {
     )
 
     this.messageBroker.subscribe('updateCursor', () => this.updateCursor())
+
+    this.messageBroker.subscribe('setZoomText', (text: string) =>
+      this.setZoomText(text)
+    )
   }
 
   addPullTopics() {
@@ -2975,10 +3140,16 @@ class UIManager {
     return separator
   }
 
+  //----------------
+
   private async createTopBar() {
     const buttonAccentColor = this.darkMode
       ? 'maskEditor_topPanelButton_dark'
       : 'maskEditor_topPanelButton_light'
+
+    const iconButtonAccentColor = this.darkMode
+      ? 'maskEditor_topPanelIconButton_dark'
+      : 'maskEditor_topPanelIconButton_light'
 
     var top_bar = document.createElement('div')
     top_bar.id = 'maskEditor_topBar'
@@ -2997,9 +3168,9 @@ class UIManager {
 
     var top_bar_undo_button = document.createElement('div')
     top_bar_undo_button.id = 'maskEditor_topBarUndoButton'
-    top_bar_undo_button.classList.add('maskEditor_topPanelIconButton')
+    top_bar_undo_button.classList.add(iconButtonAccentColor)
     top_bar_undo_button.innerHTML =
-      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"><path d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"></path> </svg>'
+      '<svg viewBox="0 0 15 15"><path d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"></path> </svg>'
 
     top_bar_undo_button.addEventListener('click', () => {
       this.messageBroker.publish('undo')
@@ -3007,19 +3178,21 @@ class UIManager {
 
     var top_bar_redo_button = document.createElement('div')
     top_bar_redo_button.id = 'maskEditor_topBarRedoButton'
-    top_bar_redo_button.classList.add('maskEditor_topPanelIconButton')
+    top_bar_redo_button.classList.add(iconButtonAccentColor)
     top_bar_redo_button.innerHTML =
-      '<svg viewBox="0 0 15 15" style="width: 36px;height: 36px;pointer-events: none;fill: var(--input-text);"> <path class="cls-1" d="M6.23,12.18c-1.97,0-3.58-1.61-3.58-3.58,0-2.11,1.71-3.58,4.17-3.58h3.98l-1.43-1.43c-.18-.18-.18-.47,0-.64.18-.18.46-.18.64,0l2.21,2.21c.09.09.13.2.13.32s-.05.24-.13.32l-2.21,2.21c-.18.18-.47.18-.64,0-.18-.18-.18-.47,0-.64l1.43-1.43h-3.98c-1.92,0-3.26,1.1-3.26,2.67,0,1.47,1.2,2.67,2.67,2.67.25,0,.46.2.46.46s-.2.46-.46.46Z"/></svg>'
+      '<svg viewBox="0 0 15 15"> <path class="cls-1" d="M6.23,12.18c-1.97,0-3.58-1.61-3.58-3.58,0-2.11,1.71-3.58,4.17-3.58h3.98l-1.43-1.43c-.18-.18-.18-.47,0-.64.18-.18.46-.18.64,0l2.21,2.21c.09.09.13.2.13.32s-.05.24-.13.32l-2.21,2.21c-.18.18-.47.18-.64,0-.18-.18-.18-.47,0-.64l1.43-1.43h-3.98c-1.92,0-3.26,1.1-3.26,2.67,0,1.47,1.2,2.67,2.67,2.67.25,0,.46.2.46.46s-.2.46-.46.46Z"/></svg>'
 
     top_bar_redo_button.addEventListener('click', () => {
       this.messageBroker.publish('redo')
     })
 
-    top_bar_shortcuts_container.appendChild(top_bar_undo_button)
-    top_bar_shortcuts_container.appendChild(top_bar_redo_button)
-
-    var top_bar_button_container = document.createElement('div')
-    top_bar_button_container.id = 'maskEditor_topBarButtonContainer'
+    var top_bar_invert_button = document.createElement('button')
+    top_bar_invert_button.id = 'maskEditor_topBarInvertButton'
+    top_bar_invert_button.classList.add(buttonAccentColor)
+    top_bar_invert_button.innerText = 'Invert'
+    top_bar_invert_button.addEventListener('click', () => {
+      this.messageBroker.publish('invert')
+    })
 
     var top_bar_clear_button = document.createElement('button')
     top_bar_clear_button.id = 'maskEditor_topBarClearButton'
@@ -3055,23 +3228,26 @@ class UIManager {
       this.maskEditor.close()
     })
 
-    top_bar_button_container.appendChild(top_bar_clear_button)
-    top_bar_button_container.appendChild(top_bar_save_button)
-    top_bar_button_container.appendChild(top_bar_cancel_button)
+    top_bar_shortcuts_container.appendChild(top_bar_undo_button)
+    top_bar_shortcuts_container.appendChild(top_bar_redo_button)
+    top_bar_shortcuts_container.appendChild(top_bar_invert_button)
+    top_bar_shortcuts_container.appendChild(top_bar_clear_button)
+    top_bar_shortcuts_container.appendChild(top_bar_save_button)
+    top_bar_shortcuts_container.appendChild(top_bar_cancel_button)
 
     top_bar.appendChild(top_bar_title_container)
     top_bar.appendChild(top_bar_shortcuts_container)
-    top_bar.appendChild(top_bar_button_container)
 
     return top_bar
   }
 
-  //----------------
-
   private createToolPanel() {
-    var pen_tool_panel = document.createElement('div')
-    pen_tool_panel.id = 'maskEditor_toolPanel'
-    this.toolPanel = pen_tool_panel
+    var tool_panel = document.createElement('div')
+    tool_panel.id = 'maskEditor_toolPanel'
+    this.toolPanel = tool_panel
+    var toolPanelHoverAccent = this.darkMode
+      ? 'maskEditor_toolPanelContainerDark'
+      : 'maskEditor_toolPanelContainerLight'
 
     var toolElements: HTMLElement[] = []
 
@@ -3082,6 +3258,7 @@ class UIManager {
     toolPanel_brushToolContainer.classList.add(
       'maskEditor_toolPanelContainerSelected'
     )
+    toolPanel_brushToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_brushToolContainer.innerHTML = `
     <svg viewBox="0 0 44 44">
       <path class="cls-1" d="M34,13.93c0,.47-.19.94-.55,1.31l-13.02,13.04c-.09.07-.18.15-.27.22-.07-1.39-1.21-2.48-2.61-2.49.07-.12.16-.24.27-.34l13.04-13.04c.72-.72,1.89-.72,2.6,0,.35.35.55.83.55,1.3Z"/>
@@ -3116,6 +3293,7 @@ class UIManager {
 
     var toolPanel_eraserToolContainer = document.createElement('div')
     toolPanel_eraserToolContainer.classList.add('maskEditor_toolPanelContainer')
+    toolPanel_eraserToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_eraserToolContainer.innerHTML = `
       <svg viewBox="0 0 44 44">
         <g>
@@ -3155,6 +3333,7 @@ class UIManager {
     toolPanel_paintBucketToolContainer.classList.add(
       'maskEditor_toolPanelContainer'
     )
+    toolPanel_paintBucketToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_paintBucketToolContainer.innerHTML = `
     <svg viewBox="0 0 44 44">
       <path class="cls-1" d="M33.4,21.76l-11.42,11.41-.04.05c-.61.61-1.6.61-2.21,0l-8.91-8.91c-.61-.61-.61-1.6,0-2.21l.04-.05.3-.29h22.24Z"/>
@@ -3198,6 +3377,7 @@ class UIManager {
     toolPanel_colorSelectToolContainer.classList.add(
       'maskEditor_toolPanelContainer'
     )
+    toolPanel_colorSelectToolContainer.classList.add(toolPanelHoverAccent)
     toolPanel_colorSelectToolContainer.innerHTML = `
     <svg viewBox="0 0 44 44">
       <path class="cls-1" d="M30.29,13.72c-1.09-1.1-2.85-1.09-3.94,0l-2.88,2.88-.75-.75c-.2-.19-.51-.19-.71,0-.19.2-.19.51,0,.71l1.4,1.4-9.59,9.59c-.35.36-.54.82-.54,1.32,0,.14,0,.28.05.41-.05.04-.1.08-.15.13-.39.39-.39,1.01,0,1.4.38.39,1.01.39,1.4,0,.04-.04.08-.09.11-.13.14.04.3.06.45.06.5,0,.97-.19,1.32-.55l9.59-9.59,1.38,1.38c.1.09.22.14.35.14s.26-.05.35-.14c.2-.2.2-.52,0-.71l-.71-.72,2.88-2.89c1.08-1.08,1.08-2.85-.01-3.94ZM19.43,25.82h-2.46l7.15-7.15,1.23,1.23-5.92,5.92Z"/>
@@ -3230,17 +3410,35 @@ class UIManager {
       toolPanel_colorSelectToolIndicator
     )
 
-    pen_tool_panel.appendChild(toolPanel_brushToolContainer)
-    pen_tool_panel.appendChild(toolPanel_eraserToolContainer)
-    pen_tool_panel.appendChild(toolPanel_paintBucketToolContainer)
-    pen_tool_panel.appendChild(toolPanel_colorSelectToolContainer)
+    //zoom indicator
+    var toolPanel_zoomIndicator = document.createElement('div')
+    toolPanel_zoomIndicator.classList.add('maskEditor_toolPanelZoomIndicator')
+    toolPanel_zoomIndicator.classList.add(toolPanelHoverAccent)
 
-    var pen_tool_panel_change_tool_button = document.createElement('button')
-    pen_tool_panel_change_tool_button.id =
-      'maskEditor_toolPanelChangeToolButton'
-    pen_tool_panel_change_tool_button.innerText = 'change to Eraser'
+    var toolPanel_zoomText = document.createElement('span')
+    toolPanel_zoomText.id = 'maskEditor_toolPanelZoomText'
+    toolPanel_zoomText.innerText = '100%'
+    this.zoomTextHTML = toolPanel_zoomText
 
-    return pen_tool_panel
+    var toolPanel_DimensionsText = document.createElement('span')
+    toolPanel_DimensionsText.id = 'maskEditor_toolPanelDimensionsText'
+    toolPanel_DimensionsText.innerText = ' '
+    this.dimensionsTextHTML = toolPanel_DimensionsText
+
+    toolPanel_zoomIndicator.appendChild(toolPanel_zoomText)
+    toolPanel_zoomIndicator.appendChild(toolPanel_DimensionsText)
+
+    toolPanel_zoomIndicator.addEventListener('click', () => {
+      this.messageBroker.publish('resetZoom')
+    })
+
+    tool_panel.appendChild(toolPanel_brushToolContainer)
+    tool_panel.appendChild(toolPanel_eraserToolContainer)
+    tool_panel.appendChild(toolPanel_paintBucketToolContainer)
+    tool_panel.appendChild(toolPanel_colorSelectToolContainer)
+    tool_panel.appendChild(toolPanel_zoomIndicator)
+
+    return tool_panel
   }
 
   private createPointerZone() {
@@ -3383,6 +3581,8 @@ class UIManager {
 
     maskCanvas.width = this.image.width
     maskCanvas.height = this.image.height
+
+    this.dimensionsTextHTML.innerText = `${this.image.width}x${this.image.height}`
 
     await this.invalidateCanvas(this.image, mask_image)
     this.messageBroker.publish('initZoomPan', [this.image, this.rootElement])
@@ -3638,6 +3838,14 @@ class UIManager {
     this.updateBrushPreview()
     this.setBrushPreviewGradientVisibility(false)
   }
+
+  setZoomText(zoomText: string) {
+    this.zoomTextHTML.innerText = zoomText
+  }
+
+  setDimensionsText(dimensionsText: string) {
+    this.dimensionsTextHTML.innerText = dimensionsText
+  }
 }
 
 class ToolManager {
@@ -3814,6 +4022,7 @@ class PanAndZoomManager {
   lastTouchPoint: Point = { x: 0, y: 0 }
 
   zoom_ratio: number = 1
+  interpolatedZoomRatio: number = 1
   pan_offset: Offset = { x: 0, y: 0 }
 
   mouseDownPoint: Point | null = null
@@ -3821,8 +4030,11 @@ class PanAndZoomManager {
 
   canvasContainer: HTMLElement | null = null
   maskCanvas: HTMLCanvasElement | null = null
+  rootElement: HTMLElement | null = null
 
   image: HTMLImageElement | null = null
+  imageRootWidth: number = 0
+  imageRootHeight: number = 0
 
   cursorPoint: Point = { x: 0, y: 0 }
 
@@ -3878,6 +4090,11 @@ class PanAndZoomManager {
         this.handleTouchEnd(event)
       }
     )
+
+    this.messageBroker.subscribe('resetZoom', async () => {
+      if (this.interpolatedZoomRatio === 1) return
+      await this.smoothResetView()
+    })
   }
 
   private addPullTopics() {
@@ -4054,13 +4271,24 @@ class PanAndZoomManager {
     const mouseX = cursorPoint.x - rect.left
     const mouseY = cursorPoint.y - rect.top
 
+    console.log(oldZoom, newZoom)
     // Calculate new pan position
     const scaleFactor = newZoom / oldZoom
     this.pan_offset.x += mouseX - mouseX * scaleFactor
     this.pan_offset.y += mouseY - mouseY * scaleFactor
 
+    console.log(this.imageRootWidth, this.imageRootHeight)
+
     // Update pan and zoom immediately
     await this.invalidatePanZoom()
+
+    const newImageWidth = maskCanvas.clientWidth
+
+    const zoomRatio = newImageWidth / this.imageRootWidth
+
+    this.interpolatedZoomRatio = zoomRatio
+
+    this.messageBroker.publish('setZoomText', `${Math.round(zoomRatio * 100)}%`)
 
     // Update cursor position with new pan values
     this.updateCursorPosition(cursorPoint)
@@ -4071,51 +4299,125 @@ class PanAndZoomManager {
     })
   }
 
+  private async smoothResetView(duration: number = 500) {
+    // Store initial state
+    const startZoom = this.zoom_ratio
+    const startPan = { ...this.pan_offset }
+
+    // Panel dimensions
+    const sidePanelWidth = 220
+    const toolPanelWidth = 64
+    const topBarHeight = 44
+
+    // Calculate available space
+    const availableWidth =
+      this.rootElement!.clientWidth - sidePanelWidth - toolPanelWidth
+    const availableHeight = this.rootElement!.clientHeight - topBarHeight
+
+    // Calculate target zoom
+    const zoomRatioWidth = availableWidth / this.image!.width
+    const zoomRatioHeight = availableHeight / this.image!.height
+    const targetZoom = Math.min(zoomRatioWidth, zoomRatioHeight)
+
+    // Calculate final dimensions
+    const aspectRatio = this.image!.width / this.image!.height
+    let finalWidth = 0
+    let finalHeight = 0
+
+    // Calculate target pan position
+    const targetPan = { x: toolPanelWidth, y: topBarHeight }
+
+    if (zoomRatioHeight > zoomRatioWidth) {
+      finalWidth = availableWidth
+      finalHeight = finalWidth / aspectRatio
+      targetPan.y = (availableHeight - finalHeight) / 2 + topBarHeight
+    } else {
+      finalHeight = availableHeight
+      finalWidth = finalHeight * aspectRatio
+      targetPan.x = (availableWidth - finalWidth) / 2 + toolPanelWidth
+    }
+
+    const startTime = performance.now()
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // Cubic easing out for smooth deceleration
+      const eased = 1 - Math.pow(1 - progress, 3)
+
+      // Calculate intermediate zoom and pan values
+      const currentZoom = startZoom + (targetZoom - startZoom) * eased
+
+      this.zoom_ratio = currentZoom
+      this.pan_offset.x = startPan.x + (targetPan.x - startPan.x) * eased
+      this.pan_offset.y = startPan.y + (targetPan.y - startPan.y) * eased
+
+      this.invalidatePanZoom()
+
+      const interpolatedZoomRatio = startZoom + (1.0 - startZoom) * eased
+
+      this.messageBroker.publish(
+        'setZoomText',
+        `${Math.round(interpolatedZoomRatio * 100)}%`
+      )
+
+      if (progress < 1) {
+        requestAnimationFrame(animate)
+      }
+    }
+
+    requestAnimationFrame(animate)
+    this.interpolatedZoomRatio = 1.0
+  }
+
   async initializeCanvasPanZoom(
     image: HTMLImageElement,
     rootElement: HTMLElement
   ) {
     // Get side panel width
     let sidePanelWidth = 220
+    const toolPanelWidth = 64
     let topBarHeight = 44
 
+    this.rootElement = rootElement
+
     // Calculate available width accounting for both side panels
-    let availableWidth = rootElement.clientWidth - 2 * sidePanelWidth
+    let availableWidth =
+      rootElement.clientWidth - sidePanelWidth - toolPanelWidth
     let availableHeight = rootElement.clientHeight - topBarHeight
 
-    // Initial dimensions
-    let drawWidth = image.width
-    let drawHeight = image.height
+    let zoomRatioWidth = availableWidth / image.width
+    let zoomRatioHeight = availableHeight / image.height
 
-    // First check if width needs scaling
-    if (drawWidth > availableWidth) {
-      drawWidth = availableWidth
-      drawHeight = (drawWidth / image.width) * image.height
-    }
+    let aspectRatio = image.width / image.height
 
-    // Then check if height needs scaling
-    if (drawHeight > availableHeight) {
-      drawHeight = availableHeight
-      drawWidth = (drawHeight / image.height) * image.width
+    let finalWidth = 0
+    let finalHeight = 0
+
+    let pan_offset: Offset = { x: toolPanelWidth, y: topBarHeight }
+
+    if (zoomRatioHeight > zoomRatioWidth) {
+      finalWidth = availableWidth
+      finalHeight = finalWidth / aspectRatio
+      pan_offset.y = (availableHeight - finalHeight) / 2 + topBarHeight
+    } else {
+      finalHeight = availableHeight
+      finalWidth = finalHeight * aspectRatio
+      pan_offset.x = (availableWidth - finalWidth) / 2 + toolPanelWidth
     }
 
     if (this.image === null) {
       this.image = image
     }
 
-    this.zoom_ratio = drawWidth / image.width
+    this.imageRootWidth = finalWidth
+    this.imageRootHeight = finalHeight
 
-    // Center the canvas in the available space
-    const canvasX = sidePanelWidth + (availableWidth - drawWidth) / 2
-    const canvasY = (availableHeight - drawHeight) / 2
-
-    this.pan_offset.x = canvasX
-    this.pan_offset.y = canvasY
+    this.zoom_ratio = Math.min(zoomRatioWidth, zoomRatioHeight)
+    this.pan_offset = pan_offset
 
     await this.invalidatePanZoom()
   }
 
-  //probably move to PanZoomManager
   async invalidatePanZoom() {
     // Single validation check upfront
     if (
@@ -4131,10 +4433,6 @@ class PanAndZoomManager {
     // Now TypeScript knows these are non-null
     const raw_width = this.image.width * this.zoom_ratio
     const raw_height = this.image.height * this.zoom_ratio
-
-    // Adjust pan offset
-    this.pan_offset.x = Math.max(10 - raw_width, this.pan_offset.x)
-    this.pan_offset.y = Math.max(10 - raw_height, this.pan_offset.y)
 
     // Get canvas container
     this.canvasContainer ??=
@@ -4238,6 +4536,9 @@ class MessageBroker {
     this.createPushTopic('setMaskBoundary')
     this.createPushTopic('setMaskTolerance')
     this.createPushTopic('setBrushSmoothingPrecision')
+    this.createPushTopic('setZoomText')
+    this.createPushTopic('resetZoom')
+    this.createPushTopic('invert')
   }
 
   /**
@@ -4425,9 +4726,35 @@ app.registerExtension({
   settings: [
     {
       id: 'Comfy.MaskEditor.UseNewEditor',
-      category: ['Comfy', 'Masking'],
+      category: ['Mask Editor', 'NewEditor'],
       name: 'Use new mask editor',
       tooltip: 'Switch to the new mask editor interface',
+      type: 'boolean',
+      defaultValue: true,
+      experimental: true
+    },
+    {
+      id: 'Comfy.MaskEditor.BrushAdjustmentSpeed',
+      category: ['Mask Editor', 'BrushAdjustment', 'Sensitivity'],
+      name: 'Brush adjustment speed multiplier',
+      tooltip:
+        'Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes.',
+      experimental: true,
+      type: 'slider',
+      attrs: {
+        min: 0.1,
+        max: 2.0,
+        step: 0.1
+      },
+      defaultValue: 1.0,
+      versionAdded: '1.0.0'
+    },
+    {
+      id: 'Comfy.MaskEditor.UseDominantAxis',
+      category: ['Mask Editor', 'BrushAdjustment', 'UseDominantAxis'],
+      name: 'Lock brush adjustment to dominant axis',
+      tooltip:
+        'When enabled, brush adjustments will only affect size OR hardness based on which direction you move more',
       type: 'boolean',
       defaultValue: true,
       experimental: true
