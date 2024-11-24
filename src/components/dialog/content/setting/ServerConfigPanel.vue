@@ -29,7 +29,15 @@
     <Divider v-if="i > 0" />
     <h3>{{ formatCamelCase(label) }}</h3>
     <div v-for="item in items" :key="item.name" class="flex items-center mb-4">
-      <FormItem :item="item" v-model:formValue="item.value" :id="item.id" />
+      <FormItem
+        :item="item"
+        v-model:formValue="item.value"
+        :id="item.id"
+        :labelClass="{
+          'text-highlight':
+            getInitialValue(item.id) !== getCurrentValue(item.id)
+        }"
+      />
     </div>
   </div>
 </template>
@@ -65,13 +73,27 @@ interface ModifiedConfig {
   value: string
 }
 
+const getDefaultValue = (key: string) => {
+  const serverConfig = serverConfigById.value[key]
+  return serverConfig?.defaultValue
+}
+
+const getInitialValue = (key: string) => {
+  return initialServerConfigValues[key] ?? getDefaultValue(key)
+}
+
+const getCurrentValue = (key: string) => {
+  return serverConfigValues.value[key] || getDefaultValue(key)
+}
+
 const modifiedConfigs = computed<ModifiedConfig[]>(() => {
-  return Object.entries(serverConfigValues.value)
-    .map(([key, value]) => {
-      const serverConfig = serverConfigById.value[key]
-      const initialValue =
-        initialServerConfigValues[key] ?? serverConfig?.defaultValue
-      return { key, initialValue, value: value || serverConfig?.defaultValue }
+  return Object.keys(serverConfigValues.value)
+    .map((key) => {
+      return {
+        key,
+        initialValue: getInitialValue(key),
+        value: getCurrentValue(key)
+      }
     })
     .filter((config) => {
       return config.initialValue !== config.value

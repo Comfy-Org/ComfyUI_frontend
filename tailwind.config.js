@@ -177,7 +177,8 @@ export default {
       },
 
       textColor: {
-        muted: 'var(--p-text-muted-color)'
+        muted: 'var(--p-text-muted-color)',
+        highlight: 'var(--p-primary-color)'
       }
     }
   },
