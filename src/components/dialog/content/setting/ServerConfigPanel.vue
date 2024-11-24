@@ -63,9 +63,7 @@ const {
 } = storeToRefs(serverConfigStore)
 
 const revertChanges = () => {
-  for (const config of modifiedConfigs.value) {
-    config.value = config.initialValue
-  }
+  serverConfigStore.revertChanges()
 }
 
 const restartApp = () => {

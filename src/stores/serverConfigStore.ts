@@ -23,7 +23,11 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
       return config.initialValue !== config.value
     })
   })
-
+  const revertChanges = () => {
+    for (const config of modifiedConfigs.value) {
+      config.value = config.initialValue
+    }
+  }
   const serverConfigsByCategory = computed<
     Record<string, ServerConfigWithValue<any>[]>
   >(() => {
@@ -84,6 +88,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     serverConfigsByCategory,
     serverConfigValues,
     launchArgs,
+    revertChanges,
     loadServerConfig
   }
 })
