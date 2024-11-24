@@ -10,15 +10,17 @@ import {
   VramManagement
 } from '@/types/serverArgs'
 
+export type ServerConfigValue = string | number | true | null | undefined
+
 export interface ServerConfig<T> extends FormItem {
   id: string
   defaultValue: T
   category?: string[]
   // Override the default value getter with a custom function.
-  getValue?: (value: T) => Record<string, any>
+  getValue?: (value: T) => Record<string, ServerConfigValue>
 }
 
-export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
+export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<ServerConfigValue>[] = [
   // We only need these settings in the web version. Desktop app manages them already.
   {
     id: 'listen',
@@ -43,21 +45,21 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     name: 'TLS Key File: Path to TLS key file for HTTPS',
     category: ['Network'],
     type: 'text',
-    defaultValue: undefined
+    defaultValue: ''
   },
   {
     id: 'tls-certfile',
     name: 'TLS Certificate File: Path to TLS certificate file for HTTPS',
     category: ['Network'],
     type: 'text',
-    defaultValue: undefined
+    defaultValue: ''
   },
   {
     id: 'enable-cors-header',
     name: 'Enable CORS header: Use "*" for all origins or specify domain',
     category: ['Network'],
     type: 'text',
-    defaultValue: undefined
+    defaultValue: ''
   },
   {
     id: 'max-upload-size',
@@ -97,7 +99,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     name: 'CUDA device index to use',
     category: ['CUDA'],
     type: 'number',
-    defaultValue: undefined
+    defaultValue: null
   },
   {
     id: 'cuda-malloc',
@@ -253,7 +255,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     name: 'DirectML device index',
     category: ['Memory'],
     type: 'number',
-    defaultValue: undefined
+    defaultValue: null
   },
   {
     id: 'disable-ipex-optimize',
@@ -295,10 +297,10 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   },
   {
     id: 'cache-lru',
-    name: 'Use LRU caching with a maximum of N node results cached. (0 to disable).',
+    name: 'Use LRU caching with a maximum of N node results cached.',
     category: ['Cache'],
     type: 'number',
-    defaultValue: 0,
+    defaultValue: null,
     tooltip: 'May use more RAM/VRAM.'
   },
 
@@ -366,7 +368,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     name: 'Reserved VRAM (GB)',
     category: ['Memory'],
     type: 'number',
-    defaultValue: undefined,
+    defaultValue: null,
     tooltip:
       'Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reverved depending on your OS.'
   },
