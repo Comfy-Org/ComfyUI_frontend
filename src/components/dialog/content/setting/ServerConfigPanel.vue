@@ -72,11 +72,11 @@ const restartApp = () => {
   electronAPI().restartApp()
 }
 
-watch(serverConfigValues, () => {
-  settingStore.set('Comfy.Server.ServerConfigValues', serverConfigValues.value)
+watch(launchArgs, (newVal) => {
+  settingStore.set('Comfy.Server.LaunchArgs', newVal)
 })
 
-watch(launchArgs, () => {
-  settingStore.set('Comfy.Server.LaunchArgs', launchArgs.value)
+watch(serverConfigValues, (newVal) => {
+  settingStore.set('Comfy.Server.ServerConfigValues', newVal)
 })
 </script>
