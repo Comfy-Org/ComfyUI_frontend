@@ -170,20 +170,29 @@ describe('useServerConfigStore', () => {
     const configs: ServerConfig<any>[] = [
       { ...dummyFormItem, id: 'test.config1', defaultValue: 'default1' },
       { ...dummyFormItem, id: 'test.config2', defaultValue: 'default2' },
-      { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' }
+      { ...dummyFormItem, id: 'test.config3', defaultValue: 'default3' },
+      { ...dummyFormItem, id: 'test.config4', defaultValue: null }
     ]
 
     store.loadServerConfig(configs, {
       'test.config1': undefined,
       'test.config2': null,
-      'test.config3': ''
+      'test.config3': '',
+      'test.config4': 0
     })
 
-    expect(Object.keys(store.launchArgs)).toHaveLength(0)
-    expect(Object.keys(store.serverConfigValues)).toEqual([
-      'test.config1',
-      'test.config2',
-      'test.config3'
+    expect(Object.keys(store.launchArgs)).toEqual([
+      'test.config3',
+      'test.config4'
+    ])
+    expect(Object.values(store.launchArgs)).toEqual(['', '0'])
+    expect(store.serverConfigById['test.config3'].value).toBe('')
+    expect(store.serverConfigById['test.config4'].value).toBe(0)
+    expect(Object.values(store.serverConfigValues)).toEqual([
+      undefined,
+      undefined,
+      '',
+      0
     ])
   })
 
