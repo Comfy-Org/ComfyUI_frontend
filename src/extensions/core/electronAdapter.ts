@@ -107,6 +107,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
           // TODO(huchenlei): Add a confirmation dialog.
           electronAPI.reinstall()
         }
+      },
+      {
+        id: 'Comfy-Desktop.Restart',
+        label: 'Restart',
+        icon: 'pi pi-refresh',
+        function() {
+          electronAPI.restartApp()
+        }
       }
     ],
 

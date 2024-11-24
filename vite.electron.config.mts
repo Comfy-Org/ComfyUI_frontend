@@ -10,6 +10,9 @@ const mockElectronAPI: Plugin = {
       {
         tag: 'script',
         children: `window.electronAPI = {
+          restartApp: () => {
+            alert('restartApp')
+          },
           sendReady: () => {},
           onShowSelectDirectory: () => {},
           onFirstTimeSetupComplete: () => {},

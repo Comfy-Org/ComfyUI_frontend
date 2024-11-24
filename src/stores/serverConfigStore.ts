@@ -3,7 +3,14 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export type ServerConfigWithValue<T> = ServerConfig<T> & {
+  /**
+   * Current value.
+   */
   value: T
+  /**
+   * Initial value loaded from settings.
+   */
+  initialValue: T
 }
 
 export const useServerConfigStore = defineStore('serverConfig', () => {
@@ -11,6 +18,12 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
   const serverConfigs = computed(() => {
     return Object.values(serverConfigById.value)
   })
+  const modifiedConfigs = computed<ServerConfigWithValue<any>[]>(() => {
+    return serverConfigs.value.filter((config) => {
+      return config.initialValue !== config.value
+    })
+  })
+
   const serverConfigsByCategory = computed<
     Record<string, ServerConfigWithValue<any>[]>
   >(() => {
@@ -55,9 +68,11 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     values: Record<string, any>
   ) {
     for (const config of configs) {
+      const value = values[config.id] ?? config.defaultValue
       serverConfigById.value[config.id] = {
         ...config,
-        value: values[config.id] ?? config.defaultValue
+        value,
+        initialValue: value
       }
     }
   }
@@ -65,6 +80,7 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
   return {
     serverConfigById,
     serverConfigs,
+    modifiedConfigs,
     serverConfigsByCategory,
     serverConfigValues,
     launchArgs,

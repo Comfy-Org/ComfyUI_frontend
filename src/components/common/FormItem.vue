@@ -1,7 +1,7 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
   <div class="form-label flex flex-grow items-center">
-    <span class="text-[var(--p-text-muted-color)]">
+    <span class="text-muted" :class="props.labelClass">
       <slot name="name-prefix"></slot>
       {{ props.item.name }}
       <i
@@ -33,15 +33,11 @@ import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 
 const formValue = defineModel<any>('formValue')
-const props = withDefaults(
-  defineProps<{
-    item: FormItem
-    id: string | undefined
-  }>(),
-  {
-    id: undefined
-  }
-)
+const props = defineProps<{
+  item: FormItem
+  id?: string
+  labelClass?: string | Record<string, boolean>
+}>()
 
 function getFormAttrs(item: FormItem) {
   const attrs = { ...(item.attrs || {}) }

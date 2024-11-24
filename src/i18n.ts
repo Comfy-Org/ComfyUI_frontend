@@ -65,6 +65,12 @@ const messages = {
         error: 'Unable to start ComfyUI'
       }
     },
+    serverConfig: {
+      modifiedConfigs:
+        'You have modified the following server configurations. Restart to apply changes.',
+      revertChanges: 'Revert Changes',
+      restart: 'Restart'
+    },
     firstTimeUIMessage:
       'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',
     download: 'Download',
