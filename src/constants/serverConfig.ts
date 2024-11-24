@@ -45,21 +45,21 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     name: 'TLS Key File: Path to TLS key file for HTTPS',
     category: ['Network'],
     type: 'text',
-    defaultValue: null
+    defaultValue: ''
   },
   {
     id: 'tls-certfile',
     name: 'TLS Certificate File: Path to TLS certificate file for HTTPS',
     category: ['Network'],
     type: 'text',
-    defaultValue: null
+    defaultValue: ''
   },
   {
     id: 'enable-cors-header',
     name: 'Enable CORS header: Use "*" for all origins or specify domain',
     category: ['Network'],
     type: 'text',
-    defaultValue: null
+    defaultValue: ''
   },
   {
     id: 'max-upload-size',
