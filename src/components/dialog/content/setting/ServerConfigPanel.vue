@@ -5,7 +5,7 @@
     </p>
     <ul>
       <li v-for="config in modifiedConfigs" :key="config.key">
-        {{ config.key }}: {{ config.initialValue }} to {{ config.value }}
+        {{ config.key }}: {{ config.initialValue }} → {{ config.value }}
       </li>
     </ul>
     <div class="flex justify-end gap-2">
