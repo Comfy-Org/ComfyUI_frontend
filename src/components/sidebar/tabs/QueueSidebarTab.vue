@@ -181,26 +181,24 @@ const allGalleryItems = computed(() =>
 )
 
 const filterTasks = (tasks: TaskItemImpl[]) =>
-  tasks
-    .filter((t) => {
-      if (
-        hideCanceled.value &&
-        t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
-      ) {
-        return false
-      }
+  tasks.filter((t) => {
+    if (
+      hideCanceled.value &&
+      t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
+    ) {
+      return false
+    }
 
-      if (
-        hideCached.value &&
-        t.flatOutputs?.length &&
-        t.flatOutputs.every((o) => o.cached)
-      ) {
-        return false
-      }
+    if (
+      hideCached.value &&
+      t.flatOutputs?.length &&
+      t.flatOutputs.every((o) => o.cached)
+    ) {
+      return false
+    }
 
-      return true
-    })
-    .slice(0, ITEMS_PER_PAGE)
+    return true
+  })
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
@@ -209,6 +207,12 @@ const loadMoreItems = () => {
     currentLength + ITEMS_PER_PAGE
   )
   visibleTasks.value.push(...newTasks)
+  if (newTasks.length) {
+    nextTick(() => {
+      // If we've added some items, check if we need to add more
+      checkAndLoadMore()
+    })
+  }
 }
 
 const checkAndLoadMore = () => {
@@ -239,7 +243,11 @@ useResizeObserver(scrollContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = filterTasks(allTasks.value)
+  visibleTasks.value = filterTasks(allTasks.value).slice(0, ITEMS_PER_PAGE)
+
+  nextTick(() => {
+    checkAndLoadMore()
+  })
 }
 
 const toggleExpanded = () => {
