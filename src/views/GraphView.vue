@@ -35,6 +35,8 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useModelStore } from '@/stores/modelStore'
+import { useServerConfigStore } from '@/stores/serverConfigStore'
+import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 
 setupAutoQueueHandler()
 
@@ -150,6 +152,12 @@ const onGraphReady = () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
       useKeybindingStore().loadUserKeybindings()
+
+      // Load server config
+      useServerConfigStore().loadServerConfig(
+        SERVER_CONFIG_ITEMS,
+        settingStore.get('Comfy.Server.ServerConfigValues')
+      )
 
       // Load model folders
       useModelStore().loadModelFolders()

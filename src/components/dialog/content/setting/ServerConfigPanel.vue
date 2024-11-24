@@ -4,8 +4,8 @@
       {{ $t('serverConfig.modifiedConfigs') }}
     </p>
     <ul>
-      <li v-for="config in modifiedConfigs" :key="config.key">
-        {{ config.key }}: {{ config.initialValue }} → {{ config.value }}
+      <li v-for="config in modifiedConfigs" :key="config.id">
+        {{ config.name }}: {{ config.initialValue }} → {{ config.value }}
       </li>
     </ul>
     <div class="flex justify-end gap-2">
@@ -34,8 +34,7 @@
         v-model:formValue="item.value"
         :id="item.id"
         :labelClass="{
-          'text-highlight':
-            getInitialValue(item.id) !== getCurrentValue(item.id)
+          'text-highlight': item.initialValue !== item.value
         }"
       />
     </div>
@@ -48,78 +47,36 @@ import Message from 'primevue/message'
 import Divider from 'primevue/divider'
 import FormItem from '@/components/common/FormItem.vue'
 import { formatCamelCase } from '@/utils/formatUtil'
-import { useSettingStore } from '@/stores/settingStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onBeforeUnmount } from 'vue'
-import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { electronAPI } from '@/utils/envUtil'
+import { useSettingStore } from '@/stores/settingStore'
+import { watch } from 'vue'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
 const {
   serverConfigsByCategory,
-  launchArgs,
   serverConfigValues,
-  serverConfigById
+  launchArgs,
+  modifiedConfigs
 } = storeToRefs(serverConfigStore)
-const initialServerConfigValues = settingStore.get(
-  'Comfy.Server.ServerConfigValues'
-)
-
-interface ModifiedConfig {
-  key: string
-  initialValue: string
-  value: string
-}
-
-const getDefaultValue = (key: string) => {
-  const serverConfig = serverConfigById.value[key]
-  return serverConfig?.defaultValue
-}
-
-const getInitialValue = (key: string) => {
-  return initialServerConfigValues[key] ?? getDefaultValue(key)
-}
-
-const getCurrentValue = (key: string) => {
-  return serverConfigValues.value[key] || getDefaultValue(key)
-}
-
-const modifiedConfigs = computed<ModifiedConfig[]>(() => {
-  return Object.keys(serverConfigValues.value)
-    .map((key) => {
-      return {
-        key,
-        initialValue: getInitialValue(key),
-        value: getCurrentValue(key)
-      }
-    })
-    .filter((config) => {
-      return config.initialValue !== config.value
-    })
-})
 
 const revertChanges = () => {
-  serverConfigStore.loadServerConfig(
-    SERVER_CONFIG_ITEMS,
-    initialServerConfigValues
-  )
+  for (const config of modifiedConfigs.value) {
+    config.value = config.initialValue
+  }
 }
 
 const restartApp = () => {
   electronAPI().restartApp()
 }
 
-onMounted(() => {
-  serverConfigStore.loadServerConfig(
-    SERVER_CONFIG_ITEMS,
-    initialServerConfigValues
-  )
+watch(serverConfigValues, () => {
+  settingStore.set('Comfy.Server.ServerConfigValues', serverConfigValues.value)
 })
 
-onBeforeUnmount(() => {
-  settingStore.set('Comfy.Server.ServerConfigValues', serverConfigValues.value)
+watch(launchArgs, () => {
   settingStore.set('Comfy.Server.LaunchArgs', launchArgs.value)
 })
 </script>
