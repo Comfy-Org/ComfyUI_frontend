@@ -186,4 +186,41 @@ describe('useServerConfigStore', () => {
       'test.config3'
     ])
   })
+
+  it('should track modified configs', () => {
+    const configs = [
+      {
+        ...dummyFormItem,
+        id: 'test.config1',
+        defaultValue: 'default1'
+      },
+      {
+        ...dummyFormItem,
+        id: 'test.config2',
+        defaultValue: 'default2'
+      }
+    ]
+
+    store.loadServerConfig(configs, {
+      'test.config1': 'initial1'
+    })
+
+    // Initially no modified configs
+    expect(store.modifiedConfigs).toHaveLength(0)
+
+    // Modify config1's value after loading
+    store.serverConfigById['test.config1'].value = 'custom1'
+
+    // Now config1 should be in modified configs
+    expect(store.modifiedConfigs).toHaveLength(1)
+    expect(store.modifiedConfigs[0].id).toBe('test.config1')
+    expect(store.modifiedConfigs[0].value).toBe('custom1')
+    expect(store.modifiedConfigs[0].initialValue).toBe('initial1')
+
+    // Change config1 back to default
+    store.serverConfigById['test.config1'].value = 'initial1'
+
+    // Should go back to no modified configs
+    expect(store.modifiedConfigs).toHaveLength(0)
+  })
 })
