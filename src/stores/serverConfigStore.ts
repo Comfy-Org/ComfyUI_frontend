@@ -1,4 +1,4 @@
-import { ServerConfig } from '@/constants/serverConfig'
+import { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -14,22 +14,26 @@ export type ServerConfigWithValue<T> = ServerConfig<T> & {
 }
 
 export const useServerConfigStore = defineStore('serverConfig', () => {
-  const serverConfigById = ref<Record<string, ServerConfigWithValue<any>>>({})
+  const serverConfigById = ref<
+    Record<string, ServerConfigWithValue<ServerConfigValue>>
+  >({})
   const serverConfigs = computed(() => {
     return Object.values(serverConfigById.value)
   })
-  const modifiedConfigs = computed<ServerConfigWithValue<any>[]>(() => {
-    return serverConfigs.value.filter((config) => {
-      return config.initialValue !== config.value
-    })
-  })
+  const modifiedConfigs = computed<ServerConfigWithValue<ServerConfigValue>[]>(
+    () => {
+      return serverConfigs.value.filter((config) => {
+        return config.initialValue !== config.value
+      })
+    }
+  )
   const revertChanges = () => {
     for (const config of modifiedConfigs.value) {
       config.value = config.initialValue
     }
   }
   const serverConfigsByCategory = computed<
-    Record<string, ServerConfigWithValue<any>[]>
+    Record<string, ServerConfigWithValue<ServerConfigValue>[]>
   >(() => {
     return serverConfigs.value.reduce(
       (acc, config) => {
@@ -38,10 +42,10 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
         acc[category].push(config)
         return acc
       },
-      {} as Record<string, ServerConfigWithValue<any>[]>
+      {} as Record<string, ServerConfigWithValue<ServerConfigValue>[]>
     )
   })
-  const serverConfigValues = computed<Record<string, any>>(() => {
+  const serverConfigValues = computed<Record<string, ServerConfigValue>>(() => {
     return Object.fromEntries(
       serverConfigs.value.map((config) => {
         return [
@@ -54,9 +58,13 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     )
   })
   const launchArgs = computed<Record<string, string>>(() => {
-    return Object.assign(
+    const args: Record<
+      string,
+      Omit<ServerConfigValue, 'undefined' | 'null'>
+    > = Object.assign(
       {},
       ...serverConfigs.value.map((config) => {
+        // Filter out configs that have the default value or undefined | null value
         if (config.value === config.defaultValue || !config.value) {
           return {}
         }
@@ -65,18 +73,29 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
           : { [config.id]: config.value }
       })
     )
+
+    // Convert true to empty string
+    // Convert number to string
+    return Object.fromEntries(
+      Object.entries(args).map(([key, value]) => {
+        if (value === true) {
+          return [key, '']
+        }
+        return [key, value.toString()]
+      })
+    ) as Record<string, string>
   })
   const commandLineArgs = computed<string>(() => {
     return Object.entries(launchArgs.value)
       .map(([key, value]) => [`--${key}`, value])
       .flat()
-      .filter((arg) => typeof arg === 'string' && arg.length > 0)
+      .filter((arg: string) => arg !== '')
       .join(' ')
   })
 
   function loadServerConfig(
-    configs: ServerConfig<any>[],
-    values: Record<string, any>
+    configs: ServerConfig<ServerConfigValue>[],
+    values: Record<string, ServerConfigValue>
   ) {
     for (const config of configs) {
       const value = values[config.id] ?? config.defaultValue

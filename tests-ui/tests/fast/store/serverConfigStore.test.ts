@@ -187,6 +187,56 @@ describe('useServerConfigStore', () => {
     ])
   })
 
+  it('should convert true to empty string in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 0
+        }
+      ],
+      {
+        'test.config1': true
+      }
+    )
+    expect(store.launchArgs['test.config1']).toBe('')
+    expect(store.commandLineArgs).toBe('--test.config1')
+  })
+
+  it('should convert number to string in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 1
+        }
+      ],
+      {
+        'test.config1': 123
+      }
+    )
+    expect(store.launchArgs['test.config1']).toBe('123')
+    expect(store.commandLineArgs).toBe('--test.config1 123')
+  })
+
+  it('should drop nullish values in launch arguments', () => {
+    store.loadServerConfig(
+      [
+        {
+          ...dummyFormItem,
+          id: 'test.config1',
+          defaultValue: 1
+        }
+      ],
+      {
+        'test.config1': null
+      }
+    )
+    expect(Object.keys(store.launchArgs)).toHaveLength(0)
+  })
+
   it('should track modified configs', () => {
     const configs = [
       {
