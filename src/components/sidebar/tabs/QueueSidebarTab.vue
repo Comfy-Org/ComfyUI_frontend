@@ -163,6 +163,7 @@ const outputFilterPopup = ref(null)
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
+const MAX_LOAD_ITERATIONS = 10
 
 const allTasks = computed(() =>
   isInFolderView.value
@@ -200,27 +201,28 @@ const filterTasks = (tasks: TaskItemImpl[]) =>
     return true
   })
 
-const loadMoreItems = () => {
+const loadMoreItems = (iteration: number) => {
   const currentLength = visibleTasks.value.length
   const newTasks = filterTasks(allTasks.value).slice(
     currentLength,
     currentLength + ITEMS_PER_PAGE
   )
   visibleTasks.value.push(...newTasks)
-  if (newTasks.length) {
+  // If we've added some items, check if we need to add more
+  // Prevent loading everything at once in case of render update issues
+  if (newTasks.length && iteration < MAX_LOAD_ITERATIONS) {
     nextTick(() => {
-      // If we've added some items, check if we need to add more
-      checkAndLoadMore()
+      checkAndLoadMore(iteration + 1)
     })
   }
 }
 
-const checkAndLoadMore = () => {
+const checkAndLoadMore = (iteration: number) => {
   if (!scrollContainer.value) return
 
   const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value
   if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
-    loadMoreItems()
+    loadMoreItems(iteration)
   }
 }
 
@@ -228,7 +230,7 @@ useInfiniteScroll(
   scrollContainer,
   () => {
     if (visibleTasks.value.length < allTasks.value.length) {
-      loadMoreItems()
+      loadMoreItems(0)
     }
   },
   { distance: SCROLL_THRESHOLD }
@@ -238,7 +240,7 @@ useInfiniteScroll(
 // This is necessary as the sidebar tab can change size when user drags the splitter.
 useResizeObserver(scrollContainer, () => {
   nextTick(() => {
-    checkAndLoadMore()
+    checkAndLoadMore(0)
   })
 })
 
@@ -246,7 +248,7 @@ const updateVisibleTasks = () => {
   visibleTasks.value = filterTasks(allTasks.value).slice(0, ITEMS_PER_PAGE)
 
   nextTick(() => {
-    checkAndLoadMore()
+    checkAndLoadMore(0)
   })
 }
 
