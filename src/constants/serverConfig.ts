@@ -297,10 +297,10 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   },
   {
     id: 'cache-lru',
-    name: 'Use LRU caching with a maximum of N node results cached. (0 to disable).',
+    name: 'Use LRU caching with a maximum of N node results cached.',
     category: ['Cache'],
     type: 'number',
-    defaultValue: 0,
+    defaultValue: null,
     tooltip: 'May use more RAM/VRAM.'
   },
 
