@@ -3,8 +3,7 @@ import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
@@ -185,6 +184,49 @@ class Load3d {
     this.startAnimation()
   }
 
+  getCameraState() {
+    const currentType = this.getCurrentCameraType()
+    return {
+      position: this.activeCamera.position.clone(),
+      target: this.controls.target.clone(),
+      zoom:
+        this.activeCamera instanceof THREE.OrthographicCamera
+          ? this.activeCamera.zoom
+          : (this.activeCamera as THREE.PerspectiveCamera).zoom,
+      cameraType: currentType
+    }
+  }
+
+  setCameraState(state: {
+    position: THREE.Vector3
+    target: THREE.Vector3
+    zoom: number
+    cameraType: 'perspective' | 'orthographic'
+  }) {
+    if (
+      this.activeCamera !==
+      (state.cameraType === 'perspective'
+        ? this.perspectiveCamera
+        : this.orthographicCamera)
+    ) {
+      this.toggleCamera(state.cameraType)
+    }
+
+    this.activeCamera.position.copy(state.position)
+
+    this.controls.target.copy(state.target)
+
+    if (this.activeCamera instanceof THREE.OrthographicCamera) {
+      this.activeCamera.zoom = state.zoom
+      this.activeCamera.updateProjectionMatrix()
+    } else if (this.activeCamera instanceof THREE.PerspectiveCamera) {
+      this.activeCamera.zoom = state.zoom
+      this.activeCamera.updateProjectionMatrix()
+    }
+
+    this.controls.update()
+  }
+
   setUpDirection(
     direction: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
   ) {
@@ -358,26 +400,24 @@ class Load3d {
   toggleCamera(cameraType?: 'perspective' | 'orthographic') {
     const oldCamera = this.activeCamera
 
-    const position = this.activeCamera.position.clone()
-    const rotation = this.activeCamera.rotation.clone()
+    const position = oldCamera.position.clone()
+    const rotation = oldCamera.rotation.clone()
     const target = this.controls.target.clone()
 
     if (!cameraType) {
       this.activeCamera =
-        this.activeCamera === this.perspectiveCamera
+        oldCamera === this.perspectiveCamera
           ? this.orthographicCamera
           : this.perspectiveCamera
     } else {
-      const requestedCamera =
+      this.activeCamera =
         cameraType === 'perspective'
           ? this.perspectiveCamera
           : this.orthographicCamera
 
-      if (this.activeCamera === requestedCamera) {
+      if (oldCamera === this.activeCamera) {
         return
       }
-
-      this.activeCamera = requestedCamera
     }
 
     this.activeCamera.position.copy(position)
@@ -392,6 +432,12 @@ class Load3d {
     this.controls.update()
 
     this.handleResize()
+  }
+
+  getCurrentCameraType(): 'perspective' | 'orthographic' {
+    return this.activeCamera === this.perspectiveCamera
+      ? 'perspective'
+      : 'orthographic'
   }
 
   toggleGrid(showGrid: boolean) {
@@ -988,11 +1034,16 @@ function configureLoad3D(
   bgColor: IWidget,
   lightIntensity: IWidget,
   upDirection: IWidget,
+  cameraState?: any,
   postModelUpdateFunc?: (load3d: Load3d) => void
 ) {
-  const onModelWidgetUpdate = async () => {
-    if (modelWidget.value) {
-      const filename = modelWidget.value as string
+  const createModelUpdateHandler = () => {
+    let isFirstLoad = true
+
+    return async (value: string | number | boolean | object) => {
+      if (!value) return
+
+      const filename = value as string
       const modelUrl = api.apiURL(
         getResourceURL(...splitFilePath(filename), loadFolder)
       )
@@ -1017,11 +1068,22 @@ function configureLoad3D(
       if (postModelUpdateFunc) {
         postModelUpdateFunc(load3d)
       }
+
+      if (isFirstLoad && cameraState && typeof cameraState === 'object') {
+        try {
+          load3d.setCameraState(cameraState)
+        } catch (error) {
+          console.warn('Failed to restore camera state:', error)
+        }
+        isFirstLoad = false
+      }
     }
   }
 
+  const onModelWidgetUpdate = createModelUpdateHandler()
+
   if (modelWidget.value) {
-    onModelWidgetUpdate()
+    onModelWidgetUpdate(modelWidget.value)
   }
 
   modelWidget.callback = onModelWidgetUpdate
@@ -1078,6 +1140,8 @@ app.registerExtension({
     return {
       LOAD_3D(node, inputName) {
         let load3dNode = app.graph._nodes.filter((wi) => wi.type == 'Load3D')
+
+        node.addProperty('Camera Info', '')
 
         const container = document.createElement('div')
         container.id = `comfy-load-3d-${load3dNode.length}`
@@ -1212,6 +1276,21 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
+    let cameraState
+    try {
+      const cameraInfo = node.properties['Camera Info']
+      if (
+        cameraInfo &&
+        typeof cameraInfo === 'string' &&
+        cameraInfo.trim() !== ''
+      ) {
+        cameraState = JSON.parse(cameraInfo)
+      }
+    } catch (error) {
+      console.warn('Failed to parse camera state:', error)
+      cameraState = undefined
+    }
+
     configureLoad3D(
       load3d,
       'input',
@@ -1222,13 +1301,16 @@ app.registerExtension({
       material,
       bgColor,
       lightIntensity,
-      upDirection
+      upDirection,
+      cameraState
     )
 
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
     sceneWidget.serializeValue = async () => {
+      node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
+
       const imageData = await load3d.captureScene(w.value, h.value)
 
       const blob = await fetch(imageData).then((r) => r.blob())
@@ -1266,6 +1348,8 @@ app.registerExtension({
         let load3dNode = app.graph._nodes.filter(
           (wi) => wi.type == 'Load3DAnimation'
         )
+
+        node.addProperty('Camera Info', '')
 
         const container = document.createElement('div')
         container.id = `comfy-load-3d-animation-${load3dNode.length}`
@@ -1466,6 +1550,21 @@ app.registerExtension({
       }
     }
 
+    let cameraState
+    try {
+      const cameraInfo = node.properties['Camera Info']
+      if (
+        cameraInfo &&
+        typeof cameraInfo === 'string' &&
+        cameraInfo.trim() !== ''
+      ) {
+        cameraState = JSON.parse(cameraInfo)
+      }
+    } catch (error) {
+      console.warn('Failed to parse camera state:', error)
+      cameraState = undefined
+    }
+
     configureLoad3D(
       load3d,
       'input',
@@ -1477,6 +1576,7 @@ app.registerExtension({
       bgColor,
       lightIntensity,
       upDirection,
+      cameraState,
       (load3d: Load3d) => {
         const animationLoad3d = load3d as Load3dAnimation
         const names = animationLoad3d.getAnimationNames()
@@ -1496,6 +1596,8 @@ app.registerExtension({
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
     sceneWidget.serializeValue = async () => {
+      node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
+
       load3d.toggleAnimation(false)
 
       const imageData = await load3d.captureScene(w.value, h.value)
