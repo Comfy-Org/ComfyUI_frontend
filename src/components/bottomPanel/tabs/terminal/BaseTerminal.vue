@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full w-full bg-black" ref="rootEl">
+  <div class="relative overflow-hidden h-full w-full bg-black" ref="rootEl">
     <div class="p-terminal rounded-none h-full w-full p-2">
       <div class="h-full terminal-host" ref="terminalEl"></div>
     </div>
