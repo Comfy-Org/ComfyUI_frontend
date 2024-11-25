@@ -163,6 +163,8 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     type: 'combo',
     options: [
       FloatingPointPrecision.AUTO,
+      FloatingPointPrecision.FP64,
+      FloatingPointPrecision.FP32,
       FloatingPointPrecision.FP16,
       FloatingPointPrecision.BF16,
       FloatingPointPrecision.FP8E4M3FN,
