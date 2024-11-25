@@ -284,11 +284,6 @@ const confirmRemoveAll = (event: Event) => {
   })
 }
 
-const onStatus = async () => {
-  await queueStore.update()
-  updateVisibleTasks()
-}
-
 const menu = ref(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
 const menuTargetNode = ref<ComfyNode | null>(null)
@@ -351,12 +346,11 @@ const toggleImageFit = () => {
 }
 
 onMounted(() => {
-  api.addEventListener('status', onStatus)
-  queueStore.update()
+  api.addEventListener('status', updateVisibleTasks)
 })
 
 onUnmounted(() => {
-  api.removeEventListener('status', onStatus)
+  api.removeEventListener('status', updateVisibleTasks)
 })
 
 // Watch for changes in allTasks and reset visibleTasks if necessary
