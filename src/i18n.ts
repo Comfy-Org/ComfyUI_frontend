@@ -51,7 +51,10 @@ const messages = {
           workflowContents: 'Workflow contents',
           customNodeConfigurations: 'Custom node configurations'
         }
-      }
+      },
+      customNodes: 'Custom Nodes',
+      customNodesDescription:
+        'Reference custom node files from existing ComfyUI installations and install their dependencies.'
     },
     serverStart: {
       reinstall: 'Reinstall',
@@ -71,6 +74,7 @@ const messages = {
       revertChanges: 'Revert Changes',
       restart: 'Restart'
     },
+    comingSoon: 'Coming Soon',
     firstTimeUIMessage:
       'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',
     download: 'Download',
