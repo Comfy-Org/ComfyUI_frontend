@@ -155,7 +155,7 @@ onMounted(() => {
 })
 
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
-  return [...(category.children || [])]
+  return [...(category.children ?? [])]
     .sort((a, b) => a.label.localeCompare(b.label))
     .map((group) => ({
       label: group.label,
