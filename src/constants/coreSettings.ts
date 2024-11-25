@@ -642,5 +642,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: {} as Record<string, string>,
     versionAdded: '1.4.8'
+  },
+  {
+    id: 'Comfy.Queue.MaxHistoryItems',
+    name: 'Queue history size',
+    tooltip: 'The maximum number of tasks that show in the queue history.',
+    type: 'slider',
+    attrs: {
+      min: 16,
+      max: 256,
+      step: 16
+    },
+    defaultValue: 64,
+    versionAdded: '1.4.12'
   }
 ]
