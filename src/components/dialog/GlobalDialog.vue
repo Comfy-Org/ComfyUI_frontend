@@ -1,37 +1,61 @@
 <!-- The main global dialog to show various things -->
 <template>
   <Dialog
-    v-for="(item, index) in dialogStore.dialogStack"
-    :key="item.key"
-    v-model:visible="item.visible"
+    v-model:visible="dialogStore.isVisible"
     class="global-dialog"
-    v-bind="item.dialogComponentProps"
-    :auto-z-index="false"
-    :pt:mask:style="{ zIndex: 2100 + index + 1 }"
-    :aria-labelledby="item.key"
+    modal
+    closable
+    closeOnEscape
+    dismissableMask
+    :maximizable="maximizable"
+    :maximized="maximized"
+    @hide="dialogStore.closeDialog"
+    @maximize="onMaximize"
+    @unmaximize="onUnmaximize"
+    :aria-labelledby="headerId"
   >
     <template #header>
       <component
-        v-if="item.headerComponent"
-        :is="item.headerComponent"
-        :id="item.key"
+        v-if="dialogStore.headerComponent"
+        :is="dialogStore.headerComponent"
+        :id="headerId"
       />
-      <h3 v-else :id="item.key">{{ item.title || ' ' }}</h3>
+      <h3 v-else :id="headerId">{{ dialogStore.title || ' ' }}</h3>
     </template>
 
-    <component
-      :is="item.component"
-      v-bind="item.contentProps"
-      :maximized="item.dialogComponentProps.maximized"
-    />
+    <component :is="dialogStore.component" v-bind="contentProps" />
   </Dialog>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import Dialog from 'primevue/dialog'
 
 const dialogStore = useDialogStore()
+const maximizable = computed(
+  () => dialogStore.dialogComponentProps.maximizable ?? false
+)
+const maximized = ref(false)
+
+const onMaximize = () => {
+  maximized.value = true
+}
+
+const onUnmaximize = () => {
+  maximized.value = false
+}
+
+const contentProps = computed(() =>
+  maximizable.value
+    ? {
+        ...dialogStore.props,
+        maximized: maximized.value
+      }
+    : dialogStore.props
+)
+
+const headerId = `dialog-${Math.random().toString(36).substr(2, 9)}`
 </script>
 
 <style>
