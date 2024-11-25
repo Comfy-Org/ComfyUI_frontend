@@ -2656,7 +2656,11 @@ export class LGraphCanvas {
       )
       break
     default:
-      if (widget.mouse) this.dirty_canvas = widget.mouse(e, [x, y], node)
+      // Legacy custom widget callback
+      if (widget.mouse) {
+        const result = widget.mouse(e, [x, y], node)
+        if (result != null) this.dirty_canvas = result
+      }
       break
     }
 
@@ -2666,7 +2670,17 @@ export class LGraphCanvas {
       node.graph._version++
     }
 
-    pointer.finally = () => this.node_widget = null
+    // Clean up state var
+    pointer.finally = () => {
+      // Legacy custom widget callback
+      if (widget.mouse) {
+        const { eUp } = pointer
+        const { canvasX, canvasY } = eUp
+        widget.mouse(eUp, [canvasX - node[0], canvasY - node[1]], node)
+      }
+
+      this.node_widget = null
+    }
 
     function setWidgetValue(
       canvas: LGraphCanvas,
