@@ -40,6 +40,7 @@ export enum CudaMalloc {
 
 export enum FloatingPointPrecision {
   AUTO = 'auto',
+  FP64 = 'fp64',
   FP32 = 'fp32',
   FP16 = 'fp16',
   BF16 = 'bf16',
