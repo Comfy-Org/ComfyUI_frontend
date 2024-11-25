@@ -118,7 +118,11 @@ import OutputFilters from './queue/OutputFilters.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemDisplayStatus,
+  TaskItemImpl,
+  useQueueStore
+} from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
@@ -180,19 +184,15 @@ const allGalleryItems = computed(() =>
 )
 
 const filterTasks = (tasks: TaskItemImpl[]) =>
-  tasks.filter((t) => {
+  tasks.filter((task: TaskItemImpl) => {
     if (
       hideCanceled.value &&
-      t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
+      task.displayStatus === TaskItemDisplayStatus.Cancelled
     ) {
       return false
     }
 
-    if (
-      hideCached.value &&
-      t.flatOutputs?.length &&
-      t.flatOutputs.every((o) => o.cached)
-    ) {
+    if (hideCached.value && task.isCached) {
       return false
     }
 
