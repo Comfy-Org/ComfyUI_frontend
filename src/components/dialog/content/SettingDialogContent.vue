@@ -22,35 +22,14 @@
         <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
         <TabPanels class="settings-tab-panels">
           <TabPanel key="search-results" value="Search Results">
-            <div v-if="searchResults.length > 0">
-              <SettingGroup
-                v-for="(group, i) in searchResults"
-                :key="group.label"
-                :divider="i !== 0"
-                :group="group"
-              />
-            </div>
-            <NoResultsPlaceholder
-              v-else
-              icon="pi pi-search"
-              :title="$t('noResultsFound')"
-              :message="$t('searchFailedMessage')"
-            />
+            <SettingsPanel :settingGroups="searchResults" />
           </TabPanel>
           <TabPanel
-            v-for="category in categories"
+            v-for="category in settingCategories"
             :key="category.key"
             :value="category.label"
           >
-            <SettingGroup
-              v-for="(group, i) in sortedGroups(category)"
-              :key="group.label"
-              :divider="i !== 0"
-              :group="{
-                label: group.label,
-                settings: flattenTree<SettingParams>(group)
-              }"
-            />
+            <SettingsPanel :settingGroups="sortedGroups(category)" />
           </TabPanel>
           <TabPanel key="about" value="About">
             <AboutPanel />
@@ -94,10 +73,9 @@ import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
-import { SettingParams } from '@/types/settingTypes'
-import SettingGroup from './setting/SettingGroup.vue'
+import { ISettingGroup, SettingParams } from '@/types/settingTypes'
+import SettingsPanel from './setting/SettingsPanel.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
@@ -112,11 +90,6 @@ const ExtensionPanel = defineAsyncComponent(
 const ServerConfigPanel = defineAsyncComponent(
   () => import('./setting/ServerConfigPanel.vue')
 )
-
-interface ISettingGroup {
-  label: string
-  settings: SettingParams[]
-}
 
 const aboutPanelNode: SettingTreeNode = {
   key: 'about',
@@ -158,8 +131,11 @@ const serverConfigPanelNodeList = computed<SettingTreeNode[]>(() => {
 
 const settingStore = useSettingStore()
 const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
+const settingCategories = computed<SettingTreeNode[]>(
+  () => settingRoot.value.children ?? []
+)
 const categories = computed<SettingTreeNode[]>(() => [
-  ...(settingRoot.value.children || []),
+  ...settingCategories.value,
   keybindingPanelNode,
   ...extensionPanelNodeList.value,
   ...serverConfigPanelNodeList.value,
@@ -178,10 +154,13 @@ onMounted(() => {
   activeCategory.value = categories.value[0]
 })
 
-const sortedGroups = (category: SettingTreeNode) => {
-  return [...(category.children || [])].sort((a, b) =>
-    a.label.localeCompare(b.label)
-  )
+const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
+  return [...(category.children ?? [])]
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((group) => ({
+      label: group.label,
+      settings: flattenTree<SettingParams>(group)
+    }))
 }
 
 const searchQuery = ref<string>('')
