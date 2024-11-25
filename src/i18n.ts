@@ -129,6 +129,7 @@ const messages = {
     searchNodes: 'Search Nodes',
     searchModels: 'Search Models',
     searchKeybindings: 'Search Keybindings',
+    searchExtensions: 'Search Extensions',
     noResultsFound: 'No Results Found',
     searchFailedMessage:
       "We couldn't find any settings matching your search. Try adjusting your search terms.",
@@ -263,6 +264,7 @@ const messages = {
     searchNodes: '搜索节点',
     searchModels: '搜索模型',
     searchKeybindings: '搜索键位',
+    searchExtensions: '搜索插件',
     noResultsFound: '未找到结果',
     searchFailedMessage:
       '我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。',
@@ -380,6 +382,7 @@ const messages = {
     searchNodes: 'Поиск узлов',
     searchModels: 'Поиск моделей',
     searchKeybindings: 'Поиск сочетаний клавиш',
+    searchExtensions: 'Поиск расширений',
     noResultsFound: 'Ничего не найдено',
     searchFailedMessage:
       'Не удалось найти ни одной настройки, соответствующей вашему запросу. Попробуйте скорректировать поисковый запрос.',
