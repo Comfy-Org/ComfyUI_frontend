@@ -1,5 +1,5 @@
 <template>
-  <div class="extension-panel">
+  <PanelTemplate value="Extension" class="extension-panel">
     <DataTable :value="extensionStore.extensions" stripedRows size="small">
       <Column field="name" :header="$t('extensionName')" sortable></Column>
       <Column
@@ -36,7 +36,7 @@
         severity="danger"
       />
     </div>
-  </div>
+  </PanelTemplate>
 </template>
 
 <script setup lang="ts">
@@ -48,6 +48,7 @@ import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import PanelTemplate from './PanelTemplate.vue'
 
 const extensionStore = useExtensionStore()
 const settingStore = useSettingStore()
