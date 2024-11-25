@@ -58,3 +58,8 @@ export interface FormItem {
   attrs?: Record<string, any>
   options?: Array<string | SettingOption> | ((value: any) => SettingOption[])
 }
+
+export interface ISettingGroup {
+  label: string
+  settings: SettingParams[]
+}

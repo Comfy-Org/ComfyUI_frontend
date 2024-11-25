@@ -1,0 +1,26 @@
+<template>
+  <div v-if="props.settingGroups.length > 0">
+    <SettingGroup
+      v-for="(group, i) in props.settingGroups"
+      :key="group.label"
+      :divider="i !== 0"
+      :group="group"
+    />
+  </div>
+  <NoResultsPlaceholder
+    v-else
+    icon="pi pi-search"
+    :title="$t('noResultsFound')"
+    :message="$t('searchFailedMessage')"
+  />
+</template>
+
+<script setup lang="ts">
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import SettingGroup from './SettingGroup.vue'
+import { ISettingGroup } from '@/types/settingTypes'
+
+const props = defineProps<{
+  settingGroups: ISettingGroup[]
+}>()
+</script>
