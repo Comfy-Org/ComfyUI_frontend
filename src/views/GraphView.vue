@@ -97,6 +97,12 @@ watchEffect(() => {
   }
 })
 
+watchEffect(() => {
+  useQueueStore().maxHistoryItems = settingStore.get(
+    'Comfy.Queue.MaxHistoryItems'
+  )
+})
+
 const init = () => {
   settingStore.addSettings(app.ui.settings)
   useKeybindingStore().loadCoreKeybindings()
