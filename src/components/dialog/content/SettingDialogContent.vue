@@ -19,7 +19,7 @@
     <Divider layout="vertical" class="mx-1 2xl:mx-4" />
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
-        <PanelTemplate key="search-results" value="Search Results">
+        <PanelTemplate value="Search Results">
           <SettingsPanel :settingGroups="searchResults" />
         </PanelTemplate>
 
@@ -34,33 +34,27 @@
           <SettingsPanel :settingGroups="sortedGroups(category)" />
         </PanelTemplate>
 
-        <TabPanel key="about" value="About">
-          <AboutPanel />
-        </TabPanel>
-        <TabPanel key="keybinding" value="Keybinding">
-          <Suspense>
-            <KeybindingPanel />
-            <template #fallback>
-              <div>Loading keybinding panel...</div>
-            </template>
-          </Suspense>
-        </TabPanel>
-        <TabPanel key="extension" value="Extension">
-          <Suspense>
-            <ExtensionPanel />
-            <template #fallback>
-              <div>Loading extension panel...</div>
-            </template>
-          </Suspense>
-        </TabPanel>
-        <TabPanel key="server-config" value="Server-Config">
-          <Suspense>
-            <ServerConfigPanel />
-            <template #fallback>
-              <div>Loading server config panel...</div>
-            </template>
-          </Suspense>
-        </TabPanel>
+        <AboutPanel />
+        <Suspense>
+          <KeybindingPanel />
+          <template #fallback>
+            <div>Loading keybinding panel...</div>
+          </template>
+        </Suspense>
+
+        <Suspense>
+          <ExtensionPanel />
+          <template #fallback>
+            <div>Loading extension panel...</div>
+          </template>
+        </Suspense>
+
+        <Suspense>
+          <ServerConfigPanel />
+          <template #fallback>
+            <div>Loading server config panel...</div>
+          </template>
+        </Suspense>
       </TabPanels>
     </Tabs>
   </div>
@@ -71,7 +65,6 @@ import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
-import TabPanel from 'primevue/tabpanel'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'

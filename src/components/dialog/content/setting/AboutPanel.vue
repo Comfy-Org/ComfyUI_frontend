@@ -1,5 +1,5 @@
 <template>
-  <div class="about-container">
+  <PanelTemplate value="About" class="about-container">
     <h2 class="text-2xl font-bold mb-2">{{ $t('about') }}</h2>
     <div class="space-y-2">
       <a
@@ -26,10 +26,11 @@
       v-if="systemStatsStore.systemStats"
       :stats="systemStatsStore.systemStats"
     />
-  </div>
+  </PanelTemplate>
 </template>
 
 <script setup lang="ts">
+import PanelTemplate from './PanelTemplate.vue'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import Tag from 'primevue/tag'

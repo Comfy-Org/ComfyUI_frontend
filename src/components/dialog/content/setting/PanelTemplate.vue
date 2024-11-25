@@ -1,6 +1,6 @@
 <template>
-  <TabPanel :value="props.value" class="h-full w-full">
-    <div class="flex flex-col h-full w-full">
+  <TabPanel :value="props.value" class="h-full w-full" :class="props.class">
+    <div class="flex flex-col h-full w-full gap-2">
       <slot name="header" />
       <ScrollPanel class="flex-grow h-0 pr-2">
         <slot />
@@ -16,5 +16,6 @@ import ScrollPanel from 'primevue/scrollpanel'
 
 const props = defineProps<{
   value: string
+  class?: string
 }>()
 </script>

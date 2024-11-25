@@ -1,42 +1,50 @@
 <template>
-  <div class="flex flex-col gap-2">
-    <Message v-if="modifiedConfigs.length > 0" severity="info" pt:text="w-full">
-      <p>
-        {{ $t('serverConfig.modifiedConfigs') }}
-      </p>
-      <ul>
-        <li v-for="config in modifiedConfigs" :key="config.id">
-          {{ config.name }}: {{ config.initialValue }} → {{ config.value }}
-        </li>
-      </ul>
-      <div class="flex justify-end gap-2">
-        <Button
-          :label="$t('serverConfig.revertChanges')"
-          @click="revertChanges"
-          outlined
-        />
-        <Button
-          :label="$t('serverConfig.restart')"
-          @click="restartApp"
-          outlined
-          severity="danger"
-        />
+  <PanelTemplate value="Server-Config" class="server-config-panel">
+    <template #header>
+      <div class="flex flex-col gap-2">
+        <Message
+          v-if="modifiedConfigs.length > 0"
+          severity="info"
+          pt:text="w-full"
+        >
+          <p>
+            {{ $t('serverConfig.modifiedConfigs') }}
+          </p>
+          <ul>
+            <li v-for="config in modifiedConfigs" :key="config.id">
+              {{ config.name }}: {{ config.initialValue }} → {{ config.value }}
+            </li>
+          </ul>
+          <div class="flex justify-end gap-2">
+            <Button
+              :label="$t('serverConfig.revertChanges')"
+              @click="revertChanges"
+              outlined
+            />
+            <Button
+              :label="$t('serverConfig.restart')"
+              @click="restartApp"
+              outlined
+              severity="danger"
+            />
+          </div>
+        </Message>
+        <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
+          <template #icon>
+            <i-lucide:terminal class="text-xl font-bold" />
+          </template>
+          <div class="flex items-center justify-between">
+            <p>{{ commandLineArgs }}</p>
+            <Button
+              icon="pi pi-clipboard"
+              @click="copyCommandLineArgs"
+              severity="secondary"
+              text
+            />
+          </div>
+        </Message>
       </div>
-    </Message>
-    <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
-      <template #icon>
-        <i-lucide:terminal class="text-xl font-bold" />
-      </template>
-      <div class="flex items-center justify-between">
-        <p>{{ commandLineArgs }}</p>
-        <Button
-          icon="pi pi-clipboard"
-          @click="copyCommandLineArgs"
-          severity="secondary"
-          text
-        />
-      </div>
-    </Message>
+    </template>
     <div
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
@@ -58,7 +66,7 @@
         />
       </div>
     </div>
-  </div>
+  </PanelTemplate>
 </template>
 
 <script setup lang="ts">
@@ -66,6 +74,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Divider from 'primevue/divider'
 import FormItem from '@/components/common/FormItem.vue'
+import PanelTemplate from './PanelTemplate.vue'
 import { formatCamelCase } from '@/utils/formatUtil'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { storeToRefs } from 'pinia'
