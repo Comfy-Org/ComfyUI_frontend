@@ -265,6 +265,12 @@ export class TaskItemImpl {
     }
   }
 
+  get isCached() {
+    return (
+      this.flatOutputs && _.every(this.flatOutputs, (output) => output.cached)
+    )
+  }
+
   get executionStartTimestamp() {
     const message = this.messages.find(
       (message) => message[0] === 'execution_start'
