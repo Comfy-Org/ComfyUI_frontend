@@ -13,12 +13,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useSettingStore } from '@/stores/settingStore'
 const SETTING_FILTER = 'Comfy.Queue.Filter'
 
-const { t } = useI18n()
 const settingStore = useSettingStore()
 const filter = settingStore.get(SETTING_FILTER) ?? {}
 
