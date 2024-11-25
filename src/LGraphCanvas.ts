@@ -2804,6 +2804,18 @@ export class LGraphCanvas {
 
     e.dragging = this.last_mouse_dragging
 
+    if (this.node_widget) {
+      // Legacy widget mouse callbacks for pointermove events
+      const [node, widget] = this.node_widget
+
+      if (widget?.mouse) {
+        const x = e.canvasX - node.pos[0]
+        const y = e.canvasY - node.pos[1]
+        const result = widget.mouse(e, [x, y], node)
+        if (result != null) this.dirty_canvas = result
+      }
+    }
+
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
     // get node over
@@ -2956,15 +2968,6 @@ export class LGraphCanvas {
         // Resize corner
         if (node.inResizeCorner(e.canvasX, e.canvasY)) {
           underPointer |= CanvasItem.ResizeSe
-        } else if (this.node_widget) {
-          // Legacy widget mouse callbacks for pointermove events
-          const widget = this.node_widget[1]
-
-          if (widget?.mouse) {
-            const x = e.canvasX - node.pos[0]
-            const y = e.canvasY - node.pos[1]
-            this.dirty_canvas = widget.mouse(e, [x, y], node)
-          }
         }
       } else {
         // Not over a node
