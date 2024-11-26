@@ -1,10 +1,10 @@
 <template>
   <div
     id="comfy-user-selection"
-    class="absolute top-0 left-0 z-50 flex h-screen w-screen items-center justify-center font-sans bg-gradient-to-b from-[var(--tr-even-bg-color)] to-[var(--tr-odd-bg-color)]"
+    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
     <main
-      class="-mt-[30vh] min-w-[365px] relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
+      class="mt-[5vh] 2xl:mt-[20vh] min-w-[365px] relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <form class="flex w-full flex-col items-center">
