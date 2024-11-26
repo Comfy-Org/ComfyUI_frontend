@@ -19,10 +19,7 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { api } from '@/scripts/api'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueStore
-} from '@/stores/queueStore'
+import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from '@/i18n'
@@ -112,10 +109,8 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const queueStore = useQueueStore()
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await queueStore.update()
 }
 
 const reconnectingMessage: ToastMessageOptions = {
