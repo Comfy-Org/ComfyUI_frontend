@@ -71,6 +71,8 @@ export default {
     revertChanges: 'Revert Changes',
     restart: 'Restart'
   },
+  empty: 'Empty',
+  noWorkflowsFound: 'No workflows found.',
   comingSoon: 'Coming Soon',
   firstTimeUIMessage:
     'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',
