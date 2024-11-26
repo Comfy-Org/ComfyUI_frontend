@@ -4,6 +4,7 @@ import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySideba
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { isElectron } from '@/utils/envUtil'
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   const { t } = useI18n()
@@ -18,7 +19,11 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     iconBadge: () => {
       if (isElectron()) {
         const electronDownloadStore = useElectronDownloadStore()
-        if (electronDownloadStore.downloads.length > 0) {
+        if (
+          electronDownloadStore.downloads.filter(
+            ({ status }) => status !== DownloadStatus.COMPLETED
+          ).length > 0
+        ) {
           return electronDownloadStore.downloads.length.toString()
         }
       }
