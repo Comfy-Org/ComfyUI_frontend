@@ -19,7 +19,10 @@ import { useI18n } from 'vue-i18n'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { api } from '@/scripts/api'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
-import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
+import {
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { i18n } from '@/i18n'

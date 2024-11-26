@@ -198,25 +198,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'cover'
   },
-  // Hidden setting used by the queue for if the results should be grouped by prompt
-  {
-    id: 'Comfy.Queue.ShowFlatList',
-    name: 'Queue show flat list',
-    type: 'hidden',
-    defaultValue: false
-  },
-
-  // Hidden setting used by the queue to filter certain results
-  {
-    id: 'Comfy.Queue.Filter',
-    name: 'Queue output filters',
-    type: 'hidden',
-    defaultValue: {
-      hideCanceled: false,
-      hideCached: false
-    },
-    versionAdded: '1.4.3'
-  },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
     category: ['LiteGraph', 'Group', 'Padding'],

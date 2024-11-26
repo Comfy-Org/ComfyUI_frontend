@@ -31,20 +31,16 @@
 
     <div class="task-item-details">
       <div class="tag-wrapper status-tag-group">
-        <Tag v-if="isFlatTask && task.isHistory && node" class="node-name-tag">
+        <Tag v-if="isFlatTask && task.isHistory" class="node-name-tag">
           <Button
             class="task-node-link"
-            :label="`${node.type} (#${node.id})`"
+            :label="`${node?.type} (#${node?.id})`"
             link
             size="small"
             @click="app.goToNode(node?.id)"
           />
         </Tag>
-        <Tag
-          :severity="taskTagSeverity(task.displayStatus)"
-          class="task-duration relative"
-        >
-          <i v-if="isCachedResult" class="pi pi-server task-cached-icon"></i>
+        <Tag :severity="taskTagSeverity(task.displayStatus)">
           <span v-html="taskStatusText(task.displayStatus)"></span>
           <span v-if="task.isHistory" class="task-time">
             {{ formatTime(task.executionTimeInSeconds) }}
@@ -94,7 +90,6 @@ const node: ComfyNode | null =
       ) ?? null
     : null
 const progressPreviewBlobUrl = ref('')
-const isCachedResult = props.isFlatTask && coverResult?.cached
 
 const emit = defineEmits<{
   (
@@ -147,7 +142,7 @@ const taskStatusText = (status: TaskItemDisplayStatus) => {
     case TaskItemDisplayStatus.Running:
       return '<i class="pi pi-spin pi-spinner" style="font-weight: bold"></i> Running'
     case TaskItemDisplayStatus.Completed:
-      return `<i class="pi pi-check${isCachedResult ? ' cached' : ''}" style="font-weight: bold"></i>`
+      return '<i class="pi pi-check" style="font-weight: bold"></i>'
     case TaskItemDisplayStatus.Failed:
       return 'Failed'
     case TaskItemDisplayStatus.Cancelled:
@@ -230,16 +225,5 @@ are floating on top of images. */
   height: 100%;
   object-fit: cover;
   object-position: center;
-}
-
-.task-cached-icon {
-  color: #fff;
-}
-
-:deep(.pi-check.cached) {
-  font-size: 12px;
-  position: absolute;
-  left: 16px;
-  top: 12px;
 }
 </style>
