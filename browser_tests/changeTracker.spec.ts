@@ -3,9 +3,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from './fixtures/ComfyPage'
-import type { useWorkspaceStore } from '../src/stores/workspaceStore'
-
-type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -26,64 +23,41 @@ test.describe('Change Tracker', () => {
     })
 
     test('Can undo multiple operations', async ({ comfyPage }) => {
-      function isModified() {
-        return comfyPage.page.evaluate(async () => {
-          return !!(window['app'].extensionManager as WorkspaceStore).workflow
-            .activeWorkflow?.isModified
-        })
-      }
-
-      function getUndoQueueSize() {
-        return comfyPage.page.evaluate(() => {
-          const workflow = (window['app'].extensionManager as WorkspaceStore)
-            .workflow.activeWorkflow
-          return workflow?.changeTracker.undoQueue.length
-        })
-      }
-
-      function getRedoQueueSize() {
-        return comfyPage.page.evaluate(() => {
-          const workflow = (window['app'].extensionManager as WorkspaceStore)
-            .workflow.activeWorkflow
-          return workflow?.changeTracker.redoQueue.length
-        })
-      }
-      expect(await getUndoQueueSize()).toBe(0)
-      expect(await getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
       expect(await comfyPage.getToastErrorCount()).toBe(0)
-      expect(await isModified()).toBe(false)
-
-      expect(await getUndoQueueSize()).toBe(0)
-      expect(await getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+      expect(await comfyPage.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.getFirstNodeRef())!
       await node.click('title')
       await node.click('collapse')
       await expect(node).toBeCollapsed()
-      expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(1)
-      expect(await getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.getUndoQueueSize()).toBe(1)
+      expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlB()
       await expect(node).toBeBypassed()
-      expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(2)
-      expect(await getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.getUndoQueueSize()).toBe(2)
+      expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeBypassed()
-      expect(await isModified()).toBe(true)
-      expect(await getUndoQueueSize()).toBe(1)
-      expect(await getRedoQueueSize()).toBe(1)
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.getUndoQueueSize()).toBe(1)
+      expect(await comfyPage.getRedoQueueSize()).toBe(1)
 
       await comfyPage.ctrlZ()
       await expect(node).not.toBeCollapsed()
-      expect(await isModified()).toBe(false)
-      expect(await getUndoQueueSize()).toBe(0)
-      expect(await getRedoQueueSize()).toBe(2)
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+      expect(await comfyPage.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.getRedoQueueSize()).toBe(2)
     })
   })
 
@@ -173,5 +147,21 @@ test.describe('Change Tracker', () => {
     await expect(node).toBeBypassed()
     await expect(node).toBePinned()
     await expect(node).toBeCollapsed()
+  })
+
+  test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
+    expect(await comfyPage.getUndoQueueSize()).toBe(0)
+    await comfyPage.page.evaluate(() => {
+      window['app'].graph.extra.foo = 'bar'
+    })
+    // Click empty space to trigger a change detection.
+    await comfyPage.clickEmptySpace()
+    expect(await comfyPage.getUndoQueueSize()).toBe(1)
+  })
+
+  test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
+    expect(await comfyPage.getUndoQueueSize()).toBe(0)
+    await comfyPage.pan({ x: 10, y: 10 })
+    expect(await comfyPage.getUndoQueueSize()).toBe(0)
   })
 })
