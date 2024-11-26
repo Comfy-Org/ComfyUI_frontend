@@ -16,7 +16,7 @@
             v-model="installPath"
             class="w-full"
             :class="{ 'p-invalid': pathError }"
-            @change="validatePath"
+            @update:modelValue="validatePath"
           />
           <InputIcon
             class="pi pi-info-circle"

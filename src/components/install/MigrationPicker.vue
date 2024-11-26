@@ -16,7 +16,7 @@
           placeholder="Select existing ComfyUI installation (optional)"
           class="flex-1"
           :class="{ 'p-invalid': pathError }"
-          @change="validateSource"
+          @update:modelValue="validateSource"
         />
         <Button icon="pi pi-folder" @click="browsePath" class="w-12" />
       </div>
