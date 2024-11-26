@@ -2518,6 +2518,7 @@ export class LGraphCanvas {
       if (widget.options.read_only) break
 
       pointer.onDrag = (eMove) => {
+        const x = eMove.canvasX - node.pos[0]
         const slideFactor = clamp((x - 15) / (width - 30), 0, 1)
         widget.value = widget.options.min + (widget.options.max - widget.options.min) * slideFactor
         if (oldValue != widget.value) {
