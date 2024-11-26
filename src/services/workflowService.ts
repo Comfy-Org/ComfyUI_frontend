@@ -66,7 +66,7 @@ export const workflowService = {
     const workflowStore = useWorkflowStore()
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
-    if (existingWorkflow) {
+    if (existingWorkflow && !existingWorkflow.isTemporary) {
       const res = (await ComfyAsyncDialog.prompt({
         title: 'Overwrite existing file?',
         message: `"${newPath}" already exists. Do you want to overwrite it?`,

@@ -465,6 +465,20 @@ test.describe('Menu', () => {
       ).toEqual(['workflow5.json'])
     })
 
+    test('Can save temporary workflow with unmodified name', async ({
+      comfyPage
+    }) => {
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+
+      await comfyPage.menu.topbar.saveWorkflow('Unsaved Workflow')
+      // Should not trigger the overwrite dialog
+      expect(
+        await comfyPage.page.locator('.comfy-modal-content:visible').count()
+      ).toBe(0)
+
+      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+    })
+
     test('Can overwrite other workflows with save as', async ({
       comfyPage
     }) => {
