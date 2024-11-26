@@ -586,7 +586,23 @@ export class ComfyApp {
                 a.click()
                 requestAnimationFrame(() => a.remove())
               }
-            }
+            },
+            {
+              content: 'Save Preview',
+              callback: () => {
+                const a = document.createElement('a')
+                let url = new URL(img.src)
+                let tagetFormat = new URLSearchParams(url.search).get("preview")?.split(';')?.[0]
+                a.href = url.toString()
+                a.setAttribute(
+                  'download',
+                  (new URLSearchParams(url.search).get("filename")).replace('png', tagetFormat)
+                )
+                document.body.append(a)
+                a.click()
+                requestAnimationFrame(() => a.remove())
+              }
+            },
           )
         }
       }
