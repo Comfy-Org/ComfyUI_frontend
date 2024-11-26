@@ -17,7 +17,10 @@ import {
 import { Topbar } from './components/Topbar'
 import { NodeReference } from './utils/litegraphUtils'
 import type { Position, Size } from './types'
+import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { SettingDialog } from './components/SettingDialog'
+
+type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 class ComfyMenu {
   public readonly sideToolbar: Locator
@@ -787,6 +790,26 @@ export class ComfyPage {
   }
   async moveMouseToEmptyArea() {
     await this.page.mouse.move(10, 10)
+  }
+  async getUndoQueueSize() {
+    return this.page.evaluate(() => {
+      const workflow = (window['app'].extensionManager as WorkspaceStore)
+        .workflow.activeWorkflow
+      return workflow?.changeTracker.undoQueue.length
+    })
+  }
+  async getRedoQueueSize() {
+    return this.page.evaluate(() => {
+      const workflow = (window['app'].extensionManager as WorkspaceStore)
+        .workflow.activeWorkflow
+      return workflow?.changeTracker.redoQueue.length
+    })
+  }
+  async isCurrentWorkflowModified() {
+    return this.page.evaluate(() => {
+      return (window['app'].extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.isModified
+    })
   }
 }
 
