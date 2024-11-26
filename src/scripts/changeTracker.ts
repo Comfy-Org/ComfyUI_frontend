@@ -388,8 +388,11 @@ export class ChangeTracker {
         return false
       }
 
-      // Reroutes (schema 0.4)
-      if (!_.isEqual(a.extra?.reroutes, b.extra?.reroutes)) return false
+      // Compare extra properties ignoring ds
+      if (
+        !_.isEqual(_.omit(a.extra ?? {}, ['ds']), _.omit(b.extra ?? {}, ['ds']))
+      )
+        return false
 
       // Compare other properties normally
       for (const key of ['links', 'reroutes', 'groups']) {
