@@ -654,6 +654,6 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 16
     },
     defaultValue: 64,
-    versionAdded: '1.4.11'
+    versionAdded: '1.4.12'
   }
 ]
