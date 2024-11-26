@@ -118,11 +118,7 @@ import OutputFilters from './queue/OutputFilters.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import {
-  TaskItemDisplayStatus,
-  TaskItemImpl,
-  useQueueStore
-} from '@/stores/queueStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
 import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
@@ -174,7 +170,9 @@ const allTasks = computed(() =>
     ? folderTask.value
       ? folderTask.value.flatten()
       : []
-    : filterTasks(isExpanded.value ? queueStore.flatTasks : queueStore.tasks)
+    : isExpanded.value
+      ? queueStore.flatTasks
+      : queueStore.tasks
 )
 const allGalleryItems = computed(() =>
   allTasks.value.flatMap((task: TaskItemImpl) => {
@@ -184,24 +182,30 @@ const allGalleryItems = computed(() =>
 )
 
 const filterTasks = (tasks: TaskItemImpl[]) =>
-  tasks.filter((task: TaskItemImpl) => {
-    if (
-      hideCanceled.value &&
-      task.displayStatus === TaskItemDisplayStatus.Cancelled
-    ) {
-      return false
-    }
+  tasks
+    .filter((t) => {
+      if (
+        hideCanceled.value &&
+        t.status?.messages?.at(-1)?.[0] === 'execution_interrupted'
+      ) {
+        return false
+      }
 
-    if (hideCached.value && task.isCached) {
-      return false
-    }
+      if (
+        hideCached.value &&
+        t.flatOutputs?.length &&
+        t.flatOutputs.every((o) => o.cached)
+      ) {
+        return false
+      }
 
-    return true
-  })
+      return true
+    })
+    .slice(0, ITEMS_PER_PAGE)
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
-  const newTasks = allTasks.value.slice(
+  const newTasks = filterTasks(allTasks.value).slice(
     currentLength,
     currentLength + ITEMS_PER_PAGE
   )
@@ -236,7 +240,7 @@ useResizeObserver(scrollContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value
+  visibleTasks.value = filterTasks(allTasks.value)
 }
 
 const toggleExpanded = () => {
