@@ -1,4 +1,6 @@
 export default {
+  empty: 'Пусто',
+  noWorkflowsFound: 'Рабочие процессы не найдены.',
   download: 'Скачать',
   refresh: 'Обновить',
   loadAllFolders: 'Загрузить все папки',

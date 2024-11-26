@@ -95,11 +95,18 @@
               renderTreeNode(workflowsTree, WorkflowTreeType.Browse).children
             "
             v-model:expandedKeys="expandedKeys"
+            v-if="workflowStore.persistedWorkflows.length > 0"
           >
             <template #node="{ node }">
               <WorkflowTreeLeaf :node="node" />
             </template>
           </TreeExplorer>
+          <NoResultsPlaceholder
+            v-else
+            icon="pi pi-folder"
+            :title="$t('empty')"
+            :message="$t('noWorkflowsFound')"
+          />
         </div>
       </div>
       <div class="comfyui-workflows-search-panel" v-else>
@@ -120,6 +127,7 @@
 
 <script setup lang="ts">
 import SearchBox from '@/components/common/SearchBox.vue'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'

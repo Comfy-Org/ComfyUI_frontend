@@ -1,4 +1,6 @@
 export default {
+  empty: '空',
+  noWorkflowsFound: '未找到工作流',
   firstTimeUIMessage:
     '这是您第一次使用新界面。选择“Menu > Use New Menu > Disabled”以恢复旧界面。',
   download: '下载',
