@@ -1,8 +1,8 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { isElectron, electronAPI } from '@/utils/envUtil'
-import type {
-  DownloadState,
+import {
+  type DownloadState,
   DownloadStatus
 } from '@comfyorg/comfyui-electron-types'
 
@@ -69,6 +69,11 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
     resume,
     cancel,
     findByUrl,
-    initialize
+    initialize,
+    inProgressDownloads: computed(() =>
+      downloads.value.filter(
+        ({ status }) => status !== DownloadStatus.COMPLETED
+      )
+    )
   }
 })
