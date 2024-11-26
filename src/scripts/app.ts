@@ -145,7 +145,6 @@ export class ComfyApp {
   configuringGraph: boolean
   isNewUserSession: boolean
   storageLocation: StorageLocation
-  multiUserServer: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
@@ -1728,7 +1727,6 @@ export class ComfyApp {
       return
     }
 
-    this.multiUserServer = true
     let user = localStorage['Comfy.userId']
     const users = userConfig.users ?? {}
     if (!user || !users[user]) {
