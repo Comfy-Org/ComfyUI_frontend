@@ -62,7 +62,7 @@ export default {
       'python-setup': 'Setting up Python Environment...',
       'starting-server': 'Starting ComfyUI server...',
       ready: 'Finishing...',
-      error: 'Unable to start ComfyUI'
+      error: 'Unable to start ComfyUI Desktop'
     }
   },
   serverConfig: {
