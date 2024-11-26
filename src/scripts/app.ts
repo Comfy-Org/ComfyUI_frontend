@@ -1721,9 +1721,6 @@ export class ComfyApp {
     let user = localStorage['Comfy.userId']
     const users = userConfig.users ?? {}
     if (!user || !users[user]) {
-      // Lift spinner / BlockUI for user selection.
-      if (this.vueAppReady) useWorkspaceStore().spinner = false
-
       // This will rarely be hit so move the loading to on demand
       const { UserSelectionScreen } = await import('./ui/userSelection')
 

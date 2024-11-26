@@ -432,7 +432,8 @@ export const zSystemStats = z.object({
 const zUser = z.object({
   storage: z.enum(['server']),
   migrated: z.boolean(),
-  users: z.record(z.string(), z.unknown())
+  // `users` is only available in multi-user server mode.
+  users: z.record(z.string(), z.string()).optional()
 })
 const zUserData = z.array(z.array(z.string(), z.string()))
 const zUserDataFullInfo = z.object({
