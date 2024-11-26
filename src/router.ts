@@ -41,6 +41,11 @@ const router = createRouter({
           component: () => import('@/views/GraphView.vue')
         },
         {
+          path: 'user-select',
+          name: 'UserSelectView',
+          component: () => import('@/views/UserSelectView.vue')
+        },
+        {
           path: 'server-start',
           name: 'ServerStartView',
           component: () => import('@/views/ServerStartView.vue'),

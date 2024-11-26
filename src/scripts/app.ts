@@ -1779,7 +1779,6 @@ export class ComfyApp {
     this.canvasEl = canvasEl
     // Show menu container for GraphView.
     this.ui.menuContainer.style.display = 'block'
-    await this.#setUser()
 
     this.resizeCanvas()
 
