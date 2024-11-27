@@ -2,6 +2,7 @@ import { useModelLibrarySidebarTab } from '@/hooks/sidebarTabs/modelLibrarySideb
 import { useNodeLibrarySidebarTab } from '@/hooks/sidebarTabs/nodeLibrarySidebarTab'
 import { useQueueSidebarTab } from '@/hooks/sidebarTabs/queueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
+import { useDocumentationSidebarTab } from '@/hooks/sidebarTabs/documentationSidebarTab'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -57,6 +58,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+    registerSidebarTab(useDocumentationSidebarTab())
   }
 
   return {

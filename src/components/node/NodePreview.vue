@@ -74,7 +74,11 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         backgroundColor: litegraphColors.WIDGET_BGCOLOR
       }"
     >
-      {{ nodeDef.description }}
+      {{
+        Array.isArray(nodeDef.description)
+          ? nodeDef.description[0]
+          : nodeDef.description
+      }}
     </div>
   </div>
 </template>

@@ -158,6 +158,7 @@ export default {
     },
     modelLibrary: 'Model Library',
     downloads: 'Downloads',
+    documentation: 'Display documentation for nodes',
     queueTab: {
       showFlatList: 'Show Flat List',
       backToAllTasks: 'Back to All Tasks',
