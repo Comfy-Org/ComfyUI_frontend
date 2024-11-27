@@ -15,7 +15,7 @@
         iconPos="right"
         size="large"
         rounded
-        @click="$router.push('/install')"
+        @click="navigateTo('/install')"
         class="p-4 text-lg fade-in-up"
       />
     </div>
@@ -24,6 +24,12 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const navigateTo = (path: string) => {
+  router.push(path)
+}
 </script>
 
 <style scoped>

@@ -44,21 +44,22 @@ import Button from 'primevue/button'
 import SearchFilterChip from './SearchFilterChip.vue'
 import { toRefs } from 'vue'
 
-interface Props {
-  class?: string
-  modelValue: string
-  placeholder?: string
-  icon?: string
-  debounceTime?: number
-  filterIcon?: string
-  filters?: TFilter[]
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Search...',
-  icon: 'pi pi-search',
-  debounceTime: 300
-})
+const props = withDefaults(
+  defineProps<{
+    class?: string
+    modelValue: string
+    placeholder?: string
+    icon?: string
+    debounceTime?: number
+    filterIcon?: string
+    filters?: TFilter[]
+  }>(),
+  {
+    placeholder: 'Search...',
+    icon: 'pi pi-search',
+    debounceTime: 300
+  }
+)
 
 const { filters } = toRefs(props)
 

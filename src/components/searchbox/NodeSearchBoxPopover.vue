@@ -22,7 +22,7 @@
     >
       <template #container>
         <NodeSearchBox
-          :filters="nodeFilters"
+          :filters="nodeFilters as FilterAndValue[]"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @add-node="addNode"
@@ -56,7 +56,7 @@ const getNewNodeLocation = (): [number, number] => {
   if (triggerEvent.value === null) {
     return [100, 100]
   }
-
+  // @ts-expect-error type event detail
   const originalEvent = triggerEvent.value.detail.originalEvent
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
@@ -99,6 +99,7 @@ const newSearchBoxEnabled = computed(
 )
 const showSearchBox = (e: LiteGraphCanvasEvent) => {
   if (newSearchBoxEnabled.value) {
+    // @ts-expect-error type event detail
     if (e.detail.originalEvent?.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
@@ -107,13 +108,16 @@ const showSearchBox = (e: LiteGraphCanvasEvent) => {
       showNewSearchBox(e)
     }
   } else {
+    // @ts-expect-error type event detail
     canvasStore.canvas.showSearchBox(e.detail.originalEvent as MouseEvent)
   }
 }
 
 const nodeDefStore = useNodeDefStore()
 const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
+  // @ts-expect-error type event detail
   if (e.detail.linkReleaseContext) {
+    // @ts-expect-error type event detail
     const links = e.detail.linkReleaseContext.links
     if (links.length === 0) {
       console.warn('Empty release with no links! This should never happen')
@@ -123,7 +127,7 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
     const filter = nodeDefStore.nodeSearchService.getFilterById(
       firstLink.releaseSlotType
     )
-    const dataType = firstLink.type
+    const dataType = firstLink.type.toString()
     addFilter([filter, dataType])
   }
 
@@ -138,6 +142,7 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
 }
 
 const showContextMenu = (e: LiteGraphCanvasEvent) => {
+  // @ts-expect-error type event detail
   const links = e.detail.linkReleaseContext.links
   if (links.length === 0) {
     console.warn('Empty release with no links! This should never happen')
@@ -145,6 +150,7 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
   }
 
   const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
+  // @ts-expect-error type event detail
   const mouseEvent = e.detail.originalEvent as MouseEvent
   const commonOptions = {
     e: mouseEvent,
@@ -162,6 +168,7 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
         slotTo: firstLink.input,
         afterRerouteId: firstLink.afterRerouteId
       }
+  // @ts-expect-error type arguments
   canvasStore.canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
@@ -202,6 +209,7 @@ const linkReleaseActionShift = computed(() => {
 })
 
 const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
+  // @ts-expect-error type event detail
   const originalEvent = e.detail.originalEvent as MouseEvent
   const shiftPressed = originalEvent.shiftKey
 

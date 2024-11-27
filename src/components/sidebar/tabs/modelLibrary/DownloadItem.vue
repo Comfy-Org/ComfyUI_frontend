@@ -75,7 +75,7 @@ const props = defineProps<{
   download: ElectronDownload
 }>()
 
-const getDownloadLabel = (savePath: string, filename: string) => {
+const getDownloadLabel = (savePath: string) => {
   let parts = (savePath ?? '').split('/')
   parts = parts.length === 1 ? parts[0].split('\\') : parts
   const name = parts.pop()
@@ -95,7 +95,6 @@ const handleRemoveDownload = () => {
     state.downloads = state.downloads.filter(
       ({ url }) => url !== props.download.url
     )
-    state.hasChanged = true
   })
 }
 </script>
