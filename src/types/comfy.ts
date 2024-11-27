@@ -159,21 +159,3 @@ export interface ComfyExtension {
 
   [key: string]: any
 }
-
-/**
- * @deprecated Use ComfyNodeDef instead
- */
-export type ComfyObjectInfo = {
-  name: string
-  display_name?: string
-  description?: string
-  category: string
-  input?: {
-    required?: Record<string, ComfyObjectInfoConfig>
-    optional?: Record<string, ComfyObjectInfoConfig>
-  }
-  output?: string[]
-  output_name: string[]
-}
-
-export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any]

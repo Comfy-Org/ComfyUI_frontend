@@ -30,13 +30,9 @@ export interface APIConfig {
 }
 
 /**
- * @typedef { import("../../src/types/comfy").ComfyObjectInfo } ComfyObjectInfo
- */
-
-/**
  * @param {{
  *   mockExtensions?: string[],
- *   mockNodeDefs?: Record<string, ComfyObjectInfo>,
+ *   mockNodeDefs?: Record<string, any>,
  *   settings?: Record<string, string>
  *   userConfig?: {storage: "server" | "browser", users?: Record<string, any>, migrated?: boolean },
  *   userData?: Record<string, any>
