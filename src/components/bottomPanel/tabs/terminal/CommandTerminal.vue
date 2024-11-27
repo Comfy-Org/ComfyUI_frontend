@@ -13,18 +13,7 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
-  // TODO: use types from electron package
-  const terminalApi = electronAPI()['Terminal'] as {
-    onOutput(cb: (message: string) => void): () => void
-    resize(cols: number, rows: number): void
-    restore(): Promise<{
-      buffer: string[]
-      pos: { x: number; y: number }
-      size: { cols: number; rows: number }
-    }>
-    storePos(x: number, y: number): void
-    write(data: string): void
-  }
+  const terminalApi = electronAPI().Terminal
 
   let offData: IDisposable
   let offOutput: () => void

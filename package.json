@@ -72,7 +72,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
-    "@comfyorg/comfyui-electron-types": "^0.3.6",
+    "@comfyorg/comfyui-electron-types": "^0.3.19",
     "@comfyorg/litegraph": "^0.8.37",
     "@primevue/themes": "^4.0.5",
     "@vueuse/core": "^11.0.0",
