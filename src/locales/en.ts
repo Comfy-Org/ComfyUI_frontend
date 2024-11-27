@@ -3,6 +3,16 @@ export default {
     title: 'Welcome to ComfyUI',
     getStarted: 'Get Started'
   },
+  notSupported: {
+    title: 'Your device is not supported',
+    message: 'Only following devices are supported:',
+    learnMore: 'Learn More',
+    reportIssue: 'Report Issue',
+    supportedDevices: {
+      macos: 'MacOS (M1 or later)',
+      windows: 'Windows (Nvidia GPU with CUDA support)'
+    }
+  },
   install: {
     installLocation: 'Install Location',
     migration: 'Migration',
