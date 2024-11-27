@@ -81,6 +81,7 @@ app.registerExtension({
   name: 'Comfy.AudioWidget',
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (
+      // @ts-expect-error ComfyNode
       ['LoadAudio', 'SaveAudio', 'PreviewAudio'].includes(nodeType.comfyClass)
     ) {
       nodeData.input.required.audioUI = ['AUDIO_UI']

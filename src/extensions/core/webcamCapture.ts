@@ -73,17 +73,22 @@ app.registerExtension({
     const canvas = document.createElement('canvas')
 
     const capture = () => {
+      // @ts-expect-error widget value type narrow down
       canvas.width = w.value
+      // @ts-expect-error widget value type narrow down
       canvas.height = h.value
       const ctx = canvas.getContext('2d')
+      // @ts-expect-error widget value type narrow down
       ctx.drawImage(video, 0, 0, w.value, h.value)
       const data = canvas.toDataURL('image/png')
 
       const img = new Image()
       img.onload = () => {
+        // @ts-expect-error adding extra property
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
         requestAnimationFrame(() => {
+          // @ts-expect-error accessing extra property
           node.setSizeForImage?.()
         })
       }
@@ -97,11 +102,14 @@ app.registerExtension({
       capture
     )
     btn.disabled = true
+    // @ts-expect-error hacky override
     btn.serializeValue = () => undefined
 
+    // @ts-expect-error hacky override
     camera.serializeValue = async () => {
       if (captureOnQueue.value) {
         capture()
+        // @ts-expect-error accessing extra property
       } else if (!node.imgs?.length) {
         const err = `No webcam image captured`
         useToastStore().addAlert(err)

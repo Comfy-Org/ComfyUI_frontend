@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useToastStore } from '@/stores/toastStore'
@@ -1308,6 +1309,7 @@ app.registerExtension({
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
+    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
 
@@ -1595,6 +1597,7 @@ app.registerExtension({
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
     const h = node.widgets.find((w: IWidget) => w.name === 'height')
 
+    // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
 
