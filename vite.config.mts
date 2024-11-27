@@ -1,8 +1,7 @@
 import { defineConfig, Plugin } from 'vite'
 import type { UserConfigExport } from 'vitest/config'
-import dts from 'vite-plugin-dts'
 import vue from '@vitejs/plugin-vue'
-import path, { resolve } from 'path'
+import path from 'path'
 import dotenv from "dotenv"
 import Icons from 'unplugin-icons/vite'
 import IconsResolver from 'unplugin-icons/resolver'
@@ -130,7 +129,6 @@ export default defineConfig({
   plugins: [
     vue(),
     comfyAPIPlugin(),
-    dts(),
 
     Icons({
       'compiler': 'vue3'
@@ -146,12 +144,6 @@ export default defineConfig({
   ],
 
   build: {
-    lib: {
-      entry: resolve(__dirname, 'src/types/comfy.ts'),
-      name: 'comfyui-frontend-types',
-      fileName: 'index',
-      formats: ['es']
-    },
     minify: SHOULD_MINIFY ? 'esbuild' : false,
     target: 'es2022',
     sourcemap: true,
