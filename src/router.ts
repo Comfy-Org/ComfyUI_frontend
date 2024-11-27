@@ -57,6 +57,12 @@ const router = createRouter({
           name: 'WelcomeView',
           component: () => import('@/views/WelcomeView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'not-supported',
+          name: 'NotSupportedView',
+          component: () => import('@/views/NotSupportedView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
