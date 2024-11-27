@@ -11,7 +11,7 @@
     "release": "node scripts/release.js",
     "update-litegraph": "node scripts/update-litegraph.js",
     "zipdist": "node scripts/zipdist.js",
-    "typecheck": "tsc --noEmit && tsc-strict",
+    "typecheck": "vue-tsc --noEmit && tsc --noEmit && tsc-strict",
     "format": "prettier --write './**/*.{js,ts,tsx,vue}'",
     "test": "jest --config jest.config.base.ts",
     "test:jest:fast": "jest --config jest.config.fast.ts",

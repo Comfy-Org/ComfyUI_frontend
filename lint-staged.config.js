@@ -3,6 +3,7 @@ export default {
 
   './**/*.{ts,tsx,vue}': (stagedFiles) => [
     ...formatFiles(stagedFiles),
+    'vue-tsc --noEmit',
     'tsc --noEmit',
     'tsc-strict'
   ]
