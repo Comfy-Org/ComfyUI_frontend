@@ -54,6 +54,7 @@ app.registerExtension({
         LiteGraph.registered_slot_in_types[lowerType] = { nodes: [] }
       }
       LiteGraph.registered_slot_in_types[lowerType].nodes.push(
+        // @ts-expect-error ComfyNode
         nodeType.comfyClass
       )
     }
@@ -71,6 +72,7 @@ app.registerExtension({
       if (!(type in LiteGraph.registered_slot_out_types)) {
         LiteGraph.registered_slot_out_types[type] = { nodes: [] }
       }
+      // @ts-expect-error ComfyNode
       LiteGraph.registered_slot_out_types[type].nodes.push(nodeType.comfyClass)
 
       if (!LiteGraph.slot_types_out.includes(type)) {

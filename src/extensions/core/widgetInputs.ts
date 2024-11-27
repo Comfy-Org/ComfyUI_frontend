@@ -724,6 +724,7 @@ app.registerExtension({
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     // Add menu options to convert to/from widgets
     const origGetExtraMenuOptions = nodeType.prototype.getExtraMenuOptions
+    // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (widget) {
       const config = getConfig.call(this, widget.name) ?? [
         widget.type,
@@ -746,8 +747,10 @@ app.registerExtension({
           if (w.options?.forceInput) {
             continue
           }
+          // @ts-expect-error custom widget type
           if (w.type === CONVERTED_TYPE) {
             toWidget.push({
+              // @ts-expect-error never
               content: `Convert ${w.name} to widget`,
               callback: () => convertToWidget(this, w)
             })
@@ -860,7 +863,9 @@ app.registerExtension({
         for (const input of this.inputs) {
           if (input.widget && !input.widget[GET_CONFIG]) {
             input.widget[GET_CONFIG] = () =>
+              // @ts-expect-error input.widget has unknown type
               getConfig.call(this, input.widget.name)
+            // @ts-expect-error input.widget has unknown type
             const w = this.widgets.find((w) => w.name === input.widget.name)
             if (w) {
               hideWidget(this, w)
@@ -935,6 +940,7 @@ app.registerExtension({
       originNode,
       originSlot
     ) {
+      // @ts-expect-error onConnectInput has 5 arguments
       const v = onConnectInput?.(this, arguments)
       // Not a combo, ignore
       if (type !== 'COMBO') return v
