@@ -2677,7 +2677,7 @@ export class LGraphCanvas {
       if (widget.mouse) {
         const { eUp } = pointer
         const { canvasX, canvasY } = eUp
-        widget.mouse(eUp, [canvasX - node[0], canvasY - node[1]], node)
+        widget.mouse(eUp, [canvasX - node.pos[0], canvasY - node.pos[1]], node)
       }
 
       this.node_widget = null
