@@ -116,6 +116,37 @@ export interface LoadedComfyWorkflow extends ComfyWorkflow {
   activeState: ComfyWorkflowJSON
 }
 
+/**
+ * Exposed store interface for the workflow store.
+ * Explicitly typed to avoid trigger following error:
+ * error TS7056: The inferred type of this node exceeds the maximum length the
+ * compiler will serialize. An explicit type annotation is needed.
+ */
+export interface WorkflowStore {
+  activeWorkflow: LoadedComfyWorkflow | null
+  isActive: (workflow: ComfyWorkflow) => boolean
+  openWorkflows: LoadedComfyWorkflow[]
+  openedWorkflowIndexShift: (shift: number) => LoadedComfyWorkflow | null
+  openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
+  isOpen: (workflow: ComfyWorkflow) => boolean
+  isBusy: boolean
+  closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  createTemporary: (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ) => ComfyWorkflow
+  renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
+  deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+
+  workflows: ComfyWorkflow[]
+  bookmarkedWorkflows: ComfyWorkflow[]
+  persistedWorkflows: ComfyWorkflow[]
+  modifiedWorkflows: ComfyWorkflow[]
+  getWorkflowByPath: (path: string) => ComfyWorkflow | null
+  syncWorkflows: (dir?: string) => Promise<void>
+}
+
 export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Detach the workflow from the store. lightweight helper function.
@@ -365,7 +396,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getWorkflowByPath,
     syncWorkflows
   }
-})
+}) as unknown as () => WorkflowStore
 
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
   const bookmarks = ref<Set<string>>(new Set())
