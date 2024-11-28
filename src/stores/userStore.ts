@@ -1,13 +1,22 @@
 import { api } from '@/scripts/api'
-import { User } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import type { User } from '@/types/apiTypes'
 
 export const useUserStore = defineStore('user', () => {
+  /**
+   * The user config. null if not loaded.
+   */
   const userConfig = ref<User | null>(null)
+  /**
+   * The current user id. null if not logged in or in single user mode.
+   */
   const currentUserId = ref<string | null>(null)
   const isMultiUserServer = computed(
     () => userConfig.value && 'users' in userConfig.value
+  )
+  const needsLogin = computed(
+    () => !currentUserId.value && isMultiUserServer.value
   )
 
   /**
@@ -28,6 +37,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     isMultiUserServer,
+    needsLogin,
     initialize,
     logout
   }
