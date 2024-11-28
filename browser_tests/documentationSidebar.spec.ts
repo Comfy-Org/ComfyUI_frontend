@@ -1,12 +1,11 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './ComfyPage'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 const nodeDef = {
   title: 'TestNodeAdvancedDoc'
 }
 
 test.describe('Documentation Sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
     await comfyPage.loadWorkflow('default')
   })
 
@@ -15,7 +14,6 @@ test.describe('Documentation Sidebar', () => {
     if (currentThemeId !== 'dark') {
       await comfyPage.menu.toggleTheme()
     }
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
   test('Sidebar registered', async ({ comfyPage }) => {
@@ -71,10 +69,6 @@ test.describe('Advanced Description tests', () => {
       await app.registerNodeDef(node.name, node)
       app.addNodeOnGraph(node)
     }, advDocNode)
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Floating')
-  })
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
   test('Description displays as raw html', async ({ comfyPage }) => {
     await comfyPage.page.locator('.documentation-tab-button').click()
@@ -99,6 +93,7 @@ test.describe('Advanced Description tests', () => {
     await comfyPage.page.mouse.move(307, 80)
     const tooltipTimeout = 500
     await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
+    await expect(comfyPage.page.locator('.node-tooltip')).not.toBeVisible()
     await expect(docPane).toContainText('int_input 0')
   })
 })
