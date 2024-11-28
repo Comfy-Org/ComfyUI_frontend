@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!hasAnyDoc()">No documentation available</div>
+  <div v-if="!hasAnyDoc()">Select a node to see documentation.</div>
   <div v-else-if="rawDoc" ref="docElement" v-html="rawDoc"></div>
   <div v-else ref="docElement">
     <div class="doc-node">{{ title }}</div>
@@ -27,7 +27,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount, isReactive } from 'vue'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useHoveredItemStore } from '@/stores/graphStore'
@@ -132,7 +132,11 @@ function updateNode(node?) {
     // Graph has no nodes
     return
   }
-  def = LiteGraph.getNodeType(node.type).nodeData
+  let newDef = LiteGraph.getNodeType(node.type).nodeData
+  if (def == newDef) {
+    return
+  }
+  def = newDef
   title.value = def.display_name
   if (Array.isArray(def.description)) {
     rawDoc.value = def.description[1]
@@ -191,8 +195,12 @@ watch(hoveredItemStore, (hoveredItem) => {
     hoveredItem.value = null
   }
 })
-
-watch(() => canvasStore?.canvas?.current_node, updateNode)
+if (isReactive(canvasStore?.canvas)) {
+  watch(() => canvasStore.canvas?.current_node, updateNode)
+} else {
+  let interval = setInterval(updateNode, 1000)
+  onBeforeUnmount(() => clearInterval(this.interval))
+}
 updateNode()
 </script>
 
