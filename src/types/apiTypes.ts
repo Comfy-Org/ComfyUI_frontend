@@ -430,7 +430,7 @@ export const zSystemStats = z.object({
   devices: z.array(zDeviceStats)
 })
 const zUser = z.object({
-  storage: z.enum(['server', 'browser']),
+  storage: z.enum(['server']),
   migrated: z.boolean(),
   users: z.record(z.string(), z.unknown())
 })

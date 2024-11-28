@@ -1,7 +1,5 @@
 import { Settings } from './apiTypes'
 
-export type StorageLocation = 'browser' | 'server'
-
 export type SettingInputType =
   | 'boolean'
   | 'number'

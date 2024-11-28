@@ -55,15 +55,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   }
 
   async load() {
-    if (this.app.storageLocation === 'browser') {
-      this.settingsValues = localStorage
-    } else {
-      this.settingsValues = await api.getSettings()
-    }
+    this.settingsValues = await api.getSettings()
 
     // Trigger onChange for any settings added before load
     for (const id in this.settingsLookup) {
-      const compatId = this.getId(id)
+      const compatId = id
       this.settingsValues[compatId] = this.tryMigrateDeprecatedValue(
         id,
         this.settingsValues[compatId]
@@ -74,25 +70,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     }
   }
 
-  getId(id: string) {
-    if (this.app.storageLocation === 'browser') {
-      id = 'Comfy.Settings.' + id
-    }
-    return id
-  }
-
   getSettingValue<K extends keyof Settings>(
     id: K,
     defaultValue?: Settings[K]
   ): Settings[K] {
-    let value = this.settingsValues[this.getId(id)]
-    if (value != null) {
-      if (this.app.storageLocation === 'browser') {
-        try {
-          value = JSON.parse(value)
-        } catch (error) {}
-      }
-    }
+    let value = this.settingsValues[id]
     return (value ?? defaultValue) as Settings[K]
   }
 
@@ -111,7 +93,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     localStorage['Comfy.Settings.' + id] = json // backwards compatibility for extensions keep setting in storage
 
     let oldValue = this.getSettingValue(id, undefined)
-    this.settingsValues[this.getId(id)] = value
+    this.settingsValues[id] = value
 
     if (id in this.settingsLookup) {
       this.settingsLookup[id].onChange?.(value, oldValue)
