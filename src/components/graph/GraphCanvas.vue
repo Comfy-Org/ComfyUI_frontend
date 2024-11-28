@@ -164,6 +164,12 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const maximumFps = settingStore.get('LiteGraph.Canvas.MaximumFps')
+  const { canvas } = canvasStore
+  if (canvas) canvas.maximumFps = maximumFps
+})
+
+watchEffect(() => {
   CanvasPointer.doubleClickTime = settingStore.get(
     'Comfy.Pointer.DoubleClickTime'
   )
