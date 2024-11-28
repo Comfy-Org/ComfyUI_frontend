@@ -78,6 +78,7 @@ export { EaseFunction, LinkMarkerShape } from "./types/globalEnums"
 export type {
   SerialisableGraph,
   SerialisableLLink,
+  ISerialisedGraph,
 } from "./types/serialisation"
 export { CanvasPointer } from "./CanvasPointer"
 export { createBounds } from "./measure"
