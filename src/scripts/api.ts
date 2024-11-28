@@ -30,7 +30,7 @@ interface QueuePromptRequestBody {
   number?: number
 }
 
-class ComfyApi extends EventTarget {
+export class ComfyApi extends EventTarget {
   #registered = new Set()
   api_host: string
   api_base: string

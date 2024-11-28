@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:electron": "vite --config vite.electron.config.mts",
     "build": "npm run typecheck && vite build",
+    "build:types": "vite build --config vite.types.config.mts",
     "deploy": "npm run build && node scripts/deploy.js",
     "release": "node scripts/release.js",
     "update-litegraph": "node scripts/update-litegraph.js",
