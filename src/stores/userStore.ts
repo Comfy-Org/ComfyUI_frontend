@@ -1,6 +1,6 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import type { User } from '@/types/apiTypes'
 
 export const useUserStore = defineStore('user', () => {
@@ -27,6 +27,24 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = localStorage['Comfy.userId']
   }
 
+  async function login({
+    userId,
+    username
+  }: {
+    userId: string
+    username: string
+  }) {
+    currentUserId.value = userId
+    localStorage['Comfy.userId'] = userId
+    localStorage['Comfy.userName'] = username
+  }
+
+  watchEffect(() => {
+    if (isMultiUserServer.value && currentUserId.value) {
+      api.user = currentUserId.value
+    }
+  })
+
   /**
    * Logout the current user.
    */
@@ -39,6 +57,7 @@ export const useUserStore = defineStore('user', () => {
     isMultiUserServer,
     needsLogin,
     initialize,
+    login,
     logout
   }
 })

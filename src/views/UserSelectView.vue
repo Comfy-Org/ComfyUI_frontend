@@ -33,17 +33,23 @@
             </label>
           </section>
         </div>
-        <footer class="mt-5 flex flex-col items-center">
-          <span class="mb-2.5 text-[var(--error-text)]">&nbsp;</span>
-          <button
-            class="comfy-btn flex w-[100px] items-center justify-center gap-1.5 p-1.5 px-2.5 text-base"
-          >
-            Next
-          </button>
+        <footer class="mt-5">
+          <Button :label="$t('userSelect.next')" @click="login" />
         </footer>
       </form>
     </main>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import router from '@/router'
+import Button from 'primevue/button'
+import { useUserStore } from '@/stores/userStore'
+
+const userStore = useUserStore()
+
+const login = () => {
+  userStore.login({ userId: 'default', username: 'test' })
+  router.push('/')
+}
+</script>

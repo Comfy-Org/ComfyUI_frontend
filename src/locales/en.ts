@@ -3,6 +3,9 @@ export default {
     title: 'Welcome to ComfyUI',
     getStarted: 'Get Started'
   },
+  userSelect: {
+    next: 'Next'
+  },
   notSupported: {
     title: 'Your device is not supported',
     message: 'Only following devices are supported:',
