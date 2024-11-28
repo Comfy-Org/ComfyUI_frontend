@@ -13,29 +13,6 @@ export const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-
-  const migrateLegacyBookmarks = () => {
-    const legacyBookmarks = settingStore.get('Comfy.NodeLibrary.Bookmarks')
-    if (!legacyBookmarks.length) {
-      return
-    }
-
-    legacyBookmarks.forEach((bookmark: string) => {
-      // If the bookmark is a folder, add it as a bookmark
-      if (bookmark.endsWith('/')) {
-        addBookmark(bookmark)
-        return
-      }
-      const category = bookmark.split('/').slice(0, -1).join('/')
-      const displayName = bookmark.split('/').pop() ?? ''
-      const nodeDef = nodeDefStore.nodeDefsByDisplayName[displayName]
-
-      if (!nodeDef) return
-      addBookmark(`${category === '' ? '' : category + '/'}${nodeDef.name}`)
-    })
-    settingStore.set('Comfy.NodeLibrary.Bookmarks', [])
-  }
-
   const bookmarks = computed<string[]>(() =>
     settingStore.get(BOOKMARK_SETTING_ID)
   )
@@ -225,8 +202,6 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     deleteBookmarkCustomization,
     renameBookmarkCustomization,
     defaultBookmarkIcon,
-    defaultBookmarkColor,
-
-    migrateLegacyBookmarks
+    defaultBookmarkColor
   }
 })

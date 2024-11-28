@@ -171,9 +171,6 @@ const onGraphReady = () => {
       // Load model folders
       useModelStore().loadModelFolders()
 
-      // Migrate legacy bookmarks
-      useNodeBookmarkStore().migrateLegacyBookmarks()
-
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
