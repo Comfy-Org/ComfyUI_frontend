@@ -521,7 +521,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Node.AutoSnapLinkToSlot': z.boolean(),
       'Comfy.Node.SnapHighlightsNode': z.boolean(),
       'Comfy.Server.ServerConfigValues': z.record(z.string(), z.any()),
-      'Comfy.Server.LaunchArgs': z.record(z.string(), z.string())
+      'Comfy.Server.LaunchArgs': z.record(z.string(), z.string()),
+      'LiteGraph.Canvas.MaximumFps': z.number()
     })
     .optional()
 )
