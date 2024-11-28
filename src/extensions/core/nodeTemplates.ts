@@ -85,46 +85,34 @@ class ManageTemplates extends ComfyDialog {
 
   async load() {
     let templates = []
-    if (app.storageLocation === 'server') {
-      if (app.isNewUserSession) {
-        // New user so migrate existing templates
-        const json = localStorage.getItem(id)
-        if (json) {
-          templates = JSON.parse(json)
-        }
-        await api.storeUserData(file, json, { stringify: false })
-      } else {
-        const res = await api.getUserData(file)
-        if (res.status === 200) {
-          try {
-            templates = await res.json()
-          } catch (error) {}
-        } else if (res.status !== 404) {
-          console.error(res.status + ' ' + res.statusText)
-        }
-      }
-    } else {
+    if (app.isNewUserSession) {
+      // New user so migrate existing templates
       const json = localStorage.getItem(id)
       if (json) {
         templates = JSON.parse(json)
       }
+      await api.storeUserData(file, json, { stringify: false })
+    } else {
+      const res = await api.getUserData(file)
+      if (res.status === 200) {
+        try {
+          templates = await res.json()
+        } catch (error) {}
+      } else if (res.status !== 404) {
+        console.error(res.status + ' ' + res.statusText)
+      }
     }
-
     return templates ?? []
   }
 
   async store() {
-    if (app.storageLocation === 'server') {
-      const templates = JSON.stringify(this.templates, undefined, 4)
-      localStorage.setItem(id, templates) // Backwards compatibility
-      try {
-        await api.storeUserData(file, templates, { stringify: false })
-      } catch (error) {
-        console.error(error)
-        useToastStore().addAlert(error.message)
-      }
-    } else {
-      localStorage.setItem(id, JSON.stringify(this.templates))
+    const templates = JSON.stringify(this.templates, undefined, 4)
+    localStorage.setItem(id, templates) // Backwards compatibility
+    try {
+      await api.storeUserData(file, templates, { stringify: false })
+    } catch (error) {
+      console.error(error)
+      useToastStore().addAlert(error.message)
     }
   }
 
