@@ -53,7 +53,10 @@
 import Button from 'primevue/button'
 
 const openDocs = () => {
-  window.open('https://github.com/Comfy-Org/desktop', '_blank')
+  window.open(
+    'https://github.com/Comfy-Org/desktop#currently-supported-platforms',
+    '_blank'
+  )
 }
 
 const reportIssue = () => {
