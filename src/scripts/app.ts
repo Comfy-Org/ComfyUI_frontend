@@ -1711,64 +1711,6 @@ export class ComfyApp {
     )
   }
 
-  async #setUser() {
-    const userConfig = await api.getUserConfig()
-    // Return in single user mode.
-    if (userConfig.users === undefined) {
-      return
-    }
-
-    let user = localStorage['Comfy.userId']
-    const users = userConfig.users ?? {}
-    if (!user || !users[user]) {
-      // This will rarely be hit so move the loading to on demand
-      const { UserSelectionScreen } = await import('./ui/userSelection')
-
-      this.ui.menuContainer.style.display = 'none'
-      const { userId, username } = await new UserSelectionScreen().show(
-        users,
-        user
-      )
-      this.ui.menuContainer.style.display = ''
-
-      user = userId
-      localStorage['Comfy.userName'] = username
-      localStorage['Comfy.userId'] = user
-    }
-
-    api.user = user
-
-    this.ui.settings.addSetting({
-      id: 'Comfy.SwitchUser',
-      name: 'Switch User',
-      type: (name) => {
-        let currentUser = localStorage['Comfy.userName']
-        if (currentUser) {
-          currentUser = ` (${currentUser})`
-        }
-        return $el('tr', [
-          $el('td', [
-            $el('label', {
-              textContent: name
-            })
-          ]),
-          $el('td', [
-            $el('button', {
-              textContent: name + (currentUser ?? ''),
-              onclick: () => {
-                delete localStorage['Comfy.userId']
-                delete localStorage['Comfy.userName']
-                window.location.reload()
-              }
-            })
-          ])
-        ])
-      },
-      // TODO: Is that the correct default value?
-      defaultValue: undefined
-    })
-  }
-
   /**
    * Set up the app on the page
    */
