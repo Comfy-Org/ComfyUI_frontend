@@ -44,13 +44,13 @@ export type INodeProperties = Dictionary<unknown> & {
   horizontal?: boolean
 }
 
-interface IMouseOverData {
+export interface IMouseOverData {
   inputId: number | null
   outputId: number | null
   overWidget: IWidget | null
 }
 
-interface ConnectByTypeOptions {
+export interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
   /** Allow our wildcard slot to connect to typed slots on remote node. Default: true */
@@ -62,12 +62,12 @@ interface ConnectByTypeOptions {
 }
 
 /** Internal type used for type safety when implementing generic checks for inputs & outputs */
-interface IGenericLinkOrLinks {
+export interface IGenericLinkOrLinks {
   links?: INodeOutputSlot["links"]
   link?: INodeInputSlot["link"]
 }
 
-interface FindFreeSlotOptions {
+export interface FindFreeSlotOptions {
   /** Slots matching these types will be ignored.  Default: [] */
   typesNotAccepted?: ISlotType[]
   /** If true, the slot itself is returned instead of the index.  Default: false */
