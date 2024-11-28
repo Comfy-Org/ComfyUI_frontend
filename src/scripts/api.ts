@@ -52,7 +52,7 @@ export class ComfyApi extends EventTarget {
 
   constructor() {
     super()
-    this.user = 'default'
+    this.user = ''
     this.api_host = location.host
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')
     console.log('Running on', this.api_host)
