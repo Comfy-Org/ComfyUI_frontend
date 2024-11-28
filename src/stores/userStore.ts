@@ -1,13 +1,18 @@
 import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
-import type { User } from '@/types/apiTypes'
+import type { User as UserConfig } from '@/types/apiTypes'
+
+export interface User {
+  userId: string
+  username: string
+}
 
 export const useUserStore = defineStore('user', () => {
   /**
    * The user config. null if not loaded.
    */
-  const userConfig = ref<User | null>(null)
+  const userConfig = ref<UserConfig | null>(null)
   /**
    * The current user id. null if not logged in or in single user mode.
    */
@@ -18,8 +23,11 @@ export const useUserStore = defineStore('user', () => {
   const needsLogin = computed(
     () => !currentUserId.value && isMultiUserServer.value
   )
-  const users = computed<Record<string, string>>(
-    () => userConfig.value?.users ?? {}
+  const users = computed<User[]>(() =>
+    Object.entries(userConfig.value?.users ?? {}).map(([userId, username]) => ({
+      userId,
+      username
+    }))
   )
   const initialized = computed(() => userConfig.value !== null)
 
@@ -31,6 +39,32 @@ export const useUserStore = defineStore('user', () => {
     currentUserId.value = localStorage['Comfy.userId']
   }
 
+  /**
+   * Create a new user.
+   *
+   * @param username - The username.
+   * @returns The new user.
+   */
+  async function createUser(username: string): Promise<User> {
+    const resp = await api.createUser(username)
+    const data = await resp.json()
+    if (resp.status >= 300) {
+      throw new Error(
+        data.error ??
+          'Error creating user: ' + resp.status + ' ' + resp.statusText
+      )
+    }
+    return {
+      userId: data,
+      username
+    }
+  }
+
+  /**
+   * Login the current user.
+   *
+   * @param user - The user.
+   */
   async function login({
     userId,
     username
@@ -63,6 +97,7 @@ export const useUserStore = defineStore('user', () => {
     needsLogin,
     initialized,
     initialize,
+    createUser,
     login,
     logout
   }
