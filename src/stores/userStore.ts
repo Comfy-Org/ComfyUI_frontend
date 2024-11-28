@@ -18,6 +18,10 @@ export const useUserStore = defineStore('user', () => {
   const needsLogin = computed(
     () => !currentUserId.value && isMultiUserServer.value
   )
+  const users = computed<Record<string, string>>(
+    () => userConfig.value?.users ?? {}
+  )
+  const initialized = computed(() => userConfig.value !== null)
 
   /**
    * Initialize the user store.
@@ -54,8 +58,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return {
+    users,
     isMultiUserServer,
     needsLogin,
+    initialized,
     initialize,
     login,
     logout

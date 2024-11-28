@@ -8,30 +8,27 @@
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <form class="flex w-full flex-col items-center">
-        <section class="w-full p-2.5 -m-2.5 transition-colors duration-200">
-          <label class="flex w-full flex-col">
-            New user:
-            <input
-              placeholder="Enter a username"
-              class="mt-2.5 rounded bg-[var(--comfy-input-bg)] p-1.5 text-[var(--input-text)] placeholder-[var(--descrip-text)] border-0"
-            />
-          </label>
-        </section>
-        <div class="w-full">
-          <span
-            class="relative block w-full py-2.5 text-center text-[var(--descrip-text)] before:absolute before:left-0 before:top-1/2 before:w-[calc(50%-20px)] before:h-px before:bg-[var(--border-color)] after:absolute after:right-0 after:top-1/2 after:w-[calc(50%-20px)] after:h-px after:bg-[var(--border-color)]"
-            >OR</span
+        <div class="flex w-full flex-col gap-2">
+          <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
+          <InputText
+            v-model="newUsername"
+            :placeholder="$t('userSelect.enterUsername')"
+          />
+        </div>
+        <Divider />
+        <div class="flex w-full flex-col gap-2">
+          <label for="existing-user-select"
+            >{{ $t('userSelect.existingUser') }}:</label
           >
-          <section class="w-full p-2.5 -m-2.5 transition-colors duration-200">
-            <label class="flex w-full flex-col">
-              Existing user:
-              <select
-                class="mt-2.5 rounded bg-[var(--comfy-input-bg)] p-1.5 text-[var(--input-text)] border-0"
-              >
-                <option hidden disabled selected value>Select a user</option>
-              </select>
-            </label>
-          </section>
+          <Select
+            v-model="selectedUser"
+            class="w-full"
+            inputId="existing-user-select"
+            :options="users"
+            option-label="username"
+            option-value="userId"
+            :placeholder="$t('userSelect.selectUser')"
+          />
         </div>
         <footer class="mt-5">
           <Button :label="$t('userSelect.next')" @click="login" />
@@ -42,14 +39,38 @@
 </template>
 
 <script setup lang="ts">
-import router from '@/router'
 import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import { useUserStore } from '@/stores/userStore'
+import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+
+interface User {
+  userId: string
+  username: string
+}
 
 const userStore = useUserStore()
+const router = useRouter()
+const users = computed<User[]>(() =>
+  Object.entries(userStore.users).map(([userId, username]) => ({
+    userId,
+    username
+  }))
+)
+const selectedUser = ref<User | null>(null)
+const newUsername = ref('')
 
 const login = () => {
   userStore.login({ userId: 'default', username: 'test' })
   router.push('/')
 }
+
+onMounted(async () => {
+  if (!userStore.initialized) {
+    await userStore.initialize()
+  }
+})
 </script>

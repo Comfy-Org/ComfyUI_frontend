@@ -4,6 +4,10 @@ export default {
     getStarted: 'Get Started'
   },
   userSelect: {
+    newUser: 'New user',
+    enterUsername: 'Enter a username',
+    existingUser: 'Existing user',
+    selectUser: 'Select a user',
     next: 'Next'
   },
   notSupported: {
