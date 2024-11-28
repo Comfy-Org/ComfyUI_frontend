@@ -98,7 +98,6 @@ class ManageTemplates extends ComfyDialog {
 
   async store() {
     const templates = JSON.stringify(this.templates, undefined, 4)
-    localStorage.setItem(id, templates) // Backwards compatibility
     try {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {

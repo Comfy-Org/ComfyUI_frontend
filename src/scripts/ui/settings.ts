@@ -89,9 +89,6 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   ) {
     value = this.tryMigrateDeprecatedValue(id, value)
 
-    const json = JSON.stringify(value)
-    localStorage['Comfy.Settings.' + id] = json // backwards compatibility for extensions keep setting in storage
-
     let oldValue = this.getSettingValue(id, undefined)
     this.settingsValues[id] = value
 
