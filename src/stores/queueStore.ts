@@ -51,7 +51,7 @@ export class ResultItemImpl {
     this.frame_rate = obj.frame_rate
   }
 
-  private get urlParams(): URLSearchParams {
+  get urlParams(): URLSearchParams {
     const params = new URLSearchParams()
     params.set('filename', this.filename)
     params.set('type', this.type)
