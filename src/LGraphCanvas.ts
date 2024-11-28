@@ -275,6 +275,16 @@ export class LGraphCanvas {
     return `normal ${LiteGraph.NODE_SUBTEXT_SIZE}px Arial`
   }
 
+  #maximumFrameGap = 0
+  /** Maximum frames per second to render. 0: unlimited. Default: 0 */
+  public get maximumFps() {
+    return this.#maximumFrameGap > Number.EPSILON ? this.#maximumFrameGap / 1000 : 0
+  }
+
+  public set maximumFps(value) {
+    this.#maximumFrameGap = value > Number.EPSILON ? 1000 / value : 0
+  }
+
   options: {
     skip_events?: any
     viewport?: any
@@ -1864,6 +1874,7 @@ export class LGraphCanvas {
     this.is_rendering = true
     renderFrame.call(this)
 
+    /** Render loop */
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         this.draw()
@@ -1871,7 +1882,14 @@ export class LGraphCanvas {
 
       const window = this.getCanvasWindow()
       if (this.is_rendering) {
-        window.requestAnimationFrame(renderFrame.bind(this))
+        if (this.#maximumFrameGap > 0) {
+          // Manual FPS limit
+          const gap = this.#maximumFrameGap - (LiteGraph.getTime() - this.last_draw_time)
+          setTimeout(renderFrame.bind(this), Math.max(1, gap))
+        } else {
+          // FPS limited by refresh rate
+          window.requestAnimationFrame(renderFrame.bind(this))
+        }
       }
     }
   }
