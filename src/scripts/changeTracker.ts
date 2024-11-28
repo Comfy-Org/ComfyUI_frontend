@@ -407,7 +407,7 @@ export class ChangeTracker {
     return false
   }
 
-  static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
+  private static graphDiff(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON) {
     function sortGraphNodes(graph: ComfyWorkflowJSON) {
       return {
         links: graph.links,
