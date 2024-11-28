@@ -142,20 +142,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
       throw new Error(`Setting ${id} of type ${type} must have a unique ID.`)
     }
 
-    let value = this.getSettingValue(id)
-    if (value == null) {
-      if (this.app.isNewUserSession) {
-        // Check if we have a localStorage value but not a setting value and we are a new user
-        const localValue = localStorage['Comfy.Settings.' + id]
-        if (localValue) {
-          value = JSON.parse(localValue)
-          this.setSettingValue(id, value) // Store on the server
-        }
-      }
-      if (value == null) {
-        value = defaultValue
-      }
-    }
+    const value = this.getSettingValue(id) ?? defaultValue
 
     // Trigger initial setting of value
     onChange?.(value, undefined)

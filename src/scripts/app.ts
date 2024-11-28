@@ -142,7 +142,6 @@ export class ComfyApp {
   lastExecutionError: { node_id: number } | null
   progress: { value: number; max: number } | null
   configuringGraph: boolean
-  isNewUserSession: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
@@ -184,6 +183,13 @@ export class ComfyApp {
    */
   get storageLocation() {
     return 'server'
+  }
+
+  /**
+   * @deprecated storage migration is no longer needed.
+   */
+  get isNewUserSession() {
+    return false
   }
 
   constructor() {
@@ -1707,11 +1713,8 @@ export class ComfyApp {
 
   async #setUser() {
     const userConfig = await api.getUserConfig()
-    if (typeof userConfig.migrated == 'boolean') {
-      // Single user mode migrated true/false for if the default user is created
-      if (!userConfig.migrated) {
-        this.isNewUserSession = true
-      }
+    // Return in single user mode.
+    if (userConfig.users === undefined) {
       return
     }
 
@@ -1725,18 +1728,15 @@ export class ComfyApp {
       const { UserSelectionScreen } = await import('./ui/userSelection')
 
       this.ui.menuContainer.style.display = 'none'
-      const { userId, username, created } =
-        await new UserSelectionScreen().show(users, user)
+      const { userId, username } = await new UserSelectionScreen().show(
+        users,
+        user
+      )
       this.ui.menuContainer.style.display = ''
 
       user = userId
       localStorage['Comfy.userName'] = username
       localStorage['Comfy.userId'] = user
-
-      if (created) {
-        api.user = user
-        this.isNewUserSession = true
-      }
     }
 
     api.user = user
