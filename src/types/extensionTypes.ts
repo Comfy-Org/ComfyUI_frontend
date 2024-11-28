@@ -1,4 +1,3 @@
-import type { ToastMessageOptions } from 'primevue/toast'
 import { Component } from 'vue'
 
 export interface BaseSidebarTabExtension {
@@ -40,6 +39,53 @@ export type CustomBottomPanelExtension = BaseBottomPanelExtension &
 export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
+
+/**
+ * Defines message options in Toast component.
+ */
+export interface ToastMessageOptions {
+  /**
+   * Severity level of the message.
+   * @defaultValue info
+   */
+  severity?:
+    | 'success'
+    | 'info'
+    | 'warn'
+    | 'error'
+    | 'secondary'
+    | 'contrast'
+    | undefined
+  /**
+   * Summary content of the message.
+   */
+  summary?: string | undefined
+  /**
+   * Detail content of the message.
+   */
+  detail?: any | undefined
+  /**
+   * Whether the message can be closed manually using the close icon.
+   * @defaultValue true
+   */
+  closable?: boolean | undefined
+  /**
+   * Delay in milliseconds to close the message automatically.
+   */
+  life?: number | undefined
+  /**
+   * Key of the Toast to display the message.
+   */
+  group?: string | undefined
+  /**
+   * Style class of the message.
+   */
+  styleClass?: any
+  /**
+   * Style class of the content.
+   */
+  contentStyleClass?: any
+}
 
 export type ToastManager = {
   add(message: ToastMessageOptions): void

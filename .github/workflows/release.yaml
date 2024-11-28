@@ -41,3 +41,21 @@ jobs:
           draft: true
           prerelease: false
           make_latest: "true"
+  publish_types:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+          registry-url: "https://registry.npmjs.org"
+      - run: npm ci
+      - run: npm run build:types
+      - name: Publish package
+        run: npm publish --access public
+        working-directory: ./dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
