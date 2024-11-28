@@ -83,7 +83,7 @@ watchEffect(() => {
 watchEffect(() => {
   const locale = settingStore.get('Comfy.Locale')
   if (locale) {
-    i18n.global.locale.value = locale as 'en' | 'zh'
+    i18n.global.locale.value = locale as 'en' | 'zh' | 'ru' | 'ja'
   }
 })
 
