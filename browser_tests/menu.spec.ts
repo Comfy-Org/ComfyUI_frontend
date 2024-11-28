@@ -350,23 +350,6 @@ test.describe('Menu', () => {
       await comfyPage.page.waitForTimeout(1000)
       expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
     })
-
-    test('Can migrate legacy bookmarks', async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks', [
-        'foo/',
-        'foo/KSampler (Advanced)',
-        'UNKNOWN',
-        'KSampler'
-      ])
-      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', [])
-      await comfyPage.reload()
-      expect(await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks')).toEqual(
-        []
-      )
-      expect(
-        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-      ).toEqual(['foo/', 'foo/KSamplerAdvanced', 'KSampler'])
-    })
   })
 
   test.describe('Workflows sidebar', () => {

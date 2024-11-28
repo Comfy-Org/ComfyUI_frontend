@@ -34,7 +34,6 @@ import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -170,9 +169,6 @@ const onGraphReady = () => {
 
       // Load model folders
       useModelStore().loadModelFolders()
-
-      // Migrate legacy bookmarks
-      useNodeBookmarkStore().migrateLegacyBookmarks()
 
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when
