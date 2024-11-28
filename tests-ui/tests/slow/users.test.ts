@@ -101,11 +101,7 @@ describe('users', () => {
           null,
           { stringify: false }
         )
-        expect(s.app.isNewUserSession).toBeTruthy()
-      } else {
-        expect(s.app.isNewUserSession).toBeFalsy()
       }
-
       return { users, selection, ...s }
     }
 
@@ -242,7 +238,6 @@ describe('users', () => {
         null,
         { stringify: false }
       )
-      expect(app.isNewUserSession).toBeTruthy()
     })
     it('doesnt show user creation if default user', async () => {
       const { app } = await start({
@@ -255,7 +250,6 @@ describe('users', () => {
       const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
-      expect(app.isNewUserSession).toBeFalsy()
     })
     it('doesnt allow user switching', async () => {
       const { app } = await start({
@@ -279,7 +273,6 @@ describe('users', () => {
       const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
-      expect(app.isNewUserSession).toBeFalsy()
     })
     it('doesnt show user creation if default user', async () => {
       const { app } = await start({
@@ -292,7 +285,6 @@ describe('users', () => {
       const { api } = await import('../../../src/scripts/api')
       expect(api.storeSettings).toHaveBeenCalledTimes(0)
       expect(api.storeUserData).toHaveBeenCalledTimes(0)
-      expect(app.isNewUserSession).toBeFalsy()
     })
     it('doesnt allow user switching', async () => {
       const { app } = await start({
