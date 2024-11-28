@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.5.0",
   "type": "module",
-  "repository": "https://github.com/comfyorg/ComfyUI_frontend",
+  "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
   "description": "Official front-end implementation of ComfyUI",
   "license": "GPL-3.0-only",
