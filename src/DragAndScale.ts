@@ -222,6 +222,8 @@ export class DragAndScale {
     if (!rect) return
 
     zooming_center = zooming_center || [rect.width * 0.5, rect.height * 0.5]
+    zooming_center[0] -= rect.x
+    zooming_center[1] -= rect.y
     const center = this.convertCanvasToOffset(zooming_center)
     this.scale = value
     if (Math.abs(this.scale - 1) < 0.01) this.scale = 1
