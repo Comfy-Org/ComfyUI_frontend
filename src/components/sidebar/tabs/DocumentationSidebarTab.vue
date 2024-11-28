@@ -31,8 +31,6 @@ import { ref, watch, onBeforeUnmount, isReactive } from 'vue'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/stores/graphStore'
 import { useHoveredItemStore } from '@/stores/graphStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-const nodeDefStore = useNodeDefStore()
 const hoveredItemStore = useHoveredItemStore()
 const canvasStore = useCanvasStore()
 
@@ -45,42 +43,6 @@ const title = ref(null)
 const inputs = ref([])
 const outputs = ref([])
 
-function setCollapse(el, doCollapse) {
-  if (doCollapse) {
-    el.children[0].children[0].innerHTML = '+'
-    Object.assign(el.children[1].style, {
-      color: '#CCC',
-      overflowX: 'hidden',
-      width: '0px',
-      minWidth: 'calc(100% - 20px)',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap'
-    })
-    for (let child of el.children[1].children) {
-      if (child.style.display != 'none') {
-        child.origDisplay = child.style.display
-      }
-      child.style.display = 'none'
-    }
-  } else {
-    el.children[0].children[0].innerHTML = '-'
-    Object.assign(el.children[1].style, {
-      color: '',
-      overflowX: '',
-      width: '100%',
-      minWidth: '',
-      textOverflow: '',
-      whiteSpace: ''
-    })
-    for (let child of el.children[1].children) {
-      child.style.display = child.origDisplay
-    }
-  }
-}
-function collapseOnClick() {
-  let doCollapse = this.children[0].innerHTML == '-'
-  setCollapse(this.parentElement, doCollapse)
-}
 function selectHelp(name: string, value?: string) {
   if (!docElement.value || !name) {
     return null
@@ -126,17 +88,20 @@ function selectHelp(name: string, value?: string) {
     }
   }
 }
-function updateNode(node?) {
-  node ||= app?.canvas?.current_node
+function updateNode() {
+  //Grab the topmost node.
+  //current_node is topmost on screen and
+  //selectedItems is unordered
+  const node = app?.graph?._nodes[app?.graph?._nodes.length - 1]
   if (!node) {
     // Graph has no nodes
     return
   }
-  let newDef = LiteGraph.getNodeType(node.type).nodeData
-  if (def == newDef) {
+  const nodeDef = LiteGraph.getNodeType(node.type).nodeData
+  if (def == nodeDef) {
     return
   }
-  def = newDef
+  def = nodeDef
   title.value = def.display_name
   if (Array.isArray(def.description)) {
     rawDoc.value = def.description[1]
@@ -178,10 +143,10 @@ watch(hoveredItemStore, (hoveredItem) => {
     return
   }
   const item = hoveredItem.value
-  if (item.node.id != app?.canvas?.current_node.id) {
+  const nodeDef = LiteGraph.getNodeType(item.node.type).nodeData
+  if (nodeDef != def) {
     return
   }
-  const nodeDef = nodeDefStore.nodeDefsByName[item.node.type]
   if (item.type == 'DESCRIPTION') {
     return
   } else if (item.type == 'Input') {
@@ -198,7 +163,7 @@ watch(hoveredItemStore, (hoveredItem) => {
 if (isReactive(canvasStore?.canvas)) {
   watch(() => canvasStore.canvas?.current_node, updateNode)
 } else {
-  let interval = setInterval(updateNode, 1000)
+  let interval = setInterval(updateNode, 300)
   onBeforeUnmount(() => clearInterval(this.interval))
 }
 updateNode()
