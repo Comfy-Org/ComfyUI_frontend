@@ -11,6 +11,7 @@
         <div class="flex w-full flex-col gap-2">
           <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
           <InputText
+            id="new-user-input"
             v-model="newUsername"
             :placeholder="$t('userSelect.enterUsername')"
           />
