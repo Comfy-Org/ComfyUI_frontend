@@ -362,7 +362,7 @@ describe('group node', () => {
     const { ez, graph, app } = await start()
     const nodes = createDefaultWorkflow(ez, graph)
 
-    let reroutes: EzNode[] = []
+    const reroutes: EzNode[] = []
     let prevNode = nodes.ckpt
     for (let i = 0; i < 5; i++) {
       const reroute = ez.Reroute()
@@ -768,7 +768,7 @@ describe('group node', () => {
     })
 
     expect(dialogShow).toBeCalledTimes(1)
-    // @ts-expect-error
+    // @ts-expect-error Mocked
     const call = dialogShow.mock.calls[0][0].innerHTML
     expect(call).toContain('the following node types were not found')
     expect(call).toContain('NotKSampler')
