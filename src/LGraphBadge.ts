@@ -47,10 +47,10 @@ export class LGraphBadge {
   getWidth(ctx: CanvasRenderingContext2D) {
     if (!this.visible) return 0
 
-    ctx.save()
+    const { font } = ctx
     ctx.font = `${this.fontSize}px sans-serif`
     const textWidth = ctx.measureText(this.text).width
-    ctx.restore()
+    ctx.font = font
     return textWidth + this.padding * 2
   }
 
@@ -61,7 +61,7 @@ export class LGraphBadge {
   ): void {
     if (!this.visible) return
 
-    ctx.save()
+    const { fillStyle } = ctx
     ctx.font = `${this.fontSize}px sans-serif`
     const badgeWidth = this.getWidth(ctx)
     const badgeX = 0
@@ -85,6 +85,6 @@ export class LGraphBadge {
       y + this.height - this.padding,
     )
 
-    ctx.restore()
+    ctx.fillStyle = fillStyle
   }
 }

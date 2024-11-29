@@ -52,6 +52,7 @@ export class LiteGraphGlobal {
   NODE_DEFAULT_BOXCOLOR = "#666"
   NODE_DEFAULT_SHAPE = "box"
   NODE_BOX_OUTLINE_COLOR = "#FFF"
+  NODE_ERROR_COLOUR = "#E00"
   DEFAULT_SHADOW_COLOR = "rgba(0,0,0,0.5)"
   DEFAULT_GROUP_FONT = 24
   DEFAULT_GROUP_FONT_SIZE?: any
@@ -251,6 +252,9 @@ export class LiteGraphGlobal {
 
   // Whether to highlight the bounding box of selected groups
   highlight_selected_group = true
+
+  /** If `true`, the old "eye-melting-red" error indicator will be used for nodes */
+  use_legacy_node_error_indicator = false
 
   // TODO: Remove legacy accessors
   LGraph = LGraph

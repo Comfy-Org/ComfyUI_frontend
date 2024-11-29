@@ -137,9 +137,10 @@ interface IDrawSelectionBoundingOptions {
   shape?: RenderShape
   title_height?: number
   title_mode?: TitleMode
-  fgcolor?: CanvasColour
+  colour?: CanvasColour
   padding?: number
   collapsed?: boolean
+  thickness?: number
 }
 
 /** @inheritdoc {@link LGraphCanvas.state} */
@@ -4737,7 +4738,7 @@ export class LGraphCanvas {
     this.current_node = node
 
     const color = node.color || node.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
-    let bgcolor = node.bgcolor || node.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    const bgcolor = node.bgcolor || node.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
 
     const low_quality = this.ds.scale < 0.6 // zoomed out
     const editor_alpha = this.editor_alpha
@@ -4790,9 +4791,6 @@ export class LGraphCanvas {
     }
 
     // draw shape
-    if (node.has_errors) {
-      bgcolor = "red"
-    }
     this.drawNodeShape(
       node,
       ctx,
@@ -4808,7 +4806,10 @@ export class LGraphCanvas {
 
     ctx.shadowColor = "transparent"
 
-    // draw foreground
+    // TODO: Legacy behaviour: onDrawForeground received ctx in this state
+    ctx.strokeStyle = LiteGraph.NODE_BOX_OUTLINE_COLOR
+
+    // Draw Foreground
     node.onDrawForeground?.(ctx, this, this.canvas)
 
     // connection slots
@@ -5117,13 +5118,14 @@ export class LGraphCanvas {
   ): void {
     // Rendering options
     ctx.strokeStyle = fgcolor
-    ctx.fillStyle = bgcolor
+    ctx.fillStyle = LiteGraph.use_legacy_node_error_indicator ? "#F00" : bgcolor
 
     const title_height = LiteGraph.NODE_TITLE_HEIGHT
     const low_quality = this.ds.scale < 0.5
 
+    const { collapsed } = node.flags
     const shape = node._shape || node.constructor.shape || RenderShape.ROUND
-    const title_mode = node.constructor.title_mode
+    const { title_mode } = node.constructor
 
     const render_title = title_mode == TitleMode.TRANSPARENT_TITLE || title_mode == TitleMode.NO_TITLE
       ? false
@@ -5138,39 +5140,48 @@ export class LGraphCanvas {
     const old_alpha = ctx.globalAlpha
 
     // Draw node background (shape)
-    {
-      ctx.beginPath()
-      if (shape == RenderShape.BOX || low_quality) {
-        ctx.fillRect(area[0], area[1], area[2], area[3])
-      } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
-        ctx.roundRect(
-          area[0],
-          area[1],
-          area[2],
-          area[3],
-          shape == RenderShape.CARD
-            ? [this.round_radius, this.round_radius, 0, 0]
-            : [this.round_radius],
-        )
-      } else if (shape == RenderShape.CIRCLE) {
-        ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
-      }
-      ctx.fill()
+    ctx.beginPath()
+    if (shape == RenderShape.BOX || low_quality) {
+      ctx.fillRect(area[0], area[1], area[2], area[3])
+    } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+      ctx.roundRect(
+        area[0],
+        area[1],
+        area[2],
+        area[3],
+        shape == RenderShape.CARD
+          ? [this.round_radius, this.round_radius, 0, 0]
+          : [this.round_radius],
+      )
+    } else if (shape == RenderShape.CIRCLE) {
+      ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
+    }
+    ctx.fill()
 
-      // separator
-      if (!node.flags.collapsed && render_title) {
-        ctx.shadowColor = "transparent"
-        ctx.fillStyle = "rgba(0,0,0,0.2)"
-        ctx.fillRect(0, -1, area[2], 2)
-      }
+    if (node.has_errors && !LiteGraph.use_legacy_node_error_indicator) {
+      this.strokeShape(ctx, area, {
+        shape,
+        title_mode,
+        title_height,
+        padding: 12,
+        colour: LiteGraph.NODE_ERROR_COLOUR,
+        collapsed,
+        thickness: 10,
+      })
+    }
+
+    // Separator - title bar <-> body
+    if (!collapsed && render_title) {
+      ctx.shadowColor = "transparent"
+      ctx.fillStyle = "rgba(0,0,0,0.2)"
+      ctx.fillRect(0, -1, area[2], 2)
     }
     ctx.shadowColor = "transparent"
 
     node.onDrawBackground?.(ctx, this, this.canvas, this.graph_mouse)
 
-    // title bg (remember, it is rendered ABOVE the node)
+    // Title bar background (remember, it is rendered ABOVE the node)
     if (render_title || title_mode == TitleMode.TRANSPARENT_TITLE) {
-      // title bar
       if (node.onDrawTitleBar) {
         node.onDrawTitleBar(ctx, title_height, size, this.ds.scale, fgcolor)
       } else if (
@@ -5179,30 +5190,13 @@ export class LGraphCanvas {
       ) {
         const title_color = node.constructor.title_color || fgcolor
 
-        if (node.flags.collapsed) {
+        if (collapsed) {
           ctx.shadowColor = LiteGraph.DEFAULT_SHADOW_COLOR
         }
 
-        //* gradient test
-        if (this.use_gradients) {
-          // TODO: This feature may not have been completed.  Could finish or remove.
-          // Original impl. may cause CanvasColour to be used as index key.  Also, colour requires validation before blindly passing on.
-          // @ts-expect-error Fix or remove gradient feature
-          let grad = LGraphCanvas.gradients[title_color]
-          if (!grad) {
-            // @ts-expect-error Fix or remove gradient feature
-            grad = LGraphCanvas.gradients[title_color] =
-              ctx.createLinearGradient(0, 0, 400, 0)
-            grad.addColorStop(0, title_color)
-            grad.addColorStop(1, "#000")
-          }
-          ctx.fillStyle = grad
-        } else {
-          ctx.fillStyle = title_color
-        }
-
-        // ctx.globalAlpha = 0.5 * old_alpha;
+        ctx.fillStyle = title_color
         ctx.beginPath()
+
         if (shape == RenderShape.BOX || low_quality) {
           ctx.rect(0, -title_height, size[0], title_height)
         } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
@@ -5211,7 +5205,7 @@ export class LGraphCanvas {
             -title_height,
             size[0],
             title_height,
-            node.flags.collapsed
+            collapsed
               ? [this.round_radius]
               : [this.round_radius, this.round_radius, 0, 0],
           )
@@ -5220,12 +5214,10 @@ export class LGraphCanvas {
         ctx.shadowColor = "transparent"
       }
 
-      let colState: string | boolean = false
-      if (LiteGraph.node_box_coloured_by_mode) {
-        if (LiteGraph.NODE_MODES_COLORS[node.mode]) {
-          colState = LiteGraph.NODE_MODES_COLORS[node.mode]
-        }
-      }
+      let colState = LiteGraph.node_box_coloured_by_mode && LiteGraph.NODE_MODES_COLORS[node.mode]
+        ? LiteGraph.NODE_MODES_COLORS[node.mode]
+        : false
+
       if (LiteGraph.node_box_coloured_when_on) {
         colState = node.action_triggered
           ? "#FFF"
@@ -5256,8 +5248,7 @@ export class LGraphCanvas {
           ctx.fill()
         }
 
-        ctx.fillStyle =
-          node.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
+        ctx.fillStyle = node.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
         if (low_quality)
           ctx.fillRect(
             title_height * 0.5 - box_size * 0.5,
@@ -5309,14 +5300,15 @@ export class LGraphCanvas {
       }
       if (!low_quality) {
         ctx.font = this.title_text_font
-        const title = String(node.getTitle()) + (node.pinned ? "📌" : "")
+        const rawTitle = node.getTitle() ?? `❌ ${node.type}`
+        const title = String(rawTitle) + (node.pinned ? "📌" : "")
         if (title) {
           if (selected) {
             ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
           } else {
             ctx.fillStyle = node.constructor.title_text_color || this.node_title_color
           }
-          if (node.flags.collapsed) {
+          if (collapsed) {
             ctx.textAlign = "left"
             // const measure = ctx.measureText(title)
             ctx.fillText(
@@ -5338,7 +5330,7 @@ export class LGraphCanvas {
 
       // subgraph box
       if (
-        !node.flags.collapsed &&
+        !collapsed &&
         node.subgraph &&
         !node.skip_subgraph_button
       ) {
@@ -5376,11 +5368,13 @@ export class LGraphCanvas {
     if (selected) {
       node.onBounding?.(area)
 
-      this.drawSelectionBounding(ctx, area, {
+      const padding = node.has_errors && !LiteGraph.use_legacy_node_error_indicator ? 20 : undefined
+
+      this.strokeShape(ctx, area, {
         shape,
         title_height,
         title_mode,
-        fgcolor,
+        padding,
         collapsed: node.flags?.collapsed,
       })
     }
@@ -5391,20 +5385,31 @@ export class LGraphCanvas {
   }
 
   /**
-   * Draws the selection bounding of an area.
+   * Draws only the path of a shape on the canvas, without filling.
+   * Used to draw indicators for node status, e.g. "selected".
+   * @param ctx The 2D context to draw on
+   * @param area The position and size of the shape to render
    */
-  drawSelectionBounding(
+  strokeShape(
     ctx: CanvasRenderingContext2D,
     area: Rect,
     {
+      /** The shape to render */
       shape = RenderShape.BOX,
+      /** Shape will extend above the Y-axis 0 by this amount */
       title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
       title_mode = TitleMode.NORMAL_TITLE,
-      fgcolor = LiteGraph.NODE_BOX_OUTLINE_COLOR,
+      /** The colour that should be drawn */
+      colour = LiteGraph.NODE_BOX_OUTLINE_COLOR,
+      /** The distance between the edge of the {@link area} and the middle of the line */
       padding = 6,
+      /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
       collapsed = false,
+      /** Thickness of the line drawn (`lineWidth`) */
+      thickness = 1,
     }: IDrawSelectionBoundingOptions = {},
-  ) {
+  ): void {
     // Adjust area if title is transparent
     if (title_mode === TitleMode.TRANSPARENT_TITLE) {
       area[1] -= title_height
@@ -5412,8 +5417,10 @@ export class LGraphCanvas {
     }
 
     // Set up context
-    ctx.lineWidth = 1
+    const { lineWidth, strokeStyle } = ctx
+    ctx.lineWidth = thickness
     ctx.globalAlpha = 0.8
+    ctx.strokeStyle = colour
     ctx.beginPath()
 
     // Draw shape based on type
@@ -5430,7 +5437,7 @@ export class LGraphCanvas {
     }
     case RenderShape.ROUND:
     case RenderShape.CARD: {
-      const radius = this.round_radius * 2
+      const radius = this.round_radius + padding
       const isCollapsed = shape === RenderShape.CARD && collapsed
       const cornerRadii =
           isCollapsed || shape === RenderShape.ROUND
@@ -5455,11 +5462,13 @@ export class LGraphCanvas {
     }
 
     // Stroke the shape
-    ctx.strokeStyle = LiteGraph.NODE_BOX_OUTLINE_COLOR
     ctx.stroke()
 
     // Reset context
-    ctx.strokeStyle = fgcolor
+    ctx.lineWidth = lineWidth
+    ctx.strokeStyle = strokeStyle
+
+    // TODO: Store and reset value properly.  Callers currently expect this behaviour (e.g. muted nodes).
     ctx.globalAlpha = 1
   }
 

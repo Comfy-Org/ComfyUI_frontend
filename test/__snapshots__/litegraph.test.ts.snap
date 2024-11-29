@@ -55,6 +55,7 @@ LiteGraphGlobal {
   "NODE_DEFAULT_BOXCOLOR": "#666",
   "NODE_DEFAULT_COLOR": "#333",
   "NODE_DEFAULT_SHAPE": "box",
+  "NODE_ERROR_COLOUR": "#E00",
   "NODE_MIN_WIDTH": 50,
   "NODE_MODES": [
     "Always",
@@ -175,6 +176,7 @@ LiteGraphGlobal {
   "snap_highlights_node": true,
   "snaps_for_comfy": true,
   "throw_errors": true,
+  "use_legacy_node_error_indicator": false,
   "use_uuids": false,
 }
 `;
