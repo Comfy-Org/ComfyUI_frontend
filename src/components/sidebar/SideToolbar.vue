@@ -12,6 +12,7 @@
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
+        <SidebarLogoutIcon v-if="userStore.isMultiUserServer" />
         <SidebarThemeToggleIcon />
         <SidebarSettingsToggleIcon />
       </div>
@@ -29,15 +30,18 @@
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
+import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { computed } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/stores/settingStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useUserStore } from '@/stores/userStore'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
+const userStore = useUserStore()
 
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.Sidebar.Location') === 'left'

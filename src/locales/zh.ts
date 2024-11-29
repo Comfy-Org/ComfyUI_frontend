@@ -61,6 +61,7 @@ export default {
   newFolder: '新建文件夹',
   sideToolbar: {
     themeToggle: '主题切换',
+    logout: '登出',
     queue: '队列',
     nodeLibrary: '节点库',
     workflows: '工作流',

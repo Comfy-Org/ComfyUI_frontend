@@ -148,6 +148,7 @@ export default {
   sideToolbar: {
     themeToggle: 'テーマの切り替え',
     queue: 'キュー',
+    logout: 'ログアウト',
     nodeLibrary: 'ノードライブラリ',
     workflows: 'ワークフロー',
     browseTemplates: 'サンプルテンプレートを表示',

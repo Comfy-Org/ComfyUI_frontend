@@ -42,6 +42,9 @@ export class ComfyApi extends EventTarget {
    * The current client id from websocket status updates.
    */
   clientId?: string
+  /**
+   * The current user id.
+   */
   user: string
   socket: WebSocket | null = null
 
@@ -49,7 +52,6 @@ export class ComfyApi extends EventTarget {
 
   constructor() {
     super()
-    // api.user is set by ComfyApp.setup()
     this.user = ''
     this.api_host = location.host
     this.api_base = location.pathname.split('/').slice(0, -1).join('/')

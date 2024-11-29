@@ -7,6 +7,7 @@ import {
 } from 'vue-router'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 import { isElectron } from './utils/envUtil'
+import { useUserStore } from './stores/userStore'
 
 const isFileProtocol = window.location.protocol === 'file:'
 const basePath = isElectron() ? '/' : window.location.pathname
@@ -38,7 +39,21 @@ const router = createRouter({
         {
           path: '',
           name: 'GraphView',
-          component: () => import('@/views/GraphView.vue')
+          component: () => import('@/views/GraphView.vue'),
+          beforeEnter: async (to, from, next) => {
+            const userStore = useUserStore()
+            await userStore.initialize()
+            if (userStore.needsLogin) {
+              next('/user-select')
+            } else {
+              next()
+            }
+          }
+        },
+        {
+          path: 'user-select',
+          name: 'UserSelectView',
+          component: () => import('@/views/UserSelectView.vue')
         },
         {
           path: 'server-start',

@@ -60,6 +60,7 @@ export default {
   sideToolbar: {
     themeToggle: 'Переключить тему',
     queue: 'Очередь',
+    logout: 'Выйти',
     nodeLibrary: 'Библиотека узлов',
     workflows: 'Рабочие процессы',
     browseTemplates: 'Просмотреть примеры шаблонов',
