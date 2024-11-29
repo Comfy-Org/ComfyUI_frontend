@@ -22,20 +22,20 @@ test.describe('User Select View', () => {
     expect(page.url()).toBe(userSelectPage.selectionUrl)
   })
 
-  test('Can choose default user', async ({ userSelectPage, page }) => {
-    await page.goto(userSelectPage.url)
-    await expect(page).toHaveURL(userSelectPage.selectionUrl)
-    await userSelectPage.existingUserSelect.click()
-    await page.locator('.p-select-list').getByText('default').click()
-    await userSelectPage.nextButton.click()
-    await expect(page).toHaveURL(userSelectPage.url)
-  })
-
   test('Can create new user', async ({ userSelectPage, page }) => {
     const randomUser = `test-user-${Math.random().toString(36).substring(2, 7)}`
     await page.goto(userSelectPage.url)
     await expect(page).toHaveURL(userSelectPage.selectionUrl)
     await userSelectPage.newUserInput.fill(randomUser)
+    await userSelectPage.nextButton.click()
+    await expect(page).toHaveURL(userSelectPage.url)
+  })
+
+  test('Can choose existing user', async ({ userSelectPage, page }) => {
+    await page.goto(userSelectPage.url)
+    await expect(page).toHaveURL(userSelectPage.selectionUrl)
+    await userSelectPage.existingUserSelect.click()
+    await page.locator('.p-select-list .p-select-option').first().click()
     await userSelectPage.nextButton.click()
     await expect(page).toHaveURL(userSelectPage.url)
   })
