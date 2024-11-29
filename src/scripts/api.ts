@@ -215,19 +215,6 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * A type-safe wrapper for dispatchEvent.
-   * @param type The type of event being sent, e.g. 'status'.  Type-check only - discarded.
-   * @param event The event to send
-   * @returns `true` on success, `false` on failure
-   */
-  dispatchEventSafe<T extends keyof ApiEvents>(
-    type: T,
-    event: ApiEvents[T]
-  ): boolean {
-    return super.dispatchEvent(event)
-  }
-
-  /**
    * Dispatches a custom event.
    * Provides type safety for the contravariance issue with EventTarget (last checked TS 5.6).
    * @param type The type of event to emit
@@ -366,6 +353,7 @@ export class ComfyApi extends EventTarget {
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
+            case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'execution_success':
@@ -376,8 +364,7 @@ export class ComfyApi extends EventTarget {
             default:
               if (this.#registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
-                this.dispatchEventSafe(
-                  msg.type,
+                super.dispatchEvent(
                   new CustomEvent(msg.type, { detail: msg.data })
                 )
               } else if (!this.reportedUnknownMessageTypes.has(msg.type)) {
