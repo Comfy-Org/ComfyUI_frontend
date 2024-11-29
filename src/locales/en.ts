@@ -13,6 +13,17 @@ export default {
       windows: 'Windows (Nvidia GPU with CUDA support)'
     }
   },
+  downloadGit: {
+    title: 'Download git',
+    message:
+      'Unable to locate git.  A working copy of git is required for normal operation.',
+    instructions:
+      'Please download and install the latest version for your operating system.  The Download git button below opens the git-scm.com downloads page.',
+    warning:
+      'If you are sure you do not need git installed, or there has been a mistake, you may click Skip to byapss this check.  Attempting to run ComfyUI without a working copy of git is not currently supported.',
+    gitWebsite: 'Download git',
+    skip: 'Skip'
+  },
   install: {
     installLocation: 'Install Location',
     migration: 'Migration',
