@@ -78,6 +78,12 @@ const router = createRouter({
           name: 'NotSupportedView',
           component: () => import('@/views/NotSupportedView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'download-git',
+          name: 'DownloadGitView',
+          component: () => import('@/views/DownloadGitView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
