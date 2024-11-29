@@ -24,13 +24,12 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '../types/comfyWorkflow'
-import { ComfyNodeDef, StatusWsMessageStatus } from '@/types/apiTypes'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import {
-  LGraphGroup,
   LGraphCanvas,
   LGraph,
   LGraphNode,
@@ -139,8 +138,10 @@ export class ComfyApp {
   // x, y, scale
   zoom_drag_start: [number, number, number] | null
   lastNodeErrors: any[] | null
-  lastExecutionError: { node_id: number } | null
-  progress: { value: number; max: number } | null
+  /** @type {ExecutionErrorWsMessage} */
+  lastExecutionError: { node_id?: NodeId } | null
+  /** @type {ProgressWsMessage} */
+  progress: { value?: number; max?: number } | null
   configuringGraph: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -1542,12 +1543,9 @@ export class ComfyApp {
    * Handles updates from the API socket
    */
   #addApiUpdateHandlers() {
-    api.addEventListener(
-      'status',
-      ({ detail }: CustomEvent<StatusWsMessageStatus>) => {
-        this.ui.setStatus(detail)
-      }
-    )
+    api.addEventListener('status', ({ detail }) => {
+      this.ui.setStatus(detail)
+    })
 
     api.addEventListener('progress', ({ detail }) => {
       this.progress = detail
@@ -2547,9 +2545,7 @@ export class ComfyApp {
     } finally {
       this.#processingQueue = false
     }
-    api.dispatchEvent(
-      new CustomEvent('promptQueued', { detail: { number, batchCount } })
-    )
+    api.dispatchCustomEvent('promptQueued', { number, batchCount })
     return !this.lastNodeErrors
   }
 

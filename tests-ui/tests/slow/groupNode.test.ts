@@ -362,7 +362,7 @@ describe('group node', () => {
     const { ez, graph, app } = await start()
     const nodes = createDefaultWorkflow(ez, graph)
 
-    let reroutes: EzNode[] = []
+    const reroutes: EzNode[] = []
     let prevNode = nodes.ckpt
     for (let i = 0; i < 5; i++) {
       const reroute = ez.Reroute()
@@ -568,37 +568,23 @@ describe('group node', () => {
 
     const { api } = await import('../../../src/scripts/api')
 
-    api.dispatchEvent(new CustomEvent('execution_start', {}))
-    api.dispatchEvent(
-      new CustomEvent('executing', { detail: `${nodes.save.id}` })
-    )
+    api.dispatchCustomEvent('execution_start', undefined)
+    api.dispatchCustomEvent('executing', `${nodes.save.id}`)
     // Event should be forwarded to group node id
     expect(group.node['imgs']).toBeFalsy()
-    api.dispatchEvent(
-      new CustomEvent('executed', {
-        detail: {
-          node: `${nodes.save.id}`,
-          display_node: `${nodes.save.id}`,
-          output: {
-            images: [
-              {
-                filename: 'test.png',
-                type: 'output'
-              }
-            ]
-          }
-        }
-      })
-    )
+    api.dispatchCustomEvent('executed', {
+      node: `${nodes.save.id}`,
+      display_node: `${nodes.save.id}`,
+      output: {
+        images: [{ filename: 'test.png', type: 'output' }]
+      }
+    })
 
     // Trigger paint
     group.node.onDrawBackground?.(app.canvas.ctx, app.canvas.canvas)
 
     expect(group.node['images']).toEqual([
-      {
-        filename: 'test.png',
-        type: 'output'
-      }
+      { filename: 'test.png', type: 'output' }
     ])
 
     // Reload
@@ -610,26 +596,17 @@ describe('group node', () => {
     group.node['getInnerNodes']()
 
     // Check it works for internal node ids
-    api.dispatchEvent(new CustomEvent('execution_start', {}))
-    api.dispatchEvent(new CustomEvent('executing', { detail: `${group.id}:5` }))
+    api.dispatchCustomEvent('execution_start', undefined)
+    api.dispatchCustomEvent('executing', `${group.id}:5`)
     // Event should be forwarded to group node id
     expect(group.node['imgs']).toBeFalsy()
-    api.dispatchEvent(
-      new CustomEvent('executed', {
-        detail: {
-          node: `${group.id}:5`,
-          display_node: `${group.id}:5`,
-          output: {
-            images: [
-              {
-                filename: 'test2.png',
-                type: 'output'
-              }
-            ]
-          }
-        }
-      })
-    )
+    api.dispatchCustomEvent('executed', {
+      node: `${group.id}:5`,
+      display_node: `${group.id}:5`,
+      output: {
+        images: [{ filename: 'test2.png', type: 'output' }]
+      }
+    })
 
     // Trigger paint
     group.node.onDrawBackground?.(app.canvas.ctx, app.canvas.canvas)
@@ -791,7 +768,7 @@ describe('group node', () => {
     })
 
     expect(dialogShow).toBeCalledTimes(1)
-    // @ts-expect-error
+    // @ts-expect-error Mocked
     const call = dialogShow.mock.calls[0][0].innerHTML
     expect(call).toContain('the following node types were not found')
     expect(call).toContain('NotKSampler')
