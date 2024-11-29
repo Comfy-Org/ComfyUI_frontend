@@ -1,19 +1,19 @@
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
-import {
-  type HistoryTaskItem,
-  type PendingTaskItem,
-  type RunningTaskItem,
-  type ComfyNodeDef,
-  type EmbeddingsResponse,
-  type ExtensionsResponse,
-  type PromptResponse,
-  type SystemStats,
-  type User,
-  type Settings,
-  type UserDataFullInfo,
-  validateComfyNodeDef,
+import type {
+  HistoryTaskItem,
+  PendingTaskItem,
+  RunningTaskItem,
+  ComfyNodeDef,
+  EmbeddingsResponse,
+  ExtensionsResponse,
+  PromptResponse,
+  SystemStats,
+  User,
+  Settings,
+  UserDataFullInfo,
   LogsRawResponse
 } from '@/types/apiTypes'
+import { validateComfyNodeDef } from '@/types/apiTypes'
 import axios from 'axios'
 
 interface QueuePromptRequestBody {
