@@ -414,6 +414,7 @@ We will support custom icons later.
 - [PrimeVue](https://primevue.org/) with [TailwindCSS](https://tailwindcss.com/) for UI
 - [Litegraph](https://github.com/Comfy-Org/litegraph.js) for node editor
 - [zod](https://zod.dev/) for schema validation
+- [vue-i18n](https://github.com/intlify/vue-i18n) for internationalization
 
 ### Git pre-commit hooks
 
@@ -479,6 +480,54 @@ This repo is using litegraph package hosted on <https://github.com/Comfy-Org/lit
 - Run `npm link @comfyorg/litegraph` in this repo.
 
 This will replace the litegraph package in this repo with the local litegraph repo.
+
+## Internationalization (i18n)
+
+Our project supports multiple languages using `vue-i18n`. This allows users around the world to use the application in their preferred language.
+
+### Supported Languages
+
+ - en
+ - zh
+ - ru
+ - ja
+
+### How to Add a New Language
+
+We welcome the addition of new languages. You can add a new language by following these steps:
+
+#### 1. Create a Locale File
+
+Navigate to the `src/locales` directory.
+Duplicate the existing `src/locales/en.ts` file and rename it to your target language code (e.g., `src/locales/ja.ts` for Japanese).
+
+#### 2. Provide Translations
+
+Translate the contents into your target language.
+If there are items that are not applicable, you can delete those items. In that case, the default language set in `en (src/locales/en.ts)` will be loaded.
+
+#### 3. Update i18n Configuration
+
+Import the new locale file in the `src/i18n.ts` file.
+
+#### 4. Enable Selection of the New Language
+
+Add the newly added language to the following item in `src/constants/coreSettings.ts`:
+
+```typescript
+  {
+    id: 'Comfy.Locale',
+    name: 'Locale',
+    type: 'combo',
+    options: ['en', 'zh', 'ru', 'ja'],
+    defaultValue: navigator.language.split('-')[0] || 'en'
+  },
+```
+
+#### 5. Test the Translations
+
+Start the development server, switch to the new language, and verify the translations.
+You can switch languages by opening the ComfyUI Settings and selecting from the `ComfyUI > Locale` dropdown box.
 
 ## Deploy
 
