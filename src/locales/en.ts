@@ -88,6 +88,7 @@ export default {
     revertChanges: 'Revert Changes',
     restart: 'Restart'
   },
+  currentUser: 'Current user',
   empty: 'Empty',
   noWorkflowsFound: 'No workflows found.',
   comingSoon: 'Coming Soon',

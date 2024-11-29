@@ -81,6 +81,7 @@ export default {
     revertChanges: '変更を元に戻す',
     restart: '再起動'
   },
+  currentUser: '現在のユーザー',
   empty: '表示する項目がありません',
   noWorkflowsFound: 'ワークフローが見つかりませんでした。',
   comingSoon: '近日公開',
