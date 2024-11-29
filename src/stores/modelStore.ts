@@ -19,6 +19,8 @@ function _findInMetadata(metadata: any, ...keys: string[]): string | null {
 
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
+  /** Path to the model */
+  readonly path_index: number
   /** Proper filename of the model */
   readonly file_name: string
   /** Normalized filename of the model, with all backslashes replaced with forward slashes */
@@ -54,7 +56,8 @@ export class ComfyModelDef {
   /** A string full of auto-computed lowercase-only searchable text for this model */
   searchable: string = ''
 
-  constructor(name: string, directory: string) {
+  constructor(name: string, directory: string, pathIndex: number) {
+    this.path_index = pathIndex
     this.file_name = name
     this.normalized_file_name = name.replaceAll('\\', '/')
     this.simplified_file_name = this.normalized_file_name.split('/').pop() ?? ''
@@ -165,7 +168,11 @@ export class ModelFolder {
     this.state = ResourceState.Loading
     const models = await api.getModels(this.directory)
     for (const model of models) {
-      this.models[model] = new ComfyModelDef(model, this.directory)
+      this.models[`${model.pathIndex}/${model.name}`] = new ComfyModelDef(
+        model.name,
+        this.directory,
+        model.pathIndex
+      )
     }
     this.state = ResourceState.Loaded
     return this
@@ -189,7 +196,8 @@ export const useModelStore = defineStore('models', () => {
    * Loads the model folders from the server
    */
   async function loadModelFolders() {
-    modelFolderNames.value = await api.getModelFolders()
+    const resData = await api.getModelFolders()
+    modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
     for (const folderName of modelFolderNames.value) {
       modelFolderByName.value[folderName] = new ModelFolder(folderName)
