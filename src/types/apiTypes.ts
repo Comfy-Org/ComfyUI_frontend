@@ -30,7 +30,8 @@ const zStatusWsMessageStatus = z.object({
 })
 
 const zStatusWsMessage = z.object({
-  status: zStatusWsMessageStatus.nullable().optional()
+  status: zStatusWsMessageStatus.nullish(),
+  sid: z.string().nullish()
 })
 
 const zProgressWsMessage = z.object({
