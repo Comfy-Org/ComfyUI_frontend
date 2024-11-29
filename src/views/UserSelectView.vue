@@ -26,7 +26,6 @@
             inputId="existing-user-select"
             :options="userStore.users"
             option-label="username"
-            option-value="userId"
             :placeholder="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />

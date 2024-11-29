@@ -154,6 +154,7 @@ export default {
   newFolder: 'New Folder',
   sideToolbar: {
     themeToggle: 'Toggle Theme',
+    logout: 'Logout',
     queue: 'Queue',
     nodeLibrary: 'Node Library',
     workflows: 'Workflows',

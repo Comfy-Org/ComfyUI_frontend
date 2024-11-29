@@ -12,6 +12,7 @@
         @click="onTabClick(tab)"
       />
       <div class="side-tool-bar-end">
+        <SidebarLogoutIcon />
         <SidebarThemeToggleIcon />
         <SidebarSettingsToggleIcon />
       </div>
@@ -29,6 +30,7 @@
 import SidebarIcon from './SidebarIcon.vue'
 import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
+import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { computed } from 'vue'
 import { useWorkspaceStore } from '@/stores/workspaceStore'

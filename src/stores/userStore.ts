@@ -29,6 +29,10 @@ export const useUserStore = defineStore('user', () => {
       username
     }))
   )
+  const currentUser = computed<User | null>(
+    () =>
+      users.value.find((user) => user.userId === currentUserId.value) ?? null
+  )
   const initialized = computed(() => userConfig.value !== null)
 
   /**
@@ -93,6 +97,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     users,
+    currentUser,
     isMultiUserServer,
     needsLogin,
     initialized,
