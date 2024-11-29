@@ -45,6 +45,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -111,6 +112,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#000',
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.1)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -175,6 +177,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#fdf6e3', // Base3
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
 
@@ -252,6 +255,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#FFF',
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 22,
         WIDGET_BGCOLOR: '#2b2f38',
@@ -327,6 +331,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#2e3440',
@@ -402,6 +407,7 @@ const colorPalettes: ColorPalettes = {
         NODE_DEFAULT_SHAPE: 'box',
         NODE_BOX_OUTLINE_COLOR: '#e5eaf0',
         NODE_BYPASS_BGCOLOR: '#FF00FF',
+        NODE_ERROR_COLOUR: '#E00',
         DEFAULT_SHADOW_COLOR: 'rgba(0,0,0,0.5)',
         DEFAULT_GROUP_FONT: 24,
         WIDGET_BGCOLOR: '#161b22',

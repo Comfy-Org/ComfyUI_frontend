@@ -45,6 +45,7 @@ const litegraphBaseSchema = z
     NODE_DEFAULT_SHAPE: z.string(),
     NODE_BOX_OUTLINE_COLOR: z.string(),
     NODE_BYPASS_BGCOLOR: z.string(),
+    NODE_ERROR_COLOUR: z.string(),
     DEFAULT_SHADOW_COLOR: z.string(),
     DEFAULT_GROUP_FONT: z.number(),
     WIDGET_BGCOLOR: z.string(),
