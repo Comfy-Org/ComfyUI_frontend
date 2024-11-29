@@ -1,4 +1,5 @@
 export default {
+  currentUser: '当前用户',
   empty: '空',
   noWorkflowsFound: '未找到工作流',
   firstTimeUIMessage:

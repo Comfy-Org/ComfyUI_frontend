@@ -1,4 +1,5 @@
 export default {
+  currentUser: 'Текущий пользователь',
   empty: 'Пусто',
   noWorkflowsFound: 'Рабочие процессы не найдены.',
   download: 'Скачать',

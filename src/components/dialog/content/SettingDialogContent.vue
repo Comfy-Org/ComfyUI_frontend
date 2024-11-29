@@ -29,6 +29,7 @@
           :value="category.label"
         >
           <template #header>
+            <CurrentUserMessage v-if="tabValue === 'Comfy'" />
             <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
           </template>
           <SettingsPanel :settingGroups="sortedGroups(category)" />
@@ -74,6 +75,7 @@ import SettingsPanel from './setting/SettingsPanel.vue'
 import PanelTemplate from './setting/PanelTemplate.vue'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
+import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
 
