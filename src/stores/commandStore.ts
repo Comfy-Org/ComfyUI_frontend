@@ -204,7 +204,7 @@ export const useCommandStore = defineStore('command', () => {
         ) {
           app.clean()
           app.graph.clear()
-          api.dispatchEvent(new CustomEvent('graphCleared'))
+          api.dispatchCustomEvent('graphCleared')
         }
       }
     },

@@ -1102,10 +1102,9 @@ export class GroupNodeHandler {
         const innerNodeIndex = this.innerNodes?.findIndex((n) => n.id == id)
         if (innerNodeIndex > -1) {
           this.node.runningInternalNodeId = innerNodeIndex
-          api.dispatchEvent(
-            new CustomEvent(type, {
-              detail: getEvent(detail, this.node.id + '', this.node)
-            })
+          api.dispatchCustomEvent(
+            type,
+            getEvent(detail, `${this.node.id}`, this.node)
           )
         }
       }

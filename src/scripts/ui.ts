@@ -4,7 +4,7 @@ import { ComfyDialog as _ComfyDialog } from './ui/dialog'
 import { toggleSwitch } from './ui/toggleSwitch'
 import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
-import { TaskItem } from '@/types/apiTypes'
+import { TaskItem, type StatusWsMessageStatus } from '@/types/apiTypes'
 import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -611,7 +611,7 @@ export class ComfyUI {
             app.clean()
             app.graph.clear()
             app.resetView()
-            api.dispatchEvent(new CustomEvent('graphCleared'))
+            api.dispatchCustomEvent('graphCleared')
           }
         }
       }),
@@ -641,10 +641,11 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer, this.settings)
 
+    // @ts-expect-error
     this.setStatus({ exec_info: { queue_remaining: 'X' } })
   }
 
-  setStatus(status) {
+  setStatus(status: StatusWsMessageStatus | null) {
     this.queueSize.textContent =
       'Queue size: ' + (status ? status.exec_info.queue_remaining : 'ERR')
     if (status) {
