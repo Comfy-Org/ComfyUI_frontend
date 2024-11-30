@@ -63,8 +63,6 @@ declare module '@comfyorg/litegraph' {
     imageRects: Rect[]
     overIndex?: number | null
     pointerDown?: { index: number | null; pos: Point } | null
-    /** @deprecated Unused */
-    pointerWasDown?: null
 
     setSizeForImage?(force?: boolean): void
     /** @deprecated Unused */

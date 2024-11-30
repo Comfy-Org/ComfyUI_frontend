@@ -1003,8 +1003,6 @@ export class ComfyApp {
             fill = '#eee'
             textFill = '#000'
           }
-        } else {
-          this.pointerWasDown = null
         }
 
         ctx.fillStyle = fill
