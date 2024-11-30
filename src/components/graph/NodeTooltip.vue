@@ -10,20 +10,23 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useHoveredItemStore } from '@/stores/graphStore'
 import { useEventListener } from '@vueuse/core'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
+const hoveredItemStore = useHoveredItemStore()
 const tooltipRef = ref<HTMLDivElement>()
 const tooltipText = ref('')
 const left = ref<string>()
 const top = ref<string>()
 
 const hideTooltip = () => (tooltipText.value = null)
+const clearHovered = () => (hoveredItemStore.value = null)
 
 const showTooltip = async (tooltip: string | null | undefined) => {
   if (!tooltip) return
@@ -43,6 +46,36 @@ const showTooltip = async (tooltip: string | null | undefined) => {
     top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
   }
 }
+watch(hoveredItemStore, (hoveredItem) => {
+  if (!hoveredItem.value) {
+    return hideTooltip()
+  }
+  const item = hoveredItem.value
+  const nodeDef =
+    nodeDefStore.nodeDefsByName[item.node.type] ??
+    LiteGraph.registered_node_types[item.node.type]?.nodeData
+  if (item.type == 'Title') {
+    let description = nodeDef.description
+    if (Array.isArray(description)) {
+      description = description[0]
+    }
+    return showTooltip(description)
+  } else if (item.type == 'Input') {
+    showTooltip(nodeDef.input.getInput(item.inputName)?.tooltip)
+  } else if (item.type == 'Output') {
+    showTooltip(nodeDef?.output?.all?.[item.outputSlot]?.tooltip)
+  } else if (item.type == 'Widget') {
+    showTooltip(
+      item.widget.tooltip ??
+        (
+          nodeDef.input.optional?.[item.widget.name] ??
+          nodeDef.input.required?.[item.widget.name]
+        )?.tooltip
+    )
+  } else {
+    hideTooltip()
+  }
+})
 
 const onIdle = () => {
   const { canvas } = comfyApp
@@ -50,13 +83,15 @@ const onIdle = () => {
   if (!node) return
 
   const ctor = node.constructor as { title_mode?: 0 | 1 | 2 | 3 }
-  const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+  const nodeDef =
+    nodeDefStore.nodeDefsByName[node.type] ??
+    LiteGraph.registered_node_types[node.type]?.nodeData
 
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
   ) {
-    return showTooltip(nodeDef.description)
+    hoveredItemStore.value = { node, type: 'Title' }
   }
 
   if (node.flags?.collapsed) return
@@ -69,7 +104,7 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
+    hoveredItemStore.value = { node, type: 'Input', inputName }
   }
 
   const outputSlot = canvas.isOverNodeOutput(
@@ -79,20 +114,18 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    return showTooltip(nodeDef.output.all?.[outputSlot]?.tooltip)
+    hoveredItemStore.value = { node, type: 'Output', outputSlot }
   }
 
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
-    return showTooltip(
-      widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
-    )
+    hoveredItemStore.value = { node, type: 'Widget', widget }
   }
 }
 
 const onMouseMove = (e: MouseEvent) => {
-  hideTooltip()
+  clearHovered()
   clearTimeout(idleTimeout)
 
   if ((e.target as Node).nodeName !== 'CANVAS') return
@@ -100,7 +133,7 @@ const onMouseMove = (e: MouseEvent) => {
 }
 
 useEventListener(window, 'mousemove', onMouseMove)
-useEventListener(window, 'click', hideTooltip)
+useEventListener(window, 'click', clearHovered)
 </script>
 
 <style lang="css" scoped>

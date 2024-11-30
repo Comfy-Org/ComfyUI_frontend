@@ -1,6 +1,6 @@
-import type { LGraphNode } from '@comfyorg/litegraph'
+import type { LGraphNode, IWidget } from '@comfyorg/litegraph'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyNodeDef } from '@/types/apiTypes'
+import type { ComfyNodeDef, DescriptionSpec } from '@/types/apiTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { SettingParams } from '@/types/settingTypes'
@@ -159,3 +159,9 @@ export interface ComfyExtension {
 
   [key: string]: any
 }
+
+export type ComfyNodeItem =
+  | { node: LGraphNode; type: 'Title' }
+  | { node: LGraphNode; type: 'Output'; outputSlot: number }
+  | { node: LGraphNode; type: 'Input'; inputName: string }
+  | { node: LGraphNode; type: 'Widget'; widget: IWidget }

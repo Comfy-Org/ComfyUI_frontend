@@ -1,4 +1,5 @@
 import { LGraphNode, LGraphGroup, LGraphCanvas } from '@comfyorg/litegraph'
+import type { ComfyNodeItem } from '@/types/comfy'
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
@@ -7,6 +8,14 @@ export const useTitleEditorStore = defineStore('titleEditor', () => {
 
   return {
     titleEditorTarget
+  }
+})
+
+export const useHoveredItemStore = defineStore('hoveredItem', () => {
+  const hoveredItem = shallowRef<ComfyNodeItem | null>(null)
+
+  return {
+    hoveredItem
   }
 })
 

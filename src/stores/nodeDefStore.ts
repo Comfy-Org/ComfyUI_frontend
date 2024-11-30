@@ -5,7 +5,8 @@ import {
 import {
   type ComfyNodeDef,
   type ComfyInputsSpec as ComfyInputsSpecSchema,
-  type InputSpec
+  type InputSpec,
+  type DescriptionSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
 import { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -158,7 +159,7 @@ export class ComfyNodeDefImpl {
   display_name: string
   category: string
   python_module: string
-  description: string
+  description: DescriptionSpec
   deprecated: boolean
   experimental: boolean
   input: ComfyInputsSpec
