@@ -18,7 +18,10 @@ import type {
   ExecutionStartWsMessage,
   ExecutionErrorWsMessage,
   StatusWsMessage,
-  StatusWsMessageStatus
+  StatusWsMessageStatus,
+  ExecutionCachedWsMessage,
+  ExecutionSuccessWsMessage,
+  LogsWsMessage
 } from '@/types/apiTypes'
 import { validateComfyNodeDef } from '@/types/apiTypes'
 import axios from 'axios'
@@ -53,10 +56,10 @@ interface BackendApiCalls {
   executed: ExecutedWsMessage
   status: StatusWsMessage
   execution_start: ExecutionStartWsMessage
-  execution_success: never
+  execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
-  execution_cached: never
-  logs: never
+  execution_cached: ExecutionCachedWsMessage
+  logs: LogsWsMessage
   /** Mr Blob Preview, I presume? */
   b_preview: Blob
 }
@@ -351,17 +354,15 @@ export class ComfyApi extends EventTarget {
               break
             case 'execution_start':
             case 'execution_error':
+            case 'execution_cached':
+            case 'execution_success':
             case 'progress':
             case 'executed':
             case 'graphChanged':
             case 'promptQueued':
+            case 'logs':
             case 'b_preview':
               this.dispatchCustomEvent(msg.type, msg.data)
-              break
-            case 'execution_success':
-            case 'execution_cached':
-            case 'logs':
-              this.dispatchCustomEvent(msg.type)
               break
             default:
               if (this.#registered.has(msg.type)) {
