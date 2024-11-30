@@ -508,7 +508,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     function showImage(name) {
       const img = new Image()
       img.onload = () => {
-        // @ts-expect-error
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
       }
@@ -521,7 +520,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       img.src = api.apiURL(
         `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       )
-      // @ts-expect-error
       node.setSizeForImage?.()
     }
 
