@@ -201,7 +201,7 @@
   "templateWorkflows": {
     "template": {
       "default": "画像生成",
-      "flux_schnell": "フラックスシュネル",
+      "flux_schnell": "Flux Schnell",
       "image2image": "画像から画像へ",
       "upscale": "2パスアップスケール"
     },
