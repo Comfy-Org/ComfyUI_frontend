@@ -11,6 +11,7 @@
     "moduleResolution": "Node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
 
     /* Linting */
     "strict": false,
