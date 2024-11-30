@@ -35,6 +35,7 @@
     "@babel/preset-env": "^7.22.20",
     "@eslint/js": "^9.8.0",
     "@iconify/json": "^2.2.245",
+    "@lobehub/i18n-cli": "^1.20.1",
     "@pinia/testing": "^0.1.5",
     "@playwright/test": "^1.44.1",
     "@types/jest": "^29.5.12",
