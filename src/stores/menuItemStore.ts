@@ -3,6 +3,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 import { useCommandStore } from './commandStore'
 import { ComfyExtension } from '@/types/comfy'
+import { isElectron } from '@/utils/envUtil'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
   const commandStore = useCommandStore()
@@ -119,6 +120,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       }
     ]
   )
+  // TODO: Remove temporary electron guard after this is generally available
+  if (isElectron()) registerCommands(['Help'], ['Comfy.Troubleshooting.Open'])
 
   return {
     menuItems,

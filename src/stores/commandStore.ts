@@ -6,7 +6,8 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import {
   showSettingsDialog,
-  showTemplateWorkflowsDialog
+  showTemplateWorkflowsDialog,
+  showTroubleshootingDialog
 } from '@/services/dialogService'
 import { useQueueSettingsStore, useQueueStore } from './queueStore'
 import { LiteGraph } from '@comfyorg/litegraph'
@@ -20,6 +21,7 @@ import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { LGraphNode } from '@comfyorg/litegraph'
 import { useWorkspaceStore } from './workspaceStore'
 import { workflowService } from '@/services/workflowService'
+import { i18n } from '@/i18n'
 
 export interface ComfyCommand {
   id: string
@@ -510,6 +512,15 @@ export const useCommandStore = defineStore('command', () => {
             app.graph.change()
           }
         }
+      }
+    },
+    {
+      id: 'Comfy.Troubleshooting.Open',
+      icon: 'pi pi-wrench',
+      label: i18n.global.t('troubleshooting.title'),
+      versionAdded: '1.5.3',
+      function: () => {
+        showTroubleshootingDialog()
       }
     }
   ]

@@ -12,6 +12,7 @@ import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsCo
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { i18n } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
+import TroubleshootingContent from '@/components/troubleshooting/TroubleshootingContent.vue'
 
 export function showLoadWorkflowWarning(props: {
   missingNodeTypes: MissingNodeType[]
@@ -87,5 +88,12 @@ export async function showPromptDialog({
         }
       }
     })
+  })
+}
+
+export function showTroubleshootingDialog() {
+  useDialogStore().showDialog({
+    title: i18n.global.t('troubleshooting.title'),
+    component: TroubleshootingContent
   })
 }

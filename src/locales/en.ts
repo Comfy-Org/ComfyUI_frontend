@@ -240,5 +240,17 @@ export default {
     resume: 'Resume Download',
     cancel: 'Cancel Download',
     cancelled: 'Cancelled'
+  },
+  troubleshooting: {
+    title: 'Troubleshooting',
+    tasks: {
+      restoreCustomNodes: 'Restore Custom Nodes'
+    },
+    restoreCustomNodes: {
+      loading: 'Parsing log files...',
+      installing: 'Installing',
+      installed: 'Installed',
+      failed: 'Failed'
+    }
   }
 }
