@@ -100,15 +100,14 @@ const restoreCustomNodes = async () => {
     typeof electron.restoreCustomNodes === 'function' &&
     typeof electron.onRestoreCustomNodes === 'function'
   ) {
+    state.value = 'running'
     await electron.onRestoreCustomNodes(updateRestoreNodesProgress)
     const started = await electron.restoreCustomNodes()
 
-    if (started) {
-      state.value = 'running'
-      return
-    }
+    if (started) return
   }
   commandFailed.value = true
+  state.value = 'complete'
 }
 
 const updateRestoreNodesProgress = ({
