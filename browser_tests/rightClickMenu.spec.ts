@@ -187,7 +187,7 @@ test.describe('Node Right Click Menu', () => {
     )
   })
 
-  test.only('Can clone pinned nodes', async ({ comfyPage }) => {
+  test('Can clone pinned nodes', async ({ comfyPage }) => {
     const nodeCount = await comfyPage.getGraphNodesCount()
     const node = (await comfyPage.getFirstNodeRef())!
     await node.clickContextMenuOption('Pin')
