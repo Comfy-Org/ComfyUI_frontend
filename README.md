@@ -487,10 +487,10 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 
 ### Supported Languages
 
- - en (en_US)
- - zh (zh_CN)
- - ru (ru_RU)
- - ja (ja_JP)
+ - en
+ - zh
+ - ru
+ - ja
 
 ### How to Add a New Language
 
@@ -506,10 +506,10 @@ Update the configuration file to include the new language(s) you wish to add:
 const { defineConfig } = require('@lobehub/i18n-cli');
 
 module.exports = defineConfig({
-  entry: 'src/locales/en_US.json', // Base language file
-  entryLocale: 'en_US',
+  entry: 'src/locales/en.json', // Base language file
+  entryLocale: 'en',
   output: 'src/locales',
-  outputLocales: ['zh_CN', 'ru_RU', 'ja_JP'], // Add the new language(s) here
+  outputLocales: ['zh', 'ru', 'ja'], // Add the new language(s) here
 });
 ```
 
