@@ -16,7 +16,7 @@
         :is="item.headerComponent"
         :id="item.key"
       />
-      <h3 v-else :id="item.key">{{ item.title || ' ' }}</h3>
+      <h3 v-else :id="item.key" class="ml-4">{{ item.title || ' ' }}</h3>
     </template>
 
     <component
