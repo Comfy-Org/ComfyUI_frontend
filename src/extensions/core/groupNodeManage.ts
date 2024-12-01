@@ -519,6 +519,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
     this.element.addEventListener('close', () => {
       this.draggable?.dispose()
+      this.element.remove()
     })
   }
 }

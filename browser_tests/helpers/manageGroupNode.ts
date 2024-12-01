@@ -1,12 +1,14 @@
 import { Locator, Page } from '@playwright/test'
 export class ManageGroupNode {
   footer: Locator
+  header: Locator
 
   constructor(
     readonly page: Page,
     readonly root: Locator
   ) {
     this.footer = root.locator('footer')
+    this.header = root.locator('header')
   }
 
   async setLabel(name: string, label: string) {
@@ -21,6 +23,11 @@ export class ManageGroupNode {
 
   async close() {
     await this.footer.getByText('Close').click()
+  }
+
+  async getSelectedNodeType() {
+    const select = this.header.locator('select').first()
+    return await select.inputValue()
   }
 
   async selectNode(name: string) {
