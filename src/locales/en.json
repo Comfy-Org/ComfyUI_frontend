@@ -194,6 +194,13 @@
     "clear": "Clear workflow",
     "toggleBottomPanel": "Toggle Bottom Panel"
   },
+  "tabMenu": {
+    "duplicateTab": "Duplicate Tab",
+    "closeTab": "Close Tab",
+    "closeTabsToLeft": "Close Tabs to Left",
+    "closeTabsToRight": "Close Tabs to Right",
+    "closeOtherTabs": "Close Other Tabs"
+  },
   "templateWorkflows": {
     "title": "Get Started with a Template",
     "template": {

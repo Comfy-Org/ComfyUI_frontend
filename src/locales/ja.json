@@ -198,6 +198,13 @@
   },
   "star": "スター",
   "systemInfo": "システム情報",
+  "tabMenu": {
+    "closeOtherTabs": "他のタブを閉じる",
+    "closeTab": "タブを閉じる",
+    "closeTabsToLeft": "左のタブを閉じる",
+    "closeTabsToRight": "右のタブを閉じる",
+    "duplicateTab": "タブを複製"
+  },
   "templateWorkflows": {
     "template": {
       "default": "画像生成",

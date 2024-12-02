@@ -9,32 +9,38 @@
     dataKey="value"
   >
     <template #option="{ option }">
-      <span
-        class="workflow-label text-sm max-w-[150px] truncate inline-block"
-        v-tooltip.bottom="option.workflow.key"
+      <div
+        class="flex p-2 gap-2"
+        @contextmenu="showContextMenu($event, option)"
       >
-        {{ option.workflow.filename }}
-      </span>
-      <div class="relative">
         <span
-          class="status-indicator"
-          v-if="
-            !workspaceStore.shiftDown &&
-            (option.workflow.isModified || !option.workflow.isPersisted)
-          "
-          >•</span
+          class="workflow-label text-sm max-w-[150px] truncate inline-block"
+          v-tooltip.bottom="option.workflow.key"
         >
-        <Button
-          class="close-button p-0 w-auto"
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          size="small"
-          @click.stop="onCloseWorkflow(option)"
-        />
+          {{ option.workflow.filename }}
+        </span>
+        <div class="relative">
+          <span
+            class="status-indicator"
+            v-if="
+              !workspaceStore.shiftDown &&
+              (option.workflow.isModified || !option.workflow.isPersisted)
+            "
+            >•</span
+          >
+          <Button
+            class="close-button p-0 w-auto"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            size="small"
+            @click.stop="onCloseWorkflow(option)"
+          />
+        </div>
       </div>
     </template>
   </SelectButton>
+  <ContextMenu ref="menu" :model="contextMenuItems" />
 </template>
 
 <script setup lang="ts">
@@ -42,20 +48,30 @@ import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import ContextMenu from 'primevue/contextmenu'
+import { useI18n } from 'vue-i18n'
+
+interface WorkflowOption {
+  value: string
+  workflow: ComfyWorkflow
+}
 
 const props = defineProps<{
   class?: string
 }>()
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const rightClickedTab = ref<WorkflowOption>(null)
+const menu = ref()
 
-interface WorkflowOption {
-  value: string
-  workflow: ComfyWorkflow
+const showContextMenu = (event, option) => {
+  rightClickedTab.value = option
+  menu.value.show(event)
 }
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
@@ -84,11 +100,63 @@ const onWorkflowChange = (option: WorkflowOption) => {
   workflowService.openWorkflow(option.workflow)
 }
 
-const onCloseWorkflow = (option: WorkflowOption) => {
-  workflowService.closeWorkflow(option.workflow, {
-    warnIfUnsaved: !workspaceStore.shiftDown
-  })
+const closeWorkflows = async (options: WorkflowOption[]) => {
+  for (const opt of options) {
+    if (
+      !(await workflowService.closeWorkflow(opt.workflow, {
+        warnIfUnsaved: !workspaceStore.shiftDown
+      }))
+    ) {
+      // User clicked cancel
+      break
+    }
+  }
 }
+
+const onCloseWorkflow = (option: WorkflowOption) => {
+  closeWorkflows([option])
+}
+
+const contextMenuItems = computed(() => {
+  const tab = rightClickedTab.value as WorkflowOption
+  if (!tab) return []
+  const index = options.value.findIndex((v) => v.workflow === tab.workflow)
+
+  return [
+    {
+      label: t('tabMenu.duplicateTab'),
+      command: () => {
+        workflowService.duplicateWorkflow(tab.workflow)
+      }
+    },
+    {
+      separator: true
+    },
+    {
+      label: t('tabMenu.closeTab'),
+      command: () => onCloseWorkflow(tab)
+    },
+    {
+      label: t('tabMenu.closeTabsToLeft'),
+      command: () => closeWorkflows(options.value.slice(0, index)),
+      disabled: index <= 0
+    },
+    {
+      label: t('tabMenu.closeTabsToRight'),
+      command: () => closeWorkflows(options.value.slice(index + 1)),
+      disabled: index === options.value.length - 1
+    },
+    {
+      label: t('tabMenu.closeOtherTabs'),
+      command: () =>
+        closeWorkflows([
+          ...options.value.slice(index + 1),
+          ...options.value.slice(0, index)
+        ]),
+      disabled: options.value.length <= 1
+    }
+  ]
+})
 </script>
 
 <style scoped>
@@ -97,7 +165,7 @@ const onCloseWorkflow = (option: WorkflowOption) => {
 }
 
 :deep(.p-togglebutton) {
-  @apply px-2 bg-transparent rounded-none flex-shrink-0 relative;
+  @apply p-0 bg-transparent rounded-none flex-shrink-0 relative;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
