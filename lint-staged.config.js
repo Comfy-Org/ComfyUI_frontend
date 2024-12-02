@@ -8,14 +8,11 @@ export default {
     'tsc-strict'
   ],
 
-  './src/locales/*.json': (stagedFiles) => [
-    'lobe-i18n locale',
-    ...formatFiles(stagedFiles)
-  ],
+  './src/locales/*.json': () => ['lobe-i18n locale'],
 
-  './src/constants/coreSettings.ts': (stagedFiles) => [
+  './src/constants/coreSettings.ts': () => [
     'tsx scripts/update-setting-locale.ts',
-    ...formatFiles(stagedFiles)
+    'lobe-i18n locale'
   ]
 }
 
