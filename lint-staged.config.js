@@ -6,6 +6,11 @@ export default {
     'vue-tsc --noEmit',
     'tsc --noEmit',
     'tsc-strict'
+  ],
+
+  './src/locales/*.json': (stagedFiles) => [
+    'lobe-i18n locale',
+    ...formatFiles(stagedFiles)
   ]
 }
 
