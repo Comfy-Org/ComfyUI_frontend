@@ -83,7 +83,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar size',
     type: 'combo',
     options: ['normal', 'small'],
-    defaultValue: window.innerWidth < 1600 ? 'small' : 'normal'
+    defaultValue: () => (window.innerWidth < 1600 ? 'small' : 'normal')
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -259,10 +259,10 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Locale',
-    name: 'Locale',
+    name: 'Language',
     type: 'combo',
     options: ['en', 'zh', 'ru', 'ja'],
-    defaultValue: navigator.language.split('-')[0] || 'en'
+    defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',

@@ -80,7 +80,9 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
   getSettingDefaultValue(id: string) {
     const param = this.settingsParamLookup[id]
-    return param?.defaultValue
+    return typeof param?.defaultValue === 'function'
+      ? param.defaultValue()
+      : param?.defaultValue
   }
 
   async setSettingValueAsync<K extends keyof Settings>(

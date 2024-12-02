@@ -29,7 +29,7 @@ export interface Setting {
 
 export interface SettingParams extends FormItem {
   id: keyof Settings
-  defaultValue: any
+  defaultValue: any | (() => any)
   onChange?: (newValue: any, oldValue?: any) => void
   // By default category is id.split('.'). However, changing id to assign
   // new category has poor backward compatibility. Use this field to overwrite
