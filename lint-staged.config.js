@@ -11,6 +11,11 @@ export default {
   './src/locales/*.json': (stagedFiles) => [
     'lobe-i18n locale',
     ...formatFiles(stagedFiles)
+  ],
+
+  './src/constants/coreSettings.ts': (stagedFiles) => [
+    'tsx scripts/update-setting-locale.ts',
+    ...formatFiles(stagedFiles)
   ]
 }
 
