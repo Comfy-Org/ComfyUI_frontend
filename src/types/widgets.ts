@@ -1,5 +1,5 @@
 import { CanvasColour, Point, Size } from "../interfaces"
-import type { LGraphCanvas, LGraphNode } from "../litegraph"
+import type { CanvasPointer, LGraphCanvas, LGraphNode } from "../litegraph"
 import type { CanvasMouseEvent, CanvasPointerEvent } from "./events"
 
 export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown> {
@@ -151,4 +151,19 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
     H: number,
   ): void
   computeSize?(width: number): Size
+
+  /**
+   * Callback for pointerdown events, allowing custom widgets to register callbacks to occur
+   * for all {@link CanvasPointer} events.
+   *
+   * This callback is operated early in the pointerdown logic; actions that prevent it from firing are:
+   * - `Ctrl + Drag` Multi-select
+   * - `Alt + Click/Drag` Clone node
+   * @param pointer The CanvasPointer handling this event
+   * @param node The node this widget belongs to
+   * @param canvas The LGraphCanvas where this event originated
+   * @return Returning `true` from this callback forces Litegraph to ignore the event and
+   * not process it any further.
+   */
+  onPointerDown(pointer: CanvasPointer, node: LGraphNode, canvas: LGraphCanvas): boolean
 }

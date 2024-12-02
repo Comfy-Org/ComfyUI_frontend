@@ -5,6 +5,11 @@ import { dist2 } from "./measure"
 /**
  * Allows click and drag actions to be declared ahead of time during a pointerdown event.
  *
+ * By default, it retains the most recent event of each type until it is reset (on pointerup).
+ * - {@link eDown}
+ * - {@link eMove}
+ * - {@link eUp}
+ *
  * Depending on whether the user clicks or drags the pointer, only the appropriate callbacks are called:
  * - {@link onClick}
  * - {@link onDoubleClick}

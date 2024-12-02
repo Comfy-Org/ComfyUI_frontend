@@ -2517,6 +2517,13 @@ export class LGraphCanvas {
 
   #processWidgetClick(e: CanvasPointerEvent, node: LGraphNode, widget: IWidget) {
     const { pointer } = this
+
+    // Custom widget - CanvasPointer
+    if (typeof widget.onPointerDown === "function") {
+      const handled = widget.onPointerDown(pointer, node, this)
+      if (handled) return
+    }
+
     const width = widget.width || node.width
 
     const oldValue = widget.value
