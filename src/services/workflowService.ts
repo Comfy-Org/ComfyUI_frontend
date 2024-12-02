@@ -300,5 +300,13 @@ export const workflowService = {
     if (previousWorkflow) {
       await this.openWorkflow(previousWorkflow)
     }
+  },
+
+  /**
+   * Takes an existing workflow and duplicates it with a new name
+   */
+  async duplicateWorkflow(workflow: ComfyWorkflow) {
+    const state = JSON.parse(JSON.stringify(workflow.activeState))
+    await app.loadGraphData(state, true, true, workflow.filename)
   }
 }
