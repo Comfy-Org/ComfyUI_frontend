@@ -2698,10 +2698,10 @@ export class LGraphNode implements Positionable, IPinnable {
    * Toggles pinned state if no value is provided.
    */
   pin(v?: boolean): void {
-    this.graph._version++
-    this.flags.pinned = v === undefined
-      ? !this.flags.pinned
-      : v
+    if (this.graph) {
+      this.graph._version++
+    }
+    this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     // Delete the flag if unpinned, so that we don't get unnecessary
     // flags.pinned = false in serialized object.
