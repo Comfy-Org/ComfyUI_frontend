@@ -496,21 +496,42 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 
 We welcome the addition of new languages. You can add a new language by following these steps:
 
-#### 1. Create a Locale File
+#### 1. Generate language files
+We use [lobe-i18n](https://github.com/lobehub/lobe-cli-toolbox/blob/master/packages/lobe-i18n/README.md) as our translation tool, which integrates with LLM for efficient localization.
 
-Navigate to the `src/locales` directory.
-Duplicate the existing `src/locales/en.ts` file and rename it to your target language code (e.g., `src/locales/ja.ts` for Japanese).
+Update the configuration file to include the new language(s) you wish to add:
 
-#### 2. Provide Translations
 
-Translate the contents into your target language.
-If there are items that are not applicable, you can delete those items. In that case, the default language set in `en (src/locales/en.ts)` will be loaded.
+```javascript
+const { defineConfig } = require('@lobehub/i18n-cli');
 
-#### 3. Update i18n Configuration
+module.exports = defineConfig({
+  entry: 'src/locales/en.json', // Base language file
+  entryLocale: 'en',
+  output: 'src/locales',
+  outputLocales: ['zh', 'ru', 'ja'], // Add the new language(s) here
+});
+```
 
-Import the new locale file in the `src/i18n.ts` file.
+Set your OpenAI API Key by running the following command:
 
-#### 4. Enable Selection of the New Language
+```sh
+npx lobe-i18n --option
+```
+
+Once configured, generate the translation files with:
+
+```sh
+npx lobe-i18n locale
+```
+
+This will create the language files for the specified languages in the configuration.
+
+#### 2. Update i18n Configuration
+
+Import the newly generated locale file(s) in the `src/i18n.ts` file to include them in the application's i18n setup.
+
+#### 3. Enable Selection of the New Language
 
 Add the newly added language to the following item in `src/constants/coreSettings.ts`:
 
@@ -519,12 +540,14 @@ Add the newly added language to the following item in `src/constants/coreSetting
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',
-    options: ['en', 'zh', 'ru', 'ja'],
+    options: ['en', 'zh', 'ru', 'ja'], // Add the new language(s) here
     defaultValue: navigator.language.split('-')[0] || 'en'
   },
 ```
 
-#### 5. Test the Translations
+This will make the new language selectable in the application's settings.
+
+#### 4. Test the Translations
 
 Start the development server, switch to the new language, and verify the translations.
 You can switch languages by opening the ComfyUI Settings and selecting from the `ComfyUI > Locale` dropdown box.

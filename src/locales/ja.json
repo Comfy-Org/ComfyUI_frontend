@@ -1,0 +1,223 @@
+{
+  "about": "情報",
+  "add": "追加",
+  "bookmark": "ブックマーク",
+  "box": "ボックス",
+  "briefcase": "ブリーフケース",
+  "color": "色",
+  "comingSoon": "近日公開",
+  "confirm": "確認",
+  "copyToClipboard": "クリップボードにコピー",
+  "currentUser": "現在のユーザー",
+  "customize": "カスタマイズ",
+  "customizeFolder": "フォルダーをカスタマイズ",
+  "delete": "削除",
+  "deprecated": "非推奨",
+  "devices": "デバイス",
+  "download": "ダウンロード",
+  "downloadGit": {
+    "gitWebsite": "Gitをダウンロード",
+    "instructions": "お使いのオペレーティングシステムに最新バージョンをダウンロードしてインストールしてください。以下の「Gitをダウンロード」ボタンをクリックすると、git-scm.comのダウンロードページが開きます。",
+    "message": "Gitを見つけることができません。正常に動作するためには、Gitの作業コピーが必要です。",
+    "skip": "スキップ",
+    "title": "Gitをダウンロード",
+    "warning": "Gitがインストールされていなくても問題ないと確信している場合、または間違いがあった場合は、「スキップ」をクリックしてこのチェックをスキップできます。作業コピーのない状態でComfyUIを実行することは現在サポートされていません。"
+  },
+  "electronFileDownload": {
+    "cancel": "ダウンロードをキャンセル",
+    "cancelled": "キャンセルされました",
+    "inProgress": "ダウンロード中",
+    "pause": "ダウンロードを一時停止",
+    "paused": "一時停止",
+    "resume": "ダウンロードを再開"
+  },
+  "empty": "表示する項目がありません",
+  "error": "エラー",
+  "experimental": "ベータ",
+  "extensionName": "拡張機能名",
+  "file": "ファイル",
+  "findIssues": "問題を探す",
+  "firstTimeUIMessage": "あなたはこの新しいUIを初めて使用します。もし以前のUIに戻したい場合は、\"Menu > Use new menu > Disabled\"を選択してください。",
+  "folder": "フォルダー",
+  "goToNode": "ノードへ移動",
+  "graphCanvasMenu": {
+    "fitView": "ビューに合わせる",
+    "panMode": "パンモード",
+    "resetView": "ビューをリセット",
+    "selectMode": "選択モード",
+    "toggleLinkVisibility": "リンクの表示切り替え",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小"
+  },
+  "heart": "ハート",
+  "icon": "アイコン",
+  "imageFailedToLoad": "画像の読み込みに失敗しました",
+  "inbox": "受信箱",
+  "insert": "挿入",
+  "install": {
+    "appDataLocationTooltip": "ComfyUIのアプリデータディレクトリ。保存内容:\n- ログ\n- サーバー設定",
+    "appPathLocationTooltip": "ComfyUIのアプリ資産ディレクトリ。ComfyUIのコードとアセットを保存します",
+    "chooseInstallationLocation": "インストール先を選択",
+    "customNodes": "カスタムノード",
+    "customNodesDescription": "既存のComfyUIインストールからカスタムノードファイルを参照し、その依存関係をインストールします。",
+    "desktopAppSettings": "デスクトップアプリの設定",
+    "desktopAppSettingsDescription": "ComfyUIのデスクトップでの動作を設定します。これらの設定は後で変更可能です。",
+    "desktopSettings": "デスクトップ設定",
+    "failedToSelectDirectory": "ディレクトリの選択に失敗しました",
+    "installLocation": "インストール先",
+    "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
+    "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
+    "migrateFromExistingInstallation": "既存のインストールから移行",
+    "migration": "移行",
+    "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
+    "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルやモデルを新しいインストールにコピー/リンクできます。",
+    "pathValidationFailed": "パスの検証に失敗しました",
+    "selectItemsToMigrate": "移行する項目を選択",
+    "settings": {
+      "allowMetrics": "クラッシュレポート",
+      "allowMetricsDescription": "ComfyUIの改善に協力してください。匿名のクラッシュレポートを送信します。個人情報やワークフロー内容は収集されません。この設定はいつでも無効にできます。",
+      "autoUpdate": "自動更新",
+      "autoUpdateDescription": "更新が利用可能になると、自動的にダウンロードおよびインストールを行います。インストール前に通知が表示されます。",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "カスタムノード設定",
+        "errorReports": "エラーメッセージとスタックトレース",
+        "fileSystemInformation": "ファイルシステム情報",
+        "personalInformation": "個人情報",
+        "systemInfo": "ハードウェア、OSの種類、アプリのバージョン",
+        "title": "データ収集について",
+        "whatWeCollect": "収集内容:",
+        "whatWeDoNotCollect": "収集しない内容:",
+        "workflowContent": "ワークフロー内容",
+        "workflowContents": "ワークフロー内容"
+      },
+      "learnMoreAboutData": "データ収集の詳細を見る"
+    },
+    "systemLocations": "システムの場所"
+  },
+  "loadAllFolders": "すべてのフォルダーを読み込む",
+  "loadWorkflow": "ワークフローを読み込む",
+  "loading": "読み込み中",
+  "logs": "ログ",
+  "menu": {
+    "autoQueue": "自動キュー",
+    "batchCount": "バッチ数",
+    "batchCountTooltip": "ワークフロー生成回数",
+    "change": "変更時",
+    "changeTooltip": "変更があるとキューに追加",
+    "clear": "ワークフローをクリア",
+    "clipspace": "クリップスペースを開く",
+    "disabled": "無効",
+    "disabledTooltip": "ワークフローは自動的にキューに追加されません",
+    "hideMenu": "メニューを隠す",
+    "instant": "即時",
+    "instantTooltip": "生成完了後すぐにキューに追加",
+    "interrupt": "現在の実行を中止",
+    "queue": "キュー",
+    "queueWorkflow": "キューに追加 (Shiftで先頭に)",
+    "queueWorkflowFront": "先頭に追加",
+    "refresh": "ノードを更新",
+    "resetView": "ビューをリセット",
+    "showMenu": "メニューを表示",
+    "toggleBottomPanel": "下部パネルを切り替え"
+  },
+  "newFolder": "新しいフォルダー",
+  "noResultsFound": "結果が見つかりませんでした",
+  "noTasksFound": "タスクが見つかりませんでした",
+  "noTasksFoundMessage": "キューにタスクがありません。",
+  "noWorkflowsFound": "ワークフローが見つかりませんでした。",
+  "notSupported": {
+    "learnMore": "詳細を見る",
+    "message": "以下のデバイスのみサポートされています:",
+    "reportIssue": "問題を報告",
+    "supportedDevices": {
+      "macos": "MacOS (M1以降)",
+      "windows": "Windows (CUDA対応のNvidia GPU)"
+    },
+    "title": "お使いのデバイスはサポートされていません"
+  },
+  "openNewIssue": "新しいIssueを開く",
+  "reconnected": "再接続しました",
+  "reconnecting": "再接続中",
+  "refresh": "更新",
+  "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
+  "rename": "名前を変更",
+  "reportIssue": "レポートを送信",
+  "reportIssueTooltip": "エラーレポートをComfy Orgに送信",
+  "reportSent": "レポートを送信しました",
+  "reset": "リセット",
+  "resetKeybindingsTooltip": "キーバインドをデフォルトに戻す",
+  "searchExtensions": "拡張機能を検索",
+  "searchFailedMessage": "検索条件に一致する設定が見つかりませんでした。条件を変更して再試行してください。",
+  "searchKeybindings": "キーバインドを検索",
+  "searchModels": "モデルを検索",
+  "searchNodes": "ノードを検索",
+  "searchSettings": "設定を検索",
+  "searchWorkflows": "ワークフローを検索",
+  "serverConfig": {
+    "modifiedConfigs": "以下のサーバー設定を変更しました。変更を適用するには再起動してください。",
+    "restart": "再起動",
+    "revertChanges": "変更を元に戻す"
+  },
+  "serverStart": {
+    "openLogs": "ログを開く",
+    "process": {
+      "error": "ComfyUIデスクトップを起動できません",
+      "ready": "完了中..."
+    },
+    "reinstall": "再インストール",
+    "reportIssue": "問題を報告"
+  },
+  "settings": "設定",
+  "showReport": "レポートを表示",
+  "sideToolbar": {
+    "browseTemplates": "サンプルテンプレートを表示",
+    "downloads": "ダウンロード",
+    "logout": "ログアウト",
+    "modelLibrary": "モデルライブラリ",
+    "newBlankWorkflow": "新しい空のワークフローを作成",
+    "nodeLibrary": "ノードライブラリ",
+    "nodeLibraryTab": {
+      "sortOrder": "並び順"
+    },
+    "openWorkflow": "ローカルでワークフローを開く",
+    "queue": "キュー",
+    "queueTab": {
+      "backToAllTasks": "すべてのタスクに戻る",
+      "clearPendingTasks": "保留中のタスクをクリア",
+      "containImagePreview": "画像プレビューを含める",
+      "coverImagePreview": "画像プレビューに合わせる",
+      "filter": "出力をフィルタ",
+      "filters": {
+        "hideCached": "キャッシュを非表示",
+        "hideCanceled": "キャンセル済みを非表示"
+      },
+      "showFlatList": "フラットリストを表示"
+    },
+    "themeToggle": "テーマの切り替え",
+    "workflows": "ワークフロー"
+  },
+  "star": "スター",
+  "systemInfo": "システム情報",
+  "templateWorkflows": {
+    "template": {
+      "default": "画像生成",
+      "flux_schnell": "Flux Schnell",
+      "image2image": "画像から画像へ",
+      "upscale": "2パスアップスケール"
+    },
+    "title": "テンプレートを利用して開始"
+  },
+  "terminal": "ターミナル",
+  "userSelect": {
+    "enterUsername": "ユーザー名を入力してください",
+    "existingUser": "既存のユーザー",
+    "newUser": "新しいユーザー",
+    "next": "次へ",
+    "selectUser": "ユーザーを選択"
+  },
+  "videoFailedToLoad": "ビデオの読み込みに失敗しました",
+  "welcome": {
+    "getStarted": "はじめる",
+    "title": "ComfyUIへようこそ"
+  }
+}

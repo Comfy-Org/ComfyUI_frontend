@@ -1,0 +1,223 @@
+{
+  "about": "О",
+  "add": "Добавить",
+  "bookmark": "Закладка",
+  "box": "Ящик",
+  "briefcase": "Чемодан",
+  "color": "Цвет",
+  "comingSoon": "Скоро",
+  "confirm": "Подтвердить",
+  "copyToClipboard": "Копировать в буфер обмена",
+  "currentUser": "Текущий пользователь",
+  "customize": "Настроить",
+  "customizeFolder": "Настроить папку",
+  "delete": "Удалить",
+  "deprecated": "УСТАР",
+  "devices": "Устройства",
+  "download": "Скачать",
+  "downloadGit": {
+    "gitWebsite": "Скачать git",
+    "instructions": "Пожалуйста, скачайте и установите последнюю версию для вашей операционной системы. Кнопка 'Скачать git' ниже открывает страницу загрузок git-scm.com.",
+    "message": "Не удалось найти git. Рабочая копия git необходима для нормальной работы.",
+    "skip": "Пропустить",
+    "title": "Скачать git",
+    "warning": "Если вы уверены, что вам не нужно устанавливать git, или произошла ошибка, вы можете нажать 'Пропустить', чтобы обойти эту проверку. Попытка запустить ComfyUI без рабочей копии git в настоящее время не поддерживается."
+  },
+  "electronFileDownload": {
+    "cancel": "Отменить загрузку",
+    "cancelled": "Отменено",
+    "inProgress": "В процессе",
+    "pause": "Приостановить загрузку",
+    "paused": "Приостановлено",
+    "resume": "Возобновить загрузку"
+  },
+  "empty": "Пусто",
+  "error": "Ошибка",
+  "experimental": "БЕТА",
+  "extensionName": "Название расширения",
+  "file": "Файл",
+  "findIssues": "Найти Issue",
+  "firstTimeUIMessage": "Это первый раз, когда вы используете новый интерфейс. Выберите \"Меню > Использовать новое меню > Отключено\", чтобы восстановить старый интерфейс.",
+  "folder": "Папка",
+  "goToNode": "Перейти к узлу",
+  "graphCanvasMenu": {
+    "fitView": "Подгонять под выделенные",
+    "panMode": "Режим панорамирования",
+    "resetView": "Сбросить вид",
+    "selectMode": "Выбрать режим",
+    "toggleLinkVisibility": "Переключить видимость ссылок",
+    "zoomIn": "Увеличить",
+    "zoomOut": "Уменьшить"
+  },
+  "heart": "Сердце",
+  "icon": "Иконка",
+  "imageFailedToLoad": "Изображение не удалось загрузить",
+  "inbox": "Входящие",
+  "insert": "Вставить",
+  "install": {
+    "appDataLocationTooltip": "Директория данных приложения ComfyUI. Хранит:\n- Логи\n- Конфигурации сервера",
+    "appPathLocationTooltip": "Директория активов приложения ComfyUI. Хранит код и активы ComfyUI",
+    "chooseInstallationLocation": "Выберите место установки",
+    "customNodes": "Пользовательские узлы",
+    "customNodesDescription": "Ссылайтесь на файлы пользовательских узлов из существующих установок ComfyUI и устанавливайте их зависимости.",
+    "desktopAppSettings": "Настройки настольного приложения",
+    "desktopAppSettingsDescription": "Настройте, как ComfyUI ведет себя на вашем рабочем столе. Вы можете изменить эти настройки позже.",
+    "desktopSettings": "Настройки рабочего стола",
+    "failedToSelectDirectory": "Не удалось выбрать директорию",
+    "installLocation": "Место установки",
+    "installLocationDescription": "Выберите директорию для пользовательских данных ComfyUI. В выбранном месте будет установлена среда Python. Пожалуйста, убедитесь, что на выбранном диске достаточно места (~15 ГБ).",
+    "installLocationTooltip": "Директория пользовательских данных ComfyUI. Хранит:\n- Среда Python\n- Модели\n- Пользовательские узлы\n",
+    "migrateFromExistingInstallation": "Миграция из существующей установки",
+    "migration": "Миграция",
+    "migrationOptional": "Миграция является необязательной. Если у вас нет существующей установки, вы можете пропустить этот шаг.",
+    "migrationSourcePathDescription": "Если у вас есть существующая установка ComfyUI, мы можем скопировать/связать ваши существующие пользовательские файлы и модели в новую установку.",
+    "pathValidationFailed": "Не удалось проверить путь",
+    "selectItemsToMigrate": "Выберите элементы для миграции",
+    "settings": {
+      "allowMetrics": "Отчеты о сбоях",
+      "allowMetricsDescription": "Помогите улучшить ComfyUI, отправляя анонимные отчеты о сбоях. Личная информация или содержимое рабочего процесса не будут собираться. Это можно отключить в любое время в меню настроек.",
+      "autoUpdate": "Автоматические обновления",
+      "autoUpdateDescription": "Автоматически загружать и устанавливать обновления, когда они становятся доступными. Вы всегда будете уведомлены перед установкой обновлений.",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "Конфигурации пользовательских узлов",
+        "errorReports": "Сообщения об ошибках и трассировка стека",
+        "fileSystemInformation": "Информация о файловой системе",
+        "personalInformation": "Личная информация",
+        "systemInfo": "Аппаратное обеспечение, тип ОС и версия приложения",
+        "title": "О сборе данных",
+        "whatWeCollect": "Что мы собираем:",
+        "whatWeDoNotCollect": "Что мы не собираем:",
+        "workflowContent": "Содержимое рабочего процесса",
+        "workflowContents": "Содержимое рабочего процесса"
+      },
+      "learnMoreAboutData": "Узнать больше о сборе данных"
+    },
+    "systemLocations": "Системные места"
+  },
+  "loadAllFolders": "Загрузить все папки",
+  "loadWorkflow": "Загрузить рабочий процесс",
+  "loading": "Загрузка",
+  "logs": "Логи",
+  "menu": {
+    "autoQueue": "Автоочередь",
+    "batchCount": "Количество пакетов",
+    "batchCountTooltip": "Количество раз, когда генерация рабочего процесса должна быть помещена в очередь",
+    "change": "При изменении",
+    "changeTooltip": "Рабочий процесс будет поставлен в очередь после внесения изменений",
+    "clear": "Очистить рабочий процесс",
+    "clipspace": "Открыть Clipspace",
+    "disabled": "Отключено",
+    "disabledTooltip": "Рабочий процесс не будет автоматически помещён в очередь",
+    "hideMenu": "Скрыть меню",
+    "instant": "Мгновенно",
+    "instantTooltip": "Рабочий процесс будет помещён в очередь сразу же после завершения генерации",
+    "interrupt": "Отменить текущее выполнение",
+    "queue": "Очередь",
+    "queueWorkflow": "Очередь рабочего процесса (Shift для вставки спереди)",
+    "queueWorkflowFront": "Очередь рабочего процесса (Вставка спереди)",
+    "refresh": "Обновить определения узлов",
+    "resetView": "Сбросить вид холста",
+    "showMenu": "Показать меню",
+    "toggleBottomPanel": "Переключить нижнюю панель"
+  },
+  "newFolder": "Новая папка",
+  "noResultsFound": "Ничего не найдено",
+  "noTasksFound": "Задачи не найдены",
+  "noTasksFoundMessage": "В очереди нет задач.",
+  "noWorkflowsFound": "Рабочие процессы не найдены.",
+  "notSupported": {
+    "learnMore": "Узнать больше",
+    "message": "Поддерживаются только следующие устройства:",
+    "reportIssue": "Сообщить о проблеме",
+    "supportedDevices": {
+      "macos": "MacOS (M1 или новее)",
+      "windows": "Windows (Nvidia GPU с поддержкой CUDA)"
+    },
+    "title": "Ваше устройство не поддерживается"
+  },
+  "openNewIssue": "Открыть новый Issue",
+  "reconnected": "Переподключено",
+  "reconnecting": "Переподключение",
+  "refresh": "Обновить",
+  "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
+  "rename": "Переименовать",
+  "reportIssue": "Отправить отчет",
+  "reportIssueTooltip": "Отправить отчет об ошибке в Comfy Org",
+  "reportSent": "Отчет отправлен",
+  "reset": "Сбросить",
+  "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
+  "searchExtensions": "Поиск расширений",
+  "searchFailedMessage": "Не удалось найти ни одной настройки, соответствующей вашему запросу. Попробуйте скорректировать поисковый запрос.",
+  "searchKeybindings": "Поиск сочетаний клавиш",
+  "searchModels": "Поиск моделей",
+  "searchNodes": "Поиск узлов",
+  "searchSettings": "Поиск настроек",
+  "searchWorkflows": "Поиск рабочих процессов",
+  "serverConfig": {
+    "modifiedConfigs": "Вы изменили следующие конфигурации сервера. Перезапустите, чтобы применить изменения.",
+    "restart": "Перезапустить",
+    "revertChanges": "Отменить изменения"
+  },
+  "serverStart": {
+    "openLogs": "Открыть логи",
+    "process": {
+      "error": "Не удалось запустить ComfyUI Desktop",
+      "ready": "Завершение..."
+    },
+    "reinstall": "Переустановить",
+    "reportIssue": "Сообщить о проблеме"
+  },
+  "settings": "Настройки",
+  "showReport": "Показать отчёт",
+  "sideToolbar": {
+    "browseTemplates": "Просмотреть примеры шаблонов",
+    "downloads": "Загрузки",
+    "logout": "Выйти",
+    "modelLibrary": "Библиотека моделей",
+    "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
+    "nodeLibrary": "Библиотека узлов",
+    "nodeLibraryTab": {
+      "sortOrder": "Порядок сортировки"
+    },
+    "openWorkflow": "Открыть рабочий процесс в локальной файловой системе",
+    "queue": "Очередь",
+    "queueTab": {
+      "backToAllTasks": "Вернуться ко всем задачам",
+      "clearPendingTasks": "Очистить отложенные задачи",
+      "containImagePreview": "Предпросмотр заливающего изображения",
+      "coverImagePreview": "Предпросмотр подходящего изображения",
+      "filter": "Фильтровать выводы",
+      "filters": {
+        "hideCached": "Скрыть кэшированные",
+        "hideCanceled": "Скрыть отмененные"
+      },
+      "showFlatList": "Показать плоский список"
+    },
+    "themeToggle": "Переключить тему",
+    "workflows": "Рабочие процессы"
+  },
+  "star": "Звёздочка",
+  "systemInfo": "Информация о системе",
+  "templateWorkflows": {
+    "template": {
+      "default": "Image Generation",
+      "flux_schnell": "Flux Schnell",
+      "image2image": "Image to Image",
+      "upscale": "2 Pass Upscale"
+    },
+    "title": "Начните работу с шаблона"
+  },
+  "terminal": "Терминал",
+  "userSelect": {
+    "enterUsername": "Введите имя пользователя",
+    "existingUser": "Существующий пользователь",
+    "newUser": "Новый пользователь",
+    "next": "Далее",
+    "selectUser": "Выберите пользователя"
+  },
+  "videoFailedToLoad": "Видео не удалось загрузить",
+  "welcome": {
+    "getStarted": "Начать",
+    "title": "Добро пожаловать в ComfyUI"
+  }
+}

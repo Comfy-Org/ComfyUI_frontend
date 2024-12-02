@@ -1,0 +1,223 @@
+{
+  "about": "关于",
+  "add": "添加",
+  "bookmark": "书签",
+  "box": "盒子",
+  "briefcase": "公文包",
+  "color": "颜色",
+  "comingSoon": "敬请期待",
+  "confirm": "确认",
+  "copyToClipboard": "复制到剪贴板",
+  "currentUser": "当前用户",
+  "customize": "定制",
+  "customizeFolder": "定制文件夹",
+  "delete": "删除",
+  "deprecated": "弃用",
+  "devices": "设备",
+  "download": "下载",
+  "downloadGit": {
+    "gitWebsite": "下载 git",
+    "instructions": "请下载并安装适合您操作系统的最新版本。下面的下载 git 按钮将打开 git-scm.com 下载页面。",
+    "message": "无法找到 git。正常操作需要一个可用的 git 副本。",
+    "skip": "跳过",
+    "title": "下载 git",
+    "warning": "如果您确定不需要安装 git，或者这是一个错误，您可以点击跳过以绕过此检查。当前不支持在没有可用 git 副本的情况下运行 ComfyUI。"
+  },
+  "electronFileDownload": {
+    "cancel": "取消下载",
+    "cancelled": "已取消",
+    "inProgress": "进行中",
+    "pause": "暂停下载",
+    "paused": "已暂停",
+    "resume": "恢复下载"
+  },
+  "empty": "空",
+  "error": "错误",
+  "experimental": "BETA",
+  "extensionName": "扩展名称",
+  "file": "文件",
+  "findIssues": "查找 Issue",
+  "firstTimeUIMessage": "这是您第一次使用新界面。选择“Menu > Use New Menu > Disabled”以恢复旧界面。",
+  "folder": "文件夹",
+  "goToNode": "前往节点",
+  "graphCanvasMenu": {
+    "fitView": "适应视图",
+    "panMode": "平移模式",
+    "resetView": "重置视图",
+    "selectMode": "选择模式",
+    "toggleLinkVisibility": "切换链接可见性",
+    "zoomIn": "放大",
+    "zoomOut": "缩小"
+  },
+  "heart": "心",
+  "icon": "图标",
+  "imageFailedToLoad": "图像加载失败",
+  "inbox": "收件箱",
+  "insert": "插入",
+  "install": {
+    "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
+    "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
+    "chooseInstallationLocation": "选择安装位置",
+    "customNodes": "自定义节点",
+    "customNodesDescription": "引用现有 ComfyUI 安装的自定义节点文件并安装其依赖项。",
+    "desktopAppSettings": "桌面应用设置",
+    "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
+    "desktopSettings": "桌面设置",
+    "failedToSelectDirectory": "选择目录失败",
+    "installLocation": "安装位置",
+    "installLocationDescription": "选择 ComfyUI 用户数据的目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
+    "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "migrateFromExistingInstallation": "从现有安装迁移",
+    "migration": "迁移",
+    "migrationOptional": "迁移是可选的。如果您没有现有安装，可以跳过此步骤。",
+    "migrationSourcePathDescription": "如果您有现有的 ComfyUI 安装，我们可以将您的现有用户文件和模型复制/链接到新安装。",
+    "pathValidationFailed": "路径验证失败",
+    "selectItemsToMigrate": "选择要迁移的项目",
+    "settings": {
+      "allowMetrics": "崩溃报告",
+      "allowMetricsDescription": "通过发送匿名崩溃报告来帮助改善 ComfyUI。不会收集任何个人信息或工作流内容。您可以随时在设置菜单中禁用此功能。",
+      "autoUpdate": "自动更新",
+      "autoUpdateDescription": "在更新可用时自动下载并安装更新。您将在安装更新之前始终收到通知。",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "自定义节点配置",
+        "errorReports": "错误信息和堆栈跟踪",
+        "fileSystemInformation": "文件系统信息",
+        "personalInformation": "个人信息",
+        "systemInfo": "硬件、操作系统类型和应用版本",
+        "title": "关于数据收集",
+        "whatWeCollect": "我们收集的内容：",
+        "whatWeDoNotCollect": "我们不收集的内容：",
+        "workflowContent": "工作流内容",
+        "workflowContents": "工作流内容"
+      },
+      "learnMoreAboutData": "了解更多关于数据收集的信息"
+    },
+    "systemLocations": "系统位置"
+  },
+  "loadAllFolders": "加载所有文件夹",
+  "loadWorkflow": "加载工作流",
+  "loading": "加载中",
+  "logs": "日志",
+  "menu": {
+    "autoQueue": "自动执行",
+    "batchCount": "批次数量",
+    "batchCountTooltip": "工作流生成次数",
+    "change": "变动",
+    "changeTooltip": "工作流将会在改变后执行",
+    "clear": "清空工作流",
+    "clipspace": "打开剪贴板",
+    "disabled": "禁用",
+    "disabledTooltip": "工作流将不会自动执行",
+    "hideMenu": "隐藏菜单",
+    "instant": "实时",
+    "instantTooltip": "工作流将会在生成完成后立即执行",
+    "interrupt": "取消当前任务",
+    "queue": "队列",
+    "queueWorkflow": "执行 (Shift 执行到队列首)",
+    "queueWorkflowFront": "执行到队列首",
+    "refresh": "刷新节点",
+    "resetView": "重置画布视图",
+    "showMenu": "显示菜单",
+    "toggleBottomPanel": "底部面板"
+  },
+  "newFolder": "新建文件夹",
+  "noResultsFound": "未找到结果",
+  "noTasksFound": "未找到任务",
+  "noTasksFoundMessage": "队列中没有任务。",
+  "noWorkflowsFound": "未找到工作流",
+  "notSupported": {
+    "learnMore": "了解更多",
+    "message": "仅支持以下设备：",
+    "reportIssue": "报告问题",
+    "supportedDevices": {
+      "macos": "MacOS (M1 或更高版本)",
+      "windows": "Windows (支持 CUDA 的 Nvidia GPU)"
+    },
+    "title": "您的设备不受支持"
+  },
+  "openNewIssue": "开启新 Issue",
+  "reconnected": "已重新连接",
+  "reconnecting": "重新连接中",
+  "refresh": "刷新",
+  "reloadToApplyChanges": "重新加载以应用更改",
+  "rename": "重命名",
+  "reportIssue": "发送报告",
+  "reportIssueTooltip": "将错误报告提交给 Comfy 组织",
+  "reportSent": "报告已提交",
+  "reset": "重置",
+  "resetKeybindingsTooltip": "重置键位",
+  "searchExtensions": "搜索插件",
+  "searchFailedMessage": "我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。",
+  "searchKeybindings": "搜索键位",
+  "searchModels": "搜索模型",
+  "searchNodes": "搜索节点",
+  "searchSettings": "搜索设置",
+  "searchWorkflows": "搜索工作流",
+  "serverConfig": {
+    "modifiedConfigs": "您已修改以下服务器配置。重启以应用更改。",
+    "restart": "重启",
+    "revertChanges": "撤销更改"
+  },
+  "serverStart": {
+    "openLogs": "打开日志",
+    "process": {
+      "error": "无法启动 ComfyUI 桌面版",
+      "ready": "完成中..."
+    },
+    "reinstall": "重新安装",
+    "reportIssue": "报告问题"
+  },
+  "settings": "设置",
+  "showReport": "显示报告",
+  "sideToolbar": {
+    "browseTemplates": "浏览示例模板",
+    "downloads": "下载",
+    "logout": "登出",
+    "modelLibrary": "模型库",
+    "newBlankWorkflow": "创建一个新空白工作流",
+    "nodeLibrary": "节点库",
+    "nodeLibraryTab": {
+      "sortOrder": "排序顺序"
+    },
+    "openWorkflow": "在本地文件系统中打开工作流",
+    "queue": "队列",
+    "queueTab": {
+      "backToAllTasks": "返回",
+      "clearPendingTasks": "清除待处理任务",
+      "containImagePreview": "填充图像预览",
+      "coverImagePreview": "适应图像预览",
+      "filter": "过滤输出",
+      "filters": {
+        "hideCached": "隐藏缓存",
+        "hideCanceled": "隐藏已取消"
+      },
+      "showFlatList": "平铺结果"
+    },
+    "themeToggle": "主题切换",
+    "workflows": "工作流"
+  },
+  "star": "星星",
+  "systemInfo": "系统信息",
+  "templateWorkflows": {
+    "template": {
+      "default": "Image Generation",
+      "flux_schnell": "Flux Schnell",
+      "image2image": "Image to Image",
+      "upscale": "2 Pass Upscale"
+    },
+    "title": "从模板开始"
+  },
+  "terminal": "终端",
+  "userSelect": {
+    "enterUsername": "输入用户名",
+    "existingUser": "已有用户",
+    "newUser": "新用户",
+    "next": "下一步",
+    "selectUser": "选择用户"
+  },
+  "videoFailedToLoad": "视频加载失败",
+  "welcome": {
+    "getStarted": "开始使用",
+    "title": "欢迎使用 ComfyUI"
+  }
+}
