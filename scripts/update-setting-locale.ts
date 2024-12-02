@@ -9,7 +9,8 @@ interface SettingLocale {
 const extractLocaleStrings = (): Record<string, SettingLocale> => {
   return Object.fromEntries(
     CORE_SETTINGS.sort((a, b) => a.id.localeCompare(b.id)).map((setting) => [
-      setting.id,
+      // '.' is not allowed in JSON keys, so we replace it with '_'
+      setting.id.replace(/\./g, '_'),
       {
         name: setting.name,
         tooltip: setting.tooltip
