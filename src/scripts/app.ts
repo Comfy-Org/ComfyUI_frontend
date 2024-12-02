@@ -131,7 +131,6 @@ export class ComfyApp {
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, typeof Image>
   graph: LGraph
-  enableWorkflowViewRestore: any
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null
   canvasEl: HTMLCanvasElement
@@ -464,7 +463,7 @@ export class ComfyApp {
       const workflow = serialize.apply(this, arguments)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
-      if (self.enableWorkflowViewRestore.value) {
+      if (useSettingStore().get('Comfy.EnableWorkflowViewRestore')) {
         if (!workflow.extra) {
           workflow.extra = {}
         }
@@ -479,13 +478,6 @@ export class ComfyApp {
 
       return workflow
     }
-    this.enableWorkflowViewRestore = this.ui.settings.addSetting({
-      id: 'Comfy.EnableWorkflowViewRestore',
-      category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
-      name: 'Save and restore canvas position and zoom level in workflows',
-      type: 'boolean',
-      defaultValue: true
-    })
   }
 
   /**
@@ -2168,7 +2160,7 @@ export class ComfyApp {
       this.graph.configure(graphData)
       if (
         restore_view &&
-        this.enableWorkflowViewRestore.value &&
+        useSettingStore().get('Comfy.EnableWorkflowViewRestore') &&
         graphData.extra?.ds
       ) {
         // @ts-expect-error

@@ -650,5 +650,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 0,
     versionAdded: '1.5.1'
+  },
+  {
+    id: 'Comfy.EnableWorkflowViewRestore',
+    category: ['Comfy', 'Workflow', 'EnableWorkflowViewRestore'],
+    name: 'Save and restore canvas position and zoom level in workflows',
+    type: 'boolean',
+    defaultValue: true,
+    versionModified: '1.5.4'
   }
 ]

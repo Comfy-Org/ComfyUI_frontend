@@ -188,6 +188,9 @@
     "Comfy_EnableTooltips": {
       "name": "Включить подсказки"
     },
+    "Comfy_EnableWorkflowViewRestore": {
+      "name": "Сохранять и восстанавливать положение и уровень масштабирования холста в рабочих процессах"
+    },
     "Comfy_Extension_Disabled": {
       "name": "Отключенные имена расширений"
     },
