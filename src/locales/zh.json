@@ -231,6 +231,9 @@
     "Comfy_LinkRenderMode": {
       "name": "链接渲染模式"
     },
+    "Comfy_Locale": {
+      "name": "语言"
+    },
     "Comfy_ModelLibrary_AutoLoadAll": {
       "name": "自动加载所有模型文件夹",
       "tooltip": "如果为真，所有文件夹将在打开模型库时立即加载（这可能会导致加载时的延迟）。如果为假，根级模型文件夹仅在您单击它们时加载。"
