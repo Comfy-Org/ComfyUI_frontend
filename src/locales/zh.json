@@ -198,6 +198,13 @@
   },
   "star": "星星",
   "systemInfo": "系统信息",
+  "tabMenu": {
+    "closeOtherTabs": "关闭其他标签",
+    "closeTab": "关闭标签",
+    "closeTabsToLeft": "关闭左侧标签",
+    "closeTabsToRight": "关闭右侧标签",
+    "duplicateTab": "复制标签"
+  },
   "templateWorkflows": {
     "template": {
       "default": "Image Generation",

@@ -198,6 +198,13 @@
   },
   "star": "Звёздочка",
   "systemInfo": "Информация о системе",
+  "tabMenu": {
+    "closeOtherTabs": "Закрыть другие вкладки",
+    "closeTab": "Закрыть вкладку",
+    "closeTabsToLeft": "Закрыть вкладки слева",
+    "closeTabsToRight": "Закрыть вкладки справа",
+    "duplicateTab": "Дублировать вкладку"
+  },
   "templateWorkflows": {
     "template": {
       "default": "Image Generation",
