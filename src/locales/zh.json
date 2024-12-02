@@ -188,6 +188,9 @@
     "Comfy_EnableTooltips": {
       "name": "启用工具提示"
     },
+    "Comfy_EnableWorkflowViewRestore": {
+      "name": "在工作流中保存和恢复画布位置及缩放级别"
+    },
     "Comfy_Extension_Disabled": {
       "name": "禁用的扩展名称"
     },

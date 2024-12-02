@@ -188,6 +188,9 @@
     "Comfy_EnableTooltips": {
       "name": "ツールチップを有効にする"
     },
+    "Comfy_EnableWorkflowViewRestore": {
+      "name": "ワークフロー内のキャンバスの位置とズームレベルを保存および復元する"
+    },
     "Comfy_Extension_Disabled": {
       "name": "無効な拡張機能名"
     },
