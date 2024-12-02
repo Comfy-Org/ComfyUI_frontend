@@ -186,4 +186,22 @@ test.describe('Node Right Click Menu', () => {
       'selected-nodes-unpinned.png'
     )
   })
+
+  test('Can clone pinned nodes', async ({ comfyPage }) => {
+    const nodeCount = await comfyPage.getGraphNodesCount()
+    const node = (await comfyPage.getFirstNodeRef())!
+    await node.clickContextMenuOption('Pin')
+    await comfyPage.nextFrame()
+    await node.click('title', { button: 'right' })
+    await expect(
+      comfyPage.page.locator('.litemenu-entry:has-text("Unpin")')
+    ).toBeAttached()
+    const cloneItem = comfyPage.page.locator(
+      '.litemenu-entry:has-text("Clone")'
+    )
+    await cloneItem.click()
+    await expect(cloneItem).toHaveCount(0)
+    await comfyPage.nextFrame()
+    expect(await comfyPage.getGraphNodesCount()).toBe(nodeCount + 1)
+  })
 })
