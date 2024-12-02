@@ -12,6 +12,7 @@
       <div
         class="flex p-2 gap-2"
         @contextmenu="showContextMenu($event, option)"
+        @click.middle="onCloseWorkflow(option)"
       >
         <span
           class="workflow-label text-sm max-w-[150px] truncate inline-block"
