@@ -52,6 +52,7 @@ import { computed, ref } from 'vue'
 import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import ContextMenu from 'primevue/contextmenu'
+import { useI18n } from 'vue-i18n'
 
 interface WorkflowOption {
   value: string
@@ -62,6 +63,7 @@ const props = defineProps<{
   class?: string
 }>()
 
+const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const rightClickedTab = ref<WorkflowOption>(null)
@@ -122,38 +124,36 @@ const contextMenuItems = computed(() => {
 
   return [
     {
-      label: 'Duplicate Tab',
+      label: t('tabMenu.duplicateTab'),
       command: () => {
         workflowService.duplicateWorkflow(tab.workflow)
       }
     },
     {
-      label: 'Close Tab',
+      separator: true
+    },
+    {
+      label: t('tabMenu.closeTab'),
       command: () => onCloseWorkflow(tab)
     },
     {
-      label: 'Close Multiple Tabs',
-      disabled: options.value.length <= 1,
-      items: [
-        {
-          label: 'Close Tabs to Left',
-          command: () => closeWorkflows(options.value.slice(0, index)),
-          disabled: index <= 0
-        },
-        {
-          label: 'Close Tabs to Right',
-          command: () => closeWorkflows(options.value.slice(index + 1)),
-          disabled: index === options.value.length - 1
-        },
-        {
-          label: 'Close Other Tabs',
-          command: () =>
-            closeWorkflows([
-              ...options.value.slice(index + 1),
-              ...options.value.slice(0, index)
-            ])
-        }
-      ]
+      label: t('tabMenu.closeTabsToLeft'),
+      command: () => closeWorkflows(options.value.slice(0, index)),
+      disabled: index <= 0
+    },
+    {
+      label: t('tabMenu.closeTabsToRight'),
+      command: () => closeWorkflows(options.value.slice(index + 1)),
+      disabled: index === options.value.length - 1
+    },
+    {
+      label: t('tabMenu.closeOtherTabs'),
+      command: () =>
+        closeWorkflows([
+          ...options.value.slice(index + 1),
+          ...options.value.slice(0, index)
+        ]),
+      disabled: options.value.length <= 1
     }
   ]
 })
