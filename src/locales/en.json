@@ -198,7 +198,7 @@
       "name": "Link Render Mode"
     },
     "Comfy_Locale": {
-      "name": "Locale"
+      "name": "Language"
     },
     "Comfy_ModelLibrary_AutoLoadAll": {
       "name": "Automatically load all model folders",
