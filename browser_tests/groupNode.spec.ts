@@ -103,6 +103,36 @@ test.describe('Group Node', () => {
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
 
+  test('Manage group opens with the correct group selected', async ({
+    comfyPage
+  }) => {
+    const makeGroup = async (name, type1, type2) => {
+      const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
+      const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
+      await node1.click('title')
+      await node2.click('title', {
+        modifiers: ['Shift']
+      })
+      return await node2.convertToGroupNode(name)
+    }
+
+    const group1 = await makeGroup(
+      'g1',
+      'CLIPTextEncode',
+      'CheckpointLoaderSimple'
+    )
+    const group2 = await makeGroup('g2', 'EmptyLatentImage', 'KSampler')
+
+    const manage1 = await group1.manageGroupNode()
+    await comfyPage.nextFrame()
+    expect(await manage1.getSelectedNodeType()).toBe('g1')
+    await manage1.close()
+    await expect(manage1.root).not.toBeVisible()
+
+    const manage2 = await group2.manageGroupNode()
+    expect(await manage2.getSelectedNodeType()).toBe('g2')
+  })
+
   test('Reconnects inputs after configuration changed via manage dialog save', async ({
     comfyPage
   }) => {

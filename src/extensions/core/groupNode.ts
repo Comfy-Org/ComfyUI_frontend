@@ -1001,7 +1001,7 @@ export class GroupNodeHandler {
         },
         {
           content: 'Manage Group Node',
-          callback: manageGroupNodes
+          callback: () => manageGroupNodes(this.type)
         }
       )
     }
@@ -1488,8 +1488,8 @@ function ungroupSelectedGroupNodes() {
   }
 }
 
-function manageGroupNodes() {
-  new ManageGroupDialog(app).show()
+function manageGroupNodes(type?: string) {
+  new ManageGroupDialog(app).show(type)
 }
 
 const id = 'Comfy.GroupNode'
