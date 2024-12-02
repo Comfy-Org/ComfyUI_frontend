@@ -13,6 +13,16 @@ export function useTerminal(element: Ref<HTMLElement>) {
   )
   terminal.loadAddon(fitAddon)
 
+  terminal.attachCustomKeyEventHandler((event) => {
+    if (event.type === 'keydown' && (event.ctrlKey || event.metaKey)) {
+      if (event.key === 'c' || event.key === 'v') {
+        // Allow default browser copy/paste handling
+        return false
+      }
+    }
+    return true
+  })
+
   onMounted(async () => {
     terminal.open(element.value)
   })
