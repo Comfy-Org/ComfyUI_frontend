@@ -33,9 +33,9 @@ const formItem = computed(() => {
   const normalizedId = props.setting.id.replace(/\./g, '_')
   return {
     ...props.setting,
-    name: t(`settingsDialog.${normalizedId}.name`),
+    name: t(`settingsDialog.${normalizedId}.name`, props.setting.name),
     tooltip: props.setting.tooltip
-      ? t(`settingsDialog.${normalizedId}.tooltip`)
+      ? t(`settingsDialog.${normalizedId}.tooltip`, props.setting.tooltip)
       : undefined
   }
 })
