@@ -231,6 +231,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.TreeExplorer.ItemPadding',
+    category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
     defaultValue: 2,
