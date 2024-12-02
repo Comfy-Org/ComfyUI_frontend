@@ -133,7 +133,8 @@
   "deprecated": "DEPR",
   "loadWorkflow": "Load Workflow",
   "goToNode": "Go to Node",
-  "settings": {
+  "settings": "Settings",
+  "settingsDialog": {
     "Comfy.ConfirmClear": {
       "name": "Require confirmation when clearing workflow"
     },

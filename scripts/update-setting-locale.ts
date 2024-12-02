@@ -24,7 +24,7 @@ const main = () => {
   const globalLocale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
   fs.writeFileSync(
     localePath,
-    JSON.stringify({ ...globalLocale, settings: localeStrings }, null, 2)
+    JSON.stringify({ ...globalLocale, settingsDialog: localeStrings }, null, 2)
   )
 }
 

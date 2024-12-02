@@ -168,6 +168,243 @@
     "reportIssue": "問題を報告"
   },
   "settings": "設定",
+  "settingsDialog": {
+    "Comfy.ConfirmClear": {
+      "name": "ワークフローをクリアする際に確認を要求する"
+    },
+    "Comfy.DOMClippingEnabled": {
+      "name": "DOM要素のクリッピングを有効にする（有効にするとパフォーマンスが低下する可能性があります）"
+    },
+    "Comfy.DevMode": {
+      "name": "開発モードオプションを有効にする（API保存など）"
+    },
+    "Comfy.DisableFloatRounding": {
+      "name": "デフォルトの浮動小数点ウィジェットの丸めを無効にする。",
+      "tooltip": "(ページの再読み込みが必要) バックエンドのノードで丸めが設定されている場合、丸めを無効にすることはできません。"
+    },
+    "Comfy.DisableSliders": {
+      "name": "ノードウィジェットスライダーを無効にする"
+    },
+    "Comfy.EnableTooltips": {
+      "name": "ツールチップを有効にする"
+    },
+    "Comfy.Extension.Disabled": {
+      "name": "無効な拡張機能名"
+    },
+    "Comfy.FloatRoundingPrecision": {
+      "name": "浮動小数点ウィジェットの丸め小数点数 [0 = 自動]。",
+      "tooltip": "(ページの再読み込みが必要)"
+    },
+    "Comfy.Graph.CanvasInfo": {
+      "name": "左下隅にキャンバス情報を表示する（fpsなど）"
+    },
+    "Comfy.Graph.CanvasMenu": {
+      "name": "グラフキャンバスメニューを表示する"
+    },
+    "Comfy.Graph.CtrlShiftZoom": {
+      "name": "ファストズームショートカットを有効にする（Ctrl + Shift + ドラッグ）"
+    },
+    "Comfy.Graph.LinkMarkers": {
+      "name": "リンク中点マーカー"
+    },
+    "Comfy.Graph.ZoomSpeed": {
+      "name": "キャンバスズーム速度"
+    },
+    "Comfy.Group.DoubleClickTitleToEdit": {
+      "name": "グループタイトルをダブルクリックして編集"
+    },
+    "Comfy.GroupSelectedNodes.Padding": {
+      "name": "選択したノードのパディング"
+    },
+    "Comfy.Keybinding.NewBindings": {
+      "name": "ユーザーによって設定されたキー割り当て"
+    },
+    "Comfy.Keybinding.UnsetBindings": {
+      "name": "ユーザーによって解除されたキー割り当て"
+    },
+    "Comfy.LinkRelease.Action": {
+      "name": "リンクリリース時のアクション（修飾子なし）"
+    },
+    "Comfy.LinkRelease.ActionShift": {
+      "name": "リンクリリース時のアクション（Shift）"
+    },
+    "Comfy.LinkRenderMode": {
+      "name": "リンクレンダーモード"
+    },
+    "Comfy.Locale": {
+      "name": "ロケール"
+    },
+    "Comfy.ModelLibrary.AutoLoadAll": {
+      "name": "すべてのモデルフォルダーを自動的に読み込む",
+      "tooltip": "trueの場合、モデルライブラリを開くとすぐにすべてのフォルダーが読み込まれます（これにより読み込み中に遅延が発生する可能性があります）。falseの場合、ルートレベルのモデルフォルダーはクリックするまで読み込まれません。"
+    },
+    "Comfy.ModelLibrary.NameFormat": {
+      "name": "モデルライブラリツリービューに表示する名前",
+      "tooltip": "\"ファイル名\"を選択すると、モデルリストにディレクトリや\".safetensors\"拡張子なしの生のファイル名の簡略化されたビューが表示されます。\"タイトル\"を選択すると、設定可能なモデルメタデータタイトルが表示されます。"
+    },
+    "Comfy.Node.AutoSnapLinkToSlot": {
+      "name": "ノードスロットにリンクを自動スナップ",
+      "tooltip": "ノードの上にリンクをドラッグすると、リンクがノードの有効な入力スロットに自動的にスナップします"
+    },
+    "Comfy.Node.BypassAllLinksOnDelete": {
+      "name": "ノード削除時にすべてのリンクを保持",
+      "tooltip": "ノードを削除する際、すべての入力および出力リンクを再接続しようとします（削除されたノードをバイパスします）"
+    },
+    "Comfy.Node.DoubleClickTitleToEdit": {
+      "name": "ノードタイトルをダブルクリックして編集"
+    },
+    "Comfy.Node.MiddleClickRerouteNode": {
+      "name": "ミドルクリックで新しいリルートノードを作成"
+    },
+    "Comfy.Node.Opacity": {
+      "name": "ノードの不透明度"
+    },
+    "Comfy.Node.ShowDeprecated": {
+      "name": "検索で非推奨ノードを表示",
+      "tooltip": "非推奨ノードはデフォルトでUIに隠されていますが、それらを使用する既存のワークフローでは機能します。"
+    },
+    "Comfy.Node.ShowExperimental": {
+      "name": "検索で実験的ノードを表示",
+      "tooltip": "実験的ノードはUIでそのようにマークされており、将来のバージョンで大幅な変更や削除の対象となる可能性があります。生産ワークフローでの使用には注意が必要です"
+    },
+    "Comfy.Node.SnapHighlightsNode": {
+      "name": "スナップハイライトノード",
+      "tooltip": "有効な入力スロットを持つノードの上にリンクをドラッグすると、ノードがハイライトされます"
+    },
+    "Comfy.NodeBadge.NodeIdBadgeMode": {
+      "name": "ノードIDバッジモード"
+    },
+    "Comfy.NodeBadge.NodeLifeCycleBadgeMode": {
+      "name": "ノードライフサイクルバッジモード"
+    },
+    "Comfy.NodeBadge.NodeSourceBadgeMode": {
+      "name": "ノードソースバッジモード"
+    },
+    "Comfy.NodeLibrary.Bookmarks": {
+      "name": "表示名付きノードライブラリブックマーク（非推奨）"
+    },
+    "Comfy.NodeLibrary.Bookmarks.V2": {
+      "name": "ユニーク名付きノードライブラリブックマークv2"
+    },
+    "Comfy.NodeLibrary.BookmarksCustomization": {
+      "name": "ノードライブラリブックマークのカスタマイズ"
+    },
+    "Comfy.NodeSearchBoxImpl": {
+      "name": "ノード検索ボックスの実装"
+    },
+    "Comfy.NodeSearchBoxImpl.NodePreview": {
+      "name": "ノードプレビュー",
+      "tooltip": "デフォルトの実装にのみ適用されます"
+    },
+    "Comfy.NodeSearchBoxImpl.ShowCategory": {
+      "name": "検索結果にノードカテゴリを表示",
+      "tooltip": "デフォルトの実装にのみ適用されます"
+    },
+    "Comfy.NodeSearchBoxImpl.ShowIdName": {
+      "name": "検索結果にノードID名を表示",
+      "tooltip": "デフォルトの実装にのみ適用されます"
+    },
+    "Comfy.NodeSearchBoxImpl.ShowNodeFrequency": {
+      "name": "検索結果にノード頻度を表示",
+      "tooltip": "デフォルトの実装にのみ適用されます"
+    },
+    "Comfy.Pointer.ClickBufferTime": {
+      "name": "ポインタクリックドリフト遅延",
+      "tooltip": "ポインタボタンを押した後、ポインタの動きが無視される最大時間（ミリ秒単位）です。\n\nクリック中にポインタが移動した場合、オブジェクトが意図せず動かされるのを防ぎます。"
+    },
+    "Comfy.Pointer.ClickDrift": {
+      "name": "ポインタクリックドリフト（最大距離）",
+      "tooltip": "ボタンを押し続けている間にポインタがこの距離以上移動した場合、クリックではなくドラッグと見なされます。\n\nクリック中にポインタが移動した場合、オブジェクトが意図せず動かされるのを防ぎます。"
+    },
+    "Comfy.Pointer.DoubleClickTime": {
+      "name": "ダブルクリック間隔（最大）",
+      "tooltip": "ダブルクリックの2回のクリック間の最大時間（ミリ秒単位）。この値を増やすことで、ダブルクリックが時々登録されない場合に助けになるかもしれません。"
+    },
+    "Comfy.PreviewFormat": {
+      "name": "プレビュー画像フォーマット",
+      "tooltip": "画像ウィジェットでプレビューを表示する際、軽量画像に変換します（例：webp、jpeg、webp;50など）。"
+    },
+    "Comfy.PromptFilename": {
+      "name": "ワークフローを保存する際にファイル名を入力するよう促す"
+    },
+    "Comfy.Queue.ImageFit": {
+      "name": "キュー画像フィット"
+    },
+    "Comfy.Queue.MaxHistoryItems": {
+      "name": "キュー履歴サイズ",
+      "tooltip": "キュー履歴に表示されるタスクの最大数。"
+    },
+    "Comfy.QueueButton.BatchCountLimit": {
+      "name": "バッチ数制限",
+      "tooltip": "1回のボタンクリックでキューに追加できるタスクの最大数"
+    },
+    "Comfy.RerouteBeta": {
+      "name": "リルートベータテストに参加する",
+      "tooltip": "新しいネイティブリルートを有効にします。\n\nリルートは、altを押しながらリンクラインからドラッグするか、リンクメニューで追加できます。\n\nこのオプションを無効にしても非破壊的です - リルートは隠されます。"
+    },
+    "Comfy.Server.LaunchArgs": {
+      "name": "サーバー起動引数",
+      "tooltip": "これらは、サーバーが起動されるときに実際にサーバーに渡される引数です。"
+    },
+    "Comfy.Server.ServerConfigValues": {
+      "name": "フロントエンド表示用のサーバー設定値",
+      "tooltip": "フロントエンド表示のみに使用されるサーバー設定値"
+    },
+    "Comfy.Settings.ExtensionPanel": {
+      "name": "設定ダイアログに拡張パネルを表示"
+    },
+    "Comfy.Sidebar.Location": {
+      "name": "サイドバーの位置"
+    },
+    "Comfy.Sidebar.Size": {
+      "name": "サイドバーのサイズ"
+    },
+    "Comfy.SnapToGrid.GridSize": {
+      "name": "グリッドにスナップするサイズ",
+      "tooltip": "シフトを押しながらノードをドラッグおよびサイズ変更すると、グリッドに整列されます。これにより、そのグリッドのサイズが制御されます。"
+    },
+    "Comfy.TextareaWidget.FontSize": {
+      "name": "テキストエリアウィジェットのフォントサイズ"
+    },
+    "Comfy.TextareaWidget.Spellcheck": {
+      "name": "テキストエリアウィジェットのスペルチェック"
+    },
+    "Comfy.TreeExplorer.ItemPadding": {
+      "name": "ツリーエクスプローラーアイテムのパディング"
+    },
+    "Comfy.UseNewMenu": {
+      "name": "新しいメニューを使用"
+    },
+    "Comfy.Validation.NodeDefs": {
+      "name": "ノード定義を検証（遅い）",
+      "tooltip": "ノード開発者に推奨されます。これにより、起動時にすべてのノード定義が検証されます。"
+    },
+    "Comfy.Validation.Workflows": {
+      "name": "ワークフローを検証"
+    },
+    "Comfy.Window.UnloadConfirmation": {
+      "name": "ウィンドウを閉じるときに確認を表示"
+    },
+    "Comfy.Workflow.ShowMissingModelsWarning": {
+      "name": "欠落しているモデルの警告を表示"
+    },
+    "Comfy.Workflow.ShowMissingNodesWarning": {
+      "name": "欠落しているノードの警告を表示"
+    },
+    "Comfy.Workflow.SortNodeIdOnSave": {
+      "name": "ワークフローを保存する際にノードIDをソート"
+    },
+    "Comfy.Workflow.WorkflowTabsPosition": {
+      "name": "開いているワークフローの位置"
+    },
+    "LiteGraph.Canvas.MaximumFps": {
+      "name": "最大FPS",
+      "tooltip": "キャンバスがレンダリングできる最大フレーム数です。スムーズさの代わりにGPU使用量を制限します。0の場合、画面のリフレッシュレートが使用されます。デフォルト：0"
+    },
+    "pysssss.SnapToGrid": {
+      "name": "常にグリッドにスナップ"
+    }
+  },
   "showReport": "レポートを表示",
   "sideToolbar": {
     "browseTemplates": "サンプルテンプレートを表示",
