@@ -97,7 +97,7 @@
     "primevue": "^4.0.5",
     "three": "^0.170.0",
     "vue": "^3.4.31",
-    "vue-i18n": "^9.13.1",
+    "vue-i18n": "^9.14.2",
     "vue-router": "^4.4.3",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
