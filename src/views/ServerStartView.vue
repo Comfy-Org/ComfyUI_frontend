@@ -53,7 +53,7 @@ let xterm: Terminal | undefined
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
   status.value = newStatus
-  xterm?.clear()
+  if (newStatus !== ProgressStatus.ERROR) xterm?.clear()
 }
 
 const terminalCreated = (
