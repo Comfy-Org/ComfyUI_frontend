@@ -28,7 +28,8 @@
     "prepare": "husky || true",
     "preview": "vite preview",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "locale": "lobe-i18n locale"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",
