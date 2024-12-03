@@ -37,26 +37,26 @@ app.registerExtension({
         return
       }
 
-      // Finished Handling all modifier keybinds, now handle the rest
+      // Only clear dialogs if not using modifiers
       if (event.ctrlKey || event.altKey || event.metaKey) {
         return
       }
 
-      // Close out of modals using escape
+      // Escape key: close the first open modal found, and all dialogs
       if (event.key === 'Escape') {
         const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
-        const modal = Array.from(modals).find(
-          (modal) =>
-            window.getComputedStyle(modal).getPropertyValue('display') !==
-            'none'
-        )
-        if (modal) {
-          modal.style.display = 'none'
+        for (const modal of modals) {
+          const modalDisplay = window
+            .getComputedStyle(modal)
+            .getPropertyValue('display')
+
+          if (modalDisplay !== 'none') {
+            modal.style.display = 'none'
+            break
+          }
         }
 
-        ;[...document.querySelectorAll('dialog')].forEach((d) => {
-          d.close()
-        })
+        for (const d of document.querySelectorAll('dialog')) d.close()
       }
     }
 
