@@ -123,6 +123,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
+  <ConfirmPopup />
 </template>
 
 <script setup lang="ts">
@@ -150,6 +151,9 @@ import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import ConfirmPopup from 'primevue/confirmpopup'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -218,6 +222,9 @@ const openWorkflowsTree = computed(() =>
   buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
 )
 
+const confirm = useConfirm()
+const toast = useToast()
+
 const renderTreeNode = (
   node: TreeNode,
   type: WorkflowTreeType
@@ -236,6 +243,40 @@ const renderTreeNode = (
       toggleNodeOnEvent(e, node)
     }
   }
+
+  const confirmDelete = (workflow: ComfyWorkflow) => {
+    confirm.require({
+      message: t('sideToolbar.workflowTab.confirmDelete'),
+      icon: 'pi pi-trash',
+      rejectProps: {
+        label: t('cancel'),
+        severity: 'secondary',
+        outlined: true
+      },
+      acceptProps: {
+        label: t('delete'),
+        severity: 'danger'
+      },
+      accept: async () => {
+        const deleted = await workflowService.deleteWorkflow(workflow)
+        if (deleted) {
+          toast.add({
+            severity: 'info',
+            summary: t('sideToolbar.workflowTab.deleted'),
+            life: 1000
+          })
+        } else {
+          toast.add({
+            severity: 'error',
+            summary: t('sideToolbar.workflowTab.deleteFailedTitle'),
+            detail: t('sideToolbar.workflowTab.deleteFailed'),
+            life: 10_000
+          })
+        }
+      }
+    })
+  }
+
   const actions = node.leaf
     ? {
         handleClick,
@@ -252,9 +293,7 @@ const renderTreeNode = (
         },
         handleDelete: workflow.isTemporary
           ? undefined
-          : () => {
-              workflowService.deleteWorkflow(workflow)
-            },
+          : () => confirmDelete(workflow),
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
             {

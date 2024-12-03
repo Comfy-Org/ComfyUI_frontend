@@ -128,6 +128,7 @@
   "reconnected": "Reconnected",
   "delete": "Delete",
   "rename": "Rename",
+  "cancel": "Cancel",
   "customize": "Customize",
   "experimental": "BETA",
   "deprecated": "DEPR",
@@ -430,6 +431,12 @@
         "hideCached": "Hide Cached",
         "hideCanceled": "Hide Canceled"
       }
+    },
+    "workflowTab": {
+      "confirmDelete": "Delete this workflow?",
+      "deleted": "Workflow deleted",
+      "deleteFailedTitle": "Delete failed",
+      "deleteFailed": "Attempt to delete the workflow failed."
     }
   },
   "menu": {

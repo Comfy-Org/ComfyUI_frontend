@@ -14,6 +14,8 @@ export interface ComfyCommand {
   /** Menubar item label, if different from command label */
   menubarLabel?: string | (() => string)
   versionAdded?: string
+  /** If non-nullish, this command will prompt for confirmation. */
+  confirmation?: string
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
@@ -24,6 +26,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   _tooltip?: string | (() => string)
   _menubarLabel?: string | (() => string)
   versionAdded?: string
+  confirmation?: string
 
   constructor(command: ComfyCommand) {
     this.id = command.id
@@ -33,6 +36,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this._tooltip = command.tooltip
     this._menubarLabel = command.menubarLabel ?? command.label
     this.versionAdded = command.versionAdded
+    this.confirmation = command.confirmation
   }
 
   get label() {
