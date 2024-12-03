@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { app } from '@/scripts/app'
-import { computed, onMounted, onUnmounted, ref, toRaw, watchEffect } from 'vue'
+import { computed, ref, toRaw, watchEffect } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
 import { ConnectingLink } from '@comfyorg/litegraph'
@@ -46,6 +46,8 @@ import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { useCanvasStore } from '@/stores/graphStore'
 import { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
+import type { OriginalEvent } from '@comfyorg/litegraph/dist/types/events'
+import { useEventListener } from '@vueuse/core'
 
 const settingStore = useSettingStore()
 
@@ -56,8 +58,9 @@ const getNewNodeLocation = (): [number, number] => {
   if (triggerEvent.value === null) {
     return [100, 100]
   }
-  // @ts-expect-error type event detail
-  const originalEvent = triggerEvent.value.detail.originalEvent
+
+  const originalEvent = (triggerEvent.value.detail as OriginalEvent)
+    .originalEvent
   return [originalEvent.canvasX, originalEvent.canvasY]
 }
 const nodeFilters = ref<FilterAndValue[]>([])
@@ -98,9 +101,9 @@ const newSearchBoxEnabled = computed(
   () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
 )
 const showSearchBox = (e: LiteGraphCanvasEvent) => {
+  const detail = e.detail as OriginalEvent
   if (newSearchBoxEnabled.value) {
-    // @ts-expect-error type event detail
-    if (e.detail.originalEvent?.pointerType === 'touch') {
+    if (detail.originalEvent?.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
       }, 128)
@@ -108,16 +111,13 @@ const showSearchBox = (e: LiteGraphCanvasEvent) => {
       showNewSearchBox(e)
     }
   } else {
-    // @ts-expect-error type event detail
-    canvasStore.canvas.showSearchBox(e.detail.originalEvent as MouseEvent)
+    canvasStore.canvas.showSearchBox(detail.originalEvent)
   }
 }
 
 const nodeDefStore = useNodeDefStore()
 const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
-  // @ts-expect-error type event detail
-  if (e.detail.linkReleaseContext) {
-    // @ts-expect-error type event detail
+  if (e.detail.subType === 'empty-release') {
     const links = e.detail.linkReleaseContext.links
     if (links.length === 0) {
       console.warn('Empty release with no links! This should never happen')
@@ -142,7 +142,10 @@ const showNewSearchBox = (e: LiteGraphCanvasEvent) => {
 }
 
 const showContextMenu = (e: LiteGraphCanvasEvent) => {
-  // @ts-expect-error type event detail
+  if (e.detail.subType !== 'empty-release') {
+    return
+  }
+
   const links = e.detail.linkReleaseContext.links
   if (links.length === 0) {
     console.warn('Empty release with no links! This should never happen')
@@ -150,8 +153,7 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
   }
 
   const firstLink = ConnectingLinkImpl.createFromPlainObject(links[0])
-  // @ts-expect-error type event detail
-  const mouseEvent = e.detail.originalEvent as MouseEvent
+  const mouseEvent = e.detail.originalEvent
   const commonOptions = {
     e: mouseEvent,
     allow_searchbox: true,
@@ -168,7 +170,6 @@ const showContextMenu = (e: LiteGraphCanvasEvent) => {
         slotTo: firstLink.input,
         afterRerouteId: firstLink.afterRerouteId
       }
-  // @ts-expect-error type arguments
   canvasStore.canvas.showConnectionMenu({
     ...connectionOptions,
     ...commonOptions
@@ -209,9 +210,8 @@ const linkReleaseActionShift = computed(() => {
 })
 
 const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
-  // @ts-expect-error type event detail
-  const originalEvent = e.detail.originalEvent as MouseEvent
-  const shiftPressed = originalEvent.shiftKey
+  const detail = e.detail as OriginalEvent
+  const shiftPressed = detail.originalEvent.shiftKey
 
   const action = shiftPressed
     ? linkReleaseActionShift.value
@@ -229,13 +229,7 @@ const handleCanvasEmptyRelease = (e: LiteGraphCanvasEvent) => {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('litegraph:canvas', canvasEventHandler)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('litegraph:canvas', canvasEventHandler)
-})
+useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 </script>
 
 <style>
