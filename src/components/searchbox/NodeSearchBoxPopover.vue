@@ -22,7 +22,7 @@
     >
       <template #container>
         <NodeSearchBox
-          :filters="nodeFilters as FilterAndValue[]"
+          :filters="nodeFilters"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
           @add-node="addNode"
