@@ -65,17 +65,6 @@ export class KeyComboImpl implements KeyCombo {
     return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
-  /** @deprecated Should be not used as keys are mutated when serialized to resolve capslock issue. */
-  deserialize(serialized: string): KeyComboImpl {
-    const [key, ctrl, alt, shift] = serialized.split(':')
-    return new KeyComboImpl({
-      key,
-      ctrl: ctrl === 'true',
-      alt: alt === 'true',
-      shift: shift === 'true'
-    })
-  }
-
   toString(): string {
     return this.getKeySequences().join(' + ')
   }
