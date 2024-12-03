@@ -16,15 +16,14 @@ export class KeybindingImpl implements Keybinding {
     this.targetSelector = obj.targetSelector
   }
 
-  equals(other: any): boolean {
-    if (toRaw(other) instanceof KeybindingImpl) {
-      return (
-        this.commandId === other.commandId &&
-        this.combo.equals(other.combo) &&
-        this.targetSelector === other.targetSelector
-      )
-    }
-    return false
+  equals(other: unknown): boolean {
+    const raw = toRaw(other)
+
+    return raw instanceof KeybindingImpl
+      ? this.commandId === raw.commandId &&
+          this.combo.equals(raw.combo) &&
+          this.targetSelector === raw.targetSelector
+      : false
   }
 }
 
