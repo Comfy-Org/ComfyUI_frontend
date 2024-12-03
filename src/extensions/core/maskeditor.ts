@@ -2116,9 +2116,10 @@ class BrushTool {
     if (!this.smoothingCordsArray) {
       this.smoothingCordsArray = []
     }
-    const opacityConstant = 1 / (1 + Math.exp(3));
-    const interpolatedOpacity = 1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) - opacityConstant;
-
+    const opacityConstant = 1 / (1 + Math.exp(3))
+    const interpolatedOpacity =
+      1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
+      opacityConstant
 
     this.smoothingCordsArray.push(point)
 
@@ -2129,21 +2130,21 @@ class BrushTool {
     }
 
     // Calculate total length more efficiently
-    let totalLength = 0;
-    const points = this.smoothingCordsArray;
-    const len = points.length - 1;
-    
+    let totalLength = 0
+    const points = this.smoothingCordsArray
+    const len = points.length - 1
+
     // Use local variables for better performance
-    let dx, dy;
+    let dx, dy
     for (let i = 0; i < len; i++) {
-      dx = points[i + 1].x - points[i].x;
-      dy = points[i + 1].y - points[i].y;
-      totalLength += Math.sqrt(dx * dx + dy * dy);
+      dx = points[i + 1].x - points[i].x
+      dy = points[i + 1].y - points[i].y
+      totalLength += Math.sqrt(dx * dx + dy * dy)
     }
 
-    const distanceBetweenPoints = this.brushSettings.size / this.smoothingPrecision * 6;
-    const stepNr = Math.ceil(totalLength / distanceBetweenPoints);
-    
+    const distanceBetweenPoints =
+      (this.brushSettings.size / this.smoothingPrecision) * 6
+    const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
 
     let interpolatedPoints = points
 
@@ -2155,14 +2156,16 @@ class BrushTool {
       )
     }
 
-    if(!this.initialDraw) { // Remove the first 3 points from the array to avoid drawing the same points twice
-      const spliceIndex = interpolatedPoints.findIndex(point => 
-        point.x === this.smoothingCordsArray[2].x && 
-        point.y === this.smoothingCordsArray[2].y
-      );
-  
+    if (!this.initialDraw) {
+      // Remove the first 3 points from the array to avoid drawing the same points twice
+      const spliceIndex = interpolatedPoints.findIndex(
+        (point) =>
+          point.x === this.smoothingCordsArray[2].x &&
+          point.y === this.smoothingCordsArray[2].y
+      )
+
       if (spliceIndex !== -1) {
-        interpolatedPoints = interpolatedPoints.slice(spliceIndex + 1);
+        interpolatedPoints = interpolatedPoints.slice(spliceIndex + 1)
       }
     }
 
@@ -2171,12 +2174,12 @@ class BrushTool {
       this.draw_shape(point, interpolatedOpacity)
     }
 
-    if (!this.initialDraw) { // initially draw on all 5 points, then remove the first 3 points to go into 2 new, 3 old points cycle
-      this.smoothingCordsArray =this.smoothingCordsArray.slice(2)
+    if (!this.initialDraw) {
+      // initially draw on all 5 points, then remove the first 3 points to go into 2 new, 3 old points cycle
+      this.smoothingCordsArray = this.smoothingCordsArray.slice(2)
     } else {
       this.initialDraw = false
     }
-
   }
 
   private async drawLine(
@@ -2186,8 +2189,12 @@ class BrushTool {
   ) {
     const brush_size = await this.messageBroker.pull('brushSize')
     const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-    const steps = Math.ceil(distance / (brush_size / this.smoothingPrecision * 4)) // Adjust for smoother lines
-    const interpolatedOpacity = 1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) - 1 / (1 + Math.exp(3));
+    const steps = Math.ceil(
+      distance / ((brush_size / this.smoothingPrecision) * 4)
+    ) // Adjust for smoother lines
+    const interpolatedOpacity =
+      1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
+      1 / (1 + Math.exp(3))
     this.init_shape(compositionOp)
 
     for (let i = 0; i <= steps; i++) {
@@ -2279,8 +2286,9 @@ class BrushTool {
     const brushType = await this.messageBroker.pull('brushType')
     const maskColor = await this.messageBroker.pull('getMaskColor')
     const size = brushSettings.size
-    const sliderOpacity = brushSettings.opacity;
-    const opacity = overrideOpacity == undefined ? sliderOpacity : overrideOpacity
+    const sliderOpacity = brushSettings.opacity
+    const opacity =
+      overrideOpacity == undefined ? sliderOpacity : overrideOpacity
     const hardness = brushSettings.hardness
 
     const x = point.x
@@ -2415,36 +2423,36 @@ class BrushTool {
       const dist = Math.hypot(dx, dy)
       distances.push(distances[i - 1] + dist)
     }
-  
+
     const totalLength = distances[distances.length - 1]
     const interval = totalLength / (numPoints - 1)
     const result: Point[] = []
     let currentIndex = 0
-  
+
     for (let i = 0; i < numPoints; i++) {
       const targetDistance = i * interval
-  
+
       while (
         currentIndex < distances.length - 1 &&
         distances[currentIndex + 1] < targetDistance
       ) {
         currentIndex++
       }
-  
+
       const t =
         (targetDistance - distances[currentIndex]) /
         (distances[currentIndex + 1] - distances[currentIndex])
-  
+
       const x =
         splinePoints[currentIndex].x +
         t * (splinePoints[currentIndex + 1].x - splinePoints[currentIndex].x)
       const y =
         splinePoints[currentIndex].y +
         t * (splinePoints[currentIndex + 1].y - splinePoints[currentIndex].y)
-  
+
       result.push({ x, y })
     }
-  
+
     return result
   }
 
@@ -2454,7 +2462,7 @@ class BrushTool {
   ): Point[] {
     const result: Point[] = []
     const cumulativeDistances: number[] = [0]
-  
+
     // Calculate cumulative distances between points
     for (let i = 1; i < points.length; i++) {
       const dx = points[i].x - points[i - 1].x
@@ -2462,14 +2470,14 @@ class BrushTool {
       const dist = Math.hypot(dx, dy)
       cumulativeDistances[i] = cumulativeDistances[i - 1] + dist
     }
-  
+
     const totalLength = cumulativeDistances[cumulativeDistances.length - 1]
     const numPoints = Math.floor(totalLength / distance)
-  
+
     for (let i = 0; i <= numPoints; i++) {
       const targetDistance = i * distance
       let idx = 0
-  
+
       // Find the segment where the target distance falls
       while (
         idx < cumulativeDistances.length - 1 &&
@@ -2477,22 +2485,22 @@ class BrushTool {
       ) {
         idx++
       }
-  
+
       if (idx >= points.length - 1) {
         result.push(points[points.length - 1])
         continue
       }
-  
+
       const d0 = cumulativeDistances[idx]
       const d1 = cumulativeDistances[idx + 1]
       const t = (targetDistance - d0) / (d1 - d0)
-  
+
       const x = points[idx].x + t * (points[idx + 1].x - points[idx].x)
       const y = points[idx].y + t * (points[idx + 1].y - points[idx].y)
-  
+
       result.push({ x, y })
     }
-  
+
     return result
   }
 
@@ -4407,7 +4415,7 @@ class PanAndZoomManager {
     const scaleFactor = newZoom / oldZoom
     this.pan_offset.x += mouseX - mouseX * scaleFactor
     this.pan_offset.y += mouseY - mouseY * scaleFactor
-    
+
     // Update pan and zoom immediately
     await this.invalidatePanZoom()
 
