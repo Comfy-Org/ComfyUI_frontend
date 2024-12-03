@@ -62,7 +62,7 @@ export class KeyComboImpl implements KeyCombo {
   }
 
   serialize(): string {
-    return `${this.key}:${this.ctrl}:${this.alt}:${this.shift}`
+    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   deserialize(serialized: string): KeyComboImpl {
