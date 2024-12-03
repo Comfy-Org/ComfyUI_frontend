@@ -66,6 +66,7 @@
               label="Install"
               icon="pi pi-check"
               iconPos="right"
+              :disabled="hasError"
               @click="install()"
             />
           </div>
