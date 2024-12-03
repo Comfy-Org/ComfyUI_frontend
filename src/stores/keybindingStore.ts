@@ -51,16 +51,15 @@ export class KeyComboImpl implements KeyCombo {
     })
   }
 
-  equals(other: any): boolean {
-    if (toRaw(other) instanceof KeyComboImpl) {
-      return (
-        this.key === other.key &&
-        this.ctrl === other.ctrl &&
-        this.alt === other.alt &&
-        this.shift === other.shift
-      )
-    }
-    return false
+  equals(other: unknown): boolean {
+    const raw = toRaw(other)
+
+    return raw instanceof KeyComboImpl
+      ? this.key.toUpperCase() === raw.key.toUpperCase() &&
+          this.ctrl === raw.ctrl &&
+          this.alt === raw.alt &&
+          this.shift === raw.shift
+      : false
   }
 
   serialize(): string {
