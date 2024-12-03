@@ -163,11 +163,13 @@ export class ChangeTracker {
   }
 
   async undoRedo(e: KeyboardEvent) {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'y' || e.key == 'Z') {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const key = e.key.toUpperCase()
+      // Redo: Ctrl + Y, or Ctrl + Shift + Z
+      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
         await this.redo()
         return true
-      } else if (e.key === 'z') {
+      } else if (key === 'Z' && !e.shiftKey) {
         await this.undo()
         return true
       }
