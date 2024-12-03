@@ -521,6 +521,47 @@ test.describe('Menu', () => {
     })
   })
 
+  test('Can delete workflows with confirm disabled', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
+
+    const { topbar, workflowsTab } = comfyPage.menu
+    await workflowsTab.open()
+
+    const filename = 'workflow18.json'
+    await topbar.saveWorkflow(filename)
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+
+    await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
+    await comfyPage.page.getByLabel('Delete').click()
+
+    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+      '*Unsaved Workflow.json'
+    ])
+  })
+
+  test('Can delete workflows', async ({ comfyPage }) => {
+    const { topbar, workflowsTab } = comfyPage.menu
+    await workflowsTab.open()
+
+    const filename = 'workflow18.json'
+    await topbar.saveWorkflow(filename)
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+
+    await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
+    await comfyPage.page.getByLabel('Delete').click()
+
+    await expect(
+      comfyPage.page.locator('.p-confirmpopup-accept-button')
+    ).toBeVisible()
+    await comfyPage.page.locator('.p-confirmpopup-accept-button').click()
+
+    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+      '*Unsaved Workflow.json'
+    ])
+  })
+
   test.describe('Workflows topbar tabs', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting(
