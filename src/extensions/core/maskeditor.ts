@@ -720,6 +720,15 @@ var styles = `
     font-size: 12px;
   }
 
+  #maskEditor_topBarSaveButton {
+    background: var(--p-primary-color) !important;
+    color: var(--p-button-primary-color) !important;
+  }
+
+  #maskEditor_topBarSaveButton:hover {
+    background: var(--p-primary-hover-color) !important;
+  }
+
 `
 
 var styleSheet = document.createElement('style')
@@ -1915,6 +1924,7 @@ class BrushTool {
   smoothingCordsArray: Point[] = []
   smoothingLastDrawTime!: Date
   maskCtx: CanvasRenderingContext2D | null = null
+  initialDraw: boolean = true
 
   brushStrokeCanvas: HTMLCanvasElement | null = null
   brushStrokeCtx: CanvasRenderingContext2D | null = null
@@ -2097,6 +2107,7 @@ class BrushTool {
       this.isDrawing = false
       this.messageBroker.publish('saveState')
       this.lineStartPoint = coords_canvas
+      this.initialDraw = true
     }
   }
 
@@ -2105,40 +2116,69 @@ class BrushTool {
     if (!this.smoothingCordsArray) {
       this.smoothingCordsArray = []
     }
+    const opacityConstant = 1 / (1 + Math.exp(3))
+    const interpolatedOpacity =
+      1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
+      opacityConstant
 
     this.smoothingCordsArray.push(point)
 
     // Keep a moving window of points for the spline
-    const MAX_POINTS = 5
-    if (this.smoothingCordsArray.length > MAX_POINTS) {
-      this.smoothingCordsArray.shift()
+    const POINTS_NR = 5
+    if (this.smoothingCordsArray.length < POINTS_NR) {
+      return
     }
 
-    // Need at least 3 points for cubic spline interpolation
-    if (this.smoothingCordsArray.length >= 3) {
-      const dx = point.x - this.smoothingCordsArray[0].x
-      const dy = point.y - this.smoothingCordsArray[0].y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const step = 5
-      const steps = Math.ceil(
-        (distance / step) * (this.smoothingPrecision / 10)
-      )
-      // Generate interpolated points
-      const interpolatedPoints = this.calculateCubicSplinePoints(
+    // Calculate total length more efficiently
+    let totalLength = 0
+    const points = this.smoothingCordsArray
+    const len = points.length - 1
+
+    // Use local variables for better performance
+    let dx, dy
+    for (let i = 0; i < len; i++) {
+      dx = points[i + 1].x - points[i].x
+      dy = points[i + 1].y - points[i].y
+      totalLength += Math.sqrt(dx * dx + dy * dy)
+    }
+
+    const distanceBetweenPoints =
+      (this.brushSettings.size / this.smoothingPrecision) * 6
+    const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
+
+    let interpolatedPoints = points
+
+    if (stepNr > 0) {
+      //this calculation needs to be improved
+      interpolatedPoints = this.generateEquidistantPoints(
         this.smoothingCordsArray,
-        steps // number of segments between each pair of control points
+        distanceBetweenPoints // Distance between interpolated points
+      )
+    }
+
+    if (!this.initialDraw) {
+      // Remove the first 3 points from the array to avoid drawing the same points twice
+      const spliceIndex = interpolatedPoints.findIndex(
+        (point) =>
+          point.x === this.smoothingCordsArray[2].x &&
+          point.y === this.smoothingCordsArray[2].y
       )
 
-      // Draw all interpolated points
-      for (const point of interpolatedPoints) {
-        this.draw_shape(point)
+      if (spliceIndex !== -1) {
+        interpolatedPoints = interpolatedPoints.slice(spliceIndex + 1)
       }
+    }
 
-      //reset the smoothing array
-      this.smoothingCordsArray = [point]
+    // Draw all interpolated points
+    for (const point of interpolatedPoints) {
+      this.draw_shape(point, interpolatedOpacity)
+    }
+
+    if (!this.initialDraw) {
+      // initially draw on all 5 points, then remove the first 3 points to go into 2 new, 3 old points cycle
+      this.smoothingCordsArray = this.smoothingCordsArray.slice(2)
     } else {
-      // If we don't have enough points yet, just draw the current point
-      this.draw_shape(point)
+      this.initialDraw = false
     }
   }
 
@@ -2149,8 +2189,12 @@ class BrushTool {
   ) {
     const brush_size = await this.messageBroker.pull('brushSize')
     const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
-    const steps = Math.ceil(distance / (brush_size / 4)) // Adjust for smoother lines
-
+    const steps = Math.ceil(
+      distance / ((brush_size / this.smoothingPrecision) * 4)
+    ) // Adjust for smoother lines
+    const interpolatedOpacity =
+      1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
+      1 / (1 + Math.exp(3))
     this.init_shape(compositionOp)
 
     for (let i = 0; i <= steps; i++) {
@@ -2158,7 +2202,7 @@ class BrushTool {
       const x = p1.x + (p2.x - p1.x) * t
       const y = p1.y + (p2.y - p1.y) * t
       const point = { x: x, y: y }
-      this.draw_shape(point)
+      this.draw_shape(point, interpolatedOpacity)
     }
   }
 
@@ -2236,13 +2280,15 @@ class BrushTool {
 
   //helper functions
 
-  private async draw_shape(point: Point) {
+  private async draw_shape(point: Point, overrideOpacity?: number) {
     const brushSettings: Brush = this.brushSettings
     const maskCtx = this.maskCtx || (await this.messageBroker.pull('maskCtx'))
     const brushType = await this.messageBroker.pull('brushType')
     const maskColor = await this.messageBroker.pull('getMaskColor')
     const size = brushSettings.size
-    const opacity = brushSettings.opacity
+    const sliderOpacity = brushSettings.opacity
+    const opacity =
+      overrideOpacity == undefined ? sliderOpacity : overrideOpacity
     const hardness = brushSettings.hardness
 
     const x = point.x
@@ -2256,6 +2302,7 @@ class BrushTool {
     const isErasing = maskCtx.globalCompositeOperation === 'destination-out'
 
     if (hardness === 1) {
+      console.log(sliderOpacity, opacity)
       gradient.addColorStop(
         0,
         isErasing
@@ -2365,6 +2412,98 @@ class BrushTool {
     return result
   }
 
+  private generateEvenlyDistributedPoints(
+    splinePoints: Point[],
+    numPoints: number
+  ): Point[] {
+    const distances: number[] = [0]
+    for (let i = 1; i < splinePoints.length; i++) {
+      const dx = splinePoints[i].x - splinePoints[i - 1].x
+      const dy = splinePoints[i].y - splinePoints[i - 1].y
+      const dist = Math.hypot(dx, dy)
+      distances.push(distances[i - 1] + dist)
+    }
+
+    const totalLength = distances[distances.length - 1]
+    const interval = totalLength / (numPoints - 1)
+    const result: Point[] = []
+    let currentIndex = 0
+
+    for (let i = 0; i < numPoints; i++) {
+      const targetDistance = i * interval
+
+      while (
+        currentIndex < distances.length - 1 &&
+        distances[currentIndex + 1] < targetDistance
+      ) {
+        currentIndex++
+      }
+
+      const t =
+        (targetDistance - distances[currentIndex]) /
+        (distances[currentIndex + 1] - distances[currentIndex])
+
+      const x =
+        splinePoints[currentIndex].x +
+        t * (splinePoints[currentIndex + 1].x - splinePoints[currentIndex].x)
+      const y =
+        splinePoints[currentIndex].y +
+        t * (splinePoints[currentIndex + 1].y - splinePoints[currentIndex].y)
+
+      result.push({ x, y })
+    }
+
+    return result
+  }
+
+  private generateEquidistantPoints(
+    points: Point[],
+    distance: number
+  ): Point[] {
+    const result: Point[] = []
+    const cumulativeDistances: number[] = [0]
+
+    // Calculate cumulative distances between points
+    for (let i = 1; i < points.length; i++) {
+      const dx = points[i].x - points[i - 1].x
+      const dy = points[i].y - points[i - 1].y
+      const dist = Math.hypot(dx, dy)
+      cumulativeDistances[i] = cumulativeDistances[i - 1] + dist
+    }
+
+    const totalLength = cumulativeDistances[cumulativeDistances.length - 1]
+    const numPoints = Math.floor(totalLength / distance)
+
+    for (let i = 0; i <= numPoints; i++) {
+      const targetDistance = i * distance
+      let idx = 0
+
+      // Find the segment where the target distance falls
+      while (
+        idx < cumulativeDistances.length - 1 &&
+        cumulativeDistances[idx + 1] < targetDistance
+      ) {
+        idx++
+      }
+
+      if (idx >= points.length - 1) {
+        result.push(points[points.length - 1])
+        continue
+      }
+
+      const d0 = cumulativeDistances[idx]
+      const d1 = cumulativeDistances[idx + 1]
+      const t = (targetDistance - d0) / (d1 - d0)
+
+      const x = points[idx].x + t * (points[idx + 1].x - points[idx].x)
+      const y = points[idx].y + t * (points[idx + 1].y - points[idx].y)
+
+      result.push({ x, y })
+    }
+
+    return result
+  }
+
   private calculateSplineCoefficients(values: number[]): number[] {
     const n = values.length - 1
     const matrix: number[][] = new Array(n + 1)
@@ -2455,7 +2594,7 @@ class UIManager {
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
 
-  private mask_opacity: number = 0.7
+  private mask_opacity: number = 1.0
   private maskBlendMode: MaskBlendMode = MaskBlendMode.Black
 
   private zoomTextHTML!: HTMLSpanElement
@@ -2726,7 +2865,7 @@ class UIManager {
 
     const opacitySliderObj = this.createSlider(
       'Opacity',
-      0.1,
+      0,
       1,
       0.01,
       0.7,
@@ -4276,8 +4415,6 @@ class PanAndZoomManager {
     const scaleFactor = newZoom / oldZoom
     this.pan_offset.x += mouseX - mouseX * scaleFactor
     this.pan_offset.y += mouseY - mouseY * scaleFactor
-
-    console.log(this.imageRootWidth, this.imageRootHeight)
 
     // Update pan and zoom immediately
     await this.invalidatePanZoom()
