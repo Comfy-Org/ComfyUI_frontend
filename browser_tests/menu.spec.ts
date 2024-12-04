@@ -519,47 +519,42 @@ test.describe('Menu', () => {
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
       ).toEqual(['*Unsaved Workflow.json'])
     })
-  })
 
-  test('Can delete workflows with confirm disabled', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
+    test('Can delete workflows (confirm disabled)', async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
 
-    const { topbar, workflowsTab } = comfyPage.menu
-    await workflowsTab.open()
+      const { topbar, workflowsTab } = comfyPage.menu
 
-    const filename = 'workflow18.json'
-    await topbar.saveWorkflow(filename)
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+      const filename = 'workflow18.json'
+      await topbar.saveWorkflow(filename)
+      expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
-    await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
-    await comfyPage.page.getByLabel('Delete').click()
+      await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
+      await comfyPage.clickContextMenuItem('Delete')
 
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow.json'
-    ])
-  })
+      await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+      expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+    })
 
-  test('Can delete workflows', async ({ comfyPage }) => {
-    const { topbar, workflowsTab } = comfyPage.menu
-    await workflowsTab.open()
+    test('Can delete workflows', async ({ comfyPage }) => {
+      const { topbar, workflowsTab } = comfyPage.menu
 
-    const filename = 'workflow18.json'
-    await topbar.saveWorkflow(filename)
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
+      const filename = 'workflow18.json'
+      await topbar.saveWorkflow(filename)
+      expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
-    await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
-    await comfyPage.page.getByLabel('Delete').click()
+      await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
+      await comfyPage.clickContextMenuItem('Delete')
 
-    await expect(
-      comfyPage.page.locator('.p-confirmpopup-accept-button')
-    ).toBeVisible()
-    await comfyPage.page.locator('.p-confirmpopup-accept-button').click()
+      await comfyPage.confirmDialog.click('accept')
 
-    await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
-    expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
-      '*Unsaved Workflow.json'
-    ])
+      await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
+      expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+    })
   })
 
   test.describe('Workflows topbar tabs', () => {
