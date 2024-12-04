@@ -740,14 +740,14 @@ export class ComfyPage {
     )
   }
 
-  async confirmDialog(prompt: string, text: string = 'Yes') {
+  async clickDialogButton(prompt: string, buttonText: string = 'Yes') {
     const modal = this.page.locator(
       `.comfy-modal-content:has-text("${prompt}")`
     )
     await expect(modal).toBeVisible()
     await modal
       .locator('.comfyui-button', {
-        hasText: text
+        hasText: buttonText
       })
       .click()
     await expect(modal).toBeHidden()
