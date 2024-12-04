@@ -120,6 +120,11 @@
     "showMenu": "Показать меню",
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
+  "menuLabels": {
+    "Edit": "Редактировать",
+    "Help": "Помощь",
+    "Workflow": "Рабочий процесс"
+  },
   "newFolder": "Новая папка",
   "noResultsFound": "Ничего не найдено",
   "noTasksFound": "Задачи не найдены",
