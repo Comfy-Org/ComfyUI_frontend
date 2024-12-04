@@ -69,9 +69,10 @@ export const workflowService = {
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
       const res = await showConfirmationDialog({
-        title: 'Overwrite existing file?',
+        title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
         type: 'overwrite',
-        message: `"${newPath}" already exists. Do you want to overwrite it?`
+        message: t('sideToolbar.workflowTab.confirmOverwrite'),
+        itemList: [newPath]
       })
 
       if (res !== true) return

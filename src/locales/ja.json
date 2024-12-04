@@ -528,6 +528,8 @@
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
       "confirmDeleteTitle": "ワークフローを削除しますか？",
+      "confirmOverwrite": "以下のファイルはすでに存在します。上書きしますか？",
+      "confirmOverwriteTitle": "既存のファイルを上書きしますか？",
       "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
       "deleteFailedTitle": "削除に失敗しました",
       "deleted": "ワークフローが削除されました",

@@ -528,6 +528,8 @@
     "workflowTab": {
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
+      "confirmOverwrite": "下面的文件已经存在。您想要覆盖它吗？",
+      "confirmOverwriteTitle": "覆盖现有文件？",
       "deleteFailed": "尝试删除工作流失败。",
       "deleteFailedTitle": "删除失败",
       "deleted": "工作流已删除",
