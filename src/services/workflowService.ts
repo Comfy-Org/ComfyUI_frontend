@@ -214,12 +214,10 @@ export const workflowService = {
 
     const workflowStore = useWorkflowStore()
     if (workflowStore.isOpen(workflow)) {
-      if (confirmed) {
-        await workflowStore.closeWorkflow(workflow)
-      } else {
-        const closed = await this.closeWorkflow(workflow)
-        if (!closed) return false
-      }
+      const closed = await this.closeWorkflow(workflow, {
+        warnIfUnsaved: !confirmed
+      })
+      if (!closed) return false
     }
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {

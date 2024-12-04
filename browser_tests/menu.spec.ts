@@ -530,6 +530,7 @@ test.describe('Menu', () => {
       expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
       await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
+      await comfyPage.nextFrame()
       await comfyPage.clickContextMenuItem('Delete')
 
       await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
