@@ -323,9 +323,6 @@
     "Comfy_Locale": {
       "name": "语言"
     },
-    "Comfy_Logging_Enabled": {
-      "name": "启用日志记录"
-    },
     "Comfy_MaskEditor_BrushAdjustmentSpeed": {
       "name": "画笔调整速度倍增器",
       "tooltip": "控制调整时画笔大小和硬度变化的速度。更高的值意味着更快的变化。"

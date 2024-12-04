@@ -1,5 +1,4 @@
 // @ts-strict-ignore
-import { ComfyLogging } from './logging'
 import {
   type ComfyWidgetConstructor,
   ComfyWidgets,
@@ -125,7 +124,6 @@ export class ComfyApp {
 
   vueAppReady: boolean
   ui: ComfyUI
-  logging: ComfyLogging
   extensions: ComfyExtension[]
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
@@ -195,7 +193,6 @@ export class ComfyApp {
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
-    this.logging = new ComfyLogging(this)
     this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
     this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
@@ -1683,7 +1680,6 @@ export class ComfyApp {
     useExtensionStore().loadDisabledExtensionNames()
 
     const extensions = await api.getExtensions()
-    this.logging.addEntry('Comfy.App', 'debug', { Extensions: extensions })
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
@@ -2059,10 +2055,6 @@ export class ComfyApp {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
       showLoadWorkflowWarning({ missingNodeTypes })
     }
-
-    this.logging.addEntry('Comfy.App', 'warn', {
-      MissingNodes: missingNodeTypes
-    })
   }
 
   #showMissingModelsError(missingModels, paths) {
@@ -2072,10 +2064,6 @@ export class ComfyApp {
         paths
       })
     }
-
-    this.logging.addEntry('Comfy.App', 'warn', {
-      MissingModels: missingModels
-    })
   }
 
   async loadGraphData(

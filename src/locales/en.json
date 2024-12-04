@@ -222,9 +222,6 @@
     "Comfy_Locale": {
       "name": "Language"
     },
-    "Comfy_Logging_Enabled": {
-      "name": "Enable logging"
-    },
     "Comfy_MaskEditor_BrushAdjustmentSpeed": {
       "name": "Brush adjustment speed multiplier",
       "tooltip": "Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes."
