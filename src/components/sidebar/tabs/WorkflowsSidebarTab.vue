@@ -123,7 +123,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ConfirmPopup />
+  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
@@ -153,7 +153,7 @@ import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import ConfirmPopup from 'primevue/confirmpopup'
+import ConfirmDialog from 'primevue/confirmdialog'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -248,6 +248,7 @@ const renderTreeNode = (
     confirm.require({
       message: t('sideToolbar.workflowTab.confirmDelete'),
       icon: 'pi pi-trash',
+      defaultFocus: 'reject',
       rejectProps: {
         label: t('cancel'),
         severity: 'secondary',
