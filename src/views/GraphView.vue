@@ -42,7 +42,6 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
-import { isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 
