@@ -151,6 +151,9 @@
     "Comfy_DOMClippingEnabled": {
       "name": "Enable DOM element clipping (enabling may reduce performance)"
     },
+    "Comfy_EditAttention_Delta": {
+      "name": "Ctrl+up/down precision"
+    },
     "Comfy_EnableTooltips": {
       "name": "Enable Tooltips"
     },
@@ -191,6 +194,16 @@
     "Comfy_Keybinding_UnsetBindings": {
       "name": "Keybindings unset by the user"
     },
+    "Comfy_Logging_Enabled": {
+      "name": "Enable logging"
+    },
+    "Comfy_MenuPosition": {
+      "name": "Save legacy menu's position"
+    },
+    "Comfy_NodeSuggestions_number": {
+      "name": "Number of nodes suggestions",
+      "tooltip": "Only for litegraph searchbox/context menu"
+    },
     "Comfy_LinkRelease_Action": {
       "name": "Action on link release (No modifier)"
     },
@@ -221,6 +234,9 @@
     },
     "Comfy_Node_DoubleClickTitleToEdit": {
       "name": "Double click node title to edit"
+    },
+    "Comfy_NodeInputConversionSubmenus": {
+      "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
     },
     "Comfy_Node_MiddleClickRerouteNode": {
       "name": "Middle-click creates a new Reroute node"
@@ -347,6 +363,10 @@
     "Comfy_Validation_NodeDefs": {
       "name": "Validate node definitions (slow)",
       "tooltip": "Recommended for node developers. This will validate all node definitions on startup."
+    },
+    "Comfy_WidgetControlMode": {
+      "name": "Widget control mode",
+      "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after."
     },
     "Comfy_Validation_Workflows": {
       "name": "Validate workflows"

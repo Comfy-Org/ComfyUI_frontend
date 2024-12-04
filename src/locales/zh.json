@@ -185,6 +185,9 @@
     "Comfy_DisableSliders": {
       "name": "禁用节点小部件滑块"
     },
+    "Comfy_EditAttention_Delta": {
+      "name": "Ctrl+上/下 精度"
+    },
     "Comfy_EnableTooltips": {
       "name": "启用工具提示"
     },
@@ -237,6 +240,12 @@
     "Comfy_Locale": {
       "name": "语言"
     },
+    "Comfy_Logging_Enabled": {
+      "name": "启用日志记录"
+    },
+    "Comfy_MenuPosition": {
+      "name": "保存旧版菜单位置"
+    },
     "Comfy_ModelLibrary_AutoLoadAll": {
       "name": "自动加载所有模型文件夹",
       "tooltip": "如果为真，所有文件夹将在打开模型库时立即加载（这可能会导致加载时的延迟）。如果为假，根级模型文件夹仅在您单击它们时加载。"
@@ -253,6 +262,9 @@
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
       "name": "节点源徽章模式"
+    },
+    "Comfy_NodeInputConversionSubmenus": {
+      "name": "在节点上下文菜单中，将输入/小部件之间转换的条目放置在子菜单中。"
     },
     "Comfy_NodeLibrary_Bookmarks": {
       "name": "节点库书签及显示名称（已弃用）"
@@ -281,6 +293,10 @@
     "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
       "name": "在搜索结果中显示节点频率",
       "tooltip": "仅适用于默认实现"
+    },
+    "Comfy_NodeSuggestions_number": {
+      "name": "节点建议数量",
+      "tooltip": "仅适用于 litegraph 搜索框/上下文菜单"
     },
     "Comfy_Node_AutoSnapLinkToSlot": {
       "name": "自动将链接吸附到节点插槽",
@@ -384,6 +400,10 @@
     },
     "Comfy_Validation_Workflows": {
       "name": "验证工作流"
+    },
+    "Comfy_WidgetControlMode": {
+      "name": "小部件控制模式",
+      "tooltip": "控制小部件值的更新时机（随机/增量/减量），可以在提示排队之前或之后。"
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "关闭窗口时显示确认"
