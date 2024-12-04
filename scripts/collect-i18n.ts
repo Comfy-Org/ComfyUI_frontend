@@ -78,7 +78,12 @@ test('collect-i18n', async ({ comfyPage }) => {
         ...locale,
         menuLabels: allLabelsLocale,
         settingsDialog: allSettingsLocale,
-        settingsCategories: allSettingCategoriesLocale
+        // Do merge for settingsCategories as there are some manual translations
+        // for special panels like "About" and "Keybinding".
+        settingsCategories: {
+          ...(locale.settingsCategories ?? {}),
+          ...allSettingCategoriesLocale
+        }
       },
       null,
       2

@@ -10,7 +10,7 @@
       <Listbox
         v-model="activeCategory"
         :options="categories"
-        optionLabel="label"
+        optionLabel="translatedLabel"
         scrollHeight="100%"
         :disabled="inSearch"
         class="border-none w-full"
@@ -78,6 +78,8 @@ import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useI18n } from 'vue-i18n'
 
 const KeybindingPanel = defineAsyncComponent(
   () => import('./setting/KeybindingPanel.vue')
@@ -132,13 +134,20 @@ const settingRoot = computed<SettingTreeNode>(() => settingStore.settingTree)
 const settingCategories = computed<SettingTreeNode[]>(
   () => settingRoot.value.children ?? []
 )
-const categories = computed<SettingTreeNode[]>(() => [
-  ...settingCategories.value,
-  keybindingPanelNode,
-  ...extensionPanelNodeList.value,
-  ...serverConfigPanelNodeList.value,
-  aboutPanelNode
-])
+const { t } = useI18n()
+const categories = computed<SettingTreeNode[]>(() =>
+  [
+    ...settingCategories.value,
+    keybindingPanelNode,
+    ...extensionPanelNodeList.value,
+    ...serverConfigPanelNodeList.value,
+    aboutPanelNode
+  ].map((node) => ({
+    ...node,
+    translatedLabel: t(`settingsCategories.${normalizeI18nKey(node.label)}`)
+  }))
+)
+
 const activeCategory = ref<SettingTreeNode | null>(null)
 const searchResults = ref<ISettingGroup[]>([])
 

@@ -630,6 +630,8 @@
     "Sidebar": "Sidebar",
     "Tree Explorer": "Tree Explorer",
     "Validation": "Validation",
-    "Window": "Window"
+    "Window": "Window",
+    "Server-Config": "Server-Config",
+    "About": "About"
   }
 }
