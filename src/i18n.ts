@@ -16,3 +16,6 @@ export const i18n = createI18n({
     ja
   }
 })
+
+/** Convenience shorthand: i18n.global should be . */
+export const { t } = i18n.global

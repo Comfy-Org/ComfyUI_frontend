@@ -10,6 +10,8 @@ import { toRaw } from 'vue'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { t } from '@/i18n'
+import { useToastStore } from '@/stores/toastStore'
 
 async function getFilename(defaultName: string): Promise<string | null> {
   if (useSettingStore().get('Comfy.PromptFilename')) {
@@ -190,15 +192,38 @@ export const workflowService = {
   /**
    * Delete a workflow
    * @param workflow The workflow to delete
-   * @returns true if the workflow was deleted, false if the user cancelled
+   * @returns `true` if the workflow was deleted, `false` if the user cancelled
    */
-  async deleteWorkflow(workflow: ComfyWorkflow): Promise<boolean> {
+  async deleteWorkflow(
+    workflow: ComfyWorkflow,
+    confirm = true
+  ): Promise<boolean> {
+    let confirmed = !confirm
+
+    if (confirm) {
+      confirmed = await showConfirmationDialog({
+        title: 'Delete workflow?',
+        type: 'delete',
+        message: t('sideToolbar.workflowTab.confirmDelete')
+      })
+      if (!confirmed) return false
+    }
+
     const workflowStore = useWorkflowStore()
     if (workflowStore.isOpen(workflow)) {
-      const closed = await this.closeWorkflow(workflow)
-      if (!closed) return false
+      if (confirmed) {
+        await workflowStore.closeWorkflow(workflow)
+      } else {
+        const closed = await this.closeWorkflow(workflow)
+        if (!closed) return false
+      }
     }
     await workflowStore.deleteWorkflow(workflow)
+    useToastStore().add({
+      severity: 'info',
+      summary: t('sideToolbar.workflowTab.deleted'),
+      life: 1000
+    })
     return true
   },
 

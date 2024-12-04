@@ -244,40 +244,6 @@ const renderTreeNode = (
     }
   }
 
-  const confirmDelete = (workflow: ComfyWorkflow) => {
-    confirm.require({
-      message: t('sideToolbar.workflowTab.confirmDelete'),
-      icon: 'pi pi-trash',
-      defaultFocus: 'reject',
-      rejectProps: {
-        label: t('cancel'),
-        severity: 'secondary',
-        outlined: true
-      },
-      acceptProps: {
-        label: t('delete'),
-        severity: 'danger'
-      },
-      accept: async () => {
-        const deleted = await workflowService.deleteWorkflow(workflow)
-        if (deleted) {
-          toast.add({
-            severity: 'info',
-            summary: t('sideToolbar.workflowTab.deleted'),
-            life: 1000
-          })
-        } else {
-          toast.add({
-            severity: 'error',
-            summary: t('sideToolbar.workflowTab.deleteFailedTitle'),
-            detail: t('sideToolbar.workflowTab.deleteFailed'),
-            life: 10_000
-          })
-        }
-      }
-    })
-  }
-
   const actions = node.leaf
     ? {
         handleClick,
@@ -294,7 +260,9 @@ const renderTreeNode = (
         },
         handleDelete: workflow.isTemporary
           ? undefined
-          : () => confirmDelete(workflow),
+          : async () => {
+              await workflowService.deleteWorkflow(workflow)
+            },
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
             {

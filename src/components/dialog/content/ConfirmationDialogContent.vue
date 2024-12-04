@@ -1,9 +1,7 @@
 <template>
-  <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
-    <p class="m-2">
-      <span>{{ message }}</span>
-    </p>
-    <div class="flex gap-4 m-2 justify-end">
+  <section class="prompt-dialog-content flex flex-col gap-6 m-2 mt-4">
+    <span>{{ message }}</span>
+    <div class="flex gap-4 justify-end">
       <Button
         :label="$t('cancel')"
         icon="pi pi-undo"
@@ -26,7 +24,7 @@
         icon="pi pi-save"
       />
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
