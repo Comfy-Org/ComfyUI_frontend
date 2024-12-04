@@ -19,6 +19,7 @@ export function showLoadWorkflowWarning(props: {
 }) {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
+    key: 'global-load-workflow-warning',
     component: LoadWorkflowWarning,
     props
   })
@@ -31,6 +32,7 @@ export function showMissingModelsWarning(props: {
 }) {
   const dialogStore = useDialogStore()
   dialogStore.showDialog({
+    key: 'global-missing-models-warning',
     component: MissingModelsWarning,
     props
   })
@@ -38,6 +40,7 @@ export function showMissingModelsWarning(props: {
 
 export function showSettingsDialog() {
   useDialogStore().showDialog({
+    key: 'global-settings',
     headerComponent: SettingDialogHeader,
     component: SettingDialogContent
   })
@@ -45,6 +48,7 @@ export function showSettingsDialog() {
 
 export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
   useDialogStore().showDialog({
+    key: 'global-execution-error',
     component: ExecutionErrorDialogContent,
     props: {
       error
@@ -54,6 +58,7 @@ export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
 
 export function showTemplateWorkflowsDialog() {
   useDialogStore().showDialog({
+    key: 'global-template-workflows',
     title: i18n.global.t('templateWorkflows.title'),
     component: TemplateWorkflowsContent
   })
@@ -72,6 +77,7 @@ export async function showPromptDialog({
 
   return new Promise((resolve) => {
     dialogStore.showDialog({
+      key: 'global-prompt',
       title,
       component: PromptDialogContent,
       props: {
