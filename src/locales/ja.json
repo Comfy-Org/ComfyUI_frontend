@@ -315,9 +315,6 @@
     "Comfy_Locale": {
       "name": "言語"
     },
-    "Comfy_Logging_Enabled": {
-      "name": "ログを有効にする"
-    },
     "Comfy_MaskEditor_BrushAdjustmentSpeed": {
       "name": "ブラシ調整速度の倍率",
       "tooltip": "調整時にブラシのサイズと硬さがどれだけ速く変化するかを制御します。値が高いほど、変化が速くなります。"
