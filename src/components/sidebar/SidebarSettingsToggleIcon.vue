@@ -16,6 +16,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 const dialogStore = useDialogStore()
 const showSetting = () => {
   dialogStore.showDialog({
+    key: 'global-settings',
     headerComponent: SettingDialogHeader,
     component: SettingDialogContent
   })
