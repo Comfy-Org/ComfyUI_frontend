@@ -69,6 +69,12 @@ export const useCommandStore = defineStore('command', () => {
     commandsById.value[command.id] = new ComfyCommandImpl(command)
   }
 
+  const registerCommands = (commands: ComfyCommand[]) => {
+    for (const command of commands) {
+      registerCommand(command)
+    }
+  }
+
   const getCommand = (command: string) => {
     return commandsById.value[command]
   }
@@ -103,6 +109,7 @@ export const useCommandStore = defineStore('command', () => {
     execute,
     getCommand,
     registerCommand,
+    registerCommands,
     isRegistered,
     loadExtensionCommands
   }
