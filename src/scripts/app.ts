@@ -15,14 +15,12 @@ import {
   getLatentMetadata
 } from './pnginfo'
 import { createImageHost, calculateImageGrid } from './ui/imagePreview'
-import { DraggableList } from './ui/draggableList'
-import { applyTextReplacements, addStylesheet } from './utils'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
   validateComfyWorkflow
-} from '../types/comfyWorkflow'
+} from '@/types/comfyWorkflow'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
@@ -113,14 +111,6 @@ export class ComfyApp {
   static clipspace_invalidate_handler: (() => void) | null = null
   static open_maskeditor = null
   static clipspace_return_node = null
-
-  // Force vite to import utils.ts as part of index.
-  // Force import of DraggableList.
-  static utils = {
-    applyTextReplacements,
-    addStylesheet,
-    DraggableList
-  }
 
   vueAppReady: boolean
   ui: ComfyUI
