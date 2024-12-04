@@ -81,7 +81,7 @@ export const workflowService = {
         await this.saveWorkflow(workflow)
         return
       }
-      const deleted = await this.deleteWorkflow(existingWorkflow)
+      const deleted = await this.deleteWorkflow(existingWorkflow, true)
       if (!deleted) return
     }
 
@@ -196,13 +196,13 @@ export const workflowService = {
    */
   async deleteWorkflow(
     workflow: ComfyWorkflow,
-    confirm = true
+    silent = false
   ): Promise<boolean> {
-    let confirmed = !confirm
+    let confirmed = silent
 
-    if (confirm) {
+    if (!silent) {
       confirmed = await showConfirmationDialog({
-        title: 'Delete workflow?',
+        title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
         type: 'delete',
         message: t('sideToolbar.workflowTab.confirmDelete'),
         itemList: [workflow.path]
@@ -220,11 +220,13 @@ export const workflowService = {
       }
     }
     await workflowStore.deleteWorkflow(workflow)
-    useToastStore().add({
-      severity: 'info',
-      summary: t('sideToolbar.workflowTab.deleted'),
-      life: 1000
-    })
+    if (!silent) {
+      useToastStore().add({
+        severity: 'info',
+        summary: t('sideToolbar.workflowTab.deleted'),
+        life: 1000
+      })
+    }
     return true
   },
 

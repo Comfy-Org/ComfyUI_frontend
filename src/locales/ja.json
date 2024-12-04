@@ -525,6 +525,7 @@
     "themeToggle": "テーマの切り替え",
     "workflowTab": {
       "confirmDelete": "このワークフローを削除してもよろしいですか？",
+      "confirmDeleteTitle": "ワークフローを削除しますか？",
       "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
       "deleteFailedTitle": "削除に失敗しました",
       "deleted": "ワークフローが削除されました"

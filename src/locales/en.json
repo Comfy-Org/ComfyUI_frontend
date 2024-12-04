@@ -434,6 +434,7 @@
       }
     },
     "workflowTab": {
+      "confirmDeleteTitle": "Delete workflow?",
       "confirmDelete": "Are you sure you want to delete this workflow?",
       "deleted": "Workflow deleted",
       "deleteFailedTitle": "Delete failed",
