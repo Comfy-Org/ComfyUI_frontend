@@ -80,12 +80,14 @@ type KeysOfType<T, Match> = {
 }[keyof T]
 
 class ConfirmDialog {
-  public readonly accept: Locator
+  public readonly delete: Locator
+  public readonly overwrite: Locator
   public readonly reject: Locator
 
   constructor(public readonly page: Page) {
-    this.accept = page.locator('.p-confirmdialog-accept-button')
-    this.reject = page.locator('.p-confirmdialog-reject-button')
+    this.delete = page.locator('button.p-button[aria-label="Delete"]')
+    this.overwrite = page.locator('button.p-button[aria-label="Overwrite"]')
+    this.reject = page.locator('button.p-button[aria-label="Cancel"]')
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
