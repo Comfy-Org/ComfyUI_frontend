@@ -40,6 +40,8 @@ import { useModelStore } from '@/stores/modelStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { useCoreCommands } from '@/hooks/coreCommandHooks'
 
 setupAutoQueueHandler()
 
@@ -105,6 +107,8 @@ watchEffect(() => {
 
 const init = () => {
   settingStore.addSettings(app.ui.settings)
+  const coreCommands = useCoreCommands()
+  useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
   useKeybindingStore().loadCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
