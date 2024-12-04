@@ -57,6 +57,10 @@ export const useDialogStore = defineStore('dialog', () => {
     props?: Record<string, any>
     dialogComponentProps?: DialogComponentProps
   }) {
+    if (dialogStack.value.length >= 10) {
+      dialogStack.value.shift()
+    }
+
     const dialog = {
       key: options.key,
       visible: true,
