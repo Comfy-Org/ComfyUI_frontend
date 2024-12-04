@@ -1,7 +1,7 @@
 // This module is mocked in tests-ui/
 // Import vue components here to avoid tests-ui/ reporting errors
 // about importing primevue components.
-import { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore, type ShowDialogOptions } from '@/stores/dialogStore'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
@@ -10,6 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
+import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { i18n } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -93,5 +94,33 @@ export async function showPromptDialog({
         }
       }
     })
+  })
+}
+
+export async function showConfirmationDialog({
+  title,
+  type,
+  message
+}: {
+  title: string
+  type: 'overwrite' | 'delete'
+  message: string
+}): Promise<boolean> {
+  return new Promise((resolve) => {
+    const options: ShowDialogOptions = {
+      key: 'global-prompt',
+      title,
+      component: ConfirmationDialogContent,
+      props: {
+        message,
+        type,
+        onConfirm: resolve
+      },
+      dialogComponentProps: {
+        onClose: () => resolve(false)
+      }
+    }
+
+    useDialogStore().showDialog(options)
   })
 }

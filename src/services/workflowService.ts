@@ -2,7 +2,7 @@ import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
 import { useWorkflowStore, ComfyWorkflow } from '@/stores/workflowStore'
-import { showPromptDialog } from './dialogService'
+import { showConfirmationDialog, showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { LGraphCanvas } from '@comfyorg/litegraph'
@@ -67,13 +67,13 @@ export const workflowService = {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = (await ComfyAsyncDialog.prompt({
+      const res = await showConfirmationDialog({
         title: 'Overwrite existing file?',
-        message: `"${newPath}" already exists. Do you want to overwrite it?`,
-        actions: ['Yes', 'No']
-      })) as 'Yes' | 'No'
+        type: 'overwrite',
+        message: `"${newPath}" already exists. Do you want to overwrite it?`
+      })
 
-      if (res === 'No') return
+      if (res !== true) return
 
       if (existingWorkflow.path === workflow.path) {
         await this.saveWorkflow(workflow)

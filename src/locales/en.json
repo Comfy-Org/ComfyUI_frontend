@@ -129,6 +129,7 @@
   "delete": "Delete",
   "rename": "Rename",
   "cancel": "Cancel",
+  "overwrite": "Overwrite",
   "customize": "Customize",
   "experimental": "BETA",
   "deprecated": "DEPR",
