@@ -39,6 +39,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 
 setupAutoQueueHandler()
 
@@ -104,6 +105,7 @@ watchEffect(() => {
 
 const init = () => {
   settingStore.addSettings(app.ui.settings)
+  useMenuItemStore().registerCoreMenuCommands()
   useKeybindingStore().loadCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
   useBottomPanelStore().registerCoreBottomPanelTabs()
