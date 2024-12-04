@@ -4,6 +4,7 @@
   "bookmark": "ブックマーク",
   "box": "ボックス",
   "briefcase": "ブリーフケース",
+  "cancel": "キャンセル",
   "color": "色",
   "comingSoon": "近日公開",
   "confirm": "確認",
@@ -13,6 +14,10 @@
   "customizeFolder": "フォルダーをカスタマイズ",
   "delete": "削除",
   "deprecated": "非推奨",
+  "desktopMenu": {
+    "confirmReinstall": "これにより、extra_models_config.yamlファイルがクリアされ、再インストールが開始されます。本当によろしいですか？",
+    "reinstall": "再インストール"
+  },
   "devices": "デバイス",
   "download": "ダウンロード",
   "downloadGit": {
@@ -184,6 +189,7 @@
     "Zoom Out": "ズームアウト"
   },
   "newFolder": "新しいフォルダー",
+  "no": "いいえ",
   "noResultsFound": "結果が見つかりませんでした",
   "noTasksFound": "タスクが見つかりませんでした",
   "noTasksFoundMessage": "キューにタスクがありません。",
@@ -199,6 +205,7 @@
     "title": "お使いのデバイスはサポートされていません"
   },
   "openNewIssue": "新しいIssueを開く",
+  "overwrite": "上書き",
   "reconnected": "再接続しました",
   "reconnecting": "再接続中",
   "refresh": "更新",
@@ -209,6 +216,7 @@
   "reportSent": "レポートを送信しました",
   "reset": "リセット",
   "resetKeybindingsTooltip": "キーバインドをデフォルトに戻す",
+  "save": "保存",
   "searchExtensions": "拡張機能を検索",
   "searchFailedMessage": "検索条件に一致する設定が見つかりませんでした。条件を変更して再試行してください。",
   "searchKeybindings": "キーバインドを検索",
@@ -541,6 +549,17 @@
       "showFlatList": "フラットリストを表示"
     },
     "themeToggle": "テーマの切り替え",
+    "workflowTab": {
+      "confirmDelete": "このワークフローを削除してもよろしいですか？",
+      "confirmDeleteTitle": "ワークフローを削除しますか？",
+      "confirmOverwrite": "以下のファイルはすでに存在します。上書きしますか？",
+      "confirmOverwriteTitle": "既存のファイルを上書きしますか？",
+      "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
+      "deleteFailedTitle": "削除に失敗しました",
+      "deleted": "ワークフローが削除されました",
+      "dirtyClose": "以下のファイルが変更されました。閉じる前に保存しますか？",
+      "dirtyCloseTitle": "変更を保存しますか？"
+    },
     "workflows": "ワークフロー"
   },
   "star": "スター",

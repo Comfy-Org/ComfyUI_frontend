@@ -75,6 +75,28 @@ type FolderStructure = {
   [key: string]: FolderStructure | string
 }
 
+type KeysOfType<T, Match> = {
+  [K in keyof T]: T[K] extends Match ? K : never
+}[keyof T]
+
+class ConfirmDialog {
+  public readonly delete: Locator
+  public readonly overwrite: Locator
+  public readonly reject: Locator
+
+  constructor(public readonly page: Page) {
+    this.delete = page.locator('button.p-button[aria-label="Delete"]')
+    this.overwrite = page.locator('button.p-button[aria-label="Overwrite"]')
+    this.reject = page.locator('button.p-button[aria-label="Cancel"]')
+  }
+
+  async click(locator: KeysOfType<ConfirmDialog, Locator>) {
+    const loc = this[locator]
+    await expect(loc).toBeVisible()
+    await loc.click()
+  }
+}
+
 export class ComfyPage {
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
@@ -94,6 +116,7 @@ export class ComfyPage {
   public readonly actionbar: ComfyActionbar
   public readonly templates: ComfyTemplates
   public readonly settingDialog: SettingDialog
+  public readonly confirmDialog: ConfirmDialog
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -118,6 +141,7 @@ export class ComfyPage {
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page)
+    this.confirmDialog = new ConfirmDialog(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -740,14 +764,14 @@ export class ComfyPage {
     )
   }
 
-  async confirmDialog(prompt: string, text: string = 'Yes') {
+  async clickDialogButton(prompt: string, buttonText: string = 'Yes') {
     const modal = this.page.locator(
       `.comfy-modal-content:has-text("${prompt}")`
     )
     await expect(modal).toBeVisible()
     await modal
       .locator('.comfyui-button', {
-        hasText: text
+        hasText: buttonText
       })
       .click()
     await expect(modal).toBeHidden()

@@ -4,6 +4,7 @@
   "bookmark": "书签",
   "box": "盒子",
   "briefcase": "公文包",
+  "cancel": "取消",
   "color": "颜色",
   "comingSoon": "敬请期待",
   "confirm": "确认",
@@ -13,6 +14,10 @@
   "customizeFolder": "定制文件夹",
   "delete": "删除",
   "deprecated": "弃用",
+  "desktopMenu": {
+    "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
+    "reinstall": "重新安装"
+  },
   "devices": "设备",
   "download": "下载",
   "downloadGit": {
@@ -184,6 +189,7 @@
     "Zoom Out": "缩小"
   },
   "newFolder": "新建文件夹",
+  "no": "不",
   "noResultsFound": "未找到结果",
   "noTasksFound": "未找到任务",
   "noTasksFoundMessage": "队列中没有任务。",
@@ -199,6 +205,7 @@
     "title": "您的设备不受支持"
   },
   "openNewIssue": "开启新 Issue",
+  "overwrite": "覆盖",
   "reconnected": "已重新连接",
   "reconnecting": "重新连接中",
   "refresh": "刷新",
@@ -209,6 +216,7 @@
   "reportSent": "报告已提交",
   "reset": "重置",
   "resetKeybindingsTooltip": "重置键位",
+  "save": "保存",
   "searchExtensions": "搜索插件",
   "searchFailedMessage": "我们找不到与您的搜索匹配的任何设置。请尝试调整搜索条件。",
   "searchKeybindings": "搜索键位",
@@ -541,6 +549,17 @@
       "showFlatList": "平铺结果"
     },
     "themeToggle": "主题切换",
+    "workflowTab": {
+      "confirmDelete": "您确定要删除此工作流吗？",
+      "confirmDeleteTitle": "删除工作流？",
+      "confirmOverwrite": "下面的文件已经存在。您想要覆盖它吗？",
+      "confirmOverwriteTitle": "覆盖现有文件？",
+      "deleteFailed": "尝试删除工作流失败。",
+      "deleteFailedTitle": "删除失败",
+      "deleted": "工作流已删除",
+      "dirtyClose": "以下文件已被更改。您想在关闭之前保存它们吗？",
+      "dirtyCloseTitle": "保存更改？"
+    },
     "workflows": "工作流"
   },
   "star": "星星",

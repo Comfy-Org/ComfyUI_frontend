@@ -4,6 +4,7 @@
   "bookmark": "Закладка",
   "box": "Ящик",
   "briefcase": "Чемодан",
+  "cancel": "Отмена",
   "color": "Цвет",
   "comingSoon": "Скоро",
   "confirm": "Подтвердить",
@@ -13,6 +14,10 @@
   "customizeFolder": "Настроить папку",
   "delete": "Удалить",
   "deprecated": "УСТАР",
+  "desktopMenu": {
+    "confirmReinstall": "Это очистит ваш файл extra_models_config.yaml и начнет установку заново. Вы уверены?",
+    "reinstall": "Переустановить"
+  },
   "devices": "Устройства",
   "download": "Скачать",
   "downloadGit": {
@@ -184,6 +189,7 @@
     "Zoom Out": "Уменьшить"
   },
   "newFolder": "Новая папка",
+  "no": "Нет",
   "noResultsFound": "Ничего не найдено",
   "noTasksFound": "Задачи не найдены",
   "noTasksFoundMessage": "В очереди нет задач.",
@@ -199,6 +205,7 @@
     "title": "Ваше устройство не поддерживается"
   },
   "openNewIssue": "Открыть новый Issue",
+  "overwrite": "Перезаписать",
   "reconnected": "Переподключено",
   "reconnecting": "Переподключение",
   "refresh": "Обновить",
@@ -209,6 +216,7 @@
   "reportSent": "Отчет отправлен",
   "reset": "Сбросить",
   "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
+  "save": "Сохранить",
   "searchExtensions": "Поиск расширений",
   "searchFailedMessage": "Не удалось найти ни одной настройки, соответствующей вашему запросу. Попробуйте скорректировать поисковый запрос.",
   "searchKeybindings": "Поиск сочетаний клавиш",
@@ -541,6 +549,17 @@
       "showFlatList": "Показать плоский список"
     },
     "themeToggle": "Переключить тему",
+    "workflowTab": {
+      "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
+      "confirmDeleteTitle": "Удалить рабочий процесс?",
+      "confirmOverwrite": "Файл ниже уже существует. Вы хотите его перезаписать?",
+      "confirmOverwriteTitle": "Перезаписать существующий файл?",
+      "deleteFailed": "Попытка удалить рабочий процесс не удалась.",
+      "deleteFailedTitle": "Не удалось удалить",
+      "deleted": "Рабочий процесс удален",
+      "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
+      "dirtyCloseTitle": "Сохранить изменения?"
+    },
     "workflows": "Рабочие процессы"
   },
   "star": "Звёздочка",

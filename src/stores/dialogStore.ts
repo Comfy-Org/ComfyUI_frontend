@@ -19,6 +19,15 @@ interface DialogInstance {
   dialogComponentProps: Record<string, any>
 }
 
+export interface ShowDialogOptions {
+  key?: string
+  title?: string
+  headerComponent?: Component
+  component: Component
+  props?: Record<string, any>
+  dialogComponentProps?: DialogComponentProps
+}
+
 export const useDialogStore = defineStore('dialog', () => {
   const dialogStack = ref<DialogInstance[]>([])
 
@@ -102,14 +111,7 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialog
   }
 
-  function showDialog(options: {
-    key?: string
-    title?: string
-    headerComponent?: Component
-    component: Component
-    props?: Record<string, any>
-    dialogComponentProps?: DialogComponentProps
-  }) {
+  function showDialog(options: ShowDialogOptions) {
     const dialogKey = options.key || genDialogKey()
 
     let dialog = dialogStack.value.find((d) => d.key === dialogKey)

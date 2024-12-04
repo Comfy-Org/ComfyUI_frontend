@@ -1,7 +1,7 @@
 // This module is mocked in tests-ui/
 // Import vue components here to avoid tests-ui/ reporting errors
 // about importing primevue components.
-import { useDialogStore } from '@/stores/dialogStore'
+import { useDialogStore, type ShowDialogOptions } from '@/stores/dialogStore'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import SettingDialogContent from '@/components/dialog/content/SettingDialogContent.vue'
@@ -10,6 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
+import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { i18n } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -93,5 +94,46 @@ export async function showPromptDialog({
         }
       }
     })
+  })
+}
+
+/**
+ *
+ * @returns `true` if the user confirms the dialog,
+ * `false` if denied (e.g. no in yes/no/cancel), or
+ * `null` if the dialog is cancelled or closed
+ */
+export async function showConfirmationDialog({
+  title,
+  type,
+  message,
+  itemList = []
+}: {
+  /** Dialog heading */
+  title: string
+  /** Pre-configured dialog type */
+  type: 'overwrite' | 'delete' | 'dirtyClose'
+  /** The main message body */
+  message: string
+  /** Displayed as an unorderd list immediately below the message body */
+  itemList?: string[]
+}): Promise<boolean | null> {
+  return new Promise((resolve) => {
+    const options: ShowDialogOptions = {
+      key: 'global-prompt',
+      title,
+      component: ConfirmationDialogContent,
+      props: {
+        message,
+        type,
+        itemList,
+        onConfirm: resolve
+      },
+      dialogComponentProps: {
+        onClose: () => resolve(null)
+      }
+    }
+
+    useDialogStore().showDialog(options)
   })
 }

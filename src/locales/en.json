@@ -128,6 +128,10 @@
   "reconnected": "Reconnected",
   "delete": "Delete",
   "rename": "Rename",
+  "save": "Save",
+  "no": "No",
+  "cancel": "Cancel",
+  "overwrite": "Overwrite",
   "customize": "Customize",
   "experimental": "BETA",
   "deprecated": "DEPR",
@@ -454,6 +458,17 @@
         "hideCached": "Hide Cached",
         "hideCanceled": "Hide Canceled"
       }
+    },
+    "workflowTab": {
+      "confirmDeleteTitle": "Delete workflow?",
+      "confirmDelete": "Are you sure you want to delete this workflow?",
+      "deleted": "Workflow deleted",
+      "deleteFailedTitle": "Delete failed",
+      "deleteFailed": "Attempt to delete the workflow failed.",
+      "dirtyCloseTitle": "Save Changes?",
+      "dirtyClose": "The files below have been changed.  Would you like to save them before closing?",
+      "confirmOverwriteTitle": "Overwrite existing file?",
+      "confirmOverwrite": "The file below already exists. Would you like to overwrite it?"
     }
   },
   "menu": {
@@ -573,5 +588,9 @@
     "Feedback": "Feedback",
     "Reinstall": "Reinstall",
     "Restart": "Restart"
+  },
+  "desktopMenu": {
+    "reinstall": "Reinstall",
+    "confirmReinstall": "This will clear your extra_models_config.yaml file, and begin installation again.  Are you sure?"
   }
 }

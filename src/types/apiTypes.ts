@@ -525,7 +525,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Node.SnapHighlightsNode': z.boolean(),
       'Comfy.Server.ServerConfigValues': z.record(z.string(), z.any()),
       'Comfy.Server.LaunchArgs': z.record(z.string(), z.string()),
-      'LiteGraph.Canvas.MaximumFps': z.number()
+      'LiteGraph.Canvas.MaximumFps': z.number(),
+      'Comfy.Workflow.ConfirmDelete': z.boolean()
     })
     .optional()
 )

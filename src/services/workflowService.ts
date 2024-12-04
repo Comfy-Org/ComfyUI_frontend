@@ -1,8 +1,7 @@
 import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
-import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
 import { useWorkflowStore, ComfyWorkflow } from '@/stores/workflowStore'
-import { showPromptDialog } from './dialogService'
+import { showConfirmationDialog, showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { LGraphCanvas } from '@comfyorg/litegraph'
@@ -10,6 +9,8 @@ import { toRaw } from 'vue'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { t } from '@/i18n'
+import { useToastStore } from '@/stores/toastStore'
 
 async function getFilename(defaultName: string): Promise<string | null> {
   if (useSettingStore().get('Comfy.PromptFilename')) {
@@ -67,19 +68,20 @@ export const workflowService = {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = (await ComfyAsyncDialog.prompt({
-        title: 'Overwrite existing file?',
-        message: `"${newPath}" already exists. Do you want to overwrite it?`,
-        actions: ['Yes', 'No']
-      })) as 'Yes' | 'No'
+      const res = await showConfirmationDialog({
+        title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
+        type: 'overwrite',
+        message: t('sideToolbar.workflowTab.confirmOverwrite'),
+        itemList: [newPath]
+      })
 
-      if (res === 'No') return
+      if (res !== true) return
 
       if (existingWorkflow.path === workflow.path) {
         await this.saveWorkflow(workflow)
         return
       }
-      const deleted = await this.deleteWorkflow(existingWorkflow)
+      const deleted = await this.deleteWorkflow(existingWorkflow, true)
       if (!deleted) return
     }
 
@@ -156,16 +158,17 @@ export const workflowService = {
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
-      const res = (await ComfyAsyncDialog.prompt({
-        title: 'Save Changes?',
-        message: `Do you want to save changes to "${workflow.path}" before closing?`,
-        actions: ['Yes', 'No', 'Cancel']
-      })) as 'Yes' | 'No' | 'Cancel'
+      const confirmed = await showConfirmationDialog({
+        title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
+        type: 'dirtyClose',
+        message: t('sideToolbar.workflowTab.dirtyClose'),
+        itemList: [workflow.path]
+      })
+      // Cancel
+      if (confirmed === null) return false
 
-      if (res === 'Yes') {
+      if (confirmed === true) {
         await this.saveWorkflow(workflow)
-      } else if (res === 'Cancel') {
-        return false
       }
     }
 
@@ -190,15 +193,40 @@ export const workflowService = {
   /**
    * Delete a workflow
    * @param workflow The workflow to delete
-   * @returns true if the workflow was deleted, false if the user cancelled
+   * @returns `true` if the workflow was deleted, `false` if the user cancelled
    */
-  async deleteWorkflow(workflow: ComfyWorkflow): Promise<boolean> {
+  async deleteWorkflow(
+    workflow: ComfyWorkflow,
+    silent = false
+  ): Promise<boolean> {
+    const bypassConfirm = !useSettingStore().get('Comfy.Workflow.ConfirmDelete')
+    let confirmed: boolean | null = bypassConfirm || silent
+
+    if (!confirmed) {
+      confirmed = await showConfirmationDialog({
+        title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
+        type: 'delete',
+        message: t('sideToolbar.workflowTab.confirmDelete'),
+        itemList: [workflow.path]
+      })
+      if (!confirmed) return false
+    }
+
     const workflowStore = useWorkflowStore()
     if (workflowStore.isOpen(workflow)) {
-      const closed = await this.closeWorkflow(workflow)
+      const closed = await this.closeWorkflow(workflow, {
+        warnIfUnsaved: !confirmed
+      })
       if (!closed) return false
     }
     await workflowStore.deleteWorkflow(workflow)
+    if (!silent) {
+      useToastStore().add({
+        severity: 'info',
+        summary: t('sideToolbar.workflowTab.deleted'),
+        life: 1000
+      })
+    }
     return true
   },
 

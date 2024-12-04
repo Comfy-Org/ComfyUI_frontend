@@ -123,6 +123,7 @@
       </div>
     </template>
   </SidebarTabTemplate>
+  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
@@ -150,6 +151,9 @@ import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import ConfirmDialog from 'primevue/confirmdialog'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
@@ -218,6 +222,9 @@ const openWorkflowsTree = computed(() =>
   buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
 )
 
+const confirm = useConfirm()
+const toast = useToast()
+
 const renderTreeNode = (
   node: TreeNode,
   type: WorkflowTreeType
@@ -236,6 +243,7 @@ const renderTreeNode = (
       toggleNodeOnEvent(e, node)
     }
   }
+
   const actions = node.leaf
     ? {
         handleClick,
@@ -252,8 +260,8 @@ const renderTreeNode = (
         },
         handleDelete: workflow.isTemporary
           ? undefined
-          : () => {
-              workflowService.deleteWorkflow(workflow)
+          : async () => {
+              await workflowService.deleteWorkflow(workflow)
             },
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [

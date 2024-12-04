@@ -658,5 +658,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionModified: '1.5.4'
+  },
+  {
+    id: 'Comfy.Workflow.ConfirmDelete',
+    name: 'Show confirmation when deleting workflows',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.5.6'
   }
 ]
