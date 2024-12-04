@@ -61,11 +61,9 @@ import BatchCountEdit from './BatchCountEdit.vue'
 import ButtonGroup from 'primevue/buttongroup'
 import { useI18n } from 'vue-i18n'
 import {
-  AutoQueueMode,
   useQueuePendingTaskCountStore,
   useQueueSettingsStore
 } from '@/stores/queueStore'
-import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
@@ -76,7 +74,7 @@ const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
 const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
 
 const { t } = useI18n()
-const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
+const queueModeMenuItemLookup = computed(() => ({
   disabled: {
     key: 'disabled',
     label: t('menu.queue'),
@@ -87,7 +85,7 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   },
   instant: {
     key: 'instant',
-    label: t('menu.instant'),
+    label: `${t('menu.queue')} (${t('menu.instant')})`,
     tooltip: t('menu.instantTooltip'),
     command: () => {
       queueMode.value = 'instant'
@@ -95,19 +93,19 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   },
   change: {
     key: 'change',
-    label: t('menu.change'),
-    tooltip: t('menu.changeTooltip'),
+    label: `${t('menu.queue')} (${t('menu.onChange')})`,
+    tooltip: t('menu.onChangeTooltip'),
     command: () => {
       queueMode.value = 'change'
     }
   }
-}
+}))
 
 const activeQueueModeMenuItem = computed(
-  () => queueModeMenuItemLookup[queueMode.value]
+  () => queueModeMenuItemLookup.value[queueMode.value]
 )
 const queueModeMenuItems = computed(() =>
-  Object.values(queueModeMenuItemLookup)
+  Object.values(queueModeMenuItemLookup.value)
 )
 
 const executingPrompt = computed(() => !!queueCountStore.count.value)
