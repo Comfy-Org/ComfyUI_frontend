@@ -1,3 +1,4 @@
+import type { ComfyCommand } from '@/stores/commandStore'
 import { Component } from 'vue'
 
 export interface BaseSidebarTabExtension {
@@ -108,5 +109,6 @@ export interface ExtensionManager {
 }
 
 export interface CommandManager {
+  commands: ComfyCommand[]
   execute(command: string, errorHandler?: (error: any) => void): void
 }

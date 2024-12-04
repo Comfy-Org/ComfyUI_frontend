@@ -127,3 +127,11 @@ export function getPathDetails(path: string) {
   const fullFilename = path.split('/').pop() ?? path
   return { directory, fullFilename, ...getFilenameDetails(fullFilename) }
 }
+
+/**
+ * Normalizes a string to be used as an i18n key.
+ * Replaces dots with underscores.
+ */
+export function normalizeI18nKey(key: string) {
+  return key.replace(/\./g, '_')
+}

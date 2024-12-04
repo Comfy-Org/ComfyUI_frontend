@@ -29,7 +29,8 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "locale": "lobe-i18n locale"
+    "locale": "lobe-i18n locale",
+    "collect-i18n": "playwright test --config=playwright.i18n.config.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",

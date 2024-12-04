@@ -31,6 +31,7 @@
 <script setup lang="ts">
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import Menubar from 'primevue/menubar'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
@@ -44,11 +45,9 @@ const dropdownDirection = computed(() =>
 const menuItemsStore = useMenuItemStore()
 const { t } = useI18n()
 const translateMenuItem = (item: MenuItem): MenuItem => {
-  const translatedLabel = item.label
-    ? t(
-        `menuLabels.${item.label}`,
-        typeof item.label === 'function' ? item.label() : item.label
-      )
+  const label = typeof item.label === 'function' ? item.label() : item.label
+  const translatedLabel = label
+    ? t(`menuLabels.${normalizeI18nKey(label)}`, label)
     : undefined
 
   return {
