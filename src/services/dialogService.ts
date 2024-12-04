@@ -100,11 +100,13 @@ export async function showPromptDialog({
 export async function showConfirmationDialog({
   title,
   type,
-  message
+  message,
+  itemList = []
 }: {
   title: string
   type: 'overwrite' | 'delete'
   message: string
+  itemList?: string[]
 }): Promise<boolean> {
   return new Promise((resolve) => {
     const options: ShowDialogOptions = {
@@ -114,6 +116,7 @@ export async function showConfirmationDialog({
       props: {
         message,
         type,
+        itemList,
         onConfirm: resolve
       },
       dialogComponentProps: {

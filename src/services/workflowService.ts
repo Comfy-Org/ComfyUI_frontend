@@ -204,7 +204,8 @@ export const workflowService = {
       confirmed = await showConfirmationDialog({
         title: 'Delete workflow?',
         type: 'delete',
-        message: t('sideToolbar.workflowTab.confirmDelete')
+        message: t('sideToolbar.workflowTab.confirmDelete'),
+        itemList: [workflow.path]
       })
       if (!confirmed) return false
     }

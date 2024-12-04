@@ -1,6 +1,9 @@
 <template>
   <section class="prompt-dialog-content flex flex-col gap-6 m-2 mt-4">
     <span>{{ message }}</span>
+    <ul v-if="itemList?.length" class="pl-4 m-0 flex flex-col gap-2">
+      <li v-for="item of itemList" :key="item">{{ item }}</li>
+    </ul>
     <div class="flex gap-4 justify-end">
       <Button
         :label="$t('cancel')"
@@ -35,6 +38,7 @@ const props = defineProps<{
   message: string
   type: 'overwrite' | 'delete'
   onConfirm: (value?: boolean) => void
+  itemList?: string[]
 }>()
 
 const onCancel = () => useDialogStore().closeDialog()
