@@ -79,7 +79,7 @@ const { t } = useI18n()
 const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   disabled: {
     key: 'disabled',
-    label: 'Queue',
+    label: t('menu.queue'),
     tooltip: t('menu.disabledTooltip'),
     command: () => {
       queueMode.value = 'disabled'
@@ -87,7 +87,7 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   },
   instant: {
     key: 'instant',
-    label: 'Queue (Instant)',
+    label: t('menu.instant'),
     tooltip: t('menu.instantTooltip'),
     command: () => {
       queueMode.value = 'instant'
@@ -95,7 +95,7 @@ const queueModeMenuItemLookup: Record<AutoQueueMode, MenuItem> = {
   },
   change: {
     key: 'change',
-    label: 'Queue (Change)',
+    label: t('menu.change'),
     tooltip: t('menu.changeTooltip'),
     command: () => {
       queueMode.value = 'change'
