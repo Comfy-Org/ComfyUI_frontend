@@ -199,9 +199,10 @@ export const workflowService = {
     workflow: ComfyWorkflow,
     silent = false
   ): Promise<boolean> {
-    let confirmed: boolean | null = silent
+    const bypassConfirm = !useSettingStore().get('Comfy.Workflow.ConfirmDelete')
+    let confirmed: boolean | null = bypassConfirm || silent
 
-    if (!silent) {
+    if (!confirmed) {
       confirmed = await showConfirmationDialog({
         title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
         type: 'delete',
