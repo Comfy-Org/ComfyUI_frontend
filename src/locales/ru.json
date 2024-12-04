@@ -155,7 +155,7 @@
     "Open Logs Folder": "Открыть папку журналов",
     "Open Models Folder": "Открыть папку моделей",
     "Open Outputs Folder": "Открыть папку выходных данных",
-    "Open extra_model_paths.yaml": "Открыть extra_model_paths.yaml",
+    "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
     "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные узлы",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
