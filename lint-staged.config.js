@@ -11,7 +11,7 @@ export default {
   './src/locales/en.json': () => ['lobe-i18n locale'],
 
   './src/constants/coreSettings.ts': () => [
-    'tsx scripts/update-setting-locale.ts',
+    'tsx scripts/update-constants-locale.ts',
     'lobe-i18n locale'
   ]
 }
