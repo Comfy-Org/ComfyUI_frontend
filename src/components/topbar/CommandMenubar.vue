@@ -1,10 +1,6 @@
 <template>
   <Menubar
-<<<<<<< HEAD
     :model="translatedItems"
-=======
-    :model="menuItems"
->>>>>>> 14c30cde (Register core commands)
     class="top-menubar border-none p-0 bg-transparent"
     :pt="{
       rootList: 'gap-0 flex-nowrap w-auto',
@@ -35,7 +31,6 @@
 <script setup lang="ts">
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { storeToRefs } from 'pinia'
 import Menubar from 'primevue/menubar'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
