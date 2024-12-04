@@ -239,6 +239,45 @@
     "reportIssue": "問題を報告"
   },
   "settings": "設定",
+  "settingsCategories": {
+    "Appearance": "外観",
+    "BrushAdjustment": "ブラシ調整",
+    "Canvas": "キャンバス",
+    "ColorPalette": "カラーパレット",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfyデスクトップ",
+    "DevMode": "開発モード",
+    "EditAttention": "編集Attention",
+    "Extension": "拡張",
+    "General": "一般",
+    "Graph": "グラフ",
+    "Group": "グループ",
+    "Keybinding": "キー割り当て",
+    "Link": "リンク",
+    "LinkRelease": "リンク解除",
+    "LiteGraph": "ライトグラフ",
+    "Locale": "ロケール",
+    "Mask Editor": "マスクエディタ",
+    "Menu": "メニュー",
+    "ModelLibrary": "モデルライブラリ",
+    "NewEditor": "新しいエディタ",
+    "Node": "ノード",
+    "Node Search Box": "ノード検索ボックス",
+    "Node Widget": "ノードウィジェット",
+    "NodeInputConversionSubmenus": "ノード入力変換サブメニュー",
+    "NodeLibrary": "ノードライブラリ",
+    "Pointer": "ポインタ",
+    "Queue": "キュー",
+    "QueueButton": "キューボタン",
+    "RerouteBeta": "ルート変更ベータ",
+    "Server": "サーバー",
+    "Settings": "設定",
+    "Sidebar": "サイドバー",
+    "Tree Explorer": "ツリーエクスプローラー",
+    "Validation": "検証",
+    "Window": "ウィンドウ",
+    "Workflow": "ワークフロー"
+  },
   "settingsDialog": {
     "Comfy-Desktop_AutoUpdate": {
       "name": "自動的に更新を確認する"
@@ -499,6 +538,9 @@
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "ウィンドウを閉じるときに確認を表示"
+    },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "ワークフローを削除する際に確認を表示"
     },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "欠落しているモデルの警告を表示"

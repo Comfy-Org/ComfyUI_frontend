@@ -239,6 +239,45 @@
     "reportIssue": "Сообщить о проблеме"
   },
   "settings": "Настройки",
+  "settingsCategories": {
+    "Appearance": "Внешний вид",
+    "BrushAdjustment": "Настройка кисти",
+    "Canvas": "Холст",
+    "ColorPalette": "Цветовая палитра",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfy рабочий стол",
+    "DevMode": "Режим разработчика",
+    "EditAttention": "Редактировать внимание",
+    "Extension": "Расширение",
+    "General": "Общие",
+    "Graph": "Граф",
+    "Group": "Группа",
+    "Keybinding": "Сочетание клавиш",
+    "Link": "Ссылка",
+    "LinkRelease": "Освобождение ссылки",
+    "LiteGraph": "Легкая графика",
+    "Locale": "Локализация",
+    "Mask Editor": "Редактор масок",
+    "Menu": "Меню",
+    "ModelLibrary": "Библиотека моделей",
+    "NewEditor": "Новый редактор",
+    "Node": "Узел",
+    "Node Search Box": "Поисковая строка узлов",
+    "Node Widget": "Виджет узла",
+    "NodeInputConversionSubmenus": "Подменю преобразования ввода узла",
+    "NodeLibrary": "Библиотека узлов",
+    "Pointer": "Указатель",
+    "Queue": "Очередь",
+    "QueueButton": "Кнопка очереди",
+    "RerouteBeta": "Бета-версия перенаправления",
+    "Server": "Сервер",
+    "Settings": "Настройки",
+    "Sidebar": "Боковая панель",
+    "Tree Explorer": "Дерево проводника",
+    "Validation": "Валидация",
+    "Window": "Окно",
+    "Workflow": "Рабочий процесс"
+  },
   "settingsDialog": {
     "Comfy-Desktop_AutoUpdate": {
       "name": "Автоматически проверять обновления"
@@ -499,6 +538,9 @@
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "Показать подтверждение при закрытии окна"
+    },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "Показать подтверждение при удалении рабочих процессов"
     },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "Показать предупреждение об отсутствующих моделях"
