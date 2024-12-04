@@ -1,6 +1,5 @@
 import { downloadBlob } from '@/scripts/utils'
 import { useSettingStore } from '@/stores/settingStore'
-import { ComfyAsyncDialog } from '@/scripts/ui/components/asyncDialog'
 import { useWorkflowStore, ComfyWorkflow } from '@/stores/workflowStore'
 import { showConfirmationDialog, showPromptDialog } from './dialogService'
 import { app } from '@/scripts/app'
@@ -158,16 +157,17 @@ export const workflowService = {
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
-      const res = (await ComfyAsyncDialog.prompt({
-        title: 'Save Changes?',
-        message: `Do you want to save changes to "${workflow.path}" before closing?`,
-        actions: ['Yes', 'No', 'Cancel']
-      })) as 'Yes' | 'No' | 'Cancel'
+      const confirmed = await showConfirmationDialog({
+        title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
+        type: 'dirtyClose',
+        message: t('sideToolbar.workflowTab.dirtyClose'),
+        itemList: [workflow.path]
+      })
+      // Cancel
+      if (confirmed === null) return false
 
-      if (res === 'Yes') {
+      if (confirmed === true) {
         await this.saveWorkflow(workflow)
-      } else if (res === 'Cancel') {
-        return false
       }
     }
 
@@ -198,7 +198,7 @@ export const workflowService = {
     workflow: ComfyWorkflow,
     silent = false
   ): Promise<boolean> {
-    let confirmed = silent
+    let confirmed: boolean | null = silent
 
     if (!silent) {
       confirmed = await showConfirmationDialog({

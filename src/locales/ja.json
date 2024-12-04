@@ -189,6 +189,7 @@
     "Zoom Out": "ズームアウト"
   },
   "newFolder": "新しいフォルダー",
+  "no": "いいえ",
   "noResultsFound": "結果が見つかりませんでした",
   "noTasksFound": "タスクが見つかりませんでした",
   "noTasksFoundMessage": "キューにタスクがありません。",
@@ -215,6 +216,7 @@
   "reportSent": "レポートを送信しました",
   "reset": "リセット",
   "resetKeybindingsTooltip": "キーバインドをデフォルトに戻す",
+  "save": "保存",
   "searchExtensions": "拡張機能を検索",
   "searchFailedMessage": "検索条件に一致する設定が見つかりませんでした。条件を変更して再試行してください。",
   "searchKeybindings": "キーバインドを検索",
@@ -528,7 +530,9 @@
       "confirmDeleteTitle": "ワークフローを削除しますか？",
       "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
       "deleteFailedTitle": "削除に失敗しました",
-      "deleted": "ワークフローが削除されました"
+      "deleted": "ワークフローが削除されました",
+      "dirtyClose": "以下のファイルが変更されました。閉じる前に保存しますか？",
+      "dirtyCloseTitle": "変更を保存しますか？"
     },
     "workflows": "ワークフロー"
   },

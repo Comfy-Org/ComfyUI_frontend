@@ -20,12 +20,21 @@
         icon="pi pi-trash"
       />
       <Button
-        v-else
+        v-else-if="type === 'overwrite'"
         :label="$t('overwrite')"
         severity="warn"
         @click="onConfirm"
         icon="pi pi-save"
       />
+      <template v-else>
+        <Button
+          :label="$t('no')"
+          severity="secondary"
+          @click="onDeny"
+          icon="pi pi-times"
+        />
+        <Button :label="$t('save')" @click="onConfirm" icon="pi pi-save" />
+      </template>
     </div>
   </section>
 </template>
@@ -36,12 +45,17 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   message: string
-  type: 'overwrite' | 'delete'
+  type: 'overwrite' | 'delete' | 'dirtyClose'
   onConfirm: (value?: boolean) => void
   itemList?: string[]
 }>()
 
 const onCancel = () => useDialogStore().closeDialog()
+
+const onDeny = () => {
+  props.onConfirm(false)
+  useDialogStore().closeDialog()
+}
 
 const onConfirm = () => {
   props.onConfirm(true)

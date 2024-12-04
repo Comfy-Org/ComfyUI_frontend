@@ -97,17 +97,27 @@ export async function showPromptDialog({
   })
 }
 
+/**
+ *
+ * @returns `true` if the user confirms the dialog,
+ * `false` if denied (e.g. no in yes/no/cancel), or
+ * `null` if the dialog is cancelled or closed
+ */
 export async function showConfirmationDialog({
   title,
   type,
   message,
   itemList = []
 }: {
+  /** Dialog heading */
   title: string
-  type: 'overwrite' | 'delete'
+  /** Pre-configured dialog type */
+  type: 'overwrite' | 'delete' | 'dirtyClose'
+  /** The main message body */
   message: string
+  /** Displayed as an unorderd list immediately below the message body */
   itemList?: string[]
-}): Promise<boolean> {
+}): Promise<boolean | null> {
   return new Promise((resolve) => {
     const options: ShowDialogOptions = {
       key: 'global-prompt',
@@ -120,7 +130,7 @@ export async function showConfirmationDialog({
         onConfirm: resolve
       },
       dialogComponentProps: {
-        onClose: () => resolve(false)
+        onClose: () => resolve(null)
       }
     }
 
