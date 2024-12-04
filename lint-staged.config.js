@@ -8,12 +8,7 @@ export default {
     'tsc-strict'
   ],
 
-  './src/locales/en.json': () => ['lobe-i18n locale'],
-
-  './src/constants/*.ts': () => [
-    'tsx scripts/update-constants-locale.ts',
-    'lobe-i18n locale'
-  ]
+  './src/locales/en.json': () => ['lobe-i18n locale']
 }
 
 function formatFiles(fileNames) {
