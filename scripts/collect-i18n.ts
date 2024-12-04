@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyCommand } from '../src/stores/commandStore'
+import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
+import { normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -15,7 +16,7 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 test('collect-i18n', async ({ comfyPage }) => {
   const commands = await comfyPage.page.evaluate(() => {
     const workspace = window['app'].extensionManager
-    const commands = workspace.command.commands as ComfyCommand[]
+    const commands = workspace.command.commands as ComfyCommandImpl[]
     return commands.map((command) => ({
       id: command.id,
       label: command.label,
@@ -26,11 +27,13 @@ test('collect-i18n', async ({ comfyPage }) => {
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
   const menuLabels = extractMenuCommandLocaleStrings()
   const commandMenuLabels = new Set(
-    commands.map((command) => command.menubarLabel ?? command.label)
+    commands.map((command) => command.menubarLabel ?? command.label ?? '')
   )
   const allLabels = new Set([...menuLabels, ...commandMenuLabels])
+  allLabels.delete('')
+
   const allLabelsLocale = Object.fromEntries(
-    Array.from(allLabels).map((label) => [label, label])
+    Array.from(allLabels).map((label) => [normalizeI18nKey(label), label])
   )
 
   fs.writeFileSync(
