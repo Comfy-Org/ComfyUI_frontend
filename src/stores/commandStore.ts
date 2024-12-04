@@ -511,6 +511,36 @@ export const useCommandStore = defineStore('command', () => {
           }
         }
       }
+    },
+    {
+      id: 'Comfy.Help.OpenComfyUIIssues',
+      icon: 'pi pi-github',
+      label: 'ComfyUI Issues',
+      versionAdded: '1.5.5',
+      function: () => {
+        window.open(
+          'https://github.com/comfyanonymous/ComfyUI/issues',
+          '_blank'
+        )
+      }
+    },
+    {
+      id: 'Comfy.Help.OpenComfyUIDocs',
+      icon: 'pi pi-info-circle',
+      label: 'ComfyUI Docs',
+      versionAdded: '1.5.5',
+      function: () => {
+        window.open('https://docs.comfy.org/', '_blank')
+      }
+    },
+    {
+      id: 'Comfy.Help.OpenComfyOrgDiscord',
+      icon: 'pi pi-discord',
+      label: 'Comfy-Org Discord',
+      versionAdded: '1.5.5',
+      function: () => {
+        window.open('https://www.comfy.org/discord', '_blank')
+      }
     }
   ]
 
