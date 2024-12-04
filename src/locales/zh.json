@@ -4,6 +4,7 @@
   "bookmark": "书签",
   "box": "盒子",
   "briefcase": "公文包",
+  "cancel": "取消",
   "color": "颜色",
   "comingSoon": "敬请期待",
   "confirm": "确认",
@@ -13,6 +14,10 @@
   "customizeFolder": "定制文件夹",
   "delete": "删除",
   "deprecated": "弃用",
+  "desktopMenu": {
+    "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
+    "reinstall": "重新安装"
+  },
   "devices": "设备",
   "download": "下载",
   "downloadGit": {
@@ -199,6 +204,7 @@
     "title": "您的设备不受支持"
   },
   "openNewIssue": "开启新 Issue",
+  "overwrite": "覆盖",
   "reconnected": "已重新连接",
   "reconnecting": "重新连接中",
   "refresh": "刷新",
@@ -517,6 +523,12 @@
       "showFlatList": "平铺结果"
     },
     "themeToggle": "主题切换",
+    "workflowTab": {
+      "confirmDelete": "您确定要删除此工作流吗？",
+      "deleteFailed": "尝试删除工作流失败。",
+      "deleteFailedTitle": "删除失败",
+      "deleted": "工作流已删除"
+    },
     "workflows": "工作流"
   },
   "star": "星星",

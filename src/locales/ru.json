@@ -4,6 +4,7 @@
   "bookmark": "Закладка",
   "box": "Ящик",
   "briefcase": "Чемодан",
+  "cancel": "Отмена",
   "color": "Цвет",
   "comingSoon": "Скоро",
   "confirm": "Подтвердить",
@@ -13,6 +14,10 @@
   "customizeFolder": "Настроить папку",
   "delete": "Удалить",
   "deprecated": "УСТАР",
+  "desktopMenu": {
+    "confirmReinstall": "Это очистит ваш файл extra_models_config.yaml и начнет установку заново. Вы уверены?",
+    "reinstall": "Переустановить"
+  },
   "devices": "Устройства",
   "download": "Скачать",
   "downloadGit": {
@@ -199,6 +204,7 @@
     "title": "Ваше устройство не поддерживается"
   },
   "openNewIssue": "Открыть новый Issue",
+  "overwrite": "Перезаписать",
   "reconnected": "Переподключено",
   "reconnecting": "Переподключение",
   "refresh": "Обновить",
@@ -517,6 +523,12 @@
       "showFlatList": "Показать плоский список"
     },
     "themeToggle": "Переключить тему",
+    "workflowTab": {
+      "confirmDelete": "Вы уверены, что хотите удалить этот рабочий процесс?",
+      "deleteFailed": "Попытка удалить рабочий процесс не удалась.",
+      "deleteFailedTitle": "Не удалось удалить",
+      "deleted": "Рабочий процесс удален"
+    },
     "workflows": "Рабочие процессы"
   },
   "star": "Звёздочка",

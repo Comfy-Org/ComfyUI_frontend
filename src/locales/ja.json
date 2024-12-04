@@ -4,6 +4,7 @@
   "bookmark": "ブックマーク",
   "box": "ボックス",
   "briefcase": "ブリーフケース",
+  "cancel": "キャンセル",
   "color": "色",
   "comingSoon": "近日公開",
   "confirm": "確認",
@@ -13,6 +14,10 @@
   "customizeFolder": "フォルダーをカスタマイズ",
   "delete": "削除",
   "deprecated": "非推奨",
+  "desktopMenu": {
+    "confirmReinstall": "これにより、extra_models_config.yamlファイルがクリアされ、再インストールが開始されます。本当によろしいですか？",
+    "reinstall": "再インストール"
+  },
   "devices": "デバイス",
   "download": "ダウンロード",
   "downloadGit": {
@@ -199,6 +204,7 @@
     "title": "お使いのデバイスはサポートされていません"
   },
   "openNewIssue": "新しいIssueを開く",
+  "overwrite": "上書き",
   "reconnected": "再接続しました",
   "reconnecting": "再接続中",
   "refresh": "更新",
@@ -517,6 +523,12 @@
       "showFlatList": "フラットリストを表示"
     },
     "themeToggle": "テーマの切り替え",
+    "workflowTab": {
+      "confirmDelete": "このワークフローを削除してもよろしいですか？",
+      "deleteFailed": "ワークフローの削除を試みましたが、失敗しました。",
+      "deleteFailedTitle": "削除に失敗しました",
+      "deleted": "ワークフローが削除されました"
+    },
     "workflows": "ワークフロー"
   },
   "star": "スター",
