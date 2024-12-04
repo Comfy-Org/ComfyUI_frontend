@@ -120,6 +120,11 @@
     "showMenu": "显示菜单",
     "toggleBottomPanel": "底部面板"
   },
+  "menuLabels": {
+    "Edit": "编辑",
+    "Help": "帮助",
+    "Workflow": "工作流"
+  },
   "newFolder": "新建文件夹",
   "noResultsFound": "未找到结果",
   "noTasksFound": "未找到任务",

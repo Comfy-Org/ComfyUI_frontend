@@ -486,5 +486,10 @@
     "resume": "Resume Download",
     "cancel": "Cancel Download",
     "cancelled": "Cancelled"
+  },
+  "menuLabels": {
+    "Workflow": "Workflow",
+    "Edit": "Edit",
+    "Help": "Help"
   }
 }

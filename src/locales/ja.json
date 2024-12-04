@@ -120,6 +120,11 @@
     "showMenu": "メニューを表示",
     "toggleBottomPanel": "下部パネルを切り替え"
   },
+  "menuLabels": {
+    "Edit": "編集",
+    "Help": "ヘルプ",
+    "Workflow": "ワークフロー"
+  },
   "newFolder": "新しいフォルダー",
   "noResultsFound": "結果が見つかりませんでした",
   "noTasksFound": "タスクが見つかりませんでした",
