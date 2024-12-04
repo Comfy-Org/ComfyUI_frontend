@@ -1,8 +1,9 @@
 import * as fs from 'fs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { normalizeI18nKey } from '../src/utils/formatUtil'
+import type { ComfyCommandImpl } from '../src/stores/commandStore'
+import type { SettingParams } from '../src/types/settingTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -36,12 +37,35 @@ test('collect-i18n', async ({ comfyPage }) => {
     Array.from(allLabels).map((label) => [normalizeI18nKey(label), label])
   )
 
+  const settings = await comfyPage.page.evaluate(() => {
+    const workspace = window['app'].extensionManager
+    const settings = workspace.setting.settings as Record<string, SettingParams>
+    return Object.values(settings)
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((setting) => ({
+        id: setting.id,
+        name: setting.name,
+        tooltip: setting.tooltip
+      }))
+  })
+
+  const allSettingsLocale = Object.fromEntries(
+    settings.map((setting) => [
+      normalizeI18nKey(setting.id),
+      {
+        name: setting.name,
+        tooltip: setting.tooltip
+      }
+    ])
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
       {
         ...locale,
-        menuLabels: allLabelsLocale
+        menuLabels: allLabelsLocale,
+        settingsDialog: allSettingsLocale
       },
       null,
       2

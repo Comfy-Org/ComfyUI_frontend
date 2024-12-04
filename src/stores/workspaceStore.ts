@@ -25,6 +25,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }))
   const sidebarTab = computed(() => useSidebarTabStore())
   const setting = computed(() => ({
+    settings: useSettingStore().settings,
     get: useSettingStore().get,
     set: useSettingStore().set
   }))

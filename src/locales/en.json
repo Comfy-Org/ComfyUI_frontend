@@ -135,6 +135,15 @@
   "goToNode": "Go to Node",
   "settings": "Settings",
   "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "Automatically check for updates"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "Send anonymous crash reports"
+    },
+    "Comfy_ColorPalette": {
+      "name": "Color Palette"
+    },
     "Comfy_ConfirmClear": {
       "name": "Require confirmation when clearing workflow"
     },
@@ -188,21 +197,14 @@
     "Comfy_GroupSelectedNodes_Padding": {
       "name": "Group selected nodes padding"
     },
+    "Comfy_InvertMenuScrolling": {
+      "name": "Invert Context Menu Scrolling"
+    },
     "Comfy_Keybinding_NewBindings": {
       "name": "Keybindings set by the user"
     },
     "Comfy_Keybinding_UnsetBindings": {
       "name": "Keybindings unset by the user"
-    },
-    "Comfy_Logging_Enabled": {
-      "name": "Enable logging"
-    },
-    "Comfy_MenuPosition": {
-      "name": "Save legacy menu's position"
-    },
-    "Comfy_NodeSuggestions_number": {
-      "name": "Number of nodes suggestions",
-      "tooltip": "Only for litegraph searchbox/context menu"
     },
     "Comfy_LinkRelease_Action": {
       "name": "Action on link release (No modifier)"
@@ -215,6 +217,24 @@
     },
     "Comfy_Locale": {
       "name": "Language"
+    },
+    "Comfy_Logging_Enabled": {
+      "name": "Enable logging"
+    },
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "Brush adjustment speed multiplier",
+      "tooltip": "Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes."
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "Lock brush adjustment to dominant axis",
+      "tooltip": "When enabled, brush adjustments will only affect size OR hardness based on which direction you move more"
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "Use new mask editor",
+      "tooltip": "Switch to the new mask editor interface"
+    },
+    "Comfy_MenuPosition": {
+      "name": "Save legacy menu's position"
     },
     "Comfy_ModelLibrary_AutoLoadAll": {
       "name": "Automatically load all model folders",
@@ -234,9 +254,6 @@
     },
     "Comfy_Node_DoubleClickTitleToEdit": {
       "name": "Double click node title to edit"
-    },
-    "Comfy_NodeInputConversionSubmenus": {
-      "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
     },
     "Comfy_Node_MiddleClickRerouteNode": {
       "name": "Middle-click creates a new Reroute node"
@@ -265,6 +282,9 @@
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
       "name": "Node source badge mode"
     },
+    "Comfy_NodeInputConversionSubmenus": {
+      "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
+    },
     "Comfy_NodeLibrary_Bookmarks": {
       "name": "Node library bookmarks with display name (deprecated)"
     },
@@ -292,6 +312,10 @@
     "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
       "name": "Show node frequency in search results",
       "tooltip": "Only applies to the default implementation"
+    },
+    "Comfy_NodeSuggestions_number": {
+      "name": "Number of nodes suggestions",
+      "tooltip": "Only for litegraph searchbox/context menu"
     },
     "Comfy_Pointer_ClickBufferTime": {
       "name": "Pointer click drift delay",
@@ -364,12 +388,12 @@
       "name": "Validate node definitions (slow)",
       "tooltip": "Recommended for node developers. This will validate all node definitions on startup."
     },
+    "Comfy_Validation_Workflows": {
+      "name": "Validate workflows"
+    },
     "Comfy_WidgetControlMode": {
       "name": "Widget control mode",
       "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after."
-    },
-    "Comfy_Validation_Workflows": {
-      "name": "Validate workflows"
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "Show confirmation when closing window"

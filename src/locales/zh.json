@@ -232,6 +232,15 @@
   },
   "settings": "设置",
   "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "自动检查更新"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "发送匿名崩溃报告"
+    },
+    "Comfy_ColorPalette": {
+      "name": "调色板"
+    },
     "Comfy_ConfirmClear": {
       "name": "清除工作流时需要确认"
     },
@@ -285,6 +294,9 @@
     "Comfy_Group_DoubleClickTitleToEdit": {
       "name": "双击组标题以编辑"
     },
+    "Comfy_InvertMenuScrolling": {
+      "name": "反转上下文菜单滚动"
+    },
     "Comfy_Keybinding_NewBindings": {
       "name": "用户设置的键绑定"
     },
@@ -305,6 +317,18 @@
     },
     "Comfy_Logging_Enabled": {
       "name": "启用日志记录"
+    },
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "画笔调整速度倍增器",
+      "tooltip": "控制调整时画笔大小和硬度变化的速度。更高的值意味着更快的变化。"
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "将画笔调整锁定到主轴",
+      "tooltip": "启用后，画笔调整将仅根据您移动的方向影响大小或硬度。"
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "使用新画笔编辑器",
+      "tooltip": "切换到新的画笔编辑器界面"
     },
     "Comfy_MenuPosition": {
       "name": "保存旧版菜单位置"
