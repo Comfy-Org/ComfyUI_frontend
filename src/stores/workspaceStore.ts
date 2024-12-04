@@ -20,6 +20,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const toast = computed<ToastManager>(() => useToastStore())
   const queueSettings = computed(() => useQueueSettingsStore())
   const command = computed(() => ({
+    commands: useCommandStore().commands,
     execute: useCommandStore().execute
   }))
   const sidebarTab = computed(() => useSidebarTabStore())
