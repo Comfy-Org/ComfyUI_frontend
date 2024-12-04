@@ -664,6 +664,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show confirmation when deleting workflows',
     type: 'boolean',
     defaultValue: true,
-    versionModified: '1.5.5'
+    versionAdded: '1.5.6'
   }
 ]
