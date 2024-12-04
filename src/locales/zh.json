@@ -240,6 +240,7 @@
   },
   "settings": "设置",
   "settingsCategories": {
+    "About": "关于",
     "Appearance": "外观",
     "BrushAdjustment": "画笔调整",
     "Canvas": "画布",
@@ -271,6 +272,7 @@
     "QueueButton": "队列按钮",
     "RerouteBeta": "重定向测试版",
     "Server": "服务器",
+    "Server-Config": "服务器配置",
     "Settings": "设置",
     "Sidebar": "侧边栏",
     "Tree Explorer": "树形浏览器",

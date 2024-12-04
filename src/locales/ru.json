@@ -240,6 +240,7 @@
   },
   "settings": "Настройки",
   "settingsCategories": {
+    "About": "О программе",
     "Appearance": "Внешний вид",
     "BrushAdjustment": "Настройка кисти",
     "Canvas": "Холст",
@@ -271,6 +272,7 @@
     "QueueButton": "Кнопка очереди",
     "RerouteBeta": "Бета-версия перенаправления",
     "Server": "Сервер",
+    "Server-Config": "Настройки сервера",
     "Settings": "Настройки",
     "Sidebar": "Боковая панель",
     "Tree Explorer": "Дерево проводника",

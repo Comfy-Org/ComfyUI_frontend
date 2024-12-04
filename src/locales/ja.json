@@ -240,6 +240,7 @@
   },
   "settings": "設定",
   "settingsCategories": {
+    "About": "について",
     "Appearance": "外観",
     "BrushAdjustment": "ブラシ調整",
     "Canvas": "キャンバス",
@@ -271,6 +272,7 @@
     "QueueButton": "キューボタン",
     "RerouteBeta": "ルート変更ベータ",
     "Server": "サーバー",
+    "Server-Config": "サーバー設定",
     "Settings": "設定",
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
