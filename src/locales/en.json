@@ -399,6 +399,9 @@
     "Comfy_Window_UnloadConfirmation": {
       "name": "Show confirmation when closing window"
     },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "Show confirmation when deleting workflows"
+    },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "Show missing models warning"
     },
@@ -589,5 +592,46 @@
   "desktopMenu": {
     "reinstall": "Reinstall",
     "confirmReinstall": "This will clear your extra_models_config.yaml file, and begin installation again.  Are you sure?"
+  },
+  "settingsCategories": {
+    "Comfy-Desktop": "Comfy-Desktop",
+    "General": "General",
+    "Appearance": "Appearance",
+    "ColorPalette": "Color Palette",
+    "Comfy": "Comfy",
+    "Workflow": "Workflow",
+    "DevMode": "Dev Mode",
+    "LiteGraph": "Lite Graph",
+    "Node Widget": "Node Widget",
+    "Node": "Node",
+    "EditAttention": "Edit Attention",
+    "Extension": "Extension",
+    "Canvas": "Canvas",
+    "Link": "Link",
+    "Group": "Group",
+    "Menu": "Menu",
+    "Keybinding": "Keybinding",
+    "LinkRelease": "Link Release",
+    "Graph": "Graph",
+    "Locale": "Locale",
+    "Mask Editor": "Mask Editor",
+    "BrushAdjustment": "Brush Adjustment",
+    "NewEditor": "New Editor",
+    "ModelLibrary": "Model Library",
+    "NodeInputConversionSubmenus": "Node Input Conversion Submenus",
+    "NodeLibrary": "Node Library",
+    "Node Search Box": "Node Search Box",
+    "Pointer": "Pointer",
+    "Queue": "Queue",
+    "QueueButton": "Queue Button",
+    "RerouteBeta": "Reroute Beta",
+    "Server": "Server",
+    "Settings": "Settings",
+    "Sidebar": "Sidebar",
+    "Tree Explorer": "Tree Explorer",
+    "Validation": "Validation",
+    "Window": "Window",
+    "Server-Config": "Server-Config",
+    "About": "About"
   }
 }

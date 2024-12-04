@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
-import { normalizeI18nKey } from '../src/utils/formatUtil'
+import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { SettingParams } from '../src/types/settingTypes'
 
@@ -45,7 +45,8 @@ test('collect-i18n', async ({ comfyPage }) => {
       .map((setting) => ({
         id: setting.id,
         name: setting.name,
-        tooltip: setting.tooltip
+        tooltip: setting.tooltip,
+        category: setting.category
       }))
   })
 
@@ -59,13 +60,30 @@ test('collect-i18n', async ({ comfyPage }) => {
     ])
   )
 
+  const allSettingCategoriesLocale = Object.fromEntries(
+    settings
+      .flatMap((setting) => {
+        return (setting.category ?? setting.id.split('.')).slice(0, 2)
+      })
+      .map((category: string) => [
+        normalizeI18nKey(category),
+        formatCamelCase(category)
+      ])
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
       {
         ...locale,
         menuLabels: allLabelsLocale,
-        settingsDialog: allSettingsLocale
+        settingsDialog: allSettingsLocale,
+        // Do merge for settingsCategories as there are some manual translations
+        // for special panels like "About" and "Keybinding".
+        settingsCategories: {
+          ...(locale.settingsCategories ?? {}),
+          ...allSettingCategoriesLocale
+        }
       },
       null,
       2

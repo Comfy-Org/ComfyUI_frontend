@@ -239,6 +239,47 @@
     "reportIssue": "报告问题"
   },
   "settings": "设置",
+  "settingsCategories": {
+    "About": "关于",
+    "Appearance": "外观",
+    "BrushAdjustment": "画笔调整",
+    "Canvas": "画布",
+    "ColorPalette": "调色板",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfy桌面版",
+    "DevMode": "开发模式",
+    "EditAttention": "编辑Attention",
+    "Extension": "扩展",
+    "General": "常规",
+    "Graph": "图",
+    "Group": "组",
+    "Keybinding": "快捷键",
+    "Link": "链接",
+    "LinkRelease": "链接释放",
+    "LiteGraph": "Lite Graph",
+    "Locale": "区域设置",
+    "Mask Editor": "遮罩编辑器",
+    "Menu": "菜单",
+    "ModelLibrary": "模型库",
+    "NewEditor": "新编辑器",
+    "Node": "节点",
+    "Node Search Box": "节点搜索框",
+    "Node Widget": "节点小部件",
+    "NodeInputConversionSubmenus": "节点输入转换子菜单",
+    "NodeLibrary": "节点库",
+    "Pointer": "指针",
+    "Queue": "队列",
+    "QueueButton": "队列按钮",
+    "RerouteBeta": "重定向测试版",
+    "Server": "服务器",
+    "Server-Config": "服务器配置",
+    "Settings": "设置",
+    "Sidebar": "侧边栏",
+    "Tree Explorer": "树形浏览器",
+    "Validation": "验证",
+    "Window": "窗口",
+    "Workflow": "工作流"
+  },
   "settingsDialog": {
     "Comfy-Desktop_AutoUpdate": {
       "name": "自动检查更新"
@@ -499,6 +540,9 @@
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "关闭窗口时显示确认"
+    },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "删除工作流时显示确认"
     },
     "Comfy_Workflow_ShowMissingModelsWarning": {
       "name": "显示缺失模型警告"

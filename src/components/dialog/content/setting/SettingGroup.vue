@@ -1,7 +1,7 @@
 <template>
   <div class="setting-group">
     <Divider v-if="divider" />
-    <h3>{{ formatCamelCase(group.label) }}</h3>
+    <h3>{{ $t(`settingsCategories.${normalizeI18nKey(group.label)}`) }}</h3>
     <div
       v-for="setting in group.settings"
       :key="setting.id"
@@ -16,7 +16,7 @@
 import Divider from 'primevue/divider'
 import SettingItem from '@/components/dialog/content/setting/SettingItem.vue'
 import { SettingParams } from '@/types/settingTypes'
-import { formatCamelCase } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{
   group: {
