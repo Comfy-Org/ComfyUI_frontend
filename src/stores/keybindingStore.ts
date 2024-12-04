@@ -16,15 +16,14 @@ export class KeybindingImpl implements Keybinding {
     this.targetSelector = obj.targetSelector
   }
 
-  equals(other: any): boolean {
-    if (toRaw(other) instanceof KeybindingImpl) {
-      return (
-        this.commandId === other.commandId &&
-        this.combo.equals(other.combo) &&
-        this.targetSelector === other.targetSelector
-      )
-    }
-    return false
+  equals(other: unknown): boolean {
+    const raw = toRaw(other)
+
+    return raw instanceof KeybindingImpl
+      ? this.commandId === raw.commandId &&
+          this.combo.equals(raw.combo) &&
+          this.targetSelector === raw.targetSelector
+      : false
   }
 }
 
@@ -51,30 +50,19 @@ export class KeyComboImpl implements KeyCombo {
     })
   }
 
-  equals(other: any): boolean {
-    if (toRaw(other) instanceof KeyComboImpl) {
-      return (
-        this.key === other.key &&
-        this.ctrl === other.ctrl &&
-        this.alt === other.alt &&
-        this.shift === other.shift
-      )
-    }
-    return false
+  equals(other: unknown): boolean {
+    const raw = toRaw(other)
+
+    return raw instanceof KeyComboImpl
+      ? this.key.toUpperCase() === raw.key.toUpperCase() &&
+          this.ctrl === raw.ctrl &&
+          this.alt === raw.alt &&
+          this.shift === raw.shift
+      : false
   }
 
   serialize(): string {
-    return `${this.key}:${this.ctrl}:${this.alt}:${this.shift}`
-  }
-
-  deserialize(serialized: string): KeyComboImpl {
-    const [key, ctrl, alt, shift] = serialized.split(':')
-    return new KeyComboImpl({
-      key,
-      ctrl: ctrl === 'true',
-      alt: alt === 'true',
-      shift: shift === 'true'
-    })
+    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   toString(): string {
