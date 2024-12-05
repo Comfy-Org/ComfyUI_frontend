@@ -16,7 +16,6 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { LGraphGroup } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { LGraphNode } from '@comfyorg/litegraph'
-import { LGraphEventMode } from '@comfyorg/litegraph/dist/types/globalEnums'
 
 export function useCoreCommands(): ComfyCommand[] {
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
@@ -33,10 +32,10 @@ export function useCoreCommands(): ComfyCommand[] {
     return result
   }
 
-  const toggleSelectedNodesMode = (mode: LGraphEventMode) => {
+  const toggleSelectedNodesMode = (mode: number) => {
     getSelectedNodes().forEach((node) => {
       if (node.mode === mode) {
-        node.mode = LGraphEventMode.ALWAYS
+        node.mode = 0 // always
       } else {
         node.mode = mode
       }
@@ -341,7 +340,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Mute/Unmute Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
-        toggleSelectedNodesMode(LGraphEventMode.NEVER)
+        toggleSelectedNodesMode(2) // muted
       }
     },
     {
@@ -350,7 +349,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Bypass/Unbypass Selected Nodes',
       versionAdded: '1.3.11',
       function: () => {
-        toggleSelectedNodesMode(LGraphEventMode.BYPASS)
+        toggleSelectedNodesMode(4) // bypassed
       }
     },
     {
