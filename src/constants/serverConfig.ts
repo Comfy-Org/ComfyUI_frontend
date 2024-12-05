@@ -384,7 +384,9 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   },
   {
     id: 'disable-smart-memory',
-    name: 'Force ComfyUI to agressively offload to regular ram instead of keeping models in vram when it can.',
+    name: 'Disable smart memory management',
+    tooltip:
+      'Force ComfyUI to aggressively offload to regular ram instead of keeping models in vram when it can.',
     category: ['Memory'],
     type: 'boolean',
     defaultValue: false
