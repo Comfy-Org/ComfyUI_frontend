@@ -15,10 +15,6 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 }
 
 test('collect-i18n', async ({ comfyPage }) => {
-  await comfyPage.page.waitForFunction(
-    () => window['electronAPI'] !== undefined
-  )
-
   const commands = await comfyPage.page.evaluate(() => {
     const workspace = window['app'].extensionManager
     const commands = workspace.command.commands as ComfyCommandImpl[]

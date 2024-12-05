@@ -18,6 +18,8 @@ jobs:
       working-directory: ComfyUI_frontend
     - name: Update en.json
       run: npm run collect-i18n
+      env:
+        PLAYWRIGHT_TEST_URL: http://localhost:5173
       working-directory: ComfyUI_frontend
     - name: Update translations
       run: npm run locale
