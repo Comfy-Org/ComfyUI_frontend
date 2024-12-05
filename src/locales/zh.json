@@ -196,6 +196,8 @@
   "noTasksFoundMessage": "队列中没有任务。",
   "noWorkflowsFound": "未找到工作流",
   "notSupported": {
+    "continue": "继续",
+    "continueTooltip": "我确定我的设备是受支持的",
     "learnMore": "了解更多",
     "message": "仅支持以下设备：",
     "reportIssue": "报告问题",
