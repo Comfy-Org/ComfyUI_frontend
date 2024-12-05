@@ -637,5 +637,121 @@
     "Window": "Window",
     "Server-Config": "Server-Config",
     "About": "About"
+  },
+  "serverConfigItems": {
+    "tls-keyfile": {
+      "name": "TLS Key File: Path to TLS key file for HTTPS"
+    },
+    "tls-certfile": {
+      "name": "TLS Certificate File: Path to TLS certificate file for HTTPS"
+    },
+    "enable-cors-header": {
+      "name": "Enable CORS header: Use \"*\" for all origins or specify domain"
+    },
+    "max-upload-size": {
+      "name": "Maximum upload size (MB)"
+    },
+    "cuda-device": {
+      "name": "CUDA device index to use"
+    },
+    "cuda-malloc": {
+      "name": "Use CUDA malloc for memory allocation"
+    },
+    "global-precision": {
+      "name": "Global floating point precision",
+      "tooltip": "Global floating point precision"
+    },
+    "unet-precision": {
+      "name": "UNET precision",
+      "tooltip": "UNET precision"
+    },
+    "vae-precision": {
+      "name": "VAE precision",
+      "tooltip": "VAE precision"
+    },
+    "cpu-vae": {
+      "name": "Run VAE on CPU"
+    },
+    "text-encoder-precision": {
+      "name": "Text Encoder precision",
+      "tooltip": "Text Encoder precision"
+    },
+    "force-channels-last": {
+      "name": "Force channels-last memory format"
+    },
+    "directml": {
+      "name": "DirectML device index"
+    },
+    "disable-ipex-optimize": {
+      "name": "Disable IPEX optimization"
+    },
+    "preview-method": {
+      "name": "Method used for latent previews"
+    },
+    "preview-size": {
+      "name": "Size of preview images"
+    },
+    "cache-classic": {
+      "name": "Use classic cache system"
+    },
+    "cache-lru": {
+      "name": "Use LRU caching with a maximum of N node results cached.",
+      "tooltip": "May use more RAM/VRAM."
+    },
+    "cross-attention-method": {
+      "name": "Cross attention method"
+    },
+    "disable-xformers": {
+      "name": "Disable xFormers optimization"
+    },
+    "force-upcast-attention": {
+      "name": "Force attention upcast"
+    },
+    "dont-upcast-attention": {
+      "name": "Prevent attention upcast"
+    },
+    "vram-management": {
+      "name": "VRAM management mode"
+    },
+    "reserve-vram": {
+      "name": "Reserved VRAM (GB)",
+      "tooltip": "Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reverved depending on your OS."
+    },
+    "default-hashing-function": {
+      "name": "Default hashing function for model files"
+    },
+    "disable-smart-memory": {
+      "name": "Disable smart memory management",
+      "tooltip": "Force ComfyUI to aggressively offload to regular ram instead of keeping models in vram when it can."
+    },
+    "deterministic": {
+      "name": "Make pytorch use slower deterministic algorithms when it can.",
+      "tooltip": "Note that this might not make images deterministic in all cases."
+    },
+    "fast": {
+      "name": "Enable some untested and potentially quality deteriorating optimizations."
+    },
+    "dont-print-server": {
+      "name": "Don't print server output to console."
+    },
+    "disable-metadata": {
+      "name": "Disable saving prompt metadata in files."
+    },
+    "disable-all-custom-nodes": {
+      "name": "Disable loading all custom nodes."
+    },
+    "log-level": {
+      "name": "Logging verbosity level"
+    }
+  },
+  "serverConfigCategories": {
+    "Network": "Network",
+    "CUDA": "CUDA",
+    "Inference": "Inference",
+    "Memory": "Memory",
+    "Preview": "Preview",
+    "Cache": "Cache",
+    "Attention": "Attention",
+    "General": "General"
   }
 }
