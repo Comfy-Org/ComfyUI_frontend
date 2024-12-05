@@ -4412,15 +4412,27 @@ export class LGraphCanvas {
         }
       }
 
-      // the selection rectangle
+      // Area-selection rectangle
       if (this.dragging_rectangle) {
+        const { eDown, eMove } = this.pointer
         ctx.strokeStyle = "#FFF"
-        ctx.strokeRect(
-          this.dragging_rectangle[0],
-          this.dragging_rectangle[1],
-          this.dragging_rectangle[2],
-          this.dragging_rectangle[3],
-        )
+
+        if (eDown && eMove) {
+          // Do not scale the selection box
+          const transform = ctx.getTransform()
+          const ratio = window.devicePixelRatio
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+
+          const x = eDown.offsetX
+          const y = eDown.offsetY
+          ctx.strokeRect(x, y, eMove.offsetX - x, eMove.offsetY - y)
+
+          ctx.setTransform(transform)
+        } else {
+          // Fallback to legacy behaviour
+          const [x, y, w, h] = this.dragging_rectangle
+          ctx.strokeRect(x, y, w, h)
+        }
       }
 
       // on top of link center
