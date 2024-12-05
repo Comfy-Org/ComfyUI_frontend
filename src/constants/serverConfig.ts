@@ -20,7 +20,7 @@ export interface ServerConfig<T> extends FormItem {
   getValue?: (value: T) => Record<string, ServerConfigValue>
 }
 
-export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<ServerConfigValue>[] = [
+export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
   // We only need these settings in the web version. Desktop app manages them already.
   {
     id: 'listen',
@@ -35,6 +35,29 @@ export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<ServerConfigValue>[] = [
     category: ['Network'],
     type: 'number',
     defaultValue: 8188
+  },
+  // Launch behavior
+  {
+    id: 'auto-launch',
+    name: 'Automatically opens in the browser on startup',
+    category: ['Launch'],
+    type: 'combo',
+    options: Object.values(AutoLaunch),
+    defaultValue: AutoLaunch.Auto,
+    getValue: (value: AutoLaunch) => {
+      switch (value) {
+        case AutoLaunch.Auto:
+          return {}
+        case AutoLaunch.Enable:
+          return {
+            ['auto-launch']: true
+          }
+        case AutoLaunch.Disable:
+          return {
+            ['disable-auto-launch']: true
+          }
+      }
+    }
   }
 ]
 
@@ -67,30 +90,6 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     category: ['Network'],
     type: 'number',
     defaultValue: 100
-  },
-
-  // Launch behavior
-  {
-    id: 'auto-launch',
-    name: 'Automatically opens in the browser on startup',
-    category: ['Launch'],
-    type: 'combo',
-    options: Object.values(AutoLaunch),
-    defaultValue: AutoLaunch.Auto,
-    getValue: (value: AutoLaunch) => {
-      switch (value) {
-        case AutoLaunch.Auto:
-          return {}
-        case AutoLaunch.Enable:
-          return {
-            ['auto-launch']: true
-          }
-        case AutoLaunch.Disable:
-          return {
-            ['disable-auto-launch']: true
-          }
-      }
-    }
   },
 
   // CUDA settings
