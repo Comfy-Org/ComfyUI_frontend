@@ -74,7 +74,7 @@ export {
 export { IWidget }
 export { LGraphBadge, BadgePosition }
 export { SlotShape, LabelPosition, SlotDirection, SlotType }
-export { EaseFunction, LinkMarkerShape } from "./types/globalEnums"
+export { EaseFunction, LinkMarkerShape, LGraphEventMode } from "./types/globalEnums"
 export type {
   SerialisableGraph,
   SerialisableLLink,
@@ -130,12 +130,6 @@ export interface LinkReleaseContext {
 export interface LinkReleaseContextExtended {
   links: ConnectingLink[]
 }
-
-/** @deprecated Confirm no downstream consumers, then remove. */
-export type LiteGraphCanvasEventType =
-  | "empty-release"
-  | "empty-double-click"
-  | "group-double-click"
 
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
