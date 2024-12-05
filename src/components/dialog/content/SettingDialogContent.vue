@@ -144,7 +144,10 @@ const categories = computed<SettingTreeNode[]>(() =>
     aboutPanelNode
   ].map((node) => ({
     ...node,
-    translatedLabel: t(`settingsCategories.${normalizeI18nKey(node.label)}`)
+    translatedLabel: t(
+      `settingsCategories.${normalizeI18nKey(node.label)}`,
+      node.label
+    )
   }))
 )
 
