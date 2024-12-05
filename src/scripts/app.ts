@@ -30,7 +30,8 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  LGraphEventMode
 } from '@comfyorg/litegraph'
 import { ExtensionManager } from '@/types/extensionTypes'
 import {
@@ -585,8 +586,9 @@ export class ComfyApp {
       options.push({
         content: 'Bypass',
         callback: (obj) => {
-          if (this.mode === 4) this.mode = 0
-          else this.mode = 4
+          if (this.mode === LGraphEventMode.BYPASS)
+            this.mode = LGraphEventMode.ALWAYS
+          else this.mode = LGraphEventMode.BYPASS
           this.graph.change()
         }
       })
@@ -1477,15 +1479,12 @@ export class ComfyApp {
       const old_color = node.color
       const old_bgcolor = node.bgcolor
 
-      if (node.mode === 2) {
-        // never
+      if (node.mode === LGraphEventMode.NEVER) {
         this.editor_alpha = 0.4
       }
 
-      // ComfyUI's custom node mode enum value 4 => bypass/never.
       let bgColor: string
-      if (node.mode === 4) {
-        // never
+      if (node.mode === LGraphEventMode.BYPASS) {
         bgColor = app.bypassBgColor
         this.editor_alpha = 0.2
       } else {
@@ -2304,7 +2303,9 @@ export class ComfyApp {
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
-      const skipNode = outerNode.mode === 2 || outerNode.mode === 4
+      const skipNode =
+        outerNode.mode === LGraphEventMode.NEVER ||
+        outerNode.mode === LGraphEventMode.BYPASS
       const innerNodes =
         !skipNode && outerNode.getInnerNodes
           ? outerNode.getInnerNodes()
@@ -2314,7 +2315,10 @@ export class ComfyApp {
           continue
         }
 
-        if (node.mode === 2 || node.mode === 4) {
+        if (
+          node.mode === LGraphEventMode.NEVER ||
+          node.mode === LGraphEventMode.BYPASS
+        ) {
           // Don't serialize muted nodes
           continue
         }
@@ -2339,7 +2343,10 @@ export class ComfyApp {
           let parent = node.getInputNode(i)
           if (parent) {
             let link = node.getInputLink(i)
-            while (parent.mode === 4 || parent.isVirtualNode) {
+            while (
+              parent.mode === LGraphEventMode.BYPASS ||
+              parent.isVirtualNode
+            ) {
               let found = false
               if (parent.isVirtualNode) {
                 link = parent.getInputLink(link.origin_slot)
@@ -2349,7 +2356,7 @@ export class ComfyApp {
                     found = true
                   }
                 }
-              } else if (link && parent.mode === 4) {
+              } else if (link && parent.mode === LGraphEventMode.BYPASS) {
                 let all_inputs = [link.origin_slot]
                 if (parent.inputs) {
                   all_inputs = all_inputs.concat(Object.keys(parent.inputs))
