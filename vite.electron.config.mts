@@ -50,7 +50,8 @@ const mockElectronAPI: Plugin = {
             getAllDownloads: () => Promise.resolve([]),
             onDownloadProgress: () => {}
           },
-          getElectronVersion: () => Promise.resolve('1.0.0')
+          getElectronVersion: () => Promise.resolve('1.0.0'),
+          getComfyUIVersion: () => '9.9.9'
         };`
       }
     ]

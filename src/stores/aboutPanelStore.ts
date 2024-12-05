@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 import { useSystemStatsStore } from './systemStatsStore'
 import { useExtensionStore } from './extensionStore'
+import { electronAPI, isElectron } from '@/utils/envUtil'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__
@@ -13,8 +14,14 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   )
 
   const coreBadges = computed<AboutPageBadge[]>(() => [
+    // In electron, the ComfyUI is packaged without the git repo,
+    // so the python server's API doesn't have the version info.
     {
-      label: `ComfyUI ${coreVersion.value}`,
+      label: `ComfyUI ${
+        isElectron()
+          ? 'v' + electronAPI().getComfyUIVersion()
+          : coreVersion.value
+      }`,
       url: 'https://github.com/comfyanonymous/ComfyUI',
       icon: 'pi pi-github'
     },
