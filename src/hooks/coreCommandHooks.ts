@@ -19,6 +19,7 @@ import {
   LGraphNode,
   LGraphGroup
 } from '@comfyorg/litegraph'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 export function useCoreCommands(): ComfyCommand[] {
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
@@ -476,6 +477,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.5.5',
       function: () => {
         window.open('https://www.comfy.org/discord', '_blank')
+      }
+    },
+    {
+      id: 'Workspace.SearchBox.Toggle',
+      icon: 'pi pi-search',
+      label: 'Toggle Search Box',
+      versionAdded: '1.5.7',
+      function: () => {
+        useSearchBoxStore().toggleVisible()
       }
     }
   ]

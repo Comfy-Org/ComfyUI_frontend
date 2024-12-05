@@ -37,26 +37,31 @@ import { app } from '@/scripts/app'
 import { computed, ref, toRaw, watchEffect } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
-import { ConnectingLink } from '@comfyorg/litegraph'
 import { FilterAndValue } from '@/services/nodeSearchService'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { ConnectingLinkImpl } from '@/types/litegraphTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import { useCanvasStore } from '@/stores/graphStore'
-import { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 import type { OriginalEvent } from '@comfyorg/litegraph/dist/types/events'
+import type {
+  Vector2,
+  LiteGraphCanvasEvent,
+  ConnectingLink
+} from '@comfyorg/litegraph'
 import { useEventListener } from '@vueuse/core'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { storeToRefs } from 'pinia'
 
 const settingStore = useSettingStore()
 
-const visible = ref(false)
+const { visible } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
 const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
-const getNewNodeLocation = (): [number, number] => {
-  if (triggerEvent.value === null) {
-    return [100, 100]
+const getNewNodeLocation = (): Vector2 => {
+  if (!triggerEvent.value) {
+    return app.getCanvasCenter()
   }
 
   const originalEvent = (triggerEvent.value.detail as OriginalEvent)
@@ -82,8 +87,8 @@ const closeDialog = () => {
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
   const node = app.addNodeOnGraph(nodeDef, { pos: getNewNodeLocation() })
 
-  const eventDetail = triggerEvent.value.detail
-  if (eventDetail.subType === 'empty-release') {
+  const eventDetail = triggerEvent.value?.detail
+  if (eventDetail && eventDetail.subType === 'empty-release') {
     eventDetail.linkReleaseContext.links.forEach((link: ConnectingLink) => {
       ConnectingLinkImpl.createFromPlainObject(link).connectTo(node)
     })
