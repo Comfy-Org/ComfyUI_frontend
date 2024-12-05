@@ -241,11 +241,11 @@ const tabValue = computed(() =>
 
 /* Show a separator line above the Keybinding tab */
 /* This indicates the start of custom setting panels */
-.settings-sidebar :deep(.p-listbox-option:nth-last-child(4)) {
+.settings-sidebar :deep(.p-listbox-option[aria-label='Keybinding']) {
   position: relative;
 }
 
-.settings-sidebar :deep(.p-listbox-option:nth-last-child(4))::before {
+.settings-sidebar :deep(.p-listbox-option[aria-label='Keybinding'])::before {
   @apply content-[''] top-0 left-0 absolute w-full;
   border-top: 1px solid var(--p-divider-border-color);
 }
