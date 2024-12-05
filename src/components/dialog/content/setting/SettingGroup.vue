@@ -1,7 +1,11 @@
 <template>
   <div class="setting-group">
     <Divider v-if="divider" />
-    <h3>{{ $t(`settingsCategories.${normalizeI18nKey(group.label)}`) }}</h3>
+    <h3>
+      {{
+        $t(`settingsCategories.${normalizeI18nKey(group.label)}`, group.label)
+      }}
+    </h3>
     <div
       v-for="setting in group.settings"
       :key="setting.id"
