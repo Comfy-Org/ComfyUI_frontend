@@ -30,7 +30,8 @@ import {
   LGraphCanvas,
   LGraph,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  LGraphEventMode
 } from '@comfyorg/litegraph'
 import { ExtensionManager } from '@/types/extensionTypes'
 import {
@@ -60,7 +61,6 @@ import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
-import { LGraphEventMode } from '@comfyorg/litegraph/dist/types/globalEnums'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 

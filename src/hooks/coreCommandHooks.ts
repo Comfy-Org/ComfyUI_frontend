@@ -13,10 +13,12 @@ import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { LGraphGroup } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
-import { LGraphNode } from '@comfyorg/litegraph'
-import { LGraphEventMode } from '@comfyorg/litegraph/dist/types/globalEnums'
+import {
+  LiteGraph,
+  LGraphEventMode,
+  LGraphNode,
+  LGraphGroup
+} from '@comfyorg/litegraph'
 
 export function useCoreCommands(): ComfyCommand[] {
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
