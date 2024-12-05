@@ -6,9 +6,7 @@ export default {
     'vue-tsc --noEmit',
     'tsc --noEmit',
     'tsc-strict'
-  ],
-
-  './src/locales/en.json': () => ['lobe-i18n locale']
+  ]
 }
 
 function formatFiles(fileNames) {
