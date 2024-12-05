@@ -196,6 +196,8 @@
   "noTasksFoundMessage": "キューにタスクがありません。",
   "noWorkflowsFound": "ワークフローが見つかりませんでした。",
   "notSupported": {
+    "continue": "続ける",
+    "continueTooltip": "私のデバイスはサポートされていると確信しています",
     "learnMore": "詳細を見る",
     "message": "以下のデバイスのみサポートされています:",
     "reportIssue": "問題を報告",

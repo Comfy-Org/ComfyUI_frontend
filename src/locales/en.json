@@ -18,7 +18,9 @@
     "supportedDevices": {
       "macos": "MacOS (M1 or later)",
       "windows": "Windows (Nvidia GPU with CUDA support)"
-    }
+    },
+    "continue": "Continue",
+    "continueTooltip": "I am sure my device is supported"
   },
   "downloadGit": {
     "title": "Download git",

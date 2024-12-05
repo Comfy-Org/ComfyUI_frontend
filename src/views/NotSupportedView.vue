@@ -32,7 +32,15 @@
             :label="$t('notSupported.reportIssue')"
             icon="pi pi-flag"
             @click="reportIssue"
+            severity="secondary"
+          />
+          <Button
+            :label="$t('notSupported.continue')"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            @click="continueToInstall"
             severity="danger"
+            v-tooltip="$t('notSupported.continueTooltip')"
           />
         </div>
       </div>
@@ -51,6 +59,7 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import { useRouter } from 'vue-router'
 
 const openDocs = () => {
   window.open(
@@ -61,5 +70,10 @@ const openDocs = () => {
 
 const reportIssue = () => {
   window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
+}
+
+const router = useRouter()
+const continueToInstall = () => {
+  router.push('/install')
 }
 </script>
