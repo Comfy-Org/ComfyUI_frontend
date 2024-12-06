@@ -124,8 +124,27 @@ export const workflowService = {
     await app.loadGraphData(blankGraph)
   },
 
-  async openWorkflow(workflow: ComfyWorkflow) {
-    if (useWorkflowStore().isActive(workflow)) return
+  /**
+   * Reload the current workflow
+   * This is used to refresh the node definitions update, e.g. when the locale changes.
+   */
+  async reloadCurrentWorkflow() {
+    const workflow = useWorkflowStore().activeWorkflow
+    if (workflow) {
+      await this.openWorkflow(workflow, { force: true })
+    }
+  },
+
+  /**
+   * Open a workflow in the current workspace
+   * @param workflow The workflow to open
+   * @param options The options for opening the workflow
+   */
+  async openWorkflow(
+    workflow: ComfyWorkflow,
+    options: { force: boolean } = { force: false }
+  ) {
+    if (useWorkflowStore().isActive(workflow) && !options.force) return
 
     const loadFromRemote = !workflow.isLoaded
     if (loadFromRemote) {
