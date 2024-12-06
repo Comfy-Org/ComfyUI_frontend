@@ -33,7 +33,7 @@ import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitter
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import NodeBadge from '@/components/graph/NodeBadge.vue'
-import { ref, computed, onMounted, watchEffect } from 'vue'
+import { ref, computed, onMounted, watchEffect, watch } from 'vue'
 import { app as comfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -63,6 +63,7 @@ import { useWorkflowStore } from '@/stores/workflowStore'
 import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
+import { useCommandStore } from '@/stores/commandStore'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -312,6 +313,15 @@ onMounted(async () => {
   window['graph'] = comfyApp.graph
 
   comfyAppReady.value = true
+
+  // Start watching for locale change after the initial value is loaded.
+  watch(
+    () => settingStore.get('Comfy.Locale'),
+    () => {
+      useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    }
+  )
+
   emit('ready')
 })
 </script>

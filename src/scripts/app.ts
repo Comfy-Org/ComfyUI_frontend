@@ -61,6 +61,7 @@ import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
+import { t } from '@/i18n'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1820,14 +1821,38 @@ export class ComfyApp {
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
+  #translateNodeDefs(defs: Record<string, ComfyNodeDef>) {
+    return Object.fromEntries(
+      Object.entries(defs).map(([name, def]) => [
+        name,
+        {
+          ...def,
+          display_name: t(
+            `nodeDefs.${name}.display_name`,
+            def.display_name ?? def.name
+          ),
+          description: def.description
+            ? t(`nodeDefs.${name}.description`, def.description)
+            : undefined
+        }
+      ])
+    )
+  }
+
+  async #getNodeDefs() {
+    return this.#translateNodeDefs(
+      await api.getNodeDefs({
+        validate: useSettingStore().get('Comfy.Validation.NodeDefs')
+      })
+    )
+  }
+
   /**
    * Registers nodes with the graph
    */
   async registerNodes() {
     // Load node definitions from the backend
-    const defs = await api.getNodeDefs({
-      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
-    })
+    const defs = await this.#getNodeDefs()
     await this.registerNodesFromDefs(defs)
     await this.#invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
@@ -2768,10 +2793,7 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs = await api.getNodeDefs({
-      validate: useSettingStore().get('Comfy.Validation.NodeDefs')
-    })
-
+    const defs = await this.#getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
