@@ -115,6 +115,16 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   inputs: Dictionary<IGraphInput>
   outputs: Dictionary<IGraphInput>
 
+  /** @returns Whether the graph has no items */
+  get empty(): boolean {
+    return this.positionableItems.length === 0
+  }
+
+  /** @returns All items on the canvas that can be selected */
+  get positionableItems(): Positionable[] {
+    return [...this._nodes, ...this._groups, ...this.reroutes.values()]
+  }
+
   #reroutes = new Map<RerouteId, Reroute>()
   /** All reroutes in this graph. */
   public get reroutes(): Map<RerouteId, Reroute> {

@@ -3954,15 +3954,12 @@ export class LGraphCanvas {
     }
   }
 
-  /**
-   * @returns All items on the canvas that can be selected
-   */
+  get empty(): boolean {
+    return this.graph.empty
+  }
+
   get positionableItems(): Positionable[] {
-    return [
-      ...this.graph._nodes,
-      ...this.graph._groups,
-      ...this.graph.reroutes.values(),
-    ]
+    return this.graph.positionableItems
   }
 
   /**
