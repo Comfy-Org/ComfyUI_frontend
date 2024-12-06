@@ -103,13 +103,15 @@ test('collect-i18n', async ({ comfyPage }) => {
   })
 
   const allNodeDefsLocale = Object.fromEntries(
-    Object.values(nodeDefs).map((nodeDef) => [
-      normalizeI18nKey(nodeDef.name),
-      {
-        display_name: nodeDef.display_name ?? nodeDef.name,
-        description: nodeDef.description || undefined
-      }
-    ])
+    Object.values(nodeDefs)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((nodeDef) => [
+        normalizeI18nKey(nodeDef.name),
+        {
+          display_name: nodeDef.display_name ?? nodeDef.name,
+          description: nodeDef.description || undefined
+        }
+      ])
   )
 
   fs.writeFileSync(
