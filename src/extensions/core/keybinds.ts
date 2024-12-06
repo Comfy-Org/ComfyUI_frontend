@@ -2,64 +2,106 @@ import { app } from '../../scripts/app'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 
-app.registerExtension({
-  name: 'Comfy.Keybinds',
-  init() {
-    const keybindListener = async function (event: KeyboardEvent) {
-      // Ignore keybindings for legacy jest tests as jest tests don't have
-      // a Vue app instance or pinia stores.
-      if (!app.vueAppReady) return
+class KeyboardManager {
+  private modifiers: string[] = []
+  private context: string = 'global'
 
-      const keyCombo = KeyComboImpl.fromEvent(event)
-      if (keyCombo.isModifier) {
-        return
-      }
+  constructor() {
+    this.addListeners()
+  }
 
-      // Ignore non-modifier keybindings if typing in input fields
-      const target = event.composedPath()[0] as HTMLElement
+  addListeners() {
+    window.addEventListener('keydown', (event) => this.handleKeyDown(event))
+    window.addEventListener('keyup', (event) => this.handleKeyUp(event))
+    window.addEventListener('blur', () => this.clearKeys())
+
+    app.extensionManager.setting.set('Comfy.KeybindContext', 'global')
+  }
+
+  private clearKeys() {
+    this.modifiers = []
+  }
+
+  private handleKeyUp(event: KeyboardEvent) {
+    this.modifiers = this.modifiers.filter((key) => key !== event.key)
+  }
+
+  private setContext(event?: KeyboardEvent) {
+    if (!event) return
+    event.preventDefault()
+    const context = app.extensionManager.setting.get('Comfy.KeybindContext')
+    this.context = context
+  }
+
+  private async handleKeyDown(event: KeyboardEvent) {
+    if (!app.vueAppReady) return
+
+    if (event.key === 'Escape' && this.modifiers.length === 0) {
+      this.handleEscapeKey()
+      return
+    }
+
+    if (event.key === 'F12') return
+
+    this.setContext()
+
+    const target = event.composedPath()[0] as HTMLElement
+    const excludedTags = ['TEXTAREA', 'INPUT', 'SPAN']
+
+    if (this.context === 'global') {
       if (
-        !keyCombo.hasModifier &&
-        (target.tagName === 'TEXTAREA' ||
-          target.tagName === 'INPUT' ||
-          (target.tagName === 'SPAN' &&
-            target.classList.contains('property_value')))
+        excludedTags.includes(target.tagName) ||
+        target.classList.contains('property_value')
       ) {
         return
       }
-
-      const keybindingStore = useKeybindingStore()
-      const commandStore = useCommandStore()
-      const keybinding = keybindingStore.getKeybinding(keyCombo)
-      if (keybinding && keybinding.targetSelector !== '#graph-canvas') {
-        // Prevent default browser behavior first, then execute the command
-        event.preventDefault()
-        await commandStore.execute(keybinding.commandId)
-        return
-      }
-
-      // Only clear dialogs if not using modifiers
-      if (event.ctrlKey || event.altKey || event.metaKey) {
-        return
-      }
-
-      // Escape key: close the first open modal found, and all dialogs
-      if (event.key === 'Escape') {
-        const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
-        for (const modal of modals) {
-          const modalDisplay = window
-            .getComputedStyle(modal)
-            .getPropertyValue('display')
-
-          if (modalDisplay !== 'none') {
-            modal.style.display = 'none'
-            break
-          }
-        }
-
-        for (const d of document.querySelectorAll('dialog')) d.close()
-      }
     }
 
-    window.addEventListener('keydown', keybindListener)
+    const keyCombo = KeyComboImpl.fromEvent(event)
+    if (keyCombo.isModifier) return
+    const keybindingStore = useKeybindingStore()
+    const commandStore = useCommandStore()
+    const keybinding = keybindingStore.getKeybinding(keyCombo, this.context)
+    console.log(keyCombo, keybinding)
+    if (keybinding) {
+      console.log('executing command', keybinding.commandId)
+      event.preventDefault()
+      await commandStore.execute(keybinding.commandId)
+      return
+    }
+  }
+
+  private handleEscapeKey() {
+    const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
+    const modal = Array.from(modals).find(
+      (modal) =>
+        window.getComputedStyle(modal).getPropertyValue('display') !== 'none'
+    )
+    if (modal) {
+      modal.style.display = 'none'
+    }
+
+    ;[...document.querySelectorAll('dialog')].forEach((d) => {
+      d.close()
+    })
+  }
+
+  setKeybindingContext(context: string) {
+    this.context = context
+  }
+}
+
+app.registerExtension({
+  name: 'Comfy.Keybinds',
+  init() {
+    const manager = new KeyboardManager()
+
+    function setKeybindingContext(context: string) {
+      manager.setKeybindingContext(context)
+    }
+
+    function resetKeybindingContext() {
+      manager.setKeybindingContext('global')
+    }
   }
 })

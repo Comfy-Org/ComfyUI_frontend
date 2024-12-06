@@ -57,7 +57,7 @@ export class ComfyCommandImpl implements ComfyCommand {
       : this._menubarLabel
   }
 
-  get keybinding(): KeybindingImpl | null {
+  get keybinding(): KeybindingImpl | undefined {
     return useKeybindingStore().getKeybindingByCommandId(this.id)
   }
 }
