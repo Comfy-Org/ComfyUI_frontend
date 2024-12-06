@@ -5,7 +5,7 @@ import {
   initWidgets
 } from './widgets'
 import { ComfyUI, $el } from './ui'
-import { api } from './api'
+import { api, type ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import {
   getPngMetadata,
@@ -114,6 +114,7 @@ export class ComfyApp {
   static clipspace_return_node = null
 
   vueAppReady: boolean
+  api: ComfyApi
   ui: ComfyUI
   extensions: ComfyExtension[]
   extensionManager: ExtensionManager
@@ -184,6 +185,7 @@ export class ComfyApp {
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
+    this.api = api
     this.bodyTop = $el('div.comfyui-body-top', { parent: document.body })
     this.bodyLeft = $el('div.comfyui-body-left', { parent: document.body })
     this.bodyRight = $el('div.comfyui-body-right', { parent: document.body })
