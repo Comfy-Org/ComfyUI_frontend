@@ -309,11 +309,20 @@ app.extensionManager.setting.set('TestSetting', 'Hello, universe!')
 
   Extensions can call the following API to register commands and keybindings. Do
   note that keybindings defined in core cannot be overwritten, and some keybindings
-  are reserved by the browser.
+  are reserved by the browser. Extensions can create custom keyBinding contexts to 
+  restrict keyboard shortcuts to specific areas of the application. If no context is 
+  specified, shortcuts are assigned to the "global" context and will work throughout 
+  ComfyUI, except in areas with their own specific context definitions.
 
 ```js
   app.registerExtension({
     name: 'TestExtension1',
+    keybindingContexts: [
+      {
+        id: 'testContext',
+        name: 'Test Context'
+      }
+    ],
     commands: [
       {
         id: 'TestCommand',
@@ -325,12 +334,20 @@ app.extensionManager.setting.set('TestSetting', 'Hello, universe!')
     keybindings: [
       {
         combo: { key: 'k' },
-        commandId: 'TestCommand'
+        commandId: 'TestCommand',
+        context: testContext //must match id in keybindingContexts
       }
     ]
   })
 ```
 
+```js
+//activate context
+app.extensionManager.setting.set('Comfy.KeybindContext', 'testContext') //must match id in keybindingContexts
+
+//deactivate context
+app.extensionManager.setting.set('Comfy.KeybindContext', 'global') //always go back to global
+```
 </details>
 
 <details>
