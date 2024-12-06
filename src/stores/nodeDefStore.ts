@@ -8,7 +8,6 @@ import {
   type InputSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
-import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
@@ -284,7 +283,6 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
-  const widgets = ref<Record<string, ComfyWidgetConstructor>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
 
