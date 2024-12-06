@@ -151,39 +151,43 @@ export class ComfyOutputsSpec {
 
 export class ComfyNodeDefImpl implements ComfyNodeDef {
   // ComfyNodeDef fields
-  name: string
-  display_name: string
+  readonly name: string
+  readonly display_name: string
+  /**
+   * Category is not marked as readonly as the bookmark system
+   * needs to write to it to assign a node to a custom folder.
+   */
   category: string
-  python_module: string
-  description: string
-  deprecated: boolean
-  experimental: boolean
-  output_node: boolean
+  readonly python_module: string
+  readonly description: string
+  readonly deprecated: boolean
+  readonly experimental: boolean
+  readonly output_node: boolean
   /**
    * @deprecated Use `inputs` instead
    */
-  input: ComfyInputsSpecSchema
+  readonly input: ComfyInputsSpecSchema
   /**
    * @deprecated Use `outputs` instead
    */
-  output: ComfyOutputTypesSpecSchema
+  readonly output: ComfyOutputTypesSpecSchema
   /**
    * @deprecated Use `outputs[n].is_list` instead
    */
-  output_is_list?: boolean[]
+  readonly output_is_list?: boolean[]
   /**
    * @deprecated Use `outputs[n].name` instead
    */
-  output_name?: string[]
+  readonly output_name?: string[]
   /**
    * @deprecated Use `outputs[n].tooltip` instead
    */
-  output_tooltips?: string[]
+  readonly output_tooltips?: string[]
 
   // ComfyNodeDefImpl fields
-  inputs: ComfyInputsSpec
-  outputs: ComfyOutputsSpec
-  nodeSource: NodeSource
+  readonly inputs: ComfyInputsSpec
+  readonly outputs: ComfyOutputsSpec
+  readonly nodeSource: NodeSource
 
   constructor(obj: ComfyNodeDef) {
     this.name = obj.name
