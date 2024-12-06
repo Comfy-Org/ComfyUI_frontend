@@ -5,10 +5,10 @@ import {
 import {
   type ComfyNodeDef,
   type ComfyInputsSpec as ComfyInputsSpecSchema,
+  type ComfyOutputTypesSpec as ComfyOutputTypesSpecSchema,
   type InputSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
-import { ComfyWidgetConstructor } from '@/scripts/widgets'
 import { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
@@ -149,21 +149,45 @@ export class ComfyOutputsSpec {
   }
 }
 
-/**
- * Note: This class does not implement the ComfyNodeDef interface, as we are
- * using a custom output spec for output definitions.
- */
-export class ComfyNodeDefImpl {
-  name: string
-  display_name: string
+export class ComfyNodeDefImpl implements ComfyNodeDef {
+  // ComfyNodeDef fields
+  readonly name: string
+  readonly display_name: string
+  /**
+   * Category is not marked as readonly as the bookmark system
+   * needs to write to it to assign a node to a custom folder.
+   */
   category: string
-  python_module: string
-  description: string
-  deprecated: boolean
-  experimental: boolean
-  input: ComfyInputsSpec
-  output: ComfyOutputsSpec
-  nodeSource: NodeSource
+  readonly python_module: string
+  readonly description: string
+  readonly deprecated: boolean
+  readonly experimental: boolean
+  readonly output_node: boolean
+  /**
+   * @deprecated Use `inputs` instead
+   */
+  readonly input: ComfyInputsSpecSchema
+  /**
+   * @deprecated Use `outputs` instead
+   */
+  readonly output: ComfyOutputTypesSpecSchema
+  /**
+   * @deprecated Use `outputs[n].is_list` instead
+   */
+  readonly output_is_list?: boolean[]
+  /**
+   * @deprecated Use `outputs[n].name` instead
+   */
+  readonly output_name?: string[]
+  /**
+   * @deprecated Use `outputs[n].tooltip` instead
+   */
+  readonly output_tooltips?: string[]
+
+  // ComfyNodeDefImpl fields
+  readonly inputs: ComfyInputsSpec
+  readonly outputs: ComfyOutputsSpec
+  readonly nodeSource: NodeSource
 
   constructor(obj: ComfyNodeDef) {
     this.name = obj.name
@@ -174,8 +198,15 @@ export class ComfyNodeDefImpl {
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
-    this.input = new ComfyInputsSpec(obj.input ?? {})
-    this.output = ComfyNodeDefImpl.transformOutputSpec(obj)
+    this.output_node = obj.output_node
+    this.input = obj.input ?? {}
+    this.output = obj.output ?? []
+    this.output_is_list = obj.output_is_list
+    this.output_name = obj.output_name
+    this.output_tooltips = obj.output_tooltips
+
+    this.inputs = new ComfyInputsSpec(obj.input ?? {})
+    this.outputs = ComfyNodeDefImpl.transformOutputSpec(obj)
     this.nodeSource = getNodeSource(obj.python_module)
   }
 
@@ -284,7 +315,6 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
-  const widgets = ref<Record<string, ComfyWidgetConstructor>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
 

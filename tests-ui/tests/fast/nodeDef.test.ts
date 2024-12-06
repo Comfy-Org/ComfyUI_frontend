@@ -171,8 +171,8 @@ describe('ComfyNodeDefImpl', () => {
     expect(result.category).toBe('Testing')
     expect(result.python_module).toBe('test_module')
     expect(result.description).toBe('A test node')
-    expect(result.input).toBeInstanceOf(ComfyInputsSpec)
-    expect(result.output.all).toEqual([
+    expect(result.inputs).toBeInstanceOf(ComfyInputsSpec)
+    expect(result.outputs.all).toEqual([
       {
         index: 0,
         name: 'intOutput',
@@ -243,7 +243,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = new ComfyNodeDefImpl(plainObject)
 
-    expect(result.output.all).toEqual([
+    expect(result.outputs.all).toEqual([
       {
         index: 0,
         name: 'stringOutput',
@@ -281,7 +281,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = new ComfyNodeDefImpl(plainObject)
 
-    expect(result.output.all).toEqual([
+    expect(result.outputs.all).toEqual([
       {
         index: 0,
         name: 'INT',
@@ -317,7 +317,7 @@ describe('ComfyNodeDefImpl', () => {
     }
 
     const result = new ComfyNodeDefImpl(plainObject)
-    expect(result.output.all).toEqual([
+    expect(result.outputs.all).toEqual([
       {
         index: 0,
         name: 'output',
@@ -354,7 +354,7 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = new ComfyNodeDefImpl(plainObject)
 
-    expect(result.output.all).toEqual([])
+    expect(result.outputs.all).toEqual([])
   })
 
   it('should handle undefined fields', () => {
@@ -367,8 +367,8 @@ describe('ComfyNodeDefImpl', () => {
     }
 
     const result = new ComfyNodeDefImpl(plainObject)
-    expect(result.output.all).toEqual([])
-    expect(result.input.all).toEqual([])
+    expect(result.outputs.all).toEqual([])
+    expect(result.inputs.all).toEqual([])
   })
 
   it('should handle complex input specifications', () => {
@@ -395,8 +395,8 @@ describe('ComfyNodeDefImpl', () => {
 
     const result = new ComfyNodeDefImpl(plainObject)
 
-    expect(result.input).toBeInstanceOf(ComfyInputsSpec)
-    expect(result.input.required).toBeDefined()
-    expect(result.input.optional).toBeDefined()
+    expect(result.inputs).toBeInstanceOf(ComfyInputsSpec)
+    expect(result.inputs.required).toBeDefined()
+    expect(result.inputs.optional).toBeDefined()
   })
 })

@@ -105,8 +105,8 @@ const litegraphColors = colors ?? defaultColorPalette.colors.litegraph_base
 const widgetStore = useWidgetStore()
 
 const nodeDef = props.nodeDef
-const allInputDefs = nodeDef.input.all
-const allOutputDefs = nodeDef.output.all
+const allInputDefs = nodeDef.inputs.all
+const allOutputDefs = nodeDef.outputs.all
 const slotInputDefs = allInputDefs.filter(
   (input) => !widgetStore.inputIsWidget(input)
 )
