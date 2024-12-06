@@ -64,6 +64,7 @@ import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
+import { workflowService } from '@/services/workflowService'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -317,8 +318,9 @@ onMounted(async () => {
   // Start watching for locale change after the initial value is loaded.
   watch(
     () => settingStore.get('Comfy.Locale'),
-    () => {
-      useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    async () => {
+      await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+      workflowService.reloadCurrentWorkflow()
     }
   )
 
