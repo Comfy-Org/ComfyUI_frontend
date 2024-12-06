@@ -157,8 +157,8 @@ export class ComfyNodeDefImpl implements ComfyNodeDef {
   python_module: string
   description: string
   deprecated: boolean
-  output_node: boolean
   experimental: boolean
+  output_node: boolean
   /**
    * @deprecated Use `inputs` instead
    */
