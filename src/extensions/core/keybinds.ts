@@ -43,7 +43,7 @@ class KeyboardManager {
 
     if (event.key === 'F12') return
 
-    this.setContext()
+    this.setContext(event)
 
     const target = event.composedPath()[0] as HTMLElement
     const excludedTags = ['TEXTAREA', 'INPUT', 'SPAN']
