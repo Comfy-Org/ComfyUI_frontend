@@ -365,6 +365,50 @@
     "CropMask": {
       "display_name": "Обрезать маску"
     },
+    "DevToolsDeprecatedNode": {
+      "description": "Устаревший узел",
+      "display_name": "Устаревший узел"
+    },
+    "DevToolsErrorRaiseNode": {
+      "description": "Выбросить ошибку для целей разработки",
+      "display_name": "Выбросить ошибку"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "description": "Выбросить ошибку с сообщением для целей разработки",
+      "display_name": "Выбросить ошибку с сообщением"
+    },
+    "DevToolsExperimentalNode": {
+      "description": "Экспериментальный узел",
+      "display_name": "Экспериментальный узел"
+    },
+    "DevToolsLongComboDropdown": {
+      "description": "Длинный комбинированный выпадающий список",
+      "display_name": "Длинный комбинированный выпадающий список"
+    },
+    "DevToolsNodeWithForceInput": {
+      "description": "Узел с принудительным вводом",
+      "display_name": "Узел с принудительным вводом"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "description": "Узел только с необязательным вводом",
+      "display_name": "Узел только с необязательным вводом"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "description": "Узел с необязательным вводом",
+      "display_name": "Узел с необязательным вводом"
+    },
+    "DevToolsNodeWithOutputList": {
+      "description": "Узел с выходным списком",
+      "display_name": "Узел с выходным списком"
+    },
+    "DevToolsNodeWithStringInput": {
+      "description": "Узел со строковым вводом",
+      "display_name": "Узел со строковым вводом"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "description": "Узел с объединённым вводом",
+      "display_name": "Узел с объединённым вводом"
+    },
     "DiffControlNetLoader": {
       "display_name": "Загрузить модель ControlNet (дифф)"
     },
@@ -806,6 +850,9 @@
     "SaveImage": {
       "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
       "display_name": "Сохранить изображение"
+    },
+    "SaveImageWebsocket": {
+      "display_name": "Сохранить изображение через веб-сокет"
     },
     "SaveLatent": {
       "display_name": "Сохранить латент"

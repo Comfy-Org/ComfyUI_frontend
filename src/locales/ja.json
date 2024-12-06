@@ -365,6 +365,50 @@
     "CropMask": {
       "display_name": "マスクをトリミング"
     },
+    "DevToolsDeprecatedNode": {
+      "description": "非推奨のノード",
+      "display_name": "非推奨ノード"
+    },
+    "DevToolsErrorRaiseNode": {
+      "description": "開発目的のためにエラーを発生させる",
+      "display_name": "エラーを発生させる"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "description": "開発目的のためにメッセージ付きのエラーを発生させる",
+      "display_name": "メッセージ付きエラーを発生させる"
+    },
+    "DevToolsExperimentalNode": {
+      "description": "実験的なノード",
+      "display_name": "実験的ノード"
+    },
+    "DevToolsLongComboDropdown": {
+      "description": "長いコンボドロップダウン",
+      "display_name": "ロングコンボドロップダウン"
+    },
+    "DevToolsNodeWithForceInput": {
+      "description": "強制入力を持つノード",
+      "display_name": "強制入力ノード"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "description": "オプション入力のみを持つノード",
+      "display_name": "オプション入力のみのノード"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "description": "オプション入力を持つノード",
+      "display_name": "オプション入力ノード"
+    },
+    "DevToolsNodeWithOutputList": {
+      "description": "出力リストを持つノード",
+      "display_name": "出力リストノード"
+    },
+    "DevToolsNodeWithStringInput": {
+      "description": "文字列入力を持つノード",
+      "display_name": "文字列入力ノード"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "description": "ユニオン入力を持つノード",
+      "display_name": "ユニオン入力ノード"
+    },
     "DiffControlNetLoader": {
       "display_name": "ControlNetモデルを読み込む（diff）"
     },
@@ -806,6 +850,9 @@
     "SaveImage": {
       "description": "入力画像をComfyUI出力ディレクトリに保存します。",
       "display_name": "画像を保存"
+    },
+    "SaveImageWebsocket": {
+      "display_name": "画像を保存するWebSocket"
     },
     "SaveLatent": {
       "display_name": "潜在を保存"

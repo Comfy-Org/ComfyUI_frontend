@@ -365,6 +365,50 @@
     "CropMask": {
       "display_name": "裁剪掩码"
     },
+    "DevToolsDeprecatedNode": {
+      "description": "一个已弃用的节点",
+      "display_name": "已弃用节点"
+    },
+    "DevToolsErrorRaiseNode": {
+      "description": "出于开发目的引发错误",
+      "display_name": "引发错误"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "description": "出于开发目的引发带消息的错误",
+      "display_name": "带消息的引发错误"
+    },
+    "DevToolsExperimentalNode": {
+      "description": "一个实验性的节点",
+      "display_name": "实验性节点"
+    },
+    "DevToolsLongComboDropdown": {
+      "description": "一个长组合下拉菜单",
+      "display_name": "长组合下拉菜单"
+    },
+    "DevToolsNodeWithForceInput": {
+      "description": "一个具有强制输入的节点",
+      "display_name": "强制输入节点"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "description": "一个仅有可选输入的节点",
+      "display_name": "仅有可选输入的节点"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "description": "一个具有可选输入的节点",
+      "display_name": "具有可选输入的节点"
+    },
+    "DevToolsNodeWithOutputList": {
+      "description": "一个具有输出列表的节点",
+      "display_name": "具有输出列表的节点"
+    },
+    "DevToolsNodeWithStringInput": {
+      "description": "一个具有字符串输入的节点",
+      "display_name": "具有字符串输入的节点"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "description": "一个具有联合输入的节点",
+      "display_name": "具有联合输入的节点"
+    },
     "DiffControlNetLoader": {
       "display_name": "加载控制网模型（diff）"
     },
@@ -806,6 +850,9 @@
     "SaveImage": {
       "description": "将输入图像保存到您的ComfyUI输出目录。",
       "display_name": "保存图像"
+    },
+    "SaveImageWebsocket": {
+      "display_name": "保存图像Websocket"
     },
     "SaveLatent": {
       "display_name": "保存潜在"

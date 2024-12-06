@@ -923,6 +923,50 @@
     "CropMask": {
       "display_name": "CropMask"
     },
+    "DevToolsDeprecatedNode": {
+      "display_name": "Deprecated Node",
+      "description": "A deprecated node"
+    },
+    "DevToolsErrorRaiseNode": {
+      "display_name": "Raise Error",
+      "description": "Raise an error for development purposes"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "display_name": "Raise Error with Message",
+      "description": "Raise an error with message for development purposes"
+    },
+    "DevToolsExperimentalNode": {
+      "display_name": "Experimental Node",
+      "description": "A experimental node"
+    },
+    "DevToolsLongComboDropdown": {
+      "display_name": "Long Combo Dropdown",
+      "description": "A long combo dropdown"
+    },
+    "DevToolsNodeWithForceInput": {
+      "display_name": "Node With Force Input",
+      "description": "A node with a forced input"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "display_name": "Node With Only Optional Input",
+      "description": "A node with only optional input"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "display_name": "Node With Optional Input",
+      "description": "A node with an optional input"
+    },
+    "DevToolsNodeWithOutputList": {
+      "display_name": "Node With Output List",
+      "description": "A node with an output list"
+    },
+    "DevToolsNodeWithStringInput": {
+      "display_name": "Node With String Input",
+      "description": "A node with a string input"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "display_name": "Node With Union Input",
+      "description": "A node with a union input"
+    },
     "DiffControlNetLoader": {
       "display_name": "Load ControlNet Model (diff)"
     },
@@ -1352,6 +1396,9 @@
     "SaveImage": {
       "display_name": "Save Image",
       "description": "Saves the input images to your ComfyUI output directory."
+    },
+    "SaveImageWebsocket": {
+      "display_name": "SaveImageWebsocket"
     },
     "SaveLatent": {
       "display_name": "SaveLatent"
