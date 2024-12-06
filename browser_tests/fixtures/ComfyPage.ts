@@ -846,18 +846,23 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
     const userId = await comfyPage.setupUser(username)
     comfyPage.userIds[parallelIndex] = userId
 
-    await comfyPage.setupSettings({
-      'Comfy.UseNewMenu': 'Disabled',
-      // Hide canvas menu/info by default.
-      'Comfy.Graph.CanvasInfo': false,
-      'Comfy.Graph.CanvasMenu': false,
-      // Hide all badges by default.
-      'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
-      'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
-      // Disable tooltips by default to avoid flakiness.
-      'Comfy.EnableTooltips': false,
-      'Comfy.userId': userId
-    })
+    try {
+      await comfyPage.setupSettings({
+        'Comfy.UseNewMenu': 'Disabled',
+        // Hide canvas menu/info by default.
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.Graph.CanvasMenu': false,
+        // Hide all badges by default.
+        'Comfy.NodeBadge.NodeIdBadgeMode': NodeBadgeMode.None,
+        'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
+        // Disable tooltips by default to avoid flakiness.
+        'Comfy.EnableTooltips': false,
+        'Comfy.userId': userId
+      })
+    } catch (e) {
+      console.error(e)
+    }
+
     await comfyPage.setup()
     await use(comfyPage)
   }

@@ -753,5 +753,800 @@
     "Cache": "Cache",
     "Attention": "Attention",
     "General": "General"
+  },
+  "nodeDefs": {
+    "AddNoise": {
+      "display_name": "AddNoise"
+    },
+    "AlignYourStepsScheduler": {
+      "display_name": "AlignYourStepsScheduler"
+    },
+    "BasicGuider": {
+      "display_name": "BasicGuider"
+    },
+    "BasicScheduler": {
+      "display_name": "BasicScheduler"
+    },
+    "BetaSamplingScheduler": {
+      "display_name": "BetaSamplingScheduler"
+    },
+    "Canny": {
+      "display_name": "Canny"
+    },
+    "CFGGuider": {
+      "display_name": "CFGGuider"
+    },
+    "CheckpointLoader": {
+      "display_name": "Load Checkpoint With Config (DEPRECATED)"
+    },
+    "CheckpointLoaderSimple": {
+      "display_name": "Load Checkpoint",
+      "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
+    },
+    "CheckpointSave": {
+      "display_name": "Save Checkpoint"
+    },
+    "CLIPAttentionMultiply": {
+      "display_name": "CLIPAttentionMultiply"
+    },
+    "CLIPLoader": {
+      "display_name": "Load CLIP",
+      "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5"
+    },
+    "CLIPMergeAdd": {
+      "display_name": "CLIPMergeAdd"
+    },
+    "CLIPMergeSimple": {
+      "display_name": "CLIPMergeSimple"
+    },
+    "CLIPMergeSubtract": {
+      "display_name": "CLIPMergeSubtract"
+    },
+    "CLIPSave": {
+      "display_name": "CLIPSave"
+    },
+    "CLIPSetLastLayer": {
+      "display_name": "CLIP Set Last Layer"
+    },
+    "CLIPTextEncode": {
+      "display_name": "CLIP Text Encode (Prompt)",
+      "description": "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
+    },
+    "CLIPTextEncodeControlnet": {
+      "display_name": "CLIPTextEncodeControlnet"
+    },
+    "CLIPTextEncodeFlux": {
+      "display_name": "CLIPTextEncodeFlux"
+    },
+    "CLIPTextEncodeHunyuanDiT": {
+      "display_name": "CLIPTextEncodeHunyuanDiT"
+    },
+    "CLIPTextEncodeSD3": {
+      "display_name": "CLIPTextEncodeSD3"
+    },
+    "CLIPTextEncodeSDXL": {
+      "display_name": "CLIPTextEncodeSDXL"
+    },
+    "CLIPTextEncodeSDXLRefiner": {
+      "display_name": "CLIPTextEncodeSDXLRefiner"
+    },
+    "CLIPVisionEncode": {
+      "display_name": "CLIP Vision Encode"
+    },
+    "CLIPVisionLoader": {
+      "display_name": "Load CLIP Vision"
+    },
+    "CombineHooks2": {
+      "display_name": "Combine Hooks [2]"
+    },
+    "CombineHooks4": {
+      "display_name": "Combine Hooks [4]"
+    },
+    "CombineHooks8": {
+      "display_name": "Combine Hooks [8]"
+    },
+    "ConditioningAverage": {
+      "display_name": "ConditioningAverage"
+    },
+    "ConditioningCombine": {
+      "display_name": "Conditioning (Combine)"
+    },
+    "ConditioningConcat": {
+      "display_name": "Conditioning (Concat)"
+    },
+    "ConditioningSetArea": {
+      "display_name": "Conditioning (Set Area)"
+    },
+    "ConditioningSetAreaPercentage": {
+      "display_name": "Conditioning (Set Area with Percentage)"
+    },
+    "ConditioningSetAreaStrength": {
+      "display_name": "ConditioningSetAreaStrength"
+    },
+    "ConditioningSetDefaultCombine": {
+      "display_name": "Cond Set Default Combine"
+    },
+    "ConditioningSetMask": {
+      "display_name": "Conditioning (Set Mask)"
+    },
+    "ConditioningSetProperties": {
+      "display_name": "Cond Set Props"
+    },
+    "ConditioningSetPropertiesAndCombine": {
+      "display_name": "Cond Set Props Combine"
+    },
+    "ConditioningSetTimestepRange": {
+      "display_name": "ConditioningSetTimestepRange"
+    },
+    "ConditioningTimestepsRange": {
+      "display_name": "Timesteps Range"
+    },
+    "ConditioningZeroOut": {
+      "display_name": "ConditioningZeroOut"
+    },
+    "ControlNetApply": {
+      "display_name": "Apply ControlNet (OLD)"
+    },
+    "ControlNetApplyAdvanced": {
+      "display_name": "Apply ControlNet"
+    },
+    "ControlNetApplySD3": {
+      "display_name": "Apply Controlnet with VAE"
+    },
+    "ControlNetInpaintingAliMamaApply": {
+      "display_name": "ControlNetInpaintingAliMamaApply"
+    },
+    "ControlNetLoader": {
+      "display_name": "Load ControlNet Model"
+    },
+    "CreateHookKeyframe": {
+      "display_name": "Create Hook Keyframe"
+    },
+    "CreateHookKeyframesFromFloats": {
+      "display_name": "Create Hook Keyframes From Floats"
+    },
+    "CreateHookKeyframesInterpolated": {
+      "display_name": "Create Hook Keyframes Interp."
+    },
+    "CreateHookLora": {
+      "display_name": "Create Hook LoRA"
+    },
+    "CreateHookLoraModelOnly": {
+      "display_name": "Create Hook LoRA (MO)"
+    },
+    "CreateHookModelAsLora": {
+      "display_name": "Create Hook Model as LoRA"
+    },
+    "CreateHookModelAsLoraModelOnly": {
+      "display_name": "Create Hook Model as LoRA (MO)"
+    },
+    "CropMask": {
+      "display_name": "CropMask"
+    },
+    "DevToolsDeprecatedNode": {
+      "display_name": "Deprecated Node",
+      "description": "A deprecated node"
+    },
+    "DevToolsErrorRaiseNode": {
+      "display_name": "Raise Error",
+      "description": "Raise an error for development purposes"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "display_name": "Raise Error with Message",
+      "description": "Raise an error with message for development purposes"
+    },
+    "DevToolsExperimentalNode": {
+      "display_name": "Experimental Node",
+      "description": "A experimental node"
+    },
+    "DevToolsLongComboDropdown": {
+      "display_name": "Long Combo Dropdown",
+      "description": "A long combo dropdown"
+    },
+    "DevToolsNodeWithForceInput": {
+      "display_name": "Node With Force Input",
+      "description": "A node with a forced input"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "display_name": "Node With Only Optional Input",
+      "description": "A node with only optional input"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "display_name": "Node With Optional Input",
+      "description": "A node with an optional input"
+    },
+    "DevToolsNodeWithOutputList": {
+      "display_name": "Node With Output List",
+      "description": "A node with an output list"
+    },
+    "DevToolsNodeWithStringInput": {
+      "display_name": "Node With String Input",
+      "description": "A node with a string input"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "display_name": "Node With Union Input",
+      "description": "A node with a union input"
+    },
+    "DiffControlNetLoader": {
+      "display_name": "Load ControlNet Model (diff)"
+    },
+    "DifferentialDiffusion": {
+      "display_name": "Differential Diffusion"
+    },
+    "DiffusersLoader": {
+      "display_name": "DiffusersLoader"
+    },
+    "DisableNoise": {
+      "display_name": "DisableNoise"
+    },
+    "DualCFGGuider": {
+      "display_name": "DualCFGGuider"
+    },
+    "DualCLIPLoader": {
+      "display_name": "DualCLIPLoader",
+      "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5"
+    },
+    "EmptyImage": {
+      "display_name": "EmptyImage"
+    },
+    "EmptyLatentAudio": {
+      "display_name": "EmptyLatentAudio"
+    },
+    "EmptyLatentImage": {
+      "display_name": "Empty Latent Image",
+      "description": "Create a new batch of empty latent images to be denoised via sampling."
+    },
+    "EmptyLTXVLatentVideo": {
+      "display_name": "EmptyLTXVLatentVideo"
+    },
+    "EmptyMochiLatentVideo": {
+      "display_name": "EmptyMochiLatentVideo"
+    },
+    "EmptySD3LatentImage": {
+      "display_name": "EmptySD3LatentImage"
+    },
+    "ExponentialScheduler": {
+      "display_name": "ExponentialScheduler"
+    },
+    "FeatherMask": {
+      "display_name": "FeatherMask"
+    },
+    "FlipSigmas": {
+      "display_name": "FlipSigmas"
+    },
+    "FluxGuidance": {
+      "display_name": "FluxGuidance"
+    },
+    "FreeU": {
+      "display_name": "FreeU"
+    },
+    "FreeU_V2": {
+      "display_name": "FreeU_V2"
+    },
+    "GITSScheduler": {
+      "display_name": "GITSScheduler"
+    },
+    "GLIGENLoader": {
+      "display_name": "GLIGENLoader"
+    },
+    "GLIGENTextBoxApply": {
+      "display_name": "GLIGENTextBoxApply"
+    },
+    "GrowMask": {
+      "display_name": "GrowMask"
+    },
+    "HypernetworkLoader": {
+      "display_name": "HypernetworkLoader"
+    },
+    "HyperTile": {
+      "display_name": "HyperTile"
+    },
+    "ImageBatch": {
+      "display_name": "Batch Images"
+    },
+    "ImageBlend": {
+      "display_name": "Image Blend"
+    },
+    "ImageBlur": {
+      "display_name": "Image Blur"
+    },
+    "ImageColorToMask": {
+      "display_name": "ImageColorToMask"
+    },
+    "ImageCompositeMasked": {
+      "display_name": "ImageCompositeMasked"
+    },
+    "ImageCrop": {
+      "display_name": "Image Crop"
+    },
+    "ImageFromBatch": {
+      "display_name": "ImageFromBatch"
+    },
+    "ImageInvert": {
+      "display_name": "Invert Image"
+    },
+    "ImageOnlyCheckpointLoader": {
+      "display_name": "Image Only Checkpoint Loader (img2vid model)"
+    },
+    "ImageOnlyCheckpointSave": {
+      "display_name": "ImageOnlyCheckpointSave"
+    },
+    "ImagePadForOutpaint": {
+      "display_name": "Pad Image for Outpainting"
+    },
+    "ImageQuantize": {
+      "display_name": "Image Quantize"
+    },
+    "ImageScale": {
+      "display_name": "Upscale Image"
+    },
+    "ImageScaleBy": {
+      "display_name": "Upscale Image By"
+    },
+    "ImageScaleToTotalPixels": {
+      "display_name": "Scale Image to Total Pixels"
+    },
+    "ImageSharpen": {
+      "display_name": "Image Sharpen"
+    },
+    "ImageToMask": {
+      "display_name": "Convert Image to Mask"
+    },
+    "ImageUpscaleWithModel": {
+      "display_name": "Upscale Image (using Model)"
+    },
+    "InpaintModelConditioning": {
+      "display_name": "InpaintModelConditioning"
+    },
+    "InstructPixToPixConditioning": {
+      "display_name": "InstructPixToPixConditioning"
+    },
+    "InvertMask": {
+      "display_name": "InvertMask"
+    },
+    "JoinImageWithAlpha": {
+      "display_name": "Join Image with Alpha"
+    },
+    "KarrasScheduler": {
+      "display_name": "KarrasScheduler"
+    },
+    "KSampler": {
+      "display_name": "KSampler",
+      "description": "Uses the provided model, positive and negative conditioning to denoise the latent image."
+    },
+    "KSamplerAdvanced": {
+      "display_name": "KSampler (Advanced)"
+    },
+    "KSamplerSelect": {
+      "display_name": "KSamplerSelect"
+    },
+    "LaplaceScheduler": {
+      "display_name": "LaplaceScheduler"
+    },
+    "LatentAdd": {
+      "display_name": "LatentAdd"
+    },
+    "LatentApplyOperation": {
+      "display_name": "LatentApplyOperation"
+    },
+    "LatentApplyOperationCFG": {
+      "display_name": "LatentApplyOperationCFG"
+    },
+    "LatentBatch": {
+      "display_name": "LatentBatch"
+    },
+    "LatentBatchSeedBehavior": {
+      "display_name": "LatentBatchSeedBehavior"
+    },
+    "LatentBlend": {
+      "display_name": "Latent Blend"
+    },
+    "LatentComposite": {
+      "display_name": "Latent Composite"
+    },
+    "LatentCompositeMasked": {
+      "display_name": "LatentCompositeMasked"
+    },
+    "LatentCrop": {
+      "display_name": "Crop Latent"
+    },
+    "LatentFlip": {
+      "display_name": "Flip Latent"
+    },
+    "LatentFromBatch": {
+      "display_name": "Latent From Batch"
+    },
+    "LatentInterpolate": {
+      "display_name": "LatentInterpolate"
+    },
+    "LatentMultiply": {
+      "display_name": "LatentMultiply"
+    },
+    "LatentOperationSharpen": {
+      "display_name": "LatentOperationSharpen"
+    },
+    "LatentOperationTonemapReinhard": {
+      "display_name": "LatentOperationTonemapReinhard"
+    },
+    "LatentRotate": {
+      "display_name": "Rotate Latent"
+    },
+    "LatentSubtract": {
+      "display_name": "LatentSubtract"
+    },
+    "LatentUpscale": {
+      "display_name": "Upscale Latent"
+    },
+    "LatentUpscaleBy": {
+      "display_name": "Upscale Latent By"
+    },
+    "LoadAudio": {
+      "display_name": "LoadAudio"
+    },
+    "LoadImage": {
+      "display_name": "Load Image"
+    },
+    "LoadImageMask": {
+      "display_name": "Load Image (as Mask)"
+    },
+    "LoadLatent": {
+      "display_name": "LoadLatent"
+    },
+    "LoraLoader": {
+      "display_name": "Load LoRA",
+      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+    },
+    "LoraLoaderModelOnly": {
+      "display_name": "LoraLoaderModelOnly",
+      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+    },
+    "LoraSave": {
+      "display_name": "Extract and Save Lora"
+    },
+    "LTXVConditioning": {
+      "display_name": "LTXVConditioning"
+    },
+    "LTXVImgToVideo": {
+      "display_name": "LTXVImgToVideo"
+    },
+    "LTXVScheduler": {
+      "display_name": "LTXVScheduler"
+    },
+    "MaskComposite": {
+      "display_name": "MaskComposite"
+    },
+    "MaskToImage": {
+      "display_name": "Convert Mask to Image"
+    },
+    "ModelMergeAdd": {
+      "display_name": "ModelMergeAdd"
+    },
+    "ModelMergeAuraflow": {
+      "display_name": "ModelMergeAuraflow"
+    },
+    "ModelMergeBlocks": {
+      "display_name": "ModelMergeBlocks"
+    },
+    "ModelMergeFlux1": {
+      "display_name": "ModelMergeFlux1"
+    },
+    "ModelMergeLTXV": {
+      "display_name": "ModelMergeLTXV"
+    },
+    "ModelMergeMochiPreview": {
+      "display_name": "ModelMergeMochiPreview"
+    },
+    "ModelMergeSD1": {
+      "display_name": "ModelMergeSD1"
+    },
+    "ModelMergeSD2": {
+      "display_name": "ModelMergeSD2"
+    },
+    "ModelMergeSD3_2B": {
+      "display_name": "ModelMergeSD3_2B"
+    },
+    "ModelMergeSD35_Large": {
+      "display_name": "ModelMergeSD35_Large"
+    },
+    "ModelMergeSDXL": {
+      "display_name": "ModelMergeSDXL"
+    },
+    "ModelMergeSimple": {
+      "display_name": "ModelMergeSimple"
+    },
+    "ModelMergeSubtract": {
+      "display_name": "ModelMergeSubtract"
+    },
+    "ModelSamplingAuraFlow": {
+      "display_name": "ModelSamplingAuraFlow"
+    },
+    "ModelSamplingContinuousEDM": {
+      "display_name": "ModelSamplingContinuousEDM"
+    },
+    "ModelSamplingContinuousV": {
+      "display_name": "ModelSamplingContinuousV"
+    },
+    "ModelSamplingDiscrete": {
+      "display_name": "ModelSamplingDiscrete"
+    },
+    "ModelSamplingFlux": {
+      "display_name": "ModelSamplingFlux"
+    },
+    "ModelSamplingLTXV": {
+      "display_name": "ModelSamplingLTXV"
+    },
+    "ModelSamplingSD3": {
+      "display_name": "ModelSamplingSD3"
+    },
+    "ModelSamplingStableCascade": {
+      "display_name": "ModelSamplingStableCascade"
+    },
+    "ModelSave": {
+      "display_name": "ModelSave"
+    },
+    "Morphology": {
+      "display_name": "ImageMorphology"
+    },
+    "PairConditioningCombine": {
+      "display_name": "Cond Pair Combine"
+    },
+    "PairConditioningSetDefaultCombine": {
+      "display_name": "Cond Pair Set Default Combine"
+    },
+    "PairConditioningSetProperties": {
+      "display_name": "Cond Pair Set Props"
+    },
+    "PairConditioningSetPropertiesAndCombine": {
+      "display_name": "Cond Pair Set Props Combine"
+    },
+    "PatchModelAddDownscale": {
+      "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+    },
+    "PerpNeg": {
+      "display_name": "Perp-Neg (DEPRECATED by PerpNegGuider)"
+    },
+    "PerpNegGuider": {
+      "display_name": "PerpNegGuider"
+    },
+    "PerturbedAttentionGuidance": {
+      "display_name": "PerturbedAttentionGuidance"
+    },
+    "PhotoMakerEncode": {
+      "display_name": "PhotoMakerEncode"
+    },
+    "PhotoMakerLoader": {
+      "display_name": "PhotoMakerLoader"
+    },
+    "PolyexponentialScheduler": {
+      "display_name": "PolyexponentialScheduler"
+    },
+    "PorterDuffImageComposite": {
+      "display_name": "Porter-Duff Image Composite"
+    },
+    "PreviewAudio": {
+      "display_name": "PreviewAudio"
+    },
+    "PreviewImage": {
+      "display_name": "Preview Image",
+      "description": "Saves the input images to your ComfyUI output directory."
+    },
+    "RandomNoise": {
+      "display_name": "RandomNoise"
+    },
+    "RebatchImages": {
+      "display_name": "Rebatch Images"
+    },
+    "RebatchLatents": {
+      "display_name": "Rebatch Latents"
+    },
+    "RepeatImageBatch": {
+      "display_name": "RepeatImageBatch"
+    },
+    "RepeatLatentBatch": {
+      "display_name": "Repeat Latent Batch"
+    },
+    "RescaleCFG": {
+      "display_name": "RescaleCFG"
+    },
+    "SamplerCustom": {
+      "display_name": "SamplerCustom"
+    },
+    "SamplerCustomAdvanced": {
+      "display_name": "SamplerCustomAdvanced"
+    },
+    "SamplerDPMAdaptative": {
+      "display_name": "SamplerDPMAdaptative"
+    },
+    "SamplerDPMPP_2M_SDE": {
+      "display_name": "SamplerDPMPP_2M_SDE"
+    },
+    "SamplerDPMPP_2S_Ancestral": {
+      "display_name": "SamplerDPMPP_2S_Ancestral"
+    },
+    "SamplerDPMPP_3M_SDE": {
+      "display_name": "SamplerDPMPP_3M_SDE"
+    },
+    "SamplerDPMPP_SDE": {
+      "display_name": "SamplerDPMPP_SDE"
+    },
+    "SamplerEulerAncestral": {
+      "display_name": "SamplerEulerAncestral"
+    },
+    "SamplerEulerAncestralCFGPP": {
+      "display_name": "SamplerEulerAncestralCFG++"
+    },
+    "SamplerEulerCFGpp": {
+      "display_name": "SamplerEulerCFG++"
+    },
+    "SamplerLCMUpscale": {
+      "display_name": "SamplerLCMUpscale"
+    },
+    "SamplerLMS": {
+      "display_name": "SamplerLMS"
+    },
+    "SaveAnimatedPNG": {
+      "display_name": "SaveAnimatedPNG"
+    },
+    "SaveAnimatedWEBP": {
+      "display_name": "SaveAnimatedWEBP"
+    },
+    "SaveAudio": {
+      "display_name": "SaveAudio"
+    },
+    "SaveImage": {
+      "display_name": "Save Image",
+      "description": "Saves the input images to your ComfyUI output directory."
+    },
+    "SaveImageWebsocket": {
+      "display_name": "SaveImageWebsocket"
+    },
+    "SaveLatent": {
+      "display_name": "SaveLatent"
+    },
+    "SD_4XUpscale_Conditioning": {
+      "display_name": "SD_4XUpscale_Conditioning"
+    },
+    "SDTurboScheduler": {
+      "display_name": "SDTurboScheduler"
+    },
+    "SelfAttentionGuidance": {
+      "display_name": "Self-Attention Guidance"
+    },
+    "SetClipHooks": {
+      "display_name": "Set CLIP Hooks"
+    },
+    "SetHookKeyframes": {
+      "display_name": "Set Hook Keyframes"
+    },
+    "SetLatentNoiseMask": {
+      "display_name": "Set Latent Noise Mask"
+    },
+    "SetUnionControlNetType": {
+      "display_name": "SetUnionControlNetType"
+    },
+    "SkipLayerGuidanceDiT": {
+      "display_name": "SkipLayerGuidanceDiT",
+      "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model."
+    },
+    "SkipLayerGuidanceSD3": {
+      "display_name": "SkipLayerGuidanceSD3",
+      "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model."
+    },
+    "SolidMask": {
+      "display_name": "SolidMask"
+    },
+    "SplitImageWithAlpha": {
+      "display_name": "Split Image with Alpha"
+    },
+    "SplitSigmas": {
+      "display_name": "SplitSigmas"
+    },
+    "SplitSigmasDenoise": {
+      "display_name": "SplitSigmasDenoise"
+    },
+    "StableCascade_EmptyLatentImage": {
+      "display_name": "StableCascade_EmptyLatentImage"
+    },
+    "StableCascade_StageB_Conditioning": {
+      "display_name": "StableCascade_StageB_Conditioning"
+    },
+    "StableCascade_StageC_VAEEncode": {
+      "display_name": "StableCascade_StageC_VAEEncode"
+    },
+    "StableCascade_SuperResolutionControlnet": {
+      "display_name": "StableCascade_SuperResolutionControlnet"
+    },
+    "StableZero123_Conditioning": {
+      "display_name": "StableZero123_Conditioning"
+    },
+    "StableZero123_Conditioning_Batched": {
+      "display_name": "StableZero123_Conditioning_Batched"
+    },
+    "StyleModelApply": {
+      "display_name": "Apply Style Model"
+    },
+    "StyleModelLoader": {
+      "display_name": "Load Style Model"
+    },
+    "SV3D_Conditioning": {
+      "display_name": "SV3D_Conditioning"
+    },
+    "SVD_img2vid_Conditioning": {
+      "display_name": "SVD_img2vid_Conditioning"
+    },
+    "ThresholdMask": {
+      "display_name": "ThresholdMask"
+    },
+    "TomePatchModel": {
+      "display_name": "TomePatchModel"
+    },
+    "TorchCompileModel": {
+      "display_name": "TorchCompileModel"
+    },
+    "TripleCLIPLoader": {
+      "display_name": "TripleCLIPLoader",
+      "description": "[Recipes]\n\nsd3: clip-l, clip-g, t5"
+    },
+    "unCLIPCheckpointLoader": {
+      "display_name": "unCLIPCheckpointLoader"
+    },
+    "unCLIPConditioning": {
+      "display_name": "unCLIPConditioning"
+    },
+    "UNetCrossAttentionMultiply": {
+      "display_name": "UNetCrossAttentionMultiply"
+    },
+    "UNETLoader": {
+      "display_name": "Load Diffusion Model"
+    },
+    "UNetSelfAttentionMultiply": {
+      "display_name": "UNetSelfAttentionMultiply"
+    },
+    "UNetTemporalAttentionMultiply": {
+      "display_name": "UNetTemporalAttentionMultiply"
+    },
+    "UpscaleModelLoader": {
+      "display_name": "Load Upscale Model"
+    },
+    "VAEDecode": {
+      "display_name": "VAE Decode",
+      "description": "Decodes latent images back into pixel space images."
+    },
+    "VAEDecodeAudio": {
+      "display_name": "VAEDecodeAudio"
+    },
+    "VAEDecodeTiled": {
+      "display_name": "VAE Decode (Tiled)"
+    },
+    "VAEEncode": {
+      "display_name": "VAE Encode"
+    },
+    "VAEEncodeAudio": {
+      "display_name": "VAEEncodeAudio"
+    },
+    "VAEEncodeForInpaint": {
+      "display_name": "VAE Encode (for Inpainting)"
+    },
+    "VAEEncodeTiled": {
+      "display_name": "VAE Encode (Tiled)"
+    },
+    "VAELoader": {
+      "display_name": "Load VAE"
+    },
+    "VAESave": {
+      "display_name": "VAESave"
+    },
+    "VideoLinearCFGGuidance": {
+      "display_name": "VideoLinearCFGGuidance"
+    },
+    "VideoTriangleCFGGuidance": {
+      "display_name": "VideoTriangleCFGGuidance"
+    },
+    "VPScheduler": {
+      "display_name": "VPScheduler"
+    },
+    "WebcamCapture": {
+      "display_name": "Webcam Capture"
+    }
   }
 }

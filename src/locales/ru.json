@@ -196,6 +196,801 @@
   "noTasksFound": "Задачи не найдены",
   "noTasksFoundMessage": "В очереди нет задач.",
   "noWorkflowsFound": "Рабочие процессы не найдены.",
+  "nodeDefs": {
+    "AddNoise": {
+      "display_name": "Добавить шум"
+    },
+    "AlignYourStepsScheduler": {
+      "display_name": "Планировщик выравнивания шагов"
+    },
+    "BasicGuider": {
+      "display_name": "Основной гид"
+    },
+    "BasicScheduler": {
+      "display_name": "Основной планировщик"
+    },
+    "BetaSamplingScheduler": {
+      "display_name": "Планировщик выборки Бета"
+    },
+    "CFGGuider": {
+      "display_name": "CFG Гид"
+    },
+    "CLIPAttentionMultiply": {
+      "display_name": "Умножение внимания CLIP"
+    },
+    "CLIPLoader": {
+      "description": "[Рецепты]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+      "display_name": "Загрузить CLIP"
+    },
+    "CLIPMergeAdd": {
+      "display_name": "Сложение CLIP"
+    },
+    "CLIPMergeSimple": {
+      "display_name": "Простое слияние CLIP"
+    },
+    "CLIPMergeSubtract": {
+      "display_name": "Вычитание CLIP"
+    },
+    "CLIPSave": {
+      "display_name": "Сохранить CLIP"
+    },
+    "CLIPSetLastLayer": {
+      "display_name": "Установить последний слой CLIP"
+    },
+    "CLIPTextEncode": {
+      "description": "Кодирует текстовый запрос с помощью модели CLIP в вектор, который можно использовать для управления моделью диффузии для генерации конкретных изображений.",
+      "display_name": "Кодирование текста CLIP (Запрос)"
+    },
+    "CLIPTextEncodeControlnet": {
+      "display_name": "Кодирование текста CLIP для Controlnet"
+    },
+    "CLIPTextEncodeFlux": {
+      "display_name": "Кодирование текста CLIP Flux"
+    },
+    "CLIPTextEncodeHunyuanDiT": {
+      "display_name": "Кодирование текста CLIP HunyuanDiT"
+    },
+    "CLIPTextEncodeSD3": {
+      "display_name": "Кодирование текста CLIP SD3"
+    },
+    "CLIPTextEncodeSDXL": {
+      "display_name": "Кодирование текста CLIP SDXL"
+    },
+    "CLIPTextEncodeSDXLRefiner": {
+      "display_name": "Кодирование текста CLIP SDXL Refinement"
+    },
+    "CLIPVisionEncode": {
+      "display_name": "Кодирование видения CLIP"
+    },
+    "CLIPVisionLoader": {
+      "display_name": "Загрузить видение CLIP"
+    },
+    "Canny": {
+      "display_name": "Канни"
+    },
+    "CheckpointLoader": {
+      "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)"
+    },
+    "CheckpointLoaderSimple": {
+      "description": "Загружает контрольную точку модели диффузии, модели диффузии используются для удаления шума из латентов.",
+      "display_name": "Загрузить контрольную точку"
+    },
+    "CheckpointSave": {
+      "display_name": "Сохранить контрольную точку"
+    },
+    "CombineHooks2": {
+      "display_name": "Объединить хуки [2]"
+    },
+    "CombineHooks4": {
+      "display_name": "Объединить хуки [4]"
+    },
+    "CombineHooks8": {
+      "display_name": "Объединить хуки [8]"
+    },
+    "ConditioningAverage": {
+      "display_name": "Среднее кондиционирование"
+    },
+    "ConditioningCombine": {
+      "display_name": "Кондиционирование (Объединение)"
+    },
+    "ConditioningConcat": {
+      "display_name": "Кондиционирование (Конкатенация)"
+    },
+    "ConditioningSetArea": {
+      "display_name": "Кондиционирование (Установить область)"
+    },
+    "ConditioningSetAreaPercentage": {
+      "display_name": "Кондиционирование (Установить область с процентом)"
+    },
+    "ConditioningSetAreaStrength": {
+      "display_name": "Сила установки области кондиционирования"
+    },
+    "ConditioningSetDefaultCombine": {
+      "display_name": "Установить значение по умолчанию для объединения кондиционирования"
+    },
+    "ConditioningSetMask": {
+      "display_name": "Кондиционирование (Установить маску)"
+    },
+    "ConditioningSetProperties": {
+      "display_name": "Установить свойства кондиционирования"
+    },
+    "ConditioningSetPropertiesAndCombine": {
+      "display_name": "Установить свойства кондиционирования и объединить"
+    },
+    "ConditioningSetTimestepRange": {
+      "display_name": "Установить диапазон временных шагов кондиционирования"
+    },
+    "ConditioningTimestepsRange": {
+      "display_name": "Диапазон временных шагов"
+    },
+    "ConditioningZeroOut": {
+      "display_name": "Обнуление кондиционирования"
+    },
+    "ControlNetApply": {
+      "display_name": "Применить ControlNet (СТАРОЕ)"
+    },
+    "ControlNetApplyAdvanced": {
+      "display_name": "Применить ControlNet"
+    },
+    "ControlNetApplySD3": {
+      "display_name": "Применить ControlNet с VAE"
+    },
+    "ControlNetInpaintingAliMamaApply": {
+      "display_name": "Применить ControlNet для инпейнтинга AliMama"
+    },
+    "ControlNetLoader": {
+      "display_name": "Загрузить модель ControlNet"
+    },
+    "CreateHookKeyframe": {
+      "display_name": "Создать ключевой кадр хука"
+    },
+    "CreateHookKeyframesFromFloats": {
+      "display_name": "Создать ключевые кадры хука из чисел с плавающей запятой"
+    },
+    "CreateHookKeyframesInterpolated": {
+      "display_name": "Создать интерполированные ключевые кадры хука"
+    },
+    "CreateHookLora": {
+      "display_name": "Создать хук LoRA"
+    },
+    "CreateHookLoraModelOnly": {
+      "display_name": "Создать хук LoRA (Только модель)"
+    },
+    "CreateHookModelAsLora": {
+      "display_name": "Создать хук модели как LoRA"
+    },
+    "CreateHookModelAsLoraModelOnly": {
+      "display_name": "Создать хук модели как LoRA (Только модель)"
+    },
+    "CropMask": {
+      "display_name": "Обрезать маску"
+    },
+    "DevToolsDeprecatedNode": {
+      "description": "Устаревший узел",
+      "display_name": "Устаревший узел"
+    },
+    "DevToolsErrorRaiseNode": {
+      "description": "Выбросить ошибку для целей разработки",
+      "display_name": "Выбросить ошибку"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "description": "Выбросить ошибку с сообщением для целей разработки",
+      "display_name": "Выбросить ошибку с сообщением"
+    },
+    "DevToolsExperimentalNode": {
+      "description": "Экспериментальный узел",
+      "display_name": "Экспериментальный узел"
+    },
+    "DevToolsLongComboDropdown": {
+      "description": "Длинный комбинированный выпадающий список",
+      "display_name": "Длинный комбинированный выпадающий список"
+    },
+    "DevToolsNodeWithForceInput": {
+      "description": "Узел с принудительным вводом",
+      "display_name": "Узел с принудительным вводом"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "description": "Узел только с необязательным вводом",
+      "display_name": "Узел только с необязательным вводом"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "description": "Узел с необязательным вводом",
+      "display_name": "Узел с необязательным вводом"
+    },
+    "DevToolsNodeWithOutputList": {
+      "description": "Узел с выходным списком",
+      "display_name": "Узел с выходным списком"
+    },
+    "DevToolsNodeWithStringInput": {
+      "description": "Узел со строковым вводом",
+      "display_name": "Узел со строковым вводом"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "description": "Узел с объединённым вводом",
+      "display_name": "Узел с объединённым вводом"
+    },
+    "DiffControlNetLoader": {
+      "display_name": "Загрузить модель ControlNet (дифф)"
+    },
+    "DifferentialDiffusion": {
+      "display_name": "Дифференциальная диффузия"
+    },
+    "DiffusersLoader": {
+      "display_name": "Загрузчик диффузоров"
+    },
+    "DisableNoise": {
+      "display_name": "Отключить шум"
+    },
+    "DualCFGGuider": {
+      "display_name": "Двойной CFG Гид"
+    },
+    "DualCLIPLoader": {
+      "description": "[Рецепты]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+      "display_name": "Двойной загрузчик CLIP"
+    },
+    "EmptyImage": {
+      "display_name": "Пустое изображение"
+    },
+    "EmptyLTXVLatentVideo": {
+      "display_name": "Пустое латентное видео LTXV"
+    },
+    "EmptyLatentAudio": {
+      "display_name": "Пустой латентный аудио"
+    },
+    "EmptyLatentImage": {
+      "description": "Создает новую партию пустых латентных изображений для удаления шума через выборку.",
+      "display_name": "Пустое латентное изображение"
+    },
+    "EmptyMochiLatentVideo": {
+      "display_name": "Пустое латентное видео Mochi"
+    },
+    "EmptySD3LatentImage": {
+      "display_name": "Пустое латентное изображение SD3"
+    },
+    "ExponentialScheduler": {
+      "display_name": "Экспоненциальный планировщик"
+    },
+    "FeatherMask": {
+      "display_name": "Пернатая маска"
+    },
+    "FlipSigmas": {
+      "display_name": "Перевернуть сигмы"
+    },
+    "FluxGuidance": {
+      "display_name": "Направление Flux"
+    },
+    "FreeU": {
+      "display_name": "FreeU"
+    },
+    "FreeU_V2": {
+      "display_name": "FreeU_V2"
+    },
+    "GITSScheduler": {
+      "display_name": "GITSScheduler"
+    },
+    "GLIGENLoader": {
+      "display_name": "Загрузчик GLIGEN"
+    },
+    "GLIGENTextBoxApply": {
+      "display_name": "Применить текстовое поле GLIGEN"
+    },
+    "GrowMask": {
+      "display_name": "Увеличить маску"
+    },
+    "HyperTile": {
+      "display_name": "Гиперплитка"
+    },
+    "HypernetworkLoader": {
+      "display_name": "Загрузчик гиперсети"
+    },
+    "ImageBatch": {
+      "display_name": "Партия изображений"
+    },
+    "ImageBlend": {
+      "display_name": "Смешивание изображений"
+    },
+    "ImageBlur": {
+      "display_name": "Размытие изображения"
+    },
+    "ImageColorToMask": {
+      "display_name": "Цвет изображения в маску"
+    },
+    "ImageCompositeMasked": {
+      "display_name": "Составное изображение с маской"
+    },
+    "ImageCrop": {
+      "display_name": "Обрезка изображения"
+    },
+    "ImageFromBatch": {
+      "display_name": "Изображение из партии"
+    },
+    "ImageInvert": {
+      "display_name": "Инвертировать изображение"
+    },
+    "ImageOnlyCheckpointLoader": {
+      "display_name": "Загрузчик контрольной точки только для изображения (модель img2vid)"
+    },
+    "ImageOnlyCheckpointSave": {
+      "display_name": "Сохранить только контрольную точку изображения"
+    },
+    "ImagePadForOutpaint": {
+      "display_name": "Добавить поля к изображению для выкрашивания"
+    },
+    "ImageQuantize": {
+      "display_name": "Квантизация изображения"
+    },
+    "ImageScale": {
+      "display_name": "Масштабировать изображение"
+    },
+    "ImageScaleBy": {
+      "display_name": "Масштабировать изображение на"
+    },
+    "ImageScaleToTotalPixels": {
+      "display_name": "Масштабировать изображение до общего количества пикселей"
+    },
+    "ImageSharpen": {
+      "display_name": "Резкость изображения"
+    },
+    "ImageToMask": {
+      "display_name": "Преобразовать изображение в маску"
+    },
+    "ImageUpscaleWithModel": {
+      "display_name": "Увеличить изображение (с использованием модели)"
+    },
+    "InpaintModelConditioning": {
+      "display_name": "Кондиционирование модели инпейнтинга"
+    },
+    "InstructPixToPixConditioning": {
+      "display_name": "Кондиционирование PixToPix"
+    },
+    "InvertMask": {
+      "display_name": "Инвертировать маску"
+    },
+    "JoinImageWithAlpha": {
+      "display_name": "Объединить изображение с альфа-каналом"
+    },
+    "KSampler": {
+      "description": "Использует предоставленную модель, положительное и отрицательное кондиционирование для удаления шума из латентного изображения.",
+      "display_name": "KSampler"
+    },
+    "KSamplerAdvanced": {
+      "display_name": "KSampler (Расширенный)"
+    },
+    "KSamplerSelect": {
+      "display_name": "Выбор KSampler"
+    },
+    "KarrasScheduler": {
+      "display_name": "Планировщик Карраса"
+    },
+    "LTXVConditioning": {
+      "display_name": "Кондиционирование LTXV"
+    },
+    "LTXVImgToVideo": {
+      "display_name": "LTXVImgToVideo"
+    },
+    "LTXVScheduler": {
+      "display_name": "Планировщик LTXV"
+    },
+    "LaplaceScheduler": {
+      "display_name": "Планировщик Лапласа"
+    },
+    "LatentAdd": {
+      "display_name": "Добавить латент"
+    },
+    "LatentApplyOperation": {
+      "display_name": "Применить операцию к латенту"
+    },
+    "LatentApplyOperationCFG": {
+      "display_name": "Применить операцию к латенту CFG"
+    },
+    "LatentBatch": {
+      "display_name": "Партия латентов"
+    },
+    "LatentBatchSeedBehavior": {
+      "display_name": "Поведение семени партии латентов"
+    },
+    "LatentBlend": {
+      "display_name": "Смешивание латентов"
+    },
+    "LatentComposite": {
+      "display_name": "Составной латент"
+    },
+    "LatentCompositeMasked": {
+      "display_name": "Составной латент с маской"
+    },
+    "LatentCrop": {
+      "display_name": "Обрезка латента"
+    },
+    "LatentFlip": {
+      "display_name": "Перевернуть латент"
+    },
+    "LatentFromBatch": {
+      "display_name": "Латент из партии"
+    },
+    "LatentInterpolate": {
+      "display_name": "Интерполяция латента"
+    },
+    "LatentMultiply": {
+      "display_name": "Умножить латент"
+    },
+    "LatentOperationSharpen": {
+      "display_name": "Операция латента: резкость"
+    },
+    "LatentOperationTonemapReinhard": {
+      "display_name": "Операция латента: тональная карта Рейнхарда"
+    },
+    "LatentRotate": {
+      "display_name": "Повернуть латент"
+    },
+    "LatentSubtract": {
+      "display_name": "Вычесть латент"
+    },
+    "LatentUpscale": {
+      "display_name": "Увеличить латент"
+    },
+    "LatentUpscaleBy": {
+      "display_name": "Увеличить латент на"
+    },
+    "LoadAudio": {
+      "display_name": "Загрузить аудио"
+    },
+    "LoadImage": {
+      "display_name": "Загрузить изображение"
+    },
+    "LoadImageMask": {
+      "display_name": "Загрузить изображение (как маску)"
+    },
+    "LoadLatent": {
+      "display_name": "Загрузить латент"
+    },
+    "LoraLoader": {
+      "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько узлов LoRA могут быть связаны вместе.",
+      "display_name": "Загрузить LoRA"
+    },
+    "LoraLoaderModelOnly": {
+      "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько узлов LoRA могут быть связаны вместе.",
+      "display_name": "Загрузчик LoRA (Только модель)"
+    },
+    "LoraSave": {
+      "display_name": "Извлечь и сохранить LoRA"
+    },
+    "MaskComposite": {
+      "display_name": "Составная маска"
+    },
+    "MaskToImage": {
+      "display_name": "Преобразовать маску в изображение"
+    },
+    "ModelMergeAdd": {
+      "display_name": "Сложение моделей"
+    },
+    "ModelMergeAuraflow": {
+      "display_name": "Слияние моделей Auraflow"
+    },
+    "ModelMergeBlocks": {
+      "display_name": "Слияние блоков моделей"
+    },
+    "ModelMergeFlux1": {
+      "display_name": "Слияние моделей Flux1"
+    },
+    "ModelMergeLTXV": {
+      "display_name": "Слияние моделей LTXV"
+    },
+    "ModelMergeMochiPreview": {
+      "display_name": "Предварительный просмотр слияния моделей Mochi"
+    },
+    "ModelMergeSD1": {
+      "display_name": "Слияние моделей SD1"
+    },
+    "ModelMergeSD2": {
+      "display_name": "Слияние моделей SD2"
+    },
+    "ModelMergeSD35_Large": {
+      "display_name": "Слияние моделей SD35_Large"
+    },
+    "ModelMergeSD3_2B": {
+      "display_name": "Слияние моделей SD3_2B"
+    },
+    "ModelMergeSDXL": {
+      "display_name": "Слияние моделей SDXL"
+    },
+    "ModelMergeSimple": {
+      "display_name": "Простое слияние моделей"
+    },
+    "ModelMergeSubtract": {
+      "display_name": "Вычитание моделей"
+    },
+    "ModelSamplingAuraFlow": {
+      "display_name": "Выборка модели AuraFlow"
+    },
+    "ModelSamplingContinuousEDM": {
+      "display_name": "Выборка модели Continuous EDM"
+    },
+    "ModelSamplingContinuousV": {
+      "display_name": "Выборка модели Continuous V"
+    },
+    "ModelSamplingDiscrete": {
+      "display_name": "Дискретная выборка модели"
+    },
+    "ModelSamplingFlux": {
+      "display_name": "Выборка модели Flux"
+    },
+    "ModelSamplingLTXV": {
+      "display_name": "Выборка модели LTXV"
+    },
+    "ModelSamplingSD3": {
+      "display_name": "Выборка модели SD3"
+    },
+    "ModelSamplingStableCascade": {
+      "display_name": "Выборка модели Stable Cascade"
+    },
+    "ModelSave": {
+      "display_name": "Сохранить модель"
+    },
+    "Morphology": {
+      "display_name": "Морфология изображения"
+    },
+    "PairConditioningCombine": {
+      "display_name": "Объединение пар кондиционирования"
+    },
+    "PairConditioningSetDefaultCombine": {
+      "display_name": "Установить значение по умолчанию для объединения пар кондиционирования"
+    },
+    "PairConditioningSetProperties": {
+      "display_name": "Установить свойства пар кондиционирования"
+    },
+    "PairConditioningSetPropertiesAndCombine": {
+      "display_name": "Установить свойства пар кондиционирования и объединить"
+    },
+    "PatchModelAddDownscale": {
+      "display_name": "Добавить уменьшение модели патча (Kohya Deep Shrink)"
+    },
+    "PerpNeg": {
+      "display_name": "Перп-Нег (УСТАРЕЛО из-за PerpNegGuider)"
+    },
+    "PerpNegGuider": {
+      "display_name": "PerpNegGuider"
+    },
+    "PerturbedAttentionGuidance": {
+      "display_name": "Направление с учетом возмущений"
+    },
+    "PhotoMakerEncode": {
+      "display_name": "Кодирование PhotoMaker"
+    },
+    "PhotoMakerLoader": {
+      "display_name": "Загрузчик PhotoMaker"
+    },
+    "PolyexponentialScheduler": {
+      "display_name": "Полиэкспоненциальный планировщик"
+    },
+    "PorterDuffImageComposite": {
+      "display_name": "Составное изображение Портера-Даффа"
+    },
+    "PreviewAudio": {
+      "display_name": "Предварительный просмотр аудио"
+    },
+    "PreviewImage": {
+      "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
+      "display_name": "Предварительный просмотр изображения"
+    },
+    "RandomNoise": {
+      "display_name": "Случайный шум"
+    },
+    "RebatchImages": {
+      "display_name": "Перепаковать изображения"
+    },
+    "RebatchLatents": {
+      "display_name": "Перепаковать латенты"
+    },
+    "RepeatImageBatch": {
+      "display_name": "Повторить партию изображений"
+    },
+    "RepeatLatentBatch": {
+      "display_name": "Повторить партию латентов"
+    },
+    "RescaleCFG": {
+      "display_name": "Масштабировать CFG"
+    },
+    "SDTurboScheduler": {
+      "display_name": "Планировщик SDTurbo"
+    },
+    "SD_4XUpscale_Conditioning": {
+      "display_name": "SD_4XUpscale_Conditioning"
+    },
+    "SV3D_Conditioning": {
+      "display_name": "SV3D_Кондиционирование"
+    },
+    "SVD_img2vid_Conditioning": {
+      "display_name": "SVD_img2vid_Кондиционирование"
+    },
+    "SamplerCustom": {
+      "display_name": "Пользовательский выборщик"
+    },
+    "SamplerCustomAdvanced": {
+      "display_name": "Пользовательский выборщик (Расширенный)"
+    },
+    "SamplerDPMAdaptative": {
+      "display_name": "Адаптивный выборщик DPM"
+    },
+    "SamplerDPMPP_2M_SDE": {
+      "display_name": "Выборщик DPMPP_2M_SDE"
+    },
+    "SamplerDPMPP_2S_Ancestral": {
+      "display_name": "Выборщик DPMPP_2S_Ancestral"
+    },
+    "SamplerDPMPP_3M_SDE": {
+      "display_name": "Выборщик DPMPP_3M_SDE"
+    },
+    "SamplerDPMPP_SDE": {
+      "display_name": "Выборщик DPMPP_SDE"
+    },
+    "SamplerEulerAncestral": {
+      "display_name": "Выборщик Эйлера (Анастр.)"
+    },
+    "SamplerEulerAncestralCFGPP": {
+      "display_name": "Выборщик Эйлера (Анастр.) CFG++"
+    },
+    "SamplerEulerCFGpp": {
+      "display_name": "Выборщик Эйлера CFG++"
+    },
+    "SamplerLCMUpscale": {
+      "display_name": "Выборщик LCM Upscale"
+    },
+    "SamplerLMS": {
+      "display_name": "Выборщик LMS"
+    },
+    "SaveAnimatedPNG": {
+      "display_name": "Сохранить анимированный PNG"
+    },
+    "SaveAnimatedWEBP": {
+      "display_name": "Сохранить анимированный WEBP"
+    },
+    "SaveAudio": {
+      "display_name": "Сохранить аудио"
+    },
+    "SaveImage": {
+      "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
+      "display_name": "Сохранить изображение"
+    },
+    "SaveImageWebsocket": {
+      "display_name": "Сохранить изображение через веб-сокет"
+    },
+    "SaveLatent": {
+      "display_name": "Сохранить латент"
+    },
+    "SelfAttentionGuidance": {
+      "display_name": "Направление самовнимания"
+    },
+    "SetClipHooks": {
+      "display_name": "Установить хуки CLIP"
+    },
+    "SetHookKeyframes": {
+      "display_name": "Установить ключевые кадры хука"
+    },
+    "SetLatentNoiseMask": {
+      "display_name": "Установить маску шума латента"
+    },
+    "SetUnionControlNetType": {
+      "display_name": "Установить тип объединенного ControlNet"
+    },
+    "SkipLayerGuidanceDiT": {
+      "description": "Универсальная версия узла SkipLayerGuidance, которую можно использовать на любой модели DiT.",
+      "display_name": "Пропустить руководство по слоям DiT"
+    },
+    "SkipLayerGuidanceSD3": {
+      "description": "Универсальная версия узла SkipLayerGuidance, которую можно использовать на любой модели DiT.",
+      "display_name": "Пропустить руководство по слоям SD3"
+    },
+    "SolidMask": {
+      "display_name": "Сплошная маска"
+    },
+    "SplitImageWithAlpha": {
+      "display_name": "Разделить изображение с альфа-каналом"
+    },
+    "SplitSigmas": {
+      "display_name": "Разделить сигмы"
+    },
+    "SplitSigmasDenoise": {
+      "display_name": "Разделить сигмы для удаления шума"
+    },
+    "StableCascade_EmptyLatentImage": {
+      "display_name": "StableCascade_Пустое латентное изображение"
+    },
+    "StableCascade_StageB_Conditioning": {
+      "display_name": "StableCascade_Этап B_Кондиционирование"
+    },
+    "StableCascade_StageC_VAEEncode": {
+      "display_name": "StableCascade_Этап C_VAE Кодирование"
+    },
+    "StableCascade_SuperResolutionControlnet": {
+      "display_name": "StableCascade_Суперразрешение Controlnet"
+    },
+    "StableZero123_Conditioning": {
+      "display_name": "StableZero123_Кондиционирование"
+    },
+    "StableZero123_Conditioning_Batched": {
+      "display_name": "StableZero123_Кондиционирование_Пакетное"
+    },
+    "StyleModelApply": {
+      "display_name": "Применить модель стиля"
+    },
+    "StyleModelLoader": {
+      "display_name": "Загрузить модель стиля"
+    },
+    "ThresholdMask": {
+      "display_name": "Пороговая маска"
+    },
+    "TomePatchModel": {
+      "display_name": "Модель патча Tome"
+    },
+    "TorchCompileModel": {
+      "display_name": "Скомпилировать модель Torch"
+    },
+    "TripleCLIPLoader": {
+      "description": "[Рецепты]\n\nsd3: clip-l, clip-g, t5",
+      "display_name": "Тройной загрузчик CLIP"
+    },
+    "UNETLoader": {
+      "display_name": "Загрузить модель диффузии"
+    },
+    "UNetCrossAttentionMultiply": {
+      "display_name": "Умножение перекрестного внимания UNet"
+    },
+    "UNetSelfAttentionMultiply": {
+      "display_name": "Умножение самовнимания UNet"
+    },
+    "UNetTemporalAttentionMultiply": {
+      "display_name": "Умножение временного внимания UNet"
+    },
+    "UpscaleModelLoader": {
+      "display_name": "Загрузить модель увеличения"
+    },
+    "VAEDecode": {
+      "description": "Декодирует латентные изображения обратно в изображения в пиксельном пространстве.",
+      "display_name": "Декодировать VAE"
+    },
+    "VAEDecodeAudio": {
+      "display_name": "Декодировать аудио VAE"
+    },
+    "VAEDecodeTiled": {
+      "display_name": "Декодировать VAE (плитками)"
+    },
+    "VAEEncode": {
+      "display_name": "Кодировать VAE"
+    },
+    "VAEEncodeAudio": {
+      "display_name": "Кодировать аудио VAE"
+    },
+    "VAEEncodeForInpaint": {
+      "display_name": "Кодировать VAE (для инпейнтинга)"
+    },
+    "VAEEncodeTiled": {
+      "display_name": "Кодировать VAE (плитками)"
+    },
+    "VAELoader": {
+      "display_name": "Загрузить VAE"
+    },
+    "VAESave": {
+      "display_name": "Сохранить VAE"
+    },
+    "VPScheduler": {
+      "display_name": "Планировщик VP"
+    },
+    "VideoLinearCFGGuidance": {
+      "display_name": "Направление Video Linear CFG"
+    },
+    "VideoTriangleCFGGuidance": {
+      "display_name": "Направление Video Triangle CFG"
+    },
+    "WebcamCapture": {
+      "display_name": "Захват с веб-камеры"
+    },
+    "unCLIPCheckpointLoader": {
+      "display_name": "Загрузчик контрольной точки unCLIP"
+    },
+    "unCLIPConditioning": {
+      "display_name": "unCLIP кондиционирование"
+    }
+  },
   "notSupported": {
     "continue": "Продолжить",
     "continueTooltip": "Я уверен, что мое устройство поддерживается",
