@@ -5,6 +5,7 @@ import {
 import {
   type ComfyNodeDef,
   type ComfyInputsSpec as ComfyInputsSpecSchema,
+  type ComfyOutputTypesSpec as ComfyOutputTypesSpecSchema,
   type InputSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
@@ -148,20 +149,40 @@ export class ComfyOutputsSpec {
   }
 }
 
-/**
- * Note: This class does not implement the ComfyNodeDef interface, as we are
- * using a custom output spec for output definitions.
- */
-export class ComfyNodeDefImpl {
+export class ComfyNodeDefImpl implements ComfyNodeDef {
+  // ComfyNodeDef fields
   name: string
   display_name: string
   category: string
   python_module: string
   description: string
   deprecated: boolean
+  output_node: boolean
   experimental: boolean
-  input: ComfyInputsSpec
-  output: ComfyOutputsSpec
+  /**
+   * @deprecated Use `inputs` instead
+   */
+  input: ComfyInputsSpecSchema
+  /**
+   * @deprecated Use `outputs` instead
+   */
+  output: ComfyOutputTypesSpecSchema
+  /**
+   * @deprecated Use `outputs[n].is_list` instead
+   */
+  output_is_list?: boolean[]
+  /**
+   * @deprecated Use `outputs[n].name` instead
+   */
+  output_name?: string[]
+  /**
+   * @deprecated Use `outputs[n].tooltip` instead
+   */
+  output_tooltips?: string[]
+
+  // ComfyNodeDefImpl fields
+  inputs: ComfyInputsSpec
+  outputs: ComfyOutputsSpec
   nodeSource: NodeSource
 
   constructor(obj: ComfyNodeDef) {
@@ -173,8 +194,15 @@ export class ComfyNodeDefImpl {
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
-    this.input = new ComfyInputsSpec(obj.input ?? {})
-    this.output = ComfyNodeDefImpl.transformOutputSpec(obj)
+    this.output_node = obj.output_node
+    this.input = obj.input ?? {}
+    this.output = obj.output ?? []
+    this.output_is_list = obj.output_is_list
+    this.output_name = obj.output_name
+    this.output_tooltips = obj.output_tooltips
+
+    this.inputs = new ComfyInputsSpec(obj.input ?? {})
+    this.outputs = ComfyNodeDefImpl.transformOutputSpec(obj)
     this.nodeSource = getNodeSource(obj.python_module)
   }
 

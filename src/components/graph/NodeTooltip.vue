@@ -69,7 +69,7 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    return showTooltip(nodeDef.input.getInput(inputName)?.tooltip)
+    return showTooltip(nodeDef.inputs.getInput(inputName)?.tooltip)
   }
 
   const outputSlot = canvas.isOverNodeOutput(
@@ -79,14 +79,14 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    return showTooltip(nodeDef.output.all?.[outputSlot]?.tooltip)
+    return showTooltip(nodeDef.outputs.all?.[outputSlot]?.tooltip)
   }
 
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
     return showTooltip(
-      widget.tooltip ?? nodeDef.input.getInput(widget.name)?.tooltip
+      widget.tooltip ?? nodeDef.inputs.getInput(widget.name)?.tooltip
     )
   }
 }
