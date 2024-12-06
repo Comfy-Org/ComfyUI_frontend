@@ -233,6 +233,122 @@
     "restart": "再起動",
     "revertChanges": "変更を元に戻す"
   },
+  "serverConfigCategories": {
+    "Attention": "アテンション",
+    "CUDA": "CUDA",
+    "Cache": "キャッシュ",
+    "General": "一般",
+    "Inference": "推論",
+    "Memory": "メモリ",
+    "Network": "ネットワーク",
+    "Preview": "プレビュー"
+  },
+  "serverConfigItems": {
+    "cache-classic": {
+      "name": "クラシックキャッシュシステムを使用する"
+    },
+    "cache-lru": {
+      "name": "最大Nノード結果をキャッシュするLRUキャッシングを使用する。",
+      "tooltip": "RAM/VRAMを多く使用する可能性があります。"
+    },
+    "cpu-vae": {
+      "name": "CPUでVAEを実行する"
+    },
+    "cross-attention-method": {
+      "name": "クロスアテンションメソッド"
+    },
+    "cuda-device": {
+      "name": "使用するCUDAデバイスインデックス"
+    },
+    "cuda-malloc": {
+      "name": "メモリ割り当てにCUDA mallocを使用する"
+    },
+    "default-hashing-function": {
+      "name": "モデルファイルのデフォルトハッシュ関数"
+    },
+    "deterministic": {
+      "name": "可能な場合、PyTorchが遅い決定論的アルゴリズムを使用する。",
+      "tooltip": "これにより、すべてのケースで画像が決定論的になるわけではないことに注意してください。"
+    },
+    "directml": {
+      "name": "DirectMLデバイスインデックス"
+    },
+    "disable-all-custom-nodes": {
+      "name": "すべてのカスタムノードの読み込みを無効にする。"
+    },
+    "disable-ipex-optimize": {
+      "name": "IPEX最適化を無効にする"
+    },
+    "disable-metadata": {
+      "name": "ファイルにプロンプトメタデータを保存しない。"
+    },
+    "disable-smart-memory": {
+      "name": "スマートメモリ管理を無効にする",
+      "tooltip": "ComfyUIがモデルをVRAMに保持する代わりに、通常のRAMに積極的にオフロードするように強制します。"
+    },
+    "disable-xformers": {
+      "name": "xFormers最適化を無効にする"
+    },
+    "dont-print-server": {
+      "name": "サーバー出力をコンソールに表示しない。"
+    },
+    "dont-upcast-attention": {
+      "name": "アテンションのアップキャストを防ぐ"
+    },
+    "enable-cors-header": {
+      "name": "CORSヘッダーを有効にする: \"*\"を使用してすべてのオリジンを許可するか、ドメインを指定する"
+    },
+    "fast": {
+      "name": "未テストの潜在的に品質を低下させる最適化を有効にする。"
+    },
+    "force-channels-last": {
+      "name": "チャネルを最後に強制するメモリ形式"
+    },
+    "force-upcast-attention": {
+      "name": "アテンションのアップキャストを強制する"
+    },
+    "global-precision": {
+      "name": "グローバル浮動小数点精度",
+      "tooltip": "グローバル浮動小数点精度"
+    },
+    "log-level": {
+      "name": "ログの冗長性レベル"
+    },
+    "max-upload-size": {
+      "name": "最大アップロードサイズ (MB)"
+    },
+    "preview-method": {
+      "name": "潜在プレビューに使用されるメソッド"
+    },
+    "preview-size": {
+      "name": "プレビュー画像のサイズ"
+    },
+    "reserve-vram": {
+      "name": "予約済みVRAM (GB)",
+      "tooltip": "OS/他のソフトウェアで使用するために予約したいVRAMの量をGB単位で設定します。デフォルトでは、OSに応じていくらかの量が予約されます。"
+    },
+    "text-encoder-precision": {
+      "name": "テキストエンコーダー精度",
+      "tooltip": "テキストエンコーダー精度"
+    },
+    "tls-certfile": {
+      "name": "TLS証明書ファイル: HTTPS用のTLS証明書ファイルのパス"
+    },
+    "tls-keyfile": {
+      "name": "TLSキーファイル: HTTPS用のTLSキーファイルのパス"
+    },
+    "unet-precision": {
+      "name": "UNET精度",
+      "tooltip": "UNET精度"
+    },
+    "vae-precision": {
+      "name": "VAE精度",
+      "tooltip": "VAE精度"
+    },
+    "vram-management": {
+      "name": "VRAM管理モード"
+    }
+  },
   "serverStart": {
     "openLogs": "ログを開く",
     "process": {

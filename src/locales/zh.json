@@ -233,6 +233,122 @@
     "restart": "重启",
     "revertChanges": "撤销更改"
   },
+  "serverConfigCategories": {
+    "Attention": "注意力",
+    "CUDA": "CUDA",
+    "Cache": "缓存",
+    "General": "常规",
+    "Inference": "推理",
+    "Memory": "内存",
+    "Network": "网络",
+    "Preview": "预览"
+  },
+  "serverConfigItems": {
+    "cache-classic": {
+      "name": "使用经典缓存系统"
+    },
+    "cache-lru": {
+      "name": "使用 LRU 缓存，最多缓存 N 个节点结果。",
+      "tooltip": "可能会使用更多的 RAM/VRAM。"
+    },
+    "cpu-vae": {
+      "name": "在 CPU 上运行 VAE"
+    },
+    "cross-attention-method": {
+      "name": "交叉注意力方法"
+    },
+    "cuda-device": {
+      "name": "要使用的 CUDA 设备索引"
+    },
+    "cuda-malloc": {
+      "name": "使用 CUDA malloc 进行内存分配"
+    },
+    "default-hashing-function": {
+      "name": "模型文件的默认哈希函数"
+    },
+    "deterministic": {
+      "name": "使 pytorch 在可以时使用较慢的确定性算法。",
+      "tooltip": "请注意，这可能不会在所有情况下使图像具有确定性。"
+    },
+    "directml": {
+      "name": "DirectML 设备索引"
+    },
+    "disable-all-custom-nodes": {
+      "name": "禁用加载所有自定义节点。"
+    },
+    "disable-ipex-optimize": {
+      "name": "禁用 IPEX 优化"
+    },
+    "disable-metadata": {
+      "name": "禁用在文件中保存提示元数据。"
+    },
+    "disable-smart-memory": {
+      "name": "禁用智能内存管理",
+      "tooltip": "强制 ComfyUI 在可以时将模型从 VRAM 移出到常规 RAM。"
+    },
+    "disable-xformers": {
+      "name": "禁用 xFormers 优化"
+    },
+    "dont-print-server": {
+      "name": "不将服务器输出打印到控制台。"
+    },
+    "dont-upcast-attention": {
+      "name": "防止注意力上升"
+    },
+    "enable-cors-header": {
+      "name": "启用 CORS 头：使用 \"*\" 代表所有来源或指定域名"
+    },
+    "fast": {
+      "name": "启用一些未经测试且可能降低质量的优化。"
+    },
+    "force-channels-last": {
+      "name": "强制使用 channels-last 内存格式"
+    },
+    "force-upcast-attention": {
+      "name": "强制注意力上升"
+    },
+    "global-precision": {
+      "name": "全局浮点精度",
+      "tooltip": "全局浮点精度"
+    },
+    "log-level": {
+      "name": "日志详细级别"
+    },
+    "max-upload-size": {
+      "name": "最大上传大小 (MB)"
+    },
+    "preview-method": {
+      "name": "用于潜在预览的方法"
+    },
+    "preview-size": {
+      "name": "预览图像的大小"
+    },
+    "reserve-vram": {
+      "name": "保留 VRAM (GB)",
+      "tooltip": "设置您希望为操作系统/其他软件保留的 VRAM 数量（以 GB 为单位）。默认情况下，根据您的操作系统保留一定数量。"
+    },
+    "text-encoder-precision": {
+      "name": "文本编码器精度",
+      "tooltip": "文本编码器精度"
+    },
+    "tls-certfile": {
+      "name": "TLS 证书文件：HTTPS 的 TLS 证书文件路径"
+    },
+    "tls-keyfile": {
+      "name": "TLS 密钥文件：HTTPS 的 TLS 密钥文件路径"
+    },
+    "unet-precision": {
+      "name": "UNET 精度",
+      "tooltip": "UNET 精度"
+    },
+    "vae-precision": {
+      "name": "VAE 精度",
+      "tooltip": "VAE 精度"
+    },
+    "vram-management": {
+      "name": "VRAM 管理模式"
+    }
+  },
   "serverStart": {
     "openLogs": "打开日志",
     "process": {

@@ -1,9 +1,10 @@
 import * as fs from 'fs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
+import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
-import type { SettingParams } from '../src/types/settingTypes'
+import type { FormItem, SettingParams } from '../src/types/settingTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -71,6 +72,25 @@ test('collect-i18n', async ({ comfyPage }) => {
       ])
   )
 
+  const allServerConfigsLocale = Object.fromEntries(
+    SERVER_CONFIG_ITEMS.map((config) => [
+      normalizeI18nKey(config.id),
+      {
+        name: (config as unknown as FormItem).name,
+        tooltip: (config as unknown as FormItem).tooltip
+      }
+    ])
+  )
+
+  const allServerConfigCategoriesLocale = Object.fromEntries(
+    SERVER_CONFIG_ITEMS.flatMap((config) => {
+      return config.category ?? ['General']
+    }).map((category) => [
+      normalizeI18nKey(category),
+      formatCamelCase(category)
+    ])
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -83,7 +103,9 @@ test('collect-i18n', async ({ comfyPage }) => {
         settingsCategories: {
           ...(locale.settingsCategories ?? {}),
           ...allSettingCategoriesLocale
-        }
+        },
+        serverConfigItems: allServerConfigsLocale,
+        serverConfigCategories: allServerConfigCategoriesLocale
       },
       null,
       2

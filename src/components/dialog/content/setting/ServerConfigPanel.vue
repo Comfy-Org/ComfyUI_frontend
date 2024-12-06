@@ -50,14 +50,14 @@
       :key="label"
     >
       <Divider v-if="i > 0" />
-      <h3>{{ formatCamelCase(label) }}</h3>
+      <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div
         v-for="item in items"
         :key="item.name"
         class="flex items-center mb-4"
       >
         <FormItem
-          :item="item"
+          :item="translateItem(item)"
           v-model:formValue="item.value"
           :id="item.id"
           :labelClass="{
@@ -75,13 +75,15 @@ import Message from 'primevue/message'
 import Divider from 'primevue/divider'
 import FormItem from '@/components/common/FormItem.vue'
 import PanelTemplate from './PanelTemplate.vue'
-import { formatCamelCase } from '@/utils/formatUtil'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { storeToRefs } from 'pinia'
 import { electronAPI } from '@/utils/envUtil'
 import { useSettingStore } from '@/stores/settingStore'
 import { watch } from 'vue'
 import { useCopyToClipboard } from '@/hooks/clipboardHooks'
+import type { FormItem as FormItemType } from '@/types/settingTypes'
+import type { ServerConfig } from '@/constants/serverConfig'
+import { useI18n } from 'vue-i18n'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
@@ -112,5 +114,16 @@ watch(serverConfigValues, (newVal) => {
 const { copyToClipboard } = useCopyToClipboard()
 const copyCommandLineArgs = async () => {
   await copyToClipboard(commandLineArgs.value)
+}
+
+const { t } = useI18n()
+const translateItem = (item: ServerConfig<any>): FormItemType => {
+  return {
+    ...item,
+    name: t(`serverConfigItems.${item.id}.name`, item.name),
+    tooltip: item.tooltip
+      ? t(`serverConfigItems.${item.id}.tooltip`, item.tooltip)
+      : undefined
+  }
 }
 </script>
