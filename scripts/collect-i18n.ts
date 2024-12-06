@@ -107,7 +107,7 @@ test('collect-i18n', async ({ comfyPage }) => {
       normalizeI18nKey(nodeDef.name),
       {
         display_name: nodeDef.display_name ?? nodeDef.name,
-        description: nodeDef.description
+        description: nodeDef.description || undefined
       }
     ])
   )
