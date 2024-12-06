@@ -1,7 +1,7 @@
 // @ts-strict-ignore - will remove in the future
 
 import { defineStore } from 'pinia'
-import { computed, Ref, ref, toRaw } from 'vue'
+import { ref, toRaw } from 'vue'
 import {
   Keybinding,
   KeyCombo,
