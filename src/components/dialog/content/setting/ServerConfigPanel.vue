@@ -120,8 +120,10 @@ const { t } = useI18n()
 const translateItem = (item: ServerConfig<any>): FormItemType => {
   return {
     ...item,
-    name: t(`serverConfigItems.${item.id}`, item.name),
-    tooltip: t(`serverConfigItems.${item.id}.tooltip`, item.tooltip)
+    name: t(`serverConfigItems.${item.id}.name`, item.name),
+    tooltip: item.tooltip
+      ? t(`serverConfigItems.${item.id}.tooltip`, item.tooltip)
+      : undefined
   }
 }
 </script>
