@@ -42,7 +42,7 @@
   "extensionName": "拡張機能名",
   "file": "ファイル",
   "findIssues": "問題を探す",
-  "firstTimeUIMessage": "あなたはこの新しいUIを初めて使用します。もし以前のUIに戻したい場合は、\"Menu > Use new menu > Disabled\"を選択してください。",
+  "firstTimeUIMessage": "あなたはこの新しいUIを初めて使用します。もし以前のUIに戻したい場合は、\"メニュー > 新しいメニューを使用 > Disabled\"を選択してください。",
   "folder": "フォルダー",
   "goToNode": "ノードへ移動",
   "graphCanvasMenu": {
