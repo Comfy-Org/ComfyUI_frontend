@@ -231,7 +231,17 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.FitView',
       icon: 'pi pi-expand',
       label: 'Fit view to selected nodes',
-      function: () => app.canvas.fitViewToSelectionAnimated()
+      function: () => {
+        if (app.canvas.empty) {
+          useToastStore().add({
+            severity: 'error',
+            summary: 'Empty canvas',
+            life: 3000
+          })
+          return
+        }
+        app.canvas.fitViewToSelectionAnimated()
+      }
     },
     {
       id: 'Comfy.Canvas.ToggleLock',
