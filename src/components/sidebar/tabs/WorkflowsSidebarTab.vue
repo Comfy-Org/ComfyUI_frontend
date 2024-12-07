@@ -40,7 +40,11 @@
           class="comfyui-workflows-open"
           v-if="workflowTabsPosition === 'Sidebar'"
         >
-          <TextDivider text="Open" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open).children
@@ -74,7 +78,11 @@
           class="comfyui-workflows-bookmarks"
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
         >
-          <TextDivider text="Bookmarks" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(
@@ -89,7 +97,11 @@
           </TreeExplorer>
         </div>
         <div class="comfyui-workflows-browse">
-          <TextDivider text="Browse" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(workflowsTree, WorkflowTreeType.Browse).children
