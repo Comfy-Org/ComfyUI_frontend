@@ -97,6 +97,12 @@ export async function showPromptDialog({
   })
 }
 
+export type ConfirmationDialogType =
+  | 'overwrite'
+  | 'delete'
+  | 'dirtyClose'
+  | 'reinstall'
+
 /**
  *
  * @returns `true` if the user confirms the dialog,
@@ -112,7 +118,7 @@ export async function showConfirmationDialog({
   /** Dialog heading */
   title: string
   /** Pre-configured dialog type */
-  type: 'overwrite' | 'delete' | 'dirtyClose'
+  type: ConfirmationDialogType
   /** The main message body */
   message: string
   /** Displayed as an unorderd list immediately below the message body */

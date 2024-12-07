@@ -1,4 +1,6 @@
+import { t } from '@/i18n'
 import { app } from '@/scripts/app'
+import { showConfirmationDialog } from '@/services/dialogService'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 ;(async () => {
   if (!isElectron()) return
@@ -101,11 +103,16 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Reinstall',
-        label: 'Reinstall',
+        label: t('desktopMenu.reinstall'),
         icon: 'pi pi-refresh',
-        function() {
-          // TODO(huchenlei): Add a confirmation dialog.
-          electronAPI.reinstall()
+        async function() {
+          const proceed = await showConfirmationDialog({
+            message: t('desktopMenu.confirmReinstall'),
+            title: t('desktopMenu.reinstall'),
+            type: 'reinstall'
+          })
+
+          if (proceed) electronAPI.reinstall()
         }
       },
       {

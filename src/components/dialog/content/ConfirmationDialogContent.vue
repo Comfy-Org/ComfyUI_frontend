@@ -26,7 +26,7 @@
         @click="onConfirm"
         icon="pi pi-save"
       />
-      <template v-else>
+      <template v-else-if="type === 'dirtyClose'">
         <Button
           :label="$t('no')"
           severity="secondary"
@@ -35,6 +35,21 @@
         />
         <Button :label="$t('save')" @click="onConfirm" icon="pi pi-save" />
       </template>
+      <Button
+        v-else-if="type === 'reinstall'"
+        :label="$t('desktopMenu.reinstall')"
+        severity="warn"
+        @click="onConfirm"
+        icon="pi pi-eraser"
+      />
+      <!-- Invalid - just show a close button. -->
+      <Button
+        v-else
+        :label="$t('close')"
+        severity="primary"
+        @click="onCancel"
+        icon="pi pi-times"
+      />
     </div>
   </section>
 </template>
@@ -42,10 +57,11 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { ConfirmationDialogType } from '@/services/dialogService'
 
 const props = defineProps<{
   message: string
-  type: 'overwrite' | 'delete' | 'dirtyClose'
+  type: ConfirmationDialogType
   onConfirm: (value?: boolean) => void
   itemList?: string[]
 }>()
@@ -62,3 +78,9 @@ const onConfirm = () => {
   useDialogStore().closeDialog()
 }
 </script>
+
+<style lang="css" scoped>
+.prompt-dialog-content {
+  white-space: pre-wrap;
+}
+</style>
