@@ -117,12 +117,15 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
   /** @returns Whether the graph has no items */
   get empty(): boolean {
-    return this.positionableItems.length === 0
+    return this._nodes.length + this._groups.length + this.reroutes.size === 0
   }
 
   /** @returns All items on the canvas that can be selected */
-  get positionableItems(): Positionable[] {
-    return [...this._nodes, ...this._groups, ...this.reroutes.values()]
+  *positionableItems(): Generator<LGraphNode | LGraphGroup | Reroute> {
+    for (const node of this._nodes) yield node
+    for (const group of this._groups) yield group
+    for (const reroute of this.reroutes.values()) yield reroute
+    return
   }
 
   #reroutes = new Map<RerouteId, Reroute>()

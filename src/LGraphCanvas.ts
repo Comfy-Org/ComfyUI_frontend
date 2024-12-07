@@ -3958,8 +3958,8 @@ export class LGraphCanvas {
     return this.graph.empty
   }
 
-  get positionableItems(): Positionable[] {
-    return this.graph.positionableItems
+  get positionableItems() {
+    return this.graph.positionableItems()
   }
 
   /**
@@ -8420,7 +8420,7 @@ export class LGraphCanvas {
    * If nothing is selected, the view is fitted around all items in the graph.
    */
   fitViewToSelectionAnimated(options: AnimationOptions = {}) {
-    const items: Positionable[] = this.selectedItems.size
+    const items = this.selectedItems.size
       ? Array.from(this.selectedItems)
       : this.positionableItems
     this.animateToBounds(createBounds(items), options)
