@@ -1505,6 +1505,17 @@
       "showFlatList": "평면 목록 표시"
     },
     "themeToggle": "테마 전환",
+    "workflowTab": {
+      "confirmDelete": "이 워크플로우를 삭제하시겠습니까?",
+      "confirmDeleteTitle": "워크플로우 삭제?",
+      "confirmOverwrite": "아래 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
+      "confirmOverwriteTitle": "기존 파일 덮어쓰기?",
+      "deleteFailed": "워크플로우 삭제를 시도했으나 실패했습니다.",
+      "deleteFailedTitle": "삭제 실패",
+      "deleted": "워크플로우가 삭제되었습니다.",
+      "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseTitle": "변경 사항 저장?"
+    },
     "workflows": "작업 흐름"
   },
   "star": "별",
@@ -1537,16 +1548,5 @@
   "welcome": {
     "getStarted": "시작하기",
     "title": "ComfyUI에 오신 것을 환영합니다"
-  },
-  "workflowTab": {
-    "confirmDelete": "이 작업 흐름을 삭제하시겠습니까?",
-    "confirmDeleteTitle": "작업 흐름 삭제?",
-    "confirmOverwrite": "아래 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
-    "confirmOverwriteTitle": "기존 파일 덮어쓰기?",
-    "deleteFailed": "작업 흐름 삭제 시도 실패.",
-    "deleteFailedTitle": "삭제 실패",
-    "deleted": "작업 흐름 삭제됨",
-    "dirtyClose": "아래 파일이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
-    "dirtyCloseTitle": "변경 사항 저장?"
   }
 }
