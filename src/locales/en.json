@@ -75,6 +75,9 @@
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
     "process": {
+      "initial-state": "Loading...",
+      "python-setup": "Setting up Python Environment...",
+      "starting-server": "Starting ComfyUI server...",
       "ready": "Finishing...",
       "error": "Unable to start ComfyUI Desktop"
     }
