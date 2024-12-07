@@ -41,7 +41,7 @@
           v-if="workflowTabsPosition === 'Sidebar'"
         >
           <TextDivider
-            :text="getWorkflowTreeTypeLabel(WorkflowTreeType.Open)"
+            :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
             type="dashed"
             class="ml-2"
           />
@@ -79,7 +79,7 @@
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
         >
           <TextDivider
-            :text="getWorkflowTreeTypeLabel(WorkflowTreeType.Bookmarks)"
+            :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
             type="dashed"
             class="ml-2"
           />
@@ -98,7 +98,7 @@
         </div>
         <div class="comfyui-workflows-browse">
           <TextDivider
-            :text="getWorkflowTreeTypeLabel(WorkflowTreeType.Browse)"
+            :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
             type="dashed"
             class="ml-2"
           />
@@ -212,17 +212,6 @@ enum WorkflowTreeType {
   Open = 'Open',
   Bookmarks = 'Bookmarks',
   Browse = 'Browse'
-}
-
-const getWorkflowTreeTypeLabel = (type: WorkflowTreeType) => {
-  switch (type) {
-    case WorkflowTreeType.Open:
-      return t('sideToolbar.workflowTab.workflowTreeType.open')
-    case WorkflowTreeType.Bookmarks:
-      return t('sideToolbar.workflowTab.workflowTreeType.bookmarks')
-    case WorkflowTreeType.Browse:
-      return t('sideToolbar.workflowTab.workflowTreeType.browse')
-  }
 }
 
 const buildWorkflowTree = (workflows: ComfyWorkflow[]) => {
