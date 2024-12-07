@@ -1148,7 +1148,10 @@
     "openLogs": "ログを開く",
     "process": {
       "error": "ComfyUIデスクトップを起動できません",
-      "ready": "完了中..."
+      "initial-state": "読み込み中...",
+      "python-setup": "Python環境を設定中...",
+      "ready": "完了中...",
+      "starting-server": "ComfyUIサーバーを起動中..."
     },
     "reinstall": "再インストール",
     "reportIssue": "問題を報告"

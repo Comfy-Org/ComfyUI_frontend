@@ -1148,7 +1148,10 @@
     "openLogs": "Открыть логи",
     "process": {
       "error": "Не удалось запустить ComfyUI Desktop",
-      "ready": "Завершение..."
+      "initial-state": "Загрузка...",
+      "python-setup": "Настройка окружения Python...",
+      "ready": "Завершение...",
+      "starting-server": "Запуск сервера ComfyUI..."
     },
     "reinstall": "Переустановить",
     "reportIssue": "Сообщить о проблеме"

@@ -1148,7 +1148,10 @@
     "openLogs": "打开日志",
     "process": {
       "error": "无法启动 ComfyUI 桌面版",
-      "ready": "完成中..."
+      "initial-state": "加载中...",
+      "python-setup": "正在设置 Python 环境...",
+      "ready": "完成中...",
+      "starting-server": "正在启动 ComfyUI 服务器..."
     },
     "reinstall": "重新安装",
     "reportIssue": "报告问题"
