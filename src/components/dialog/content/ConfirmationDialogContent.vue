@@ -26,7 +26,7 @@
         @click="onConfirm"
         icon="pi pi-save"
       />
-      <template v-else>
+      <template v-else-if="type === 'dirtyClose'">
         <Button
           :label="$t('no')"
           severity="secondary"
@@ -35,6 +35,14 @@
         />
         <Button :label="$t('save')" @click="onConfirm" icon="pi pi-save" />
       </template>
+      <!-- Invalid - just show a close button. -->
+      <Button
+        v-else
+        :label="$t('close')"
+        severity="primary"
+        @click="onCancel"
+        icon="pi pi-times"
+      />
     </div>
   </section>
 </template>
