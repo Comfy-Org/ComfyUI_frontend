@@ -9,10 +9,10 @@
 /src/locales/ @Comfy-Org/comfy_maintainer
 
 # Japanese translation
-/src/locales/ja.json @shinshin86
+/src/locales/ja.json @shinshin86 @Comfy-Org/comfy_maintainer
 
 # Load 3D extension
-/src/extensions/core/load3d.ts @jtydhr88
+/src/extensions/core/load3d.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
 
 # Mask Editor extension
-/src/extensions/core/maskeditor.ts @trsommer
+/src/extensions/core/maskeditor.ts @trsommer @Comfy-Org/comfy_frontend_devs
