@@ -487,10 +487,10 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
 
 ### Supported Languages
 
- - en
- - zh
- - ru
- - ja
+ - en (English)
+ - zh (中文)
+ - ru (Русский)
+ - ja (日本語)
 
 ### How to Add a New Language
 
@@ -540,7 +540,13 @@ Add the newly added language to the following item in `src/constants/coreSetting
     id: 'Comfy.Locale',
     name: 'Locale',
     type: 'combo',
-    options: ['en', 'zh', 'ru', 'ja'], // Add the new language(s) here
+    // Add the new language(s) here
+    options: [
+      { value: 'en', text: 'English' },
+      { value: 'zh', text: '中文' },
+      { value: 'ru', text: 'Русский' },
+      { value: 'ja', text: '日本語' }
+    ],
     defaultValue: navigator.language.split('-')[0] || 'en'
   },
 ```
