@@ -1,0 +1,18 @@
+# Admins
+* @Comfy-Org/comfy_frontend_devs
+
+# Maintainers
+*.md @Comfy-Org/comfy_maintainer
+/tests-ui/ @Comfy-Org/comfy_maintainer
+/browser_tests/ @Comfy-Org/comfy_maintainer
+/.env_example @Comfy-Org/comfy_maintainer
+/src/locales/ @Comfy-Org/comfy_maintainer
+
+# Japanese translation
+/src/locales/ja.json @shinshin86
+
+# Load 3D extension
+/src/extensions/core/load3d.ts @jtydhr88
+
+# Mask Editor extension
+/src/extensions/core/maskeditor.ts @trsommer
