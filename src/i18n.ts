@@ -27,5 +27,5 @@ export const { t, te } = i18n.global
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
-  return i18n.global.te(key) ? t(key) : fallbackMessage
+  return te(key) ? t(key) : fallbackMessage
 }
