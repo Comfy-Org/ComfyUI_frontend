@@ -17,5 +17,15 @@ export const i18n = createI18n({
   }
 })
 
-/** Convenience shorthand: i18n.global should be . */
-export const { t } = i18n.global
+/** Convenience shorthand: i18n.global */
+export const { t, te } = i18n.global
+
+/**
+ * Safe translation function that returns the fallback message if the key is not found.
+ *
+ * @param key - The key to translate.
+ * @param fallbackMessage - The fallback message to use if the key is not found.
+ */
+export function st(key: string, fallbackMessage: string) {
+  return te(key) ? t(key) : fallbackMessage
+}

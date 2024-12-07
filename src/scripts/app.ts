@@ -61,7 +61,7 @@ import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
-import { t } from '@/i18n'
+import { st } from '@/i18n'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1827,12 +1827,12 @@ export class ComfyApp {
         name,
         {
           ...def,
-          display_name: t(
+          display_name: st(
             `nodeDefs.${name}.display_name`,
             def.display_name ?? def.name
           ),
           description: def.description
-            ? t(`nodeDefs.${name}.description`, def.description)
+            ? st(`nodeDefs.${name}.description`, def.description)
             : undefined
         }
       ])
