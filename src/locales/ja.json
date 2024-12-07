@@ -1518,7 +1518,12 @@
       "deleteFailedTitle": "削除に失敗しました",
       "deleted": "ワークフローが削除されました",
       "dirtyClose": "以下のファイルが変更されました。閉じる前に保存しますか？",
-      "dirtyCloseTitle": "変更を保存しますか？"
+      "dirtyCloseTitle": "変更を保存しますか？",
+      "workflowTreeType": {
+        "bookmarks": "ブックマーク",
+        "browse": "ブラウズ",
+        "open": "開く"
+      }
     },
     "workflows": "ワークフロー"
   },

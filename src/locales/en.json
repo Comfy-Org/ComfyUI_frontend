@@ -474,7 +474,12 @@
       "dirtyCloseTitle": "Save Changes?",
       "dirtyClose": "The files below have been changed.  Would you like to save them before closing?",
       "confirmOverwriteTitle": "Overwrite existing file?",
-      "confirmOverwrite": "The file below already exists. Would you like to overwrite it?"
+      "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "workflowTreeType": {
+        "browse": "Browse",
+        "bookmarks": "Bookmarks",
+        "open": "Open"
+      }
     }
   },
   "menu": {
