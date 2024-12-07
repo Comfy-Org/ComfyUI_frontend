@@ -78,3 +78,9 @@ const onConfirm = () => {
   useDialogStore().closeDialog()
 }
 </script>
+
+<style lang="css" scoped>
+.prompt-dialog-content {
+  white-space: pre-wrap;
+}
+</style>

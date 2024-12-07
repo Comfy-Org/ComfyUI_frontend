@@ -599,7 +599,7 @@
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
-    "confirmReinstall": "This will clear your extra_models_config.yaml file, and begin installation again.  Are you sure?"
+    "confirmReinstall": "This will clear your extra_models_config.yaml file,\nand begin installation again.\n\nAre you sure?"
   },
   "settingsCategories": {
     "Comfy-Desktop": "Comfy-Desktop",
