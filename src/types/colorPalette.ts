@@ -65,6 +65,7 @@ const comfyBaseSchema = z.object({
   ['bg-color']: z.string(),
   ['bg-img']: z.string().optional(),
   ['comfy-menu-bg']: z.string(),
+  ['comfy-menu-secondary-bg']: z.string().optional(),
   ['comfy-input-bg']: z.string(),
   ['input-text']: z.string(),
   ['descrip-text']: z.string(),
