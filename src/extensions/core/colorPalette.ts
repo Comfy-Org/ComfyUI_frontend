@@ -582,7 +582,7 @@ app.registerExtension({
     }
 
     const getColorPaletteTemplate = async () => {
-      let colorPalette = {
+      const colorPalette: Palette = {
         id: 'my_color_palette_unique_id',
         name: 'My Color Palette',
         colors: {
@@ -595,14 +595,10 @@ app.registerExtension({
       // Copy over missing keys from default color palette
       const defaultColorPalette = colorPalettes[defaultColorPaletteId]
       for (const key in defaultColorPalette.colors.litegraph_base) {
-        if (!colorPalette.colors.litegraph_base[key]) {
-          colorPalette.colors.litegraph_base[key] = ''
-        }
+        colorPalette.colors.litegraph_base[key] ||= ''
       }
       for (const key in defaultColorPalette.colors.comfy_base) {
-        if (!colorPalette.colors.comfy_base[key]) {
-          colorPalette.colors.comfy_base[key] = ''
-        }
+        colorPalette.colors.comfy_base[key] ||= ''
       }
 
       return completeColorPalette(colorPalette)
@@ -728,7 +724,7 @@ app.registerExtension({
           app.bypassBgColor =
             colorPalette.colors.litegraph_base.NODE_BYPASS_BGCOLOR
         }
-        app.canvas.draw(true, true)
+        app.canvas.setDirty(true, true)
       }
     }
 
