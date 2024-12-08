@@ -149,7 +149,7 @@
       }
     },
     "customNodes": "Custom Nodes",
-    "customNodesDescription": "Reference custom node files from existing ComfyUI installations and install their dependencies."
+    "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations."
   },
   "serverStart": {
     "reinstall": "Reinstall",
