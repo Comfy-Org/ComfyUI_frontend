@@ -36,8 +36,9 @@ import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton
 import { computed, onMounted, provide, ref } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
-import { useEventBus } from '@vueuse/core'
+import { useEventBus, useResizeObserver } from '@vueuse/core'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { electronAPI, isElectron } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -72,6 +73,22 @@ eventBus.on((event: string, payload: any) => {
     isDroppable.value = payload.isOverlapping && payload.isDragging
   }
 })
+
+/** Height of titlebar on desktop. */
+if (isElectron()) {
+  let desktopHeight = 0
+
+  useResizeObserver(topMenuRef, (entries) => {
+    if (settingStore.get('Comfy.UseNewMenu') !== 'Top') return
+
+    const [entry] = entries
+    const { height } = entry.contentRect
+    if (desktopHeight === height) return
+
+    electronAPI().changeTheme({ height })
+    desktopHeight = height
+  })
+}
 </script>
 
 <style scoped>
