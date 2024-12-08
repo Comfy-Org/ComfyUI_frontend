@@ -100,24 +100,24 @@ const visible = computed({
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const iconOptions = [
-  { name: t('bookmark'), value: nodeBookmarkStore.defaultBookmarkIcon },
-  { name: t('folder'), value: 'pi-folder' },
-  { name: t('star'), value: 'pi-star' },
-  { name: t('heart'), value: 'pi-heart' },
-  { name: t('file'), value: 'pi-file' },
-  { name: t('inbox'), value: 'pi-inbox' },
-  { name: t('box'), value: 'pi-box' },
-  { name: t('briefcase'), value: 'pi-briefcase' }
+  { name: t('g.bookmark'), value: nodeBookmarkStore.defaultBookmarkIcon },
+  { name: t('g.folder'), value: 'pi-folder' },
+  { name: t('g.star'), value: 'pi-star' },
+  { name: t('g.heart'), value: 'pi-heart' },
+  { name: t('g.file'), value: 'pi-file' },
+  { name: t('g.inbox'), value: 'pi-inbox' },
+  { name: t('g.box'), value: 'pi-box' },
+  { name: t('g.briefcase'), value: 'pi-briefcase' }
 ]
 
 const colorOptions = [
-  { name: t('default'), value: nodeBookmarkStore.defaultBookmarkColor },
-  { name: t('blue'), value: '#007bff' },
-  { name: t('green'), value: '#28a745' },
-  { name: t('red'), value: '#dc3545' },
-  { name: t('pink'), value: '#e83e8c' },
-  { name: t('yellow'), value: '#ffc107' },
-  { name: t('custom'), value: 'custom' }
+  { name: t('g.default'), value: nodeBookmarkStore.defaultBookmarkColor },
+  { name: t('g.blue'), value: '#007bff' },
+  { name: t('g.green'), value: '#28a745' },
+  { name: t('g.red'), value: '#dc3545' },
+  { name: t('g.pink'), value: '#e83e8c' },
+  { name: t('g.yellow'), value: '#ffc107' },
+  { name: t('g.custom'), value: 'custom' }
 ]
 
 const defaultIcon = iconOptions.find(

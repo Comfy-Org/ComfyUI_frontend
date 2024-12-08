@@ -241,19 +241,19 @@ const menuTargetTask = ref<TaskItemImpl | null>(null)
 const menuTargetNode = ref<ComfyNode | null>(null)
 const menuItems = computed<MenuItem[]>(() => [
   {
-    label: t('delete'),
+    label: t('g.delete'),
     icon: 'pi pi-trash',
     command: () => menuTargetTask.value && removeTask(menuTargetTask.value),
     disabled: isExpanded.value || isInFolderView.value
   },
   {
-    label: t('loadWorkflow'),
+    label: t('g.loadWorkflow'),
     icon: 'pi pi-file-export',
     command: () => menuTargetTask.value?.loadWorkflow(app),
     disabled: !menuTargetTask.value?.workflow
   },
   {
-    label: t('goToNode'),
+    label: t('g.goToNode'),
     icon: 'pi pi-arrow-circle-right',
     command: () => app.goToNode(menuTargetNode.value?.id),
     visible: !!menuTargetNode.value

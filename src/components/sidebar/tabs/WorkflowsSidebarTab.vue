@@ -278,7 +278,7 @@ const renderTreeNode = (
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
             {
-              label: t('insert'),
+              label: t('g.insert'),
               icon: 'pi pi-file-export',
               command: () => {
                 const workflow = node.data

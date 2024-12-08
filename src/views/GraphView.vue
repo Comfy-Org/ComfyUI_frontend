@@ -135,7 +135,7 @@ const onReconnected = () => {
   toast.remove(reconnectingMessage)
   toast.add({
     severity: 'success',
-    summary: t('reconnected'),
+    summary: t('g.reconnected'),
     life: 2000
   })
 }

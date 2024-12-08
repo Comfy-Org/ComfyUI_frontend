@@ -41,7 +41,7 @@ const reportIssue = async () => {
     submitted.value = true
     toast.add({
       severity: 'success',
-      summary: t('reportSent'),
+      summary: t('g.reportSent'),
       life: 3000
     })
   } finally {
