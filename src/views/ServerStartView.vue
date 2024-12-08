@@ -1,8 +1,8 @@
 <template>
   <div
-    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
+    class="app-drag font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <h2 class="text-2xl font-bold">
+    <h2 class="text-2xl font-bold select-none">
       {{ t(`serverStart.process.${status}`) }}
       <span v-if="status === ProgressStatus.ERROR">
         v{{ electronVersion }}
@@ -10,7 +10,7 @@
     </h2>
     <div
       v-if="status === ProgressStatus.ERROR"
-      class="flex items-center my-4 gap-2"
+      class="no-drag flex items-center my-4 gap-2"
     >
       <Button
         icon="pi pi-flag"
@@ -30,7 +30,7 @@
         @click="reinstall"
       />
     </div>
-    <BaseTerminal @created="terminalCreated" />
+    <BaseTerminal class="no-drag" @created="terminalCreated" />
   </div>
 </template>
 

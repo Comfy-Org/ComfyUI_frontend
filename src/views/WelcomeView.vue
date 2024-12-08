@@ -2,7 +2,7 @@
   <div
     class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <div class="flex flex-col items-center justify-center gap-8 p-8">
+    <div class="app-drag flex flex-col items-center justify-center gap-8 p-8">
       <!-- Header -->
       <h1 class="animated-gradient-text text-glow select-none">
         {{ $t('welcome.title') }}
@@ -16,7 +16,7 @@
         size="large"
         rounded
         @click="navigateTo('/install')"
-        class="p-4 text-lg fade-in-up"
+        class="no-drag p-4 text-lg fade-in-up"
       />
     </div>
   </div>

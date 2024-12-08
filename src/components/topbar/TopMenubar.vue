@@ -107,3 +107,47 @@ eventBus.on((event: string, payload: any) => {
   cursor: default;
 }
 </style>
+
+<style>
+/* Custom window styling */
+:root[data-platform='electron'] {
+  .comfyui-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0.5rem;
+
+    &::before {
+      content: '';
+      width: 1.75rem;
+      height: 1.75rem;
+      background: url('/assets/images/Comfy_Logo_x256.png') no-repeat;
+      background-size: contain;
+    }
+  }
+
+  .comfyui-body-top {
+    .comfyui-menu {
+      app-region: drag;
+      padding-right: calc(100% - env(titlebar-area-width, 0));
+    }
+
+    .comfyui-menu::after {
+      content: '';
+      height: calc(100% - 0.75rem);
+      width: 2px;
+      background-color: var(--p-navigation-item-icon-color);
+      display: block;
+      margin-left: 1rem;
+      margin-right: 1rem;
+    }
+  }
+
+  button,
+  .p-menubar,
+  .comfyui-menu-right > *,
+  .actionbar {
+    app-region: no-drag;
+  }
+}
+</style>
