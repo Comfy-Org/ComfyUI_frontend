@@ -666,7 +666,8 @@
     "Validation": "Validation",
     "Window": "Window",
     "Server-Config": "Server-Config",
-    "About": "About"
+    "About": "About",
+    "Edit Token Weight": "Edit Token Weight"
   },
   "serverConfigItems": {
     "tls-keyfile": {
