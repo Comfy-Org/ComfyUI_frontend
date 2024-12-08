@@ -157,7 +157,7 @@ const resetCustomization = () => {
     selectedColor.value = defaultColor
   } else if (!colorOption) {
     customColor.value = props.initialColor.replace('#', '')
-    selectedColor.value = { name: 'Custom', value: 'custom' }
+    selectedColor.value = { name: t('color.custom'), value: 'custom' }
   } else {
     selectedColor.value = colorOption
   }
