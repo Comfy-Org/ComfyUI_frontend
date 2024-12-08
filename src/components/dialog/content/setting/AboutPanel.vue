@@ -1,6 +1,6 @@
 <template>
   <PanelTemplate value="About" class="about-container">
-    <h2 class="text-2xl font-bold mb-2">{{ $t('about') }}</h2>
+    <h2 class="text-2xl font-bold mb-2">{{ $t('g.about') }}</h2>
     <div class="space-y-2">
       <a
         v-for="badge in aboutPanelStore.badges"

@@ -3,7 +3,7 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('searchKeybindings') + '...'"
+        :placeholder="$t('g.searchKeybindings') + '...'"
       />
     </template>
 
@@ -102,8 +102,8 @@
     </Dialog>
     <Button
       class="mt-4"
-      :label="$t('reset')"
-      v-tooltip="$t('resetKeybindingsTooltip')"
+      :label="$t('g.reset')"
+      v-tooltip="$t('g.resetKeybindingsTooltip')"
       icon="pi pi-trash"
       severity="danger"
       fluid

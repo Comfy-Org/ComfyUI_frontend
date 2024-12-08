@@ -10,7 +10,7 @@
         text
         severity="secondary"
         @click="nodeBookmarkTreeExplorerRef?.addNewBookmarkFolder()"
-        v-tooltip.bottom="$t('newFolder')"
+        v-tooltip.bottom="$t('g.newFolder')"
       />
       <Button
         class="sort-button"
@@ -28,7 +28,7 @@
         @search="handleSearch"
         @show-filter="($event) => searchFilter.toggle($event)"
         @remove-filter="onRemoveFilter"
-        :placeholder="$t('searchNodes') + '...'"
+        :placeholder="$t('g.searchNodes') + '...'"
         filter-icon="pi pi-filter"
         :filters
       />

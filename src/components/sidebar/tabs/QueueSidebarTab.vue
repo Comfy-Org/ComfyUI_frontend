@@ -75,8 +75,8 @@
       <div v-else>
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
-          :title="$t('noTasksFound')"
-          :message="$t('noTasksFoundMessage')"
+          :title="$t('g.noTasksFound')"
+          :message="$t('g.noTasksFoundMessage')"
         />
       </div>
     </template>

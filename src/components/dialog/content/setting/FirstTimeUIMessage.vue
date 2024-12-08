@@ -6,7 +6,7 @@
     :closable="true"
     @close="handleClose"
   >
-    {{ $t('firstTimeUIMessage') }}
+    {{ $t('g.firstTimeUIMessage') }}
   </Message>
 </template>
 

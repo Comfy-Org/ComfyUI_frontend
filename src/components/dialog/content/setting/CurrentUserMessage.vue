@@ -7,7 +7,9 @@
     pt:text="w-full"
   >
     <div class="flex items-center justify-between">
-      <div>{{ $t('currentUser') }}: {{ userStore.currentUser?.username }}</div>
+      <div>
+        {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
+      </div>
       <Button icon="pi pi-sign-out" @click="logout" text />
     </div>
   </Message>

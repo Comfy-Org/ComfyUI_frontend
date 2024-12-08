@@ -9,21 +9,21 @@
         @click="modelStore.loadModelFolders"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('refresh')"
+        v-tooltip.bottom="$t('g.refresh')"
       />
       <Button
         icon="pi pi-cloud-download"
         @click="modelStore.loadModels"
         severity="secondary"
         text
-        v-tooltip.bottom="$t('loadAllFolders')"
+        v-tooltip.bottom="$t('g.loadAllFolders')"
       />
     </template>
     <template #header>
       <SearchBox
         class="model-lib-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
-        :placeholder="$t('searchModels') + '...'"
+        :placeholder="$t('g.searchModels') + '...'"
         @search="handleSearch"
       />
     </template>

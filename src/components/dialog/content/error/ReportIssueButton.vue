@@ -1,11 +1,11 @@
 <template>
   <Button
     @click="reportIssue"
-    :label="$t('reportIssue')"
+    :label="$t('g.reportIssue')"
     :severity="submitted ? 'success' : 'secondary'"
     :icon="icon"
     :disabled="submitted"
-    v-tooltip="$t('reportIssueTooltip')"
+    v-tooltip="$t('g.reportIssueTooltip')"
   >
   </Button>
 </template>

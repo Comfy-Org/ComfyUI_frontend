@@ -1,8 +1,8 @@
 <template>
-  <Dialog v-model:visible="visible" :header="$t('customizeFolder')">
+  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
     <div class="p-fluid">
       <div class="field icon-field">
-        <label for="icon">{{ $t('icon') }}</label>
+        <label for="icon">{{ $t('g.icon') }}</label>
         <SelectButton
           v-model="selectedIcon"
           :options="iconOptions"
@@ -19,7 +19,7 @@
       </div>
       <Divider />
       <div class="field color-field">
-        <label for="color">{{ $t('color') }}</label>
+        <label for="color">{{ $t('g.color') }}</label>
         <div class="color-picker-container">
           <SelectButton
             v-model="selectedColor"
@@ -41,7 +41,7 @@
                 v-else
                 class="pi pi-palette"
                 :style="{ fontSize: '1.2rem' }"
-                v-tooltip="$t('customColor')"
+                v-tooltip="$t('g.customColor')"
               ></i>
             </template>
           </SelectButton>
@@ -54,13 +54,13 @@
     </div>
     <template #footer>
       <Button
-        :label="$t('reset')"
+        :label="$t('g.reset')"
         icon="pi pi-refresh"
         @click="resetCustomization"
         class="p-button-text"
       />
       <Button
-        :label="$t('confirm')"
+        :label="$t('g.confirm')"
         icon="pi pi-check"
         @click="confirmCustomization"
         autofocus

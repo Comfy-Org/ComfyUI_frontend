@@ -62,7 +62,7 @@
           <div>
             <label class="text-neutral-200 font-medium">
               {{ $t('install.customNodes') }}
-              <Tag severity="secondary"> {{ $t('comingSoon') }}... </Tag>
+              <Tag severity="secondary"> {{ $t('g.comingSoon') }}... </Tag>
             </label>
             <p class="text-sm text-neutral-400 my-1">
               {{ $t('install.customNodesDescription') }}

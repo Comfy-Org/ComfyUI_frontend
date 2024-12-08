@@ -25,12 +25,12 @@
     <div class="option-badges">
       <Tag
         v-if="nodeDef.experimental"
-        :value="$t('experimental')"
+        :value="$t('g.experimental')"
         severity="primary"
       />
       <Tag
         v-if="nodeDef.deprecated"
-        :value="$t('deprecated')"
+        :value="$t('g.deprecated')"
         severity="danger"
       />
       <Tag

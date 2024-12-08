@@ -10,8 +10,8 @@
   <NoResultsPlaceholder
     v-else
     icon="pi pi-search"
-    :title="$t('noResultsFound')"
-    :message="$t('searchFailedMessage')"
+    :title="$t('g.noResultsFound')"
+    :message="$t('g.searchFailedMessage')"
   />
 </template>
 

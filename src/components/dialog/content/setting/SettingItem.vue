@@ -6,10 +6,10 @@
     @update:formValue="updateSettingValue"
   >
     <template #name-prefix>
-      <Tag v-if="setting.experimental" :value="$t('experimental')" />
+      <Tag v-if="setting.experimental" :value="$t('g.experimental')" />
       <Tag
         v-if="setting.deprecated"
-        :value="$t('deprecated')"
+        :value="$t('g.deprecated')"
         severity="danger"
       />
     </template>
