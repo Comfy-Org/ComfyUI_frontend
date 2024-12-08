@@ -123,7 +123,7 @@ const onStatus = (e: CustomEvent<StatusWsMessageStatus>) => {
 
 const reconnectingMessage: ToastMessageOptions = {
   severity: 'error',
-  summary: t('reconnecting')
+  summary: t('g.reconnecting')
 }
 
 const onReconnecting = () => {
