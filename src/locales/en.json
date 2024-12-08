@@ -666,7 +666,7 @@
     "Window": "Window",
     "Server-Config": "Server-Config",
     "About": "About",
-    "Edit Token Weight": "Edit Token Weight"
+    "EditTokenWeight": "Edit Token Weight"
   },
   "serverConfigItems": {
     "tls-keyfile": {
