@@ -543,6 +543,14 @@
     "panMode": "Pan Mode",
     "toggleLinkVisibility": "Toggle Link Visibility"
   },
+  "groupNode": {
+    "create": "Create group node",
+    "enterName": "Enter name"
+  },
+  "nodeTemplates": {
+    "saveAsTemplate": "Save as template",
+    "enterName": "Enter name"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",

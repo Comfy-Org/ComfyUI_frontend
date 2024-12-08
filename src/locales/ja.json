@@ -99,6 +99,10 @@
     "zoomIn": "拡大",
     "zoomOut": "縮小"
   },
+  "groupNode": {
+    "create": "グループノードを作成",
+    "enterName": "名前を入力"
+  },
   "icon": {
     "bookmark": "ブックマーク",
     "box": "ボックス",
@@ -1086,6 +1090,10 @@
     "unCLIPConditioning": {
       "display_name": "unCLIP条件付け"
     }
+  },
+  "nodeTemplates": {
+    "enterName": "名前を入力",
+    "saveAsTemplate": "テンプレートとして保存"
   },
   "notSupported": {
     "continue": "続ける",

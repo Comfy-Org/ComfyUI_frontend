@@ -99,6 +99,10 @@
     "zoomIn": "Увеличить",
     "zoomOut": "Уменьшить"
   },
+  "groupNode": {
+    "create": "Создать узел группы",
+    "enterName": "Введите имя"
+  },
   "icon": {
     "bookmark": "Закладка",
     "box": "Коробка",
@@ -1086,6 +1090,10 @@
     "unCLIPConditioning": {
       "display_name": "unCLIP кондиционирование"
     }
+  },
+  "nodeTemplates": {
+    "enterName": "Введите имя",
+    "saveAsTemplate": "Сохранить как шаблон"
   },
   "notSupported": {
     "continue": "Продолжить",
