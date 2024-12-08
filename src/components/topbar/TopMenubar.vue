@@ -97,6 +97,10 @@ eventBus.on((event: string, payload: any) => {
   background: var(--p-highlight-background-focus);
 }
 
+:deep(.p-menubar-item-label) {
+  line-height: revert;
+}
+
 .comfyui-logo {
   font-size: 1.2em;
   user-select: none;
