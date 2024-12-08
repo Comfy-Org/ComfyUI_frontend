@@ -1833,7 +1833,11 @@ export class ComfyApp {
           ),
           description: def.description
             ? st(`nodeDefs.${name}.description`, def.description)
-            : undefined
+            : undefined,
+          category: def.category
+            .split('/')
+            .map((category) => st(`nodeCategories.${category}`, category))
+            .join('/')
         }
       ])
     )
