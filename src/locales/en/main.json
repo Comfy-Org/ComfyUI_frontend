@@ -732,6 +732,15 @@
     "EditTokenWeight": "Edit Token Weight"
   },
   "serverConfigItems": {
+    "listen": {
+      "name": "Listen: Specify the IP address to listen on"
+    },
+    "input-directory": {
+      "name": "ComfyUI input directory"
+    },
+    "output-directory": {
+      "name": "ComfyUI output directory"
+    },
     "tls-keyfile": {
       "name": "TLS Key File: Path to TLS key file for HTTPS"
     },
