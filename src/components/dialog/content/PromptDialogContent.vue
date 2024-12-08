@@ -10,7 +10,7 @@
       />
       <label>{{ message }}</label>
     </FloatLabel>
-    <Button @click="onConfirm">{{ $t('confirm') }}</Button>
+    <Button @click="onConfirm">{{ $t('g.confirm') }}</Button>
   </div>
 </template>
 

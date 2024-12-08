@@ -130,13 +130,13 @@ const deleteCommand = async (node: RenderedTreeExplorerNode) => {
 const menuItems = computed<MenuItem[]>(() =>
   [
     {
-      label: t('rename'),
+      label: t('g.rename'),
       icon: 'pi pi-file-edit',
       command: () => renameCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleRename !== undefined
     },
     {
-      label: t('delete'),
+      label: t('g.delete'),
       icon: 'pi pi-trash',
       command: () => deleteCommand(menuTargetNode.value),
       visible: menuTargetNode.value?.handleDelete !== undefined,

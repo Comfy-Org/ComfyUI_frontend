@@ -1,8 +1,8 @@
 <template>
-  <Dialog v-model:visible="visible" :header="$t('customizeFolder')">
+  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
     <div class="p-fluid">
       <div class="field icon-field">
-        <label for="icon">{{ $t('icon') }}</label>
+        <label for="icon">{{ $t('g.icon') }}</label>
         <SelectButton
           v-model="selectedIcon"
           :options="iconOptions"
@@ -19,7 +19,7 @@
       </div>
       <Divider />
       <div class="field color-field">
-        <label for="color">{{ $t('color') }}</label>
+        <label for="color">{{ $t('g.color') }}</label>
         <div class="color-picker-container">
           <SelectButton
             v-model="selectedColor"
@@ -41,7 +41,7 @@
                 v-else
                 class="pi pi-palette"
                 :style="{ fontSize: '1.2rem' }"
-                v-tooltip="$t('customColor')"
+                v-tooltip="$t('g.customColor')"
               ></i>
             </template>
           </SelectButton>
@@ -54,13 +54,13 @@
     </div>
     <template #footer>
       <Button
-        :label="$t('reset')"
+        :label="$t('g.reset')"
         icon="pi pi-refresh"
         @click="resetCustomization"
         class="p-button-text"
       />
       <Button
-        :label="$t('confirm')"
+        :label="$t('g.confirm')"
         icon="pi pi-check"
         @click="confirmCustomization"
         autofocus
@@ -100,24 +100,24 @@ const visible = computed({
 const nodeBookmarkStore = useNodeBookmarkStore()
 
 const iconOptions = [
-  { name: t('bookmark'), value: nodeBookmarkStore.defaultBookmarkIcon },
-  { name: t('folder'), value: 'pi-folder' },
-  { name: t('star'), value: 'pi-star' },
-  { name: t('heart'), value: 'pi-heart' },
-  { name: t('file'), value: 'pi-file' },
-  { name: t('inbox'), value: 'pi-inbox' },
-  { name: t('box'), value: 'pi-box' },
-  { name: t('briefcase'), value: 'pi-briefcase' }
+  { name: t('icon.bookmark'), value: nodeBookmarkStore.defaultBookmarkIcon },
+  { name: t('icon.folder'), value: 'pi-folder' },
+  { name: t('icon.star'), value: 'pi-star' },
+  { name: t('icon.heart'), value: 'pi-heart' },
+  { name: t('icon.file'), value: 'pi-file' },
+  { name: t('icon.inbox'), value: 'pi-inbox' },
+  { name: t('icon.box'), value: 'pi-box' },
+  { name: t('icon.briefcase'), value: 'pi-briefcase' }
 ]
 
 const colorOptions = [
-  { name: t('default'), value: nodeBookmarkStore.defaultBookmarkColor },
-  { name: t('blue'), value: '#007bff' },
-  { name: t('green'), value: '#28a745' },
-  { name: t('red'), value: '#dc3545' },
-  { name: t('pink'), value: '#e83e8c' },
-  { name: t('yellow'), value: '#ffc107' },
-  { name: t('custom'), value: 'custom' }
+  { name: t('color.default'), value: nodeBookmarkStore.defaultBookmarkColor },
+  { name: t('color.blue'), value: '#007bff' },
+  { name: t('color.green'), value: '#28a745' },
+  { name: t('color.red'), value: '#dc3545' },
+  { name: t('color.pink'), value: '#e83e8c' },
+  { name: t('color.yellow'), value: '#ffc107' },
+  { name: t('color.custom'), value: 'custom' }
 ]
 
 const defaultIcon = iconOptions.find(
@@ -157,7 +157,7 @@ const resetCustomization = () => {
     selectedColor.value = defaultColor
   } else if (!colorOption) {
     customColor.value = props.initialColor.replace('#', '')
-    selectedColor.value = { name: 'Custom', value: 'custom' }
+    selectedColor.value = { name: t('color.custom'), value: 'custom' }
   } else {
     selectedColor.value = colorOption
   }

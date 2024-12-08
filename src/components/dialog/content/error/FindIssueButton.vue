@@ -1,7 +1,7 @@
 <template>
   <Button
     @click="openGitHubIssues"
-    :label="$t('findIssues')"
+    :label="$t('g.findIssues')"
     severity="secondary"
     icon="pi pi-github"
   >

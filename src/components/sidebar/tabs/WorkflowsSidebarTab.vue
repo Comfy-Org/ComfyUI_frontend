@@ -31,7 +31,7 @@
         class="workflows-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
-        :placeholder="$t('searchWorkflows') + '...'"
+        :placeholder="$t('g.searchWorkflows') + '...'"
       />
     </template>
     <template #body>
@@ -116,8 +116,8 @@
           <NoResultsPlaceholder
             v-else
             icon="pi pi-folder"
-            :title="$t('empty')"
-            :message="$t('noWorkflowsFound')"
+            :title="$t('g.empty')"
+            :message="$t('g.noWorkflowsFound')"
           />
         </div>
       </div>
@@ -278,7 +278,7 @@ const renderTreeNode = (
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
             {
-              label: t('insert'),
+              label: t('g.insert'),
               icon: 'pi pi-file-export',
               command: () => {
                 const workflow = node.data

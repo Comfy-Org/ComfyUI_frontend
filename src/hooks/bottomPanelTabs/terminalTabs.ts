@@ -8,7 +8,7 @@ export const useLogsTerminalTab = (): BottomPanelExtension => {
   const { t } = useI18n()
   return {
     id: 'logs-terminal',
-    title: t('logs'),
+    title: t('g.logs'),
     component: markRaw(LogsTerminal),
     type: 'vue'
   }
@@ -18,7 +18,7 @@ export const useCommandTerminalTab = (): BottomPanelExtension => {
   const { t } = useI18n()
   return {
     id: 'command-terminal',
-    title: t('terminal'),
+    title: t('g.terminal'),
     component: markRaw(CommandTerminal),
     type: 'vue'
   }

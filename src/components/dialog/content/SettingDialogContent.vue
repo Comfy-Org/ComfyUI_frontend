@@ -5,7 +5,7 @@
         class="settings-search-box w-full mb-2"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
-        :placeholder="$t('searchSettings') + '...'"
+        :placeholder="$t('g.searchSettings') + '...'"
       />
       <Listbox
         v-model="activeCategory"

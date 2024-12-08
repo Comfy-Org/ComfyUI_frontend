@@ -3,7 +3,7 @@
     icon="pi pi-cog"
     class="comfy-settings-btn"
     @click="showSetting"
-    :tooltip="$t('settings')"
+    :tooltip="$t('g.settings')"
   />
 </template>
 

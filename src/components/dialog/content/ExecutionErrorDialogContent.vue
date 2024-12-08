@@ -7,7 +7,7 @@
   <div class="comfy-error-report">
     <Button
       v-show="!reportOpen"
-      :label="$t('showReport')"
+      :label="$t('g.showReport')"
       @click="showReport"
       text
     />
@@ -28,7 +28,7 @@
       />
       <Button
         v-if="reportOpen"
-        :label="$t('copyToClipboard')"
+        :label="$t('g.copyToClipboard')"
         icon="pi pi-copy"
         @click="copyReportToClipboard"
       />
