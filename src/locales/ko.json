@@ -91,6 +91,10 @@
     "zoomIn": "확대",
     "zoomOut": "축소"
   },
+  "groupNode": {
+    "create": "그룹 노드 만들기",
+    "enterName": "이름 입력"
+  },
   "icon": "아이콘",
   "install": {
     "appDataLocationTooltip": "ComfyUI의 앱 데이터 디렉토리. 저장소:\n- 로그\n- 서버 구성",
@@ -1069,6 +1073,10 @@
     "unCLIPConditioning": {
       "display_name": "unCLIP 조건 설정"
     }
+  },
+  "nodeTemplates": {
+    "enterName": "이름 입력",
+    "saveAsTemplate": "템플릿으로 저장"
   },
   "notSupported": {
     "continue": "계속",
