@@ -103,7 +103,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       },
       {
         id: 'Comfy-Desktop.Reinstall',
-        label: t('desktopMenu.reinstall'),
+        label: 'Reinstall',
         icon: 'pi pi-refresh',
         async function() {
           const proceed = await showConfirmationDialog({
