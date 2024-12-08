@@ -64,6 +64,13 @@ export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
 export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   // Network settings
   {
+    id: 'listen',
+    name: 'Listen: Specify the IP address to listen on',
+    category: ['Network'],
+    type: 'text',
+    defaultValue: '127.0.0.1'
+  },
+  {
     id: 'tls-keyfile',
     name: 'TLS Key File: Path to TLS key file for HTTPS',
     category: ['Network'],
@@ -433,5 +440,20 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
         verbose: value
       }
     }
+  },
+  /// Launch settings
+  {
+    id: 'input-directory',
+    name: 'ComfyUI input directory',
+    category: ['Launch'],
+    type: 'text',
+    defaultValue: ''
+  },
+  {
+    id: 'output-directory',
+    name: 'ComfyUI output directory',
+    category: ['Launch'],
+    type: 'text',
+    defaultValue: ''
   }
 ]
