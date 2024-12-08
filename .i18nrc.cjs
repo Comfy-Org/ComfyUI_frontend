@@ -8,4 +8,8 @@ module.exports = defineConfig({
   entryLocale: 'en',
   output: 'src/locales',
   outputLocales: ['zh', 'ru', 'ja'],
+  reference: `Keep following model names untranslated:
+  - flux
+  - photomaker
+  `
 });
