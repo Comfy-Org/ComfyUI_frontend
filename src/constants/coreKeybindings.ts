@@ -173,5 +173,22 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'f'
     },
     commandId: 'Workspace.ToggleFocusMode'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true
+    },
+    commandId: 'Comfy.Undo',
+    targetSelector: '#graph-canvas'
+  },
+  {
+    combo: {
+      key: 'z',
+      ctrl: true,
+      shift: true
+    },
+    commandId: 'Comfy.Redo',
+    targetSelector: '#graph-canvas'
   }
 ]

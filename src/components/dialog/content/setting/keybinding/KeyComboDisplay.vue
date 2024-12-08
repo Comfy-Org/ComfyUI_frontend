@@ -1,11 +1,14 @@
 <template>
   <span>
-    <template v-for="(sequence, index) in keySequences" :key="index">
-      <Tag :severity="isModified ? 'info' : 'secondary'">
-        {{ sequence }}
-      </Tag>
-      <span v-if="index < keySequences.length - 1" class="px-2">+</span>
+    <template v-if="keyCombo">
+      <template v-for="(sequence, index) in keySequences" :key="index">
+        <Tag :severity="isModified ? 'info' : 'secondary'">
+          {{ sequence }}
+        </Tag>
+        <span v-if="index < keySequences.length - 1" class="px-2">+</span>
+      </template>
     </template>
+    <span v-else>-</span>
   </span>
 </template>
 
@@ -16,7 +19,7 @@ import { computed } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    keyCombo: KeyComboImpl
+    keyCombo: KeyComboImpl | null
     isModified: boolean
   }>(),
   {
@@ -24,5 +27,5 @@ const props = withDefaults(
   }
 )
 
-const keySequences = computed(() => props.keyCombo.getKeySequences())
+const keySequences = computed(() => props.keyCombo?.getKeySequences() ?? [])
 </script>

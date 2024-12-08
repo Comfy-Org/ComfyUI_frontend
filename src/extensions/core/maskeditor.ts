@@ -818,6 +818,15 @@ class MaskEditorDialog extends ComfyDialog {
     this.element = this.rootElement
   }
 
+  static executeCommand(command: string, argument?: any) {
+    if (MaskEditorDialog.instance) {
+      MaskEditorDialog.instance.keyboardManager.executeCommand(
+        command,
+        argument
+      )
+    }
+  }
+
   static getInstance() {
     if (!ComfyApp.clipspace || !ComfyApp.clipspace.imgs) {
       throw new Error('No clipspace images found')
@@ -874,7 +883,7 @@ class MaskEditorDialog extends ComfyDialog {
       observer.observe(this.rootElement, config)
 
       this.isLayoutCreated = true
-
+      app.extensionManager.setting.set('Comfy.KeybindContext', 'maskEditor')
       await this.uiManager.setlayout()
     }
 
@@ -1083,6 +1092,7 @@ class MaskEditorDialog extends ComfyDialog {
     if (success) {
       ComfyApp.onClipspaceEditorSave()
       this.close()
+      app.extensionManager.setting.set('Comfy.KeybindContext', 'global')
       this.isOpen = false
     } else {
       this.uiManager.setSaveButtonText('Save')
@@ -1437,6 +1447,7 @@ class PaintBucketTool {
     }
 
     this.ctx.putImageData(this.imageData, 0, 0)
+    this.messageBroker.publish('saveState')
     this.imageData = null
     this.data = null
   }
@@ -1935,6 +1946,7 @@ class BrushTool {
   initialPoint: Point | null = null
   useDominantAxis: boolean = false
   brushAdjustmentSpeed: number = 1.0
+  brushSizeShortcutStep: number = 1
 
   maskEditor: MaskEditorDialog
   messageBroker: MessageBroker
@@ -1952,6 +1964,10 @@ class BrushTool {
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
 
+    this.brushSizeShortcutStep = app.extensionManager.setting.get(
+      'Comfy.MaskEditor.BrushSizeStep'
+    )
+
     this.brushSettings = {
       size: 10,
       opacity: 100,
@@ -1965,6 +1981,12 @@ class BrushTool {
     //setters
     this.messageBroker.subscribe('setBrushSize', (size: number) =>
       this.setBrushSize(size)
+    )
+    this.messageBroker.subscribe('incraseBrushSize', () =>
+      this.increaseBrushSize()
+    )
+    this.messageBroker.subscribe('decreaseBrushSize', () =>
+      this.decreaseBrushSize()
     )
     this.messageBroker.subscribe('setBrushOpacity', (opacity: number) =>
       this.setBrushOpacity(opacity)
@@ -2547,6 +2569,18 @@ class BrushTool {
     this.brushSettings.size = size
   }
 
+  private increaseBrushSize() {
+    const maxSize = 100
+    const newSize = this.brushSettings.size + 1 * this.brushSizeShortcutStep
+    this.brushSettings.size = Math.min(newSize, maxSize)
+  }
+
+  private decreaseBrushSize() {
+    const minSize = 1
+    const newSize = this.brushSettings.size - 1 * this.brushSizeShortcutStep
+    this.brushSettings.size = Math.max(newSize, minSize)
+  }
+
   private setBrushOpacity(opacity: number) {
     this.brushSettings.opacity = opacity
   }
@@ -2590,6 +2624,7 @@ class UIManager {
   private image!: HTMLImageElement
   private imageURL!: URL
   private darkMode: boolean = true
+  private toolElements: HTMLElement[] = []
 
   private maskEditor: MaskEditorDialog
   private messageBroker: MessageBroker
@@ -2635,6 +2670,14 @@ class UIManager {
 
     this.messageBroker.subscribe('setZoomText', (text: string) =>
       this.setZoomText(text)
+    )
+
+    this.messageBroker.subscribe('toggleMask', () => {
+      this.toggleMaskOpacity()
+    })
+
+    this.messageBroker.subscribe('setToolUI', (tool: string) =>
+      this.setToolUI(tool)
     )
   }
 
@@ -3364,6 +3407,7 @@ class UIManager {
     top_bar_cancel_button.innerText = 'Cancel'
 
     top_bar_cancel_button.addEventListener('click', () => {
+      app.extensionManager.setting.set('Comfy.KeybindContext', 'global')
       this.maskEditor.close()
     })
 
@@ -3407,20 +3451,8 @@ class UIManager {
     toolElements.push(toolPanel_brushToolContainer)
 
     toolPanel_brushToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.Pen)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_brushToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'flex'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.Pen)
-      this.pointerZone.style.cursor = 'none'
+      this.messageBroker.publish('setTool', 'brush')
+      this.setToolUI('pen')
     })
 
     var toolPanel_brushToolIndicator = document.createElement('div')
@@ -3445,20 +3477,8 @@ class UIManager {
     toolElements.push(toolPanel_eraserToolContainer)
 
     toolPanel_eraserToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.Eraser)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_eraserToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'flex'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.Eraser)
-      this.pointerZone.style.cursor = 'none'
+      this.messageBroker.publish('setTool', 'eraser')
+      this.setToolUI('eraser')
     })
 
     var toolPanel_eraserToolIndicator = document.createElement('div')
@@ -3483,22 +3503,8 @@ class UIManager {
     toolElements.push(toolPanel_paintBucketToolContainer)
 
     toolPanel_paintBucketToolContainer.addEventListener('click', () => {
-      //move logic to tool manager
-      this.messageBroker.publish('setTool', Tools.PaintBucket)
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_paintBucketToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'none'
-          this.colorSelectSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'flex'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.PaintBucket)
-      this.pointerZone.style.cursor =
-        "url('/cursor/paintBucket.png') 30 25, auto"
-      this.brush.style.opacity = '0'
+      this.messageBroker.publish('setTool', 'paintBucket')
+      this.setToolUI('paintBucket')
     })
 
     var toolPanel_paintBucketToolIndicator = document.createElement('div')
@@ -3525,20 +3531,7 @@ class UIManager {
     toolElements.push(toolPanel_colorSelectToolContainer)
     toolPanel_colorSelectToolContainer.addEventListener('click', () => {
       this.messageBroker.publish('setTool', 'colorSelect')
-      for (let toolElement of toolElements) {
-        if (toolElement != toolPanel_colorSelectToolContainer) {
-          toolElement.classList.remove('maskEditor_toolPanelContainerSelected')
-        } else {
-          toolElement.classList.add('maskEditor_toolPanelContainerSelected')
-          this.brushSettingsHTML.style.display = 'none'
-          this.paintBucketSettingsHTML.style.display = 'none'
-          this.colorSelectSettingsHTML.style.display = 'flex'
-        }
-      }
-      this.messageBroker.publish('setTool', Tools.ColorSelect)
-      this.pointerZone.style.cursor =
-        "url('/cursor/colorSelect.png') 15 25, auto"
-      this.brush.style.opacity = '0'
+      this.setToolUI('colorSelect')
     })
 
     var toolPanel_colorSelectToolIndicator = document.createElement('div')
@@ -3548,6 +3541,8 @@ class UIManager {
     toolPanel_colorSelectToolContainer.appendChild(
       toolPanel_colorSelectToolIndicator
     )
+
+    this.toolElements = toolElements
 
     //zoom indicator
     var toolPanel_zoomIndicator = document.createElement('div')
@@ -3578,6 +3573,82 @@ class UIManager {
     tool_panel.appendChild(toolPanel_zoomIndicator)
 
     return tool_panel
+  }
+
+  private async setToolUI(tool: string) {
+    console.log(tool)
+    switch (tool) {
+      case 'pen':
+        //move logic to tool manager
+        for (let toolElement of this.toolElements) {
+          if (toolElement != this.toolElements[0]) {
+            toolElement.classList.remove(
+              'maskEditor_toolPanelContainerSelected'
+            )
+          } else {
+            toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+            this.brushSettingsHTML.style.display = 'flex'
+            this.colorSelectSettingsHTML.style.display = 'none'
+            this.paintBucketSettingsHTML.style.display = 'none'
+          }
+        }
+        this.messageBroker.publish('setTool', Tools.Pen)
+        this.pointerZone.style.cursor = 'none'
+        break
+      case 'eraser':
+        //move logic to tool manager
+        for (let toolElement of this.toolElements) {
+          if (toolElement != this.toolElements[1]) {
+            toolElement.classList.remove(
+              'maskEditor_toolPanelContainerSelected'
+            )
+          } else {
+            toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+            this.brushSettingsHTML.style.display = 'flex'
+            this.colorSelectSettingsHTML.style.display = 'none'
+            this.paintBucketSettingsHTML.style.display = 'none'
+          }
+        }
+        this.pointerZone.style.cursor = 'none'
+        break
+      case 'paintBucket':
+        //move logic to tool manager
+        this.messageBroker.publish('setTool', Tools.PaintBucket)
+        for (let toolElement of this.toolElements) {
+          if (toolElement != this.toolElements[2]) {
+            toolElement.classList.remove(
+              'maskEditor_toolPanelContainerSelected'
+            )
+          } else {
+            toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+            this.brushSettingsHTML.style.display = 'none'
+            this.colorSelectSettingsHTML.style.display = 'none'
+            this.paintBucketSettingsHTML.style.display = 'flex'
+          }
+        }
+        this.pointerZone.style.cursor =
+          "url('/cursor/paintBucket.png') 30 25, auto"
+        this.brush.style.opacity = '0'
+        break
+      case 'colorSelect':
+        this.messageBroker.publish('setTool', 'colorSelect')
+        for (let toolElement of this.toolElements) {
+          if (toolElement != this.toolElements[3]) {
+            toolElement.classList.remove(
+              'maskEditor_toolPanelContainerSelected'
+            )
+          } else {
+            toolElement.classList.add('maskEditor_toolPanelContainerSelected')
+            this.brushSettingsHTML.style.display = 'none'
+            this.paintBucketSettingsHTML.style.display = 'none'
+            this.colorSelectSettingsHTML.style.display = 'flex'
+          }
+        }
+        this.pointerZone.style.cursor =
+          "url('/cursor/colorSelect.png') 15 25, auto"
+        this.brush.style.opacity = '0'
+        break
+    }
   }
 
   private createPointerZone() {
@@ -3985,6 +4056,12 @@ class UIManager {
   setDimensionsText(dimensionsText: string) {
     this.dimensionsTextHTML.innerText = dimensionsText
   }
+
+  toggleMaskOpacity() {
+    const currentOpacity = parseFloat(this.maskCanvas.style.opacity) || 1
+    this.mask_opacity = currentOpacity > 0 ? 0 : this.mask_opacity
+    this.maskCanvas.style.opacity = String(this.mask_opacity)
+  }
 }
 
 class ToolManager {
@@ -4065,7 +4142,6 @@ class ToolManager {
         offset
       )
       this.messageBroker.publish('paintBucketFill', coords_canvas)
-      this.messageBroker.publish('saveState')
       return
     }
 
@@ -4648,6 +4724,8 @@ class MessageBroker {
     this.createPushTopic('isCombinationPressed')
     this.createPushTopic('setPaintBucketTolerance')
     this.createPushTopic('setBrushSize')
+    this.createPushTopic('incraseBrushSize')
+    this.createPushTopic('decreaseBrushSize')
     this.createPushTopic('setBrushHardness')
     this.createPushTopic('setBrushOpacity')
     this.createPushTopic('setBrushShape')
@@ -4676,6 +4754,8 @@ class MessageBroker {
     this.createPushTopic('setZoomText')
     this.createPushTopic('resetZoom')
     this.createPushTopic('invert')
+    this.createPushTopic('toggleMask')
+    this.createPushTopic('setToolUI')
   }
 
   /**
@@ -4839,22 +4919,42 @@ class KeyboardManager {
     return this.keysDown.includes(key)
   }
 
-  // combinations
-
-  private undoCombinationPressed() {
-    const combination = ['ctrl', 'z']
-    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
-    const result = combination.every((key) => keysDownLower.includes(key))
-    if (result) this.messageBroker.publish('undo')
-    return result
-  }
-
-  private redoCombinationPressed() {
-    const combination = ['ctrl', 'shift', 'z']
-    const keysDownLower = this.keysDown.map((key) => key.toLowerCase())
-    const result = combination.every((key) => keysDownLower.includes(key))
-    if (result) this.messageBroker.publish('redo')
-    return result
+  public async executeCommand(commandId: string, argument?: any) {
+    switch (commandId) {
+      case 'undo':
+        this.messageBroker.publish('undo')
+        break
+      case 'redo':
+        this.messageBroker.publish('redo')
+        break
+      case 'brushSizeUp':
+        // Increase brush size by 5
+        this.messageBroker.publish('incraseBrushSize')
+        this.messageBroker.publish('updateCursor')
+        break
+      case 'brushSizeDown':
+        // Decrease brush size by 5
+        this.messageBroker.publish('decreaseBrushSize')
+        this.messageBroker.publish('updateCursor')
+        break
+      case 'selectTool':
+        if (argument) {
+          this.messageBroker.publish('setTool', argument)
+          this.messageBroker.publish('setToolUI', argument)
+          this.messageBroker.publish('updateCursor')
+        }
+        break
+      case 'zoomToFit':
+        this.messageBroker.publish('resetZoom')
+        this.messageBroker.publish('updateCursor')
+        break
+      case 'invert':
+        this.messageBroker.publish('invert')
+        break
+      case 'save':
+        this.maskEditor.save()
+        break
+    }
   }
 }
 
@@ -4887,6 +4987,22 @@ app.registerExtension({
       versionAdded: '1.0.0'
     },
     {
+      id: 'Comfy.MaskEditor.BrushSizeStep',
+      category: ['Mask Editor', 'BrushAdjustment', 'ShortcutSensitivity'],
+      name: 'Brush size keyboard shortcut increment',
+      tooltip:
+        'Controls how much the brush size changes when using increase and decrease shortcuts',
+      experimental: true,
+      type: 'slider',
+      attrs: {
+        min: 1,
+        max: 10,
+        step: 1
+      },
+      defaultValue: 3,
+      versionAdded: '1.0.0'
+    },
+    {
       id: 'Comfy.MaskEditor.UseDominantAxis',
       category: ['Mask Editor', 'BrushAdjustment', 'UseDominantAxis'],
       name: 'Lock brush adjustment to dominant axis',
@@ -4895,6 +5011,165 @@ app.registerExtension({
       type: 'boolean',
       defaultValue: true,
       experimental: true
+    }
+  ],
+  keybindingContexts: [
+    {
+      id: 'maskEditor',
+      name: 'Mask Editor'
+    }
+  ],
+  commands: [
+    {
+      id: 'Comfy.MaskEditor.undo',
+      function: () => {
+        MaskEditorDialog.executeCommand('undo')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.redo',
+      function: () => {
+        MaskEditorDialog.executeCommand('redo')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.brushSizeUp',
+      function: () => {
+        MaskEditorDialog.executeCommand('brushSizeUp')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.brushSizeDown',
+      function: () => {
+        MaskEditorDialog.executeCommand('brushSizeDown')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.selectBrushTool',
+      function: () => {
+        MaskEditorDialog.executeCommand('selectTool', 'pen')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.selectEraserTool',
+      function: () => {
+        MaskEditorDialog.executeCommand('selectTool', 'eraser')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.selectPaintBucketTool',
+      function: () => {
+        MaskEditorDialog.executeCommand('selectTool', 'paintBucket')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.selectColorSelectTool',
+      function: () => {
+        MaskEditorDialog.executeCommand('selectTool', 'colorSelect')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.zoomToFit',
+      function: () => {
+        MaskEditorDialog.executeCommand('zoomToFit')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.invert',
+      function: () => {
+        MaskEditorDialog.executeCommand('invert')
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.save',
+      function: () => {
+        MaskEditorDialog.executeCommand('save')
+      }
+    }
+  ],
+  keybindings: [
+    {
+      combo: {
+        ctrl: true,
+        key: 'z'
+      },
+      commandId: 'Comfy.MaskEditor.undo',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        ctrl: true,
+        shift: true,
+        key: 'z'
+      },
+      commandId: 'Comfy.MaskEditor.redo',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: ']'
+      },
+      commandId: 'Comfy.MaskEditor.brushSizeUp',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: '['
+      },
+      commandId: 'Comfy.MaskEditor.brushSizeDown',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: 'b'
+      },
+      commandId: 'Comfy.MaskEditor.selectBrushTool',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: 'e'
+      },
+      commandId: 'Comfy.MaskEditor.selectEraserTool',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: 'p'
+      },
+      commandId: 'Comfy.MaskEditor.selectPaintBucketTool',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        key: 'c'
+      },
+      commandId: 'Comfy.MaskEditor.selectColorSelectTool',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        ctrl: true,
+        key: '0'
+      },
+      commandId: 'Comfy.MaskEditor.zoomToFit',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        ctrl: true,
+        key: 'i'
+      },
+      commandId: 'Comfy.MaskEditor.invert',
+      context: 'maskEditor'
+    },
+    {
+      combo: {
+        ctrl: true,
+        key: 's'
+      },
+      commandId: 'Comfy.MaskEditor.save',
+      context: 'maskEditor'
     }
   ],
   init(app) {
