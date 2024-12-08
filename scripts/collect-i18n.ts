@@ -119,10 +119,7 @@ test('collect-i18n', async ({ comfyPage }) => {
     Object.values(nodeDefs).flatMap((nodeDef) =>
       nodeDef.category
         .split('/')
-        .map((category) => [
-          normalizeI18nKey(category),
-          formatCamelCase(category)
-        ])
+        .map((category) => [normalizeI18nKey(category), category])
     )
   )
 
