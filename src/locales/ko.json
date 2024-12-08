@@ -1,0 +1,1613 @@
+{
+  "color": "색상",
+  "desktopMenu": {
+    "confirmReinstall": "이 작업은 extra_models_config.yaml 파일을 지우고 설치를 다시 시작합니다. 정말로 진행하시겠습니까?",
+    "reinstall": "재설치"
+  },
+  "downloadGit": {
+    "gitWebsite": "git 프로그램 다운로드",
+    "instructions": "운영 체제에 맞는 최신 버전을 다운로드하여 설치하십시오. 아래의 'git 프로그램 다운로드' 버튼을 클릭하면 git-scm.com 다운로드 페이지가 열립니다.",
+    "message": "git 프로그램을 찾을 수 없습니다. 정상적인 작업을 위해서는 git 프로그램이 필요합니다.",
+    "skip": "건너뛰기",
+    "title": "git 프로그램 다운로드",
+    "warning": "git 프로그램이 이미 설치된 것이 확실하다면, 이 검사 단계를 스킵할 수 있습니다. 현재는 정상적으로 실행 가능한 git 프로그램이 없는 경우, ComfyUI를 실행할 수 없습니다."
+  },
+  "electronFileDownload": {
+    "cancel": "다운로드 취소",
+    "cancelled": "취소됨",
+    "inProgress": "진행 중",
+    "pause": "다운로드 일시 중지",
+    "paused": "일시 중지됨",
+    "resume": "다운로드 재개"
+  },
+  "g": {
+    "about": "정보",
+    "add": "추가",
+    "cancel": "취소",
+    "close": "닫기",
+    "color": "색상",
+    "comingSoon": "곧 출시 예정",
+    "confirm": "확인",
+    "copyToClipboard": "클립보드에 복사",
+    "currentUser": "현재 사용자",
+    "customize": "사용자 정의",
+    "customizeFolder": "폴더 사용자 정의",
+    "delete": "삭제",
+    "deprecated": "사용 중단",
+    "devices": "장치",
+    "download": "다운로드",
+    "empty": "비어 있음",
+    "error": "오류",
+    "experimental": "베타",
+    "extensionName": "확장 이름",
+    "findIssues": "문제 찾기",
+    "firstTimeUIMessage": "새 UI를 처음 사용합니다. \"메뉴 > 새 메뉴 사용 > 비활성화\"를 선택하여 이전 UI로 복원하세요.",
+    "goToNode": "노드로 이동",
+    "icon": "아이콘",
+    "imageFailedToLoad": "이미지를 로드하지 못했습니다.",
+    "insert": "삽입",
+    "loadAllFolders": "모든 폴더 로드",
+    "loadWorkflow": "워크플로우 로드",
+    "loading": "로딩 중",
+    "logs": "로그",
+    "newFolder": "새 폴더",
+    "no": "아니오",
+    "noResultsFound": "결과를 찾을 수 없습니다.",
+    "noTasksFound": "작업을 찾을 수 없습니다.",
+    "noTasksFoundMessage": "대기열에 작업이 없습니다.",
+    "noWorkflowsFound": "워크플로우를 찾을 수 없습니다.",
+    "openNewIssue": "새 문제 열기",
+    "overwrite": "덮어쓰기",
+    "reconnected": "재연결됨",
+    "reconnecting": "재연결 중",
+    "refresh": "새로 고침",
+    "reloadToApplyChanges": "변경 사항을 적용하려면 새로 고침하세요.",
+    "rename": "이름 바꾸기",
+    "reportIssue": "보고서 보내기",
+    "reportIssueTooltip": "Comfy Org에 오류 보고서를 제출합니다.",
+    "reportSent": "보고서 제출됨",
+    "reset": "재설정",
+    "resetKeybindingsTooltip": "키 바인딩을 기본값으로 재설정",
+    "save": "저장",
+    "searchExtensions": "확장 검색",
+    "searchFailedMessage": "검색어와 일치하는 설정을 찾을 수 없습니다. 검색어를 조정해 보세요.",
+    "searchKeybindings": "키 바인딩 검색",
+    "searchModels": "모델 검색",
+    "searchNodes": "노드 검색",
+    "searchSettings": "설정 검색",
+    "searchWorkflows": "워크플로우 검색",
+    "settings": "설정",
+    "showReport": "보고서 보기",
+    "systemInfo": "시스템 정보",
+    "terminal": "터미널",
+    "videoFailedToLoad": "비디오를 로드하지 못했습니다."
+  },
+  "graphCanvasMenu": {
+    "fitView": "보기 맞춤",
+    "panMode": "팬 모드",
+    "resetView": "보기 재설정",
+    "selectMode": "선택 모드",
+    "toggleLinkVisibility": "링크 가시성 전환",
+    "zoomIn": "확대",
+    "zoomOut": "축소"
+  },
+  "icon": "아이콘",
+  "install": {
+    "appDataLocationTooltip": "ComfyUI의 앱 데이터 디렉토리. 저장소:\n- 로그\n- 서버 구성",
+    "appPathLocationTooltip": "ComfyUI의 앱 에셋 디렉토리. ComfyUI 코드 및 에셋을 저장합니다.",
+    "chooseInstallationLocation": "설치 위치 선택",
+    "customNodes": "사용자 정의 노드",
+    "customNodesDescription": "기존 ComfyUI 설치에서 사용자 정의 노드 파일을 참조하고 해당 종속성을 설치합니다.",
+    "desktopAppSettings": "데스크탑 앱 설정",
+    "desktopAppSettingsDescription": "ComfyUI가 데스크탑에서 어떻게 작동하는지 구성하세요. 이 설정은 나중에 변경할 수 있습니다.",
+    "desktopSettings": "데스크탑 설정",
+    "failedToSelectDirectory": "디렉토리 선택 실패",
+    "installLocation": "설치 위치",
+    "installLocationDescription": "ComfyUI의 사용자 데이터 디렉토리를 선택하십시오. 선택한 위치에 Python 환경이 설치됩니다. 선택한 디스크에 충분한 공간(~15GB)이 남아 있는지 확인하십시오.",
+    "installLocationTooltip": "ComfyUI의 사용자 데이터 디렉토리. 저장소:\n- Python 환경\n- 모델\n- 사용자 정의 노드\n",
+    "migrateFromExistingInstallation": "기존 설치에서 마이그레이션",
+    "migration": "마이그레이션",
+    "migrationOptional": "마이그레이션은 선택 사항입니다. 기존에 설치된 것이 없다면, 이 단계를 건너뛸 수 있습니다.",
+    "migrationSourcePathDescription": "기존에 설치된 ComfyUI가 있는 경우, 기존 사용자 파일과 모델을 새 설치에 복사하거나 링크할 수 있습니다",
+    "pathValidationFailed": "경로 유효성 검사 실패",
+    "selectItemsToMigrate": "마이그레이션 항목 선택",
+    "settings": {
+      "allowMetrics": "충돌 보고서",
+      "allowMetricsDescription": "익명의 충돌 보고서를 보내 ComfyUI 개선에 도움을 줍니다. 개인 정보나 워크플로 내용은 수집되지 않습니다. 이는 설정 메뉴에서 언제든지 비활성화할 수 있습니다.",
+      "autoUpdate": "자동 업데이트",
+      "autoUpdateDescription": "업데이트가 가능해지면 자동으로 다운로드하고 설치합니다. 업데이트가 설치되기 전에 항상 알림을 받습니다.",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "사용자 정의 노드 설정",
+        "errorReports": "오류 메시지 및 스택 추적",
+        "fileSystemInformation": "파일 시스템 정보",
+        "personalInformation": "개인 정보",
+        "systemInfo": "하드웨어, OS 유형 및 앱 버전",
+        "title": "데이터 수집 안내",
+        "whatWeCollect": "수집하는 정보:",
+        "whatWeDoNotCollect": "수집하지 않는 정보:",
+        "workflowContent": "워크플로 내용",
+        "workflowContents": "워크플로 내용"
+      },
+      "learnMoreAboutData": "데이터 수집에 대해 더 알아보기"
+    },
+    "systemLocations": "시스템 위치"
+  },
+  "menu": {
+    "autoQueue": "자동 큐",
+    "batchCount": "배치 수",
+    "batchCountTooltip": "워크플로 작업을 큐에 반복 추가할 횟수",
+    "clear": "워크플로 비우기",
+    "clipspace": "클립스페이스 열기",
+    "disabled": "비활성화됨",
+    "disabledTooltip": "워크플로 작업을 자동으로 큐에 추가하지 않습니다.",
+    "execute": "실행",
+    "hideMenu": "메뉴 숨기기",
+    "instant": "즉시",
+    "instantTooltip": "워크플로 실행이 완료되면 즉시 큐에 추가합니다.",
+    "interrupt": "현재 실행 취소",
+    "onChange": "변경 시",
+    "onChangeTooltip": "변경이 있는 경우에만 워크플로를 큐에 추가합니다.",
+    "queue": "큐",
+    "queueWorkflow": "워크플로 큐에 추가 (Shift: 큐 맨 앞에 추가)",
+    "queueWorkflowFront": "워크플로를 큐 맨 앞에 추가",
+    "refresh": "노드 정의 새로 고침",
+    "resetView": "캔버스 보기 재설정",
+    "showMenu": "메뉴 표시",
+    "toggleBottomPanel": "하단 패널 전환"
+  },
+  "menuLabels": {
+    "Browse Templates": "템플릿 탐색",
+    "Bypass/Unbypass Selected Nodes": "선택한 노드 우회/우회 해제",
+    "Clear Pending Tasks": "보류 중인 작업 제거하기",
+    "Clear Workflow": "워크플로 지우기",
+    "Clipspace": "클립스페이스",
+    "Collapse/Expand Selected Nodes": "선택한 노드 축소/확장",
+    "Comfy-Org Discord": "Comfy-Org 디스코드",
+    "ComfyUI Docs": "ComfyUI 문서",
+    "ComfyUI Issues": "ComfyUI 이슈 페이지",
+    "Convert selected nodes to group node": "선택한 노드를 그룹 노드로 변환",
+    "Edit": "편집",
+    "Export": "내보내기",
+    "Export (API)": "내보내기 (API)",
+    "Feedback": "피드백",
+    "Fit Group To Contents": "그룹을 내용에 맞게 조정",
+    "Fit view to selected nodes": "선택한 노드에 맞게 보기 조정",
+    "Group Selected Nodes": "선택한 노드 그룹화",
+    "Help": "도움말",
+    "Interrupt": "중단",
+    "Load Default Workflow": "기본 워크플로 불러오기",
+    "Logs": "로그",
+    "Manage group nodes": "그룹 노드 관리",
+    "Model Library": "모델 라이브러리",
+    "Mute/Unmute Selected Nodes": "선택한 노드 활성화/비활성화",
+    "New": "새로 만들기",
+    "Next Opened Workflow": "다음 열린 워크플로",
+    "Node Library": "노드 라이브러리",
+    "Open": "열기",
+    "Open Custom Nodes Folder": "사용자 정의 노드 폴더 열기",
+    "Open DevTools": "개발자 도구 열기",
+    "Open Inputs Folder": "입력 폴더 열기",
+    "Open Logs Folder": "로그 폴더 열기",
+    "Open Models Folder": "모델 폴더 열기",
+    "Open Outputs Folder": "출력 폴더 열기",
+    "Open extra_model_paths_yaml": "extra_model_paths.yaml 열기",
+    "Pin/Unpin Selected Items": "선택한 항목 고정/고정 해제",
+    "Pin/Unpin Selected Nodes": "선택한 노드 고정/고정 해제",
+    "Previous Opened Workflow": "이전 열린 워크플로",
+    "Queue": "큐",
+    "Queue Prompt": "큐 프롬프트",
+    "Queue Prompt (Front)": "큐 프롬프트 (맨 앞)",
+    "Redo": "다시 실행",
+    "Refresh Node Definitions": "노드 정의 새로 고침",
+    "Reinstall": "재설치",
+    "Reset View": "보기 초기화",
+    "Restart": "재시작",
+    "Save": "저장",
+    "Save As": "다른 이름으로 저장",
+    "Settings": "설정",
+    "Terminal": "터미널",
+    "Toggle Bottom Panel": "하단 패널 전환",
+    "Toggle Focus Mode": "포커스 모드 전환",
+    "Toggle Link Visibility": "링크 가시성 전환",
+    "Toggle Lock": "잠금 전환",
+    "Toggle Search Box": "검색 상자 전환",
+    "Toggle Theme": "테마 전환",
+    "Undo": "실행 취소",
+    "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
+    "Workflow": "워크플로",
+    "Workflows": "워크플로",
+    "Zoom In": "확대",
+    "Zoom Out": "축소"
+  },
+  "nodeCategories": {
+    "3d_models": "3D 모델",
+    "DevTools": "개발자 도구",
+    "_for_testing": "_테스트용",
+    "advanced": "고급",
+    "animation": "애니메이션",
+    "api": "API",
+    "attention_experiments": "어텐션 실험",
+    "audio": "오디오",
+    "batch": "배치",
+    "clip": "클립",
+    "combine": "결합",
+    "compositing": "합성",
+    "cond pair": "조건 쌍",
+    "cond single": "단일 조건",
+    "conditioning": "조건화",
+    "controlnet": "컨트롤넷",
+    "create": "생성",
+    "custom_sampling": "사용자 정의 샘플링",
+    "deprecated": "지원 중단",
+    "flux": "flux",
+    "gligen": "글리젠",
+    "guidance": "가이드",
+    "guiders": "가이드",
+    "hooks": "후크",
+    "image": "이미지",
+    "inpaint": "인페인팅",
+    "instructpix2pix": "InstructPix2Pix",
+    "latent": "잠재 데이터",
+    "loaders": "로더",
+    "ltxv": "ltxv",
+    "mask": "마스크",
+    "model": "모델",
+    "model_merging": "모델 병합",
+    "model_patches": "모델 패치",
+    "model_specific": "모델 특정",
+    "noise": "노이즈",
+    "operations": "연산",
+    "photomaker": "포토메이커",
+    "postprocessing": "후처리",
+    "preprocessors": "전처리기",
+    "samplers": "샘플러",
+    "sampling": "샘플링",
+    "schedulers": "스케줄러",
+    "scheduling": "스케줄링",
+    "sd3": "sd3",
+    "sigmas": "시그마",
+    "stable_cascade": "Stable Cascade",
+    "style_model": "스타일 모델",
+    "transform": "변환",
+    "unet": "UNet",
+    "upscale_diffusion": "업스케일 확산",
+    "upscaling": "업스케일링",
+    "video": "비디오",
+    "video_models": "비디오 모델"
+  },
+  "nodeDefs": {
+    "AddNoise": {
+      "display_name": "노이즈 추가"
+    },
+    "AlignYourStepsScheduler": {
+      "display_name": "AlignYourSteps 스케쥴러"
+    },
+    "BasicGuider": {
+      "display_name": "기본 가이드"
+    },
+    "BasicScheduler": {
+      "display_name": "기본 스케줄러"
+    },
+    "BetaSamplingScheduler": {
+      "display_name": "베타 샘플링 스케줄러"
+    },
+    "CFGGuider": {
+      "display_name": "CFG 가이드"
+    },
+    "CLIPAttentionMultiply": {
+      "display_name": "CLIP 어텐션 곱하기"
+    },
+    "CLIPLoader": {
+      "description": "[레시피]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+      "display_name": "CLIP 로드"
+    },
+    "CLIPMergeAdd": {
+      "display_name": "CLIP 병합 (더하기)"
+    },
+    "CLIPMergeSimple": {
+      "display_name": "CLIP 병합 (단순)"
+    },
+    "CLIPMergeSubtract": {
+      "display_name": "CLIP 병합 (빼기)"
+    },
+    "CLIPSave": {
+      "display_name": "CLIP 저장"
+    },
+    "CLIPSetLastLayer": {
+      "display_name": "CLIP 마지막 레이어 설정"
+    },
+    "CLIPTextEncode": {
+      "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 안내하는 임베딩으로 변환합니다.",
+      "display_name": "CLIP 텍스트 인코딩 (프롬프트)"
+    },
+    "CLIPTextEncodeControlnet": {
+      "display_name": "CLIP 텍스트 인코딩 (컨트롤넷)"
+    },
+    "CLIPTextEncodeFlux": {
+      "display_name": "CLIP 텍스트 인코딩 (FLUX)"
+    },
+    "CLIPTextEncodeHunyuanDiT": {
+      "display_name": "CLIP 텍스트 인코딩 (HunyuanDiT)"
+    },
+    "CLIPTextEncodeSD3": {
+      "display_name": "CLIP 텍스트 인코딩 (SD3)"
+    },
+    "CLIPTextEncodeSDXL": {
+      "display_name": "CLIP 텍스트 인코딩 (SDXL)"
+    },
+    "CLIPTextEncodeSDXLRefiner": {
+      "display_name": "CLIP 텍스트 인코딩 (SDXL Refiner)"
+    },
+    "CLIPVisionEncode": {
+      "display_name": "CLIP 비전 인코딩"
+    },
+    "CLIPVisionLoader": {
+      "display_name": "CLIP 비전 로드"
+    },
+    "Canny": {
+      "display_name": "Canny 경계 필터"
+    },
+    "CheckpointLoader": {
+      "display_name": "구성으로 체크포인트 로드 (지원 중단)"
+    },
+    "CheckpointLoaderSimple": {
+      "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
+      "display_name": "체크포인트 로드"
+    },
+    "CheckpointSave": {
+      "display_name": "체크포인트 저장"
+    },
+    "CombineHooks2": {
+      "display_name": "후크 결합 [2]"
+    },
+    "CombineHooks4": {
+      "display_name": "후크 결합 [4]"
+    },
+    "CombineHooks8": {
+      "display_name": "후크 결합 [8]"
+    },
+    "ConditioningAverage": {
+      "display_name": "조건 (평균)"
+    },
+    "ConditioningCombine": {
+      "display_name": "조건 (결합)"
+    },
+    "ConditioningConcat": {
+      "display_name": "조건 (연결)"
+    },
+    "ConditioningSetArea": {
+      "display_name": "조건 (영역 설정)"
+    },
+    "ConditioningSetAreaPercentage": {
+      "display_name": "조건 (비율로 영역 설정)"
+    },
+    "ConditioningSetAreaStrength": {
+      "display_name": "조건 (영역 강도 설정)"
+    },
+    "ConditioningSetDefaultCombine": {
+      "display_name": "조건 (기본 결합 설정)"
+    },
+    "ConditioningSetMask": {
+      "display_name": "조건 (마스크 설정)"
+    },
+    "ConditioningSetProperties": {
+      "display_name": "조건 (속성 설정)"
+    },
+    "ConditioningSetPropertiesAndCombine": {
+      "display_name": "조건 (속성 설정 및 결합)"
+    },
+    "ConditioningSetTimestepRange": {
+      "display_name": "조건 (타임스텝 범위 설정)"
+    },
+    "ConditioningTimestepsRange": {
+      "display_name": "조건 (타임스텝 범위)"
+    },
+    "ConditioningZeroOut": {
+      "display_name": "조건 (제로 아웃)"
+    },
+    "ControlNetApply": {
+      "display_name": "컨트롤넷 적용 (구형)"
+    },
+    "ControlNetApplyAdvanced": {
+      "display_name": "컨트롤넷 적용"
+    },
+    "ControlNetApplySD3": {
+      "display_name": "컨트롤넷을 VAE와 함께 적용"
+    },
+    "ControlNetInpaintingAliMamaApply": {
+      "display_name": "컨트롤넷 인페인팅 AliMama 적용"
+    },
+    "ControlNetLoader": {
+      "display_name": "컨트롤넷 모델 로드"
+    },
+    "CreateHookKeyframe": {
+      "display_name": "후크 키프레임 생성"
+    },
+    "CreateHookKeyframesFromFloats": {
+      "display_name": "부동 소수점으로 후크 키프레임 생성"
+    },
+    "CreateHookKeyframesInterpolated": {
+      "display_name": "보간된 후크 키프레임 생성"
+    },
+    "CreateHookLora": {
+      "display_name": "후크 LoRA 생성"
+    },
+    "CreateHookLoraModelOnly": {
+      "display_name": "후크 LoRA 생성 (모델 전용)"
+    },
+    "CreateHookModelAsLora": {
+      "display_name": "후크 모델을 LoRA로 생성"
+    },
+    "CreateHookModelAsLoraModelOnly": {
+      "display_name": "후크 모델을 LoRA로 생성 (모델 전용)"
+    },
+    "CropMask": {
+      "display_name": "마스크 자르기"
+    },
+    "DevToolsDeprecatedNode": {
+      "description": "지원 중단된 노드",
+      "display_name": "지원 중단된 노드"
+    },
+    "DevToolsErrorRaiseNode": {
+      "description": "개발 목적으로 오류를 발생시킵니다",
+      "display_name": "오류 발생"
+    },
+    "DevToolsErrorRaiseNodeWithMessage": {
+      "description": "개발 목적으로 메시지와 함께 오류를 발생시킵니다",
+      "display_name": "메시지와 함께 오류 발생"
+    },
+    "DevToolsExperimentalNode": {
+      "description": "실험적 노드",
+      "display_name": "실험적 노드"
+    },
+    "DevToolsLongComboDropdown": {
+      "description": "긴 콤보 드롭다운",
+      "display_name": "긴 콤보 드롭다운"
+    },
+    "DevToolsNodeWithForceInput": {
+      "description": "강제 입력이 있는 노드",
+      "display_name": "강제 입력이 있는 노드"
+    },
+    "DevToolsNodeWithOnlyOptionalInput": {
+      "description": "선택적 입력만 있는 노드",
+      "display_name": "선택적 입력만 있는 노드"
+    },
+    "DevToolsNodeWithOptionalInput": {
+      "description": "선택적 입력이 있는 노드",
+      "display_name": "선택적 입력이 있는 노드"
+    },
+    "DevToolsNodeWithOutputList": {
+      "description": "출력 목록이 있는 노드",
+      "display_name": "출력 목록이 있는 노드"
+    },
+    "DevToolsNodeWithStringInput": {
+      "description": "문자열 입력이 있는 노드",
+      "display_name": "문자열 입력이 있는 노드"
+    },
+    "DevToolsNodeWithUnionInput": {
+      "description": "유니온 입력이 있는 노드",
+      "display_name": "유니온 입력이 있는 노드"
+    },
+    "DiffControlNetLoader": {
+      "display_name": "컨트롤넷 모델 로드 (차이)"
+    },
+    "DifferentialDiffusion": {
+      "display_name": "차등 확산"
+    },
+    "DiffusersLoader": {
+      "display_name": "디퓨저 로더"
+    },
+    "DisableNoise": {
+      "display_name": "노이즈 비활성화"
+    },
+    "DualCFGGuider": {
+      "display_name": "이중 CFG 가이드"
+    },
+    "DualCLIPLoader": {
+      "description": "[레시피]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+      "display_name": "이중 CLIP 로더"
+    },
+    "EmptyImage": {
+      "display_name": "빈 이미지"
+    },
+    "EmptyLTXVLatentVideo": {
+      "display_name": "빈 LTXV 잠재 비디오"
+    },
+    "EmptyLatentAudio": {
+      "display_name": "빈 잠재 오디오"
+    },
+    "EmptyLatentImage": {
+      "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
+      "display_name": "빈 잠재 이미지"
+    },
+    "EmptyMochiLatentVideo": {
+      "display_name": "빈 Mochi 잠재 비디오"
+    },
+    "EmptySD3LatentImage": {
+      "display_name": "빈 SD3 잠재 이미지"
+    },
+    "ExponentialScheduler": {
+      "display_name": "지수 스케줄러"
+    },
+    "FeatherMask": {
+      "display_name": "페더 마스크"
+    },
+    "FlipSigmas": {
+      "display_name": "시그마 뒤집기"
+    },
+    "FluxGuidance": {
+      "display_name": "FLUX 가이드"
+    },
+    "FreeU": {
+      "display_name": "FreeU"
+    },
+    "FreeU_V2": {
+      "display_name": "FreeU V2"
+    },
+    "GITSScheduler": {
+      "display_name": "GITS 스케줄러"
+    },
+    "GLIGENLoader": {
+      "display_name": "GLIGEN 로더"
+    },
+    "GLIGENTextBoxApply": {
+      "display_name": "GLIGEN 텍스트 박스 적용"
+    },
+    "GrowMask": {
+      "display_name": "마스크 확장"
+    },
+    "HyperTile": {
+      "display_name": "하이퍼 타일"
+    },
+    "HypernetworkLoader": {
+      "display_name": "하이퍼네트워크 로더"
+    },
+    "ImageBatch": {
+      "display_name": "이미지 배치"
+    },
+    "ImageBlend": {
+      "display_name": "이미지 혼합"
+    },
+    "ImageBlur": {
+      "display_name": "이미지 흐림"
+    },
+    "ImageColorToMask": {
+      "display_name": "이미지 색상을 마스크로 변환"
+    },
+    "ImageCompositeMasked": {
+      "display_name": "마스크된 이미지 합성"
+    },
+    "ImageCrop": {
+      "display_name": "이미지 자르기"
+    },
+    "ImageFromBatch": {
+      "display_name": "배치에서 이미지 가져오기"
+    },
+    "ImageInvert": {
+      "display_name": "이미지 반전"
+    },
+    "ImageOnlyCheckpointLoader": {
+      "display_name": "이미지 전용 체크포인트 로더 (img2vid 모델)"
+    },
+    "ImageOnlyCheckpointSave": {
+      "display_name": "이미지 전용 체크포인트 저장"
+    },
+    "ImagePadForOutpaint": {
+      "display_name": "아웃페인팅을 위한 이미지 패딩"
+    },
+    "ImageQuantize": {
+      "display_name": "이미지 양자화"
+    },
+    "ImageScale": {
+      "display_name": "이미지 확대"
+    },
+    "ImageScaleBy": {
+      "display_name": "이미지 확대 비율"
+    },
+    "ImageScaleToTotalPixels": {
+      "display_name": "총 픽셀 수에 맞춰 이미지 크기 조정"
+    },
+    "ImageSharpen": {
+      "display_name": "이미지 선명화"
+    },
+    "ImageToMask": {
+      "display_name": "이미지를 마스크로 변환"
+    },
+    "ImageUpscaleWithModel": {
+      "display_name": "모델을 사용한 이미지 확대"
+    },
+    "InpaintModelConditioning": {
+      "display_name": "인페인팅 모델 조건 설정"
+    },
+    "InstructPixToPixConditioning": {
+      "display_name": "픽셀 간 조건 설정"
+    },
+    "InvertMask": {
+      "display_name": "마스크 반전"
+    },
+    "JoinImageWithAlpha": {
+      "display_name": "알파와 함께 이미지 결합"
+    },
+    "KSampler": {
+      "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 이미지를 디노이즈합니다.",
+      "display_name": "KSampler"
+    },
+    "KSamplerAdvanced": {
+      "display_name": "고급 KSampler"
+    },
+    "KSamplerSelect": {
+      "display_name": "KSampler (선택)"
+    },
+    "KarrasScheduler": {
+      "display_name": "Karras 스케줄러"
+    },
+    "LTXVConditioning": {
+      "display_name": "LTXV 조건 설정"
+    },
+    "LTXVImgToVideo": {
+      "display_name": "LTXV 이미지에서 비디오로"
+    },
+    "LTXVScheduler": {
+      "display_name": "LTXV 스케줄러"
+    },
+    "LaplaceScheduler": {
+      "display_name": "라플라스 스케줄러"
+    },
+    "LatentAdd": {
+      "display_name": "잠재 데이터 연산 (더하기)"
+    },
+    "LatentApplyOperation": {
+      "display_name": "잠재 데이터 연산 (연산 적용)"
+    },
+    "LatentApplyOperationCFG": {
+      "display_name": "잠재 데이터 CFG 연산 (연산 적용)"
+    },
+    "LatentBatch": {
+      "display_name": "잠재 데이터 배치 연결"
+    },
+    "LatentBatchSeedBehavior": {
+      "display_name": "잠재 데이터 배치 시드 동작"
+    },
+    "LatentBlend": {
+      "display_name": "잠재 데이터 연산 (혼합)"
+    },
+    "LatentComposite": {
+      "display_name": "잠재 데이터 합성 (위치 기반)"
+    },
+    "LatentCompositeMasked": {
+      "display_name": "잠재 데이터 합성 (마스크 기반)"
+    },
+    "LatentCrop": {
+      "display_name": "잠재 데이터 자르기"
+    },
+    "LatentFlip": {
+      "display_name": "잠재 데이터 연산 (뒤집기)"
+    },
+    "LatentFromBatch": {
+      "display_name": "배치에서 잠재 데이터 가져오기"
+    },
+    "LatentInterpolate": {
+      "display_name": "잠재 데이터 연산 (보간)"
+    },
+    "LatentMultiply": {
+      "display_name": "잠재 데이터 연산 (곱하기)"
+    },
+    "LatentOperationSharpen": {
+      "display_name": "잠재 데이터 연산 (선명화)"
+    },
+    "LatentOperationTonemapReinhard": {
+      "display_name": "잠재 데이터 연산 (톤맵 레인하르트)"
+    },
+    "LatentRotate": {
+      "display_name": "잠재 데이터 연산 (회전)"
+    },
+    "LatentSubtract": {
+      "display_name": "잠재 데이터 연산 (빼기)"
+    },
+    "LatentUpscale": {
+      "display_name": "잠재 데이터 크기 조정"
+    },
+    "LatentUpscaleBy": {
+      "display_name": "잠재 데이터 크기 배율 조정"
+    },
+    "LoadAudio": {
+      "display_name": "오디오 로드"
+    },
+    "LoadImage": {
+      "display_name": "이미지 로드"
+    },
+    "LoadImageMask": {
+      "display_name": "마스크 이미지 로드"
+    },
+    "LoadLatent": {
+      "display_name": "잠재 데이터 로드"
+    },
+    "LoraLoader": {
+      "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+      "display_name": "LoRA 로드"
+    },
+    "LoraLoaderModelOnly": {
+      "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+      "display_name": "LoRA 로드 (모델 전용)"
+    },
+    "LoraSave": {
+      "display_name": "LoRA 추출 및 저장"
+    },
+    "MaskComposite": {
+      "display_name": "마스크 합성"
+    },
+    "MaskToImage": {
+      "display_name": "마스크를 이미지로 변환"
+    },
+    "ModelMergeAdd": {
+      "display_name": "모델 병합 (더하기)"
+    },
+    "ModelMergeAuraflow": {
+      "display_name": "모델 병합 (AuraFlow)"
+    },
+    "ModelMergeBlocks": {
+      "display_name": "모델 병합 (블록)"
+    },
+    "ModelMergeFlux1": {
+      "display_name": "모델 병합 (FLUX.1)"
+    },
+    "ModelMergeLTXV": {
+      "display_name": "모델 병합 LTXV"
+    },
+    "ModelMergeMochiPreview": {
+      "display_name": "모델 병합 (Mochi 프리뷰)"
+    },
+    "ModelMergeSD1": {
+      "display_name": "모델 병합 (SD1)"
+    },
+    "ModelMergeSD2": {
+      "display_name": "모델 병합 (SD2)"
+    },
+    "ModelMergeSD35_Large": {
+      "display_name": "모델 병합 (SD35 Large)"
+    },
+    "ModelMergeSD3_2B": {
+      "display_name": "모델 병합 (SD3 2B)"
+    },
+    "ModelMergeSDXL": {
+      "display_name": "모델 병합 (SDXL)"
+    },
+    "ModelMergeSimple": {
+      "display_name": "모델 병합 (단순)"
+    },
+    "ModelMergeSubtract": {
+      "display_name": "모델 병합 (빼기)"
+    },
+    "ModelSamplingAuraFlow": {
+      "display_name": "모델 샘플링 (AuraFlow)"
+    },
+    "ModelSamplingContinuousEDM": {
+      "display_name": "모델 샘플링 (연속 EDM)"
+    },
+    "ModelSamplingContinuousV": {
+      "display_name": "모델 샘플링 (연속 V)"
+    },
+    "ModelSamplingDiscrete": {
+      "display_name": "모델 샘플링 (이산)"
+    },
+    "ModelSamplingFlux": {
+      "display_name": "모델 샘플링 (FLUX)"
+    },
+    "ModelSamplingLTXV": {
+      "display_name": "모델 샘플링 (LTXV)"
+    },
+    "ModelSamplingSD3": {
+      "display_name": "모델 샘플링 (SD3)"
+    },
+    "ModelSamplingStableCascade": {
+      "display_name": "모델 샘플링 (StableCascade)"
+    },
+    "ModelSave": {
+      "display_name": "모델 저장"
+    },
+    "Morphology": {
+      "display_name": "이미지 형태 변환"
+    },
+    "PairConditioningCombine": {
+      "display_name": "조건 쌍 (결합)"
+    },
+    "PairConditioningSetDefaultCombine": {
+      "display_name": "조건 쌍 (기본 결합 설정)"
+    },
+    "PairConditioningSetProperties": {
+      "display_name": "조건 쌍 (속성 설정)"
+    },
+    "PairConditioningSetPropertiesAndCombine": {
+      "display_name": "조건 쌍 (속성 설정 및 결합)"
+    },
+    "PatchModelAddDownscale": {
+      "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)"
+    },
+    "PerpNeg": {
+      "display_name": "Perp-Neg (PerpNegGuider에 의해 지원 중단됨)"
+    },
+    "PerpNegGuider": {
+      "display_name": "PerpNeg 가이드"
+    },
+    "PerturbedAttentionGuidance": {
+      "display_name": "교란 어텐션 유도 (PAG)"
+    },
+    "PhotoMakerEncode": {
+      "display_name": "포토메이커 인코딩"
+    },
+    "PhotoMakerLoader": {
+      "display_name": "포토메이커 로더"
+    },
+    "PolyexponentialScheduler": {
+      "display_name": "다항 지수 스케줄러"
+    },
+    "PorterDuffImageComposite": {
+      "display_name": "포터-더프 이미지 합성"
+    },
+    "PreviewAudio": {
+      "display_name": "오디오 미리듣기"
+    },
+    "PreviewImage": {
+      "description": "입력 이미지를 ComfyUI 의 임시(temp) 폴더에 저장합니다.",
+      "display_name": "이미지 미리보기"
+    },
+    "RandomNoise": {
+      "display_name": "무작위 노이즈"
+    },
+    "RebatchImages": {
+      "display_name": "이미지 배치 재배치"
+    },
+    "RebatchLatents": {
+      "display_name": "잠재 데이터 배치 재배치"
+    },
+    "RepeatImageBatch": {
+      "display_name": "이미지 반복 배치 생성"
+    },
+    "RepeatLatentBatch": {
+      "display_name": "잠재 데이터 반복 배치 생성"
+    },
+    "RescaleCFG": {
+      "display_name": "CFG 리스케일"
+    },
+    "SDTurboScheduler": {
+      "display_name": "SD-Turbo 스케줄러"
+    },
+    "SD_4XUpscale_Conditioning": {
+      "display_name": "SD_4X 확대 조건 설정"
+    },
+    "SV3D_Conditioning": {
+      "display_name": "SV3D 조건 설정"
+    },
+    "SVD_img2vid_Conditioning": {
+      "display_name": "SVD_img2vid 조건 설정"
+    },
+    "SamplerCustom": {
+      "display_name": "사용자 정의 샘플러"
+    },
+    "SamplerCustomAdvanced": {
+      "display_name": "고급 사용자 정의 샘플러"
+    },
+    "SamplerDPMAdaptative": {
+      "display_name": "DPMAdaptive 샘플러"
+    },
+    "SamplerDPMPP_2M_SDE": {
+      "display_name": "DPMPP_2M_SDE 샘플러러"
+    },
+    "SamplerDPMPP_2S_Ancestral": {
+      "display_name": "DPMPP_2S_Ancestral 샘플러"
+    },
+    "SamplerDPMPP_3M_SDE": {
+      "display_name": "DPMPP_3M_SDE 샘플러"
+    },
+    "SamplerDPMPP_SDE": {
+      "display_name": "DPMPP_SDE 샘플러"
+    },
+    "SamplerEulerAncestral": {
+      "display_name": "Eluer Ancestral 샘플러"
+    },
+    "SamplerEulerAncestralCFGPP": {
+      "display_name": "Eluer Acnestral CFG++ 샘플러"
+    },
+    "SamplerEulerCFGpp": {
+      "display_name": "Eluer CFG++ 샘플러"
+    },
+    "SamplerLCMUpscale": {
+      "display_name": "LCM 확대 샘플러"
+    },
+    "SamplerLMS": {
+      "display_name": "LMS 샘플러"
+    },
+    "SaveAnimatedPNG": {
+      "display_name": "애니메이션 PNG 저장"
+    },
+    "SaveAnimatedWEBP": {
+      "display_name": "애니메이션 WEBP 저장"
+    },
+    "SaveAudio": {
+      "display_name": "오디오 저장"
+    },
+    "SaveImage": {
+      "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+      "display_name": "이미지 저장"
+    },
+    "SaveImageWebsocket": {
+      "display_name": "이미지 웹소켓 전송"
+    },
+    "SaveLatent": {
+      "display_name": "잠재 데이터 저장"
+    },
+    "SelfAttentionGuidance": {
+      "display_name": "셀프 어텐션 가이드"
+    },
+    "SetClipHooks": {
+      "display_name": "CLIP 후크 설정"
+    },
+    "SetHookKeyframes": {
+      "display_name": "후크 키프레임 설정"
+    },
+    "SetLatentNoiseMask": {
+      "display_name": "잠재 데이터에 노이즈 마스크 설정"
+    },
+    "SetUnionControlNetType": {
+      "display_name": "통합 컨트롤넷 유형 설정"
+    },
+    "SkipLayerGuidanceDiT": {
+      "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
+      "display_name": "SkipLayerGuidanceDiT"
+    },
+    "SkipLayerGuidanceSD3": {
+      "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
+      "display_name": "SkipLayerGuidanceSD3"
+    },
+    "SolidMask": {
+      "display_name": "단색 마스크"
+    },
+    "SplitImageWithAlpha": {
+      "display_name": "이미지와 알파채널 분리"
+    },
+    "SplitSigmas": {
+      "display_name": "시그마 분할 (스텝형)"
+    },
+    "SplitSigmasDenoise": {
+      "display_name": "시그마 분할 (디노이즈형)"
+    },
+    "StableCascade_EmptyLatentImage": {
+      "display_name": "StableCascade 빈 잠재 이미지"
+    },
+    "StableCascade_StageB_Conditioning": {
+      "display_name": "StableCascasde_StageB 조건 설정"
+    },
+    "StableCascade_StageC_VAEEncode": {
+      "display_name": "StableCascade_StageC VAE 인코딩"
+    },
+    "StableCascade_SuperResolutionControlnet": {
+      "display_name": "StableCascade 초고해상도 컨트롤넷"
+    },
+    "StableZero123_Conditioning": {
+      "display_name": "StableZero123 조건 설정"
+    },
+    "StableZero123_Conditioning_Batched": {
+      "display_name": "StableZero123 조건 설정_배치"
+    },
+    "StyleModelApply": {
+      "display_name": "스타일 모델 적용"
+    },
+    "StyleModelLoader": {
+      "display_name": "스타일 모델 로드"
+    },
+    "ThresholdMask": {
+      "display_name": "임계값 마스크"
+    },
+    "TomePatchModel": {
+      "display_name": "토큰 병합(ToMe) 모델 패치"
+    },
+    "TorchCompileModel": {
+      "display_name": "모델 토치 컴파일"
+    },
+    "TripleCLIPLoader": {
+      "description": "[레시피]\n\nsd3: clip-l, clip-g, t5",
+      "display_name": "삼중 CLIP 로더"
+    },
+    "UNETLoader": {
+      "display_name": "확산 모델 로드"
+    },
+    "UNetCrossAttentionMultiply": {
+      "display_name": "UNet 교차 어텐션 곱하기"
+    },
+    "UNetSelfAttentionMultiply": {
+      "display_name": "UNet 셀프 어텐션 곱하기"
+    },
+    "UNetTemporalAttentionMultiply": {
+      "display_name": "UNet 템포럴 어텐션 곱하기"
+    },
+    "UpscaleModelLoader": {
+      "display_name": "업스케일 모델 로드"
+    },
+    "VAEDecode": {
+      "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
+      "display_name": "VAE 디코드"
+    },
+    "VAEDecodeAudio": {
+      "display_name": "VAE 디코드 오디오"
+    },
+    "VAEDecodeTiled": {
+      "display_name": "VAE 디코드 (타일)"
+    },
+    "VAEEncode": {
+      "display_name": "VAE 인코드"
+    },
+    "VAEEncodeAudio": {
+      "display_name": "VAE 인코드 오디오"
+    },
+    "VAEEncodeForInpaint": {
+      "display_name": "VAE 인코드 (인페인팅용)"
+    },
+    "VAEEncodeTiled": {
+      "display_name": "VAE 인코드 (타일)"
+    },
+    "VAELoader": {
+      "display_name": "VAE 로드"
+    },
+    "VAESave": {
+      "display_name": "VAE 저장"
+    },
+    "VPScheduler": {
+      "display_name": "VP 스케줄러"
+    },
+    "VideoLinearCFGGuidance": {
+      "display_name": "비디오 선형 CFG 가이드"
+    },
+    "VideoTriangleCFGGuidance": {
+      "display_name": "비디오 삼각형 CFG 가이드"
+    },
+    "WebcamCapture": {
+      "display_name": "웹캠 캡처"
+    },
+    "unCLIPCheckpointLoader": {
+      "display_name": "unCLIP 체크포인트 로더"
+    },
+    "unCLIPConditioning": {
+      "display_name": "unCLIP 조건 설정"
+    }
+  },
+  "notSupported": {
+    "continue": "계속",
+    "continueTooltip": "내 장치가 지원되는 장치가 확실합니다.",
+    "learnMore": "자세히 알아보기",
+    "message": "다음 장치만 지원됩니다:",
+    "reportIssue": "이슈 보고",
+    "supportedDevices": {
+      "macos": "MacOS (M1 이상)",
+      "windows": "Windows (CUDA 지원 Nvidia GPU)"
+    },
+    "title": "이 장치는 지원되지 않습니다."
+  },
+  "serverConfig": {
+    "modifiedConfigs": "다음 서버 구성을 수정했습니다. 변경 사항을 적용하려면 다시 시작하세오.",
+    "restart": "다시 시작",
+    "revertChanges": "변경 사항 되돌리기"
+  },
+  "serverConfigCategories": {
+    "Attention": "어텐션",
+    "CUDA": "CUDA",
+    "Cache": "캐시",
+    "General": "일반",
+    "Inference": "추론",
+    "Memory": "메모리",
+    "Network": "네트워크",
+    "Preview": "미리보기"
+  },
+  "serverConfigItems": {
+    "cache-classic": {
+      "name": "예전 방식의 공격적 캐시 시스템 사용"
+    },
+    "cache-lru": {
+      "name": "최대 N개 노드 결과를 캐시하는 LRU(Least Recently Used) 캐싱 사용.",
+      "tooltip": "RAM/VRAM 사용량이 증가합니다"
+    },
+    "cpu-vae": {
+      "name": "CPU에서 VAE 실행"
+    },
+    "cross-attention-method": {
+      "name": "교차 어텐션 방법"
+    },
+    "cuda-device": {
+      "name": "사용할 CUDA 장치 번호"
+    },
+    "cuda-malloc": {
+      "name": "메모리 할당에 CUDA malloc 사용"
+    },
+    "default-hashing-function": {
+      "name": "모델 파일의 기본 해싱 함수"
+    },
+    "deterministic": {
+      "name": "사용 가능한 경우 pytorch가 느리지만 결정론적인 알고리즘을 사용하도록 설정합니다.",
+      "tooltip": "주의: 이 옵션이 항상 결정론적 이미지를 보장하지는 않습니다."
+    },
+    "directml": {
+      "name": "DirectML 장치 번호"
+    },
+    "disable-all-custom-nodes": {
+      "name": "모든 사용자 정의 노드 로드 비활성화."
+    },
+    "disable-ipex-optimize": {
+      "name": "IPEX 최적화 비활성화"
+    },
+    "disable-metadata": {
+      "name": "파일에 프롬프트(워크플로) 메타데이터 저장 비활성화."
+    },
+    "disable-smart-memory": {
+      "name": "스마트 메모리 관리 비활성화",
+      "tooltip": "ComfyUI가 모델을 VRAM에 유지하는 대신 시스템 메모리로 공격적으로 오프로드하도록 강제합니다."
+    },
+    "disable-xformers": {
+      "name": "xFormers 최적화 비활성화"
+    },
+    "dont-print-server": {
+      "name": "서버 출력을 콘솔에 출력하지 않음."
+    },
+    "dont-upcast-attention": {
+      "name": "어텐션 업캐스트 방지"
+    },
+    "enable-cors-header": {
+      "name": "CORS 헤더 활성화: 모든 출처에 대해 \"*\" 사용 또는 도메인 지정"
+    },
+    "fast": {
+      "name": "테스트되지 않고 품질 저하 가능성이 있는 실험적 최적화 기능을 활성화 합니다."
+    },
+    "force-channels-last": {
+      "name": "channels-last 메모리 형식 강제 적용"
+    },
+    "force-upcast-attention": {
+      "name": "어텐션 업캐스트 강제 적용"
+    },
+    "global-precision": {
+      "name": "전역 부동 소수점 정밀도",
+      "tooltip": "전역 부동 소수점 정밀도"
+    },
+    "log-level": {
+      "name": "로그 출력 수준"
+    },
+    "max-upload-size": {
+      "name": "최대 업로드 크기 (MB)"
+    },
+    "preview-method": {
+      "name": "잠재 데이터 미리보기 방법"
+    },
+    "preview-size": {
+      "name": "미리보기 최대 이미지 크기"
+    },
+    "reserve-vram": {
+      "name": "예약된 VRAM (GB)",
+      "tooltip": "OS/기타 소프트웨어에서 사용하기 위해 예약할 VRAM의 양을 GB 단위로 설정합니다. 기본적으로 OS에 따라 일부 양이 예약됩니다."
+    },
+    "text-encoder-precision": {
+      "name": "텍스트 인코더 정밀도",
+      "tooltip": "텍스트 인코더 정밀도"
+    },
+    "tls-certfile": {
+      "name": "TLS 인증서 파일: HTTPS용 TLS 인증서 파일 경로"
+    },
+    "tls-keyfile": {
+      "name": "TLS 키 파일: HTTPS용 TLS 키 파일 경로"
+    },
+    "unet-precision": {
+      "name": "UNET 정밀도",
+      "tooltip": "UNET 정밀도"
+    },
+    "vae-precision": {
+      "name": "VAE 정밀도",
+      "tooltip": "VAE 정밀도"
+    },
+    "vram-management": {
+      "name": "VRAM 관리 모드"
+    }
+  },
+  "serverStart": {
+    "openLogs": "로그 열기",
+    "process": {
+      "error": "ComfyUI Desktop을 시작할 수 없습니다",
+      "initial-state": "로딩 중...",
+      "python-setup": "파이썬 환경 설정 중...",
+      "ready": "마무리 중...",
+      "starting-server": "ComfyUI 서버 시작 중..."
+    },
+    "reinstall": "재설치",
+    "reportIssue": "문제 보고"
+  },
+  "settingsCategories": {
+    "About": "정보",
+    "Appearance": "모양",
+    "BrushAdjustment": "브러시 조정",
+    "Canvas": "캔버스",
+    "ColorPalette": "색상 팔레트",
+    "Comfy": "Comfy",
+    "Comfy-Desktop": "Comfy-Desktop",
+    "DevMode": "개발자 모드",
+    "EditAttention": "토큰 가중치 편집",
+    "Extension": "확장",
+    "General": "일반",
+    "Graph": "그래프",
+    "Group": "그룹",
+    "Keybinding": "키 바인딩",
+    "Link": "링크",
+    "LinkRelease": "링크 해제",
+    "LiteGraph": "LiteGraph",
+    "Locale": "언어 설정",
+    "Mask Editor": "마스크 편집기",
+    "Menu": "메뉴",
+    "ModelLibrary": "모델 라이브러리",
+    "NewEditor": "새 편집기",
+    "Node": "노드",
+    "Node Search Box": "노드 검색 상자",
+    "Node Widget": "노드 위젯",
+    "NodeInputConversionSubmenus": "노드 입력 변환 하위 메뉴",
+    "NodeLibrary": "노드 라이브러리",
+    "Pointer": "포인터",
+    "Queue": "큐",
+    "QueueButton": "큐 버튼",
+    "RerouteBeta": "경로재설정 베타",
+    "Server": "서버",
+    "Server-Config": "서버 구성",
+    "Settings": "설정",
+    "Sidebar": "사이드바",
+    "Tree Explorer": "트리 탐색기",
+    "Validation": "검증",
+    "Window": "창",
+    "Workflow": "워크플로"
+  },
+  "settingsDialog": {
+    "Comfy-Desktop_AutoUpdate": {
+      "name": "자동 업데이트 확인"
+    },
+    "Comfy-Desktop_SendStatistics": {
+      "name": "익명으로 충돌 보고서 전송"
+    },
+    "Comfy_ColorPalette": {
+      "name": "색상 팔레트"
+    },
+    "Comfy_ConfirmClear": {
+      "name": "워크플로 비우기 시 확인 요구"
+    },
+    "Comfy_DOMClippingEnabled": {
+      "name": "DOM 요소 클리핑 활성화 (활성화 시 성능 저하 가능)"
+    },
+    "Comfy_DevMode": {
+      "name": "개발자 모드 옵션 활성화 (API 저장 등)"
+    },
+    "Comfy_DisableFloatRounding": {
+      "name": "기본 부동 소수점 위젯 반올림 비활성화",
+      "tooltip": "(페이지 새로 고침 필요) 백엔드에서 노드에 의해 설정된 반올림이 있을 때 반올림을 비활성화할 수 없습니다."
+    },
+    "Comfy_DisableSliders": {
+      "name": "노드 위젯 슬라이더 비활성화"
+    },
+    "Comfy_EditAttention_Delta": {
+      "name": "Ctrl+위/아래 정밀도"
+    },
+    "Comfy_EnableTooltips": {
+      "name": "툴팁 활성화"
+    },
+    "Comfy_EnableWorkflowViewRestore": {
+      "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
+    },
+    "Comfy_Extension_Disabled": {
+      "name": "비활성화된 확장 이름"
+    },
+    "Comfy_FloatRoundingPrecision": {
+      "name": "부동 소수점 위젯 반올림 소수 자리 수 [0 = 자동]",
+      "tooltip": "(페이지 새로 고침 필요)"
+    },
+    "Comfy_Graph_CanvasInfo": {
+      "name": "왼쪽 하단 모서리에 캔버스 정보 표시 (fps 등)"
+    },
+    "Comfy_Graph_CanvasMenu": {
+      "name": "그래프 캔버스 메뉴 표시"
+    },
+    "Comfy_Graph_CtrlShiftZoom": {
+      "name": "빠른 확대/축소 단축키 활성화 (Ctrl + Shift + 드래그)"
+    },
+    "Comfy_Graph_LinkMarkers": {
+      "name": "링크 중간점 마커"
+    },
+    "Comfy_Graph_ZoomSpeed": {
+      "name": "캔버스 확대/축소 속도"
+    },
+    "Comfy_GroupSelectedNodes_Padding": {
+      "name": "선택된 노드 패딩"
+    },
+    "Comfy_Group_DoubleClickTitleToEdit": {
+      "name": "그룹 제목을 두 번 클릭하여 편집"
+    },
+    "Comfy_InvertMenuScrolling": {
+      "name": "컨텍스트 메뉴 스크롤 반전"
+    },
+    "Comfy_Keybinding_NewBindings": {
+      "name": "사용자가 설정한 키 바인딩"
+    },
+    "Comfy_Keybinding_UnsetBindings": {
+      "name": "사용자가 해제한 키 바인딩"
+    },
+    "Comfy_LinkRelease_Action": {
+      "name": "링크 해제 시 동작 (수정자 없음)"
+    },
+    "Comfy_LinkRelease_ActionShift": {
+      "name": "링크 해제 시 동작 (Shift)"
+    },
+    "Comfy_LinkRenderMode": {
+      "name": "링크 렌더 모드"
+    },
+    "Comfy_Locale": {
+      "name": "언어"
+    },
+    "Comfy_MaskEditor_BrushAdjustmentSpeed": {
+      "name": "브러시 조정 속도 배수",
+      "tooltip": "조정할 때 브러시 크기와 경도가 얼마나 빨리 변하는지를 제어합니다. 값이 높을수록 변화가 더 빠릅니다."
+    },
+    "Comfy_MaskEditor_UseDominantAxis": {
+      "name": "브러시 조정을 지배 축에 고정",
+      "tooltip": "활성화하면 브러시 조정이 이동하는 방향에 따라 크기 또는 경도에만 영향을 미칩니다."
+    },
+    "Comfy_MaskEditor_UseNewEditor": {
+      "name": "새 마스크 편집기 사용",
+      "tooltip": "새 마스크 편집기 인터페이스로 전환"
+    },
+    "Comfy_MenuPosition": {
+      "name": "구식 메뉴의 위치 저장"
+    },
+    "Comfy_ModelLibrary_AutoLoadAll": {
+      "name": "모든 모델 폴더 자동 로드",
+      "tooltip": "참이면 모든 폴더가 모델 라이브러리를 열 때 즉시 로드됩니다 (로드하는 동안 지연이 발생할 수 있습니다). 거짓이면 루트 수준 모델 폴더는 클릭할 때만 로드됩니다."
+    },
+    "Comfy_ModelLibrary_NameFormat": {
+      "name": "모델 라이브러리 트리 뷰에 표시할 이름",
+      "tooltip": "\"파일 이름\"을 선택하면 모델 목록에서 원시 파일 이름(디렉토리 또는 \".safetensors\" 확장자 없이)의 단순화된 뷰가 렌더링됩니다. \"제목\"을 선택하면 구성 가능한 모델 메타데이터 제목이 표시됩니다."
+    },
+    "Comfy_NodeBadge_NodeIdBadgeMode": {
+      "name": "노드 ID 배지 모드"
+    },
+    "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
+      "name": "노드 생명 주기 배지 모드"
+    },
+    "Comfy_NodeBadge_NodeSourceBadgeMode": {
+      "name": "노드 출처 배지 모드"
+    },
+    "Comfy_NodeInputConversionSubmenus": {
+      "name": "노드 컨텍스트 메뉴에서 입력/위젯 간 변환 항목을 하위 메뉴에 배치합니다."
+    },
+    "Comfy_NodeLibrary_Bookmarks": {
+      "name": "노드 라이브러리 북마크 (지원 중단)"
+    },
+    "Comfy_NodeLibrary_BookmarksCustomization": {
+      "name": "노드 라이브러리 북마크 사용자 정의"
+    },
+    "Comfy_NodeLibrary_Bookmarks_V2": {
+      "name": "고유 이름을 가진 노드 라이브러리 북마크 v2"
+    },
+    "Comfy_NodeSearchBoxImpl": {
+      "name": "노드 검색 상자 구현"
+    },
+    "Comfy_NodeSearchBoxImpl_NodePreview": {
+      "name": "노드 미리보기",
+      "tooltip": "기본 구현에만 적용됩니다."
+    },
+    "Comfy_NodeSearchBoxImpl_ShowCategory": {
+      "name": "검색 결과에 노드 카테고리 표시",
+      "tooltip": "기본 구현에만 적용됩니다."
+    },
+    "Comfy_NodeSearchBoxImpl_ShowIdName": {
+      "name": "검색 결과에 노드 ID 이름 표시",
+      "tooltip": "기본 구현에만 적용됩니다."
+    },
+    "Comfy_NodeSearchBoxImpl_ShowNodeFrequency": {
+      "name": "검색 결과에 노드 빈도 표시",
+      "tooltip": "기본 구현에만 적용됩니다."
+    },
+    "Comfy_NodeSuggestions_number": {
+      "name": "노드 제안 수",
+      "tooltip": "라이트그래프 검색 상자/컨텍스트 메뉴 전용"
+    },
+    "Comfy_Node_AutoSnapLinkToSlot": {
+      "name": "링크를 노드 슬롯에 자동 스냅",
+      "tooltip": "링크를 노드 위로 드래그할 때 링크가 노드의 유효한 입력 슬롯에 자동으로 스냅됩니다."
+    },
+    "Comfy_Node_BypassAllLinksOnDelete": {
+      "name": "노드 삭제 시 모든 링크 유지",
+      "tooltip": "노드를 삭제할 때 모든 입력 및 출력 링크를 재연결하려고 시도합니다 (삭제된 노드를 우회)."
+    },
+    "Comfy_Node_DoubleClickTitleToEdit": {
+      "name": "노드 제목을 두 번 클릭하여 편집"
+    },
+    "Comfy_Node_MiddleClickRerouteNode": {
+      "name": "중간 클릭으로 새 경로재설정 노드 생성"
+    },
+    "Comfy_Node_Opacity": {
+      "name": "노드 불투명도"
+    },
+    "Comfy_Node_ShowDeprecated": {
+      "name": "검색에서 지원 중단된 노드 표시",
+      "tooltip": "지원 중단된 노드는 기본적으로 UI에서 숨겨지지만, 이를 사용하는 기존 워크플로에서는 여전히 기능합니다."
+    },
+    "Comfy_Node_ShowExperimental": {
+      "name": "검색에서 실험적 노드 표시",
+      "tooltip": "실험적 노드는 UI에서 그렇게 표시되며, 향후 버전에서 상당한 변경이나 제거의 대상이 될 수 있습니다. 프로덕션 워크플로에서 주의하여 사용하십시오."
+    },
+    "Comfy_Node_SnapHighlightsNode": {
+      "name": "스냅 하이라이트 노드",
+      "tooltip": "링크를 유효한 입력 슬롯이 있는 노드 위로 드래그할 때 노드를 강조 표시합니다."
+    },
+    "Comfy_Pointer_ClickBufferTime": {
+      "name": "포인터 클릭 드리프트 지연",
+      "tooltip": "포인터 버튼을 누른 후, 포인터 움직임을 무시할 수 있는 최대 시간(밀리초)입니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
+    },
+    "Comfy_Pointer_ClickDrift": {
+      "name": "포인터 클릭 드리프트 (최대 거리)",
+      "tooltip": "버튼을 누른 상태에서 포인터가 이 거리보다 더 많이 움직이면, 클릭이 아닌 드래그로 간주됩니다.\n\n클릭하는 동안 포인터가 움직여 의도치 않게 객체가 밀리는 것을 방지합니다."
+    },
+    "Comfy_Pointer_DoubleClickTime": {
+      "name": "더블 클릭 간격 (최대)",
+      "tooltip": "더블 클릭의 두 클릭 사이의 최대 시간(밀리초)입니다. 이 값을 늘리면 가끔 더블 클릭이 인식되지 않는 문제를 해결할 수 있습니다."
+    },
+    "Comfy_PreviewFormat": {
+      "name": "미리보기 이미지 형식",
+      "tooltip": "이미지 위젯에서 미리보기를 표시할 때 경량 이미지로 변환합니다. '이미지 포맷;품질' 예: webp, jpeg, webp;50 등."
+    },
+    "Comfy_PromptFilename": {
+      "name": "워크플로 저장 시 파일 이름 프롬프트"
+    },
+    "Comfy_QueueButton_BatchCountLimit": {
+      "name": "배치 수 제한",
+      "tooltip": "한 번의 버튼 클릭으로 큐에 추가되는 최대 작업 수입니다."
+    },
+    "Comfy_Queue_ImageFit": {
+      "name": "큐 이미지 맞춤"
+    },
+    "Comfy_Queue_MaxHistoryItems": {
+      "name": "큐 기록 갯수",
+      "tooltip": "큐 기록에 표시되는 최대 작업 수입니다."
+    },
+    "Comfy_RerouteBeta": {
+      "name": "경로재설정 베타 테스트 참여",
+      "tooltip": "새로운 기본 경로재설정을 활성화합니다.\n\n링크 라인에서 Alt를 누른 채 드래그하거나 링크 메뉴에서 경로재설정을 추가할 수 있습니다.\n\n이 옵션을 비활성화해도 경로재설정은 삭제되지 않고 숨겨집니다."
+    },
+    "Comfy_Server_LaunchArgs": {
+      "name": "서버 시작 인수",
+      "tooltip": "서버가 시작될 때 전달되는 실제 인수입니다."
+    },
+    "Comfy_Server_ServerConfigValues": {
+      "name": "프론트엔드 표시를 위한 서버 구성 값",
+      "tooltip": "프론트엔드 표시를 위해 사용되는 서버 구성 값만 해당됩니다."
+    },
+    "Comfy_Settings_ExtensionPanel": {
+      "name": "설정 대화 상자에서 확장 패널 표시"
+    },
+    "Comfy_Sidebar_Location": {
+      "name": "사이드바 위치"
+    },
+    "Comfy_Sidebar_Size": {
+      "name": "사이드바 크기"
+    },
+    "Comfy_SnapToGrid_GridSize": {
+      "name": "그리드 크기에 스냅",
+      "tooltip": "Shift 키를 누른 상태에서 노드를 드래그하거나 크기를 조절하면 그리드에 맞춰 정렬됩니다. 이 설정은 그리드의 크기를 제어합니다."
+    },
+    "Comfy_TextareaWidget_FontSize": {
+      "name": "텍스트 영역 위젯 글꼴 크기"
+    },
+    "Comfy_TextareaWidget_Spellcheck": {
+      "name": "텍스트 영역 위젯 맞춤법 검사"
+    },
+    "Comfy_TreeExplorer_ItemPadding": {
+      "name": "트리 탐색기 항목 패딩"
+    },
+    "Comfy_UseNewMenu": {
+      "name": "새 메뉴 사용"
+    },
+    "Comfy_Validation_NodeDefs": {
+      "name": "노드 정의 유효성 검사 (느림)",
+      "tooltip": "노드 개발자에게 권장됩니다. 시작 시 모든 노드 정의를 유효성 검사합니다."
+    },
+    "Comfy_Validation_Workflows": {
+      "name": "워크플로 유효성 검사"
+    },
+    "Comfy_WidgetControlMode": {
+      "name": "위젯 제어 모드",
+      "tooltip": "위젯 값이 업데이트되는 시점을 제어합니다 (무작위화/증가/감소), 프롬프트가 큐에 추가되기 전 또는 후입니다."
+    },
+    "Comfy_Window_UnloadConfirmation": {
+      "name": "창 닫을 때 확인 표시"
+    },
+    "Comfy_Workflow_ConfirmDelete": {
+      "name": "워크플로 삭제 시 확인 표시"
+    },
+    "Comfy_Workflow_ShowMissingModelsWarning": {
+      "name": "누락된 모델 경고 표시"
+    },
+    "Comfy_Workflow_ShowMissingNodesWarning": {
+      "name": "누락된 노드 경고 표시"
+    },
+    "Comfy_Workflow_SortNodeIdOnSave": {
+      "name": "워크플로 저장 시 노드 ID 정렬"
+    },
+    "Comfy_Workflow_WorkflowTabsPosition": {
+      "name": "열린 워크플로 위치"
+    },
+    "LiteGraph_Canvas_MaximumFps": {
+      "name": "최대 FPS",
+      "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드러움의 대가로 GPU 사용량을 제한합니다. 0이면 화면 새로 고침 속도가 사용됩니다. 기본값: 0"
+    },
+    "pysssss_SnapToGrid": {
+      "name": "항상 그리드에 스냅"
+    }
+  },
+  "sideToolbar": {
+    "browseTemplates": "예제 템플릿 탐색",
+    "downloads": "다운로드",
+    "logout": "로그아웃",
+    "modelLibrary": "모델 라이브러리",
+    "newBlankWorkflow": "새 빈 워크플로 만들기",
+    "nodeLibrary": "노드 라이브러리",
+    "nodeLibraryTab": {
+      "sortOrder": "정렬 순서"
+    },
+    "openWorkflow": "로컬 파일 시스템에서 워크플로 열기",
+    "queue": "큐",
+    "queueTab": {
+      "backToAllTasks": "모든 작업으로 돌아가기",
+      "clearPendingTasks": "보류 중인 작업 지우기",
+      "containImagePreview": "이미지 미리보기 채우기",
+      "coverImagePreview": "이미지 미리보기 맞추기",
+      "filter": "출력 필터",
+      "filters": {
+        "hideCached": "캐시 숨기기",
+        "hideCanceled": "취소된 작업 숨기기"
+      },
+      "showFlatList": "평면 목록 표시"
+    },
+    "themeToggle": "테마 전환",
+    "workflowTab": {
+      "confirmDelete": "정말로 이 워크플로를 삭제하시겠습니까?",
+      "confirmDeleteTitle": "워크플로 삭제",
+      "confirmOverwrite": "아래 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
+      "confirmOverwriteTitle": "기존 파일 덮어쓰기?",
+      "deleteFailed": "워크플로 삭제를 시도했으나 실패했습니다.",
+      "deleteFailedTitle": "삭제 실패",
+      "deleted": "워크플로가 삭제되었습니다.",
+      "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseTitle": "변경 사항 저장",
+      "workflowTreeType": {
+        "bookmarks": "북마크",
+        "browse": "찾아보기",
+        "open": "열기"
+      }
+    },
+    "workflows": "워크플로"
+  },
+  "tabMenu": {
+    "closeOtherTabs": "다른 탭 닫기",
+    "closeTab": "탭 닫기",
+    "closeTabsToLeft": "왼쪽 탭 닫기",
+    "closeTabsToRight": "오른쪽 탭 닫기",
+    "duplicateTab": "탭 복제"
+  },
+  "templateWorkflows": {
+    "template": {
+      "default": "이미지 생성",
+      "flux_schnell": "FLUX Schenll",
+      "image2image": "이미지에서 이미지로",
+      "upscale": "2단계 업스케일"
+    },
+    "title": "템플릿으로 시작하기"
+  },
+  "userSelect": {
+    "enterUsername": "사용자 이름 입력",
+    "existingUser": "기존 사용자",
+    "newUser": "새 사용자",
+    "next": "다음",
+    "selectUser": "사용자 선택"
+  },
+  "welcome": {
+    "getStarted": "시작하기",
+    "title": "ComfyUI에 오신 것을 환영합니다"
+  }
+}
