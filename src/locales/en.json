@@ -24,14 +24,6 @@
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
-    "bookmark": "Bookmark",
-    "folder": "Folder",
-    "star": "Star",
-    "heart": "Heart",
-    "file": "File",
-    "inbox": "Inbox",
-    "box": "Box",
-    "briefcase": "Briefcase",
     "error": "Error",
     "loading": "Loading",
     "findIssues": "Find Issues",
@@ -68,6 +60,25 @@
     "noTasksFound": "No Tasks Found",
     "noTasksFoundMessage": "There are no tasks in the queue.",
     "newFolder": "New Folder"
+  },
+  "color": {
+    "default": "Default",
+    "blue": "Blue",
+    "green": "Green",
+    "red": "Red",
+    "pink": "Pink",
+    "yellow": "Yellow",
+    "custom": "Custom"
+  },
+  "icon": {
+    "bookmark": "Bookmark",
+    "folder": "Folder",
+    "star": "Star",
+    "heart": "Heart",
+    "file": "File",
+    "inbox": "Inbox",
+    "box": "Box",
+    "briefcase": "Briefcase"
   },
   "welcome": {
     "title": "Welcome to ComfyUI",

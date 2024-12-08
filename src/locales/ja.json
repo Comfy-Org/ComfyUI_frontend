@@ -1,4 +1,13 @@
 {
+  "color": {
+    "blue": "青",
+    "custom": "カスタム",
+    "default": "デフォルト",
+    "green": "緑",
+    "pink": "ピンク",
+    "red": "赤",
+    "yellow": "黄色"
+  },
   "desktopMenu": {
     "confirmReinstall": "これにより、extra_models_config.yamlファイルがクリアされ、再インストールが開始されます。本当によろしいですか？",
     "reinstall": "再インストール"
@@ -22,9 +31,6 @@
   "g": {
     "about": "情報",
     "add": "追加",
-    "bookmark": "ブックマーク",
-    "box": "ボックス",
-    "briefcase": "ブリーフケース",
     "cancel": "キャンセル",
     "close": "閉じる",
     "color": "色",
@@ -42,15 +48,11 @@
     "error": "エラー",
     "experimental": "ベータ",
     "extensionName": "拡張機能名",
-    "file": "ファイル",
     "findIssues": "問題を見つける",
     "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択して古いUIに戻してください。",
-    "folder": "フォルダー",
     "goToNode": "ノードに移動",
-    "heart": "ハート",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
-    "inbox": "受信トレイ",
     "insert": "挿入",
     "loadAllFolders": "すべてのフォルダーを読み込む",
     "loadWorkflow": "ワークフローを読み込む",
@@ -84,7 +86,6 @@
     "searchWorkflows": "ワークフローを検索",
     "settings": "設定",
     "showReport": "レポートを表示",
-    "star": "スター",
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました"
@@ -97,6 +98,16 @@
     "toggleLinkVisibility": "リンクの表示切り替え",
     "zoomIn": "拡大",
     "zoomOut": "縮小"
+  },
+  "icon": {
+    "bookmark": "ブックマーク",
+    "box": "ボックス",
+    "briefcase": "ブリーフケース",
+    "file": "ファイル",
+    "folder": "フォルダー",
+    "heart": "ハート",
+    "inbox": "受信トレイ",
+    "star": "星"
   },
   "install": {
     "appDataLocationTooltip": "ComfyUIのアプリデータディレクトリ。保存内容:\n- ログ\n- サーバー設定",

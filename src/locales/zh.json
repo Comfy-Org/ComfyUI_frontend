@@ -1,4 +1,13 @@
 {
+  "color": {
+    "blue": "蓝色",
+    "custom": "自定义",
+    "default": "默认",
+    "green": "绿色",
+    "pink": "粉色",
+    "red": "红色",
+    "yellow": "黄色"
+  },
   "desktopMenu": {
     "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
     "reinstall": "重新安装"
@@ -22,9 +31,6 @@
   "g": {
     "about": "关于",
     "add": "添加",
-    "bookmark": "书签",
-    "box": "盒子",
-    "briefcase": "公文包",
     "cancel": "取消",
     "close": "关闭",
     "color": "颜色",
@@ -42,15 +48,11 @@
     "error": "错误",
     "experimental": "测试版",
     "extensionName": "扩展名称",
-    "file": "文件",
     "findIssues": "查找问题",
     "firstTimeUIMessage": "这是您第一次使用新界面。选择 \"菜单 > 使用新菜单 > 禁用\" 来恢复旧界面。",
-    "folder": "文件夹",
     "goToNode": "转到节点",
-    "heart": "心",
     "icon": "图标",
     "imageFailedToLoad": "图像加载失败",
-    "inbox": "收件箱",
     "insert": "插入",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
@@ -84,7 +86,6 @@
     "searchWorkflows": "搜索工作流",
     "settings": "设置",
     "showReport": "显示报告",
-    "star": "星标",
     "systemInfo": "系统信息",
     "terminal": "终端",
     "videoFailedToLoad": "视频加载失败"
@@ -97,6 +98,16 @@
     "toggleLinkVisibility": "切换链接可见性",
     "zoomIn": "放大",
     "zoomOut": "缩小"
+  },
+  "icon": {
+    "bookmark": "书签",
+    "box": "盒子",
+    "briefcase": "公文包",
+    "file": "文件",
+    "folder": "文件夹",
+    "heart": "心",
+    "inbox": "收件箱",
+    "star": "星星"
   },
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
