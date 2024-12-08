@@ -7,6 +7,7 @@ app.registerExtension({
   init() {
     const editAttentionDelta = app.ui.settings.addSetting({
       id: 'Comfy.EditAttention.Delta',
+      category: ['Comfy', 'Edit Token Weight', 'Delta'],
       name: 'Ctrl+up/down precision',
       type: 'slider',
       attrs: {
