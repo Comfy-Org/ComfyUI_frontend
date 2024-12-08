@@ -93,7 +93,7 @@ const extraMenuItems = (
   menuTargetNode: RenderedTreeExplorerNode<ComfyNodeDefImpl>
 ) => [
   {
-    label: t('newFolder'),
+    label: t('g.newFolder'),
     icon: 'pi pi-folder-plus',
     command: () => {
       addNewBookmarkFolder(menuTargetNode)
@@ -101,7 +101,7 @@ const extraMenuItems = (
     visible: !menuTargetNode?.leaf
   },
   {
-    label: t('customize'),
+    label: t('g.customize'),
     icon: 'pi pi-palette',
     command: () => {
       const customization =

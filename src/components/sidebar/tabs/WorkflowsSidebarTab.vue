@@ -31,7 +31,7 @@
         class="workflows-search-box p-2 2xl:p-4"
         v-model:modelValue="searchQuery"
         @search="handleSearch"
-        :placeholder="$t('searchWorkflows') + '...'"
+        :placeholder="$t('g.searchWorkflows') + '...'"
       />
     </template>
     <template #body>
@@ -40,7 +40,11 @@
           class="comfyui-workflows-open"
           v-if="workflowTabsPosition === 'Sidebar'"
         >
-          <TextDivider text="Open" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.open')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open).children
@@ -74,7 +78,11 @@
           class="comfyui-workflows-bookmarks"
           v-show="workflowStore.bookmarkedWorkflows.length > 0"
         >
-          <TextDivider text="Bookmarks" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.bookmarks')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(
@@ -89,7 +97,11 @@
           </TreeExplorer>
         </div>
         <div class="comfyui-workflows-browse">
-          <TextDivider text="Browse" type="dashed" class="ml-2" />
+          <TextDivider
+            :text="t('sideToolbar.workflowTab.workflowTreeType.browse')"
+            type="dashed"
+            class="ml-2"
+          />
           <TreeExplorer
             :roots="
               renderTreeNode(workflowsTree, WorkflowTreeType.Browse).children
@@ -104,8 +116,8 @@
           <NoResultsPlaceholder
             v-else
             icon="pi pi-folder"
-            :title="$t('empty')"
-            :message="$t('noWorkflowsFound')"
+            :title="$t('g.empty')"
+            :message="$t('g.noWorkflowsFound')"
           />
         </div>
       </div>
@@ -266,7 +278,7 @@ const renderTreeNode = (
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
             {
-              label: t('insert'),
+              label: t('g.insert'),
               icon: 'pi pi-file-export',
               command: () => {
                 const workflow = node.data

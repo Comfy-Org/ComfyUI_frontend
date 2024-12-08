@@ -16,7 +16,7 @@
     />
   </div>
   <div class="_footer">
-    <Button type="button" :label="$t('add')" @click="submit"></Button>
+    <Button type="button" :label="$t('g.add')" @click="submit"></Button>
   </div>
 </template>
 

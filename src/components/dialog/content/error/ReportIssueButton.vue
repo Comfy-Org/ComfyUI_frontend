@@ -1,11 +1,11 @@
 <template>
   <Button
     @click="reportIssue"
-    :label="$t('reportIssue')"
+    :label="$t('g.reportIssue')"
     :severity="submitted ? 'success' : 'secondary'"
     :icon="icon"
     :disabled="submitted"
-    v-tooltip="$t('reportIssueTooltip')"
+    v-tooltip="$t('g.reportIssueTooltip')"
   >
   </Button>
 </template>
@@ -41,7 +41,7 @@ const reportIssue = async () => {
     submitted.value = true
     toast.add({
       severity: 'success',
-      summary: t('reportSent'),
+      summary: t('g.reportSent'),
       life: 3000
     })
   } finally {

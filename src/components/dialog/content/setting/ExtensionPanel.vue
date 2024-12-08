@@ -3,7 +3,7 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('searchExtensions') + '...'"
+        :placeholder="$t('g.searchExtensions') + '...'"
       />
       <Message v-if="hasChanges" severity="info" pt:text="w-full">
         <ul>
@@ -16,7 +16,7 @@
         </ul>
         <div class="flex justify-end">
           <Button
-            :label="$t('reloadToApplyChanges')"
+            :label="$t('g.reloadToApplyChanges')"
             @click="applyChanges"
             outlined
             severity="danger"
@@ -30,7 +30,7 @@
       size="small"
       :filters="filters"
     >
-      <Column field="name" :header="$t('extensionName')" sortable></Column>
+      <Column field="name" :header="$t('g.extensionName')" sortable></Column>
       <Column
         :pt="{
           bodyCell: 'flex items-center justify-end'

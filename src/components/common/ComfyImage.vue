@@ -22,7 +22,7 @@
   </span>
   <div v-if="imageBroken" class="broken-image-placeholder">
     <i class="pi pi-image"></i>
-    <span>{{ $t('imageFailedToLoad') }}</span>
+    <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>
 

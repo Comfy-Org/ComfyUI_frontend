@@ -12,7 +12,7 @@
     <div class="file-action">
       <Button
         class="file-action-button"
-        :label="$t('download') + ' (' + fileSize + ')'"
+        :label="$t('g.download') + ' (' + fileSize + ')'"
         size="small"
         outlined
         :disabled="props.error"

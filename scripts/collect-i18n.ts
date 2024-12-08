@@ -6,6 +6,7 @@ import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
+import type { ComfyNodeDef } from '../src/types/apiTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -97,10 +98,10 @@ test('collect-i18n', async ({ comfyPage }) => {
   )
 
   // Node Definitions
-  const nodeDefs = await comfyPage.page.evaluate(async () => {
+  const nodeDefs = (await comfyPage.page.evaluate(async () => {
     const api = window['app'].api as ComfyApi
     return await api.getNodeDefs()
-  })
+  })) as Record<string, ComfyNodeDef>
 
   const allNodeDefsLocale = Object.fromEntries(
     Object.values(nodeDefs)
@@ -112,6 +113,14 @@ test('collect-i18n', async ({ comfyPage }) => {
           description: nodeDef.description || undefined
         }
       ])
+  )
+
+  const allNodeCategoriesLocale = Object.fromEntries(
+    Object.values(nodeDefs).flatMap((nodeDef) =>
+      nodeDef.category
+        .split('/')
+        .map((category) => [normalizeI18nKey(category), category])
+    )
   )
 
   fs.writeFileSync(
@@ -129,7 +138,8 @@ test('collect-i18n', async ({ comfyPage }) => {
         },
         serverConfigItems: allServerConfigsLocale,
         serverConfigCategories: allServerConfigCategoriesLocale,
-        nodeDefs: allNodeDefsLocale
+        nodeDefs: allNodeDefsLocale,
+        nodeCategories: allNodeCategoriesLocale
       },
       null,
       2
