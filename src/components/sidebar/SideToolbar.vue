@@ -91,6 +91,7 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 
   background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
+  box-shadow: var(--bar-shadow);
 }
 
 .side-tool-bar-end {

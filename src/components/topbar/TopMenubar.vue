@@ -79,6 +79,7 @@ eventBus.on((event: string, payload: any) => {
   width: 100vw;
   background: var(--comfy-menu-bg);
   color: var(--fg-color);
+  box-shadow: var(--bar-shadow);
   font-family: Arial, Helvetica, sans-serif;
   font-size: 0.8em;
   box-sizing: border-box;
