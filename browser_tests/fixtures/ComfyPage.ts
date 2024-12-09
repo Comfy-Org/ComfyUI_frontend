@@ -515,7 +515,7 @@ export class ComfyPage {
   }
 
   get promptDialogInput() {
-    return this.page.locator('.graphdialog input[type="text"]')
+    return this.page.locator('.p-dialog-content input[type="text"]')
   }
 
   async disconnectEdge() {
