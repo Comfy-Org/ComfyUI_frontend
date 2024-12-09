@@ -99,6 +99,10 @@
     "zoomIn": "拡大",
     "zoomOut": "縮小"
   },
+  "groupNode": {
+    "create": "グループノードを作成",
+    "enterName": "名前を入力"
+  },
   "icon": {
     "bookmark": "ブックマーク",
     "box": "ボックス",
@@ -1087,6 +1091,10 @@
       "display_name": "unCLIP条件付け"
     }
   },
+  "nodeTemplates": {
+    "enterName": "名前を入力",
+    "saveAsTemplate": "テンプレートとして保存"
+  },
   "notSupported": {
     "continue": "続ける",
     "continueTooltip": "私のデバイスはサポートされていると確信しています",
@@ -1241,7 +1249,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
     "DevMode": "開発モード",
-    "EditAttention": "編集Attention",
+    "EditTokenWeight": "トークンの重みを編集",
     "Extension": "拡張",
     "General": "一般",
     "Graph": "グラフ",

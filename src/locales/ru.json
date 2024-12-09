@@ -99,6 +99,10 @@
     "zoomIn": "Увеличить",
     "zoomOut": "Уменьшить"
   },
+  "groupNode": {
+    "create": "Создать узел группы",
+    "enterName": "Введите имя"
+  },
   "icon": {
     "bookmark": "Закладка",
     "box": "Коробка",
@@ -1087,6 +1091,10 @@
       "display_name": "unCLIP кондиционирование"
     }
   },
+  "nodeTemplates": {
+    "enterName": "Введите имя",
+    "saveAsTemplate": "Сохранить как шаблон"
+  },
   "notSupported": {
     "continue": "Продолжить",
     "continueTooltip": "Я уверен, что мое устройство поддерживается",
@@ -1241,7 +1249,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy рабочий стол",
     "DevMode": "Режим разработчика",
-    "EditAttention": "Редактировать внимание",
+    "EditTokenWeight": "Редактировать вес токена",
     "Extension": "Расширение",
     "General": "Общие",
     "Graph": "Граф",

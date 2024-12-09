@@ -6,6 +6,8 @@ import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
+import { showPromptDialog } from '@/services/dialogService'
+import { t } from '@/i18n'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -348,8 +350,12 @@ app.registerExtension({
       options.push({
         content: `Save Selected as Template`,
         disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
-        callback: () => {
-          const name = prompt('Enter name')
+        callback: async () => {
+          const name = await showPromptDialog({
+            title: t('nodeTemplates.saveAsTemplate'),
+            message: t('nodeTemplates.enterName'),
+            defaultValue: ''
+          })
           if (!name?.trim()) return
 
           clipboardAction(() => {
