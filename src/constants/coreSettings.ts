@@ -416,6 +416,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.5'
   },
   {
+    //new array that saves all modified keybindings, no distinction between modified and unset -> unified in object
+    id: 'Comfy.Keybinding.ModifiedBindings',
+    name: 'Keybindings changed by the user',
+    type: 'hidden',
+    defaultValue: [] as Keybinding[],
+    versionAdded: '1.5.7'
+  },
+  {
+    //deprecated
     id: 'Comfy.Keybinding.UnsetBindings',
     name: 'Keybindings unset by the user',
     type: 'hidden',
@@ -423,6 +432,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.7'
   },
   {
+    //deprecated
     id: 'Comfy.Keybinding.NewBindings',
     name: 'Keybindings set by the user',
     type: 'hidden',

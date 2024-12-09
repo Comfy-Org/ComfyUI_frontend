@@ -1706,7 +1706,7 @@ export class ComfyApp {
     await this.#loadExtensions()
 
     this.#addProcessMouseHandler()
-    this.#addProcessKeyHandler()
+    //this.#addProcessKeyHandler() //removes another key handler
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
     this.#addRestoreWorkflowView()

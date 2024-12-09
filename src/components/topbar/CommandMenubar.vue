@@ -21,7 +21,7 @@
           v-if="item?.comfyCommand?.keybinding"
           class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
         >
-          {{ item.comfyCommand.keybinding.combo.toString() }}
+          {{ item.comfyCommand.keybinding.currentCombo?.toString() || '-' }}
         </span>
       </a>
     </template>

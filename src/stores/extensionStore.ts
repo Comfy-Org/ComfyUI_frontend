@@ -46,6 +46,7 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    useKeybindingStore().loadExtensionKeybindingContexts(extension)
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)

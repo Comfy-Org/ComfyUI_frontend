@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { setActivePinia, createPinia } from 'pinia'
 import { useKeybindingStore, KeybindingImpl } from '@/stores/keybindingStore'
 
@@ -16,7 +17,7 @@ describe('useKeybindingStore', () => {
     store.addDefaultKeybinding(keybinding)
 
     expect(store.keybindings).toHaveLength(1)
-    expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
+    expect(store.getKeybinding(keybinding!.combo)).toEqual(keybinding)
   })
 
   it('should add and retrieve user keybindings', () => {
@@ -57,7 +58,7 @@ describe('useKeybindingStore', () => {
       combo: { key: 'C', ctrl: true }
     })
     store.addDefaultKeybinding(defaultKeybinding)
-    store.unsetKeybinding(defaultKeybinding)
+    store.unsetKeybinding(defaultKeybinding.commandId)
 
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command2',
@@ -79,8 +80,10 @@ describe('useKeybindingStore', () => {
     store.addUserKeybinding(keybinding)
     expect(store.keybindings).toHaveLength(1)
 
-    store.unsetKeybinding(keybinding)
-    expect(store.keybindings).toHaveLength(0)
+    store.unsetKeybinding(keybinding.commandId)
+    expect(
+      store.getKeybindingByCommandId(keybinding.commandId).currentCombo
+    ).toBeNull()
   })
 
   it('should unset default keybindings', () => {
@@ -93,8 +96,10 @@ describe('useKeybindingStore', () => {
     store.addDefaultKeybinding(keybinding)
     expect(store.keybindings).toHaveLength(1)
 
-    store.unsetKeybinding(keybinding)
-    expect(store.keybindings).toHaveLength(0)
+    store.unsetKeybinding(keybinding.commandId)
+    expect(
+      store.getKeybindingByCommandId(keybinding.commandId).currentCombo
+    ).toBeNull()
   })
 
   it('should throw an error when adding duplicate default keybindings', () => {
@@ -133,7 +138,7 @@ describe('useKeybindingStore', () => {
       combo: { key: 'H', alt: true, shift: true }
     })
 
-    expect(() => store.unsetKeybinding(keybinding)).not.toThrow()
+    expect(() => store.unsetKeybinding(keybinding.commandId)).not.toThrow()
   })
 
   it('should remove unset keybinding when adding back a default keybinding', () => {
@@ -148,7 +153,7 @@ describe('useKeybindingStore', () => {
     expect(store.keybindings).toHaveLength(1)
 
     // Unset the default keybinding
-    store.unsetKeybinding(defaultKeybinding)
+    store.unsetKeybinding(defaultKeybinding.commandId)
     expect(store.keybindings).toHaveLength(0)
 
     // Add the same keybinding as a user keybinding
@@ -215,7 +220,7 @@ describe('useKeybindingStore', () => {
     )
 
     for (const keybinding of userUnsetKeybindings) {
-      store.unsetKeybinding(keybinding)
+      store.unsetKeybinding(keybinding.commandId)
     }
 
     expect(store.keybindings).toHaveLength(1)

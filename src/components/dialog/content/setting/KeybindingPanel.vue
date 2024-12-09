@@ -5,6 +5,10 @@
         v-model="filters['global'].value"
         :placeholder="$t('g.searchKeybindings') + '...'"
       />
+      <KeyContextSelect
+        :contexts="keybindingContexts"
+        @context-changed="handleContextChange"
+      />
     </template>
 
     <DataTable
@@ -54,7 +58,7 @@
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
-            :keyCombo="slotProps.data.keybinding.combo"
+            :keyCombo="slotProps.data.keybinding.effectiveCombo"
             :isModified="
               keybindingStore.isCommandKeybindingModified(slotProps.data.id)
             "
@@ -130,6 +134,7 @@ import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
+import KeyContextSelect from './keybinding/KeyContextSelect.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
@@ -146,11 +151,22 @@ interface ICommandData {
   keybinding: KeybindingImpl | null
 }
 
+const selectedContext = ref('global')
+
 const commandsData = computed<ICommandData[]>(() => {
-  return Object.values(commandStore.commands).map((command) => ({
-    id: command.id,
-    keybinding: keybindingStore.getKeybindingByCommandId(command.id)
-  }))
+  return Object.values(commandStore.commands)
+    .map((command) => ({
+      id: command.id,
+      keybinding: keybindingStore.getKeybindingByCommandId(command.id)
+    }))
+    .filter((data) => {
+      // If keybinding is null, treat as global context
+      if (!data.keybinding) {
+        return selectedContext.value === 'global'
+      }
+      // Show commands that match the selected context
+      return data.keybinding.context === selectedContext.value
+    })
 })
 
 const selectedCommandData = ref<ICommandData | null>(null)
@@ -158,6 +174,7 @@ const editDialogVisible = ref(false)
 const newBindingKeyCombo = ref<KeyComboImpl | null>(null)
 const currentEditingCommand = ref<ICommandData | null>(null)
 const keybindingInput = ref(null)
+const keybindingContexts = keybindingStore.keybindingContexts
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
   if (!currentEditingCommand.value) {
@@ -177,14 +194,16 @@ const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
     return null
   }
 
-  return keybindingStore.getKeybinding(newBindingKeyCombo.value)
+  return keybindingStore.getKeybinding(
+    newBindingKeyCombo.value,
+    currentEditingCommand.value.keybinding?.context
+  )
 })
 
 function editKeybinding(commandData: ICommandData) {
   currentEditingCommand.value = commandData
-  newBindingKeyCombo.value = commandData.keybinding
-    ? commandData.keybinding.combo
-    : null
+  newBindingKeyCombo.value = commandData.keybinding?.effectiveCombo ?? null
+
   editDialogVisible.value = true
 }
 
@@ -199,7 +218,7 @@ watchEffect(() => {
 
 function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
-    keybindingStore.unsetKeybinding(commandData.keybinding)
+    keybindingStore.unsetKeybinding(commandData.id)
     keybindingStore.persistUserKeybindings()
   }
 }
@@ -220,7 +239,8 @@ function saveKeybinding() {
     const updated = keybindingStore.updateKeybindingOnCommand(
       new KeybindingImpl({
         commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
+        combo: newBindingKeyCombo.value,
+        context: currentEditingCommand.value.keybinding?.context
       })
     )
     if (updated) {
@@ -228,6 +248,11 @@ function saveKeybinding() {
     }
   }
   cancelEdit()
+}
+
+function handleContextChange(contextId: string) {
+  selectedContext.value = contextId
+  console.log('Context changed to', contextId)
 }
 
 const toast = useToast()

@@ -1,29 +1,70 @@
+// @ts-strict-ignore - will remove in the future
 import { defineStore } from 'pinia'
-import { computed, Ref, ref, toRaw } from 'vue'
-import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
+import { ref, toRaw } from 'vue'
+import {
+  Keybinding,
+  KeyCombo,
+  KeyBindingContext
+} from '@/types/keyBindingTypes'
 import { useSettingStore } from './settingStore'
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
-  commandId: string
-  combo: KeyComboImpl
-  targetSelector?: string
+  readonly commandId: string
+  readonly combo?: KeyComboImpl | null
+  currentCombo?: KeyComboImpl | null = null
+  readonly targetSelector?: string
+  readonly context?: string
 
+  //the new system saves the state of the keybindings in the object instead of the store
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
-    this.combo = new KeyComboImpl(obj.combo)
+    this.combo = obj.combo ? new KeyComboImpl(obj.combo) : null //this is the default combo set by comfyUI/the extension, can also be null for unset keybindings
+    this.currentCombo = this.combo //this is the current combo set by the user, can also be null for user unset keybindings
+    if (obj.currentCombo) this.currentCombo = new KeyComboImpl(obj.currentCombo)
     this.targetSelector = obj.targetSelector
+    this.context = obj.context ?? 'global'
+  }
+
+  get defaultCombo(): KeyComboImpl {
+    return this.combo
+  }
+
+  get effectiveCombo(): KeyComboImpl {
+    return this.currentCombo // null = unset, currentCombo != combo = user set combo
+  }
+
+  overwriteCombo(combo: KeyComboImpl) {
+    this.currentCombo = combo // user set combo
+  }
+
+  unsetCombo() {
+    this.currentCombo = null // unset
+  }
+
+  resetCombo() {
+    this.currentCombo = this.combo //resets the combo to the default combo
+  }
+
+  isModified(): boolean {
+    return this.currentCombo !== this.combo
+  }
+
+  getContext(): string {
+    return this.context
   }
 
   equals(other: unknown): boolean {
     const raw = toRaw(other)
-
-    return raw instanceof KeybindingImpl
-      ? this.commandId === raw.commandId &&
-          this.combo.equals(raw.combo) &&
-          this.targetSelector === raw.targetSelector
-      : false
+    if (!(raw instanceof KeybindingImpl)) return false
+    //the new system compares keybindingsd by the object properties instead of a serialized string
+    return (
+      this.commandId === raw.commandId &&
+      this.combo.equals(raw.combo) &&
+      this.targetSelector === raw.targetSelector &&
+      this.context === raw.context
+    )
   }
 }
 
@@ -50,6 +91,8 @@ export class KeyComboImpl implements KeyCombo {
     })
   }
 
+  //removed the serialization function because the new system compares keybindings using the object properties
+
   equals(other: unknown): boolean {
     const raw = toRaw(other)
 
@@ -59,10 +102,6 @@ export class KeyComboImpl implements KeyCombo {
           this.alt === raw.alt &&
           this.shift === raw.shift
       : false
-  }
-
-  serialize(): string {
-    return `${this.key.toUpperCase()}:${this.ctrl}:${this.alt}:${this.shift}`
   }
 
   toString(): string {
@@ -93,174 +132,174 @@ export class KeyComboImpl implements KeyCombo {
   }
 }
 
+//used in the vue settings header to select between keybinding contexts
+export class KeyBindingContextImpl implements KeyBindingContext {
+  id: string
+  name: string
+
+  constructor(obj: KeyBindingContext) {
+    this.id = obj.id
+    this.name = obj.name
+  }
+}
+
 export const useKeybindingStore = defineStore('keybinding', () => {
-  /**
-   * Default keybindings provided by core and extensions.
-   */
-  const defaultKeybindings = ref<Record<string, KeybindingImpl>>({})
-  /**
-   * User-defined keybindings.
-   */
-  const userKeybindings = ref<Record<string, KeybindingImpl>>({})
-  /**
-   * User-defined keybindings that unset default keybindings.
-   */
-  const userUnsetKeybindings = ref<Record<string, KeybindingImpl>>({})
-
-  const keybindingByKeyCombo = computed<Record<string, KeybindingImpl>>(() => {
-    const result: Record<string, KeybindingImpl> = {
-      ...defaultKeybindings.value
+  const keybindings = ref<KeybindingImpl[]>([])
+  const keybindingContexts = ref<KeyBindingContextImpl[]>([
+    {
+      id: 'global',
+      name: 'Global'
     }
-
-    for (const keybinding of Object.values(userUnsetKeybindings.value)) {
-      const serializedCombo = keybinding.combo.serialize()
-      if (result[serializedCombo]?.equals(keybinding)) {
-        delete result[serializedCombo]
-      }
-    }
-
-    return {
-      ...result,
-      ...userKeybindings.value
-    }
-  })
-
-  const keybindings = computed<KeybindingImpl[]>(() =>
-    Object.values(keybindingByKeyCombo.value)
-  )
-
-  function getKeybinding(combo: KeyComboImpl) {
-    return keybindingByKeyCombo.value[combo.serialize()]
+  ]) // global is default
+  function getKeybinding(
+    combo: KeyCombo,
+    context: string = 'global'
+  ): KeybindingImpl | undefined {
+    return keybindings.value.find((keybinding) => {
+      return (
+        keybinding.effectiveCombo &&
+        keybinding.effectiveCombo.equals(combo) &&
+        keybinding.context === context
+      )
+    })
   }
 
-  function createKeybindingsByCommandId(keybindings: KeybindingImpl[]) {
-    const result: Record<string, KeybindingImpl[]> = {}
-    for (const keybinding of keybindings) {
-      if (!(keybinding.commandId in result)) {
-        result[keybinding.commandId] = []
-      }
-      result[keybinding.commandId].push(keybinding)
-    }
-    return result
+  function getKeybindingsByCommandId(commandId: string): KeybindingImpl[] {
+    return keybindings.value.filter(
+      (keybinding) => keybinding.commandId === commandId
+    )
   }
 
-  const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
-    () => {
-      return createKeybindingsByCommandId(keybindings.value)
-    }
-  )
-
-  function getKeybindingsByCommandId(commandId: string) {
-    return keybindingsByCommandId.value[commandId] ?? []
-  }
-
-  const defaultKeybindingsByCommandId = computed<
-    Record<string, KeybindingImpl[]>
-  >(() => {
-    return createKeybindingsByCommandId(Object.values(defaultKeybindings.value))
-  })
-
-  function getKeybindingByCommandId(commandId: string) {
+  function getKeybindingByCommandId(
+    commandId: string
+  ): KeybindingImpl | undefined {
     return getKeybindingsByCommandId(commandId)[0]
   }
 
-  function addKeybinding(
-    target: Ref<Record<string, KeybindingImpl>>,
-    keybinding: KeybindingImpl,
-    { existOk = false }: { existOk: boolean }
-  ) {
-    if (!existOk && keybinding.combo.serialize() in target.value) {
-      throw new Error(
-        `Keybinding on ${keybinding.combo} already exists on ${
-          target.value[keybinding.combo.serialize()].commandId
-        }`
-      )
+  function addKeybinding(keybinding: KeybindingImpl) {
+    if (
+      getKeybinding(keybinding.effectiveCombo, keybinding.context) !== undefined
+    ) {
+      throw new Error(`Keybinding ${keybinding.commandId} already exists.`)
     }
-    target.value[keybinding.combo.serialize()] = keybinding
+    keybindings.value.push(keybinding)
   }
 
+  //kept for backwards compatibility
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
-    addKeybinding(defaultKeybindings, keybinding, { existOk: false })
+    addKeybinding(keybinding)
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
-    const defaultKeybinding =
-      defaultKeybindings.value[keybinding.combo.serialize()]
-    const userUnsetKeybinding =
-      userUnsetKeybindings.value[keybinding.combo.serialize()]
+    const effectiveCombo = keybinding.effectiveCombo
+    const context = keybinding.context ?? 'global'
 
-    // User is adding back a keybinding that was an unsetted default keybinding.
-    if (
-      keybinding.equals(defaultKeybinding) &&
-      keybinding.equals(userUnsetKeybinding)
-    ) {
-      delete userUnsetKeybindings.value[keybinding.combo.serialize()]
-      return
+    const existingKeybinding = getKeybinding(effectiveCombo, context)
+    if (existingKeybinding) {
+      existingKeybinding.overwriteCombo(effectiveCombo)
+    } else {
+      addKeybinding(keybinding)
     }
-
-    // Unset keybinding on default keybinding if it exists and is not the same as userUnsetKeybinding
-    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)) {
-      unsetKeybinding(defaultKeybinding)
-    }
-
-    addKeybinding(userKeybindings, keybinding, { existOk: true })
   }
 
-  function unsetKeybinding(keybinding: KeybindingImpl) {
-    const serializedCombo = keybinding.combo.serialize()
-    if (!(serializedCombo in keybindingByKeyCombo.value)) {
-      console.warn(
-        `Trying to unset non-exist keybinding: ${JSON.stringify(keybinding)}`
-      )
-      return
-    }
+  function unsetKeybinding(commandId: string) {
+    const existingKeybinding = getKeybindingByCommandId(commandId)
 
-    if (userKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      delete userKeybindings.value[serializedCombo]
-      return
+    if (existingKeybinding) {
+      existingKeybinding.unsetCombo()
     }
-
-    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      addKeybinding(userUnsetKeybindings, keybinding, { existOk: false })
-      return
-    }
-
-    throw new Error(`Unknown keybinding: ${JSON.stringify(keybinding)}`)
   }
 
-  /**
-   * Update the keybinding on given command if it is different from the current keybinding.
-   *
-   * @returns true if the keybinding is updated, false otherwise.
-   */
   function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
-    const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
-    if (currentKeybinding?.equals(keybinding)) {
-      return false
+    const existingKeybinding1 = getKeybindingByCommandId(keybinding.commandId)
+    const existingKeybinding2 = getKeybinding(
+      keybinding.effectiveCombo,
+      keybinding.context
+    )
+
+    if (existingKeybinding1) {
+      existingKeybinding1.overwriteCombo(keybinding.effectiveCombo)
+      return true
     }
-    if (currentKeybinding) {
-      unsetKeybinding(currentKeybinding)
+    if (existingKeybinding2) {
+      existingKeybinding2.overwriteCombo(keybinding.effectiveCombo)
+      return true
     }
-    addUserKeybinding(keybinding)
+
+    addKeybinding(keybinding)
     return true
   }
 
-  function loadUserKeybindings() {
+  async function loadUserKeybindings() {
+    await migrateKeybindings()
+
     const settingStore = useSettingStore()
-    // Unset bindings first as new bindings might conflict with default bindings.
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      unsetKeybinding(new KeybindingImpl(keybinding))
-    }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      addUserKeybinding(new KeybindingImpl(keybinding))
+
+    // Load modified bindings from settings
+    const modifiedBindings =
+      settingStore.get('Comfy.Keybinding.ModifiedBindings') ?? []
+    for (const binding of modifiedBindings) {
+      const existing = getKeybindingByCommandId(binding.commandId)
+      if (existing != null && binding) {
+        const keyCombo = binding.currentCombo
+          ? new KeyComboImpl(binding.currentCombo)
+          : null
+        existing.overwriteCombo(keyCombo)
+      }
     }
   }
 
+  async function migrateKeybindings() {
+    const settingStore = useSettingStore()
+    const changedKeybindings =
+      settingStore.get('Comfy.Keybinding.NewBindings') ?? []
+    const unsetKeybindings =
+      settingStore.get('Comfy.Keybinding.UnsetBindings') ?? []
+
+    console.log('Migrating keybindings', changedKeybindings, unsetKeybindings)
+
+    for (const keybinding of changedKeybindings) {
+      const existing = getKeybindingByCommandId(keybinding.commandId)
+      if (existing != null) {
+        existing.overwriteCombo(new KeyComboImpl(keybinding.combo))
+      } else {
+        const { combo: currentCombo, ...rest } = keybinding
+        const newKeybinding = {
+          ...rest,
+          currentCombo,
+          combo: null
+        }
+        addUserKeybinding(new KeybindingImpl(newKeybinding))
+      }
+    }
+
+    for (const keybinding of unsetKeybindings) {
+      unsetKeybinding(keybinding.commandId)
+    }
+
+    //await settingStore.set('Comfy.Keybinding.NewBindings', [])
+    //await settingStore.set('Comfy.Keybinding.UnsetBindings', [])
+
+    /*
+    clearing the old keybinding arrays can be done in a future version because the new keybinding
+    system is loaded after this migration function is called. This means that the old keybindings
+    will be overwritten if the user sets a new keybinding for the same command.
+    */
+  }
+
   function loadCoreKeybindings() {
+    // Simply load core keybindings as defaults
     for (const keybinding of CORE_KEYBINDINGS) {
       addDefaultKeybinding(new KeybindingImpl(keybinding))
+    }
+  }
+  function loadExtensionKeybindingContexts(extension: ComfyExtension) {
+    if (extension.keybindingContexts) {
+      for (const context of extension.keybindingContexts) {
+        if (!keybindingContexts.value.includes(context)) {
+          keybindingContexts.value.push(context)
+        }
+      }
     }
   }
 
@@ -268,7 +307,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     if (extension.keybindings) {
       for (const keybinding of extension.keybindings) {
         try {
-          addDefaultKeybinding(new KeybindingImpl(keybinding))
+          addUserKeybinding(new KeybindingImpl(keybinding))
         } catch (error) {
           console.warn(
             `Failed to load keybinding for extension ${extension.name}`,
@@ -281,37 +320,48 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   async function persistUserKeybindings() {
     const settingStore = useSettingStore()
-    // TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1079):
-    // Allow setting multiple values at once in settingStore
+
+    // Only save modified keybindings
+    const modifiedBindings = keybindings.value
+      .filter((kb) => kb.isModified())
+      .map((kb) => ({
+        //only the relevant properties are saved to the settings
+        commandId: kb.commandId,
+        currentCombo: kb.currentCombo
+      }))
+
     await settingStore.set(
-      'Comfy.Keybinding.NewBindings',
-      Object.values(userKeybindings.value)
-    )
-    await settingStore.set(
-      'Comfy.Keybinding.UnsetBindings',
-      Object.values(userUnsetKeybindings.value)
+      'Comfy.Keybinding.ModifiedBindings',
+      modifiedBindings
     )
   }
 
-  function resetKeybindings() {
-    userKeybindings.value = {}
-    userUnsetKeybindings.value = {}
+  /**
+   * Resets keybindings for a specific context or all keybindings if no context is provided
+   * @param context Optional context to reset keybindings for
+   */
+  function resetKeybindings(context?: string): void {
+    if (!keybindings.value?.length) {
+      return
+    }
+
+    keybindings.value.forEach((keybinding) => {
+      if (!context || keybinding.getContext() === context) {
+        keybinding.resetCombo()
+      }
+    })
   }
 
   function isCommandKeybindingModified(commandId: string): boolean {
-    const currentKeybinding: KeybindingImpl | undefined =
-      getKeybindingByCommandId(commandId)
-    const defaultKeybinding: KeybindingImpl | undefined =
-      defaultKeybindingsByCommandId.value[commandId]?.[0]
-
-    return !(
-      (currentKeybinding === undefined && defaultKeybinding === undefined) ||
-      currentKeybinding?.equals(defaultKeybinding)
-    )
+    const keybinding = getKeybindingByCommandId(commandId)
+    if (!keybinding)
+      throw new Error(`Keybinding for command ${commandId} not found.`)
+    return keybinding.isModified()
   }
 
   return {
     keybindings,
+    keybindingContexts,
     getKeybinding,
     getKeybindingsByCommandId,
     getKeybindingByCommandId,
@@ -322,6 +372,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     loadUserKeybindings,
     loadCoreKeybindings,
     loadExtensionKeybindings,
+    loadExtensionKeybindingContexts,
     persistUserKeybindings,
     resetKeybindings,
     isCommandKeybindingModified

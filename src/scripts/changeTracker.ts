@@ -162,20 +162,6 @@ export class ChangeTracker {
     )
   }
 
-  async undoRedo(e: KeyboardEvent) {
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-      const key = e.key.toUpperCase()
-      // Redo: Ctrl + Y, or Ctrl + Shift + Z
-      if ((key === 'Y' && !e.shiftKey) || (key == 'Z' && e.shiftKey)) {
-        await this.redo()
-        return true
-      } else if (key === 'Z' && !e.shiftKey) {
-        await this.undo()
-        return true
-      }
-    }
-  }
-
   beforeChange() {
     this.changeCount++
   }
@@ -194,6 +180,7 @@ export class ChangeTracker {
     ChangeTracker.app = app
 
     let keyIgnored = false
+    /*
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
@@ -237,7 +224,7 @@ export class ChangeTracker {
       },
       true
     )
-
+    */
     window.addEventListener('keyup', (e) => {
       if (keyIgnored) {
         keyIgnored = false
