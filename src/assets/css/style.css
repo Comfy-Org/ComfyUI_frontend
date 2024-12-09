@@ -9,6 +9,7 @@
   --fg-color: #000;
   --bg-color: #fff;
   --comfy-menu-bg: #353535;
+  --comfy-menu-secondary-bg: #292929;
   --comfy-input-bg: #222;
   --input-text: #ddd;
   --descrip-text: #999;
@@ -179,8 +180,8 @@ body {
 }
 
 .comfy-modal select,
-.comfy-modal input[type=button],
-.comfy-modal input[type=checkbox] {
+.comfy-modal input[type='button'],
+.comfy-modal input[type='checkbox'] {
   margin: 3px 3px 3px 4px;
 }
 
@@ -294,8 +295,8 @@ span.drag-handle {
   padding: 3px 4px;
   cursor: move;
   vertical-align: middle;
-  margin-top: -.4em;
-  margin-left: -.2em;
+  margin-top: -0.4em;
+  margin-left: -0.2em;
   font-size: 12px;
   font-family: sans-serif;
   letter-spacing: 2px;
@@ -362,11 +363,11 @@ button.comfy-queue-btn {
   z-index: 99;
 }
 
-.comfy-modal.comfy-settings input[type="range"] {
+.comfy-modal.comfy-settings input[type='range'] {
   vertical-align: middle;
 }
 
-.comfy-modal.comfy-settings input[type="range"] + input[type="number"] {
+.comfy-modal.comfy-settings input[type='range'] + input[type='number'] {
   width: 3.5em;
 }
 
@@ -397,7 +398,7 @@ button.comfy-queue-btn {
   .comfy-menu span.drag-handle {
     display: none;
   }
-  
+
   .comfy-menu-queue-size {
     flex: unset;
   }
@@ -431,7 +432,9 @@ button.comfy-queue-btn {
   padding-right: 8px;
 }
 
-.graphdialog input, .graphdialog textarea, .graphdialog select {
+.graphdialog input,
+.graphdialog textarea,
+.graphdialog select {
   background-color: var(--comfy-input-bg);
   border: 2px solid;
   border-color: var(--border-color);
@@ -493,7 +496,8 @@ dialog::backdrop {
   text-align: right;
 }
 
-#comfy-settings-dialog tbody button, #comfy-settings-dialog table > button {
+#comfy-settings-dialog tbody button,
+#comfy-settings-dialog table > button {
   background-color: var(--bg-color);
   border: 1px var(--border-color) solid;
   border-radius: 0;
@@ -572,7 +576,7 @@ dialog::backdrop {
 }
 
 .litemenu-entry.has_submenu::after {
-  content: ">";
+  content: '>';
   position: absolute;
   top: 0;
   right: 2px;
@@ -586,7 +590,8 @@ dialog::backdrop {
   will-change: transform;
 }
 
-.litegraph.litecontextmenu .litemenu-entry:hover:not(.disabled):not(.separator) {
+.litegraph.litecontextmenu
+  .litemenu-entry:hover:not(.disabled):not(.separator) {
   background-color: var(--comfy-menu-bg) !important;
   filter: brightness(155%);
   will-change: transform;

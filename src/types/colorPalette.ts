@@ -65,6 +65,7 @@ const comfyBaseSchema = z.object({
   ['bg-color']: z.string(),
   ['bg-img']: z.string().optional(),
   ['comfy-menu-bg']: z.string(),
+  ['comfy-menu-secondary-bg']: z.string().optional(),
   ['comfy-input-bg']: z.string(),
   ['input-text']: z.string(),
   ['descrip-text']: z.string(),
@@ -76,7 +77,8 @@ const comfyBaseSchema = z.object({
   ['content-bg']: z.string(),
   ['content-fg']: z.string(),
   ['content-hover-bg']: z.string(),
-  ['content-hover-fg']: z.string()
+  ['content-hover-fg']: z.string(),
+  ['bar-shadow']: z.string()
 })
 
 const colorsSchema = z
