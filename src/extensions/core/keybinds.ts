@@ -38,13 +38,12 @@ class KeyboardManager {
     if (!app.vueAppReady) return
 
     if (event.key === 'Escape' && this.modifiers.length === 0) {
+      event.preventDefault()
       this.handleEscapeKey()
       return
     }
 
     if (event.key === 'F12') return // prevent opening dev tools
-
-    this.setContext(event)
 
     const target = event.composedPath()[0] as HTMLElement
     const excludedTags = ['TEXTAREA', 'INPUT', 'SPAN']
@@ -57,6 +56,8 @@ class KeyboardManager {
         return
       }
     }
+
+    this.setContext(event)
 
     const keyCombo = KeyComboImpl.fromEvent(event)
     if (keyCombo.isModifier) return
