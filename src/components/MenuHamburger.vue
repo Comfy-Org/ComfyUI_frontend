@@ -9,6 +9,7 @@
     size="large"
     v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
     @click="exitFocusMode"
+    @contextmenu="showNativeMenu"
   />
 </template>
 
@@ -18,6 +19,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { computed, CSSProperties, watchEffect } from 'vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
+import { showNativeMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()

@@ -16,7 +16,7 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useEventListener } from '@vueuse/core'
-import { isElectron } from './utils/envUtil'
+import { isElectron, showNativeMenu } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
@@ -26,6 +26,17 @@ const handleKey = (e: KeyboardEvent) => {
 useEventListener(window, 'keydown', handleKey)
 useEventListener(window, 'keyup', handleKey)
 
+const showContextMenu = (event: PointerEvent) => {
+  const { target } = event
+  switch (true) {
+    case target instanceof HTMLTextAreaElement:
+    case target instanceof HTMLInputElement && target.type === 'text':
+      // TODO: Context input menu explicitly for text input
+      showNativeMenu()
+      return
+  }
+}
+
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
@@ -33,6 +44,7 @@ onMounted(() => {
   if (isElectron()) {
     // Enable CSS selectors
     document.documentElement.dataset['platform'] = 'electron'
+    document.addEventListener('contextmenu', showContextMenu)
   }
 })
 </script>

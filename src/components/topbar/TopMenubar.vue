@@ -21,6 +21,7 @@
         text
         v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
         @click="workspaceState.focusMode = true"
+        @contextmenu="showNativeMenu"
       />
     </div>
   </teleport>
@@ -38,7 +39,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { app } from '@/scripts/app'
 import { useEventBus, useResizeObserver } from '@vueuse/core'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI, isElectron, showNativeMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
