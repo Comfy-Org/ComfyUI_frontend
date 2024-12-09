@@ -77,7 +77,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#4e4e4e',
         'content-fg': '#fff',
         'content-hover-bg': '#222',
-        'content-hover-fg': '#fff'
+        'content-hover-fg': '#fff',
+        'bar-shadow': 'rgba(16, 16, 16, 0.5) 0 0 0.5rem'
       }
     }
   },
@@ -145,7 +146,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#e0e0e0',
         'content-fg': '#222',
         'content-hover-bg': '#adadad',
-        'content-hover-fg': '#222'
+        'content-hover-fg': '#222',
+        'bar-shadow': 'rgba(16, 16, 16, 0.25) 0 0 0.5rem'
       }
     }
   },
@@ -208,7 +210,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#657b83',
         'content-fg': '#fdf6e3',
         'content-hover-bg': '#002b36',
-        'content-hover-fg': '#fdf6e3'
+        'content-hover-fg': '#fdf6e3',
+        'bar-shadow': 'rgba(16, 16, 16, 0.5) 0 0 0.5rem'
       }
     }
   },
@@ -285,7 +288,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#6e7581',
         'content-fg': '#fff',
         'content-hover-bg': '#2b2f38',
-        'content-hover-fg': '#fff'
+        'content-hover-fg': '#fff',
+        'bar-shadow': 'rgba(8, 8, 8, 0.75) 0 0 0.5rem'
       }
     }
   },
@@ -362,7 +366,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#545d70',
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#2e3440',
-        'content-hover-fg': '#e5eaf0'
+        'content-hover-fg': '#e5eaf0',
+        'bar-shadow': 'rgba(0, 0, 0, 0.75) 0 0 0.5rem'
       }
     }
   },
@@ -439,7 +444,8 @@ const colorPalettes: ColorPalettes = {
         'content-bg': '#30363d',
         'content-fg': '#e5eaf0',
         'content-hover-bg': '#161b22',
-        'content-hover-fg': '#e5eaf0'
+        'content-hover-fg': '#e5eaf0',
+        'bar-shadow': 'rgba(0, 0, 0, 1) 0 0 0.5rem'
       }
     }
   }

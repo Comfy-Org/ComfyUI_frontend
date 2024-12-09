@@ -26,7 +26,6 @@
   --content-fg: #000;
   --content-hover-bg: #adadad;
   --content-hover-fg: #000;
-  --bar-shadow: rgba(16, 16, 16, 0.25) 0 0 0.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -37,7 +36,6 @@
     --content-fg: #fff;
     --content-hover-bg: #222;
     --content-hover-fg: #fff;
-    --bar-shadow: rgba(16, 16, 16, 0.5) 0 0 0.5rem;
   }
 }
 
