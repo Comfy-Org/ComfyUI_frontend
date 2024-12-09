@@ -2,7 +2,7 @@
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
-      <i class="pi pi-check download-finished" v-if="status === 'completed'" />
+      <i class="pi pi-check text-green-500" v-if="status === 'completed'" />
       <div class="file-info">
         <div class="file-details">
           <span class="file-type" :title="hint">{{ label }}</span>
@@ -123,9 +123,3 @@ const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
 const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
 const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
 </script>
-
-<style scoped>
-.download-finished {
-  color: var(--p-green-500);
-}
-</style>
