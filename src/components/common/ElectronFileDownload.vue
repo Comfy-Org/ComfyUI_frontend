@@ -2,6 +2,7 @@
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
+      <i class="pi pi-check download-finished" v-if="status === 'completed'" />
       <div class="file-info">
         <div class="file-details">
           <span class="file-type" :title="hint">{{ label }}</span>
@@ -91,12 +92,11 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { DownloadManager } = electronAPI()
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
 const downloadProgress = ref<number>(0)
-const status = ref<string | null>(null)
+const status = ref<string | null>('comp')
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
@@ -124,3 +124,9 @@ const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
 const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
 const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
 </script>
+
+<style scoped>
+.download-finished {
+  color: var(--p-green-500);
+}
+</style>
