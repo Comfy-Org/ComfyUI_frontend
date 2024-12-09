@@ -2,6 +2,7 @@
 <template>
   <div class="flex flex-col">
     <div class="flex flex-row items-center gap-2">
+      <i class="pi pi-check text-green-500" v-if="status === 'completed'" />
       <div class="file-info">
         <div class="file-details">
           <span class="file-type" :title="hint">{{ label }}</span>
@@ -80,7 +81,6 @@ import ProgressBar from 'primevue/progressbar'
 import { ref, computed } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
-import { electronAPI } from '@/utils/envUtil'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const props = defineProps<{
@@ -91,7 +91,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { DownloadManager } = electronAPI()
 const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
