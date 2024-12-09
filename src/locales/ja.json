@@ -1249,7 +1249,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
     "DevMode": "開発モード",
-    "EditAttention": "編集Attention",
+    "EditTokenWeight": "トークンの重みを編集",
     "Extension": "拡張",
     "General": "一般",
     "Graph": "グラフ",

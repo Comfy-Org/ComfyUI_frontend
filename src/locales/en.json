@@ -638,7 +638,6 @@
     "LiteGraph": "Lite Graph",
     "Node Widget": "Node Widget",
     "Node": "Node",
-    "EditAttention": "Edit Attention",
     "Extension": "Extension",
     "Canvas": "Canvas",
     "Link": "Link",
@@ -666,7 +665,8 @@
     "Validation": "Validation",
     "Window": "Window",
     "Server-Config": "Server-Config",
-    "About": "About"
+    "About": "About",
+    "EditTokenWeight": "Edit Token Weight"
   },
   "serverConfigItems": {
     "tls-keyfile": {

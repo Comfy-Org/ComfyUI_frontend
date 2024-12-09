@@ -1232,7 +1232,7 @@
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy-Desktop",
     "DevMode": "개발자 모드",
-    "EditAttention": "토큰 가중치 편집",
+    "EditTokenWeight": "토큰 가중치 편집",
     "Extension": "확장",
     "General": "일반",
     "Graph": "그래프",
