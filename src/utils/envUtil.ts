@@ -7,3 +7,7 @@ export function isElectron() {
 export function electronAPI() {
   return (window as any)['electronAPI'] as ElectronAPI
 }
+
+export function showNativeMenu() {
+  electronAPI()?.showSystemMenu()
+}
