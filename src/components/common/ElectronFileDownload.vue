@@ -81,7 +81,6 @@ import ProgressBar from 'primevue/progressbar'
 import { ref, computed } from 'vue'
 import { formatSize } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
-import { electronAPI } from '@/utils/envUtil'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 
 const props = defineProps<{
@@ -96,7 +95,7 @@ const label = computed(() => props.label || props.url.split('/').pop())
 const hint = computed(() => props.hint || props.url)
 const download = useDownload(props.url)
 const downloadProgress = ref<number>(0)
-const status = ref<string | null>('comp')
+const status = ref<string | null>(null)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
