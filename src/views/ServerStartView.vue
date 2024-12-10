@@ -82,6 +82,7 @@ onMounted(async () => {
   electron.sendReady()
   electron.onProgressUpdate(updateProgress)
   electronVersion.value = await electron.getElectronVersion()
+  electron.changeTheme({ color: '#171717', symbolColor: '#d4d4d4' })
 })
 </script>
 

@@ -42,6 +42,11 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import {
+  defaultColorPalette,
+  getColorPalette
+} from '@/extensions/core/colorPalette'
+import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 
@@ -51,6 +56,7 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 
 const theme = computed<string>(() => settingStore.get('Comfy.ColorPalette'))
+const defaultCssVars = defaultColorPalette.colors.comfy_base
 
 watch(
   theme,
@@ -61,6 +67,18 @@ watch(
       document.body.classList.add(DARK_THEME_CLASS)
     } else {
       document.body.classList.remove(DARK_THEME_CLASS)
+    }
+
+    // Native window control theme
+    if (isElectron()) {
+      const cssVars = getColorPalette(newTheme).colors.comfy_base
+      let color = cssVars['comfy-menu-bg'] ?? defaultCssVars['comfy-menu-bg']
+      if (color.startsWith('#')) {
+        if (color.length === 4) color = `#${color.substring(1).repeat(2)}`
+        color = `#${color.substring(1, 7)}00`
+      }
+      const symbolColor = cssVars['input-text'] ?? defaultCssVars['input-text']
+      electronAPI().changeTheme({ color, symbolColor })
     }
   },
   { immediate: true }

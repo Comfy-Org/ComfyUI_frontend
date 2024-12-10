@@ -88,7 +88,7 @@ import InstallLocationPicker from '@/components/install/InstallLocationPicker.vu
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
-import { ref, computed, toRaw } from 'vue'
+import { ref, computed, toRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const installPath = ref('')
@@ -114,6 +114,10 @@ const install = () => {
   electronAPI().installComfyUI(options)
   router.push('/server-start')
 }
+
+onMounted(() => {
+  electronAPI()?.changeTheme({ color: '#171717', symbolColor: '#d4d4d4' })
+})
 </script>
 
 <style scoped>
