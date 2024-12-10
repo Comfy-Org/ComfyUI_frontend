@@ -1150,6 +1150,7 @@
     "Cache": "キャッシュ",
     "General": "一般",
     "Inference": "推論",
+    "Launch": "起動",
     "Memory": "メモリ",
     "Network": "ネットワーク",
     "Preview": "プレビュー"
@@ -1222,11 +1223,20 @@
       "name": "グローバル浮動小数点精度",
       "tooltip": "グローバル浮動小数点精度"
     },
+    "input-directory": {
+      "name": "ComfyUI入力ディレクトリ"
+    },
+    "listen": {
+      "name": "リッスン：リッスンするIPアドレスを指定します"
+    },
     "log-level": {
       "name": "ログの冗長性レベル"
     },
     "max-upload-size": {
       "name": "最大アップロードサイズ (MB)"
+    },
+    "output-directory": {
+      "name": "ComfyUI出力ディレクトリ"
     },
     "preview-method": {
       "name": "潜在プレビューに使用されるメソッド"
