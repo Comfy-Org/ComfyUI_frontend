@@ -392,7 +392,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Top',
     name: 'Use new menu',
     type: 'combo',
-    options: ['Disabled', 'Top', 'Bottom'],
+    options: [
+      { value: 'Disabled', text: 'Disabled' },
+      { value: 'Top', text: 'Top' },
+      { value: 'Bottom', text: 'Bottom' }
+    ],
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -405,7 +409,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',
-    options: ['Sidebar', 'Topbar'],
+    options: [
+      { value: 'Sidebar', text: 'Sidebar' },
+      { value: 'Topbar', text: 'Topbar' }
+    ],
     defaultValue: 'Sidebar'
   },
   {

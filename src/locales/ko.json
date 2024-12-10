@@ -1513,7 +1513,12 @@
       "name": "트리 탐색기 항목 패딩"
     },
     "Comfy_UseNewMenu": {
-      "name": "새 메뉴 사용"
+      "name": "새 메뉴 사용",
+      "options": {
+        "Bottom": "하단",
+        "Disabled": "비활성화",
+        "Top": "상단"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "노드 정의 유효성 검사 (느림)",
@@ -1542,7 +1547,11 @@
       "name": "워크플로 저장 시 노드 ID 정렬"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "열린 워크플로 위치"
+      "name": "열린 워크플로 위치",
+      "options": {
+        "Sidebar": "사이드바",
+        "Topbar": "상단바"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "최대 FPS",

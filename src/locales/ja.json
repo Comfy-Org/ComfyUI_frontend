@@ -1530,7 +1530,12 @@
       "name": "ツリーエクスプローラーアイテムのパディング"
     },
     "Comfy_UseNewMenu": {
-      "name": "新しいメニューを使用"
+      "name": "新しいメニューを使用",
+      "options": {
+        "Bottom": "下",
+        "Disabled": "無効",
+        "Top": "上"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "ノード定義を検証（遅い）",
@@ -1559,7 +1564,11 @@
       "name": "ワークフローを保存する際にノードIDをソート"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "開いているワークフローの位置"
+      "name": "開いているワークフローの位置",
+      "options": {
+        "Sidebar": "サイドバー",
+        "Topbar": "トップバー"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "最大FPS",

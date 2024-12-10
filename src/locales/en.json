@@ -417,7 +417,12 @@
       "name": "Tree explorer item padding"
     },
     "Comfy_UseNewMenu": {
-      "name": "Use new menu"
+      "name": "Use new menu",
+      "options": {
+        "Disabled": "Disabled",
+        "Top": "Top",
+        "Bottom": "Bottom"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "Validate node definitions (slow)",
@@ -446,7 +451,11 @@
       "name": "Sort node IDs when saving workflow"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "Opened workflows position"
+      "name": "Opened workflows position",
+      "options": {
+        "Sidebar": "Sidebar",
+        "Topbar": "Topbar"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "Maxium FPS",

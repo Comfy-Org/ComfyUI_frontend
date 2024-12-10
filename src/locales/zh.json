@@ -1530,7 +1530,12 @@
       "name": "树形浏览器项目内边距"
     },
     "Comfy_UseNewMenu": {
-      "name": "使用新菜单"
+      "name": "使用新菜单",
+      "options": {
+        "Bottom": "底部",
+        "Disabled": "禁用",
+        "Top": "顶部"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "验证节点定义（慢）",
@@ -1559,7 +1564,11 @@
       "name": "保存工作流时排序节点ID"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "已打开工作流的位置"
+      "name": "已打开工作流的位置",
+      "options": {
+        "Sidebar": "侧边栏",
+        "Topbar": "顶部栏"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "最大FPS",
