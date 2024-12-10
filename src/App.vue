@@ -32,7 +32,7 @@ const showContextMenu = (event: PointerEvent) => {
     case target instanceof HTMLTextAreaElement:
     case target instanceof HTMLInputElement && target.type === 'text':
       // TODO: Context input menu explicitly for text input
-      showNativeMenu()
+      showNativeMenu({ type: 'text' })
       return
   }
 }
