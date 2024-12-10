@@ -1369,33 +1369,16 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "모델 라이브러리 트리 뷰에 표시할 이름",
-      "options": {
-        "filename": "파일 이름",
-        "title": "제목"
-      },
       "tooltip": "\"파일 이름\"을 선택하면 모델 목록에서 원시 파일 이름(디렉토리 또는 \".safetensors\" 확장자 없이)의 단순화된 뷰가 렌더링됩니다. \"제목\"을 선택하면 구성 가능한 모델 메타데이터 제목이 표시됩니다."
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "노드 ID 배지 모드",
-      "options": {
-        "None": "없음",
-        "Show all": "모두 표시"
-      }
+      "name": "노드 ID 배지 모드"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "노드 생명 주기 배지 모드",
-      "options": {
-        "None": "없음",
-        "Show all": "모두 표시"
-      }
+      "name": "노드 생명 주기 배지 모드"
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "노드 출처 배지 모드",
-      "options": {
-        "Hide built-in": "내장된 것 숨기기",
-        "None": "없음",
-        "Show all": "모두 표시"
-      }
+      "name": "노드 출처 배지 모드"
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "노드 컨텍스트 메뉴에서 입력/위젯 간 변환 항목을 하위 메뉴에 배치합니다."
@@ -1526,12 +1509,7 @@
       "name": "트리 탐색기 항목 패딩"
     },
     "Comfy_UseNewMenu": {
-      "name": "새 메뉴 사용",
-      "options": {
-        "Bottom": "하단",
-        "Disabled": "비활성화",
-        "Top": "상단"
-      }
+      "name": "새 메뉴 사용"
     },
     "Comfy_Validation_NodeDefs": {
       "name": "노드 정의 유효성 검사 (느림)",
@@ -1560,11 +1538,7 @@
       "name": "워크플로 저장 시 노드 ID 정렬"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "열린 워크플로 위치",
-      "options": {
-        "Sidebar": "사이드바",
-        "Topbar": "상단바"
-      }
+      "name": "열린 워크플로 위치"
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "최대 FPS",

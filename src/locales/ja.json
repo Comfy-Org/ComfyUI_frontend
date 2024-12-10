@@ -1386,33 +1386,16 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "モデルライブラリツリービューに表示する名前",
-      "options": {
-        "filename": "ファイル名",
-        "title": "タイトル"
-      },
       "tooltip": "\"ファイル名\"を選択すると、モデルリストにディレクトリや\".safetensors\"拡張子なしの生のファイル名の簡略化されたビューが表示されます。\"タイトル\"を選択すると、設定可能なモデルメタデータタイトルが表示されます。"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "ノードIDバッジモード",
-      "options": {
-        "None": "なし",
-        "Show all": "すべて表示"
-      }
+      "name": "ノードIDバッジモード"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "ノードライフサイクルバッジモード",
-      "options": {
-        "None": "なし",
-        "Show all": "すべて表示"
-      }
+      "name": "ノードライフサイクルバッジモード"
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "ノードソースバッジモード",
-      "options": {
-        "Hide built-in": "組み込みを非表示",
-        "None": "なし",
-        "Show all": "すべて表示"
-      }
+      "name": "ノードソースバッジモード"
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "ノードのコンテキストメニューに、入力/ウィジェット間の変換を行うエントリをサブメニューに配置します。"
@@ -1543,12 +1526,7 @@
       "name": "ツリーエクスプローラーアイテムのパディング"
     },
     "Comfy_UseNewMenu": {
-      "name": "新しいメニューを使用",
-      "options": {
-        "Bottom": "下",
-        "Disabled": "無効",
-        "Top": "上"
-      }
+      "name": "新しいメニューを使用"
     },
     "Comfy_Validation_NodeDefs": {
       "name": "ノード定義を検証（遅い）",
@@ -1577,11 +1555,7 @@
       "name": "ワークフローを保存する際にノードIDをソート"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "開いているワークフローの位置",
-      "options": {
-        "Sidebar": "サイドバー",
-        "Topbar": "トップバー"
-      }
+      "name": "開いているワークフローの位置"
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "最大FPS",

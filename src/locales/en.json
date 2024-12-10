@@ -273,11 +273,7 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "What name to display in the model library tree view",
-      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title.",
-      "options": {
-        "filename": "filename",
-        "title": "title"
-      }
+      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title."
     },
     "Comfy_Node_AutoSnapLinkToSlot": {
       "name": "Auto snap link to node slot",
@@ -309,26 +305,13 @@
       "tooltip": "When dragging a link over a node with viable input slot, highlight the node"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "Node ID badge mode",
-      "options": {
-        "None": "None",
-        "Show all": "Show all"
-      }
+      "name": "Node ID badge mode"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "Node life cycle badge mode",
-      "options": {
-        "None": "None",
-        "Show all": "Show all"
-      }
+      "name": "Node life cycle badge mode"
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "Node source badge mode",
-      "options": {
-        "None": "None",
-        "Show all": "Show all",
-        "Hide built-in": "Hide built-in"
-      }
+      "name": "Node source badge mode"
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
@@ -430,12 +413,7 @@
       "name": "Tree explorer item padding"
     },
     "Comfy_UseNewMenu": {
-      "name": "Use new menu",
-      "options": {
-        "Disabled": "Disabled",
-        "Top": "Top",
-        "Bottom": "Bottom"
-      }
+      "name": "Use new menu"
     },
     "Comfy_Validation_NodeDefs": {
       "name": "Validate node definitions (slow)",
@@ -464,11 +442,7 @@
       "name": "Sort node IDs when saving workflow"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "Opened workflows position",
-      "options": {
-        "Sidebar": "Sidebar",
-        "Topbar": "Topbar"
-      }
+      "name": "Opened workflows position"
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "Maxium FPS",
