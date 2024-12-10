@@ -372,6 +372,14 @@
     "CLIPTextEncode": {
       "description": "テキストプロンプトをCLIPモデルを使用してエンコードし、特定の画像を生成するために拡散モデルをガイドするために使用できる埋め込みに変換します。",
       "display_name": "CLIPテキストエンコード（プロンプト）",
+      "inputs": {
+        "clip": {
+          "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
+        },
+        "text": {
+          "tooltip": "エンコードするテキスト。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
@@ -411,6 +419,11 @@
     "CheckpointLoaderSimple": {
       "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは潜在変数のノイズを除去するために使用されます。",
       "display_name": "チェックポイントを読み込む",
+      "inputs": {
+        "ckpt_name": {
+          "tooltip": "読み込むチェックポイント（モデル）の名前。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "潜在変数のデノイズに使用されるモデル。"
@@ -638,11 +651,27 @@
       "display_name": "空のLTXV潜在ビデオ"
     },
     "EmptyLatentAudio": {
-      "display_name": "空の潜在音声"
+      "display_name": "空の潜在音声",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "バッチ内の潜在画像の数。"
+        }
+      }
     },
     "EmptyLatentImage": {
       "description": "サンプリングを通じてノイズを除去するための空の潜在画像の新しいバッチを作成します。",
       "display_name": "空の潜在画像",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "バッチ内の潜在画像の数。"
+        },
+        "height": {
+          "tooltip": "潜在画像の高さ（ピクセル単位）。"
+        },
+        "width": {
+          "tooltip": "潜在画像の幅（ピクセル単位）。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "空の潜在画像バッチ。"
@@ -747,6 +776,11 @@
     },
     "InpaintModelConditioning": {
       "display_name": "インペイントモデル条件付け",
+      "inputs": {
+        "noise_mask": {
+          "tooltip": "潜在にノイズマスクを追加し、サンプリングがマスク内でのみ行われるようにします。モデルによっては結果が改善されるか、完全に壊れる可能性があります。"
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -782,6 +816,38 @@
     "KSampler": {
       "description": "提供されたモデル、正の条件付けと負の条件付けを使用して潜在画像のノイズを除去します。",
       "display_name": "Kサンプラー",
+      "inputs": {
+        "cfg": {
+          "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。値が高いほど、生成される画像はプロンプトにより近くなりますが、値が高すぎると品質に悪影響を及ぼす可能性があります。"
+        },
+        "denoise": {
+          "tooltip": "適用されるデノイズの量。値が低いほど、初期画像の構造を維持し、画像から画像へのサンプリングが可能になります。"
+        },
+        "latent_image": {
+          "tooltip": "デノイズする潜在画像。"
+        },
+        "model": {
+          "tooltip": "入力潜在のデノイズに使用されるモデル。"
+        },
+        "negative": {
+          "tooltip": "画像から除外したい属性を説明する条件付け。"
+        },
+        "positive": {
+          "tooltip": "画像に含めたい属性を説明する条件付け。"
+        },
+        "sampler_name": {
+          "tooltip": "サンプリング時に使用されるアルゴリズムで、生成される出力の品質、速度、スタイルに影響を与える可能性があります。"
+        },
+        "scheduler": {
+          "tooltip": "スケジューラは、ノイズが徐々に除去されて画像が形成される方法を制御します。"
+        },
+        "seed": {
+          "tooltip": "ノイズを生成するために使用されるランダムシード。"
+        },
+        "steps": {
+          "tooltip": "デノイズプロセスで使用されるステップ数。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "デノイズされた潜在変数。"
@@ -810,6 +876,11 @@
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV画像からビデオへ",
+      "inputs": {
+        "image_noise_scale": {
+          "tooltip": "条件付け画像の潜在に適用するノイズの量。"
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -823,7 +894,15 @@
       }
     },
     "LTXVScheduler": {
-      "display_name": "LTXVスケジューラー"
+      "display_name": "LTXVスケジューラー",
+      "inputs": {
+        "stretch": {
+          "tooltip": "シグマを[terminal, 1]の範囲に伸ばします。"
+        },
+        "terminal": {
+          "tooltip": "ストレッチ後のシグマの端末値。"
+        }
+      }
     },
     "LaplaceScheduler": {
       "display_name": "ラプラススケジューラー"
@@ -900,6 +979,23 @@
     "LoraLoader": {
       "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
       "display_name": "LoRAを読み込む",
+      "inputs": {
+        "clip": {
+          "tooltip": "LoRAが適用されるCLIPモデル。"
+        },
+        "lora_name": {
+          "tooltip": "LoRAの名前。"
+        },
+        "model": {
+          "tooltip": "LoRAが適用される拡散モデル。"
+        },
+        "strength_clip": {
+          "tooltip": "CLIPモデルをどの程度変更するか。この値は負の値になる可能性があります。"
+        },
+        "strength_model": {
+          "tooltip": "拡散モデルをどの程度変更するか。この値は負の値になる可能性があります。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "修正された拡散モデル。"
@@ -919,7 +1015,15 @@
       }
     },
     "LoraSave": {
-      "display_name": "LoRAを抽出して保存"
+      "display_name": "LoRAを抽出して保存",
+      "inputs": {
+        "model_diff": {
+          "tooltip": "loraに変換されるModelSubtract出力。"
+        },
+        "text_encoder_diff": {
+          "tooltip": "loraに変換されるCLIPSubtract出力。"
+        }
+      }
     },
     "MaskComposite": {
       "display_name": "マスク合成"
@@ -1197,7 +1301,15 @@
     },
     "SaveImage": {
       "description": "入力画像をComfyUI出力ディレクトリに保存します。",
-      "display_name": "画像を保存"
+      "display_name": "画像を保存",
+      "inputs": {
+        "filename_prefix": {
+          "tooltip": "保存するファイルのプレフィックス。この中には、ノードからの値を含めるために、%date:yyyy-MM-dd%や%Empty Latent Image.width%などのフォーマット情報が含まれる場合があります。"
+        },
+        "images": {
+          "tooltip": "保存する画像。"
+        }
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "画像を保存するWebSocket"
@@ -1360,6 +1472,14 @@
     "VAEDecode": {
       "description": "潜在画像をピクセル空間画像にデコードします。",
       "display_name": "VAEデコード",
+      "inputs": {
+        "samples": {
+          "tooltip": "デコードされる潜在。"
+        },
+        "vae": {
+          "tooltip": "潜在のデコードに使用されるVAEモデル。"
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "デコードされた画像。"

@@ -875,6 +875,11 @@
     "CheckpointLoaderSimple": {
       "display_name": "Load Checkpoint",
       "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents.",
+      "inputs": {
+        "ckpt_name": {
+          "tooltip": "The name of the checkpoint (model) to load."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "The model used for denoising latents."
@@ -915,6 +920,14 @@
     "CLIPTextEncode": {
       "display_name": "CLIP Text Encode (Prompt)",
       "description": "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images.",
+      "inputs": {
+        "text": {
+          "tooltip": "The text to be encoded."
+        },
+        "clip": {
+          "tooltip": "The CLIP model used for encoding the text."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "A conditioning containing the embedded text used to guide the diffusion model."
@@ -1154,11 +1167,27 @@
       "display_name": "EmptyImage"
     },
     "EmptyLatentAudio": {
-      "display_name": "EmptyLatentAudio"
+      "display_name": "EmptyLatentAudio",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "The number of latent images in the batch."
+        }
+      }
     },
     "EmptyLatentImage": {
       "display_name": "Empty Latent Image",
       "description": "Create a new batch of empty latent images to be denoised via sampling.",
+      "inputs": {
+        "width": {
+          "tooltip": "The width of the latent images in pixels."
+        },
+        "height": {
+          "tooltip": "The height of the latent images in pixels."
+        },
+        "batch_size": {
+          "tooltip": "The number of latent images in the batch."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "The empty latent image batch."
@@ -1266,6 +1295,11 @@
     },
     "InpaintModelConditioning": {
       "display_name": "InpaintModelConditioning",
+      "inputs": {
+        "noise_mask": {
+          "tooltip": "Add a noise mask to the latent so sampling will only happen within the mask. Might improve results or completely break things depending on the model."
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -1304,6 +1338,38 @@
     "KSampler": {
       "display_name": "KSampler",
       "description": "Uses the provided model, positive and negative conditioning to denoise the latent image.",
+      "inputs": {
+        "model": {
+          "tooltip": "The model used for denoising the input latent."
+        },
+        "seed": {
+          "tooltip": "The random seed used for creating the noise."
+        },
+        "steps": {
+          "tooltip": "The number of steps used in the denoising process."
+        },
+        "cfg": {
+          "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
+        },
+        "sampler_name": {
+          "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
+        },
+        "scheduler": {
+          "tooltip": "The scheduler controls how noise is gradually removed to form the image."
+        },
+        "positive": {
+          "tooltip": "The conditioning describing the attributes you want to include in the image."
+        },
+        "negative": {
+          "tooltip": "The conditioning describing the attributes you want to exclude from the image."
+        },
+        "latent_image": {
+          "tooltip": "The latent image to denoise."
+        },
+        "denoise": {
+          "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "The denoised latent."
@@ -1391,6 +1457,23 @@
     "LoraLoader": {
       "display_name": "Load LoRA",
       "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+      "inputs": {
+        "model": {
+          "tooltip": "The diffusion model the LoRA will be applied to."
+        },
+        "clip": {
+          "tooltip": "The CLIP model the LoRA will be applied to."
+        },
+        "lora_name": {
+          "tooltip": "The name of the LoRA."
+        },
+        "strength_model": {
+          "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+        },
+        "strength_clip": {
+          "tooltip": "How strongly to modify the CLIP model. This value can be negative."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "The modified diffusion model."
@@ -1410,7 +1493,15 @@
       }
     },
     "LoraSave": {
-      "display_name": "Extract and Save Lora"
+      "display_name": "Extract and Save Lora",
+      "inputs": {
+        "model_diff": {
+          "tooltip": "The ModelSubtract output to be converted to a lora."
+        },
+        "text_encoder_diff": {
+          "tooltip": "The CLIPSubtract output to be converted to a lora."
+        }
+      }
     },
     "LTXVConditioning": {
       "display_name": "LTXVConditioning",
@@ -1425,6 +1516,11 @@
     },
     "LTXVImgToVideo": {
       "display_name": "LTXVImgToVideo",
+      "inputs": {
+        "image_noise_scale": {
+          "tooltip": "Amount of noise to apply on conditioning image latent."
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -1438,7 +1534,15 @@
       }
     },
     "LTXVScheduler": {
-      "display_name": "LTXVScheduler"
+      "display_name": "LTXVScheduler",
+      "inputs": {
+        "stretch": {
+          "tooltip": "Stretch the sigmas to be in the range [terminal, 1]."
+        },
+        "terminal": {
+          "tooltip": "The terminal value of the sigmas after stretching."
+        }
+      }
     },
     "MaskComposite": {
       "display_name": "MaskComposite"
@@ -1671,7 +1775,15 @@
     },
     "SaveImage": {
       "display_name": "Save Image",
-      "description": "Saves the input images to your ComfyUI output directory."
+      "description": "Saves the input images to your ComfyUI output directory.",
+      "inputs": {
+        "images": {
+          "tooltip": "The images to save."
+        },
+        "filename_prefix": {
+          "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+        }
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "SaveImageWebsocket"
@@ -1885,6 +1997,14 @@
     "VAEDecode": {
       "display_name": "VAE Decode",
       "description": "Decodes latent images back into pixel space images.",
+      "inputs": {
+        "samples": {
+          "tooltip": "The latent to be decoded."
+        },
+        "vae": {
+          "tooltip": "The VAE model used for decoding the latent."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "The decoded image."

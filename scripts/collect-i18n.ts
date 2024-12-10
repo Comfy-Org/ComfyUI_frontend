@@ -138,13 +138,19 @@ test('collect-i18n', async ({ comfyPage }) => {
 
   function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
-      nodeDef.inputs.all.map((input) => {
+      nodeDef.inputs.all.flatMap((input) => {
+        if (input.tooltip === undefined) {
+          return []
+        }
+
         return [
-          normalizeI18nKey(input.name),
-          {
-            name: input.name,
-            tooltip: input.tooltip
-          }
+          [
+            normalizeI18nKey(input.name),
+            {
+              // TODO: Translate name here.
+              tooltip: input.tooltip
+            }
+          ]
         ]
       })
     )

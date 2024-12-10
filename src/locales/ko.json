@@ -355,6 +355,14 @@
     "CLIPTextEncode": {
       "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 안내하는 임베딩으로 변환합니다.",
       "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
+      "inputs": {
+        "clip": {
+          "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
+        },
+        "text": {
+          "tooltip": "인코딩할 텍스트입니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "확산 모델을 안내하는 데 사용되는 임베디드 텍스트를 포함하는 조건부입니다."
@@ -394,6 +402,11 @@
     "CheckpointLoaderSimple": {
       "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
       "display_name": "체크포인트 로드",
+      "inputs": {
+        "ckpt_name": {
+          "tooltip": "로드할 체크포인트(모델)의 이름입니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "잠재 변수를 제거하는 데 사용되는 모델입니다."
@@ -621,11 +634,27 @@
       "display_name": "빈 LTXV 잠재 비디오"
     },
     "EmptyLatentAudio": {
-      "display_name": "빈 잠재 오디오"
+      "display_name": "빈 잠재 오디오",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "배치의 잠재 이미지 수입니다."
+        }
+      }
     },
     "EmptyLatentImage": {
       "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
       "display_name": "빈 잠재 이미지",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "배치의 잠재 이미지 수입니다."
+        },
+        "height": {
+          "tooltip": "잠재 이미지의 높이(픽셀)입니다."
+        },
+        "width": {
+          "tooltip": "잠재 이미지의 너비(픽셀)입니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "빈 잠재 이미지 배치입니다."
@@ -730,6 +759,11 @@
     },
     "InpaintModelConditioning": {
       "display_name": "인페인팅 모델 조건 설정",
+      "inputs": {
+        "noise_mask": {
+          "tooltip": "잠재에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -765,6 +799,38 @@
     "KSampler": {
       "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 이미지를 디노이즈합니다.",
       "display_name": "KSampler",
+      "inputs": {
+        "cfg": {
+          "tooltip": "Classifier-Free Guidance 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 값이 높을수록 프롬프트와 더 밀접하게 일치하는 이미지가 생성되지만, 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
+        },
+        "denoise": {
+          "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
+        },
+        "latent_image": {
+          "tooltip": "노이즈 제거할 잠재 이미지입니다."
+        },
+        "model": {
+          "tooltip": "입력 잠재의 노이즈 제거에 사용되는 모델입니다."
+        },
+        "negative": {
+          "tooltip": "이미지에서 제외하고 싶은 속성을 설명하는 조건입니다."
+        },
+        "positive": {
+          "tooltip": "이미지에 포함하고 싶은 속성을 설명하는 조건입니다."
+        },
+        "sampler_name": {
+          "tooltip": "샘플링 시 사용되는 알고리즘으로, 생성된 출력의 품질, 속도 및 스타일에 영향을 미칠 수 있습니다."
+        },
+        "scheduler": {
+          "tooltip": "스케줄러는 노이즈가 점진적으로 제거되어 이미지를 형성하는 방식을 제어합니다."
+        },
+        "seed": {
+          "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+        },
+        "steps": {
+          "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "제거된 잠재 변수입니다."
@@ -793,6 +859,11 @@
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV 이미지에서 비디오로",
+      "inputs": {
+        "image_noise_scale": {
+          "tooltip": "조건 이미지 잠재에 적용할 노이즈의 양입니다."
+        }
+      },
       "outputs": {
         "0": {
           "name": "positive"
@@ -806,7 +877,15 @@
       }
     },
     "LTXVScheduler": {
-      "display_name": "LTXV 스케줄러"
+      "display_name": "LTXV 스케줄러",
+      "inputs": {
+        "stretch": {
+          "tooltip": "시그마를 [terminal, 1] 범위로 늘립니다."
+        },
+        "terminal": {
+          "tooltip": "늘린 후 시그마의 최종 값입니다."
+        }
+      }
     },
     "LaplaceScheduler": {
       "display_name": "라플라스 스케줄러"
@@ -883,6 +962,23 @@
     "LoraLoader": {
       "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
       "display_name": "LoRA 로드",
+      "inputs": {
+        "clip": {
+          "tooltip": "LoRA가 적용될 CLIP 모델입니다."
+        },
+        "lora_name": {
+          "tooltip": "LoRA의 이름입니다."
+        },
+        "model": {
+          "tooltip": "LoRA가 적용될 확산 모델입니다."
+        },
+        "strength_clip": {
+          "tooltip": "CLIP 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+        },
+        "strength_model": {
+          "tooltip": "확산 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "수정된 확산 모델입니다."
@@ -902,7 +998,15 @@
       }
     },
     "LoraSave": {
-      "display_name": "LoRA 추출 및 저장"
+      "display_name": "LoRA 추출 및 저장",
+      "inputs": {
+        "model_diff": {
+          "tooltip": "lora로 변환될 ModelSubtract 출력입니다."
+        },
+        "text_encoder_diff": {
+          "tooltip": "lora로 변환될 CLIPSubtract 출력입니다."
+        }
+      }
     },
     "MaskComposite": {
       "display_name": "마스크 합성"
@@ -1180,7 +1284,15 @@
     },
     "SaveImage": {
       "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
-      "display_name": "이미지 저장"
+      "display_name": "이미지 저장",
+      "inputs": {
+        "filename_prefix": {
+          "tooltip": "저장할 파일의 접두사입니다. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
+        },
+        "images": {
+          "tooltip": "저장할 이미지입니다."
+        }
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "이미지 웹소켓 전송"
@@ -1343,6 +1455,14 @@
     "VAEDecode": {
       "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
       "display_name": "VAE 디코드",
+      "inputs": {
+        "samples": {
+          "tooltip": "디코딩할 잠재입니다."
+        },
+        "vae": {
+          "tooltip": "잠재 디코딩에 사용되는 VAE 모델입니다."
+        }
+      },
       "outputs": {
         "0": {
           "tooltip": "디코딩된 이미지입니다."
