@@ -20,7 +20,7 @@
 import Tag from 'primevue/tag'
 import FormItem from '@/components/common/FormItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
-import { SettingParams } from '@/types/settingTypes'
+import { SettingOption, SettingParams } from '@/types/settingTypes'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -29,6 +29,10 @@ const props = defineProps<{
 }>()
 
 const { t, te } = useI18n()
+function st(key: string, fallbackMessage: string) {
+  return te(key) ? t(key) : fallbackMessage
+}
+
 const formItem = computed(() => {
   const { id, options } = props.setting
   const normalizedId = id.replace(/\./g, '_')
@@ -37,23 +41,16 @@ const formItem = computed(() => {
   const nameKey = `${baseKey}.name`
   const tooltipKey = `${baseKey}.tooltip`
 
-  let translatedOptions: typeof options | undefined
+  const translatedOptions = Array.isArray(options)
+    ? options.map((opt) => {
+        const option: SettingOption =
+          typeof opt === 'string' ? { value: opt, text: opt } : { ...opt }
+        const key = `${baseKey}.options.${option.value}`
 
-  if (Array.isArray(options)) {
-    translatedOptions = options.map((opt) => {
-      const value = typeof opt === 'string' ? opt : opt.value
-      const optionKey = `${baseKey}.options.${value}`
-      const translatedText = te(optionKey)
-        ? t(optionKey)
-        : typeof opt === 'string'
-          ? opt
-          : opt.text
-
-      return typeof opt === 'string'
-        ? translatedText
-        : { ...opt, text: translatedText }
-    })
-  }
+        if (te(key)) option.text = t(key)
+        return option
+      })
+    : options
 
   return {
     ...props.setting,
@@ -63,7 +60,7 @@ const formItem = computed(() => {
         ? t(tooltipKey)
         : props.setting.tooltip
       : undefined,
-    options: translatedOptions ?? options
+    options: translatedOptions
   }
 })
 
