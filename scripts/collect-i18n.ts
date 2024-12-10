@@ -118,6 +118,8 @@ test('collect-i18n', async ({ comfyPage }) => {
     })
   ).map((def) => new ComfyNodeDefImpl(def))
 
+  console.log(`Collected ${nodeDefs.length} node definitions`)
+
   const allDataTypesLocale = Object.fromEntries(
     nodeDefs
       .flatMap((nodeDef) => {
@@ -136,10 +138,13 @@ test('collect-i18n', async ({ comfyPage }) => {
       .sort((a, b) => a[0].localeCompare(b[0]))
   )
 
-  function extractInputs(nodeDef: ComfyNodeDefImpl) {
+  function extractInputs(nodeDef: ComfyNodeDefImpl, nodeIndex: number) {
     const inputs = Object.fromEntries(
       nodeDef.inputs.all.flatMap((input) => {
-        if (input.tooltip === undefined) {
+        const name = nodeIndex < 1 ? input.name : undefined
+        const tooltip = input.tooltip
+
+        if (name === undefined && tooltip === undefined) {
           return []
         }
 
@@ -147,8 +152,8 @@ test('collect-i18n', async ({ comfyPage }) => {
           [
             normalizeI18nKey(input.name),
             {
-              // TODO: Translate name here.
-              tooltip: input.tooltip
+              name,
+              tooltip
             }
           ]
         ]
@@ -185,12 +190,12 @@ test('collect-i18n', async ({ comfyPage }) => {
   const allNodeDefsLocale = Object.fromEntries(
     nodeDefs
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((nodeDef) => [
+      .map((nodeDef, i) => [
         normalizeI18nKey(nodeDef.name),
         {
           display_name: nodeDef.display_name ?? nodeDef.name,
           description: nodeDef.description || undefined,
-          inputs: extractInputs(nodeDef),
+          inputs: extractInputs(nodeDef, i),
           outputs: extractOutputs(nodeDef)
         }
       ])

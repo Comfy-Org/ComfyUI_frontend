@@ -330,7 +330,21 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "添加噪声"
+      "display_name": "添加噪声",
+      "inputs": {
+        "latent_image": {
+          "name": "潜在图像"
+        },
+        "model": {
+          "name": "模型"
+        },
+        "noise": {
+          "name": "噪声"
+        },
+        "sigmas": {
+          "name": "标准差"
+        }
+      }
     },
     "AlignYourStepsScheduler": {
       "display_name": "对齐步骤调度器"

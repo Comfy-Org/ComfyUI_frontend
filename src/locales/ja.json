@@ -330,7 +330,21 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "ノイズを追加"
+      "display_name": "ノイズを追加",
+      "inputs": {
+        "latent_image": {
+          "name": "潜在画像"
+        },
+        "model": {
+          "name": "モデル"
+        },
+        "noise": {
+          "name": "ノイズ"
+        },
+        "sigmas": {
+          "name": "シグマ"
+        }
+      }
     },
     "AlignYourStepsScheduler": {
       "display_name": "ステップを整列"

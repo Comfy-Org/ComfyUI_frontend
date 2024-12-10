@@ -313,7 +313,21 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "노이즈 추가"
+      "display_name": "노이즈 추가",
+      "inputs": {
+        "latent_image": {
+          "name": "잠재_이미지"
+        },
+        "model": {
+          "name": "모델"
+        },
+        "noise": {
+          "name": "노이즈"
+        },
+        "sigmas": {
+          "name": "시그마"
+        }
+      }
     },
     "AlignYourStepsScheduler": {
       "display_name": "AlignYourSteps 스케쥴러"

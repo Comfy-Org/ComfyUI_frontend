@@ -330,7 +330,21 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "Добавить шум"
+      "display_name": "Добавить шум",
+      "inputs": {
+        "latent_image": {
+          "name": "латентное_изображение"
+        },
+        "model": {
+          "name": "модель"
+        },
+        "noise": {
+          "name": "шум"
+        },
+        "sigmas": {
+          "name": "сигмы"
+        }
+      }
     },
     "AlignYourStepsScheduler": {
       "display_name": "Планировщик выравнивания шагов"

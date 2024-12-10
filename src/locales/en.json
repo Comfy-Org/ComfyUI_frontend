@@ -849,7 +849,21 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "AddNoise"
+      "display_name": "AddNoise",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "noise": {
+          "name": "noise"
+        },
+        "sigmas": {
+          "name": "sigmas"
+        },
+        "latent_image": {
+          "name": "latent_image"
+        }
+      }
     },
     "AlignYourStepsScheduler": {
       "display_name": "AlignYourStepsScheduler"
