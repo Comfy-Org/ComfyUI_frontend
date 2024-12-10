@@ -61,7 +61,7 @@ import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
-import { st } from '@/i18n'
+import { st, t, te } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -1975,12 +1975,11 @@ export class ComfyApp {
           const shapeOptions = outputIsList
             ? { shape: LiteGraph.GRID_SHAPE }
             : {}
+          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.outputs.${o}.name`
+          const typeKey = `dataTypes.${normalizeI18nKey(output)}`
           const outputOptions = {
             ...shapeOptions,
-            label: st(
-              `nodeDefs.${normalizeI18nKey(nodeData.name)}.outputs.${normalizeI18nKey(outputName)}.name`,
-              outputName
-            )
+            label: te(nameKey) ? t(nameKey) : st(typeKey, outputName)
           }
           this.addOutput(outputName, output, outputOptions)
         }

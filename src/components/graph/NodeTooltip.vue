@@ -85,9 +85,8 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    const outputName = node.outputs[outputSlot].name
     const translatedTooltip = st(
-      `nodeDefs.${normalizeI18nKey(node.type)}.outputs.${normalizeI18nKey(outputName)}.tooltip`,
+      `nodeDefs.${normalizeI18nKey(node.type)}.outputs.${outputSlot}.tooltip`,
       nodeDef.outputs.all?.[outputSlot]?.tooltip
     )
     return showTooltip(translatedTooltip)
