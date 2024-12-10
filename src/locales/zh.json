@@ -1396,10 +1396,19 @@
       "name": "节点ID徽章模式"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "节点生命周期徽章模式"
+      "name": "节点生命周期徽章模式",
+      "options": {
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "节点源徽章模式"
+      "name": "节点源徽章模式",
+      "options": {
+        "Hide built-in": "隐藏内置",
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "在节点上下文菜单中，将输入/小部件之间转换的条目放置在子菜单中。"

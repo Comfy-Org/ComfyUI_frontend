@@ -285,7 +285,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeSourceBadgeMode'],
     name: 'Node source badge mode',
     type: 'combo',
-    options: Object.values(NodeBadgeMode),
+    options: Object.values(NodeBadgeMode).map((mode) => ({
+      value: mode,
+      text: mode
+    })),
     defaultValue: NodeBadgeMode.HideBuiltIn
   },
   {
@@ -301,7 +304,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeLifeCycleBadgeMode'],
     name: 'Node life cycle badge mode',
     type: 'combo',
-    options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
+    options: [
+      { value: NodeBadgeMode.None, text: NodeBadgeMode.None },
+      { value: NodeBadgeMode.ShowAll, text: NodeBadgeMode.ShowAll }
+    ],
     defaultValue: NodeBadgeMode.ShowAll
   },
   {

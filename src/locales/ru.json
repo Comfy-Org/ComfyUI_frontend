@@ -1396,10 +1396,19 @@
       "name": "Режим значка ID узла"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "Режим значка жизненного цикла узла"
+      "name": "Режим значка жизненного цикла узла",
+      "options": {
+        "None": "Нет",
+        "Show all": "Показать все"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "Режим значка источника узла"
+      "name": "Режим значка источника узла",
+      "options": {
+        "Hide built-in": "Скрыть встроенные",
+        "None": "Нет",
+        "Show all": "Показать все"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "В контекстном меню узла разместите элементы, которые конвертируют между вводом/виджетом в подменю."

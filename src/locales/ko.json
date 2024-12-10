@@ -1379,10 +1379,19 @@
       "name": "노드 ID 배지 모드"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "노드 생명 주기 배지 모드"
+      "name": "노드 생명 주기 배지 모드",
+      "options": {
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "노드 출처 배지 모드"
+      "name": "노드 출처 배지 모드",
+      "options": {
+        "Hide built-in": "내장된 것 숨기기",
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "노드 컨텍스트 메뉴에서 입력/위젯 간 변환 항목을 하위 메뉴에 배치합니다."

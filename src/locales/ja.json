@@ -1396,10 +1396,19 @@
       "name": "ノードIDバッジモード"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "ノードライフサイクルバッジモード"
+      "name": "ノードライフサイクルバッジモード",
+      "options": {
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "ノードソースバッジモード"
+      "name": "ノードソースバッジモード",
+      "options": {
+        "Hide built-in": "組み込みを非表示",
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "ノードのコンテキストメニューに、入力/ウィジェット間の変換を行うエントリをサブメニューに配置します。"

@@ -312,10 +312,19 @@
       "name": "Node ID badge mode"
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "Node life cycle badge mode"
+      "name": "Node life cycle badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "Node source badge mode"
+      "name": "Node source badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all",
+        "Hide built-in": "Hide built-in"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
