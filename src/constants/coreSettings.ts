@@ -255,16 +255,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Select "filename" to render a simplified view of the raw filename (without directory or ".safetensors" extension) in the model list. Select "title" to display the configurable model metadata title.',
     type: 'combo',
-    options: [
-      {
-        value: 'filename',
-        text: 'filename'
-      },
-      {
-        value: 'title',
-        text: 'title'
-      }
-    ],
+    options: ['filename', 'title'],
     defaultValue: 'title'
   },
   {
@@ -285,10 +276,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeSourceBadgeMode'],
     name: 'Node source badge mode',
     type: 'combo',
-    options: Object.values(NodeBadgeMode).map((mode) => ({
-      value: mode,
-      text: mode
-    })),
+    options: Object.values(NodeBadgeMode),
     defaultValue: NodeBadgeMode.HideBuiltIn
   },
   {
@@ -296,10 +284,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeIdBadgeMode'],
     name: 'Node ID badge mode',
     type: 'combo',
-    options: [
-      { value: NodeBadgeMode.None, text: NodeBadgeMode.None },
-      { value: NodeBadgeMode.ShowAll, text: NodeBadgeMode.ShowAll }
-    ],
+    options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
     defaultValue: NodeBadgeMode.ShowAll
   },
   {
@@ -307,10 +292,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeLifeCycleBadgeMode'],
     name: 'Node life cycle badge mode',
     type: 'combo',
-    options: [
-      { value: NodeBadgeMode.None, text: NodeBadgeMode.None },
-      { value: NodeBadgeMode.ShowAll, text: NodeBadgeMode.ShowAll }
-    ],
+    options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
     defaultValue: NodeBadgeMode.ShowAll
   },
   {
@@ -401,11 +383,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Top',
     name: 'Use new menu',
     type: 'combo',
-    options: [
-      { value: 'Disabled', text: 'Disabled' },
-      { value: 'Top', text: 'Top' },
-      { value: 'Bottom', text: 'Bottom' }
-    ],
+    options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -418,10 +396,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.WorkflowTabsPosition',
     name: 'Opened workflows position',
     type: 'combo',
-    options: [
-      { value: 'Sidebar', text: 'Sidebar' },
-      { value: 'Topbar', text: 'Topbar' }
-    ],
+    options: ['Sidebar', 'Topbar'],
     defaultValue: 'Sidebar'
   },
   {
