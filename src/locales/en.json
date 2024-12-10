@@ -309,7 +309,11 @@
       "tooltip": "When dragging a link over a node with viable input slot, highlight the node"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "Node ID badge mode"
+      "name": "Node ID badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
       "name": "Node life cycle badge mode",

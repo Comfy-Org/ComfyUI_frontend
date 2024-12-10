@@ -296,7 +296,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Node', 'NodeIdBadgeMode'],
     name: 'Node ID badge mode',
     type: 'combo',
-    options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
+    options: [
+      { value: NodeBadgeMode.None, text: NodeBadgeMode.None },
+      { value: NodeBadgeMode.ShowAll, text: NodeBadgeMode.ShowAll }
+    ],
     defaultValue: NodeBadgeMode.ShowAll
   },
   {

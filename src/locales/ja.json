@@ -1393,7 +1393,11 @@
       "tooltip": "\"ファイル名\"を選択すると、モデルリストにディレクトリや\".safetensors\"拡張子なしの生のファイル名の簡略化されたビューが表示されます。\"タイトル\"を選択すると、設定可能なモデルメタデータタイトルが表示されます。"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "ノードIDバッジモード"
+      "name": "ノードIDバッジモード",
+      "options": {
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
       "name": "ノードライフサイクルバッジモード",

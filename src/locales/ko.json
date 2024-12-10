@@ -1376,7 +1376,11 @@
       "tooltip": "\"파일 이름\"을 선택하면 모델 목록에서 원시 파일 이름(디렉토리 또는 \".safetensors\" 확장자 없이)의 단순화된 뷰가 렌더링됩니다. \"제목\"을 선택하면 구성 가능한 모델 메타데이터 제목이 표시됩니다."
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "노드 ID 배지 모드"
+      "name": "노드 ID 배지 모드",
+      "options": {
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
       "name": "노드 생명 주기 배지 모드",

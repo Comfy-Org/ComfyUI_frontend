@@ -1393,7 +1393,11 @@
       "tooltip": "选择“文件名”以在模型列表中呈现原始文件名的简化视图（不带目录或“.safetensors”扩展名）。选择“标题”以显示可配置的模型元数据标题。"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "节点ID徽章模式"
+      "name": "节点ID徽章模式",
+      "options": {
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
       "name": "节点生命周期徽章模式",
