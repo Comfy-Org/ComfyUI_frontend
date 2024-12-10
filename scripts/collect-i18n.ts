@@ -3,6 +3,7 @@ import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
+import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
@@ -111,25 +112,57 @@ test('collect-i18n', async ({ comfyPage }) => {
   )
 
   // Node Definitions
-  const nodeDefs = (await comfyPage.page.evaluate(async () => {
-    const api = window['app'].api as ComfyApi
-    return await api.getNodeDefs()
-  })) as Record<string, ComfyNodeDef>
+  const nodeDefs: ComfyNodeDefImpl[] = Object.values(
+    await comfyPage.page.evaluate(async () => {
+      const api = window['app'].api as ComfyApi
+      return await api.getNodeDefs()
+    })
+  ).map((def) => new ComfyNodeDefImpl(def))
+
+  function extractInputs(nodeDef: ComfyNodeDefImpl) {
+    return Object.fromEntries(
+      nodeDef.inputs.all.map((input) => {
+        return [
+          normalizeI18nKey(input.name),
+          {
+            name: input.name,
+            tooltip: input.tooltip
+          }
+        ]
+      })
+    )
+  }
+
+  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
+    return Object.fromEntries(
+      nodeDef.outputs.all.map((output) => {
+        return [
+          normalizeI18nKey(output.name),
+          {
+            name: output.name ?? output.type,
+            tooltip: output.tooltip
+          }
+        ]
+      })
+    )
+  }
 
   const allNodeDefsLocale = Object.fromEntries(
-    Object.values(nodeDefs)
+    nodeDefs
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((nodeDef) => [
         normalizeI18nKey(nodeDef.name),
         {
           display_name: nodeDef.display_name ?? nodeDef.name,
-          description: nodeDef.description || undefined
+          description: nodeDef.description || undefined,
+          inputs: extractInputs(nodeDef),
+          outputs: extractOutputs(nodeDef)
         }
       ])
   )
 
   const allNodeCategoriesLocale = Object.fromEntries(
-    Object.values(nodeDefs).flatMap((nodeDef) =>
+    nodeDefs.flatMap((nodeDef) =>
       nodeDef.category
         .split('/')
         .map((category) => [normalizeI18nKey(category), category])
@@ -137,30 +170,21 @@ test('collect-i18n', async ({ comfyPage }) => {
   )
 
   const allDataTypesLocale = Object.fromEntries(
-    Object.values(nodeDefs).flatMap((nodeDef) => {
-      const inputs = nodeDef.input ?? {}
-      const requiredInputs = inputs.required ?? {}
-      const optionalInputs = inputs.optional ?? {}
-      const allInputs = {
-        ...requiredInputs,
-        ...optionalInputs
-      }
-
-      const inputDataTypes = Object.values(allInputs).map((inputSpec) => {
-        const typeRaw = inputSpec[0]
-        const type = Array.isArray(typeRaw) ? 'COMBO' : typeRaw
-        return type
+    nodeDefs
+      .flatMap((nodeDef) => {
+        const inputDataTypes = Object.values(nodeDef.inputs.all).map(
+          (inputSpec) => inputSpec.type
+        )
+        const outputDataTypes = nodeDef.outputs.all.map((output) => output.type)
+        const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
+          (type: string) => type.split(',')
+        )
+        return allDataTypes.map((dataType) => [
+          normalizeI18nKey(dataType),
+          dataType
+        ])
       })
-      const outputDataTypes = nodeDef.output ?? []
-      const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
-        (type: string) => type.split(',')
-      )
-
-      return allDataTypes.map((dataType) => [
-        normalizeI18nKey(dataType),
-        dataType
-      ])
-    })
+      .sort((a, b) => a[0].localeCompare(b[0]))
   )
 
   fs.writeFileSync(

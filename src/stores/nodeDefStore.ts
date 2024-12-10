@@ -9,7 +9,7 @@ import {
   type InputSpec
 } from '@/types/apiTypes'
 import { defineStore } from 'pinia'
-import { TreeNode } from 'primevue/treenode'
+import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
 import axios from 'axios'
