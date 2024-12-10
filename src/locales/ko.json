@@ -1369,6 +1369,10 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "모델 라이브러리 트리 뷰에 표시할 이름",
+      "options": {
+        "filename": "파일 이름",
+        "title": "제목"
+      },
       "tooltip": "\"파일 이름\"을 선택하면 모델 목록에서 원시 파일 이름(디렉토리 또는 \".safetensors\" 확장자 없이)의 단순화된 뷰가 렌더링됩니다. \"제목\"을 선택하면 구성 가능한 모델 메타데이터 제목이 표시됩니다."
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {

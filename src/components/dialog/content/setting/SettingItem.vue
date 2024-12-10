@@ -28,15 +28,41 @@ const props = defineProps<{
   setting: SettingParams
 }>()
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const formItem = computed(() => {
   const normalizedId = props.setting.id.replace(/\./g, '_')
+
+  const baseKey = `settingsDialog.${normalizedId}`
+  const nameKey = `${baseKey}.name`
+  const tooltipKey = `${baseKey}.tooltip`
+
+  let translatedOptions: typeof props.setting.options | undefined
+
+  if (props.setting.options && Array.isArray(props.setting.options)) {
+    translatedOptions = props.setting.options.map((opt) => {
+      const value = typeof opt === 'string' ? opt : opt.value
+      const optionKey = `${baseKey}.options.${value}`
+      const translatedText = te(optionKey)
+        ? t(optionKey)
+        : typeof opt === 'string'
+          ? opt
+          : opt.text
+
+      return typeof opt === 'string'
+        ? translatedText
+        : { ...opt, text: translatedText }
+    })
+  }
+
   return {
     ...props.setting,
-    name: t(`settingsDialog.${normalizedId}.name`, props.setting.name),
+    name: te(nameKey) ? t(nameKey) : props.setting.name,
     tooltip: props.setting.tooltip
-      ? t(`settingsDialog.${normalizedId}.tooltip`, props.setting.tooltip)
-      : undefined
+      ? te(tooltipKey)
+        ? t(tooltipKey)
+        : props.setting.tooltip
+      : undefined,
+    options: translatedOptions || props.setting.options
   }
 })
 

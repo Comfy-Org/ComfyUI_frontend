@@ -255,7 +255,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'Select "filename" to render a simplified view of the raw filename (without directory or ".safetensors" extension) in the model list. Select "title" to display the configurable model metadata title.',
     type: 'combo',
-    options: ['filename', 'title'],
+    options: [
+      {
+        value: 'filename',
+        text: 'filename'
+      },
+      {
+        value: 'title',
+        text: 'title'
+      }
+    ],
     defaultValue: 'title'
   },
   {

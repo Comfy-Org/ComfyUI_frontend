@@ -273,7 +273,11 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "What name to display in the model library tree view",
-      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title."
+      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title.",
+      "options": {
+        "filename": "filename",
+        "title": "title"
+      }
     },
     "Comfy_Node_AutoSnapLinkToSlot": {
       "name": "Auto snap link to node slot",
