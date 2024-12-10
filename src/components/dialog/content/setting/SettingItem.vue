@@ -36,10 +36,11 @@ const formItem = computed(() => {
   const nameKey = `${baseKey}.name`
   const tooltipKey = `${baseKey}.tooltip`
 
-  let translatedOptions: typeof props.setting.options | undefined
+  const { options } = props.setting
+  let translatedOptions: typeof options | undefined
 
-  if (props.setting.options && Array.isArray(props.setting.options)) {
-    translatedOptions = props.setting.options.map((opt) => {
+  if (Array.isArray(options)) {
+    translatedOptions = options.map((opt) => {
       const value = typeof opt === 'string' ? opt : opt.value
       const optionKey = `${baseKey}.options.${value}`
       const translatedText = te(optionKey)
@@ -62,7 +63,7 @@ const formItem = computed(() => {
         ? t(tooltipKey)
         : props.setting.tooltip
       : undefined,
-    options: translatedOptions || props.setting.options
+    options: translatedOptions ?? options
   }
 })
 
