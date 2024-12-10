@@ -34,12 +34,10 @@ function st(key: string, fallbackMessage: string) {
 }
 
 const formItem = computed(() => {
-  const { id, options } = props.setting
+  const { id, options, tooltip } = props.setting
   const normalizedId = id.replace(/\./g, '_')
 
   const baseKey = `settingsDialog.${normalizedId}`
-  const nameKey = `${baseKey}.name`
-  const tooltipKey = `${baseKey}.tooltip`
 
   const translatedOptions = Array.isArray(options)
     ? options.map((opt) => {
@@ -52,14 +50,14 @@ const formItem = computed(() => {
       })
     : options
 
+  const translatedTooltip = tooltip
+    ? st(`${baseKey}.tooltip`, tooltip)
+    : undefined
+
   return {
     ...props.setting,
-    name: te(nameKey) ? t(nameKey) : props.setting.name,
-    tooltip: props.setting.tooltip
-      ? te(tooltipKey)
-        ? t(tooltipKey)
-        : props.setting.tooltip
-      : undefined,
+    name: st(`${baseKey}.name`, props.setting.name),
+    tooltip: translatedTooltip,
     options: translatedOptions
   }
 })
