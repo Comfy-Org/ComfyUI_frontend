@@ -20,7 +20,7 @@
 import Tag from 'primevue/tag'
 import FormItem from '@/components/common/FormItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
-import { SettingParams } from '@/types/settingTypes'
+import type { SettingOption, SettingParams } from '@/types/settingTypes'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -29,6 +29,21 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+function translateOptions(options: (SettingOption | string)[]) {
+  return options.map((option) => {
+    const optionLabel = typeof option === 'string' ? option : option.text
+    const optionValue = typeof option === 'string' ? option : option.value
+
+    return {
+      text: t(
+        `settingsDialog.${props.setting.id}.options.${optionLabel}`,
+        optionLabel
+      ),
+      value: optionValue
+    }
+  })
+}
+
 const formItem = computed(() => {
   const normalizedId = props.setting.id.replace(/\./g, '_')
   return {
@@ -36,6 +51,9 @@ const formItem = computed(() => {
     name: t(`settingsDialog.${normalizedId}.name`, props.setting.name),
     tooltip: props.setting.tooltip
       ? t(`settingsDialog.${normalizedId}.tooltip`, props.setting.tooltip)
+      : undefined,
+    options: props.setting.options
+      ? translateOptions(props.setting.options)
       : undefined
   }
 })
