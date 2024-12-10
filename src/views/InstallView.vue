@@ -104,13 +104,13 @@ const hasError = computed(() => pathError.value !== '')
 
 const router = useRouter()
 const install = () => {
-  const options = toRaw({
+  const options = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
     migrationItemIds: toRaw(migrationItemIds.value)
-  })
+  }
   electronAPI().installComfyUI(options)
   router.push('/server-start')
 }
