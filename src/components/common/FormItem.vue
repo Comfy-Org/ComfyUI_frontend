@@ -53,10 +53,7 @@ function getFormAttrs(item: FormItem) {
   }
   switch (item.type) {
     case 'combo':
-      attrs['options'] =
-        typeof item.options === 'function'
-          ? item.options(formValue.value)
-          : item.options
+      attrs['options'] = item.options
       if (typeof item.options[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
