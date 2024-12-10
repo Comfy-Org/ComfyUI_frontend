@@ -1333,7 +1333,12 @@
       "name": "ファストズームショートカットを有効にする（Ctrl + Shift + ドラッグ）"
     },
     "Comfy_Graph_LinkMarkers": {
-      "name": "リンク中点マーカー"
+      "name": "リンク中点マーカー",
+      "options": {
+        "Arrow": "矢印",
+        "Circle": "円",
+        "None": "なし"
+      }
     },
     "Comfy_Graph_ZoomSpeed": {
       "name": "キャンバスズーム速度"
@@ -1354,13 +1359,29 @@
       "name": "ユーザーによって解除されたキー割り当て"
     },
     "Comfy_LinkRelease_Action": {
-      "name": "リンクリリース時のアクション（修飾子なし）"
+      "name": "リンクリリース時のアクション（修飾子なし）",
+      "options": {
+        "context menu": "コンテキストメニュー",
+        "no action": "アクションなし",
+        "search box": "検索ボックス"
+      }
     },
     "Comfy_LinkRelease_ActionShift": {
-      "name": "リンクリリース時のアクション（Shift）"
+      "name": "リンクリリース時のアクション（Shift）",
+      "options": {
+        "context menu": "コンテキストメニュー",
+        "no action": "アクションなし",
+        "search box": "検索ボックス"
+      }
     },
     "Comfy_LinkRenderMode": {
-      "name": "リンクレンダーモード"
+      "name": "リンクレンダーモード",
+      "options": {
+        "Hidden": "隠す",
+        "Linear": "リニア",
+        "Spline": "スプライン",
+        "Straight": "ストレート"
+      }
     },
     "Comfy_Locale": {
       "name": "言語"
@@ -1386,16 +1407,33 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "モデルライブラリツリービューに表示する名前",
+      "options": {
+        "filename": "ファイル名",
+        "title": "タイトル"
+      },
       "tooltip": "\"ファイル名\"を選択すると、モデルリストにディレクトリや\".safetensors\"拡張子なしの生のファイル名の簡略化されたビューが表示されます。\"タイトル\"を選択すると、設定可能なモデルメタデータタイトルが表示されます。"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "ノードIDバッジモード"
+      "name": "ノードIDバッジモード",
+      "options": {
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "ノードライフサイクルバッジモード"
+      "name": "ノードライフサイクルバッジモード",
+      "options": {
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "ノードソースバッジモード"
+      "name": "ノードソースバッジモード",
+      "options": {
+        "Hide built-in": "組み込みを隠す",
+        "None": "なし",
+        "Show all": "すべて表示"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "ノードのコンテキストメニューに、入力/ウィジェット間の変換を行うエントリをサブメニューに配置します。"
@@ -1410,7 +1448,11 @@
       "name": "ユニークな名前のノードライブラリのブックマークv2"
     },
     "Comfy_NodeSearchBoxImpl": {
-      "name": "ノード検索ボックスの実装"
+      "name": "ノード検索ボックスの実装",
+      "options": {
+        "default": "デフォルト",
+        "litegraph (legacy)": "litegraph (レガシー)"
+      }
     },
     "Comfy_NodeSearchBoxImpl_NodePreview": {
       "name": "ノードプレビュー",
@@ -1507,10 +1549,18 @@
       "name": "設定ダイアログに拡張パネルを表示"
     },
     "Comfy_Sidebar_Location": {
-      "name": "サイドバーの位置"
+      "name": "サイドバーの位置",
+      "options": {
+        "left": "左",
+        "right": "右"
+      }
     },
     "Comfy_Sidebar_Size": {
-      "name": "サイドバーのサイズ"
+      "name": "サイドバーのサイズ",
+      "options": {
+        "normal": "通常",
+        "small": "小"
+      }
     },
     "Comfy_SnapToGrid_GridSize": {
       "name": "グリッドサイズにスナップ",
@@ -1526,7 +1576,12 @@
       "name": "ツリーエクスプローラーアイテムのパディング"
     },
     "Comfy_UseNewMenu": {
-      "name": "新しいメニューを使用"
+      "name": "新しいメニューを使用",
+      "options": {
+        "Bottom": "下",
+        "Disabled": "無効",
+        "Top": "上"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "ノード定義を検証（遅い）",
@@ -1537,6 +1592,10 @@
     },
     "Comfy_WidgetControlMode": {
       "name": "ウィジェット制御モード",
+      "options": {
+        "after": "後",
+        "before": "前"
+      },
       "tooltip": "ウィジェットの値が更新されるタイミングを制御します（ランダム化/インクリメント/デクリメント）、プロンプトがキューに入れられる前または後のいずれかです。"
     },
     "Comfy_Window_UnloadConfirmation": {
@@ -1555,7 +1614,11 @@
       "name": "ワークフローを保存する際にノードIDをソート"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "開いているワークフローの位置"
+      "name": "開いているワークフローの位置",
+      "options": {
+        "Sidebar": "サイドバー",
+        "Topbar": "トップバー"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "最大FPS",

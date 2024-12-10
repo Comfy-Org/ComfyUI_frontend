@@ -1316,7 +1316,12 @@
       "name": "빠른 확대/축소 단축키 활성화 (Ctrl + Shift + 드래그)"
     },
     "Comfy_Graph_LinkMarkers": {
-      "name": "링크 중간점 마커"
+      "name": "링크 중간점 마커",
+      "options": {
+        "Arrow": "화살표",
+        "Circle": "원",
+        "None": "없음"
+      }
     },
     "Comfy_Graph_ZoomSpeed": {
       "name": "캔버스 확대/축소 속도"
@@ -1337,13 +1342,29 @@
       "name": "사용자가 해제한 키 바인딩"
     },
     "Comfy_LinkRelease_Action": {
-      "name": "링크 해제 시 동작 (수정자 없음)"
+      "name": "링크 해제 시 동작 (수정자 없음)",
+      "options": {
+        "context menu": "컨텍스트 메뉴",
+        "no action": "작업 없음",
+        "search box": "검색 상자"
+      }
     },
     "Comfy_LinkRelease_ActionShift": {
-      "name": "링크 해제 시 동작 (Shift)"
+      "name": "링크 해제 시 동작 (Shift)",
+      "options": {
+        "context menu": "컨텍스트 메뉴",
+        "no action": "작업 없음",
+        "search box": "검색 상자"
+      }
     },
     "Comfy_LinkRenderMode": {
-      "name": "링크 렌더 모드"
+      "name": "링크 렌더 모드",
+      "options": {
+        "Hidden": "숨김",
+        "Linear": "선형",
+        "Spline": "스플라인",
+        "Straight": "직선"
+      }
     },
     "Comfy_Locale": {
       "name": "언어"
@@ -1369,16 +1390,33 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "모델 라이브러리 트리 뷰에 표시할 이름",
+      "options": {
+        "filename": "파일 이름",
+        "title": "제목"
+      },
       "tooltip": "\"파일 이름\"을 선택하면 모델 목록에서 원시 파일 이름(디렉토리 또는 \".safetensors\" 확장자 없이)의 단순화된 뷰가 렌더링됩니다. \"제목\"을 선택하면 구성 가능한 모델 메타데이터 제목이 표시됩니다."
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "노드 ID 배지 모드"
+      "name": "노드 ID 배지 모드",
+      "options": {
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "노드 생명 주기 배지 모드"
+      "name": "노드 생명 주기 배지 모드",
+      "options": {
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "노드 출처 배지 모드"
+      "name": "노드 출처 배지 모드",
+      "options": {
+        "Hide built-in": "내장 숨기기",
+        "None": "없음",
+        "Show all": "모두 표시"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "노드 컨텍스트 메뉴에서 입력/위젯 간 변환 항목을 하위 메뉴에 배치합니다."
@@ -1393,7 +1431,11 @@
       "name": "고유 이름을 가진 노드 라이브러리 북마크 v2"
     },
     "Comfy_NodeSearchBoxImpl": {
-      "name": "노드 검색 상자 구현"
+      "name": "노드 검색 상자 구현",
+      "options": {
+        "default": "기본",
+        "litegraph (legacy)": "litegraph (구버전)"
+      }
     },
     "Comfy_NodeSearchBoxImpl_NodePreview": {
       "name": "노드 미리보기",
@@ -1490,10 +1532,18 @@
       "name": "설정 대화 상자에서 확장 패널 표시"
     },
     "Comfy_Sidebar_Location": {
-      "name": "사이드바 위치"
+      "name": "사이드바 위치",
+      "options": {
+        "left": "왼쪽",
+        "right": "오른쪽"
+      }
     },
     "Comfy_Sidebar_Size": {
-      "name": "사이드바 크기"
+      "name": "사이드바 크기",
+      "options": {
+        "normal": "보통",
+        "small": "작음"
+      }
     },
     "Comfy_SnapToGrid_GridSize": {
       "name": "그리드 크기에 스냅",
@@ -1509,7 +1559,12 @@
       "name": "트리 탐색기 항목 패딩"
     },
     "Comfy_UseNewMenu": {
-      "name": "새 메뉴 사용"
+      "name": "새 메뉴 사용",
+      "options": {
+        "Bottom": "하단",
+        "Disabled": "비활성화",
+        "Top": "상단"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "노드 정의 유효성 검사 (느림)",
@@ -1520,6 +1575,10 @@
     },
     "Comfy_WidgetControlMode": {
       "name": "위젯 제어 모드",
+      "options": {
+        "after": "다음",
+        "before": "이전"
+      },
       "tooltip": "위젯 값이 업데이트되는 시점을 제어합니다 (무작위화/증가/감소), 프롬프트가 큐에 추가되기 전 또는 후입니다."
     },
     "Comfy_Window_UnloadConfirmation": {
@@ -1538,7 +1597,11 @@
       "name": "워크플로 저장 시 노드 ID 정렬"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "열린 워크플로 위치"
+      "name": "열린 워크플로 위치",
+      "options": {
+        "Sidebar": "사이드바",
+        "Topbar": "상단바"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "최대 FPS",

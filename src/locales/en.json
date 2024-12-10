@@ -220,7 +220,12 @@
       "name": "Enable fast-zoom shortcut (Ctrl + Shift + Drag)"
     },
     "Comfy_Graph_LinkMarkers": {
-      "name": "Link midpoint markers"
+      "name": "Link midpoint markers",
+      "options": {
+        "None": "None",
+        "Circle": "Circle",
+        "Arrow": "Arrow"
+      }
     },
     "Comfy_Graph_ZoomSpeed": {
       "name": "Canvas zoom speed"
@@ -241,13 +246,29 @@
       "name": "Keybindings unset by the user"
     },
     "Comfy_LinkRelease_Action": {
-      "name": "Action on link release (No modifier)"
+      "name": "Action on link release (No modifier)",
+      "options": {
+        "context menu": "context menu",
+        "search box": "search box",
+        "no action": "no action"
+      }
     },
     "Comfy_LinkRelease_ActionShift": {
-      "name": "Action on link release (Shift)"
+      "name": "Action on link release (Shift)",
+      "options": {
+        "context menu": "context menu",
+        "search box": "search box",
+        "no action": "no action"
+      }
     },
     "Comfy_LinkRenderMode": {
-      "name": "Link Render Mode"
+      "name": "Link Render Mode",
+      "options": {
+        "Straight": "Straight",
+        "Linear": "Linear",
+        "Spline": "Spline",
+        "Hidden": "Hidden"
+      }
     },
     "Comfy_Locale": {
       "name": "Language"
@@ -273,7 +294,11 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "What name to display in the model library tree view",
-      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title."
+      "tooltip": "Select \"filename\" to render a simplified view of the raw filename (without directory or \".safetensors\" extension) in the model list. Select \"title\" to display the configurable model metadata title.",
+      "options": {
+        "filename": "filename",
+        "title": "title"
+      }
     },
     "Comfy_Node_AutoSnapLinkToSlot": {
       "name": "Auto snap link to node slot",
@@ -305,13 +330,26 @@
       "tooltip": "When dragging a link over a node with viable input slot, highlight the node"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "Node ID badge mode"
+      "name": "Node ID badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "Node life cycle badge mode"
+      "name": "Node life cycle badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "Node source badge mode"
+      "name": "Node source badge mode",
+      "options": {
+        "None": "None",
+        "Show all": "Show all",
+        "Hide built-in": "Hide built-in"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
@@ -326,7 +364,11 @@
       "name": "Node library bookmarks customization"
     },
     "Comfy_NodeSearchBoxImpl": {
-      "name": "Node search box implementation"
+      "name": "Node search box implementation",
+      "options": {
+        "default": "default",
+        "litegraph (legacy)": "litegraph (legacy)"
+      }
     },
     "Comfy_NodeSearchBoxImpl_NodePreview": {
       "name": "Node preview",
@@ -394,10 +436,18 @@
       "name": "Show extension panel in settings dialog"
     },
     "Comfy_Sidebar_Location": {
-      "name": "Sidebar location"
+      "name": "Sidebar location",
+      "options": {
+        "left": "left",
+        "right": "right"
+      }
     },
     "Comfy_Sidebar_Size": {
-      "name": "Sidebar size"
+      "name": "Sidebar size",
+      "options": {
+        "normal": "normal",
+        "small": "small"
+      }
     },
     "Comfy_SnapToGrid_GridSize": {
       "name": "Snap to grid size",
@@ -413,7 +463,12 @@
       "name": "Tree explorer item padding"
     },
     "Comfy_UseNewMenu": {
-      "name": "Use new menu"
+      "name": "Use new menu",
+      "options": {
+        "Disabled": "Disabled",
+        "Top": "Top",
+        "Bottom": "Bottom"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "Validate node definitions (slow)",
@@ -424,7 +479,11 @@
     },
     "Comfy_WidgetControlMode": {
       "name": "Widget control mode",
-      "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after."
+      "tooltip": "Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.",
+      "options": {
+        "before": "before",
+        "after": "after"
+      }
     },
     "Comfy_Window_UnloadConfirmation": {
       "name": "Show confirmation when closing window"
@@ -442,7 +501,11 @@
       "name": "Sort node IDs when saving workflow"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "Opened workflows position"
+      "name": "Opened workflows position",
+      "options": {
+        "Sidebar": "Sidebar",
+        "Topbar": "Topbar"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "Maxium FPS",

@@ -1333,7 +1333,12 @@
       "name": "启用快速缩放快捷键（Ctrl + Shift + 拖动）"
     },
     "Comfy_Graph_LinkMarkers": {
-      "name": "链接中点标记"
+      "name": "链接中点标记",
+      "options": {
+        "Arrow": "箭头",
+        "Circle": "圆",
+        "None": "无"
+      }
     },
     "Comfy_Graph_ZoomSpeed": {
       "name": "画布缩放速度"
@@ -1354,13 +1359,29 @@
       "name": "用户取消的键绑定"
     },
     "Comfy_LinkRelease_Action": {
-      "name": "释放链接时的操作（无修饰符）"
+      "name": "释放链接时的操作（无修饰符）",
+      "options": {
+        "context menu": "上下文菜单",
+        "no action": "无操作",
+        "search box": "搜索框"
+      }
     },
     "Comfy_LinkRelease_ActionShift": {
-      "name": "释放链接时的操作（Shift）"
+      "name": "释放链接时的操作（Shift）",
+      "options": {
+        "context menu": "上下文菜单",
+        "no action": "无操作",
+        "search box": "搜索框"
+      }
     },
     "Comfy_LinkRenderMode": {
-      "name": "链接渲染模式"
+      "name": "链接渲染模式",
+      "options": {
+        "Hidden": "隐藏",
+        "Linear": "线性",
+        "Spline": "样条",
+        "Straight": "直线"
+      }
     },
     "Comfy_Locale": {
       "name": "语言"
@@ -1386,16 +1407,33 @@
     },
     "Comfy_ModelLibrary_NameFormat": {
       "name": "在模型库树视图中显示的名称",
+      "options": {
+        "filename": "文件名",
+        "title": "标题"
+      },
       "tooltip": "选择“文件名”以在模型列表中呈现原始文件名的简化视图（不带目录或“.safetensors”扩展名）。选择“标题”以显示可配置的模型元数据标题。"
     },
     "Comfy_NodeBadge_NodeIdBadgeMode": {
-      "name": "节点ID徽章模式"
+      "name": "节点ID徽章模式",
+      "options": {
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeBadge_NodeLifeCycleBadgeMode": {
-      "name": "节点生命周期徽章模式"
+      "name": "节点生命周期徽章模式",
+      "options": {
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeBadge_NodeSourceBadgeMode": {
-      "name": "节点源徽章模式"
+      "name": "节点源徽章模式",
+      "options": {
+        "Hide built-in": "隐藏内置",
+        "None": "无",
+        "Show all": "显示全部"
+      }
     },
     "Comfy_NodeInputConversionSubmenus": {
       "name": "在节点上下文菜单中，将输入/小部件之间转换的条目放置在子菜单中。"
@@ -1410,7 +1448,11 @@
       "name": "节点库书签v2及唯一名称"
     },
     "Comfy_NodeSearchBoxImpl": {
-      "name": "节点搜索框实现"
+      "name": "节点搜索框实现",
+      "options": {
+        "default": "默认",
+        "litegraph (legacy)": "litegraph（遗留）"
+      }
     },
     "Comfy_NodeSearchBoxImpl_NodePreview": {
       "name": "节点预览",
@@ -1507,10 +1549,18 @@
       "name": "在设置对话框中显示扩展面板"
     },
     "Comfy_Sidebar_Location": {
-      "name": "侧边栏位置"
+      "name": "侧边栏位置",
+      "options": {
+        "left": "左侧",
+        "right": "右侧"
+      }
     },
     "Comfy_Sidebar_Size": {
-      "name": "侧边栏大小"
+      "name": "侧边栏大小",
+      "options": {
+        "normal": "正常",
+        "small": "小"
+      }
     },
     "Comfy_SnapToGrid_GridSize": {
       "name": "吸附到网格大小",
@@ -1526,7 +1576,12 @@
       "name": "树形浏览器项目内边距"
     },
     "Comfy_UseNewMenu": {
-      "name": "使用新菜单"
+      "name": "使用新菜单",
+      "options": {
+        "Bottom": "底部",
+        "Disabled": "禁用",
+        "Top": "顶部"
+      }
     },
     "Comfy_Validation_NodeDefs": {
       "name": "验证节点定义（慢）",
@@ -1537,6 +1592,10 @@
     },
     "Comfy_WidgetControlMode": {
       "name": "小部件控制模式",
+      "options": {
+        "after": "之后",
+        "before": "之前"
+      },
       "tooltip": "控制小部件值的更新时机（随机/增量/减量），可以在提示排队之前或之后。"
     },
     "Comfy_Window_UnloadConfirmation": {
@@ -1555,7 +1614,11 @@
       "name": "保存工作流时排序节点ID"
     },
     "Comfy_Workflow_WorkflowTabsPosition": {
-      "name": "已打开工作流的位置"
+      "name": "已打开工作流的位置",
+      "options": {
+        "Sidebar": "侧边栏",
+        "Topbar": "顶部栏"
+      }
     },
     "LiteGraph_Canvas_MaximumFps": {
       "name": "最大FPS",
