@@ -2,18 +2,22 @@
   <div
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="0">
+    <Stepper
+      class="mt-[5vh] 2xl:mt-[20vh]"
+      value="0"
+      @update:value="setHighestStep"
+    >
       <StepList>
         <Step value="0">
           {{ $t('install.gpu') }}
         </Step>
-        <Step value="1" :disabled="hasError">
+        <Step value="1" :disabled="noGpu">
           {{ $t('install.installLocation') }}
         </Step>
-        <Step value="2" :disabled="hasError">
+        <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
           {{ $t('install.migration') }}
         </Step>
-        <Step value="3" :disabled="hasError">
+        <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
           {{ $t('install.desktopSettings') }}
         </Step>
       </StepList>
@@ -124,7 +128,16 @@ const migrationItemIds = ref<string[]>([])
 const autoUpdate = ref(true)
 const allowMetrics = ref(true)
 
+/** Forces each install step to be visited at least once. */
+const highestStep = ref(0)
+
+const setHighestStep = (value: string | number) => {
+  const int = typeof value === 'number' ? value : parseInt(value, 10)
+  if (!isNaN(int) && int > highestStep.value) highestStep.value = int
+}
+
 const hasError = computed(() => pathError.value !== '')
+const noGpu = computed(() => typeof gpu.value !== 'string')
 
 const router = useRouter()
 const install = () => {
