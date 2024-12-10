@@ -11,5 +11,7 @@ module.exports = defineConfig({
   reference: `Keep following model names untranslated:
   - flux
   - photomaker
+  - clip
+  - vae
   `
 });

@@ -136,6 +136,33 @@ test('collect-i18n', async ({ comfyPage }) => {
     )
   )
 
+  const allDataTypesLocale = Object.fromEntries(
+    Object.values(nodeDefs).flatMap((nodeDef) => {
+      const inputs = nodeDef.input ?? {}
+      const requiredInputs = inputs.required ?? {}
+      const optionalInputs = inputs.optional ?? {}
+      const allInputs = {
+        ...requiredInputs,
+        ...optionalInputs
+      }
+
+      const inputDataTypes = Object.values(allInputs).map((inputSpec) => {
+        const typeRaw = inputSpec[0]
+        const type = Array.isArray(typeRaw) ? 'COMBO' : typeRaw
+        return type
+      })
+      const outputDataTypes = nodeDef.output ?? []
+      const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
+        (type: string) => type.split(',')
+      )
+
+      return allDataTypes.map((dataType) => [
+        normalizeI18nKey(dataType),
+        dataType
+      ])
+    })
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -152,6 +179,7 @@ test('collect-i18n', async ({ comfyPage }) => {
         serverConfigItems: allServerConfigsLocale,
         serverConfigCategories: allServerConfigCategoriesLocale,
         nodeDefs: allNodeDefsLocale,
+        dataTypes: allDataTypesLocale,
         nodeCategories: allNodeCategoriesLocale
       },
       null,
