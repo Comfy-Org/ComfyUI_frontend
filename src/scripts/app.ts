@@ -1994,7 +1994,7 @@ export class ComfyApp {
       }
 
       configure(data: any) {
-        // Keep 'name', 'type', and 'shape' information from the original node definition.
+        // Keep 'name', 'type', 'shape', and 'label' information from the original node definition.
         const merge = (
           current: Record<string, any>,
           incoming: Record<string, any>
@@ -2005,7 +2005,7 @@ export class ComfyApp {
             this.inputs.push(current as INodeInputSlot)
             return incoming
           }
-          for (const key of ['name', 'type', 'shape']) {
+          for (const key of ['name', 'type', 'shape', 'label']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
             }
