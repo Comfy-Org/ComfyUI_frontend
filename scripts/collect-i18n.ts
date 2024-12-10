@@ -7,7 +7,6 @@ import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
-import type { ComfyNodeDef } from '../src/types/apiTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
