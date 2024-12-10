@@ -78,7 +78,8 @@
     "file": "File",
     "inbox": "Inbox",
     "box": "Box",
-    "briefcase": "Briefcase"
+    "briefcase": "Briefcase",
+    "exclamation-triangle": "Warning"
   },
   "welcome": {
     "title": "Welcome to ComfyUI",
@@ -129,6 +130,13 @@
     "migrationOptional": "Migration is optional. If you don't have an existing installation, you can skip this step.",
     "desktopAppSettings": "Desktop App Settings",
     "desktopAppSettingsDescription": "Configure how ComfyUI behaves on your desktop. You can change these settings later.",
+    "gpu": "GPU",
+    "selectGpu": "Select GPU",
+    "selectGpuDescription": "Select the type of GPU you have.",
+    "cpuMode": "CPU Mode",
+    "cpuModeDescription": "CPU mode is intended for developers and rare edge cases only.",
+    "cpuModeDescription2": "If you are not absolutely certain you need this, please ignore this box and select your GPU above.",
+    "selectCpuGpu": "Select the type of GPU you have.",
     "settings": {
       "autoUpdate": "Automatic Updates",
       "allowMetrics": "Crash Reports",

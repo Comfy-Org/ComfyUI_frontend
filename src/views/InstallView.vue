@@ -2,8 +2,11 @@
   <div
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="1">
+    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="0">
       <StepList>
+        <Step value="0">
+          {{ $t('install.gpu') }}
+        </Step>
         <Step value="1" :disabled="hasError">
           {{ $t('install.installLocation') }}
         </Step>
@@ -15,12 +18,30 @@
         </Step>
       </StepList>
       <StepPanels>
+        <StepPanel value="0" v-slot="{ activateCallback }">
+          <GpuPicker v-model:gpu="gpu" />
+          <div class="flex pt-6 justify-end">
+            <Button
+              label="Next"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              @click="activateCallback('1')"
+              :disabled="typeof gpu !== 'string'"
+            />
+          </div>
+        </StepPanel>
         <StepPanel value="1" v-slot="{ activateCallback }">
           <InstallLocationPicker
             v-model:installPath="installPath"
             v-model:pathError="pathError"
           />
-          <div class="flex pt-6 justify-end">
+          <div class="flex pt-6 justify-between">
+            <Button
+              label="Back"
+              severity="secondary"
+              icon="pi pi-arrow-left"
+              @click="activateCallback('0')"
+            />
             <Button
               label="Next"
               icon="pi pi-arrow-right"
@@ -90,6 +111,9 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import { electronAPI } from '@/utils/envUtil'
 import { ref, computed, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
+import GpuPicker from '@/components/install/GpuPicker.vue'
+
+const gpu = ref<'nvidia' | 'amd' | 'cpu'>(null)
 
 const installPath = ref('')
 const pathError = ref('')
