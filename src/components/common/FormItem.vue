@@ -53,7 +53,13 @@ function getFormAttrs(item: FormItem) {
   }
   switch (item.type) {
     case 'combo':
-      attrs['options'] = item.options
+      attrs['options'] =
+        typeof item.options === 'function'
+          ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
+            // (value) => [string | {text: string, value: string}]
+            item.options(formValue.value)
+          : item.options
+
       if (typeof item.options[0] !== 'string') {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
