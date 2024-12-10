@@ -20,6 +20,7 @@ import {
   LGraphGroup
 } from '@comfyorg/litegraph'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { isElectron, electronAPI } from '@/utils/envUtil'
 
 export function useCoreCommands(): ComfyCommand[] {
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
@@ -414,11 +415,18 @@ export function useCoreCommands(): ComfyCommand[] {
         return () => {
           const settingStore = useSettingStore()
           const currentTheme = settingStore.get('Comfy.ColorPalette')
-          if (isDarkMode(currentTheme)) {
+          const useLightMode = isDarkMode(currentTheme)
+          if (useLightMode) {
             previousDarkTheme = currentTheme
             settingStore.set('Comfy.ColorPalette', 'light')
           } else {
             settingStore.set('Comfy.ColorPalette', previousDarkTheme)
+          }
+          if (isElectron()) {
+            electronAPI().changeTheme({
+              color: '#00000000',
+              symbolColor: useLightMode ? '#333' : '#ddd'
+            })
           }
         }
       })()

@@ -1,12 +1,12 @@
 <template>
   <div
-    class="font-sans w-screen h-screen mx-0 grid place-items-center justify-center items-center text-neutral-900 bg-neutral-300 pointer-events-auto"
+    class="app-drag font-sans w-screen h-screen mx-0 grid place-items-center justify-center items-center text-neutral-900 bg-neutral-300 pointer-events-auto"
   >
     <div
       class="col-start-1 h-screen row-start-1 place-content-center mx-auto overflow-y-auto"
     >
       <div
-        class="max-w-screen-sm flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-right-top bg-origin-padding"
+        class="no-drag max-w-screen-sm flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-right-top bg-origin-padding"
       >
         <!-- Header -->
         <h1 class="mt-24 text-4xl font-bold text-red-500">

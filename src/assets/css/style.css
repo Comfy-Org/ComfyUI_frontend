@@ -704,3 +704,11 @@ audio.comfy-audio.empty-audio-widget {
 .p-tree-node-content {
   padding: var(--comfy-tree-explorer-item-padding) !important;
 }
+
+.app-drag {
+  app-region: drag;
+}
+
+.no-drag {
+  app-region: no-drag;
+}

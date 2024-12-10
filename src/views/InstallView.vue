@@ -1,8 +1,8 @@
 <template>
   <div
-    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
+    class="app-drag font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="1">
+    <Stepper class="no-drag mt-[5vh] 2xl:mt-[20vh]" value="1">
       <StepList>
         <Step value="1" :disabled="hasError">
           {{ $t('install.installLocation') }}
