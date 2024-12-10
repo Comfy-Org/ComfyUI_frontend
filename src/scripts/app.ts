@@ -62,6 +62,7 @@ import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1932,9 +1933,16 @@ export class ComfyApp {
             }
           } else {
             // Node connection inputs
-            const inputOptions = inputIsRequired
+            const shapeOptions = inputIsRequired
               ? {}
               : { shape: LiteGraph.SlotShape.HollowCircle }
+            const inputOptions = {
+              ...shapeOptions,
+              label: st(
+                `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`,
+                inputName
+              )
+            }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -1964,9 +1972,16 @@ export class ComfyApp {
           if (output instanceof Array) output = 'COMBO'
           const outputName = nodeData['output_name'][o] || output
           const outputIsList = nodeData['output_is_list'][o]
-          const outputOptions = outputIsList
+          const shapeOptions = outputIsList
             ? { shape: LiteGraph.GRID_SHAPE }
             : {}
+          const outputOptions = {
+            ...shapeOptions,
+            label: st(
+              `nodeDefs.${normalizeI18nKey(nodeData.name)}.outputs.${normalizeI18nKey(outputName)}.name`,
+              outputName
+            )
+          }
           this.addOutput(outputName, output, outputOptions)
         }
 
