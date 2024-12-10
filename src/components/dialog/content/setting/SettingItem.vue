@@ -30,13 +30,13 @@ const props = defineProps<{
 
 const { t, te } = useI18n()
 const formItem = computed(() => {
-  const normalizedId = props.setting.id.replace(/\./g, '_')
+  const { id, options } = props.setting
+  const normalizedId = id.replace(/\./g, '_')
 
   const baseKey = `settingsDialog.${normalizedId}`
   const nameKey = `${baseKey}.name`
   const tooltipKey = `${baseKey}.tooltip`
 
-  const { options } = props.setting
   let translatedOptions: typeof options | undefined
 
   if (Array.isArray(options)) {
