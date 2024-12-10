@@ -1118,6 +1118,7 @@
     "Cache": "缓存",
     "General": "常规",
     "Inference": "推理",
+    "Launch": "启动",
     "Memory": "内存",
     "Network": "网络",
     "Preview": "预览"
@@ -1190,11 +1191,20 @@
       "name": "全局浮点精度",
       "tooltip": "全局浮点精度"
     },
+    "input-directory": {
+      "name": "ComfyUI 输入目录"
+    },
+    "listen": {
+      "name": "监听：指定要监听的IP地址"
+    },
     "log-level": {
       "name": "日志详细级别"
     },
     "max-upload-size": {
       "name": "最大上传大小 (MB)"
+    },
+    "output-directory": {
+      "name": "ComfyUI 输出目录"
     },
     "preview-method": {
       "name": "用于潜在预览的方法"

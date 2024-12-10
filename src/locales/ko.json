@@ -1101,6 +1101,7 @@
     "Cache": "캐시",
     "General": "일반",
     "Inference": "추론",
+    "Launch": "시작",
     "Memory": "메모리",
     "Network": "네트워크",
     "Preview": "미리보기"
@@ -1173,11 +1174,20 @@
       "name": "전역 부동 소수점 정밀도",
       "tooltip": "전역 부동 소수점 정밀도"
     },
+    "input-directory": {
+      "name": "ComfyUI 입력 디렉토리"
+    },
+    "listen": {
+      "name": "수신: 수신할 IP 주소를 지정하십시오."
+    },
     "log-level": {
       "name": "로그 출력 수준"
     },
     "max-upload-size": {
       "name": "최대 업로드 크기 (MB)"
+    },
+    "output-directory": {
+      "name": "ComfyUI 출력 디렉토리"
     },
     "preview-method": {
       "name": "잠재 데이터 미리보기 방법"

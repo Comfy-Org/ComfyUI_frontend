@@ -669,6 +669,9 @@
     "EditTokenWeight": "Edit Token Weight"
   },
   "serverConfigItems": {
+    "listen": {
+      "name": "Listen: Specify the IP address to listen on"
+    },
     "tls-keyfile": {
       "name": "TLS Key File: Path to TLS key file for HTTPS"
     },
@@ -772,6 +775,12 @@
     },
     "log-level": {
       "name": "Logging verbosity level"
+    },
+    "input-directory": {
+      "name": "ComfyUI input directory"
+    },
+    "output-directory": {
+      "name": "ComfyUI output directory"
     }
   },
   "serverConfigCategories": {
@@ -782,7 +791,8 @@
     "Preview": "Preview",
     "Cache": "Cache",
     "Attention": "Attention",
-    "General": "General"
+    "General": "General",
+    "Launch": "Launch"
   },
   "nodeDefs": {
     "AddNoise": {
