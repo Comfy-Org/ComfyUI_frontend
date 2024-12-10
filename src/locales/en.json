@@ -863,11 +863,6 @@
         "latent_image": {
           "name": "latent_image"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "AlignYourStepsScheduler": {
@@ -882,11 +877,6 @@
         "denoise": {
           "name": "denoise"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "BasicGuider": {
@@ -897,11 +887,6 @@
         },
         "conditioning": {
           "name": "conditioning"
-        }
-      },
-      "outputs": {
-        "GUIDER": {
-          "name": "GUIDER"
         }
       }
     },
@@ -920,11 +905,6 @@
         "denoise": {
           "name": "denoise"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "BetaSamplingScheduler": {
@@ -942,11 +922,6 @@
         "beta": {
           "name": "beta"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "Canny": {
@@ -960,11 +935,6 @@
         },
         "high_threshold": {
           "name": "high_threshold"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -983,11 +953,6 @@
         "cfg": {
           "name": "cfg"
         }
-      },
-      "outputs": {
-        "GUIDER": {
-          "name": "GUIDER"
-        }
       }
     },
     "CheckpointLoader": {
@@ -998,17 +963,6 @@
         },
         "ckpt_name": {
           "name": "ckpt_name"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        },
-        "CLIP": {
-          "name": "CLIP"
-        },
-        "VAE": {
-          "name": "VAE"
         }
       }
     },
@@ -1022,16 +976,13 @@
         }
       },
       "outputs": {
-        "MODEL": {
-          "name": "MODEL",
+        "0": {
           "tooltip": "The model used for denoising latents."
         },
-        "CLIP": {
-          "name": "CLIP",
+        "1": {
           "tooltip": "The CLIP model used for encoding text prompts."
         },
-        "VAE": {
-          "name": "VAE",
+        "2": {
           "tooltip": "The VAE model used for encoding and decoding images to and from latent space."
         }
       }
@@ -1051,8 +1002,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "CLIPAttentionMultiply": {
       "display_name": "CLIPAttentionMultiply",
@@ -1072,11 +1022,6 @@
         "out": {
           "name": "out"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "CLIPLoader": {
@@ -1089,11 +1034,6 @@
         "type": {
           "name": "type"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "CLIPMergeAdd": {
@@ -1104,11 +1044,6 @@
         },
         "clip2": {
           "name": "clip2"
-        }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
         }
       }
     },
@@ -1124,11 +1059,6 @@
         "ratio": {
           "name": "ratio"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "CLIPMergeSubtract": {
@@ -1143,11 +1073,6 @@
         "multiplier": {
           "name": "multiplier"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "CLIPSave": {
@@ -1159,8 +1084,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "CLIPSetLastLayer": {
       "display_name": "CLIP Set Last Layer",
@@ -1170,11 +1094,6 @@
         },
         "stop_at_clip_layer": {
           "name": "stop_at_clip_layer"
-        }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
         }
       }
     },
@@ -1192,8 +1111,7 @@
         }
       },
       "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING",
+        "0": {
           "tooltip": "A conditioning containing the embedded text used to guide the diffusion model."
         }
       }
@@ -1209,11 +1127,6 @@
         },
         "text": {
           "name": "text"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1232,11 +1145,6 @@
         "guidance": {
           "name": "guidance"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "CLIPTextEncodeHunyuanDiT": {
@@ -1250,11 +1158,6 @@
         },
         "mt5xl": {
           "name": "mt5xl"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1275,11 +1178,6 @@
         },
         "empty_padding": {
           "name": "empty_padding"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1313,11 +1211,6 @@
         "text_l": {
           "name": "text_l"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "CLIPTextEncodeSDXLRefiner": {
@@ -1338,11 +1231,6 @@
         "clip": {
           "name": "clip"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "CLIPVisionEncode": {
@@ -1357,11 +1245,6 @@
         "crop": {
           "name": "crop"
         }
-      },
-      "outputs": {
-        "CLIP_VISION_OUTPUT": {
-          "name": "CLIP_VISION_OUTPUT"
-        }
       }
     },
     "CLIPVisionLoader": {
@@ -1369,11 +1252,6 @@
       "inputs": {
         "clip_name": {
           "name": "clip_name"
-        }
-      },
-      "outputs": {
-        "CLIP_VISION": {
-          "name": "CLIP_VISION"
         }
       }
     },
@@ -1385,11 +1263,6 @@
         },
         "hooks_B": {
           "name": "hooks_B"
-        }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
         }
       }
     },
@@ -1407,11 +1280,6 @@
         },
         "hooks_D": {
           "name": "hooks_D"
-        }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
         }
       }
     },
@@ -1442,11 +1310,6 @@
         "hooks_H": {
           "name": "hooks_H"
         }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
-        }
       }
     },
     "ConditioningAverage": {
@@ -1461,11 +1324,6 @@
         "conditioning_to_strength": {
           "name": "conditioning_to_strength"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningCombine": {
@@ -1477,11 +1335,6 @@
         "conditioning_2": {
           "name": "conditioning_2"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningConcat": {
@@ -1492,11 +1345,6 @@
         },
         "conditioning_from": {
           "name": "conditioning_from"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1521,11 +1369,6 @@
         "strength": {
           "name": "strength"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningSetAreaPercentage": {
@@ -1549,11 +1392,6 @@
         "strength": {
           "name": "strength"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningSetAreaStrength": {
@@ -1564,11 +1402,6 @@
         },
         "strength": {
           "name": "strength"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1583,11 +1416,6 @@
         },
         "hooks": {
           "name": "hooks"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1605,11 +1433,6 @@
         },
         "set_cond_area": {
           "name": "set_cond_area"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1633,11 +1456,6 @@
         },
         "timesteps": {
           "name": "timesteps"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1665,11 +1483,6 @@
         "timesteps": {
           "name": "timesteps"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningSetTimestepRange": {
@@ -1684,11 +1497,6 @@
         "end": {
           "name": "end"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "ConditioningTimestepsRange": {
@@ -1702,13 +1510,10 @@
         }
       },
       "outputs": {
-        "TIMESTEPS_RANGE": {
-          "name": "TIMESTEPS_RANGE"
-        },
-        "BEFORE_RANGE": {
+        "1": {
           "name": "BEFORE_RANGE"
         },
-        "AFTER_RANGE": {
+        "2": {
           "name": "AFTER_RANGE"
         }
       }
@@ -1718,11 +1523,6 @@
       "inputs": {
         "conditioning": {
           "name": "conditioning"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1740,11 +1540,6 @@
         },
         "strength": {
           "name": "strength"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -1777,10 +1572,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -1814,10 +1609,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -1854,10 +1649,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -1867,11 +1662,6 @@
       "inputs": {
         "control_net_name": {
           "name": "control_net_name"
-        }
-      },
-      "outputs": {
-        "CONTROL_NET": {
-          "name": "CONTROL_NET"
         }
       }
     },
@@ -1889,7 +1679,7 @@
         }
       },
       "outputs": {
-        "HOOK_KF": {
+        "0": {
           "name": "HOOK_KF"
         }
       }
@@ -1914,7 +1704,7 @@
         }
       },
       "outputs": {
-        "HOOK_KF": {
+        "0": {
           "name": "HOOK_KF"
         }
       }
@@ -1948,7 +1738,7 @@
         }
       },
       "outputs": {
-        "HOOK_KF": {
+        "0": {
           "name": "HOOK_KF"
         }
       }
@@ -1968,11 +1758,6 @@
         "prev_hooks": {
           "name": "prev_hooks"
         }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
-        }
       }
     },
     "CreateHookLoraModelOnly": {
@@ -1986,11 +1771,6 @@
         },
         "prev_hooks": {
           "name": "prev_hooks"
-        }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
         }
       }
     },
@@ -2009,11 +1789,6 @@
         "prev_hooks": {
           "name": "prev_hooks"
         }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
-        }
       }
     },
     "CreateHookModelAsLoraModelOnly": {
@@ -2027,11 +1802,6 @@
         },
         "prev_hooks": {
           "name": "prev_hooks"
-        }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
         }
       }
     },
@@ -2053,28 +1823,15 @@
         "height": {
           "name": "height"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "DevToolsDeprecatedNode": {
       "display_name": "Deprecated Node",
-      "description": "A deprecated node",
-      "inputs": {},
-      "outputs": {}
+      "description": "A deprecated node"
     },
     "DevToolsErrorRaiseNode": {
       "display_name": "Raise Error",
-      "description": "Raise an error for development purposes",
-      "inputs": {},
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
-      }
+      "description": "Raise an error for development purposes"
     },
     "DevToolsErrorRaiseNodeWithMessage": {
       "display_name": "Raise Error with Message",
@@ -2083,14 +1840,11 @@
         "message": {
           "name": "message"
         }
-      },
-      "outputs": {}
+      }
     },
     "DevToolsExperimentalNode": {
       "display_name": "Experimental Node",
-      "description": "A experimental node",
-      "inputs": {},
-      "outputs": {}
+      "description": "A experimental node"
     },
     "DevToolsLongComboDropdown": {
       "display_name": "Long Combo Dropdown",
@@ -2099,8 +1853,7 @@
         "option": {
           "name": "option"
         }
-      },
-      "outputs": {}
+      }
     },
     "DevToolsNodeWithForceInput": {
       "display_name": "Node With Force Input",
@@ -2115,8 +1868,7 @@
         "float_input": {
           "name": "float_input"
         }
-      },
-      "outputs": {}
+      }
     },
     "DevToolsNodeWithOnlyOptionalInput": {
       "display_name": "Node With Only Optional Input",
@@ -2128,8 +1880,7 @@
         "clip": {
           "name": "clip"
         }
-      },
-      "outputs": {}
+      }
     },
     "DevToolsNodeWithOptionalInput": {
       "display_name": "Node With Optional Input",
@@ -2141,22 +1892,16 @@
         "optional_input": {
           "name": "optional_input"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "DevToolsNodeWithOutputList": {
       "display_name": "Node With Output List",
       "description": "A node with an output list",
-      "inputs": {},
       "outputs": {
-        "INTEGER OUTPUT": {
+        "0": {
           "name": "INTEGER OUTPUT"
         },
-        "INTEGER LIST OUTPUT": {
+        "1": {
           "name": "INTEGER LIST OUTPUT"
         }
       }
@@ -2168,8 +1913,7 @@
         "string_input": {
           "name": "string_input"
         }
-      },
-      "outputs": {}
+      }
     },
     "DevToolsNodeWithUnionInput": {
       "display_name": "Node With Union Input",
@@ -2184,8 +1928,7 @@
         "int_input": {
           "name": "int_input"
         }
-      },
-      "outputs": {}
+      }
     },
     "DiffControlNetLoader": {
       "display_name": "Load ControlNet Model (diff)",
@@ -2196,11 +1939,6 @@
         "control_net_name": {
           "name": "control_net_name"
         }
-      },
-      "outputs": {
-        "CONTROL_NET": {
-          "name": "CONTROL_NET"
-        }
       }
     },
     "DifferentialDiffusion": {
@@ -2208,11 +1946,6 @@
       "inputs": {
         "model": {
           "name": "model"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -2222,27 +1955,10 @@
         "model_path": {
           "name": "model_path"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        },
-        "CLIP": {
-          "name": "CLIP"
-        },
-        "VAE": {
-          "name": "VAE"
-        }
       }
     },
     "DisableNoise": {
-      "display_name": "DisableNoise",
-      "inputs": {},
-      "outputs": {
-        "NOISE": {
-          "name": "NOISE"
-        }
-      }
+      "display_name": "DisableNoise"
     },
     "DualCFGGuider": {
       "display_name": "DualCFGGuider",
@@ -2265,11 +1981,6 @@
         "cfg_cond2_negative": {
           "name": "cfg_cond2_negative"
         }
-      },
-      "outputs": {
-        "GUIDER": {
-          "name": "GUIDER"
-        }
       }
     },
     "DualCLIPLoader": {
@@ -2284,11 +1995,6 @@
         },
         "type": {
           "name": "type"
-        }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
         }
       }
     },
@@ -2307,11 +2013,6 @@
         "color": {
           "name": "color"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "EmptyLatentAudio": {
@@ -2323,11 +2024,6 @@
         "batch_size": {
           "name": "batch_size",
           "tooltip": "The number of latent images in the batch."
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -2349,8 +2045,7 @@
         }
       },
       "outputs": {
-        "LATENT": {
-          "name": "LATENT",
+        "0": {
           "tooltip": "The empty latent image batch."
         }
       }
@@ -2370,11 +2065,6 @@
         "batch_size": {
           "name": "batch_size"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "EmptyMochiLatentVideo": {
@@ -2392,11 +2082,6 @@
         "batch_size": {
           "name": "batch_size"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "EmptySD3LatentImage": {
@@ -2411,11 +2096,6 @@
         "batch_size": {
           "name": "batch_size"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "ExponentialScheduler": {
@@ -2429,11 +2109,6 @@
         },
         "sigma_min": {
           "name": "sigma_min"
-        }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
         }
       }
     },
@@ -2455,11 +2130,6 @@
         "bottom": {
           "name": "bottom"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "FlipSigmas": {
@@ -2467,11 +2137,6 @@
       "inputs": {
         "sigmas": {
           "name": "sigmas"
-        }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
         }
       }
     },
@@ -2483,11 +2148,6 @@
         },
         "guidance": {
           "name": "guidance"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -2509,11 +2169,6 @@
         "s2": {
           "name": "s2"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "FreeU_V2": {
@@ -2534,11 +2189,6 @@
         "s2": {
           "name": "s2"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "GITSScheduler": {
@@ -2553,11 +2203,6 @@
         "denoise": {
           "name": "denoise"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "GLIGENLoader": {
@@ -2565,11 +2210,6 @@
       "inputs": {
         "gligen_name": {
           "name": "gligen_name"
-        }
-      },
-      "outputs": {
-        "GLIGEN": {
-          "name": "GLIGEN"
         }
       }
     },
@@ -2600,11 +2240,6 @@
         "y": {
           "name": "y"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "GrowMask": {
@@ -2619,11 +2254,6 @@
         "tapered_corners": {
           "name": "tapered_corners"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "HypernetworkLoader": {
@@ -2637,11 +2267,6 @@
         },
         "strength": {
           "name": "strength"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -2663,11 +2288,6 @@
         "scale_depth": {
           "name": "scale_depth"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ImageBatch": {
@@ -2678,11 +2298,6 @@
         },
         "image2": {
           "name": "image2"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -2701,11 +2316,6 @@
         "blend_mode": {
           "name": "blend_mode"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageBlur": {
@@ -2720,11 +2330,6 @@
         "sigma": {
           "name": "sigma"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageColorToMask": {
@@ -2735,11 +2340,6 @@
         },
         "color": {
           "name": "color"
-        }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
         }
       }
     },
@@ -2764,11 +2364,6 @@
         "mask": {
           "name": "mask"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageCrop": {
@@ -2789,11 +2384,6 @@
         "y": {
           "name": "y"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageFromBatch": {
@@ -2808,11 +2398,6 @@
         "length": {
           "name": "length"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageInvert": {
@@ -2821,11 +2406,6 @@
         "image": {
           "name": "image"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageOnlyCheckpointLoader": {
@@ -2833,17 +2413,6 @@
       "inputs": {
         "ckpt_name": {
           "name": "ckpt_name"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        },
-        "CLIP_VISION": {
-          "name": "CLIP_VISION"
-        },
-        "VAE": {
-          "name": "VAE"
         }
       }
     },
@@ -2862,8 +2431,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "ImagePadForOutpaint": {
       "display_name": "Pad Image for Outpainting",
@@ -2886,14 +2454,6 @@
         "feathering": {
           "name": "feathering"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        },
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "ImageQuantize": {
@@ -2907,11 +2467,6 @@
         },
         "dither": {
           "name": "dither"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -2933,11 +2488,6 @@
         "crop": {
           "name": "crop"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageScaleBy": {
@@ -2952,11 +2502,6 @@
         "scale_by": {
           "name": "scale_by"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageScaleToTotalPixels": {
@@ -2970,11 +2515,6 @@
         },
         "megapixels": {
           "name": "megapixels"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -2993,11 +2533,6 @@
         "alpha": {
           "name": "alpha"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "ImageToMask": {
@@ -3009,11 +2544,6 @@
         "channel": {
           "name": "channel"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "ImageUpscaleWithModel": {
@@ -3024,11 +2554,6 @@
         },
         "image": {
           "name": "image"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -3056,13 +2581,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -3084,13 +2609,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -3100,11 +2625,6 @@
       "inputs": {
         "mask": {
           "name": "mask"
-        }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
         }
       }
     },
@@ -3116,11 +2636,6 @@
         },
         "alpha": {
           "name": "alpha"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -3138,11 +2653,6 @@
         },
         "rho": {
           "name": "rho"
-        }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
         }
       }
     },
@@ -3192,8 +2702,7 @@
         }
       },
       "outputs": {
-        "LATENT": {
-          "name": "LATENT",
+        "0": {
           "tooltip": "The denoised latent."
         }
       }
@@ -3240,11 +2749,6 @@
         "return_with_leftover_noise": {
           "name": "return_with_leftover_noise"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "KSamplerSelect": {
@@ -3252,11 +2756,6 @@
       "inputs": {
         "sampler_name": {
           "name": "sampler_name"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -3278,11 +2777,6 @@
         "beta": {
           "name": "beta"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "LatentAdd": {
@@ -3293,11 +2787,6 @@
         },
         "samples2": {
           "name": "samples2"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3310,11 +2799,6 @@
         "operation": {
           "name": "operation"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentApplyOperationCFG": {
@@ -3325,11 +2809,6 @@
         },
         "operation": {
           "name": "operation"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -3342,11 +2821,6 @@
         "samples2": {
           "name": "samples2"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentBatchSeedBehavior": {
@@ -3357,11 +2831,6 @@
         },
         "seed_behavior": {
           "name": "seed_behavior"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3376,11 +2845,6 @@
         },
         "blend_factor": {
           "name": "blend_factor"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3401,11 +2865,6 @@
         },
         "feather": {
           "name": "feather"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3430,11 +2889,6 @@
         "mask": {
           "name": "mask"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentCrop": {
@@ -3455,11 +2909,6 @@
         "y": {
           "name": "y"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentFlip": {
@@ -3470,11 +2919,6 @@
         },
         "flip_method": {
           "name": "flip_method"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3490,11 +2934,6 @@
         "length": {
           "name": "length"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentInterpolate": {
@@ -3509,11 +2948,6 @@
         "ratio": {
           "name": "ratio"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentMultiply": {
@@ -3524,11 +2958,6 @@
         },
         "multiplier": {
           "name": "multiplier"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3544,11 +2973,6 @@
         "alpha": {
           "name": "alpha"
         }
-      },
-      "outputs": {
-        "LATENT_OPERATION": {
-          "name": "LATENT_OPERATION"
-        }
       }
     },
     "LatentOperationTonemapReinhard": {
@@ -3556,11 +2980,6 @@
       "inputs": {
         "multiplier": {
           "name": "multiplier"
-        }
-      },
-      "outputs": {
-        "LATENT_OPERATION": {
-          "name": "LATENT_OPERATION"
         }
       }
     },
@@ -3573,11 +2992,6 @@
         "rotation": {
           "name": "rotation"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentSubtract": {
@@ -3588,11 +3002,6 @@
         },
         "samples2": {
           "name": "samples2"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3614,11 +3023,6 @@
         "crop": {
           "name": "crop"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LatentUpscaleBy": {
@@ -3633,11 +3037,6 @@
         "scale_by": {
           "name": "scale_by"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "LoadAudio": {
@@ -3646,11 +3045,6 @@
         "audio": {
           "name": "audio"
         }
-      },
-      "outputs": {
-        "AUDIO": {
-          "name": "AUDIO"
-        }
       }
     },
     "LoadImage": {
@@ -3658,14 +3052,6 @@
       "inputs": {
         "image": {
           "name": "image"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        },
-        "MASK": {
-          "name": "MASK"
         }
       }
     },
@@ -3678,11 +3064,6 @@
         "channel": {
           "name": "channel"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "LoadLatent": {
@@ -3690,11 +3071,6 @@
       "inputs": {
         "latent": {
           "name": "latent"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -3724,12 +3100,10 @@
         }
       },
       "outputs": {
-        "MODEL": {
-          "name": "MODEL",
+        "0": {
           "tooltip": "The modified diffusion model."
         },
-        "CLIP": {
-          "name": "CLIP",
+        "1": {
           "tooltip": "The modified CLIP model."
         }
       }
@@ -3749,8 +3123,7 @@
         }
       },
       "outputs": {
-        "MODEL": {
-          "name": "MODEL",
+        "0": {
           "tooltip": "The modified diffusion model."
         }
       }
@@ -3778,8 +3151,7 @@
           "name": "text_encoder_diff",
           "tooltip": "The CLIPSubtract output to be converted to a lora."
         }
-      },
-      "outputs": {}
+      }
     },
     "LTXVConditioning": {
       "display_name": "LTXVConditioning",
@@ -3795,10 +3167,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -3836,13 +3208,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -3870,11 +3242,6 @@
         "latent": {
           "name": "latent"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "MaskComposite": {
@@ -3895,11 +3262,6 @@
         "operation": {
           "name": "operation"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "MaskToImage": {
@@ -3907,11 +3269,6 @@
       "inputs": {
         "mask": {
           "name": "mask"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -3923,11 +3280,6 @@
         },
         "model2": {
           "name": "model2"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -4069,11 +3421,6 @@
         "final_linear_": {
           "name": "final_linear."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeBlocks": {
@@ -4093,11 +3440,6 @@
         },
         "out": {
           "name": "out"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -4299,11 +3641,6 @@
         "final_layer_": {
           "name": "final_layer."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeLTXV": {
@@ -4413,11 +3750,6 @@
         },
         "proj_out_": {
           "name": "proj_out."
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -4589,11 +3921,6 @@
         "final_layer_": {
           "name": "final_layer."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeSD1": {
@@ -4694,11 +4021,6 @@
         },
         "out_": {
           "name": "out."
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -4801,11 +4123,6 @@
         "out_": {
           "name": "out."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeSD3_2B": {
@@ -4906,11 +4223,6 @@
         },
         "final_layer_": {
           "name": "final_layer."
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5055,11 +4367,6 @@
         "final_layer_": {
           "name": "final_layer."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeSDXL": {
@@ -5143,11 +4450,6 @@
         "out_": {
           "name": "out."
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelMergeSimple": {
@@ -5161,11 +4463,6 @@
         },
         "ratio": {
           "name": "ratio"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5181,11 +4478,6 @@
         "multiplier": {
           "name": "multiplier"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSamplingAuraFlow": {
@@ -5196,11 +4488,6 @@
         },
         "shift": {
           "name": "shift"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5219,11 +4506,6 @@
         "sigma_min": {
           "name": "sigma_min"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSamplingContinuousV": {
@@ -5241,11 +4523,6 @@
         "sigma_min": {
           "name": "sigma_min"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSamplingDiscrete": {
@@ -5259,11 +4536,6 @@
         },
         "zsnr": {
           "name": "zsnr"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5285,11 +4557,6 @@
         "height": {
           "name": "height"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSamplingLTXV": {
@@ -5307,11 +4574,6 @@
         "latent": {
           "name": "latent"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSamplingSD3": {
@@ -5322,11 +4584,6 @@
         },
         "shift": {
           "name": "shift"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5339,11 +4596,6 @@
         "shift": {
           "name": "shift"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "ModelSave": {
@@ -5355,8 +4607,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "Morphology": {
       "display_name": "ImageMorphology",
@@ -5369,11 +4620,6 @@
         },
         "kernel_size": {
           "name": "kernel_size"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     },
@@ -5394,10 +4640,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -5422,10 +4668,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -5456,10 +4702,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -5496,10 +4742,10 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         }
       }
@@ -5531,11 +4777,6 @@
         "upscale_method": {
           "name": "upscale_method"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "PerpNeg": {
@@ -5549,11 +4790,6 @@
         },
         "neg_scale": {
           "name": "neg_scale"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5578,11 +4814,6 @@
         "neg_scale": {
           "name": "neg_scale"
         }
-      },
-      "outputs": {
-        "GUIDER": {
-          "name": "GUIDER"
-        }
       }
     },
     "PerturbedAttentionGuidance": {
@@ -5593,11 +4824,6 @@
         },
         "scale": {
           "name": "scale"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5616,11 +4842,6 @@
         "text": {
           "name": "text"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "PhotoMakerLoader": {
@@ -5628,11 +4849,6 @@
       "inputs": {
         "photomaker_model_name": {
           "name": "photomaker_model_name"
-        }
-      },
-      "outputs": {
-        "PHOTOMAKER": {
-          "name": "PHOTOMAKER"
         }
       }
     },
@@ -5650,11 +4866,6 @@
         },
         "rho": {
           "name": "rho"
-        }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
         }
       }
     },
@@ -5676,14 +4887,6 @@
         "mode": {
           "name": "mode"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        },
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "PreviewAudio": {
@@ -5692,8 +4895,7 @@
         "audio": {
           "name": "audio"
         }
-      },
-      "outputs": {}
+      }
     },
     "PreviewImage": {
       "display_name": "Preview Image",
@@ -5702,19 +4904,13 @@
         "images": {
           "name": "images"
         }
-      },
-      "outputs": {}
+      }
     },
     "RandomNoise": {
       "display_name": "RandomNoise",
       "inputs": {
         "noise_seed": {
           "name": "noise_seed"
-        }
-      },
-      "outputs": {
-        "NOISE": {
-          "name": "NOISE"
         }
       }
     },
@@ -5727,11 +4923,6 @@
         "batch_size": {
           "name": "batch_size"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "RebatchLatents": {
@@ -5742,11 +4933,6 @@
         },
         "batch_size": {
           "name": "batch_size"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -5759,11 +4945,6 @@
         "amount": {
           "name": "amount"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "RepeatLatentBatch": {
@@ -5775,11 +4956,6 @@
         "amount": {
           "name": "amount"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "RescaleCFG": {
@@ -5790,11 +4966,6 @@
         },
         "multiplier": {
           "name": "multiplier"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -5830,10 +5001,10 @@
         }
       },
       "outputs": {
-        "output": {
+        "0": {
           "name": "output"
         },
-        "denoised_output": {
+        "1": {
           "name": "denoised_output"
         }
       }
@@ -5858,10 +5029,10 @@
         }
       },
       "outputs": {
-        "output": {
+        "0": {
           "name": "output"
         },
-        "denoised_output": {
+        "1": {
           "name": "denoised_output"
         }
       }
@@ -5899,11 +5070,6 @@
         "s_noise": {
           "name": "s_noise"
         }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
-        }
       }
     },
     "SamplerDPMPP_2M_SDE": {
@@ -5921,11 +5087,6 @@
         "noise_device": {
           "name": "noise_device"
         }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
-        }
       }
     },
     "SamplerDPMPP_2S_Ancestral": {
@@ -5936,11 +5097,6 @@
         },
         "s_noise": {
           "name": "s_noise"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -5955,11 +5111,6 @@
         },
         "noise_device": {
           "name": "noise_device"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -5978,11 +5129,6 @@
         "noise_device": {
           "name": "noise_device"
         }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
-        }
       }
     },
     "SamplerEulerAncestral": {
@@ -5993,11 +5139,6 @@
         },
         "s_noise": {
           "name": "s_noise"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -6010,11 +5151,6 @@
         "s_noise": {
           "name": "s_noise"
         }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
-        }
       }
     },
     "SamplerEulerCFGpp": {
@@ -6022,11 +5158,6 @@
       "inputs": {
         "version": {
           "name": "version"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -6042,11 +5173,6 @@
         "upscale_method": {
           "name": "upscale_method"
         }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
-        }
       }
     },
     "SamplerLMS": {
@@ -6054,11 +5180,6 @@
       "inputs": {
         "order": {
           "name": "order"
-        }
-      },
-      "outputs": {
-        "SAMPLER": {
-          "name": "SAMPLER"
         }
       }
     },
@@ -6077,8 +5198,7 @@
         "compress_level": {
           "name": "compress_level"
         }
-      },
-      "outputs": {}
+      }
     },
     "SaveAnimatedWEBP": {
       "display_name": "SaveAnimatedWEBP",
@@ -6101,8 +5221,7 @@
         "method": {
           "name": "method"
         }
-      },
-      "outputs": {}
+      }
     },
     "SaveAudio": {
       "display_name": "SaveAudio",
@@ -6113,8 +5232,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "SaveImage": {
       "display_name": "Save Image",
@@ -6128,8 +5246,7 @@
           "name": "filename_prefix",
           "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
         }
-      },
-      "outputs": {}
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "SaveImageWebsocket",
@@ -6137,8 +5254,7 @@
         "images": {
           "name": "images"
         }
-      },
-      "outputs": {}
+      }
     },
     "SaveLatent": {
       "display_name": "SaveLatent",
@@ -6149,8 +5265,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "SD_4XUpscale_Conditioning": {
       "display_name": "SD_4XUpscale_Conditioning",
@@ -6172,13 +5287,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -6195,11 +5310,6 @@
         "denoise": {
           "name": "denoise"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "SelfAttentionGuidance": {
@@ -6213,11 +5323,6 @@
         },
         "blur_sigma": {
           "name": "blur_sigma"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -6236,11 +5341,6 @@
         "hooks": {
           "name": "hooks"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "SetHookKeyframes": {
@@ -6251,11 +5351,6 @@
         },
         "hook_kf": {
           "name": "hook_kf"
-        }
-      },
-      "outputs": {
-        "HOOKS": {
-          "name": "HOOKS"
         }
       }
     },
@@ -6268,11 +5363,6 @@
         "mask": {
           "name": "mask"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "SetUnionControlNetType": {
@@ -6283,11 +5373,6 @@
         },
         "type": {
           "name": "type"
-        }
-      },
-      "outputs": {
-        "CONTROL_NET": {
-          "name": "CONTROL_NET"
         }
       }
     },
@@ -6316,11 +5401,6 @@
         "rescaling_scale": {
           "name": "rescaling_scale"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "SkipLayerGuidanceSD3": {
@@ -6342,11 +5422,6 @@
         "end_percent": {
           "name": "end_percent"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "SolidMask": {
@@ -6361,11 +5436,6 @@
         "height": {
           "name": "height"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "SplitImageWithAlpha": {
@@ -6373,14 +5443,6 @@
       "inputs": {
         "image": {
           "name": "image"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        },
-        "MASK": {
-          "name": "MASK"
         }
       }
     },
@@ -6395,10 +5457,10 @@
         }
       },
       "outputs": {
-        "high_sigmas": {
+        "0": {
           "name": "high_sigmas"
         },
-        "low_sigmas": {
+        "1": {
           "name": "low_sigmas"
         }
       }
@@ -6414,10 +5476,10 @@
         }
       },
       "outputs": {
-        "high_sigmas": {
+        "0": {
           "name": "high_sigmas"
         },
-        "low_sigmas": {
+        "1": {
           "name": "low_sigmas"
         }
       }
@@ -6439,10 +5501,10 @@
         }
       },
       "outputs": {
-        "stage_c": {
+        "0": {
           "name": "stage_c"
         },
-        "stage_b": {
+        "1": {
           "name": "stage_b"
         }
       }
@@ -6455,11 +5517,6 @@
         },
         "stage_c": {
           "name": "stage_c"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -6477,10 +5534,10 @@
         }
       },
       "outputs": {
-        "stage_c": {
+        "0": {
           "name": "stage_c"
         },
-        "stage_b": {
+        "1": {
           "name": "stage_b"
         }
       }
@@ -6496,13 +5553,13 @@
         }
       },
       "outputs": {
-        "controlnet_input": {
+        "0": {
           "name": "controlnet_input"
         },
-        "stage_c": {
+        "1": {
           "name": "stage_c"
         },
-        "stage_b": {
+        "2": {
           "name": "stage_b"
         }
       }
@@ -6536,13 +5593,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -6582,13 +5639,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -6611,11 +5668,6 @@
         "strength_type": {
           "name": "strength_type"
         }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
-        }
       }
     },
     "StyleModelLoader": {
@@ -6623,11 +5675,6 @@
       "inputs": {
         "style_model_name": {
           "name": "style_model_name"
-        }
-      },
-      "outputs": {
-        "STYLE_MODEL": {
-          "name": "STYLE_MODEL"
         }
       }
     },
@@ -6657,13 +5704,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -6700,13 +5747,13 @@
         }
       },
       "outputs": {
-        "positive": {
+        "0": {
           "name": "positive"
         },
-        "negative": {
+        "1": {
           "name": "negative"
         },
-        "latent": {
+        "2": {
           "name": "latent"
         }
       }
@@ -6720,11 +5767,6 @@
         "value": {
           "name": "value"
         }
-      },
-      "outputs": {
-        "MASK": {
-          "name": "MASK"
-        }
       }
     },
     "TomePatchModel": {
@@ -6736,11 +5778,6 @@
         "ratio": {
           "name": "ratio"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "TorchCompileModel": {
@@ -6751,11 +5788,6 @@
         },
         "backend": {
           "name": "backend"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -6772,11 +5804,6 @@
         "clip_name3": {
           "name": "clip_name3"
         }
-      },
-      "outputs": {
-        "CLIP": {
-          "name": "CLIP"
-        }
       }
     },
     "unCLIPCheckpointLoader": {
@@ -6784,20 +5811,6 @@
       "inputs": {
         "ckpt_name": {
           "name": "ckpt_name"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        },
-        "CLIP": {
-          "name": "CLIP"
-        },
-        "VAE": {
-          "name": "VAE"
-        },
-        "CLIP_VISION": {
-          "name": "CLIP_VISION"
         }
       }
     },
@@ -6815,11 +5828,6 @@
         },
         "noise_augmentation": {
           "name": "noise_augmentation"
-        }
-      },
-      "outputs": {
-        "CONDITIONING": {
-          "name": "CONDITIONING"
         }
       }
     },
@@ -6841,11 +5849,6 @@
         "out": {
           "name": "out"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "UNETLoader": {
@@ -6856,11 +5859,6 @@
         },
         "weight_dtype": {
           "name": "weight_dtype"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -6882,11 +5880,6 @@
         "out": {
           "name": "out"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "UNetTemporalAttentionMultiply": {
@@ -6907,11 +5900,6 @@
         "cross_temporal": {
           "name": "cross_temporal"
         }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
-        }
       }
     },
     "UpscaleModelLoader": {
@@ -6919,11 +5907,6 @@
       "inputs": {
         "model_name": {
           "name": "model_name"
-        }
-      },
-      "outputs": {
-        "UPSCALE_MODEL": {
-          "name": "UPSCALE_MODEL"
         }
       }
     },
@@ -6941,8 +5924,7 @@
         }
       },
       "outputs": {
-        "IMAGE": {
-          "name": "IMAGE",
+        "0": {
           "tooltip": "The decoded image."
         }
       }
@@ -6955,11 +5937,6 @@
         },
         "vae": {
           "name": "vae"
-        }
-      },
-      "outputs": {
-        "AUDIO": {
-          "name": "AUDIO"
         }
       }
     },
@@ -6978,11 +5955,6 @@
         "overlap": {
           "name": "overlap"
         }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
-        }
       }
     },
     "VAEEncode": {
@@ -6994,11 +5966,6 @@
         "vae": {
           "name": "vae"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "VAEEncodeAudio": {
@@ -7009,11 +5976,6 @@
         },
         "vae": {
           "name": "vae"
-        }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
         }
       }
     },
@@ -7032,11 +5994,6 @@
         "grow_mask_by": {
           "name": "grow_mask_by"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "VAEEncodeTiled": {
@@ -7051,11 +6008,6 @@
         "tile_size": {
           "name": "tile_size"
         }
-      },
-      "outputs": {
-        "LATENT": {
-          "name": "LATENT"
-        }
       }
     },
     "VAELoader": {
@@ -7063,11 +6015,6 @@
       "inputs": {
         "vae_name": {
           "name": "vae_name"
-        }
-      },
-      "outputs": {
-        "VAE": {
-          "name": "VAE"
         }
       }
     },
@@ -7080,8 +6027,7 @@
         "filename_prefix": {
           "name": "filename_prefix"
         }
-      },
-      "outputs": {}
+      }
     },
     "VideoLinearCFGGuidance": {
       "display_name": "VideoLinearCFGGuidance",
@@ -7091,11 +6037,6 @@
         },
         "min_cfg": {
           "name": "min_cfg"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -7107,11 +6048,6 @@
         },
         "min_cfg": {
           "name": "min_cfg"
-        }
-      },
-      "outputs": {
-        "MODEL": {
-          "name": "MODEL"
         }
       }
     },
@@ -7130,11 +6066,6 @@
         "eps_s": {
           "name": "eps_s"
         }
-      },
-      "outputs": {
-        "SIGMAS": {
-          "name": "SIGMAS"
-        }
       }
     },
     "WebcamCapture": {
@@ -7151,11 +6082,6 @@
         },
         "capture_on_queue": {
           "name": "capture_on_queue"
-        }
-      },
-      "outputs": {
-        "IMAGE": {
-          "name": "IMAGE"
         }
       }
     }
