@@ -49,6 +49,7 @@ import Message from 'primevue/message'
 import { User, useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
 import { computed, onMounted, ref } from 'vue'
+import { electronAPI } from '@/utils/envUtil'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -83,6 +84,8 @@ const login = async () => {
 }
 
 onMounted(async () => {
+  electronAPI()?.changeTheme({ color: '#171717', symbolColor: '#d4d4d4' })
+
   if (!userStore.initialized) {
     await userStore.initialize()
   }

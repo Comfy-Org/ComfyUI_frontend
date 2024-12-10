@@ -23,13 +23,19 @@
 </template>
 
 <script setup lang="ts">
+import { electronAPI } from '@/utils/envUtil'
 import Button from 'primevue/button'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const navigateTo = (path: string) => {
   router.push(path)
 }
+
+onMounted(() => {
+  electronAPI()?.changeTheme({ color: '#171717', symbolColor: '#d4d4d4' })
+})
 </script>
 
 <style scoped>

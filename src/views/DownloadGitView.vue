@@ -48,7 +48,9 @@
 </template>
 
 <script setup lang="ts">
+import { electronAPI } from '@/utils/envUtil'
 import Button from 'primevue/button'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const openGitDownloads = () => {
@@ -60,4 +62,8 @@ const skipGit = () => {
   const router = useRouter()
   router.push('install')
 }
+
+onMounted(() => {
+  electronAPI()?.changeTheme({ color: '#d4d4d4', symbolColor: '#171717' })
+})
 </script>
