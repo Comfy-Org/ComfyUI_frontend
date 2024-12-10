@@ -23,6 +23,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import type { SettingOption, SettingParams } from '@/types/settingTypes'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{
   setting: SettingParams
@@ -36,7 +37,7 @@ function translateOptions(options: (SettingOption | string)[]) {
 
     return {
       text: t(
-        `settingsDialog.${props.setting.id}.options.${optionLabel}`,
+        `settingsDialog.${normalizeI18nKey(props.setting.id)}.options.${normalizeI18nKey(optionLabel)}`,
         optionLabel
       ),
       value: optionValue
@@ -45,7 +46,7 @@ function translateOptions(options: (SettingOption | string)[]) {
 }
 
 const formItem = computed(() => {
-  const normalizedId = props.setting.id.replace(/\./g, '_')
+  const normalizedId = normalizeI18nKey(props.setting.id)
   return {
     ...props.setting,
     name: t(`settingsDialog.${normalizedId}.name`, props.setting.name),
