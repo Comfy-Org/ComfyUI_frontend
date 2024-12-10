@@ -371,7 +371,12 @@
     },
     "CLIPTextEncode": {
       "description": "テキストプロンプトをCLIPモデルを使用してエンコードし、特定の画像を生成するために拡散モデルをガイドするために使用できる埋め込みに変換します。",
-      "display_name": "CLIPテキストエンコード（プロンプト）"
+      "display_name": "CLIPテキストエンコード（プロンプト）",
+      "outputs": {
+        "0": {
+          "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
+        }
+      }
     },
     "CLIPTextEncodeControlnet": {
       "display_name": "CLIPテキストエンコードコントロールネット"
@@ -405,7 +410,18 @@
     },
     "CheckpointLoaderSimple": {
       "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは潜在変数のノイズを除去するために使用されます。",
-      "display_name": "チェックポイントを読み込む"
+      "display_name": "チェックポイントを読み込む",
+      "outputs": {
+        "0": {
+          "tooltip": "潜在変数のデノイズに使用されるモデル。"
+        },
+        "1": {
+          "tooltip": "テキストプロンプトをエンコードするために使用されるCLIPモデル。"
+        },
+        "2": {
+          "tooltip": "画像を潜在空間にエンコードおよびデコードするために使用されるVAEモデル。"
+        }
+      }
     },
     "CheckpointSave": {
       "display_name": "チェックポイントを保存"
@@ -453,7 +469,15 @@
       "display_name": "条件付けタイムステップ範囲"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "タイムステップ範囲"
+      "display_name": "タイムステップ範囲",
+      "outputs": {
+        "1": {
+          "name": "BEFORE_RANGE"
+        },
+        "2": {
+          "name": "AFTER_RANGE"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "条件付けゼロアウト"
@@ -462,25 +486,64 @@
       "display_name": "ControlNetを適用（旧）"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "ControlNetを適用"
+      "display_name": "ControlNetを適用",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "VAEでControlNetを適用"
+      "display_name": "VAEでControlNetを適用",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "ControlNetインペインティングAliMamaを適用"
+      "display_name": "ControlNetインペインティングAliMamaを適用",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "ControlNetモデルを読み込む"
     },
     "CreateHookKeyframe": {
-      "display_name": "フックキーフレームを作成"
+      "display_name": "フックキーフレームを作成",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "フックキーフレームを浮動小数点から作成"
+      "display_name": "フックキーフレームを浮動小数点から作成",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "フックキーフレームを補間"
+      "display_name": "フックキーフレームを補間",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "フックLoRAを作成"
@@ -531,7 +594,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "出力リストを持つノード",
-      "display_name": "出力リストノード"
+      "display_name": "出力リストノード",
+      "outputs": {
+        "0": {
+          "name": "INTEGER OUTPUT"
+        },
+        "1": {
+          "name": "INTEGER LIST OUTPUT"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "description": "文字列入力を持つノード",
@@ -571,7 +642,12 @@
     },
     "EmptyLatentImage": {
       "description": "サンプリングを通じてノイズを除去するための空の潜在画像の新しいバッチを作成します。",
-      "display_name": "空の潜在画像"
+      "display_name": "空の潜在画像",
+      "outputs": {
+        "0": {
+          "tooltip": "空の潜在画像バッチ。"
+        }
+      }
     },
     "EmptyMochiLatentVideo": {
       "display_name": "空のMochi潜在ビデオ"
@@ -670,10 +746,32 @@
       "display_name": "モデルを使用して画像を拡大"
     },
     "InpaintModelConditioning": {
-      "display_name": "インペイントモデル条件付け"
+      "display_name": "インペイントモデル条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "PixToPix条件付け"
+      "display_name": "PixToPix条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "マスクを反転"
@@ -683,7 +781,12 @@
     },
     "KSampler": {
       "description": "提供されたモデル、正の条件付けと負の条件付けを使用して潜在画像のノイズを除去します。",
-      "display_name": "Kサンプラー"
+      "display_name": "Kサンプラー",
+      "outputs": {
+        "0": {
+          "tooltip": "デノイズされた潜在変数。"
+        }
+      }
     },
     "KSamplerAdvanced": {
       "display_name": "Kサンプラー（高度）"
@@ -695,10 +798,29 @@
       "display_name": "カラススケジューラー"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV条件付け"
+      "display_name": "LTXV条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "LTXVImgToVideo": {
-      "display_name": "LTXV画像からビデオへ"
+      "display_name": "LTXV画像からビデオへ",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "LTXVScheduler": {
       "display_name": "LTXVスケジューラー"
@@ -777,11 +899,24 @@
     },
     "LoraLoader": {
       "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
-      "display_name": "LoRAを読み込む"
+      "display_name": "LoRAを読み込む",
+      "outputs": {
+        "0": {
+          "tooltip": "修正された拡散モデル。"
+        },
+        "1": {
+          "tooltip": "修正されたCLIPモデル。"
+        }
+      }
     },
     "LoraLoaderModelOnly": {
       "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
-      "display_name": "LoRAローダーモデルのみ"
+      "display_name": "LoRAローダーモデルのみ",
+      "outputs": {
+        "0": {
+          "tooltip": "修正された拡散モデル。"
+        }
+      }
     },
     "LoraSave": {
       "display_name": "LoRAを抽出して保存"
@@ -862,16 +997,48 @@
       "display_name": "画像形態学"
     },
     "PairConditioningCombine": {
-      "display_name": "ペア条件付け組み合わせ"
+      "display_name": "ペア条件付け組み合わせ",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "ペア条件付けデフォルト組み合わせを設定"
+      "display_name": "ペア条件付けデフォルト組み合わせを設定",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "ペア条件付けプロパティ設定"
+      "display_name": "ペア条件付けプロパティ設定",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "ペア条件付けプロパティ設定と組み合わせ"
+      "display_name": "ペア条件付けプロパティ設定と組み合わせ",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "パッチモデル追加ダウンスケール（Kohya Deep Shrink）"
@@ -926,19 +1093,68 @@
       "display_name": "SDターボスケジューラー"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X拡大条件付け"
+      "display_name": "SD_4X拡大条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D条件付け"
+      "display_name": "SV3D条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid条件付け"
+      "display_name": "SVD_img2vid条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SamplerCustom": {
-      "display_name": "カスタムサンプラー"
+      "display_name": "カスタムサンプラー",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "カスタムサンプラー（高度）"
+      "display_name": "カスタムサンプラー（高度）",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "サンプラーDPM適応"
@@ -1019,28 +1235,93 @@
       "display_name": "アルファで画像を分割"
     },
     "SplitSigmas": {
-      "display_name": "シグマを分割"
+      "display_name": "シグマを分割",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "シグマを分割してノイズ除去"
+      "display_name": "シグマを分割してノイズ除去",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "安定カスケード_空の潜在画像"
+      "display_name": "安定カスケード_空の潜在画像",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "安定カスケード_ステージB条件付け"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "安定カスケード_ステージC_VAEエンコード"
+      "display_name": "安定カスケード_ステージC_VAEエンコード",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "安定カスケード_超解像Controlnet"
+      "display_name": "安定カスケード_超解像Controlnet",
+      "outputs": {
+        "0": {
+          "name": "controlnet_input"
+        },
+        "1": {
+          "name": "stage_c"
+        },
+        "2": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "安定ゼロ123条件付け"
+      "display_name": "安定ゼロ123条件付け",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "安定ゼロ123条件付け（バッチ）"
+      "display_name": "安定ゼロ123条件付け（バッチ）",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "スタイルモデルを適用"
@@ -1078,7 +1359,12 @@
     },
     "VAEDecode": {
       "description": "潜在画像をピクセル空間画像にデコードします。",
-      "display_name": "VAEデコード"
+      "display_name": "VAEデコード",
+      "outputs": {
+        "0": {
+          "tooltip": "デコードされた画像。"
+        }
+      }
     },
     "VAEDecodeAudio": {
       "display_name": "VAEデコード音声"

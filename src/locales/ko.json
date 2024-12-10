@@ -354,7 +354,12 @@
     },
     "CLIPTextEncode": {
       "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 안내하는 임베딩으로 변환합니다.",
-      "display_name": "CLIP 텍스트 인코딩 (프롬프트)"
+      "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
+      "outputs": {
+        "0": {
+          "tooltip": "확산 모델을 안내하는 데 사용되는 임베디드 텍스트를 포함하는 조건부입니다."
+        }
+      }
     },
     "CLIPTextEncodeControlnet": {
       "display_name": "CLIP 텍스트 인코딩 (컨트롤넷)"
@@ -388,7 +393,18 @@
     },
     "CheckpointLoaderSimple": {
       "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
-      "display_name": "체크포인트 로드"
+      "display_name": "체크포인트 로드",
+      "outputs": {
+        "0": {
+          "tooltip": "잠재 변수를 제거하는 데 사용되는 모델입니다."
+        },
+        "1": {
+          "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
+        },
+        "2": {
+          "tooltip": "이미지를 잠재 공간으로 인코딩하고 디코딩하는 데 사용되는 VAE 모델입니다."
+        }
+      }
     },
     "CheckpointSave": {
       "display_name": "체크포인트 저장"
@@ -436,7 +452,15 @@
       "display_name": "조건 (타임스텝 범위 설정)"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "조건 (타임스텝 범위)"
+      "display_name": "조건 (타임스텝 범위)",
+      "outputs": {
+        "1": {
+          "name": "BEFORE_RANGE"
+        },
+        "2": {
+          "name": "AFTER_RANGE"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "조건 (제로 아웃)"
@@ -445,25 +469,64 @@
       "display_name": "컨트롤넷 적용 (구형)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "컨트롤넷 적용"
+      "display_name": "컨트롤넷 적용",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "컨트롤넷을 VAE와 함께 적용"
+      "display_name": "컨트롤넷을 VAE와 함께 적용",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "컨트롤넷 인페인팅 AliMama 적용"
+      "display_name": "컨트롤넷 인페인팅 AliMama 적용",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "컨트롤넷 모델 로드"
     },
     "CreateHookKeyframe": {
-      "display_name": "후크 키프레임 생성"
+      "display_name": "후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "부동 소수점으로 후크 키프레임 생성"
+      "display_name": "부동 소수점으로 후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "보간된 후크 키프레임 생성"
+      "display_name": "보간된 후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "후크 LoRA 생성"
@@ -514,7 +577,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "출력 목록이 있는 노드",
-      "display_name": "출력 목록이 있는 노드"
+      "display_name": "출력 목록이 있는 노드",
+      "outputs": {
+        "0": {
+          "name": "INTEGER OUTPUT"
+        },
+        "1": {
+          "name": "INTEGER LIST OUTPUT"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "description": "문자열 입력이 있는 노드",
@@ -554,7 +625,12 @@
     },
     "EmptyLatentImage": {
       "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
-      "display_name": "빈 잠재 이미지"
+      "display_name": "빈 잠재 이미지",
+      "outputs": {
+        "0": {
+          "tooltip": "빈 잠재 이미지 배치입니다."
+        }
+      }
     },
     "EmptyMochiLatentVideo": {
       "display_name": "빈 Mochi 잠재 비디오"
@@ -653,10 +729,32 @@
       "display_name": "모델을 사용한 이미지 확대"
     },
     "InpaintModelConditioning": {
-      "display_name": "인페인팅 모델 조건 설정"
+      "display_name": "인페인팅 모델 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "픽셀 간 조건 설정"
+      "display_name": "픽셀 간 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "마스크 반전"
@@ -666,7 +764,12 @@
     },
     "KSampler": {
       "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 이미지를 디노이즈합니다.",
-      "display_name": "KSampler"
+      "display_name": "KSampler",
+      "outputs": {
+        "0": {
+          "tooltip": "제거된 잠재 변수입니다."
+        }
+      }
     },
     "KSamplerAdvanced": {
       "display_name": "고급 KSampler"
@@ -678,10 +781,29 @@
       "display_name": "Karras 스케줄러"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV 조건 설정"
+      "display_name": "LTXV 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "LTXVImgToVideo": {
-      "display_name": "LTXV 이미지에서 비디오로"
+      "display_name": "LTXV 이미지에서 비디오로",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "LTXVScheduler": {
       "display_name": "LTXV 스케줄러"
@@ -760,11 +882,24 @@
     },
     "LoraLoader": {
       "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
-      "display_name": "LoRA 로드"
+      "display_name": "LoRA 로드",
+      "outputs": {
+        "0": {
+          "tooltip": "수정된 확산 모델입니다."
+        },
+        "1": {
+          "tooltip": "수정된 CLIP 모델입니다."
+        }
+      }
     },
     "LoraLoaderModelOnly": {
       "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
-      "display_name": "LoRA 로드 (모델 전용)"
+      "display_name": "LoRA 로드 (모델 전용)",
+      "outputs": {
+        "0": {
+          "tooltip": "수정된 확산 모델입니다."
+        }
+      }
     },
     "LoraSave": {
       "display_name": "LoRA 추출 및 저장"
@@ -845,16 +980,48 @@
       "display_name": "이미지 형태 변환"
     },
     "PairConditioningCombine": {
-      "display_name": "조건 쌍 (결합)"
+      "display_name": "조건 쌍 (결합)",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "조건 쌍 (기본 결합 설정)"
+      "display_name": "조건 쌍 (기본 결합 설정)",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "조건 쌍 (속성 설정)"
+      "display_name": "조건 쌍 (속성 설정)",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "조건 쌍 (속성 설정 및 결합)"
+      "display_name": "조건 쌍 (속성 설정 및 결합)",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)"
@@ -909,19 +1076,68 @@
       "display_name": "SD-Turbo 스케줄러"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X 확대 조건 설정"
+      "display_name": "SD_4X 확대 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D 조건 설정"
+      "display_name": "SV3D 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid 조건 설정"
+      "display_name": "SVD_img2vid 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SamplerCustom": {
-      "display_name": "사용자 정의 샘플러"
+      "display_name": "사용자 정의 샘플러",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "고급 사용자 정의 샘플러"
+      "display_name": "고급 사용자 정의 샘플러",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "DPMAdaptive 샘플러"
@@ -1002,28 +1218,93 @@
       "display_name": "이미지와 알파채널 분리"
     },
     "SplitSigmas": {
-      "display_name": "시그마 분할 (스텝형)"
+      "display_name": "시그마 분할 (스텝형)",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "시그마 분할 (디노이즈형)"
+      "display_name": "시그마 분할 (디노이즈형)",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade 빈 잠재 이미지"
+      "display_name": "StableCascade 빈 잠재 이미지",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascasde_StageB 조건 설정"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_StageC VAE 인코딩"
+      "display_name": "StableCascade_StageC VAE 인코딩",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade 초고해상도 컨트롤넷"
+      "display_name": "StableCascade 초고해상도 컨트롤넷",
+      "outputs": {
+        "0": {
+          "name": "controlnet_input"
+        },
+        "1": {
+          "name": "stage_c"
+        },
+        "2": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123 조건 설정"
+      "display_name": "StableZero123 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123 조건 설정_배치"
+      "display_name": "StableZero123 조건 설정_배치",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "스타일 모델 적용"
@@ -1061,7 +1342,12 @@
     },
     "VAEDecode": {
       "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
-      "display_name": "VAE 디코드"
+      "display_name": "VAE 디코드",
+      "outputs": {
+        "0": {
+          "tooltip": "디코딩된 이미지입니다."
+        }
+      }
     },
     "VAEDecodeAudio": {
       "display_name": "VAE 디코드 오디오"
