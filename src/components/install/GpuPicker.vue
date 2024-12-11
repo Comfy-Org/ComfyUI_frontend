@@ -25,11 +25,11 @@
         />
         <img
           class="gpu-button"
-          :class="{ selected: selected === 'amd' }"
+          :class="{ selected: selected === 'mps' }"
           alt="AMD"
           width="128"
           height="128"
-          @click="pickGpu('amd')"
+          @click="pickGpu('mps')"
           src="/assets/images/amd-header-logo.svg"
         />
       </div>
@@ -98,7 +98,7 @@ const cpuMode = computed({
   get: () => selected.value === 'cpu',
   set: () => pickGpu('cpu')
 })
-const selected = defineModel<'nvidia' | 'amd' | 'cpu' | null>('gpu', {
+const selected = defineModel<'nvidia' | 'mps' | 'cpu' | null>('gpu', {
   required: true
 })
 

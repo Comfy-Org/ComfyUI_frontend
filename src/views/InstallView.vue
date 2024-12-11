@@ -117,7 +117,7 @@ import { ref, computed, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import GpuPicker from '@/components/install/GpuPicker.vue'
 
-const gpu = ref<'nvidia' | 'amd' | 'cpu'>(null)
+const gpu = ref<'nvidia' | 'mps' | 'cpu'>(null)
 
 const installPath = ref('')
 const pathError = ref('')
@@ -146,14 +146,15 @@ const install = () => {
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
-    migrationItemIds: toRaw(migrationItemIds.value)
+    migrationItemIds: toRaw(migrationItemIds.value),
+    gpu: gpu.value
   }
   electronAPI().installComfyUI(options)
   router.push('/server-start')
 }
 </script>
 
-<style scoped>
+<style lang="postcss" scoped>
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }
