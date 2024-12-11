@@ -1402,10 +1402,10 @@
       "name": "언어",
       "options": {
         "en": "English",
-        "zh": "中文",
-        "ru": "Русский",
         "ja": "日本語",
-        "ko": "한국어"
+        "ko": "한국어",
+        "ru": "Русский",
+        "zh": "中文"
       }
     },
     "Comfy_MaskEditor_BrushAdjustmentSpeed": {
