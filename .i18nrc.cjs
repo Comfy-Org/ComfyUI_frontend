@@ -4,14 +4,10 @@
 const { defineConfig } = require('@lobehub/i18n-cli');
 
 module.exports = defineConfig({
+  modelName: 'gpt-4',
   entry: 'src/locales/en',
   entryLocale: 'en',
   output: 'src/locales',
   outputLocales: ['zh', 'ru', 'ja', 'ko'],
-  reference: `Keep following model names untranslated:
-  - flux
-  - photomaker
-  - clip
-  - vae
-  `
+  reference: `Special names to keep untranslated: flux, photomaker, clip, vae`
 });
