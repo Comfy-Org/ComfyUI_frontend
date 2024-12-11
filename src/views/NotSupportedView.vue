@@ -1,8 +1,8 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex items-center m-0 text-neutral-900 bg-neutral-300 pointer-events-auto"
+    class="app-drag font-sans w-screen h-screen flex items-center m-0 text-neutral-900 bg-neutral-300 pointer-events-auto"
   >
-    <div class="flex-grow flex items-center justify-center">
+    <div class="no-drag flex-grow flex items-center justify-center">
       <div class="flex flex-col gap-8 p-8">
         <!-- Header -->
         <h1 class="text-4xl font-bold text-red-500">
@@ -58,7 +58,9 @@
 </template>
 
 <script setup lang="ts">
+import { electronAPI } from '@/utils/envUtil'
 import Button from 'primevue/button'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const openDocs = () => {
@@ -76,4 +78,8 @@ const router = useRouter()
 const continueToInstall = () => {
   router.push('/install')
 }
+
+onMounted(() => {
+  electronAPI()?.changeTheme({ color: '#d4d4d4', symbolColor: '#171717' })
+})
 </script>

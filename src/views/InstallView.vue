@@ -1,8 +1,8 @@
 <template>
   <div
-    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
+    class="app-drag font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="1">
+    <Stepper class="no-drag mt-[5vh] 2xl:mt-[20vh]" value="1">
       <StepList>
         <Step value="1" :disabled="hasError">
           {{ $t('install.installLocation') }}
@@ -88,7 +88,7 @@ import InstallLocationPicker from '@/components/install/InstallLocationPicker.vu
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
-import { ref, computed, toRaw } from 'vue'
+import { ref, computed, toRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const installPath = ref('')
@@ -114,6 +114,10 @@ const install = () => {
   electronAPI().installComfyUI(options)
   router.push('/server-start')
 }
+
+onMounted(() => {
+  electronAPI()?.changeTheme({ color: '#171717', symbolColor: '#d4d4d4' })
+})
 </script>
 
 <style scoped>

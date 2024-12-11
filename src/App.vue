@@ -16,6 +16,7 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useEventListener } from '@vueuse/core'
+import { isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
@@ -28,5 +29,10 @@ useEventListener(window, 'keyup', handleKey)
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
   console.log('ComfyUI Front-end version:', config.app_version)
+
+  if (isElectron()) {
+    // Enable CSS selectors
+    document.documentElement.dataset['platform'] = 'electron'
+  }
 })
 </script>
