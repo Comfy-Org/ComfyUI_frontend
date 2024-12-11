@@ -143,10 +143,7 @@ test('collect-i18n', async ({ comfyPage }) => {
   function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
       nodeDef.inputs.all.flatMap((input) => {
-        // TODO(huchenlei): translate input name. Somehow `CLIPAttentionMultiply` will
-        // cause all subsequent translations to fail (Raw english values
-        // are generated).
-        const name = undefined
+        const name = input.name
         const tooltip = input.tooltip
 
         if (name === undefined && tooltip === undefined) {
