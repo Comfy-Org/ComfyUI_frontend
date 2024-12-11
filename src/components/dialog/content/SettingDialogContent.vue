@@ -183,14 +183,14 @@ const handleSearch = (query: string) => {
     return
   }
 
-  const queryLower = query.toLowerCase()
+  const queryLower = query.toLocaleLowerCase()
   const allSettings = flattenTree<SettingParams>(settingRoot.value)
   const filteredSettings = allSettings.filter((setting) => {
     const idLower = setting.id.toLowerCase()
     const nameLower = setting.name.toLowerCase()
     const translatedName = t(
       `settingsDialog.${normalizeI18nKey(setting.id)}.name`
-    ).toLowerCase()
+    ).toLocaleLowerCase()
 
     return (
       idLower.includes(queryLower) ||
