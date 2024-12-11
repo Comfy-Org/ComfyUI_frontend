@@ -1399,7 +1399,14 @@
       }
     },
     "Comfy_Locale": {
-      "name": "언어"
+      "name": "언어",
+      "options": {
+        "en": "English",
+        "zh": "中文",
+        "ru": "Русский",
+        "ja": "日本語",
+        "ko": "한국어"
+      }
     },
     "Comfy_MaskEditor_BrushAdjustmentSpeed": {
       "name": "브러시 조정 속도 배수",
