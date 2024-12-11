@@ -1979,7 +1979,9 @@ export class ComfyApp {
           const typeKey = `dataTypes.${normalizeI18nKey(output)}`
           const outputOptions = {
             ...shapeOptions,
-            label: te(nameKey) ? t(nameKey) : st(typeKey, outputName)
+            label: nodeData['output_name'][o]
+              ? st(nameKey, outputName)
+              : st(typeKey, outputName)
           }
           this.addOutput(outputName, output, outputOptions)
         }
