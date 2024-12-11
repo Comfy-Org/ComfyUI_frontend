@@ -63,18 +63,15 @@ test('collect-i18n', async ({ comfyPage }) => {
       {
         name: setting.name,
         tooltip: setting.tooltip,
-        // Don't translate the locale options as each option is in its own language.
-        // e.g. "English", "中文", "Русский", "日本語", "한국어"
-        options:
-          setting.options && setting.id !== 'Comfy.Locale'
-            ? Object.fromEntries(
-                setting.options.map((option) => {
-                  const optionLabel =
-                    typeof option === 'string' ? option : option.text
-                  return [normalizeI18nKey(optionLabel), optionLabel]
-                })
-              )
-            : undefined
+        options: setting.options
+          ? Object.fromEntries(
+              setting.options.map((option) => {
+                const optionLabel =
+                  typeof option === 'string' ? option : option.text
+                return [normalizeI18nKey(optionLabel), optionLabel]
+              })
+            )
+          : undefined
       }
     ])
   )
