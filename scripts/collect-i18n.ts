@@ -137,8 +137,11 @@ test('collect-i18n', async ({ comfyPage }) => {
       })
       .sort((a, b) => a[0].localeCompare(b[0]))
   )
-
-  const NODE_LIMIT = 1
+  /**
+   * Limit the number of nodes to translate. This is to avoid large chunk size
+   * translation, which has higher chance of failing.
+   */
+  const NODE_LIMIT = 10
 
   function extractInputs(nodeDef: ComfyNodeDefImpl, nodeIndex: number) {
     const inputs = Object.fromEntries(

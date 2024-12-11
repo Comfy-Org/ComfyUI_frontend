@@ -866,31 +866,112 @@
       }
     },
     "AlignYourStepsScheduler": {
-      "display_name": "AlignYourStepsScheduler"
+      "display_name": "AlignYourStepsScheduler",
+      "inputs": {
+        "model_type": {
+          "name": "model_type"
+        },
+        "steps": {
+          "name": "steps"
+        },
+        "denoise": {
+          "name": "denoise"
+        }
+      }
     },
     "BasicGuider": {
-      "display_name": "BasicGuider"
+      "display_name": "BasicGuider",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "conditioning": {
+          "name": "conditioning"
+        }
+      }
     },
     "BasicScheduler": {
-      "display_name": "BasicScheduler"
+      "display_name": "BasicScheduler",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "scheduler": {
+          "name": "scheduler"
+        },
+        "steps": {
+          "name": "steps"
+        },
+        "denoise": {
+          "name": "denoise"
+        }
+      }
     },
     "BetaSamplingScheduler": {
-      "display_name": "BetaSamplingScheduler"
+      "display_name": "BetaSamplingScheduler",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "steps": {
+          "name": "steps"
+        },
+        "alpha": {
+          "name": "alpha"
+        },
+        "beta": {
+          "name": "beta"
+        }
+      }
     },
     "Canny": {
-      "display_name": "Canny"
+      "display_name": "Canny",
+      "inputs": {
+        "image": {
+          "name": "image"
+        },
+        "low_threshold": {
+          "name": "low_threshold"
+        },
+        "high_threshold": {
+          "name": "high_threshold"
+        }
+      }
     },
     "CFGGuider": {
-      "display_name": "CFGGuider"
+      "display_name": "CFGGuider",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "positive": {
+          "name": "positive"
+        },
+        "negative": {
+          "name": "negative"
+        },
+        "cfg": {
+          "name": "cfg"
+        }
+      }
     },
     "CheckpointLoader": {
-      "display_name": "Load Checkpoint With Config (DEPRECATED)"
+      "display_name": "Load Checkpoint With Config (DEPRECATED)",
+      "inputs": {
+        "config_name": {
+          "name": "config_name"
+        },
+        "ckpt_name": {
+          "name": "ckpt_name"
+        }
+      }
     },
     "CheckpointLoaderSimple": {
       "display_name": "Load Checkpoint",
       "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents.",
       "inputs": {
         "ckpt_name": {
+          "name": "ckpt_name",
           "tooltip": "The name of the checkpoint (model) to load."
         }
       },
@@ -907,7 +988,21 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "Save Checkpoint"
+      "display_name": "Save Checkpoint",
+      "inputs": {
+        "model": {
+          "name": "model"
+        },
+        "clip": {
+          "name": "clip"
+        },
+        "vae": {
+          "name": "vae"
+        },
+        "filename_prefix": {
+          "name": "filename_prefix"
+        }
+      }
     },
     "CLIPAttentionMultiply": {
       "display_name": "CLIPAttentionMultiply"

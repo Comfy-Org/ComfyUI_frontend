@@ -347,19 +347,80 @@
       }
     },
     "AlignYourStepsScheduler": {
-      "display_name": "ステップを整列"
+      "display_name": "ステップを整列",
+      "inputs": {
+        "denoise": {
+          "name": "デノイズ"
+        },
+        "model_type": {
+          "name": "モデルタイプ"
+        },
+        "steps": {
+          "name": "ステップ"
+        }
+      }
     },
     "BasicGuider": {
-      "display_name": "基本ガイダー"
+      "display_name": "基本ガイダー",
+      "inputs": {
+        "conditioning": {
+          "name": "条件付け"
+        },
+        "model": {
+          "name": "モデル"
+        }
+      }
     },
     "BasicScheduler": {
-      "display_name": "基本スケジューラー"
+      "display_name": "基本スケジューラー",
+      "inputs": {
+        "denoise": {
+          "name": "デノイズ"
+        },
+        "model": {
+          "name": "モデル"
+        },
+        "scheduler": {
+          "name": "スケジューラー"
+        },
+        "steps": {
+          "name": "ステップ"
+        }
+      }
     },
     "BetaSamplingScheduler": {
-      "display_name": "ベータサンプリングスケジューラー"
+      "display_name": "ベータサンプリングスケジューラー",
+      "inputs": {
+        "alpha": {
+          "name": "アルファ"
+        },
+        "beta": {
+          "name": "ベータ"
+        },
+        "model": {
+          "name": "モデル"
+        },
+        "steps": {
+          "name": "ステップ"
+        }
+      }
     },
     "CFGGuider": {
-      "display_name": "CFGガイダー"
+      "display_name": "CFGガイダー",
+      "inputs": {
+        "cfg": {
+          "name": "CFG"
+        },
+        "model": {
+          "name": "モデル"
+        },
+        "negative": {
+          "name": "ネガティブ"
+        },
+        "positive": {
+          "name": "ポジティブ"
+        }
+      }
     },
     "CLIPAttentionMultiply": {
       "display_name": "CLIP注意の乗算"
@@ -425,16 +486,36 @@
       "display_name": "CLIPビジョンを読み込む"
     },
     "Canny": {
-      "display_name": "キャニー"
+      "display_name": "キャニー",
+      "inputs": {
+        "high_threshold": {
+          "name": "高閾値"
+        },
+        "image": {
+          "name": "画像"
+        },
+        "low_threshold": {
+          "name": "低閾値"
+        }
+      }
     },
     "CheckpointLoader": {
-      "display_name": "設定でチェックポイントを読み込む（非推奨）"
+      "display_name": "設定でチェックポイントを読み込む（非推奨）",
+      "inputs": {
+        "ckpt_name": {
+          "name": "チェックポイント名"
+        },
+        "config_name": {
+          "name": "設定名"
+        }
+      }
     },
     "CheckpointLoaderSimple": {
       "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは潜在変数のノイズを除去するために使用されます。",
       "display_name": "チェックポイントを読み込む",
       "inputs": {
         "ckpt_name": {
+          "name": "チェックポイント名",
           "tooltip": "読み込むチェックポイント（モデル）の名前。"
         }
       },
@@ -451,7 +532,21 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "チェックポイントを保存"
+      "display_name": "チェックポイントを保存",
+      "inputs": {
+        "clip": {
+          "name": "clip"
+        },
+        "filename_prefix": {
+          "name": "ファイル名プレフィックス"
+        },
+        "model": {
+          "name": "モデル"
+        },
+        "vae": {
+          "name": "vae"
+        }
+      }
     },
     "CombineHooks2": {
       "display_name": "フックを組み合わせる [2]"

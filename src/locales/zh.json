@@ -347,19 +347,80 @@
       }
     },
     "AlignYourStepsScheduler": {
-      "display_name": "对齐步骤调度器"
+      "display_name": "对齐步骤调度器",
+      "inputs": {
+        "denoise": {
+          "name": "去噪"
+        },
+        "model_type": {
+          "name": "模型类型"
+        },
+        "steps": {
+          "name": "步骤"
+        }
+      }
     },
     "BasicGuider": {
-      "display_name": "基本引导器"
+      "display_name": "基本引导器",
+      "inputs": {
+        "conditioning": {
+          "name": "条件"
+        },
+        "model": {
+          "name": "模型"
+        }
+      }
     },
     "BasicScheduler": {
-      "display_name": "基本调度器"
+      "display_name": "基本调度器",
+      "inputs": {
+        "denoise": {
+          "name": "去噪"
+        },
+        "model": {
+          "name": "模型"
+        },
+        "scheduler": {
+          "name": "调度器"
+        },
+        "steps": {
+          "name": "步骤"
+        }
+      }
     },
     "BetaSamplingScheduler": {
-      "display_name": "贝塔采样调度器"
+      "display_name": "贝塔采样调度器",
+      "inputs": {
+        "alpha": {
+          "name": "阿尔法"
+        },
+        "beta": {
+          "name": "贝塔"
+        },
+        "model": {
+          "name": "模型"
+        },
+        "steps": {
+          "name": "步骤"
+        }
+      }
     },
     "CFGGuider": {
-      "display_name": "CFG引导器"
+      "display_name": "CFG引导器",
+      "inputs": {
+        "cfg": {
+          "name": "CFG"
+        },
+        "model": {
+          "name": "模型"
+        },
+        "negative": {
+          "name": "负面"
+        },
+        "positive": {
+          "name": "正面"
+        }
+      }
     },
     "CLIPAttentionMultiply": {
       "display_name": "CLIP注意力乘法"
@@ -425,16 +486,36 @@
       "display_name": "加载CLIP视觉"
     },
     "Canny": {
-      "display_name": "Canny边缘检测"
+      "display_name": "Canny边缘检测",
+      "inputs": {
+        "high_threshold": {
+          "name": "高阈值"
+        },
+        "image": {
+          "name": "图像"
+        },
+        "low_threshold": {
+          "name": "低阈值"
+        }
+      }
     },
     "CheckpointLoader": {
-      "display_name": "加载检查点配置（已弃用）"
+      "display_name": "加载检查点配置（已弃用）",
+      "inputs": {
+        "ckpt_name": {
+          "name": "检查点名称"
+        },
+        "config_name": {
+          "name": "配置名称"
+        }
+      }
     },
     "CheckpointLoaderSimple": {
       "description": "加载扩散模型检查点，扩散模型用于去噪潜在图像。",
       "display_name": "加载检查点",
       "inputs": {
         "ckpt_name": {
+          "name": "检查点名称",
           "tooltip": "要加载的检查点（模型）的名称。"
         }
       },
@@ -451,7 +532,21 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "保存检查点"
+      "display_name": "保存检查点",
+      "inputs": {
+        "clip": {
+          "name": "clip"
+        },
+        "filename_prefix": {
+          "name": "文件名前缀"
+        },
+        "model": {
+          "name": "模型"
+        },
+        "vae": {
+          "name": "vae"
+        }
+      }
     },
     "CombineHooks2": {
       "display_name": "组合钩子 [2]"

@@ -347,19 +347,80 @@
       }
     },
     "AlignYourStepsScheduler": {
-      "display_name": "Планировщик выравнивания шагов"
+      "display_name": "Планировщик выравнивания шагов",
+      "inputs": {
+        "denoise": {
+          "name": "уменьшение_шума"
+        },
+        "model_type": {
+          "name": "тип_модели"
+        },
+        "steps": {
+          "name": "шаги"
+        }
+      }
     },
     "BasicGuider": {
-      "display_name": "Основной гид"
+      "display_name": "Основной гид",
+      "inputs": {
+        "conditioning": {
+          "name": "условие"
+        },
+        "model": {
+          "name": "модель"
+        }
+      }
     },
     "BasicScheduler": {
-      "display_name": "Основной планировщик"
+      "display_name": "Основной планировщик",
+      "inputs": {
+        "denoise": {
+          "name": "уменьшение_шума"
+        },
+        "model": {
+          "name": "модель"
+        },
+        "scheduler": {
+          "name": "расписание"
+        },
+        "steps": {
+          "name": "шаги"
+        }
+      }
     },
     "BetaSamplingScheduler": {
-      "display_name": "Планировщик выборки Бета"
+      "display_name": "Планировщик выборки Бета",
+      "inputs": {
+        "alpha": {
+          "name": "альфа"
+        },
+        "beta": {
+          "name": "бета"
+        },
+        "model": {
+          "name": "модель"
+        },
+        "steps": {
+          "name": "шаги"
+        }
+      }
     },
     "CFGGuider": {
-      "display_name": "CFG Гид"
+      "display_name": "CFG Гид",
+      "inputs": {
+        "cfg": {
+          "name": "cfg"
+        },
+        "model": {
+          "name": "модель"
+        },
+        "negative": {
+          "name": "отрицательный"
+        },
+        "positive": {
+          "name": "положительный"
+        }
+      }
     },
     "CLIPAttentionMultiply": {
       "display_name": "Умножение внимания CLIP"
@@ -425,16 +486,36 @@
       "display_name": "Загрузить видение CLIP"
     },
     "Canny": {
-      "display_name": "Канни"
+      "display_name": "Канни",
+      "inputs": {
+        "high_threshold": {
+          "name": "высокий_порог"
+        },
+        "image": {
+          "name": "изображение"
+        },
+        "low_threshold": {
+          "name": "низкий_порог"
+        }
+      }
     },
     "CheckpointLoader": {
-      "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)"
+      "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)",
+      "inputs": {
+        "ckpt_name": {
+          "name": "имя_чека"
+        },
+        "config_name": {
+          "name": "имя_конфигурации"
+        }
+      }
     },
     "CheckpointLoaderSimple": {
       "description": "Загружает контрольную точку модели диффузии, модели диффузии используются для удаления шума из латентов.",
       "display_name": "Загрузить контрольную точку",
       "inputs": {
         "ckpt_name": {
+          "name": "имя_чека",
           "tooltip": "Имя контрольной точки (модели) для загрузки."
         }
       },
@@ -451,7 +532,21 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "Сохранить контрольную точку"
+      "display_name": "Сохранить контрольную точку",
+      "inputs": {
+        "clip": {
+          "name": "clip"
+        },
+        "filename_prefix": {
+          "name": "префикс_имени_файла"
+        },
+        "model": {
+          "name": "модель"
+        },
+        "vae": {
+          "name": "vae"
+        }
+      }
     },
     "CombineHooks2": {
       "display_name": "Объединить хуки [2]"
