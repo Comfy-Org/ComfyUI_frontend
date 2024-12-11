@@ -4,13 +4,25 @@ import zh from './locales/zh/main.json'
 import ru from './locales/ru/main.json'
 import ja from './locales/ja/main.json'
 import ko from './locales/ko/main.json'
+import enNodes from './locales/en/nodes.json'
+import zhNodes from './locales/zh/nodes.json'
+import ruNodes from './locales/ru/nodes.json'
+import jaNodes from './locales/ja/nodes.json'
+import koNodes from './locales/ko/nodes.json'
+
+function buildLocale(main: typeof en, nodes: typeof enNodes) {
+  return {
+    ...main,
+    nodeDefs: nodes
+  }
+}
 
 const messages = {
-  en: en,
-  zh: zh,
-  ru: ru,
-  ja: ja,
-  ko: ko
+  en: buildLocale(en, enNodes),
+  zh: buildLocale(zh, zhNodes),
+  ru: buildLocale(ru, ruNodes),
+  ja: buildLocale(ja, jaNodes),
+  ko: buildLocale(ko, koNodes)
 }
 
 export const i18n = createI18n({
@@ -35,6 +47,6 @@ export const { t, te } = i18n.global
  * @param key - The key to translate.
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
-export function st(key: string, fallbackMessage: string) {
+export function st(key: string, fallbackMessage: string): string {
   return te(key) ? t(key) : fallbackMessage
 }
