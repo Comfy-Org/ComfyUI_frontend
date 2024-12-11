@@ -137,16 +137,14 @@ test('collect-i18n', async ({ comfyPage }) => {
       })
       .sort((a, b) => a[0].localeCompare(b[0]))
   )
-  /**
-   * Limit the number of nodes to translate. This is to avoid large chunk size
-   * translation, which has higher chance of failing.
-   */
-  const NODE_LIMIT = 10
 
-  function extractInputs(nodeDef: ComfyNodeDefImpl, nodeIndex: number) {
+  function extractInputs(nodeDef: ComfyNodeDefImpl) {
     const inputs = Object.fromEntries(
       nodeDef.inputs.all.flatMap((input) => {
-        const name = nodeIndex < NODE_LIMIT ? input.name : undefined
+        // TODO(huchenlei): translate input name. Somehow `CLIPAttentionMultiply` will
+        // cause all subsequent translations to fail (Raw english values
+        // are generated).
+        const name = undefined
         const tooltip = input.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -167,16 +165,11 @@ test('collect-i18n', async ({ comfyPage }) => {
     return Object.keys(inputs).length > 0 ? inputs : undefined
   }
 
-  function extractOutputs(nodeDef: ComfyNodeDefImpl, nodeIndex: number) {
+  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
     const outputs = Object.fromEntries(
       nodeDef.outputs.all.flatMap((output, i) => {
         // Ignore data types if they are already translated in allDataTypesLocale.
-        const name =
-          output.name in allDataTypesLocale
-            ? undefined
-            : nodeIndex < NODE_LIMIT
-              ? output.name
-              : undefined
+        const name = output.name in allDataTypesLocale ? undefined : output.name
         const tooltip = output.tooltip
 
         if (name === undefined && tooltip === undefined) {
@@ -205,8 +198,8 @@ test('collect-i18n', async ({ comfyPage }) => {
         {
           display_name: nodeDef.display_name ?? nodeDef.name,
           description: nodeDef.description || undefined,
-          inputs: extractInputs(nodeDef, i),
-          outputs: extractOutputs(nodeDef, i)
+          inputs: extractInputs(nodeDef),
+          outputs: extractOutputs(nodeDef)
         }
       ])
   )

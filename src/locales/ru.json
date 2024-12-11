@@ -330,97 +330,22 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "Добавить шум",
-      "inputs": {
-        "latent_image": {
-          "name": "латентное_изображение"
-        },
-        "model": {
-          "name": "модель"
-        },
-        "noise": {
-          "name": "шум"
-        },
-        "sigmas": {
-          "name": "сигмы"
-        }
-      }
+      "display_name": "Добавить шум"
     },
     "AlignYourStepsScheduler": {
-      "display_name": "Планировщик выравнивания шагов",
-      "inputs": {
-        "denoise": {
-          "name": "уменьшение_шума"
-        },
-        "model_type": {
-          "name": "тип_модели"
-        },
-        "steps": {
-          "name": "шаги"
-        }
-      }
+      "display_name": "Планировщик выравнивания шагов"
     },
     "BasicGuider": {
-      "display_name": "Основной гид",
-      "inputs": {
-        "conditioning": {
-          "name": "условие"
-        },
-        "model": {
-          "name": "модель"
-        }
-      }
+      "display_name": "Основной гид"
     },
     "BasicScheduler": {
-      "display_name": "Основной планировщик",
-      "inputs": {
-        "denoise": {
-          "name": "уменьшение_шума"
-        },
-        "model": {
-          "name": "модель"
-        },
-        "scheduler": {
-          "name": "расписание"
-        },
-        "steps": {
-          "name": "шаги"
-        }
-      }
+      "display_name": "Основной планировщик"
     },
     "BetaSamplingScheduler": {
-      "display_name": "Планировщик выборки Бета",
-      "inputs": {
-        "alpha": {
-          "name": "альфа"
-        },
-        "beta": {
-          "name": "бета"
-        },
-        "model": {
-          "name": "модель"
-        },
-        "steps": {
-          "name": "шаги"
-        }
-      }
+      "display_name": "Планировщик выборки Бета"
     },
     "CFGGuider": {
-      "display_name": "CFG Гид",
-      "inputs": {
-        "cfg": {
-          "name": "cfg"
-        },
-        "model": {
-          "name": "модель"
-        },
-        "negative": {
-          "name": "отрицательный"
-        },
-        "positive": {
-          "name": "положительный"
-        }
-      }
+      "display_name": "CFG Гид"
     },
     "CLIPAttentionMultiply": {
       "display_name": "Умножение внимания CLIP"
@@ -486,36 +411,16 @@
       "display_name": "Загрузить видение CLIP"
     },
     "Canny": {
-      "display_name": "Канни",
-      "inputs": {
-        "high_threshold": {
-          "name": "высокий_порог"
-        },
-        "image": {
-          "name": "изображение"
-        },
-        "low_threshold": {
-          "name": "низкий_порог"
-        }
-      }
+      "display_name": "Канни"
     },
     "CheckpointLoader": {
-      "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)",
-      "inputs": {
-        "ckpt_name": {
-          "name": "имя_чека"
-        },
-        "config_name": {
-          "name": "имя_конфигурации"
-        }
-      }
+      "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)"
     },
     "CheckpointLoaderSimple": {
       "description": "Загружает контрольную точку модели диффузии, модели диффузии используются для удаления шума из латентов.",
       "display_name": "Загрузить контрольную точку",
       "inputs": {
         "ckpt_name": {
-          "name": "имя_чека",
           "tooltip": "Имя контрольной точки (модели) для загрузки."
         }
       },
@@ -532,21 +437,7 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "Сохранить контрольную точку",
-      "inputs": {
-        "clip": {
-          "name": "clip"
-        },
-        "filename_prefix": {
-          "name": "префикс_имени_файла"
-        },
-        "model": {
-          "name": "модель"
-        },
-        "vae": {
-          "name": "vae"
-        }
-      }
+      "display_name": "Сохранить контрольную точку"
     },
     "CombineHooks2": {
       "display_name": "Объединить хуки [2]"
@@ -591,7 +482,15 @@
       "display_name": "Установить диапазон временных шагов кондиционирования"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "Диапазон временных шагов"
+      "display_name": "Диапазон временных шагов",
+      "outputs": {
+        "1": {
+          "name": "ДО_ДИАПАЗОНА"
+        },
+        "2": {
+          "name": "ПОСЛЕ_ДИАПАЗОНА"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "Обнуление кондиционирования"
@@ -600,25 +499,64 @@
       "display_name": "Применить ControlNet (СТАРОЕ)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "Применить ControlNet"
+      "display_name": "Применить ControlNet",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "Применить ControlNet с VAE"
+      "display_name": "Применить ControlNet с VAE",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "Применить ControlNet для инпейнтинга AliMama"
+      "display_name": "Применить ControlNet для инпейнтинга AliMama",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "Загрузить модель ControlNet"
     },
     "CreateHookKeyframe": {
-      "display_name": "Создать ключевой кадр хука"
+      "display_name": "Создать ключевой кадр хука",
+      "outputs": {
+        "0": {
+          "name": "КЛЮЧЕВОЙ_КАДР"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "Создать ключевые кадры хука из чисел с плавающей запятой"
+      "display_name": "Создать ключевые кадры хука из чисел с плавающей запятой",
+      "outputs": {
+        "0": {
+          "name": "КЛЮЧЕВОЙ_КАДР"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "Создать интерполированные ключевые кадры хука"
+      "display_name": "Создать интерполированные ключевые кадры хука",
+      "outputs": {
+        "0": {
+          "name": "КЛЮЧЕВОЙ_КАДР"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "Создать хук LoRA"
@@ -669,7 +607,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "Узел с выходным списком",
-      "display_name": "Узел с выходным списком"
+      "display_name": "Узел с выходным списком",
+      "outputs": {
+        "0": {
+          "name": "ЦЕЛОЧИСЛЬНЫЙ_ВЫХОД"
+        },
+        "1": {
+          "name": "СПИСОК_ЦЕЛЫХ_ЧИСЕЛ"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "description": "Узел со строковым вводом",
@@ -834,10 +780,32 @@
         "noise_mask": {
           "tooltip": "Добавьте маску шума к латентному изображению, чтобы выборка происходила только в пределах маски. Это может улучшить результаты или полностью испортить их в зависимости от модели."
         }
+      },
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "Кондиционирование PixToPix"
+      "display_name": "Кондиционирование PixToPix",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "Инвертировать маску"
@@ -896,13 +864,32 @@
       "display_name": "Планировщик Карраса"
     },
     "LTXVConditioning": {
-      "display_name": "Кондиционирование LTXV"
+      "display_name": "Кондиционирование LTXV",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "LTXVImgToVideo": {
       "display_name": "LTXVImgToVideo",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "Количество шума, применяемого к латентному изображению."
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
         }
       }
     },
@@ -1114,16 +1101,48 @@
       "display_name": "Морфология изображения"
     },
     "PairConditioningCombine": {
-      "display_name": "Объединение пар кондиционирования"
+      "display_name": "Объединение пар кондиционирования",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "Установить значение по умолчанию для объединения пар кондиционирования"
+      "display_name": "Установить значение по умолчанию для объединения пар кондиционирования",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "Установить свойства пар кондиционирования"
+      "display_name": "Установить свойства пар кондиционирования",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "Установить свойства пар кондиционирования и объединить"
+      "display_name": "Установить свойства пар кондиционирования и объединить",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "Добавить уменьшение модели патча (Kohya Deep Shrink)"
@@ -1178,19 +1197,68 @@
       "display_name": "Планировщик SDTurbo"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4XUpscale_Conditioning"
+      "display_name": "SD_4XUpscale_Conditioning",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D_Кондиционирование"
+      "display_name": "SV3D_Кондиционирование",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid_Кондиционирование"
+      "display_name": "SVD_img2vid_Кондиционирование",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "SamplerCustom": {
-      "display_name": "Пользовательский выборщик"
+      "display_name": "Пользовательский выборщик",
+      "outputs": {
+        "0": {
+          "name": "выход"
+        },
+        "1": {
+          "name": "очищенный_выход"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "Пользовательский выборщик (Расширенный)"
+      "display_name": "Пользовательский выборщик (Расширенный)",
+      "outputs": {
+        "0": {
+          "name": "выход"
+        },
+        "1": {
+          "name": "очищенный_выход"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "Адаптивный выборщик DPM"
@@ -1279,28 +1347,93 @@
       "display_name": "Разделить изображение с альфа-каналом"
     },
     "SplitSigmas": {
-      "display_name": "Разделить сигмы"
+      "display_name": "Разделить сигмы",
+      "outputs": {
+        "0": {
+          "name": "высокие_сигмы"
+        },
+        "1": {
+          "name": "низкие_сигмы"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "Разделить сигмы для удаления шума"
+      "display_name": "Разделить сигмы для удаления шума",
+      "outputs": {
+        "0": {
+          "name": "высокие_сигмы"
+        },
+        "1": {
+          "name": "низкие_сигмы"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade_Пустое латентное изображение"
+      "display_name": "StableCascade_Пустое латентное изображение",
+      "outputs": {
+        "0": {
+          "name": "этап_c"
+        },
+        "1": {
+          "name": "этап_b"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascade_Этап B_Кондиционирование"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_Этап C_VAE Кодирование"
+      "display_name": "StableCascade_Этап C_VAE Кодирование",
+      "outputs": {
+        "0": {
+          "name": "этап_c"
+        },
+        "1": {
+          "name": "этап_b"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade_Суперразрешение Controlnet"
+      "display_name": "StableCascade_Суперразрешение Controlnet",
+      "outputs": {
+        "0": {
+          "name": "вход_controlnet"
+        },
+        "1": {
+          "name": "этап_c"
+        },
+        "2": {
+          "name": "этап_b"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123_Кондиционирование"
+      "display_name": "StableZero123_Кондиционирование",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123_Кондиционирование_Пакетное"
+      "display_name": "StableZero123_Кондиционирование_Пакетное",
+      "outputs": {
+        "0": {
+          "name": "положительный"
+        },
+        "1": {
+          "name": "отрицательный"
+        },
+        "2": {
+          "name": "латентный"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "Применить модель стиля"

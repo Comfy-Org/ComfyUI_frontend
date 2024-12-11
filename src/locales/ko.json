@@ -313,97 +313,22 @@
   },
   "nodeDefs": {
     "AddNoise": {
-      "display_name": "노이즈 추가",
-      "inputs": {
-        "latent_image": {
-          "name": "잠재_이미지"
-        },
-        "model": {
-          "name": "모델"
-        },
-        "noise": {
-          "name": "노이즈"
-        },
-        "sigmas": {
-          "name": "시그마"
-        }
-      }
+      "display_name": "노이즈 추가"
     },
     "AlignYourStepsScheduler": {
-      "display_name": "AlignYourSteps 스케쥴러",
-      "inputs": {
-        "denoise": {
-          "name": "노이즈 제거"
-        },
-        "model_type": {
-          "name": "모델 유형"
-        },
-        "steps": {
-          "name": "단계"
-        }
-      }
+      "display_name": "AlignYourSteps 스케쥴러"
     },
     "BasicGuider": {
-      "display_name": "기본 가이드",
-      "inputs": {
-        "conditioning": {
-          "name": "조건"
-        },
-        "model": {
-          "name": "모델"
-        }
-      }
+      "display_name": "기본 가이드"
     },
     "BasicScheduler": {
-      "display_name": "기본 스케줄러",
-      "inputs": {
-        "denoise": {
-          "name": "노이즈 제거"
-        },
-        "model": {
-          "name": "모델"
-        },
-        "scheduler": {
-          "name": "스케줄러"
-        },
-        "steps": {
-          "name": "단계"
-        }
-      }
+      "display_name": "기본 스케줄러"
     },
     "BetaSamplingScheduler": {
-      "display_name": "베타 샘플링 스케줄러",
-      "inputs": {
-        "alpha": {
-          "name": "알파"
-        },
-        "beta": {
-          "name": "베타"
-        },
-        "model": {
-          "name": "모델"
-        },
-        "steps": {
-          "name": "단계"
-        }
-      }
+      "display_name": "베타 샘플링 스케줄러"
     },
     "CFGGuider": {
-      "display_name": "CFG 가이드",
-      "inputs": {
-        "cfg": {
-          "name": "CFG"
-        },
-        "model": {
-          "name": "모델"
-        },
-        "negative": {
-          "name": "부정"
-        },
-        "positive": {
-          "name": "긍정"
-        }
-      }
+      "display_name": "CFG 가이드"
     },
     "CLIPAttentionMultiply": {
       "display_name": "CLIP 어텐션 곱하기"
@@ -469,36 +394,16 @@
       "display_name": "CLIP 비전 로드"
     },
     "Canny": {
-      "display_name": "Canny 경계 필터",
-      "inputs": {
-        "high_threshold": {
-          "name": "상한 임계값"
-        },
-        "image": {
-          "name": "이미지"
-        },
-        "low_threshold": {
-          "name": "하한 임계값"
-        }
-      }
+      "display_name": "Canny 경계 필터"
     },
     "CheckpointLoader": {
-      "display_name": "구성으로 체크포인트 로드 (지원 중단)",
-      "inputs": {
-        "ckpt_name": {
-          "name": "체크포인트 이름"
-        },
-        "config_name": {
-          "name": "구성 이름"
-        }
-      }
+      "display_name": "구성으로 체크포인트 로드 (지원 중단)"
     },
     "CheckpointLoaderSimple": {
       "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
       "display_name": "체크포인트 로드",
       "inputs": {
         "ckpt_name": {
-          "name": "체크포인트 이름",
           "tooltip": "로드할 체크포인트(모델)의 이름입니다."
         }
       },
@@ -515,21 +420,7 @@
       }
     },
     "CheckpointSave": {
-      "display_name": "체크포인트 저장",
-      "inputs": {
-        "clip": {
-          "name": "clip"
-        },
-        "filename_prefix": {
-          "name": "파일 이름 접두사"
-        },
-        "model": {
-          "name": "모델"
-        },
-        "vae": {
-          "name": "vae"
-        }
-      }
+      "display_name": "체크포인트 저장"
     },
     "CombineHooks2": {
       "display_name": "후크 결합 [2]"
@@ -574,7 +465,15 @@
       "display_name": "조건 (타임스텝 범위 설정)"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "조건 (타임스텝 범위)"
+      "display_name": "조건 (타임스텝 범위)",
+      "outputs": {
+        "1": {
+          "name": "범위_이전"
+        },
+        "2": {
+          "name": "범위_이후"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "조건 (제로 아웃)"
@@ -583,25 +482,64 @@
       "display_name": "컨트롤넷 적용 (구형)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "컨트롤넷 적용"
+      "display_name": "컨트롤넷 적용",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "컨트롤넷을 VAE와 함께 적용"
+      "display_name": "컨트롤넷을 VAE와 함께 적용",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "컨트롤넷 인페인팅 AliMama 적용"
+      "display_name": "컨트롤넷 인페인팅 AliMama 적용",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "컨트롤넷 모델 로드"
     },
     "CreateHookKeyframe": {
-      "display_name": "후크 키프레임 생성"
+      "display_name": "후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "후크_KF"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "부동 소수점으로 후크 키프레임 생성"
+      "display_name": "부동 소수점으로 후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "후크_KF"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "보간된 후크 키프레임 생성"
+      "display_name": "보간된 후크 키프레임 생성",
+      "outputs": {
+        "0": {
+          "name": "후크_KF"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "후크 LoRA 생성"
@@ -652,7 +590,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "출력 목록이 있는 노드",
-      "display_name": "출력 목록이 있는 노드"
+      "display_name": "출력 목록이 있는 노드",
+      "outputs": {
+        "0": {
+          "name": "정수 출력"
+        },
+        "1": {
+          "name": "정수 목록 출력"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "description": "문자열 입력이 있는 노드",
@@ -817,10 +763,32 @@
         "noise_mask": {
           "tooltip": "잠재에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
         }
+      },
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "픽셀 간 조건 설정"
+      "display_name": "픽셀 간 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "마스크 반전"
@@ -879,13 +847,32 @@
       "display_name": "Karras 스케줄러"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV 조건 설정"
+      "display_name": "LTXV 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV 이미지에서 비디오로",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "조건 이미지 잠재에 적용할 노이즈의 양입니다."
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
         }
       }
     },
@@ -1097,16 +1084,48 @@
       "display_name": "이미지 형태 변환"
     },
     "PairConditioningCombine": {
-      "display_name": "조건 쌍 (결합)"
+      "display_name": "조건 쌍 (결합)",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "조건 쌍 (기본 결합 설정)"
+      "display_name": "조건 쌍 (기본 결합 설정)",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "조건 쌍 (속성 설정)"
+      "display_name": "조건 쌍 (속성 설정)",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "조건 쌍 (속성 설정 및 결합)"
+      "display_name": "조건 쌍 (속성 설정 및 결합)",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)"
@@ -1161,19 +1180,68 @@
       "display_name": "SD-Turbo 스케줄러"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X 확대 조건 설정"
+      "display_name": "SD_4X 확대 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D 조건 설정"
+      "display_name": "SV3D 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid 조건 설정"
+      "display_name": "SVD_img2vid 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "SamplerCustom": {
-      "display_name": "사용자 정의 샘플러"
+      "display_name": "사용자 정의 샘플러",
+      "outputs": {
+        "0": {
+          "name": "출력"
+        },
+        "1": {
+          "name": "노이즈 제거된 출력"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "고급 사용자 정의 샘플러"
+      "display_name": "고급 사용자 정의 샘플러",
+      "outputs": {
+        "0": {
+          "name": "출력"
+        },
+        "1": {
+          "name": "노이즈 제거된 출력"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "DPMAdaptive 샘플러"
@@ -1262,28 +1330,93 @@
       "display_name": "이미지와 알파채널 분리"
     },
     "SplitSigmas": {
-      "display_name": "시그마 분할 (스텝형)"
+      "display_name": "시그마 분할 (스텝형)",
+      "outputs": {
+        "0": {
+          "name": "높은_시그마"
+        },
+        "1": {
+          "name": "낮은_시그마"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "시그마 분할 (디노이즈형)"
+      "display_name": "시그마 분할 (디노이즈형)",
+      "outputs": {
+        "0": {
+          "name": "높은_시그마"
+        },
+        "1": {
+          "name": "낮은_시그마"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade 빈 잠재 이미지"
+      "display_name": "StableCascade 빈 잠재 이미지",
+      "outputs": {
+        "0": {
+          "name": "단계_c"
+        },
+        "1": {
+          "name": "단계_b"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascasde_StageB 조건 설정"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_StageC VAE 인코딩"
+      "display_name": "StableCascade_StageC VAE 인코딩",
+      "outputs": {
+        "0": {
+          "name": "단계_c"
+        },
+        "1": {
+          "name": "단계_b"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade 초고해상도 컨트롤넷"
+      "display_name": "StableCascade 초고해상도 컨트롤넷",
+      "outputs": {
+        "0": {
+          "name": "controlnet_input"
+        },
+        "1": {
+          "name": "단계_c"
+        },
+        "2": {
+          "name": "단계_b"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123 조건 설정"
+      "display_name": "StableZero123 조건 설정",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123 조건 설정_배치"
+      "display_name": "StableZero123 조건 설정_배치",
+      "outputs": {
+        "0": {
+          "name": "양성"
+        },
+        "1": {
+          "name": "음성"
+        },
+        "2": {
+          "name": "잠재"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "스타일 모델 적용"
