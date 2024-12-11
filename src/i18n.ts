@@ -1,22 +1,25 @@
 import { createI18n } from 'vue-i18n'
-import en from './locales/en/en.json'
-import zh from './locales/zh/zh.json'
-import ru from './locales/ru/ru.json'
-import ja from './locales/ja/ja.json'
-import ko from './locales/ko/ko.json'
+import en from './locales/en/main.json'
+import zh from './locales/zh/main.json'
+import ru from './locales/ru/main.json'
+import ja from './locales/ja/main.json'
+import ko from './locales/ko/main.json'
+
+const messages = {
+  en: en,
+  zh: zh,
+  ru: ru,
+  ja: ja,
+  ko: ko
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
   legacy: false,
   locale: navigator.language.split('-')[0] || 'en',
   fallbackLocale: 'en',
-  messages: {
-    en,
-    zh,
-    ru,
-    ja,
-    ko
-  },
+  messages,
+
   // Ignore warnings for locale options as each option is in its own language.
   // e.g. "English", "中文", "Русский", "日本語", "한국어"
   missingWarn: /^(?!settingsDialog\.Comfy_Locale\.options\.).+/,
