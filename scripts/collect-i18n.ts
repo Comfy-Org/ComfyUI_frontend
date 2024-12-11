@@ -9,6 +9,8 @@ import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
 
 const localePath = './src/locales/en/main.json'
+const nodeDefsPath = './src/locales/en/nodeDefs.json'
+
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
   for (const [category, _] of CORE_MENU_COMMANDS) {
@@ -227,7 +229,6 @@ test('collect-i18n', async ({ comfyPage }) => {
         },
         serverConfigItems: allServerConfigsLocale,
         serverConfigCategories: allServerConfigCategoriesLocale,
-        nodeDefs: allNodeDefsLocale,
         dataTypes: allDataTypesLocale,
         nodeCategories: allNodeCategoriesLocale
       },
@@ -235,4 +236,6 @@ test('collect-i18n', async ({ comfyPage }) => {
       2
     )
   )
+
+  fs.writeFileSync(nodeDefsPath, JSON.stringify(allNodeDefsLocale, null, 2))
 })
