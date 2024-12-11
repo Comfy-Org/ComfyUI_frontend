@@ -1,9 +1,9 @@
 import { createI18n } from 'vue-i18n'
-import en from './locales/en.json'
-import zh from './locales/zh.json'
-import ru from './locales/ru.json'
-import ja from './locales/ja.json'
-import ko from './locales/ko.json'
+import en from './locales/en/en.json'
+import zh from './locales/zh/zh.json'
+import ru from './locales/ru/ru.json'
+import ja from './locales/ja/ja.json'
+import ko from './locales/ko/ko.json'
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2
