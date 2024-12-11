@@ -2,11 +2,7 @@
   <div
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper
-      class="mt-[5vh] 2xl:mt-[20vh]"
-      value="0"
-      @update:value="setHighestStep"
-    >
+    <Stepper class="stepper" value="0" @update:value="setHighestStep">
       <StepList>
         <Step value="0">
           {{ $t('install.gpu') }}
@@ -157,5 +153,9 @@ const install = () => {
 <style lang="postcss" scoped>
 :deep(.p-steppanel) {
   @apply bg-transparent;
+}
+
+.stepper {
+  margin-top: max(1rem, max(0px, calc((100vh - 42rem) * 0.5)));
 }
 </style>
