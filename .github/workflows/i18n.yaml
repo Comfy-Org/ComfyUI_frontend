@@ -22,7 +22,8 @@ jobs:
         PLAYWRIGHT_TEST_URL: http://localhost:5173
       working-directory: ComfyUI_frontend
     - name: Update translations
-      run: npm run locale
+      # Pipe output so that it doesn't error out on stdout.clearLine
+      run: npm run locale 2>&1 | cat
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       working-directory: ComfyUI_frontend
