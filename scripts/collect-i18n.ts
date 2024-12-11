@@ -3,10 +3,10 @@ import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
+import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
-import type { ComfyNodeDef } from '../src/types/apiTypes'
 
 const localePath = './src/locales/en.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
@@ -111,56 +111,105 @@ test('collect-i18n', async ({ comfyPage }) => {
   )
 
   // Node Definitions
-  const nodeDefs = (await comfyPage.page.evaluate(async () => {
-    const api = window['app'].api as ComfyApi
-    return await api.getNodeDefs()
-  })) as Record<string, ComfyNodeDef>
+  const nodeDefs: ComfyNodeDefImpl[] = Object.values(
+    await comfyPage.page.evaluate(async () => {
+      const api = window['app'].api as ComfyApi
+      return await api.getNodeDefs()
+    })
+  ).map((def) => new ComfyNodeDefImpl(def))
+
+  console.log(`Collected ${nodeDefs.length} node definitions`)
+
+  const allDataTypesLocale = Object.fromEntries(
+    nodeDefs
+      .flatMap((nodeDef) => {
+        const inputDataTypes = Object.values(nodeDef.inputs.all).map(
+          (inputSpec) => inputSpec.type
+        )
+        const outputDataTypes = nodeDef.outputs.all.map((output) => output.type)
+        const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
+          (type: string) => type.split(',')
+        )
+        return allDataTypes.map((dataType) => [
+          normalizeI18nKey(dataType),
+          dataType
+        ])
+      })
+      .sort((a, b) => a[0].localeCompare(b[0]))
+  )
+
+  function extractInputs(nodeDef: ComfyNodeDefImpl) {
+    const inputs = Object.fromEntries(
+      nodeDef.inputs.all.flatMap((input) => {
+        // TODO(huchenlei): translate input name. Somehow `CLIPAttentionMultiply` will
+        // cause all subsequent translations to fail (Raw english values
+        // are generated).
+        const name = undefined
+        const tooltip = input.tooltip
+
+        if (name === undefined && tooltip === undefined) {
+          return []
+        }
+
+        return [
+          [
+            normalizeI18nKey(input.name),
+            {
+              name,
+              tooltip
+            }
+          ]
+        ]
+      })
+    )
+    return Object.keys(inputs).length > 0 ? inputs : undefined
+  }
+
+  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
+    const outputs = Object.fromEntries(
+      nodeDef.outputs.all.flatMap((output, i) => {
+        // Ignore data types if they are already translated in allDataTypesLocale.
+        const name = output.name in allDataTypesLocale ? undefined : output.name
+        const tooltip = output.tooltip
+
+        if (name === undefined && tooltip === undefined) {
+          return []
+        }
+
+        return [
+          [
+            i.toString(),
+            {
+              name,
+              tooltip
+            }
+          ]
+        ]
+      })
+    )
+    return Object.keys(outputs).length > 0 ? outputs : undefined
+  }
 
   const allNodeDefsLocale = Object.fromEntries(
-    Object.values(nodeDefs)
+    nodeDefs
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((nodeDef) => [
         normalizeI18nKey(nodeDef.name),
         {
           display_name: nodeDef.display_name ?? nodeDef.name,
-          description: nodeDef.description || undefined
+          description: nodeDef.description || undefined,
+          inputs: extractInputs(nodeDef),
+          outputs: extractOutputs(nodeDef)
         }
       ])
   )
 
   const allNodeCategoriesLocale = Object.fromEntries(
-    Object.values(nodeDefs).flatMap((nodeDef) =>
+    nodeDefs.flatMap((nodeDef) =>
       nodeDef.category
         .split('/')
         .map((category) => [normalizeI18nKey(category), category])
     )
-  )
-
-  const allDataTypesLocale = Object.fromEntries(
-    Object.values(nodeDefs).flatMap((nodeDef) => {
-      const inputs = nodeDef.input ?? {}
-      const requiredInputs = inputs.required ?? {}
-      const optionalInputs = inputs.optional ?? {}
-      const allInputs = {
-        ...requiredInputs,
-        ...optionalInputs
-      }
-
-      const inputDataTypes = Object.values(allInputs).map((inputSpec) => {
-        const typeRaw = inputSpec[0]
-        const type = Array.isArray(typeRaw) ? 'COMBO' : typeRaw
-        return type
-      })
-      const outputDataTypes = nodeDef.output ?? []
-      const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
-        (type: string) => type.split(',')
-      )
-
-      return allDataTypes.map((dataType) => [
-        normalizeI18nKey(dataType),
-        dataType
-      ])
-    })
   )
 
   fs.writeFileSync(

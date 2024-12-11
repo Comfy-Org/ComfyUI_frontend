@@ -15,6 +15,8 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useEventListener } from '@vueuse/core'
+import { st } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
@@ -69,7 +71,11 @@ const onIdle = () => {
   )
   if (inputSlot !== -1) {
     const inputName = node.inputs[inputSlot].name
-    return showTooltip(nodeDef.inputs.getInput(inputName)?.tooltip)
+    const translatedTooltip = st(
+      `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(inputName)}.tooltip`,
+      nodeDef.inputs.getInput(inputName)?.tooltip
+    )
+    return showTooltip(translatedTooltip)
   }
 
   const outputSlot = canvas.isOverNodeOutput(
@@ -79,15 +85,22 @@ const onIdle = () => {
     [0, 0]
   )
   if (outputSlot !== -1) {
-    return showTooltip(nodeDef.outputs.all?.[outputSlot]?.tooltip)
+    const translatedTooltip = st(
+      `nodeDefs.${normalizeI18nKey(node.type)}.outputs.${outputSlot}.tooltip`,
+      nodeDef.outputs.all?.[outputSlot]?.tooltip
+    )
+    return showTooltip(translatedTooltip)
   }
 
   const widget = comfyApp.canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !widget.element) {
-    return showTooltip(
-      widget.tooltip ?? nodeDef.inputs.getInput(widget.name)?.tooltip
+    const translatedTooltip = st(
+      `nodeDefs.${normalizeI18nKey(node.type)}.inputs.${normalizeI18nKey(widget.name)}.tooltip`,
+      nodeDef.inputs.getInput(widget.name)?.tooltip
     )
+    // Widget tooltip can be set dynamically, current translation collection does not support this.
+    return showTooltip(widget.tooltip ?? translatedTooltip)
   }
 }
 

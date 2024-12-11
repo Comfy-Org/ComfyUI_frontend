@@ -371,7 +371,20 @@
     },
     "CLIPTextEncode": {
       "description": "使用CLIP模型对文本提示进行编码，生成可以引导扩散模型生成特定图像的嵌入。",
-      "display_name": "CLIP文本编码（提示）"
+      "display_name": "CLIP文本编码（提示）",
+      "inputs": {
+        "clip": {
+          "tooltip": "用于编码文本的 CLIP 模型。"
+        },
+        "text": {
+          "tooltip": "要编码的文本。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "包含嵌入文本的条件，用于引导扩散模型。"
+        }
+      }
     },
     "CLIPTextEncodeControlnet": {
       "display_name": "CLIP文本编码控制网"
@@ -405,7 +418,23 @@
     },
     "CheckpointLoaderSimple": {
       "description": "加载扩散模型检查点，扩散模型用于去噪潜在图像。",
-      "display_name": "加载检查点"
+      "display_name": "加载检查点",
+      "inputs": {
+        "ckpt_name": {
+          "tooltip": "要加载的检查点（模型）的名称。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "用于去噪潜在变量的模型。"
+        },
+        "1": {
+          "tooltip": "用于编码文本提示的CLIP模型。"
+        },
+        "2": {
+          "tooltip": "用于将图像编码和解码到潜在空间的VAE模型。"
+        }
+      }
     },
     "CheckpointSave": {
       "display_name": "保存检查点"
@@ -453,7 +482,15 @@
       "display_name": "条件设置时间步范围"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "时间步范围"
+      "display_name": "时间步范围",
+      "outputs": {
+        "1": {
+          "name": "范围前"
+        },
+        "2": {
+          "name": "范围后"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "条件零化"
@@ -462,25 +499,64 @@
       "display_name": "应用控制网（旧）"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "应用控制网"
+      "display_name": "应用控制网",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "应用控制网与VAE"
+      "display_name": "应用控制网与VAE",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "控制网修复AliMama应用"
+      "display_name": "控制网修复AliMama应用",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "加载控制网模型"
     },
     "CreateHookKeyframe": {
-      "display_name": "创建钩子关键帧"
+      "display_name": "创建钩子关键帧",
+      "outputs": {
+        "0": {
+          "name": "钩子关键帧"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "从浮点数创建钩子关键帧"
+      "display_name": "从浮点数创建钩子关键帧",
+      "outputs": {
+        "0": {
+          "name": "钩子关键帧"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "创建插值钩子关键帧"
+      "display_name": "创建插值钩子关键帧",
+      "outputs": {
+        "0": {
+          "name": "钩子关键帧"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "创建钩子LoRA"
@@ -531,7 +607,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "一个具有输出列表的节点",
-      "display_name": "具有输出列表的节点"
+      "display_name": "具有输出列表的节点",
+      "outputs": {
+        "0": {
+          "name": "整数输出"
+        },
+        "1": {
+          "name": "整数列表输出"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "description": "一个具有字符串输入的节点",
@@ -567,11 +651,32 @@
       "display_name": "空LTXV潜在视频"
     },
     "EmptyLatentAudio": {
-      "display_name": "空潜在音频"
+      "display_name": "空潜在音频",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "批次中的潜在图像数量。"
+        }
+      }
     },
     "EmptyLatentImage": {
       "description": "创建一批新的空潜在图像，以通过采样进行去噪。",
-      "display_name": "空潜在图像"
+      "display_name": "空潜在图像",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "批次中的潜在图像数量。"
+        },
+        "height": {
+          "tooltip": "潜在图像的高度（以像素为单位）。"
+        },
+        "width": {
+          "tooltip": "潜在图像的宽度（以像素为单位）。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "空的潜在图像批次。"
+        }
+      }
     },
     "EmptyMochiLatentVideo": {
       "display_name": "空Mochi潜在视频"
@@ -670,10 +775,37 @@
       "display_name": "使用模型放大图像"
     },
     "InpaintModelConditioning": {
-      "display_name": "修复模型条件"
+      "display_name": "修复模型条件",
+      "inputs": {
+        "noise_mask": {
+          "tooltip": "向潜在图像添加噪声掩码，以便采样仅在掩码内进行。根据模型的不同，可能会改善结果或完全破坏效果。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "指令像素到像素条件"
+      "display_name": "指令像素到像素条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "反转掩码"
@@ -683,7 +815,44 @@
     },
     "KSampler": {
       "description": "使用提供的模型、正向和负向条件去噪潜在图像。",
-      "display_name": "K采样器"
+      "display_name": "K采样器",
+      "inputs": {
+        "cfg": {
+          "tooltip": "无分类器引导比例平衡创造力和对提示的遵循。更高的值会导致图像更接近提示，但过高的值会对质量产生负面影响。"
+        },
+        "denoise": {
+          "tooltip": "应用的去噪量，较低的值将保持初始图像的结构，允许图像到图像的采样。"
+        },
+        "latent_image": {
+          "tooltip": "要去噪的潜在图像。"
+        },
+        "model": {
+          "tooltip": "用于去噪输入潜在图像的模型。"
+        },
+        "negative": {
+          "tooltip": "描述您希望在图像中排除的属性的条件。"
+        },
+        "positive": {
+          "tooltip": "描述您希望在图像中包含的属性的条件。"
+        },
+        "sampler_name": {
+          "tooltip": "在采样时使用的算法，这会影响生成输出的质量、速度和风格。"
+        },
+        "scheduler": {
+          "tooltip": "调度器控制噪声如何逐渐去除以形成图像。"
+        },
+        "seed": {
+          "tooltip": "用于生成噪声的随机种子。"
+        },
+        "steps": {
+          "tooltip": "去噪过程中使用的步骤数量。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "去噪后的潜在变量。"
+        }
+      }
     },
     "KSamplerAdvanced": {
       "display_name": "K采样器（高级）"
@@ -695,13 +864,45 @@
       "display_name": "Karras调度器"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV条件"
+      "display_name": "LTXV条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "LTXVImgToVideo": {
-      "display_name": "LTXV图像到视频"
+      "display_name": "LTXV图像到视频",
+      "inputs": {
+        "image_noise_scale": {
+          "tooltip": "在条件图像潜在图像上应用的噪声量。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "LTXVScheduler": {
-      "display_name": "LTXV调度器"
+      "display_name": "LTXV调度器",
+      "inputs": {
+        "stretch": {
+          "tooltip": "将 sigma 拉伸到范围 [terminal, 1]。"
+        },
+        "terminal": {
+          "tooltip": "拉伸后 sigma 的终值。"
+        }
+      }
     },
     "LaplaceScheduler": {
       "display_name": "拉普拉斯调度器"
@@ -777,14 +978,52 @@
     },
     "LoraLoader": {
       "description": "LoRA用于修改扩散和CLIP模型，改变潜在图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
-      "display_name": "加载LoRA"
+      "display_name": "加载LoRA",
+      "inputs": {
+        "clip": {
+          "tooltip": "LoRA 将应用于的 CLIP 模型。"
+        },
+        "lora_name": {
+          "tooltip": "LoRA 的名称。"
+        },
+        "model": {
+          "tooltip": "LoRA 将应用于的扩散模型。"
+        },
+        "strength_clip": {
+          "tooltip": "修改 CLIP 模型的强度。此值可以为负。"
+        },
+        "strength_model": {
+          "tooltip": "修改扩散模型的强度。此值可以为负。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "修改后的扩散模型。"
+        },
+        "1": {
+          "tooltip": "修改后的CLIP模型。"
+        }
+      }
     },
     "LoraLoaderModelOnly": {
       "description": "LoRA用于修改扩散和CLIP模型，改变潜在图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
-      "display_name": "仅加载LoRA模型"
+      "display_name": "仅加载LoRA模型",
+      "outputs": {
+        "0": {
+          "tooltip": "修改后的扩散模型。"
+        }
+      }
     },
     "LoraSave": {
-      "display_name": "提取并保存LoRA"
+      "display_name": "提取并保存LoRA",
+      "inputs": {
+        "model_diff": {
+          "tooltip": "要转换为 LoRA 的 ModelSubtract 输出。"
+        },
+        "text_encoder_diff": {
+          "tooltip": "要转换为 LoRA 的 CLIPSubtract 输出。"
+        }
+      }
     },
     "MaskComposite": {
       "display_name": "掩码合成"
@@ -862,16 +1101,48 @@
       "display_name": "图像形态学"
     },
     "PairConditioningCombine": {
-      "display_name": "条件对组合"
+      "display_name": "条件对组合",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "条件对设置默认组合"
+      "display_name": "条件对设置默认组合",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "条件对设置属性"
+      "display_name": "条件对设置属性",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "条件对设置属性组合"
+      "display_name": "条件对设置属性组合",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "补丁模型添加下采样（Kohya深度缩小）"
@@ -926,19 +1197,68 @@
       "display_name": "SDTurbo调度器"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X放大条件"
+      "display_name": "SD_4X放大条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D条件"
+      "display_name": "SV3D条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid条件"
+      "display_name": "SVD_img2vid条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "SamplerCustom": {
-      "display_name": "自定义采样器"
+      "display_name": "自定义采样器",
+      "outputs": {
+        "0": {
+          "name": "输出"
+        },
+        "1": {
+          "name": "去噪输出"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "自定义采样器（高级）"
+      "display_name": "自定义采样器（高级）",
+      "outputs": {
+        "0": {
+          "name": "输出"
+        },
+        "1": {
+          "name": "去噪输出"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "自适应DPM采样器"
@@ -981,7 +1301,15 @@
     },
     "SaveImage": {
       "description": "将输入图像保存到您的ComfyUI输出目录。",
-      "display_name": "保存图像"
+      "display_name": "保存图像",
+      "inputs": {
+        "filename_prefix": {
+          "tooltip": "要保存的文件的前缀。这可能包括格式信息，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width% 以包含节点中的值。"
+        },
+        "images": {
+          "tooltip": "要保存的图像。"
+        }
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "保存图像Websocket"
@@ -1019,28 +1347,93 @@
       "display_name": "按Alpha分割图像"
     },
     "SplitSigmas": {
-      "display_name": "分割Sigma"
+      "display_name": "分割Sigma",
+      "outputs": {
+        "0": {
+          "name": "高方差"
+        },
+        "1": {
+          "name": "低方差"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "分割Sigma去噪"
+      "display_name": "分割Sigma去噪",
+      "outputs": {
+        "0": {
+          "name": "高方差"
+        },
+        "1": {
+          "name": "低方差"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "稳定级联_空潜在图像"
+      "display_name": "稳定级联_空潜在图像",
+      "outputs": {
+        "0": {
+          "name": "阶段C"
+        },
+        "1": {
+          "name": "阶段B"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "稳定级联_B阶段条件"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "稳定级联_C阶段VAE编码"
+      "display_name": "稳定级联_C阶段VAE编码",
+      "outputs": {
+        "0": {
+          "name": "阶段C"
+        },
+        "1": {
+          "name": "阶段B"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "稳定级联_超分辨率控制网"
+      "display_name": "稳定级联_超分辨率控制网",
+      "outputs": {
+        "0": {
+          "name": "控制网输入"
+        },
+        "1": {
+          "name": "阶段C"
+        },
+        "2": {
+          "name": "阶段B"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "稳定零123条件"
+      "display_name": "稳定零123条件",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "稳定零123条件_批处理"
+      "display_name": "稳定零123条件_批处理",
+      "outputs": {
+        "0": {
+          "name": "正面"
+        },
+        "1": {
+          "name": "负面"
+        },
+        "2": {
+          "name": "潜在"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "应用风格模型"
@@ -1078,7 +1471,20 @@
     },
     "VAEDecode": {
       "description": "将潜在图像解码回像素空间图像。",
-      "display_name": "VAE解码"
+      "display_name": "VAE解码",
+      "inputs": {
+        "samples": {
+          "tooltip": "要解码的潜在图像。"
+        },
+        "vae": {
+          "tooltip": "用于解码潜在图像的 VAE 模型。"
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "解码后的图像。"
+        }
+      }
     },
     "VAEDecodeAudio": {
       "display_name": "VAE解码音频"

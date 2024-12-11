@@ -874,7 +874,23 @@
     },
     "CheckpointLoaderSimple": {
       "display_name": "Load Checkpoint",
-      "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents."
+      "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents.",
+      "inputs": {
+        "ckpt_name": {
+          "tooltip": "The name of the checkpoint (model) to load."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "The model used for denoising latents."
+        },
+        "1": {
+          "tooltip": "The CLIP model used for encoding text prompts."
+        },
+        "2": {
+          "tooltip": "The VAE model used for encoding and decoding images to and from latent space."
+        }
+      }
     },
     "CheckpointSave": {
       "display_name": "Save Checkpoint"
@@ -903,7 +919,20 @@
     },
     "CLIPTextEncode": {
       "display_name": "CLIP Text Encode (Prompt)",
-      "description": "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images."
+      "description": "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images.",
+      "inputs": {
+        "text": {
+          "tooltip": "The text to be encoded."
+        },
+        "clip": {
+          "tooltip": "The CLIP model used for encoding the text."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "A conditioning containing the embedded text used to guide the diffusion model."
+        }
+      }
     },
     "CLIPTextEncodeControlnet": {
       "display_name": "CLIPTextEncodeControlnet"
@@ -972,7 +1001,15 @@
       "display_name": "ConditioningSetTimestepRange"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "Timesteps Range"
+      "display_name": "Timesteps Range",
+      "outputs": {
+        "1": {
+          "name": "BEFORE_RANGE"
+        },
+        "2": {
+          "name": "AFTER_RANGE"
+        }
+      }
     },
     "ConditioningZeroOut": {
       "display_name": "ConditioningZeroOut"
@@ -981,25 +1018,64 @@
       "display_name": "Apply ControlNet (OLD)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "Apply ControlNet"
+      "display_name": "Apply ControlNet",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetApplySD3": {
-      "display_name": "Apply Controlnet with VAE"
+      "display_name": "Apply Controlnet with VAE",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "ControlNetInpaintingAliMamaApply"
+      "display_name": "ControlNetInpaintingAliMamaApply",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "ControlNetLoader": {
       "display_name": "Load ControlNet Model"
     },
     "CreateHookKeyframe": {
-      "display_name": "Create Hook Keyframe"
+      "display_name": "Create Hook Keyframe",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "Create Hook Keyframes From Floats"
+      "display_name": "Create Hook Keyframes From Floats",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "Create Hook Keyframes Interp."
+      "display_name": "Create Hook Keyframes Interp.",
+      "outputs": {
+        "0": {
+          "name": "HOOK_KF"
+        }
+      }
     },
     "CreateHookLora": {
       "display_name": "Create Hook LoRA"
@@ -1050,7 +1126,15 @@
     },
     "DevToolsNodeWithOutputList": {
       "display_name": "Node With Output List",
-      "description": "A node with an output list"
+      "description": "A node with an output list",
+      "outputs": {
+        "0": {
+          "name": "INTEGER OUTPUT"
+        },
+        "1": {
+          "name": "INTEGER LIST OUTPUT"
+        }
+      }
     },
     "DevToolsNodeWithStringInput": {
       "display_name": "Node With String Input",
@@ -1083,11 +1167,32 @@
       "display_name": "EmptyImage"
     },
     "EmptyLatentAudio": {
-      "display_name": "EmptyLatentAudio"
+      "display_name": "EmptyLatentAudio",
+      "inputs": {
+        "batch_size": {
+          "tooltip": "The number of latent images in the batch."
+        }
+      }
     },
     "EmptyLatentImage": {
       "display_name": "Empty Latent Image",
-      "description": "Create a new batch of empty latent images to be denoised via sampling."
+      "description": "Create a new batch of empty latent images to be denoised via sampling.",
+      "inputs": {
+        "width": {
+          "tooltip": "The width of the latent images in pixels."
+        },
+        "height": {
+          "tooltip": "The height of the latent images in pixels."
+        },
+        "batch_size": {
+          "tooltip": "The number of latent images in the batch."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "The empty latent image batch."
+        }
+      }
     },
     "EmptyLTXVLatentVideo": {
       "display_name": "EmptyLTXVLatentVideo"
@@ -1189,10 +1294,37 @@
       "display_name": "Upscale Image (using Model)"
     },
     "InpaintModelConditioning": {
-      "display_name": "InpaintModelConditioning"
+      "display_name": "InpaintModelConditioning",
+      "inputs": {
+        "noise_mask": {
+          "tooltip": "Add a noise mask to the latent so sampling will only happen within the mask. Might improve results or completely break things depending on the model."
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "InstructPixToPixConditioning"
+      "display_name": "InstructPixToPixConditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "InvertMask": {
       "display_name": "InvertMask"
@@ -1205,7 +1337,44 @@
     },
     "KSampler": {
       "display_name": "KSampler",
-      "description": "Uses the provided model, positive and negative conditioning to denoise the latent image."
+      "description": "Uses the provided model, positive and negative conditioning to denoise the latent image.",
+      "inputs": {
+        "model": {
+          "tooltip": "The model used for denoising the input latent."
+        },
+        "seed": {
+          "tooltip": "The random seed used for creating the noise."
+        },
+        "steps": {
+          "tooltip": "The number of steps used in the denoising process."
+        },
+        "cfg": {
+          "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
+        },
+        "sampler_name": {
+          "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
+        },
+        "scheduler": {
+          "tooltip": "The scheduler controls how noise is gradually removed to form the image."
+        },
+        "positive": {
+          "tooltip": "The conditioning describing the attributes you want to include in the image."
+        },
+        "negative": {
+          "tooltip": "The conditioning describing the attributes you want to exclude from the image."
+        },
+        "latent_image": {
+          "tooltip": "The latent image to denoise."
+        },
+        "denoise": {
+          "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "The denoised latent."
+        }
+      }
     },
     "KSamplerAdvanced": {
       "display_name": "KSampler (Advanced)"
@@ -1287,23 +1456,93 @@
     },
     "LoraLoader": {
       "display_name": "Load LoRA",
-      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+      "inputs": {
+        "model": {
+          "tooltip": "The diffusion model the LoRA will be applied to."
+        },
+        "clip": {
+          "tooltip": "The CLIP model the LoRA will be applied to."
+        },
+        "lora_name": {
+          "tooltip": "The name of the LoRA."
+        },
+        "strength_model": {
+          "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+        },
+        "strength_clip": {
+          "tooltip": "How strongly to modify the CLIP model. This value can be negative."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "The modified diffusion model."
+        },
+        "1": {
+          "tooltip": "The modified CLIP model."
+        }
+      }
     },
     "LoraLoaderModelOnly": {
       "display_name": "LoraLoaderModelOnly",
-      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together."
+      "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+      "outputs": {
+        "0": {
+          "tooltip": "The modified diffusion model."
+        }
+      }
     },
     "LoraSave": {
-      "display_name": "Extract and Save Lora"
+      "display_name": "Extract and Save Lora",
+      "inputs": {
+        "model_diff": {
+          "tooltip": "The ModelSubtract output to be converted to a lora."
+        },
+        "text_encoder_diff": {
+          "tooltip": "The CLIPSubtract output to be converted to a lora."
+        }
+      }
     },
     "LTXVConditioning": {
-      "display_name": "LTXVConditioning"
+      "display_name": "LTXVConditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "LTXVImgToVideo": {
-      "display_name": "LTXVImgToVideo"
+      "display_name": "LTXVImgToVideo",
+      "inputs": {
+        "image_noise_scale": {
+          "tooltip": "Amount of noise to apply on conditioning image latent."
+        }
+      },
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "LTXVScheduler": {
-      "display_name": "LTXVScheduler"
+      "display_name": "LTXVScheduler",
+      "inputs": {
+        "stretch": {
+          "tooltip": "Stretch the sigmas to be in the range [terminal, 1]."
+        },
+        "terminal": {
+          "tooltip": "The terminal value of the sigmas after stretching."
+        }
+      }
     },
     "MaskComposite": {
       "display_name": "MaskComposite"
@@ -1381,16 +1620,48 @@
       "display_name": "ImageMorphology"
     },
     "PairConditioningCombine": {
-      "display_name": "Cond Pair Combine"
+      "display_name": "Cond Pair Combine",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "Cond Pair Set Default Combine"
+      "display_name": "Cond Pair Set Default Combine",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetProperties": {
-      "display_name": "Cond Pair Set Props"
+      "display_name": "Cond Pair Set Props",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "Cond Pair Set Props Combine"
+      "display_name": "Cond Pair Set Props Combine",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        }
+      }
     },
     "PatchModelAddDownscale": {
       "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
@@ -1442,10 +1713,26 @@
       "display_name": "RescaleCFG"
     },
     "SamplerCustom": {
-      "display_name": "SamplerCustom"
+      "display_name": "SamplerCustom",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerCustomAdvanced": {
-      "display_name": "SamplerCustomAdvanced"
+      "display_name": "SamplerCustomAdvanced",
+      "outputs": {
+        "0": {
+          "name": "output"
+        },
+        "1": {
+          "name": "denoised_output"
+        }
+      }
     },
     "SamplerDPMAdaptative": {
       "display_name": "SamplerDPMAdaptative"
@@ -1488,7 +1775,15 @@
     },
     "SaveImage": {
       "display_name": "Save Image",
-      "description": "Saves the input images to your ComfyUI output directory."
+      "description": "Saves the input images to your ComfyUI output directory.",
+      "inputs": {
+        "images": {
+          "tooltip": "The images to save."
+        },
+        "filename_prefix": {
+          "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+        }
+      }
     },
     "SaveImageWebsocket": {
       "display_name": "SaveImageWebsocket"
@@ -1497,7 +1792,18 @@
       "display_name": "SaveLatent"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4XUpscale_Conditioning"
+      "display_name": "SD_4XUpscale_Conditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SDTurboScheduler": {
       "display_name": "SDTurboScheduler"
@@ -1532,28 +1838,93 @@
       "display_name": "Split Image with Alpha"
     },
     "SplitSigmas": {
-      "display_name": "SplitSigmas"
+      "display_name": "SplitSigmas",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "SplitSigmasDenoise": {
-      "display_name": "SplitSigmasDenoise"
+      "display_name": "SplitSigmasDenoise",
+      "outputs": {
+        "0": {
+          "name": "high_sigmas"
+        },
+        "1": {
+          "name": "low_sigmas"
+        }
+      }
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade_EmptyLatentImage"
+      "display_name": "StableCascade_EmptyLatentImage",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascade_StageB_Conditioning"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_StageC_VAEEncode"
+      "display_name": "StableCascade_StageC_VAEEncode",
+      "outputs": {
+        "0": {
+          "name": "stage_c"
+        },
+        "1": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade_SuperResolutionControlnet"
+      "display_name": "StableCascade_SuperResolutionControlnet",
+      "outputs": {
+        "0": {
+          "name": "controlnet_input"
+        },
+        "1": {
+          "name": "stage_c"
+        },
+        "2": {
+          "name": "stage_b"
+        }
+      }
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123_Conditioning"
+      "display_name": "StableZero123_Conditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123_Conditioning_Batched"
+      "display_name": "StableZero123_Conditioning_Batched",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "StyleModelApply": {
       "display_name": "Apply Style Model"
@@ -1562,10 +1933,32 @@
       "display_name": "Load Style Model"
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D_Conditioning"
+      "display_name": "SV3D_Conditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid_Conditioning"
+      "display_name": "SVD_img2vid_Conditioning",
+      "outputs": {
+        "0": {
+          "name": "positive"
+        },
+        "1": {
+          "name": "negative"
+        },
+        "2": {
+          "name": "latent"
+        }
+      }
     },
     "ThresholdMask": {
       "display_name": "ThresholdMask"
@@ -1603,7 +1996,20 @@
     },
     "VAEDecode": {
       "display_name": "VAE Decode",
-      "description": "Decodes latent images back into pixel space images."
+      "description": "Decodes latent images back into pixel space images.",
+      "inputs": {
+        "samples": {
+          "tooltip": "The latent to be decoded."
+        },
+        "vae": {
+          "tooltip": "The VAE model used for decoding the latent."
+        }
+      },
+      "outputs": {
+        "0": {
+          "tooltip": "The decoded image."
+        }
+      }
     },
     "VAEDecodeAudio": {
       "display_name": "VAEDecodeAudio"
@@ -1643,91 +2049,91 @@
     }
   },
   "nodeCategories": {
-    "sampling": "sampling",
-    "loaders": "loaders",
-    "conditioning": "conditioning",
-    "latent": "latent",
-    "inpaint": "inpaint",
-    "batch": "batch",
-    "image": "image",
-    "mask": "mask",
-    "upscaling": "upscaling",
     "_for_testing": "_for_testing",
-    "transform": "transform",
-    "advanced": "advanced",
-    "style_model": "style_model",
-    "controlnet": "controlnet",
-    "gligen": "gligen",
-    "deprecated": "deprecated",
-    "operations": "operations",
-    "postprocessing": "postprocessing",
-    "compositing": "compositing",
-    "model_merging": "model_merging",
-    "model_patches": "model_patches",
-    "unet": "unet",
-    "preprocessors": "preprocessors",
     "custom_sampling": "custom_sampling",
-    "schedulers": "schedulers",
-    "samplers": "samplers",
-    "sigmas": "sigmas",
-    "guiders": "guiders",
     "noise": "noise",
-    "model": "model",
-    "animation": "animation",
-    "video_models": "video_models",
-    "3d_models": "3d_models",
-    "upscale_diffusion": "upscale_diffusion",
-    "photomaker": "photomaker",
-    "stable_cascade": "stable_cascade",
-    "instructpix2pix": "instructpix2pix",
-    "model_specific": "model_specific",
+    "sampling": "sampling",
+    "schedulers": "schedulers",
+    "guiders": "guiders",
+    "image": "image",
+    "preprocessors": "preprocessors",
+    "advanced": "advanced",
+    "loaders": "loaders",
+    "model_merging": "model_merging",
     "attention_experiments": "attention_experiments",
-    "audio": "audio",
-    "sd3": "sd3",
-    "guidance": "guidance",
+    "conditioning": "conditioning",
     "flux": "flux",
-    "video": "video",
-    "ltxv": "ltxv",
     "hooks": "hooks",
-    "create": "create",
-    "scheduling": "scheduling",
     "combine": "combine",
     "cond single": "cond single",
-    "cond pair": "cond pair",
-    "clip": "clip",
+    "controlnet": "controlnet",
+    "scheduling": "scheduling",
+    "create": "create",
+    "mask": "mask",
     "DevTools": "DevTools",
-    "api": "api"
+    "deprecated": "deprecated",
+    "latent": "latent",
+    "audio": "audio",
+    "video": "video",
+    "ltxv": "ltxv",
+    "sd3": "sd3",
+    "sigmas": "sigmas",
+    "model_patches": "model_patches",
+    "unet": "unet",
+    "gligen": "gligen",
+    "postprocessing": "postprocessing",
+    "transform": "transform",
+    "batch": "batch",
+    "video_models": "video_models",
+    "upscaling": "upscaling",
+    "inpaint": "inpaint",
+    "instructpix2pix": "instructpix2pix",
+    "compositing": "compositing",
+    "samplers": "samplers",
+    "operations": "operations",
+    "model_specific": "model_specific",
+    "model": "model",
+    "cond pair": "cond pair",
+    "photomaker": "photomaker",
+    "animation": "animation",
+    "api": "api",
+    "upscale_diffusion": "upscale_diffusion",
+    "clip": "clip",
+    "guidance": "guidance",
+    "stable_cascade": "stable_cascade",
+    "3d_models": "3d_models",
+    "style_model": "style_model"
   },
   "dataTypes": {
-    "MODEL": "MODEL",
-    "INT": "INT",
-    "FLOAT": "FLOAT",
-    "COMBO": "COMBO",
-    "CONDITIONING": "CONDITIONING",
-    "LATENT": "LATENT",
+    "AUDIO": "AUDIO",
+    "BOOLEAN": "BOOLEAN",
     "CLIP": "CLIP",
-    "VAE": "VAE",
-    "STRING": "STRING",
-    "IMAGE": "IMAGE",
-    "MASK": "MASK",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
-    "STYLE_MODEL": "STYLE_MODEL",
+    "COMBO": "COMBO",
+    "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
+    "FLOAT": "FLOAT",
+    "FLOATS": "FLOATS",
     "GLIGEN": "GLIGEN",
-    "BOOLEAN": "BOOLEAN",
-    "LATENT_OPERATION": "LATENT_OPERATION",
-    "UPSCALE_MODEL": "UPSCALE_MODEL",
-    "SAMPLER": "SAMPLER",
-    "SIGMAS": "SIGMAS",
     "GUIDER": "GUIDER",
+    "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
+    "HOOKS": "HOOKS",
+    "IMAGE": "IMAGE",
+    "INT": "INT",
+    "LATENT": "LATENT",
+    "LATENT_OPERATION": "LATENT_OPERATION",
+    "MASK": "MASK",
+    "MODEL": "MODEL",
     "NOISE": "NOISE",
     "PHOTOMAKER": "PHOTOMAKER",
-    "WEBCAM": "WEBCAM",
-    "AUDIO": "AUDIO",
-    "HOOKS": "HOOKS",
-    "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
-    "FLOATS": "FLOATS",
-    "TIMESTEPS_RANGE": "TIMESTEPS_RANGE"
+    "SAMPLER": "SAMPLER",
+    "SIGMAS": "SIGMAS",
+    "STRING": "STRING",
+    "STYLE_MODEL": "STYLE_MODEL",
+    "TIMESTEPS_RANGE": "TIMESTEPS_RANGE",
+    "UPSCALE_MODEL": "UPSCALE_MODEL",
+    "VAE": "VAE",
+    "WEBCAM": "WEBCAM"
   }
 }
