@@ -4,13 +4,25 @@ import zh from './locales/zh/main.json'
 import ru from './locales/ru/main.json'
 import ja from './locales/ja/main.json'
 import ko from './locales/ko/main.json'
+import enNodes from './locales/en/nodeDefs.json'
+import zhNodes from './locales/zh/nodeDefs.json'
+import ruNodes from './locales/ru/nodeDefs.json'
+import jaNodes from './locales/ja/nodeDefs.json'
+import koNodes from './locales/ko/nodeDefs.json'
+
+function buildLocale(main: typeof en, nodes: typeof enNodes) {
+  return {
+    ...main,
+    nodeDefs: nodes
+  }
+}
 
 const messages: Record<string, typeof en> = {
-  en,
-  zh,
-  ru,
-  ja,
-  ko
+  en: buildLocale(en, enNodes),
+  zh: buildLocale(zh, zhNodes),
+  ru: buildLocale(ru, ruNodes),
+  ja: buildLocale(ja, jaNodes),
+  ko: buildLocale(ko, koNodes)
 }
 
 export const i18n = createI18n({
