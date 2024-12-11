@@ -108,12 +108,12 @@ import StepPanel from 'primevue/steppanel'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
-import { electronAPI } from '@/utils/envUtil'
-import { ref, computed, toRaw } from 'vue'
+import { electronAPI, type GpuType } from '@/utils/envUtil'
+import { ref, computed, toRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import GpuPicker from '@/components/install/GpuPicker.vue'
 
-const gpu = ref<'nvidia' | 'mps' | 'cpu'>(null)
+const gpu = ref<GpuType>(null)
 
 const installPath = ref('')
 const pathError = ref('')
@@ -135,6 +135,7 @@ const setHighestStep = (value: string | number) => {
 const hasError = computed(() => pathError.value !== '')
 const noGpu = computed(() => typeof gpu.value !== 'string')
 
+const electron = electronAPI()
 const router = useRouter()
 const install = () => {
   const options = {
@@ -145,9 +146,16 @@ const install = () => {
     migrationItemIds: toRaw(migrationItemIds.value),
     gpu: gpu.value
   }
-  electronAPI().installComfyUI(options)
+  electron.installComfyUI(options)
   router.push('/server-start')
 }
+
+onMounted(() => {
+  if (!electron) return
+
+  const detectedGpu = electron.getGpu()
+  if (detectedGpu === 'mps' || detectedGpu === 'nvidia') gpu.value = detectedGpu
+})
 </script>
 
 <style lang="postcss" scoped>

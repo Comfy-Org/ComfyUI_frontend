@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { computed, GlobalComponents, ref } from 'vue'
-import { electronAPI } from '@/utils/envUtil'
+import { electronAPI, GpuType } from '@/utils/envUtil'
 
 import ToggleSwitch from 'primevue/toggleswitch'
 
@@ -98,7 +98,7 @@ const cpuMode = computed({
   get: () => selected.value === 'cpu',
   set: () => pickGpu('cpu')
 })
-const selected = defineModel<'nvidia' | 'mps' | 'cpu' | null>('gpu', {
+const selected = defineModel<GpuType>('gpu', {
   required: true
 })
 
