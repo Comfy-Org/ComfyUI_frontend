@@ -1,0 +1,1201 @@
+{
+  "AddNoise": {
+    "display_name": "添加噪声"
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "对齐步骤调度器"
+  },
+  "BasicGuider": {
+    "display_name": "基础引导器"
+  },
+  "BasicScheduler": {
+    "display_name": "基础调度器"
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "Beta采样调度器"
+  },
+  "CFGGuider": {
+    "display_name": "CFG引导器"
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIP注意力乘法"
+  },
+  "CLIPLoader": {
+    "description": "[配方]\n\n稳定扩散：clip-l\n稳定级联：clip-g\nsd3：t5 / clip-g / clip-l\n稳定音频：t5\nmochi：t5",
+    "display_name": "加载CLIP"
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIP合并添加"
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIP简单合并"
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIP合并减去"
+  },
+  "CLIPSave": {
+    "display_name": "CLIP保存"
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "设置CLIP最后一层"
+  },
+  "CLIPTextEncode": {
+    "description": "使用CLIP模型将文本提示编码为可以用来引导扩散模型生成特定图像的嵌入。",
+    "display_name": "CLIP文本编码（提示）",
+    "inputs": {
+      "clip": {
+        "tooltip": "用于编码文本的CLIP模型。"
+      },
+      "text": {
+        "tooltip": "要编码的文本。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "包含用于引导扩散模型的嵌入文本的条件。"
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIP文本编码控制网"
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIP文本编码Flux"
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIP文本编码HunyuanDiT"
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIP文本编码SD3"
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIP文本编码SDXL"
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIP文本编码SDXL精炼器"
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIP视觉编码"
+  },
+  "CLIPVisionLoader": {
+    "display_name": "加载CLIP视觉"
+  },
+  "Canny": {
+    "display_name": "Canny"
+  },
+  "CheckpointLoader": {
+    "display_name": "加载检查点与配置（已弃用）"
+  },
+  "CheckpointLoaderSimple": {
+    "description": "加载一个扩散模型检查点，扩散模型用于去噪潜在因素。",
+    "display_name": "加载检查点",
+    "inputs": {
+      "ckpt_name": {
+        "tooltip": "要加载的检查点（模型）的名称。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "用于去噪潜在因素的模型。"
+      },
+      "1": {
+        "tooltip": "用于编码文本提示的CLIP模型。"
+      },
+      "2": {
+        "tooltip": "用于将图像编码和解码到潜在空间的VAE模型。"
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "保存检查点"
+  },
+  "CombineHooks2": {
+    "display_name": "组合钩子[2]"
+  },
+  "CombineHooks4": {
+    "display_name": "组合钩子[4]"
+  },
+  "CombineHooks8": {
+    "display_name": "组合钩子[8]"
+  },
+  "ConditioningAverage": {
+    "display_name": "条件平均"
+  },
+  "ConditioningCombine": {
+    "display_name": "条件（组合）"
+  },
+  "ConditioningConcat": {
+    "display_name": "条件（连接）"
+  },
+  "ConditioningSetArea": {
+    "display_name": "条件（设置区域）"
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "条件（按百分比设置区域）"
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "设置区域强度"
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "设置默认组合条件"
+  },
+  "ConditioningSetMask": {
+    "display_name": "条件（设置遮罩）"
+  },
+  "ConditioningSetProperties": {
+    "display_name": "设置属性条件"
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "设置属性和组合条件"
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "设置时间步长范围"
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "时间步长范围",
+    "outputs": {
+      "1": {
+        "name": "范围前"
+      },
+      "2": {
+        "name": "范围后"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "条件清零"
+  },
+  "ControlNetApply": {
+    "display_name": "应用控制网（旧）"
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "应用控制网",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "应用控制网与VAE",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "应用ControlNetInpaintingAliMama",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "加载控制网模型"
+  },
+  "CreateHookKeyframe": {
+    "display_name": "创建钩子关键帧",
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "从浮点数创建钩子关键帧",
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "创建插值钩子关键帧",
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "创建钩子LoRA"
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "仅创建钩子LoRA模型"
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "创建模型作为LoRA钩子"
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "仅创建模型作为LoRA钩子"
+  },
+  "CropMask": {
+    "display_name": "裁剪遮罩"
+  },
+  "DevToolsDeprecatedNode": {
+    "description": "一个已弃用的节点",
+    "display_name": "已弃用的节点"
+  },
+  "DevToolsErrorRaiseNode": {
+    "description": "为开发目的引发错误",
+    "display_name": "引发错误"
+  },
+  "DevToolsErrorRaiseNodeWithMessage": {
+    "description": "带消息引发错误以供开发使用",
+    "display_name": "带消息引发错误"
+  },
+  "DevToolsExperimentalNode": {
+    "description": "一个实验性节点",
+    "display_name": "实验性节点"
+  },
+  "DevToolsLongComboDropdown": {
+    "description": "一个长组合下拉菜单",
+    "display_name": "长组合下拉菜单"
+  },
+  "DevToolsNodeWithForceInput": {
+    "description": "一个带强制输入的节点",
+    "display_name": "带强制输入的节点"
+  },
+  "DevToolsNodeWithOnlyOptionalInput": {
+    "description": "一个只有可选输入的节点",
+    "display_name": "只有可选输入的节点"
+  },
+  "DevToolsNodeWithOptionalInput": {
+    "description": "一个带可选输入的节点",
+    "display_name": "带可选输入的节点"
+  },
+  "DevToolsNodeWithOutputList": {
+    "description": "一个带输出列表的节点",
+    "display_name": "带输出列表的节点",
+    "outputs": {
+      "0": {
+        "name": "整数输出"
+      },
+      "1": {
+        "name": "整数列表输出"
+      }
+    }
+  },
+  "DevToolsNodeWithStringInput": {
+    "description": "一个带字符串输入的节点",
+    "display_name": "带字符串输入的节点"
+  },
+  "DevToolsNodeWithUnionInput": {
+    "description": "一个带联合输入的节点",
+    "display_name": "带联合输入的节点"
+  },
+  "DiffControlNetLoader": {
+    "display_name": "加载控制网模型（差分）"
+  },
+  "DifferentialDiffusion": {
+    "display_name": "差分扩散"
+  },
+  "DiffusersLoader": {
+    "display_name": "扩散器加载器"
+  },
+  "DisableNoise": {
+    "display_name": "禁用噪声"
+  },
+  "DualCFGGuider": {
+    "display_name": "双CFG引导器"
+  },
+  "DualCLIPLoader": {
+    "description": "[配方]\n\nsdxl：clip-l，clip-g\nsd3：clip-l，clip-g / clip-l，t5 / clip-g，t5\nflux：clip-l，t5",
+    "display_name": "双CLIP加载器"
+  },
+  "EmptyImage": {
+    "display_name": "空图像"
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "空LTXV潜在视频"
+  },
+  "EmptyLatentAudio": {
+    "display_name": "空潜在音频",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "批次中的潜在图像数量。"
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "创建一个新的空潜在图像批次，通过采样进行去噪。",
+    "display_name": "空潜在图像",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "批次中的潜在图像数量。"
+      },
+      "height": {
+        "tooltip": "潜在图像的高度（像素）。"
+      },
+      "width": {
+        "tooltip": "潜在图像的宽度（像素）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "空的潜在图像批次。"
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "空Mochi潜在视频"
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "空SD3潜在图像"
+  },
+  "ExponentialScheduler": {
+    "display_name": "指数调度器"
+  },
+  "FeatherMask": {
+    "display_name": "羽毛遮罩"
+  },
+  "FlipSigmas": {
+    "display_name": "翻转Sigmas"
+  },
+  "FluxGuidance": {
+    "display_name": "Flux引导"
+  },
+  "FreeU": {
+    "display_name": "FreeU"
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU_V2"
+  },
+  "GITSScheduler": {
+    "display_name": "GITSScheduler"
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGENLoader"
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGENTextBoxApply"
+  },
+  "GrowMask": {
+    "display_name": "GrowMask"
+  },
+  "HyperTile": {
+    "display_name": "HyperTile"
+  },
+  "HypernetworkLoader": {
+    "display_name": "HypernetworkLoader"
+  },
+  "ImageBatch": {
+    "display_name": "批量图片"
+  },
+  "ImageBlend": {
+    "display_name": "图片混合"
+  },
+  "ImageBlur": {
+    "display_name": "图片模糊"
+  },
+  "ImageColorToMask": {
+    "display_name": "ImageColorToMask"
+  },
+  "ImageCompositeMasked": {
+    "display_name": "ImageCompositeMasked"
+  },
+  "ImageCrop": {
+    "display_name": "图片裁剪"
+  },
+  "ImageFromBatch": {
+    "display_name": "ImageFromBatch"
+  },
+  "ImageInvert": {
+    "display_name": "反转图片"
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "仅图片检查点加载器（img2vid模型）"
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "ImageOnlyCheckpointSave"
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "为外部绘制填充图片"
+  },
+  "ImageQuantize": {
+    "display_name": "图片量化"
+  },
+  "ImageScale": {
+    "display_name": "放大图片"
+  },
+  "ImageScaleBy": {
+    "display_name": "按比例放大图片"
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "将图片缩放至总像素"
+  },
+  "ImageSharpen": {
+    "display_name": "图片锐化"
+  },
+  "ImageToMask": {
+    "display_name": "将图片转换为遮罩"
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "放大图片（使用模型）"
+  },
+  "InpaintModelConditioning": {
+    "display_name": "InpaintModelConditioning",
+    "inputs": {
+      "noise_mask": {
+        "tooltip": "在潜在的噪声遮罩上添加噪声，使采样只在遮罩内进行。可能会改善结果，或者根据模型的不同，可能会完全破坏结果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "InstructPixToPixConditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "InvertMask"
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "将图片与Alpha通道合并"
+  },
+  "KSampler": {
+    "description": "使用提供的模型，正向和反向条件来去噪潜在图像。",
+    "display_name": "KSampler",
+    "inputs": {
+      "cfg": {
+        "tooltip": "无分类器指导比例平衡创造性和对提示的遵守。更高的值会导致图片更接近提示，但过高的值会对质量产生负面影响。"
+      },
+      "denoise": {
+        "tooltip": "应用的去噪量，较低的值将保持初始图像的结构，允许进行图像到图像的采样。"
+      },
+      "latent_image": {
+        "tooltip": "要去噪的潜在图像。"
+      },
+      "model": {
+        "tooltip": "用于去噪输入潜在的模型。"
+      },
+      "negative": {
+        "tooltip": "描述你想从图像中排除的属性的条件。"
+      },
+      "positive": {
+        "tooltip": "描述你想在图像中包含的属性的条件。"
+      },
+      "sampler_name": {
+        "tooltip": "采样时使用的算法，这会影响生成输出的质量、速度和风格。"
+      },
+      "scheduler": {
+        "tooltip": "调度器控制如何逐渐去除噪声以形成图像。"
+      },
+      "seed": {
+        "tooltip": "用于创建噪声的随机种子。"
+      },
+      "steps": {
+        "tooltip": "去噪过程中使用的步骤数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "去噪后的潜在图像。"
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "KSampler（高级）"
+  },
+  "KSamplerSelect": {
+    "display_name": "KSamplerSelect"
+  },
+  "KarrasScheduler": {
+    "display_name": "KarrasScheduler"
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXVConditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXVImgToVideo",
+    "inputs": {
+      "image_noise_scale": {
+        "tooltip": "在调节图像潜在的噪声上应用的量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXVScheduler",
+    "inputs": {
+      "stretch": {
+        "tooltip": "将sigmas拉伸到[terminal, 1]的范围内。"
+      },
+      "terminal": {
+        "tooltip": "拉伸后sigmas的终止值。"
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "LaplaceScheduler"
+  },
+  "LatentAdd": {
+    "display_name": "LatentAdd"
+  },
+  "LatentApplyOperation": {
+    "display_name": "LatentApplyOperation"
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "LatentApplyOperationCFG"
+  },
+  "LatentBatch": {
+    "display_name": "LatentBatch"
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "LatentBatchSeedBehavior"
+  },
+  "LatentBlend": {
+    "display_name": "潜在混合"
+  },
+  "LatentComposite": {
+    "display_name": "潜在复合"
+  },
+  "LatentCompositeMasked": {
+    "display_name": "LatentCompositeMasked"
+  },
+  "LatentCrop": {
+    "display_name": "裁剪潜在"
+  },
+  "LatentFlip": {
+    "display_name": "翻转潜在"
+  },
+  "LatentFromBatch": {
+    "display_name": "从批量中获取潜在"
+  },
+  "LatentInterpolate": {
+    "display_name": "潜在插值"
+  },
+  "LatentMultiply": {
+    "display_name": "LatentMultiply"
+  },
+  "LatentOperationSharpen": {
+    "display_name": "LatentOperationSharpen"
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "LatentOperationTonemapReinhard"
+  },
+  "LatentRotate": {
+    "display_name": "旋转潜在"
+  },
+  "LatentSubtract": {
+    "display_name": "LatentSubtract"
+  },
+  "LatentUpscale": {
+    "display_name": "放大潜在"
+  },
+  "LatentUpscaleBy": {
+    "display_name": "按比例放大潜在"
+  },
+  "LoadAudio": {
+    "display_name": "加载音频"
+  },
+  "LoadImage": {
+    "display_name": "加载图片"
+  },
+  "LoadImageMask": {
+    "display_name": "加载图片（作为遮罩）"
+  },
+  "LoadLatent": {
+    "display_name": "加载潜在"
+  },
+  "LoraLoader": {
+    "description": "LoRAs用于修改扩散和CLIP模型，改变去噪潜在的方式，如应用样式。可以链接多个LoRA节点。",
+    "display_name": "加载LoRA",
+    "inputs": {
+      "clip": {
+        "tooltip": "LoRA将应用于的CLIP模型。"
+      },
+      "lora_name": {
+        "tooltip": "LoRA的名称。"
+      },
+      "model": {
+        "tooltip": "LoRA将应用于的扩散模型。"
+      },
+      "strength_clip": {
+        "tooltip": "修改CLIP模型的强度。此值可以为负。"
+      },
+      "strength_model": {
+        "tooltip": "修改扩散模型的强度。此值可以为负。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      },
+      "1": {
+        "tooltip": "修改后的CLIP模型。"
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRAs用于修改扩散和CLIP模型，改变去噪潜在的方式，如应用样式。可以链接多个LoRA节点。",
+    "display_name": "LoraLoaderModelOnly",
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "提取并保存Lora",
+    "inputs": {
+      "model_diff": {
+        "tooltip": "要转换为lora的ModelSubtract输出。"
+      },
+      "text_encoder_diff": {
+        "tooltip": "要转换为lora的CLIPSubtract输出。"
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "MaskComposite"
+  },
+  "MaskToImage": {
+    "display_name": "将遮罩转换为图片"
+  },
+  "ModelMergeAdd": {
+    "display_name": "ModelMergeAdd"
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "ModelMergeAuraflow"
+  },
+  "ModelMergeBlocks": {
+    "display_name": "ModelMergeBlocks"
+  },
+  "ModelMergeFlux1": {
+    "display_name": "ModelMergeFlux1"
+  },
+  "ModelMergeLTXV": {
+    "display_name": "ModelMergeLTXV"
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "ModelMergeMochiPreview"
+  },
+  "ModelMergeSD1": {
+    "display_name": "ModelMergeSD1"
+  },
+  "ModelMergeSD2": {
+    "display_name": "ModelMergeSD2"
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "ModelMergeSD35_Large"
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "ModelMergeSD3_2B"
+  },
+  "ModelMergeSDXL": {
+    "display_name": "ModelMergeSDXL"
+  },
+  "ModelMergeSimple": {
+    "display_name": "ModelMergeSimple"
+  },
+  "ModelMergeSubtract": {
+    "display_name": "ModelMergeSubtract"
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "ModelSamplingAuraFlow"
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "ModelSamplingContinuousEDM"
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "ModelSamplingContinuousV"
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "ModelSamplingDiscrete"
+  },
+  "ModelSamplingFlux": {
+    "display_name": "ModelSamplingFlux"
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "ModelSamplingLTXV"
+  },
+  "ModelSamplingSD3": {
+    "display_name": "ModelSamplingSD3"
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "ModelSamplingStableCascade"
+  },
+  "ModelSave": {
+    "display_name": "ModelSave"
+  },
+  "Morphology": {
+    "display_name": "图像形态学"
+  },
+  "PairConditioningCombine": {
+    "display_name": "条件配对组合",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "设置默认条件配对组合",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "设置条件配对属性",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "设置条件配对属性并组合",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg (已由PerpNegGuider取代)"
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNegGuider"
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "扰动注意力引导"
+  },
+  "PhotoMakerEncode": {
+    "display_name": "PhotoMakerEncode"
+  },
+  "PhotoMakerLoader": {
+    "display_name": "PhotoMakerLoader"
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "PolyexponentialScheduler"
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "Porter-Duff 图像合成"
+  },
+  "PreviewAudio": {
+    "display_name": "预览音频"
+  },
+  "PreviewImage": {
+    "description": "将输入图像保存到您的ComfyUI输出目录。",
+    "display_name": "预览图像"
+  },
+  "RandomNoise": {
+    "display_name": "随机噪声"
+  },
+  "RebatchImages": {
+    "display_name": "重新批处理图像"
+  },
+  "RebatchLatents": {
+    "display_name": "重新批处理潜变量"
+  },
+  "RepeatImageBatch": {
+    "display_name": "重复图像批次"
+  },
+  "RepeatLatentBatch": {
+    "display_name": "重复潜变量批次"
+  },
+  "RescaleCFG": {
+    "display_name": "重新缩放CFG"
+  },
+  "SDTurboScheduler": {
+    "display_name": "SDTurboScheduler"
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4XUpscale_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜变量"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜变量"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD_img2vid_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜变量"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "自定义采样器",
+    "outputs": {
+      "0": {
+        "name": "输出"
+      },
+      "1": {
+        "name": "去噪输出"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "高级自定义采样器",
+    "outputs": {
+      "0": {
+        "name": "输出"
+      },
+      "1": {
+        "name": "去噪输出"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "SamplerDPMAdaptative"
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "SamplerDPMPP_2M_SDE"
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "SamplerDPMPP_2S_Ancestral"
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "SamplerDPMPP_3M_SDE"
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "SamplerDPMPP_SDE"
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "SamplerEulerAncestral"
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "SamplerEulerAncestralCFG++"
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "SamplerEulerCFG++"
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "SamplerLCMUpscale"
+  },
+  "SamplerLMS": {
+    "display_name": "SamplerLMS"
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "保存动画PNG"
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "保存动画WEBP"
+  },
+  "SaveAudio": {
+    "display_name": "保存音频"
+  },
+  "SaveImage": {
+    "description": "将输入图像保存到您的ComfyUI输出目录。",
+    "display_name": "保存图像",
+    "inputs": {
+      "filename_prefix": {
+        "tooltip": "要保存的文件的前缀。这可能包括格式信息，如%date:yyyy-MM-dd%或%Empty Latent Image.width%以包含来自节点的值。"
+      },
+      "images": {
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "SaveImageWebsocket"
+  },
+  "SaveLatent": {
+    "display_name": "保存潜变量"
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "自我注意力引导"
+  },
+  "SetClipHooks": {
+    "display_name": "设置CLIP钩子"
+  },
+  "SetHookKeyframes": {
+    "display_name": "设置钩子关键帧"
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "设置潜变量噪声掩码"
+  },
+  "SetUnionControlNetType": {
+    "display_name": "设置联合控制网类型"
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "可以在每个DiT模型上使用的SkipLayerGuidance节点的通用版本。",
+    "display_name": "SkipLayerGuidanceDiT"
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "可以在每个DiT模型上使用的SkipLayerGuidance节点的通用版本。",
+    "display_name": "SkipLayerGuidanceSD3"
+  },
+  "SolidMask": {
+    "display_name": "实心遮罩"
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "带Alpha通道的图像分割"
+  },
+  "SplitSigmas": {
+    "display_name": "分割Sigmas",
+    "outputs": {
+      "0": {
+        "name": "高Sigmas"
+      },
+      "1": {
+        "name": "低Sigmas"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "分割Sigmas去噪",
+    "outputs": {
+      "0": {
+        "name": "高Sigmas"
+      },
+      "1": {
+        "name": "低Sigmas"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "StableCascade_EmptyLatentImage",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "StableCascade_StageB_Conditioning"
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "StableCascade_StageC_VAEEncode",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "StableCascade_SuperResolutionControlnet",
+    "outputs": {
+      "0": {
+        "name": "controlnet_input"
+      },
+      "1": {
+        "name": "stage_c"
+      },
+      "2": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "StableZero123_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜变量"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "StableZero123_Conditioning_Batched",
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "反向"
+      },
+      "2": {
+        "name": "潜变量"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "应用样式模型"
+  },
+  "StyleModelLoader": {
+    "display_name": "加载样式模型"
+  },
+  "ThresholdMask": {
+    "display_name": "阈值遮罩"
+  },
+  "TomePatchModel": {
+    "display_name": "TomePatchModel"
+  },
+  "TorchCompileModel": {
+    "display_name": "TorchCompileModel"
+  },
+  "TripleCLIPLoader": {
+    "description": "[配方]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "TripleCLIPLoader"
+  },
+  "UNETLoader": {
+    "display_name": "加载扩散模型"
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNetCrossAttentionMultiply"
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNetSelfAttentionMultiply"
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNetTemporalAttentionMultiply"
+  },
+  "UpscaleModelLoader": {
+    "display_name": "加载放大模型"
+  },
+  "VAEDecode": {
+    "description": "将潜在图像解码回像素空间图像。",
+    "display_name": "VAE 解码",
+    "inputs": {
+      "samples": {
+        "tooltip": "要解码的潜在图像。"
+      },
+      "vae": {
+        "tooltip": "用于解码潜在图像的 VAE 模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "解码后的图像。"
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "VAE音频解码"
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAE 解码（平铺）"
+  },
+  "VAEEncode": {
+    "display_name": "VAE 编码"
+  },
+  "VAEEncodeAudio": {
+    "display_name": "VAE音频编码"
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAE 编码（用于修复）"
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAE 编码（平铺）"
+  },
+  "VAELoader": {
+    "display_name": "加载 VAE"
+  },
+  "VAESave": {
+    "display_name": "保存 VAE"
+  },
+  "VPScheduler": {
+    "display_name": "VP调度器"
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "视频线性CFG指导"
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "视频三角CFG指导"
+  },
+  "WebcamCapture": {
+    "display_name": "网络摄像头捕捉"
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIPCheckpointLoader"
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIPConditioning"
+  }
+}

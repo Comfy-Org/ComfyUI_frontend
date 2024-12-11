@@ -1,0 +1,1201 @@
+{
+  "AddNoise": {
+    "display_name": "ノイズを追加"
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "ステップを整列"
+  },
+  "BasicGuider": {
+    "display_name": "基本ガイダー"
+  },
+  "BasicScheduler": {
+    "display_name": "基本スケジューラー"
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "ベータサンプリングスケジューラー"
+  },
+  "CFGGuider": {
+    "display_name": "CFGガイダー"
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIPアテンション乗算"
+  },
+  "CLIPLoader": {
+    "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "display_name": "CLIPを読み込む"
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIPマージ追加"
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIPマージシンプル"
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIPマージ減算"
+  },
+  "CLIPSave": {
+    "display_name": "CLIPを保存"
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "CLIPの最終層を設定"
+  },
+  "CLIPTextEncode": {
+    "description": "CLIPモデルを使用してテキストプロンプトをエンコードし、特定の画像を生成するために拡散モデルをガイドするために使用される埋め込みを生成します。",
+    "display_name": "CLIPテキストエンコード（プロンプト）",
+    "inputs": {
+      "clip": {
+        "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
+      },
+      "text": {
+        "tooltip": "エンコードするテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "拡散モデルをガイドするために使用される埋め込まれたテキストを含む条件付け。"
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIPテキストエンコードコントロールネット"
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIPテキストエンコードflux"
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIPテキストエンコードHunyuanDiT"
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIPテキストエンコードSD3"
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIPテキストエンコードSDXL"
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIPテキストエンコードSDXLリファイナー"
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIPビジョンエンコード"
+  },
+  "CLIPVisionLoader": {
+    "display_name": "CLIPビジョンを読み込む"
+  },
+  "Canny": {
+    "display_name": "キャニー"
+  },
+  "CheckpointLoader": {
+    "display_name": "設定でチェックポイントを読み込む（非推奨）"
+  },
+  "CheckpointLoaderSimple": {
+    "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは潜在変数のノイズ除去に使用されます。",
+    "display_name": "チェックポイントを読み込む",
+    "inputs": {
+      "ckpt_name": {
+        "tooltip": "読み込むチェックポイント（モデル）の名前。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "潜在変数のノイズ除去に使用されるモデル。"
+      },
+      "1": {
+        "tooltip": "テキストプロンプトをエンコードするために使用されるCLIPモデル。"
+      },
+      "2": {
+        "tooltip": "画像を潜在空間にエンコードおよびデコードするために使用されるVAEモデル。"
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "チェックポイントを保存"
+  },
+  "CombineHooks2": {
+    "display_name": "フックを組み合わせる [2]"
+  },
+  "CombineHooks4": {
+    "display_name": "フックを組み合わせる [4]"
+  },
+  "CombineHooks8": {
+    "display_name": "フックを組み合わせる [8]"
+  },
+  "ConditioningAverage": {
+    "display_name": "条件付け平均"
+  },
+  "ConditioningCombine": {
+    "display_name": "条件付け（組み合わせ）"
+  },
+  "ConditioningConcat": {
+    "display_name": "条件付け（連結）"
+  },
+  "ConditioningSetArea": {
+    "display_name": "条件付け（エリア設定）"
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "条件付け (パーセンテージでエリアを設定)"
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "条件付けエリア強度"
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "条件付けデフォルト結合"
+  },
+  "ConditioningSetMask": {
+    "display_name": "条件付け (マスクを設定)"
+  },
+  "ConditioningSetProperties": {
+    "display_name": "条件付けプロパティ"
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "条件付けプロパティ結合"
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "条件付けタイムステップ範囲"
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "タイムステップ範囲",
+    "outputs": {
+      "1": {
+        "name": "範囲前"
+      },
+      "2": {
+        "name": "範囲後"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "条件付けゼロアウト"
+  },
+  "ControlNetApply": {
+    "display_name": "ControlNetを適用 (OLD)"
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "ControlNetを適用",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "VAEでControlNetを適用",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "ControlNetInpaintingAliMamaを適用",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "ControlNetモデルを読み込む"
+  },
+  "CreateHookKeyframe": {
+    "display_name": "フックキーフレームを作成",
+    "outputs": {
+      "0": {
+        "name": "HOOK_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "フロートからフックキーフレームを作成",
+    "outputs": {
+      "0": {
+        "name": "HOOK_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "フックキーフレームを補間して作成",
+    "outputs": {
+      "0": {
+        "name": "HOOK_KF"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "フックLoRAを作成"
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "フックLoRAを作成 (MO)"
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "フックモデルをLoRAとして作成"
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "フックモデルをLoRAとして作成 (MO)"
+  },
+  "CropMask": {
+    "display_name": "クロップマスク"
+  },
+  "DevToolsDeprecatedNode": {
+    "description": "非推奨のノード",
+    "display_name": "非推奨ノード"
+  },
+  "DevToolsErrorRaiseNode": {
+    "description": "開発目的のためにエラーを発生させる",
+    "display_name": "エラーを発生させる"
+  },
+  "DevToolsErrorRaiseNodeWithMessage": {
+    "description": "開発目的のためにメッセージ付きでエラーを発生させる",
+    "display_name": "メッセージ付きでエラーを発生させる"
+  },
+  "DevToolsExperimentalNode": {
+    "description": "実験的なノード",
+    "display_name": "実験的ノード"
+  },
+  "DevToolsLongComboDropdown": {
+    "description": "ロングコンボドロップダウン",
+    "display_name": "ロングコンボドロップダウン"
+  },
+  "DevToolsNodeWithForceInput": {
+    "description": "強制入力のあるノード",
+    "display_name": "強制入力のあるノード"
+  },
+  "DevToolsNodeWithOnlyOptionalInput": {
+    "description": "オプション入力のみのノード",
+    "display_name": "オプション入力のみのノード"
+  },
+  "DevToolsNodeWithOptionalInput": {
+    "description": "オプション入力のあるノード",
+    "display_name": "オプション入力のあるノード"
+  },
+  "DevToolsNodeWithOutputList": {
+    "description": "出力リストを持つノード",
+    "display_name": "出力リストを持つノード",
+    "outputs": {
+      "0": {
+        "name": "整数出力"
+      },
+      "1": {
+        "name": "整数リスト出力"
+      }
+    }
+  },
+  "DevToolsNodeWithStringInput": {
+    "description": "文字列入力を持つノード",
+    "display_name": "文字列入力を持つノード"
+  },
+  "DevToolsNodeWithUnionInput": {
+    "description": "ユニオン入力を持つノード",
+    "display_name": "ユニオン入力を持つノード"
+  },
+  "DiffControlNetLoader": {
+    "display_name": "ControlNetモデルを読み込む（diff）"
+  },
+  "DifferentialDiffusion": {
+    "display_name": "差分拡散"
+  },
+  "DiffusersLoader": {
+    "display_name": "DiffusersLoader"
+  },
+  "DisableNoise": {
+    "display_name": "ノイズを無効にする"
+  },
+  "DualCFGGuider": {
+    "display_name": "DualCFGGuider"
+  },
+  "DualCLIPLoader": {
+    "description": "[レシピ]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "display_name": "DualCLIPLoader"
+  },
+  "EmptyImage": {
+    "display_name": "空の画像"
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "空のLTXV潜在ビデオ"
+  },
+  "EmptyLatentAudio": {
+    "display_name": "空の潜在音声",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "バッチ内の潜在画像の数。"
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "サンプリングを通じてデノイズされる新しい空の潜在画像のバッチを作成します。",
+    "display_name": "空の潜在画像",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "バッチ内の潜在画像の数。"
+      },
+      "height": {
+        "tooltip": "潜在画像の高さ（ピクセル単位）。"
+      },
+      "width": {
+        "tooltip": "潜在画像の幅（ピクセル単位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "空の潜在画像バッチ。"
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "空のMochi潜在ビデオ"
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "空のSD3潜在画像"
+  },
+  "ExponentialScheduler": {
+    "display_name": "指数スケジューラ"
+  },
+  "FeatherMask": {
+    "display_name": "フェザーマスク"
+  },
+  "FlipSigmas": {
+    "display_name": "シグマを反転"
+  },
+  "FluxGuidance": {
+    "display_name": "Fluxガイダンス"
+  },
+  "FreeU": {
+    "display_name": "FreeU"
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU_V2"
+  },
+  "GITSScheduler": {
+    "display_name": "GITSScheduler"
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGENLoader"
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGENテキストボックス適用"
+  },
+  "GrowMask": {
+    "display_name": "マスクを拡大"
+  },
+  "HyperTile": {
+    "display_name": "ハイパータイル"
+  },
+  "HypernetworkLoader": {
+    "display_name": "ハイパーネットワークローダー"
+  },
+  "ImageBatch": {
+    "display_name": "画像バッチ"
+  },
+  "ImageBlend": {
+    "display_name": "画像ブレンド"
+  },
+  "ImageBlur": {
+    "display_name": "画像ぼかし"
+  },
+  "ImageColorToMask": {
+    "display_name": "画像色をマスクに変換"
+  },
+  "ImageCompositeMasked": {
+    "display_name": "マスクされた画像合成"
+  },
+  "ImageCrop": {
+    "display_name": "画像トリミング"
+  },
+  "ImageFromBatch": {
+    "display_name": "バッチからの画像"
+  },
+  "ImageInvert": {
+    "display_name": "画像を反転"
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "画像のみのチェックポイントローダー（img2vidモデル）"
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "ImageOnlyCheckpointSave"
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "アウトペイント用の画像パッド"
+  },
+  "ImageQuantize": {
+    "display_name": "画像の量子化"
+  },
+  "ImageScale": {
+    "display_name": "画像のアップスケール"
+  },
+  "ImageScaleBy": {
+    "display_name": "画像をアップスケールする"
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "画像を総ピクセル数にスケール"
+  },
+  "ImageSharpen": {
+    "display_name": "画像のシャープ化"
+  },
+  "ImageToMask": {
+    "display_name": "画像をマスクに変換"
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "画像をアップスケール (モデル使用)"
+  },
+  "InpaintModelConditioning": {
+    "display_name": "InpaintModelConditioning",
+    "inputs": {
+      "noise_mask": {
+        "tooltip": "サンプリングがマスク内でのみ行われるように、潜在空間にノイズマスクを追加します。モデルによっては結果が改善されるか、完全に壊れる可能性があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "InstructPixToPixConditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "マスクを反転"
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "アルファと画像を結合"
+  },
+  "KSampler": {
+    "description": "提供されたモデル、ポジティブおよびネガティブの条件付けを使用して、潜在画像のノイズを除去します。",
+    "display_name": "KSampler",
+    "inputs": {
+      "cfg": {
+        "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。高い値はプロンプトにより密接に一致する画像を生成しますが、値が高すぎると品質に悪影響を及ぼします。"
+      },
+      "denoise": {
+        "tooltip": "適用されるノイズ除去の量。低い値は初期画像の構造を維持し、画像から画像へのサンプリングを可能にします。"
+      },
+      "latent_image": {
+        "tooltip": "ノイズを除去する潜在画像。"
+      },
+      "model": {
+        "tooltip": "入力潜在のノイズ除去に使用されるモデル。"
+      },
+      "negative": {
+        "tooltip": "画像から除外したい属性を説明する条件付け。"
+      },
+      "positive": {
+        "tooltip": "画像に含めたい属性を説明する条件付け。"
+      },
+      "sampler_name": {
+        "tooltip": "サンプリング時に使用されるアルゴリズムで、生成された出力の品質、速度、スタイルに影響を与える可能性があります。"
+      },
+      "scheduler": {
+        "tooltip": "スケジューラーは、画像を形成するためにノイズが徐々に除去される方法を制御します。"
+      },
+      "seed": {
+        "tooltip": "ノイズを生成するために使用されるランダムシード。"
+      },
+      "steps": {
+        "tooltip": "ノイズ除去プロセスで使用されるステップ数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "ノイズ除去された潜在。"
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "KSampler (高度)"
+  },
+  "KSamplerSelect": {
+    "display_name": "KSamplerSelect"
+  },
+  "KarrasScheduler": {
+    "display_name": "KarrasScheduler"
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXV条件付け",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXV画像から動画へ",
+    "inputs": {
+      "image_noise_scale": {
+        "tooltip": "条件付け画像の潜在に適用するノイズの量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXVScheduler",
+    "inputs": {
+      "stretch": {
+        "tooltip": "シグマを[terminal, 1]の範囲にストレッチします。"
+      },
+      "terminal": {
+        "tooltip": "ストレッチ後のシグマの端値。"
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "LaplaceScheduler"
+  },
+  "LatentAdd": {
+    "display_name": "LatentAdd"
+  },
+  "LatentApplyOperation": {
+    "display_name": "LatentApplyOperation"
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "LatentApplyOperationCFG"
+  },
+  "LatentBatch": {
+    "display_name": "LatentBatch"
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "LatentBatchSeedBehavior"
+  },
+  "LatentBlend": {
+    "display_name": "潜在ブレンド"
+  },
+  "LatentComposite": {
+    "display_name": "潜在合成"
+  },
+  "LatentCompositeMasked": {
+    "display_name": "潜在合成マスク"
+  },
+  "LatentCrop": {
+    "display_name": "潜在クロップ"
+  },
+  "LatentFlip": {
+    "display_name": "潜在フリップ"
+  },
+  "LatentFromBatch": {
+    "display_name": "バッチからの潜在"
+  },
+  "LatentInterpolate": {
+    "display_name": "潜在補間"
+  },
+  "LatentMultiply": {
+    "display_name": "潜在乗算"
+  },
+  "LatentOperationSharpen": {
+    "display_name": "潜在シャープ化"
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "潜在トーンマップ（ラインハルト）"
+  },
+  "LatentRotate": {
+    "display_name": "潜在回転"
+  },
+  "LatentSubtract": {
+    "display_name": "潜在減算"
+  },
+  "LatentUpscale": {
+    "display_name": "潜在アップスケール"
+  },
+  "LatentUpscaleBy": {
+    "display_name": "潜在アップスケール（倍率）"
+  },
+  "LoadAudio": {
+    "display_name": "オーディオを読み込む"
+  },
+  "LoadImage": {
+    "display_name": "画像を読み込む"
+  },
+  "LoadImageMask": {
+    "display_name": "画像を読み込む（マスクとして）"
+  },
+  "LoadLatent": {
+    "display_name": "潜在を読み込む"
+  },
+  "LoraLoader": {
+    "description": "LoRAは、拡散モデルとCLIPモデルを変更し、潜在がデノイズされる方法を変更します。複数のLoRAノードを連結できます。",
+    "display_name": "LoRAを読み込む",
+    "inputs": {
+      "clip": {
+        "tooltip": "LoRAが適用されるCLIPモデル。"
+      },
+      "lora_name": {
+        "tooltip": "LoRAの名前。"
+      },
+      "model": {
+        "tooltip": "LoRAが適用される拡散モデル。"
+      },
+      "strength_clip": {
+        "tooltip": "CLIPモデルをどの程度変更するか。この値は負の値にすることもできます。"
+      },
+      "strength_model": {
+        "tooltip": "拡散モデルをどの程度変更するか。この値は負の値にすることもできます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更された拡散モデル。"
+      },
+      "1": {
+        "tooltip": "変更されたCLIPモデル。"
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRAは、拡散モデルとCLIPモデルを変更し、潜在がデノイズされる方法を変更します。複数のLoRAノードを連結できます。",
+    "display_name": "LoRAローダーモデルのみ",
+    "outputs": {
+      "0": {
+        "tooltip": "変更された拡散モデル。"
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "LoRAを抽出して保存",
+    "inputs": {
+      "model_diff": {
+        "tooltip": "loraに変換されるModelSubtractの出力。"
+      },
+      "text_encoder_diff": {
+        "tooltip": "loraに変換されるCLIPSubtractの出力。"
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "MaskComposite"
+  },
+  "MaskToImage": {
+    "display_name": "マスクを画像に変換"
+  },
+  "ModelMergeAdd": {
+    "display_name": "ModelMergeAdd"
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "ModelMergeAuraflow"
+  },
+  "ModelMergeBlocks": {
+    "display_name": "ModelMergeBlocks"
+  },
+  "ModelMergeFlux1": {
+    "display_name": "ModelMergeFlux1"
+  },
+  "ModelMergeLTXV": {
+    "display_name": "ModelMergeLTXV"
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "ModelMergeMochiPreview"
+  },
+  "ModelMergeSD1": {
+    "display_name": "ModelMergeSD1"
+  },
+  "ModelMergeSD2": {
+    "display_name": "ModelMergeSD2"
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "ModelMergeSD35_Large"
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "ModelMergeSD3_2B"
+  },
+  "ModelMergeSDXL": {
+    "display_name": "ModelMergeSDXL"
+  },
+  "ModelMergeSimple": {
+    "display_name": "ModelMergeSimple"
+  },
+  "ModelMergeSubtract": {
+    "display_name": "ModelMergeSubtract"
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "ModelSamplingAuraFlow"
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "ModelSamplingContinuousEDM"
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "ModelSamplingContinuousV"
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "ModelSamplingDiscrete"
+  },
+  "ModelSamplingFlux": {
+    "display_name": "ModelSamplingFlux"
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "ModelSamplingLTXV"
+  },
+  "ModelSamplingSD3": {
+    "display_name": "ModelSamplingSD3"
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "ModelSamplingStableCascade"
+  },
+  "ModelSave": {
+    "display_name": "ModelSave"
+  },
+  "Morphology": {
+    "display_name": "画像形態学"
+  },
+  "PairConditioningCombine": {
+    "display_name": "条件ペア結合",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "条件ペアデフォルト結合",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "条件ペアプロパティ設定",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "条件ペアプロパティ設定結合",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg (PerpNegGuiderによって非推奨)"
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNegGuider"
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "PerturbedAttentionGuidance"
+  },
+  "PhotoMakerEncode": {
+    "display_name": "PhotoMakerEncode"
+  },
+  "PhotoMakerLoader": {
+    "display_name": "PhotoMakerLoader"
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "PolyexponentialScheduler"
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "ポーターデフ画像合成"
+  },
+  "PreviewAudio": {
+    "display_name": "プレビューオーディオ"
+  },
+  "PreviewImage": {
+    "description": "入力画像をComfyUI出力ディレクトリに保存します。",
+    "display_name": "プレビュー画像"
+  },
+  "RandomNoise": {
+    "display_name": "ランダムノイズ"
+  },
+  "RebatchImages": {
+    "display_name": "画像の再バッチ処理"
+  },
+  "RebatchLatents": {
+    "display_name": "潜在の再バッチ処理"
+  },
+  "RepeatImageBatch": {
+    "display_name": "画像バッチの繰り返し"
+  },
+  "RepeatLatentBatch": {
+    "display_name": "潜在バッチの繰り返し"
+  },
+  "RescaleCFG": {
+    "display_name": "CFGの再スケール"
+  },
+  "SDTurboScheduler": {
+    "display_name": "SDターボスケジューラー"
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4Xアップスケール条件付け",
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      },
+      "2": {
+        "name": "潜在"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD_img2vid_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "カスタムサンプラー",
+    "outputs": {
+      "0": {
+        "name": "出力"
+      },
+      "1": {
+        "name": "デノイズされた出力"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "カスタムサンプラー（高度）",
+    "outputs": {
+      "0": {
+        "name": "出力"
+      },
+      "1": {
+        "name": "デノイズされた出力"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "適応型DPMサンプラー"
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "DPMPP_2M_SDEサンプラー"
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "DPMPP_2S_先祖サンプラー"
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "DPMPP_3M_SDEサンプラー"
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "DPMPP_SDEサンプラー"
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "オイラー先祖サンプラー"
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "オイラー先祖CFG++サンプラー"
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "オイラーCFG++サンプラー"
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "LCMアップスケールサンプラー"
+  },
+  "SamplerLMS": {
+    "display_name": "LMSサンプラー"
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "アニメーションPNGを保存"
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "アニメーションWEBPを保存"
+  },
+  "SaveAudio": {
+    "display_name": "オーディオを保存"
+  },
+  "SaveImage": {
+    "description": "入力画像をComfyUI出力ディレクトリに保存します。",
+    "display_name": "画像を保存",
+    "inputs": {
+      "filename_prefix": {
+        "tooltip": "保存するファイルのプレフィックス。%date:yyyy-MM-dd%や%Empty Latent Image.width%などのフォーマット情報を含めることができます。"
+      },
+      "images": {
+        "tooltip": "保存する画像。"
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "画像をWebsocketで保存"
+  },
+  "SaveLatent": {
+    "display_name": "潜在を保存"
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "自己注意ガイダンス"
+  },
+  "SetClipHooks": {
+    "display_name": "CLIPフックを設定"
+  },
+  "SetHookKeyframes": {
+    "display_name": "フックキーフレームを設定"
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "潜在ノイズマスクを設定"
+  },
+  "SetUnionControlNetType": {
+    "display_name": "UnionControlNetタイプを設定"
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
+    "display_name": "SkipLayerGuidanceDiT"
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
+    "display_name": "SkipLayerGuidanceSD3"
+  },
+  "SolidMask": {
+    "display_name": "ソリッドマスク"
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "アルファ付き画像を分割"
+  },
+  "SplitSigmas": {
+    "display_name": "SplitSigmas",
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
+      },
+      "1": {
+        "name": "low_sigmas"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "SplitSigmasDenoise",
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
+      },
+      "1": {
+        "name": "low_sigmas"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "StableCascade_EmptyLatentImage",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "StableCascade_StageB_Conditioning"
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "StableCascade_StageC_VAEEncode",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "StableCascade_SuperResolutionControlnet",
+    "outputs": {
+      "0": {
+        "name": "controlnet_input"
+      },
+      "1": {
+        "name": "stage_c"
+      },
+      "2": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "StableZero123_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "StableZero123_Conditioning_Batched",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "スタイルモデルを適用"
+  },
+  "StyleModelLoader": {
+    "display_name": "スタイルモデルを読み込む"
+  },
+  "ThresholdMask": {
+    "display_name": "ThresholdMask"
+  },
+  "TomePatchModel": {
+    "display_name": "TomePatchModel"
+  },
+  "TorchCompileModel": {
+    "display_name": "TorchCompileModel"
+  },
+  "TripleCLIPLoader": {
+    "description": "[レシピ]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "TripleCLIPLoader"
+  },
+  "UNETLoader": {
+    "display_name": "拡散モデルを読み込む"
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNetCrossAttentionMultiply"
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNetSelfAttentionMultiply"
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNetTemporalAttentionMultiply"
+  },
+  "UpscaleModelLoader": {
+    "display_name": "アップスケールモデルを読み込む"
+  },
+  "VAEDecode": {
+    "description": "潜在画像をピクセル空間の画像にデコードします。",
+    "display_name": "VAEデコード",
+    "inputs": {
+      "samples": {
+        "tooltip": "デコードされる潜在変数。"
+      },
+      "vae": {
+        "tooltip": "潜在変数のデコードに使用されるVAEモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "デコードされた画像。"
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "VAEDecodeAudio"
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAEデコード（タイル）"
+  },
+  "VAEEncode": {
+    "display_name": "VAEエンコード"
+  },
+  "VAEEncodeAudio": {
+    "display_name": "VAEEncodeAudio"
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAEエンコード（インペイント用）"
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAEエンコード（タイル）"
+  },
+  "VAELoader": {
+    "display_name": "VAEを読み込む"
+  },
+  "VAESave": {
+    "display_name": "VAESave"
+  },
+  "VPScheduler": {
+    "display_name": "VPScheduler"
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "VideoLinearCFGGuidance"
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "VideoTriangleCFGGuidance"
+  },
+  "WebcamCapture": {
+    "display_name": "ウェブカメラキャプチャ"
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIPCheckpointLoader"
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIPConditioning"
+  }
+}

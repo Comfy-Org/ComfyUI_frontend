@@ -1,0 +1,1201 @@
+{
+  "AddNoise": {
+    "display_name": "노이즈 추가"
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "단계 정렬 스케줄러"
+  },
+  "BasicGuider": {
+    "display_name": "기본 가이드"
+  },
+  "BasicScheduler": {
+    "display_name": "기본 스케줄러"
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "베타 샘플링 스케줄러"
+  },
+  "CFGGuider": {
+    "display_name": "CFG 가이드"
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIP 주의 곱하기"
+  },
+  "CLIPLoader": {
+    "description": "[레시피]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "display_name": "CLIP 로드"
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIP 병합 추가"
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIP 병합 간단"
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIP 병합 빼기"
+  },
+  "CLIPSave": {
+    "display_name": "CLIP 저장"
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "CLIP 마지막 레이어 설정"
+  },
+  "CLIPTextEncode": {
+    "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 특정 이미지를 생성하도록 확산 모델을 안내하는 데 사용할 수 있는 임베딩으로 변환합니다.",
+    "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
+    "inputs": {
+      "clip": {
+        "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
+      },
+      "text": {
+        "tooltip": "인코딩할 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "확산 모델을 안내하는 데 사용되는 임베딩된 텍스트를 포함하는 조건입니다."
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIP 텍스트 인코딩 컨트롤넷"
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIP 텍스트 인코딩 flux"
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIP 텍스트 인코딩 HunyuanDiT"
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIP 텍스트 인코딩 SD3"
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIP 텍스트 인코딩 SDXL"
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIP 텍스트 인코딩 SDXL 리파이너"
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIP 비전 인코딩"
+  },
+  "CLIPVisionLoader": {
+    "display_name": "CLIP 비전 로드"
+  },
+  "Canny": {
+    "display_name": "캐니"
+  },
+  "CheckpointLoader": {
+    "display_name": "구성으로 체크포인트 로드 (사용 중단)"
+  },
+  "CheckpointLoaderSimple": {
+    "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 변수를 디노이즈하는 데 사용됩니다.",
+    "display_name": "체크포인트 로드",
+    "inputs": {
+      "ckpt_name": {
+        "tooltip": "로드할 체크포인트(모델)의 이름입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "잠재 변수를 디노이즈하는 데 사용되는 모델입니다."
+      },
+      "1": {
+        "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
+      },
+      "2": {
+        "tooltip": "이미지를 잠재 공간으로 인코딩하고 디코딩하는 데 사용되는 VAE 모델입니다."
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "체크포인트 저장"
+  },
+  "CombineHooks2": {
+    "display_name": "후크 결합 [2]"
+  },
+  "CombineHooks4": {
+    "display_name": "후크 결합 [4]"
+  },
+  "CombineHooks8": {
+    "display_name": "후크 결합 [8]"
+  },
+  "ConditioningAverage": {
+    "display_name": "조건 평균"
+  },
+  "ConditioningCombine": {
+    "display_name": "조건 (결합)"
+  },
+  "ConditioningConcat": {
+    "display_name": "조건 (연결)"
+  },
+  "ConditioningSetArea": {
+    "display_name": "조건 (영역 설정)"
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "조건 설정 (비율로 영역 설정)"
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "조건 설정 영역 강도"
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "조건 설정 기본 결합"
+  },
+  "ConditioningSetMask": {
+    "display_name": "조건 설정 (마스크 설정)"
+  },
+  "ConditioningSetProperties": {
+    "display_name": "조건 설정 속성"
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 설정 속성 결합"
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "조건 설정 시간 단계 범위"
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "시간 단계 범위",
+    "outputs": {
+      "1": {
+        "name": "범위 전"
+      },
+      "2": {
+        "name": "범위 후"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "조건 설정 제로 아웃"
+  },
+  "ControlNetApply": {
+    "display_name": "ControlNet 적용 (구형)"
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "ControlNet 적용",
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "VAE와 함께 ControlNet 적용",
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "ControlNetInpaintingAliMamaApply",
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "ControlNet 모델 로드"
+  },
+  "CreateHookKeyframe": {
+    "display_name": "후크 키프레임 생성",
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "부동 소수점에서 후크 키프레임 생성",
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "후크 키프레임 보간 생성",
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "후크 LoRA 생성"
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "후크 LoRA 생성 (모델 전용)"
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "후크 모델을 LoRA로 생성"
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "후크 모델을 LoRA로 생성 (모델 전용)"
+  },
+  "CropMask": {
+    "display_name": "크롭 마스크"
+  },
+  "DevToolsDeprecatedNode": {
+    "description": "사용 중단된 노드",
+    "display_name": "사용 중단된 노드"
+  },
+  "DevToolsErrorRaiseNode": {
+    "description": "개발 목적으로 오류 발생",
+    "display_name": "오류 발생"
+  },
+  "DevToolsErrorRaiseNodeWithMessage": {
+    "description": "개발 목적으로 메시지와 함께 오류 발생",
+    "display_name": "메시지와 함께 오류 발생"
+  },
+  "DevToolsExperimentalNode": {
+    "description": "실험적 노드",
+    "display_name": "실험적 노드"
+  },
+  "DevToolsLongComboDropdown": {
+    "description": "긴 콤보 드롭다운",
+    "display_name": "긴 콤보 드롭다운"
+  },
+  "DevToolsNodeWithForceInput": {
+    "description": "강제 입력이 있는 노드",
+    "display_name": "강제 입력이 있는 노드"
+  },
+  "DevToolsNodeWithOnlyOptionalInput": {
+    "description": "선택적 입력만 있는 노드",
+    "display_name": "선택적 입력만 있는 노드"
+  },
+  "DevToolsNodeWithOptionalInput": {
+    "description": "선택적 입력이 있는 노드",
+    "display_name": "선택적 입력이 있는 노드"
+  },
+  "DevToolsNodeWithOutputList": {
+    "description": "출력 목록이 있는 노드",
+    "display_name": "출력 목록이 있는 노드",
+    "outputs": {
+      "0": {
+        "name": "정수 출력"
+      },
+      "1": {
+        "name": "정수 목록 출력"
+      }
+    }
+  },
+  "DevToolsNodeWithStringInput": {
+    "description": "문자열 입력이 있는 노드",
+    "display_name": "문자열 입력이 있는 노드"
+  },
+  "DevToolsNodeWithUnionInput": {
+    "description": "유니온 입력이 있는 노드",
+    "display_name": "유니온 입력이 있는 노드"
+  },
+  "DiffControlNetLoader": {
+    "display_name": "ControlNet 모델 로드 (diff)"
+  },
+  "DifferentialDiffusion": {
+    "display_name": "차별적 확산"
+  },
+  "DiffusersLoader": {
+    "display_name": "DiffusersLoader"
+  },
+  "DisableNoise": {
+    "display_name": "노이즈 비활성화"
+  },
+  "DualCFGGuider": {
+    "display_name": "DualCFGGuider"
+  },
+  "DualCLIPLoader": {
+    "description": "[레시피]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "display_name": "DualCLIPLoader"
+  },
+  "EmptyImage": {
+    "display_name": "빈 이미지"
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "빈 LTXV 잠재 비디오"
+  },
+  "EmptyLatentAudio": {
+    "display_name": "빈 잠재 오디오",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "배치의 잠재 이미지 수."
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "샘플링을 통해 노이즈 제거할 빈 잠재 이미지의 새 배치를 생성합니다.",
+    "display_name": "빈 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "tooltip": "배치의 잠재 이미지 수."
+      },
+      "height": {
+        "tooltip": "픽셀 단위의 잠재 이미지 높이."
+      },
+      "width": {
+        "tooltip": "픽셀 단위의 잠재 이미지 너비."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "빈 잠재 이미지 배치."
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "빈 Mochi 잠재 비디오"
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "빈 SD3 잠재 이미지"
+  },
+  "ExponentialScheduler": {
+    "display_name": "지수 스케줄러"
+  },
+  "FeatherMask": {
+    "display_name": "페더 마스크"
+  },
+  "FlipSigmas": {
+    "display_name": "플립 시그마"
+  },
+  "FluxGuidance": {
+    "display_name": "FluxGuidance"
+  },
+  "FreeU": {
+    "display_name": "FreeU"
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU_V2"
+  },
+  "GITSScheduler": {
+    "display_name": "GITSScheduler"
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGENLoader"
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGENTextBoxApply"
+  },
+  "GrowMask": {
+    "display_name": "GrowMask"
+  },
+  "HyperTile": {
+    "display_name": "하이퍼 타일"
+  },
+  "HypernetworkLoader": {
+    "display_name": "하이퍼네트워크 로더"
+  },
+  "ImageBatch": {
+    "display_name": "이미지 배치"
+  },
+  "ImageBlend": {
+    "display_name": "이미지 블렌드"
+  },
+  "ImageBlur": {
+    "display_name": "이미지 블러"
+  },
+  "ImageColorToMask": {
+    "display_name": "이미지 색상을 마스크로"
+  },
+  "ImageCompositeMasked": {
+    "display_name": "마스크가 적용된 이미지 합성"
+  },
+  "ImageCrop": {
+    "display_name": "이미지 자르기"
+  },
+  "ImageFromBatch": {
+    "display_name": "배치에서 이미지 가져오기"
+  },
+  "ImageInvert": {
+    "display_name": "이미지 반전"
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "이미지 전용 체크포인트 로더 (img2vid 모델)"
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "이미지 전용 체크포인트 저장"
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "아웃페인팅을 위한 이미지 패드"
+  },
+  "ImageQuantize": {
+    "display_name": "이미지 양자화"
+  },
+  "ImageScale": {
+    "display_name": "이미지 업스케일"
+  },
+  "ImageScaleBy": {
+    "display_name": "이미지 업스케일 비율"
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "총 픽셀 수에 맞춰 이미지 스케일"
+  },
+  "ImageSharpen": {
+    "display_name": "이미지 선명화"
+  },
+  "ImageToMask": {
+    "display_name": "이미지를 마스크로 변환"
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "모델을 사용한 이미지 업스케일"
+  },
+  "InpaintModelConditioning": {
+    "display_name": "인페인트 모델 조건화",
+    "inputs": {
+      "noise_mask": {
+        "tooltip": "샘플링이 마스크 내에서만 발생하도록 잠재 공간에 노이즈 마스크를 추가합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "픽스 투 픽스 조건화",
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "마스크 반전"
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "알파와 이미지 결합"
+  },
+  "KSampler": {
+    "description": "제공된 모델, 양성 및 음성 조건화를 사용하여 잠재 이미지를 노이즈 제거합니다.",
+    "display_name": "K샘플러",
+    "inputs": {
+      "cfg": {
+        "tooltip": "분류기 없는 가이던스 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 높은 값은 프롬프트와 더 밀접하게 일치하는 이미지를 생성하지만 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
+      },
+      "denoise": {
+        "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
+      },
+      "latent_image": {
+        "tooltip": "노이즈 제거할 잠재 이미지입니다."
+      },
+      "model": {
+        "tooltip": "입력 잠재의 노이즈 제거에 사용되는 모델입니다."
+      },
+      "negative": {
+        "tooltip": "이미지에서 제외하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "positive": {
+        "tooltip": "이미지에 포함하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "sampler_name": {
+        "tooltip": "샘플링 시 사용되는 알고리즘으로, 생성된 출력의 품질, 속도 및 스타일에 영향을 미칠 수 있습니다."
+      },
+      "scheduler": {
+        "tooltip": "스케줄러는 이미지 형성을 위해 노이즈가 점진적으로 제거되는 방식을 제어합니다."
+      },
+      "seed": {
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      },
+      "steps": {
+        "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "노이즈 제거된 잠재입니다."
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "K샘플러 (고급)"
+  },
+  "KSamplerSelect": {
+    "display_name": "K샘플러 선택"
+  },
+  "KarrasScheduler": {
+    "display_name": "카라스 스케줄러"
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXV 조건화",
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXV 이미지에서 비디오로",
+    "inputs": {
+      "image_noise_scale": {
+        "tooltip": "조건화 이미지 잠재에 적용할 노이즈 양."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXVScheduler",
+    "inputs": {
+      "stretch": {
+        "tooltip": "시그마를 [터미널, 1] 범위로 늘립니다."
+      },
+      "terminal": {
+        "tooltip": "늘린 후 시그마의 터미널 값입니다."
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "라플라스 스케줄러"
+  },
+  "LatentAdd": {
+    "display_name": "잠재 추가"
+  },
+  "LatentApplyOperation": {
+    "display_name": "잠재 연산 적용"
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "잠재 연산 적용 CFG"
+  },
+  "LatentBatch": {
+    "display_name": "잠재 배치"
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "잠재 배치 시드 동작"
+  },
+  "LatentBlend": {
+    "display_name": "잠재 혼합"
+  },
+  "LatentComposite": {
+    "display_name": "잠재 복합체"
+  },
+  "LatentCompositeMasked": {
+    "display_name": "잠재 복합체 마스크"
+  },
+  "LatentCrop": {
+    "display_name": "잠재 자르기"
+  },
+  "LatentFlip": {
+    "display_name": "잠재 뒤집기"
+  },
+  "LatentFromBatch": {
+    "display_name": "배치에서 잠재 가져오기"
+  },
+  "LatentInterpolate": {
+    "display_name": "잠재 보간"
+  },
+  "LatentMultiply": {
+    "display_name": "잠재 곱하기"
+  },
+  "LatentOperationSharpen": {
+    "display_name": "잠재 선명하게 하기"
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "잠재 톤 매핑 라이너드"
+  },
+  "LatentRotate": {
+    "display_name": "잠재 회전"
+  },
+  "LatentSubtract": {
+    "display_name": "잠재 빼기"
+  },
+  "LatentUpscale": {
+    "display_name": "잠재 업스케일"
+  },
+  "LatentUpscaleBy": {
+    "display_name": "잠재 업스케일 비율"
+  },
+  "LoadAudio": {
+    "display_name": "오디오 로드"
+  },
+  "LoadImage": {
+    "display_name": "이미지 로드"
+  },
+  "LoadImageMask": {
+    "display_name": "이미지 로드 (마스크로)"
+  },
+  "LoadLatent": {
+    "display_name": "잠재 로드"
+  },
+  "LoraLoader": {
+    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재가 노이즈 제거되는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "display_name": "LoRA 로드",
+    "inputs": {
+      "clip": {
+        "tooltip": "LoRA가 적용될 CLIP 모델."
+      },
+      "lora_name": {
+        "tooltip": "LoRA의 이름."
+      },
+      "model": {
+        "tooltip": "LoRA가 적용될 확산 모델."
+      },
+      "strength_clip": {
+        "tooltip": "CLIP 모델을 얼마나 강하게 수정할지. 이 값은 음수가 될 수 있습니다."
+      },
+      "strength_model": {
+        "tooltip": "확산 모델을 얼마나 강하게 수정할지. 이 값은 음수가 될 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델."
+      },
+      "1": {
+        "tooltip": "수정된 CLIP 모델."
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재가 노이즈 제거되는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "display_name": "LoraLoaderModelOnly",
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델."
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "LoRA 추출 및 저장",
+    "inputs": {
+      "model_diff": {
+        "tooltip": "lora로 변환될 ModelSubtract 출력."
+      },
+      "text_encoder_diff": {
+        "tooltip": "lora로 변환될 CLIPSubtract 출력."
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "MaskComposite"
+  },
+  "MaskToImage": {
+    "display_name": "마스크를 이미지로 변환"
+  },
+  "ModelMergeAdd": {
+    "display_name": "ModelMergeAdd"
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "ModelMergeAuraflow"
+  },
+  "ModelMergeBlocks": {
+    "display_name": "ModelMergeBlocks"
+  },
+  "ModelMergeFlux1": {
+    "display_name": "ModelMergeFlux1"
+  },
+  "ModelMergeLTXV": {
+    "display_name": "ModelMergeLTXV"
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "ModelMergeMochiPreview"
+  },
+  "ModelMergeSD1": {
+    "display_name": "ModelMergeSD1"
+  },
+  "ModelMergeSD2": {
+    "display_name": "ModelMergeSD2"
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "ModelMergeSD35_Large"
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "ModelMergeSD3_2B"
+  },
+  "ModelMergeSDXL": {
+    "display_name": "ModelMergeSDXL"
+  },
+  "ModelMergeSimple": {
+    "display_name": "ModelMergeSimple"
+  },
+  "ModelMergeSubtract": {
+    "display_name": "ModelMergeSubtract"
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "ModelSamplingAuraFlow"
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "ModelSamplingContinuousEDM"
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "ModelSamplingContinuousV"
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "ModelSamplingDiscrete"
+  },
+  "ModelSamplingFlux": {
+    "display_name": "ModelSamplingFlux"
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "ModelSamplingLTXV"
+  },
+  "ModelSamplingSD3": {
+    "display_name": "ModelSamplingSD3"
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "ModelSamplingStableCascade"
+  },
+  "ModelSave": {
+    "display_name": "모델 저장"
+  },
+  "Morphology": {
+    "display_name": "이미지 형태학"
+  },
+  "PairConditioningCombine": {
+    "display_name": "조건 쌍 결합",
+    "outputs": {
+      "0": {
+        "name": "양수"
+      },
+      "1": {
+        "name": "음수"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "조건 쌍 기본 설정 결합",
+    "outputs": {
+      "0": {
+        "name": "양수"
+      },
+      "1": {
+        "name": "음수"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "조건 쌍 속성 설정",
+    "outputs": {
+      "0": {
+        "name": "양수"
+      },
+      "1": {
+        "name": "음수"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 쌍 속성 설정 및 결합",
+    "outputs": {
+      "0": {
+        "name": "양수"
+      },
+      "1": {
+        "name": "음수"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg (PerpNegGuider에 의해 사용 중단됨)"
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNegGuider"
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "PerturbedAttentionGuidance"
+  },
+  "PhotoMakerEncode": {
+    "display_name": "PhotoMakerEncode"
+  },
+  "PhotoMakerLoader": {
+    "display_name": "PhotoMakerLoader"
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "PolyexponentialScheduler"
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "포터-더프 이미지 합성"
+  },
+  "PreviewAudio": {
+    "display_name": "미리보기 오디오"
+  },
+  "PreviewImage": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+    "display_name": "미리보기 이미지"
+  },
+  "RandomNoise": {
+    "display_name": "랜덤 노이즈"
+  },
+  "RebatchImages": {
+    "display_name": "이미지 재배치"
+  },
+  "RebatchLatents": {
+    "display_name": "잠재 변수 재배치"
+  },
+  "RepeatImageBatch": {
+    "display_name": "이미지 배치 반복"
+  },
+  "RepeatLatentBatch": {
+    "display_name": "잠재 배치 반복"
+  },
+  "RescaleCFG": {
+    "display_name": "CFG 재조정"
+  },
+  "SDTurboScheduler": {
+    "display_name": "SD 터보 스케줄러"
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4X업스케일 조건",
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD_img2vid_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "사용자 정의 샘플러",
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "고급 사용자 정의 샘플러",
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "적응형 DPM 샘플러"
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "DPMPP_2M_SDE 샘플러"
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "DPMPP_2S_조상 샘플러"
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "DPMPP_3M_SDE 샘플러"
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "DPMPP_SDE 샘플러"
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "오일러 조상 샘플러"
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "오일러 조상 CFG++"
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "오일러 CFG++"
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "LCM 업스케일 샘플러"
+  },
+  "SamplerLMS": {
+    "display_name": "LMS 샘플러"
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "애니메이션 PNG 저장"
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "애니메이션 WEBP 저장"
+  },
+  "SaveAudio": {
+    "display_name": "오디오 저장"
+  },
+  "SaveImage": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+    "display_name": "이미지 저장",
+    "inputs": {
+      "filename_prefix": {
+        "tooltip": "저장할 파일의 접두사. %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보를 포함할 수 있습니다."
+      },
+      "images": {
+        "tooltip": "저장할 이미지."
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "웹소켓을 통한 이미지 저장"
+  },
+  "SaveLatent": {
+    "display_name": "잠재 변수 저장"
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "자기 주의 가이드"
+  },
+  "SetClipHooks": {
+    "display_name": "CLIP 훅 설정"
+  },
+  "SetHookKeyframes": {
+    "display_name": "훅 키프레임 설정"
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "잠재 노이즈 마스크 설정"
+  },
+  "SetUnionControlNetType": {
+    "display_name": "유니온 컨트롤넷 유형 설정"
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 일반 버전입니다.",
+    "display_name": "SkipLayerGuidanceDiT"
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 일반 버전입니다.",
+    "display_name": "SkipLayerGuidanceSD3"
+  },
+  "SolidMask": {
+    "display_name": "SolidMask"
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "알파로 이미지 분할"
+  },
+  "SplitSigmas": {
+    "display_name": "SplitSigmas",
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
+      },
+      "1": {
+        "name": "low_sigmas"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "SplitSigmasDenoise",
+    "outputs": {
+      "0": {
+        "name": "high_sigmas"
+      },
+      "1": {
+        "name": "low_sigmas"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "StableCascade_EmptyLatentImage",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "StableCascade_StageB_Conditioning"
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "StableCascade_StageC_VAEEncode",
+    "outputs": {
+      "0": {
+        "name": "stage_c"
+      },
+      "1": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "StableCascade_SuperResolutionControlnet",
+    "outputs": {
+      "0": {
+        "name": "controlnet_input"
+      },
+      "1": {
+        "name": "stage_c"
+      },
+      "2": {
+        "name": "stage_b"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "StableZero123_Conditioning",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "StableZero123_Conditioning_Batched",
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      },
+      "2": {
+        "name": "latent"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "스타일 모델 적용"
+  },
+  "StyleModelLoader": {
+    "display_name": "스타일 모델 로드"
+  },
+  "ThresholdMask": {
+    "display_name": "ThresholdMask"
+  },
+  "TomePatchModel": {
+    "display_name": "TomePatchModel"
+  },
+  "TorchCompileModel": {
+    "display_name": "TorchCompileModel"
+  },
+  "TripleCLIPLoader": {
+    "description": "[레시피]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "TripleCLIPLoader"
+  },
+  "UNETLoader": {
+    "display_name": "확산 모델 로드"
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNetCrossAttentionMultiply"
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNetSelfAttentionMultiply"
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNetTemporalAttentionMultiply"
+  },
+  "UpscaleModelLoader": {
+    "display_name": "업스케일 모델 로드"
+  },
+  "VAEDecode": {
+    "description": "잠재 이미지를 픽셀 공간 이미지로 디코드합니다.",
+    "display_name": "VAE 디코드",
+    "inputs": {
+      "samples": {
+        "tooltip": "디코드할 잠재."
+      },
+      "vae": {
+        "tooltip": "잠재를 디코드하는 데 사용되는 VAE 모델."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "디코드된 이미지."
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "VAEDecodeAudio"
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAE 디코드 (타일)"
+  },
+  "VAEEncode": {
+    "display_name": "VAE 인코드"
+  },
+  "VAEEncodeAudio": {
+    "display_name": "VAEEncodeAudio"
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAE 인코드 (인페인팅용)"
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAE 인코드 (타일)"
+  },
+  "VAELoader": {
+    "display_name": "VAE 로드"
+  },
+  "VAESave": {
+    "display_name": "VAESave"
+  },
+  "VPScheduler": {
+    "display_name": "VPScheduler"
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "VideoLinearCFGGuidance"
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "VideoTriangleCFGGuidance"
+  },
+  "WebcamCapture": {
+    "display_name": "웹캠 캡처"
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIPCheckpointLoader"
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIPConditioning"
+  }
+}
