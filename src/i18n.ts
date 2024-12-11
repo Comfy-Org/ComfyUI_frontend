@@ -16,7 +16,11 @@ export const i18n = createI18n({
     ru,
     ja,
     ko
-  }
+  },
+  // Ignore warnings for locale options as each option is in its own language.
+  // e.g. "English", "中文", "Русский", "日本語", "한국어"
+  missingWarn: /^(?!settingsDialog\.Comfy_Locale\.options\.).+/,
+  fallbackWarn: /^(?!settingsDialog\.Comfy_Locale\.options\.).+/
 })
 
 /** Convenience shorthand: i18n.global */
