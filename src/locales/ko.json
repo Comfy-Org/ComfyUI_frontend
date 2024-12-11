@@ -423,7 +423,7 @@
       },
       "outputs": {
         "0": {
-          "tooltip": "잠재 변수를 제거하는 데 사용되는 모델입니다."
+          "tooltip": "노이즈 제거를 위한 잠재 모델입니다."
         },
         "1": {
           "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
@@ -479,15 +479,7 @@
       "display_name": "조건 (타임스텝 범위 설정)"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "조건 (타임스텝 범위)",
-      "outputs": {
-        "1": {
-          "name": "BEFORE_RANGE"
-        },
-        "2": {
-          "name": "AFTER_RANGE"
-        }
-      }
+      "display_name": "조건 (타임스텝 범위)"
     },
     "ConditioningZeroOut": {
       "display_name": "조건 (제로 아웃)"
@@ -496,64 +488,25 @@
       "display_name": "컨트롤넷 적용 (구형)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "컨트롤넷 적용",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "컨트롤넷 적용"
     },
     "ControlNetApplySD3": {
-      "display_name": "컨트롤넷을 VAE와 함께 적용",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "컨트롤넷을 VAE와 함께 적용"
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "컨트롤넷 인페인팅 AliMama 적용",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "컨트롤넷 인페인팅 AliMama 적용"
     },
     "ControlNetLoader": {
       "display_name": "컨트롤넷 모델 로드"
     },
     "CreateHookKeyframe": {
-      "display_name": "후크 키프레임 생성",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "후크 키프레임 생성"
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "부동 소수점으로 후크 키프레임 생성",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "부동 소수점으로 후크 키프레임 생성"
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "보간된 후크 키프레임 생성",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "보간된 후크 키프레임 생성"
     },
     "CreateHookLora": {
       "display_name": "후크 LoRA 생성"
@@ -604,15 +557,7 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "출력 목록이 있는 노드",
-      "display_name": "출력 목록이 있는 노드",
-      "outputs": {
-        "0": {
-          "name": "INTEGER OUTPUT"
-        },
-        "1": {
-          "name": "INTEGER LIST OUTPUT"
-        }
-      }
+      "display_name": "출력 목록이 있는 노드"
     },
     "DevToolsNodeWithStringInput": {
       "description": "문자열 입력이 있는 노드",
@@ -777,32 +722,10 @@
         "noise_mask": {
           "tooltip": "잠재에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
         }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "픽셀 간 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "픽셀 간 조건 설정"
     },
     "InvertMask": {
       "display_name": "마스크 반전"
@@ -847,7 +770,7 @@
       },
       "outputs": {
         "0": {
-          "tooltip": "제거된 잠재 변수입니다."
+          "tooltip": "노이즈가 제거된 잠재입니다."
         }
       }
     },
@@ -861,32 +784,13 @@
       "display_name": "Karras 스케줄러"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "LTXV 조건 설정"
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV 이미지에서 비디오로",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "조건 이미지 잠재에 적용할 노이즈의 양입니다."
-        }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
         }
       }
     },
@@ -1098,48 +1002,16 @@
       "display_name": "이미지 형태 변환"
     },
     "PairConditioningCombine": {
-      "display_name": "조건 쌍 (결합)",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "조건 쌍 (결합)"
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "조건 쌍 (기본 결합 설정)",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "조건 쌍 (기본 결합 설정)"
     },
     "PairConditioningSetProperties": {
-      "display_name": "조건 쌍 (속성 설정)",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "조건 쌍 (속성 설정)"
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "조건 쌍 (속성 설정 및 결합)",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "조건 쌍 (속성 설정 및 결합)"
     },
     "PatchModelAddDownscale": {
       "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)"
@@ -1194,68 +1066,19 @@
       "display_name": "SD-Turbo 스케줄러"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X 확대 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SD_4X 확대 조건 설정"
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SV3D 조건 설정"
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SVD_img2vid 조건 설정"
     },
     "SamplerCustom": {
-      "display_name": "사용자 정의 샘플러",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "사용자 정의 샘플러"
     },
     "SamplerCustomAdvanced": {
-      "display_name": "고급 사용자 정의 샘플러",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "고급 사용자 정의 샘플러"
     },
     "SamplerDPMAdaptative": {
       "display_name": "DPMAdaptive 샘플러"
@@ -1344,93 +1167,28 @@
       "display_name": "이미지와 알파채널 분리"
     },
     "SplitSigmas": {
-      "display_name": "시그마 분할 (스텝형)",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "시그마 분할 (스텝형)"
     },
     "SplitSigmasDenoise": {
-      "display_name": "시그마 분할 (디노이즈형)",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "시그마 분할 (디노이즈형)"
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade 빈 잠재 이미지",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade 빈 잠재 이미지"
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascasde_StageB 조건 설정"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_StageC VAE 인코딩",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade_StageC VAE 인코딩"
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade 초고해상도 컨트롤넷",
-      "outputs": {
-        "0": {
-          "name": "controlnet_input"
-        },
-        "1": {
-          "name": "stage_c"
-        },
-        "2": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade 초고해상도 컨트롤넷"
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123 조건 설정",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "StableZero123 조건 설정"
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123 조건 설정_배치",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "StableZero123 조건 설정_배치"
     },
     "StyleModelApply": {
       "display_name": "스타일 모델 적용"

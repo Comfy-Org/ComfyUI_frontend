@@ -1015,15 +1015,7 @@
       "display_name": "ConditioningSetTimestepRange"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "Timesteps Range",
-      "outputs": {
-        "1": {
-          "name": "BEFORE_RANGE"
-        },
-        "2": {
-          "name": "AFTER_RANGE"
-        }
-      }
+      "display_name": "Timesteps Range"
     },
     "ConditioningZeroOut": {
       "display_name": "ConditioningZeroOut"
@@ -1032,64 +1024,25 @@
       "display_name": "Apply ControlNet (OLD)"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "Apply ControlNet",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Apply ControlNet"
     },
     "ControlNetApplySD3": {
-      "display_name": "Apply Controlnet with VAE",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Apply Controlnet with VAE"
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "ControlNetInpaintingAliMamaApply",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ControlNetInpaintingAliMamaApply"
     },
     "ControlNetLoader": {
       "display_name": "Load ControlNet Model"
     },
     "CreateHookKeyframe": {
-      "display_name": "Create Hook Keyframe",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "Create Hook Keyframe"
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "Create Hook Keyframes From Floats",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "Create Hook Keyframes From Floats"
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "Create Hook Keyframes Interp.",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "Create Hook Keyframes Interp."
     },
     "CreateHookLora": {
       "display_name": "Create Hook LoRA"
@@ -1140,15 +1093,7 @@
     },
     "DevToolsNodeWithOutputList": {
       "display_name": "Node With Output List",
-      "description": "A node with an output list",
-      "outputs": {
-        "0": {
-          "name": "INTEGER OUTPUT"
-        },
-        "1": {
-          "name": "INTEGER LIST OUTPUT"
-        }
-      }
+      "description": "A node with an output list"
     },
     "DevToolsNodeWithStringInput": {
       "display_name": "Node With String Input",
@@ -1313,32 +1258,10 @@
         "noise_mask": {
           "tooltip": "Add a noise mask to the latent so sampling will only happen within the mask. Might improve results or completely break things depending on the model."
         }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "InstructPixToPixConditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "InstructPixToPixConditioning"
     },
     "InvertMask": {
       "display_name": "InvertMask"
@@ -1518,32 +1441,13 @@
       }
     },
     "LTXVConditioning": {
-      "display_name": "LTXVConditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "LTXVConditioning"
     },
     "LTXVImgToVideo": {
       "display_name": "LTXVImgToVideo",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "Amount of noise to apply on conditioning image latent."
-        }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
         }
       }
     },
@@ -1634,48 +1538,16 @@
       "display_name": "ImageMorphology"
     },
     "PairConditioningCombine": {
-      "display_name": "Cond Pair Combine",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Cond Pair Combine"
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "Cond Pair Set Default Combine",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Cond Pair Set Default Combine"
     },
     "PairConditioningSetProperties": {
-      "display_name": "Cond Pair Set Props",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Cond Pair Set Props"
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "Cond Pair Set Props Combine",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "Cond Pair Set Props Combine"
     },
     "PatchModelAddDownscale": {
       "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
@@ -1727,26 +1599,10 @@
       "display_name": "RescaleCFG"
     },
     "SamplerCustom": {
-      "display_name": "SamplerCustom",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "SamplerCustom"
     },
     "SamplerCustomAdvanced": {
-      "display_name": "SamplerCustomAdvanced",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "SamplerCustomAdvanced"
     },
     "SamplerDPMAdaptative": {
       "display_name": "SamplerDPMAdaptative"
@@ -1806,18 +1662,7 @@
       "display_name": "SaveLatent"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4XUpscale_Conditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SD_4XUpscale_Conditioning"
     },
     "SDTurboScheduler": {
       "display_name": "SDTurboScheduler"
@@ -1852,93 +1697,28 @@
       "display_name": "Split Image with Alpha"
     },
     "SplitSigmas": {
-      "display_name": "SplitSigmas",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "SplitSigmas"
     },
     "SplitSigmasDenoise": {
-      "display_name": "SplitSigmasDenoise",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "SplitSigmasDenoise"
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "StableCascade_EmptyLatentImage",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade_EmptyLatentImage"
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "StableCascade_StageB_Conditioning"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "StableCascade_StageC_VAEEncode",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade_StageC_VAEEncode"
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "StableCascade_SuperResolutionControlnet",
-      "outputs": {
-        "0": {
-          "name": "controlnet_input"
-        },
-        "1": {
-          "name": "stage_c"
-        },
-        "2": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "StableCascade_SuperResolutionControlnet"
     },
     "StableZero123_Conditioning": {
-      "display_name": "StableZero123_Conditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "StableZero123_Conditioning"
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "StableZero123_Conditioning_Batched",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "StableZero123_Conditioning_Batched"
     },
     "StyleModelApply": {
       "display_name": "Apply Style Model"
@@ -1947,32 +1727,10 @@
       "display_name": "Load Style Model"
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D_Conditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SV3D_Conditioning"
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid_Conditioning",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SVD_img2vid_Conditioning"
     },
     "ThresholdMask": {
       "display_name": "ThresholdMask"

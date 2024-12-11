@@ -396,7 +396,7 @@
       },
       "outputs": {
         "0": {
-          "tooltip": "包含嵌入文本的条件，用于指导扩散模型。"
+          "tooltip": "包含嵌入文本的条件，用于引导扩散模型。"
         }
       }
     },
@@ -446,7 +446,7 @@
           "tooltip": "用于编码文本提示的CLIP模型。"
         },
         "2": {
-          "tooltip": "用于将图像编码和解码为潜在空间的VAE模型。"
+          "tooltip": "用于将图像编码和解码到潜在空间的VAE模型。"
         }
       }
     },
@@ -496,15 +496,7 @@
       "display_name": "条件设置时间步范围"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "时间步范围",
-      "outputs": {
-        "1": {
-          "name": "BEFORE_RANGE"
-        },
-        "2": {
-          "name": "AFTER_RANGE"
-        }
-      }
+      "display_name": "时间步范围"
     },
     "ConditioningZeroOut": {
       "display_name": "条件零化"
@@ -513,64 +505,25 @@
       "display_name": "应用控制网（旧）"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "应用控制网",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "应用控制网"
     },
     "ControlNetApplySD3": {
-      "display_name": "应用控制网与VAE",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "应用控制网与VAE"
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "控制网修复AliMama应用",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "控制网修复AliMama应用"
     },
     "ControlNetLoader": {
       "display_name": "加载控制网模型"
     },
     "CreateHookKeyframe": {
-      "display_name": "创建钩子关键帧",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "创建钩子关键帧"
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "从浮点数创建钩子关键帧",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "从浮点数创建钩子关键帧"
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "创建插值钩子关键帧",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "创建插值钩子关键帧"
     },
     "CreateHookLora": {
       "display_name": "创建钩子LoRA"
@@ -621,15 +574,7 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "一个具有输出列表的节点",
-      "display_name": "具有输出列表的节点",
-      "outputs": {
-        "0": {
-          "name": "INTEGER OUTPUT"
-        },
-        "1": {
-          "name": "INTEGER LIST OUTPUT"
-        }
-      }
+      "display_name": "具有输出列表的节点"
     },
     "DevToolsNodeWithStringInput": {
       "description": "一个具有字符串输入的节点",
@@ -794,32 +739,10 @@
         "noise_mask": {
           "tooltip": "向潜在图像添加噪声掩码，以便采样仅在掩码内进行。根据模型的不同，可能会改善结果或完全破坏效果。"
         }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "指令像素到像素条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "指令像素到像素条件"
     },
     "InvertMask": {
       "display_name": "反转掩码"
@@ -878,32 +801,13 @@
       "display_name": "Karras调度器"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "LTXV条件"
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV图像到视频",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "在条件图像潜在图像上应用的噪声量。"
-        }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
         }
       }
     },
@@ -1115,48 +1019,16 @@
       "display_name": "图像形态学"
     },
     "PairConditioningCombine": {
-      "display_name": "条件对组合",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "条件对组合"
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "条件对设置默认组合",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "条件对设置默认组合"
     },
     "PairConditioningSetProperties": {
-      "display_name": "条件对设置属性",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "条件对设置属性"
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "条件对设置属性组合",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "条件对设置属性组合"
     },
     "PatchModelAddDownscale": {
       "display_name": "补丁模型添加下采样（Kohya深度缩小）"
@@ -1211,68 +1083,19 @@
       "display_name": "SDTurbo调度器"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X放大条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SD_4X放大条件"
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SV3D条件"
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SVD_img2vid条件"
     },
     "SamplerCustom": {
-      "display_name": "自定义采样器",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "自定义采样器"
     },
     "SamplerCustomAdvanced": {
-      "display_name": "自定义采样器（高级）",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "自定义采样器（高级）"
     },
     "SamplerDPMAdaptative": {
       "display_name": "自适应DPM采样器"
@@ -1361,93 +1184,28 @@
       "display_name": "按Alpha分割图像"
     },
     "SplitSigmas": {
-      "display_name": "分割Sigma",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "分割Sigma"
     },
     "SplitSigmasDenoise": {
-      "display_name": "分割Sigma去噪",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "分割Sigma去噪"
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "稳定级联_空潜在图像",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "稳定级联_空潜在图像"
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "稳定级联_B阶段条件"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "稳定级联_C阶段VAE编码",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "稳定级联_C阶段VAE编码"
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "稳定级联_超分辨率控制网",
-      "outputs": {
-        "0": {
-          "name": "controlnet_input"
-        },
-        "1": {
-          "name": "stage_c"
-        },
-        "2": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "稳定级联_超分辨率控制网"
     },
     "StableZero123_Conditioning": {
-      "display_name": "稳定零123条件",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "稳定零123条件"
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "稳定零123条件_批处理",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "稳定零123条件_批处理"
     },
     "StyleModelApply": {
       "display_name": "应用风格模型"

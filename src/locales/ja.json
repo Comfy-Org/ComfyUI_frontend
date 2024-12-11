@@ -496,15 +496,7 @@
       "display_name": "条件付けタイムステップ範囲"
     },
     "ConditioningTimestepsRange": {
-      "display_name": "タイムステップ範囲",
-      "outputs": {
-        "1": {
-          "name": "BEFORE_RANGE"
-        },
-        "2": {
-          "name": "AFTER_RANGE"
-        }
-      }
+      "display_name": "タイムステップ範囲"
     },
     "ConditioningZeroOut": {
       "display_name": "条件付けゼロアウト"
@@ -513,64 +505,25 @@
       "display_name": "ControlNetを適用（旧）"
     },
     "ControlNetApplyAdvanced": {
-      "display_name": "ControlNetを適用",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ControlNetを適用"
     },
     "ControlNetApplySD3": {
-      "display_name": "VAEでControlNetを適用",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "VAEでControlNetを適用"
     },
     "ControlNetInpaintingAliMamaApply": {
-      "display_name": "ControlNetインペインティングAliMamaを適用",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ControlNetインペインティングAliMamaを適用"
     },
     "ControlNetLoader": {
       "display_name": "ControlNetモデルを読み込む"
     },
     "CreateHookKeyframe": {
-      "display_name": "フックキーフレームを作成",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "フックキーフレームを作成"
     },
     "CreateHookKeyframesFromFloats": {
-      "display_name": "フックキーフレームを浮動小数点から作成",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "フックキーフレームを浮動小数点から作成"
     },
     "CreateHookKeyframesInterpolated": {
-      "display_name": "フックキーフレームを補間",
-      "outputs": {
-        "0": {
-          "name": "HOOK_KF"
-        }
-      }
+      "display_name": "フックキーフレームを補間"
     },
     "CreateHookLora": {
       "display_name": "フックLoRAを作成"
@@ -621,15 +574,7 @@
     },
     "DevToolsNodeWithOutputList": {
       "description": "出力リストを持つノード",
-      "display_name": "出力リストノード",
-      "outputs": {
-        "0": {
-          "name": "INTEGER OUTPUT"
-        },
-        "1": {
-          "name": "INTEGER LIST OUTPUT"
-        }
-      }
+      "display_name": "出力リストノード"
     },
     "DevToolsNodeWithStringInput": {
       "description": "文字列入力を持つノード",
@@ -794,32 +739,10 @@
         "noise_mask": {
           "tooltip": "潜在にノイズマスクを追加し、サンプリングがマスク内でのみ行われるようにします。モデルによっては結果が改善されるか、完全に壊れる可能性があります。"
         }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
       }
     },
     "InstructPixToPixConditioning": {
-      "display_name": "PixToPix条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "PixToPix条件付け"
     },
     "InvertMask": {
       "display_name": "マスクを反転"
@@ -878,32 +801,13 @@
       "display_name": "カラススケジューラー"
     },
     "LTXVConditioning": {
-      "display_name": "LTXV条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "LTXV条件付け"
     },
     "LTXVImgToVideo": {
       "display_name": "LTXV画像からビデオへ",
       "inputs": {
         "image_noise_scale": {
           "tooltip": "条件付け画像の潜在に適用するノイズの量。"
-        }
-      },
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
         }
       }
     },
@@ -1115,48 +1019,16 @@
       "display_name": "画像形態学"
     },
     "PairConditioningCombine": {
-      "display_name": "ペア条件付け組み合わせ",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ペア条件付け組み合わせ"
     },
     "PairConditioningSetDefaultCombine": {
-      "display_name": "ペア条件付けデフォルト組み合わせを設定",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ペア条件付けデフォルト組み合わせを設定"
     },
     "PairConditioningSetProperties": {
-      "display_name": "ペア条件付けプロパティ設定",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ペア条件付けプロパティ設定"
     },
     "PairConditioningSetPropertiesAndCombine": {
-      "display_name": "ペア条件付けプロパティ設定と組み合わせ",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        }
-      }
+      "display_name": "ペア条件付けプロパティ設定と組み合わせ"
     },
     "PatchModelAddDownscale": {
       "display_name": "パッチモデル追加ダウンスケール（Kohya Deep Shrink）"
@@ -1211,68 +1083,19 @@
       "display_name": "SDターボスケジューラー"
     },
     "SD_4XUpscale_Conditioning": {
-      "display_name": "SD_4X拡大条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SD_4X拡大条件付け"
     },
     "SV3D_Conditioning": {
-      "display_name": "SV3D条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SV3D条件付け"
     },
     "SVD_img2vid_Conditioning": {
-      "display_name": "SVD_img2vid条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "SVD_img2vid条件付け"
     },
     "SamplerCustom": {
-      "display_name": "カスタムサンプラー",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "カスタムサンプラー"
     },
     "SamplerCustomAdvanced": {
-      "display_name": "カスタムサンプラー（高度）",
-      "outputs": {
-        "0": {
-          "name": "output"
-        },
-        "1": {
-          "name": "denoised_output"
-        }
-      }
+      "display_name": "カスタムサンプラー（高度）"
     },
     "SamplerDPMAdaptative": {
       "display_name": "サンプラーDPM適応"
@@ -1361,93 +1184,28 @@
       "display_name": "アルファで画像を分割"
     },
     "SplitSigmas": {
-      "display_name": "シグマを分割",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "シグマを分割"
     },
     "SplitSigmasDenoise": {
-      "display_name": "シグマを分割してノイズ除去",
-      "outputs": {
-        "0": {
-          "name": "high_sigmas"
-        },
-        "1": {
-          "name": "low_sigmas"
-        }
-      }
+      "display_name": "シグマを分割してノイズ除去"
     },
     "StableCascade_EmptyLatentImage": {
-      "display_name": "安定カスケード_空の潜在画像",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "安定カスケード_空の潜在画像"
     },
     "StableCascade_StageB_Conditioning": {
       "display_name": "安定カスケード_ステージB条件付け"
     },
     "StableCascade_StageC_VAEEncode": {
-      "display_name": "安定カスケード_ステージC_VAEエンコード",
-      "outputs": {
-        "0": {
-          "name": "stage_c"
-        },
-        "1": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "安定カスケード_ステージC_VAEエンコード"
     },
     "StableCascade_SuperResolutionControlnet": {
-      "display_name": "安定カスケード_超解像Controlnet",
-      "outputs": {
-        "0": {
-          "name": "controlnet_input"
-        },
-        "1": {
-          "name": "stage_c"
-        },
-        "2": {
-          "name": "stage_b"
-        }
-      }
+      "display_name": "安定カスケード_超解像Controlnet"
     },
     "StableZero123_Conditioning": {
-      "display_name": "安定ゼロ123条件付け",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "安定ゼロ123条件付け"
     },
     "StableZero123_Conditioning_Batched": {
-      "display_name": "安定ゼロ123条件付け（バッチ）",
-      "outputs": {
-        "0": {
-          "name": "positive"
-        },
-        "1": {
-          "name": "negative"
-        },
-        "2": {
-          "name": "latent"
-        }
-      }
+      "display_name": "安定ゼロ123条件付け（バッチ）"
     },
     "StyleModelApply": {
       "display_name": "スタイルモデルを適用"
