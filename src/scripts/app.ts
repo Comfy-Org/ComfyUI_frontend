@@ -1979,9 +1979,14 @@ export class ComfyApp {
           const typeKey = `dataTypes.${normalizeI18nKey(output)}`
           const outputOptions = {
             ...shapeOptions,
-            label: nodeData['output_name'][o]
-              ? st(nameKey, outputName)
-              : st(typeKey, outputName)
+            // If the output name is different from the output type, use the output name.
+            // e.g.
+            // - type ("INT"); name ("Positive") => translate name
+            // - type ("FLOAT"); name ("FLOAT") => translate type
+            label:
+              output !== outputName
+                ? st(nameKey, outputName)
+                : st(typeKey, outputName)
           }
           this.addOutput(outputName, output, outputOptions)
         }
