@@ -193,7 +193,7 @@ test('collect-i18n', async ({ comfyPage }) => {
   const allNodeDefsLocale = Object.fromEntries(
     nodeDefs
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((nodeDef, i) => [
+      .map((nodeDef) => [
         normalizeI18nKey(nodeDef.name),
         {
           display_name: nodeDef.display_name ?? nodeDef.name,
