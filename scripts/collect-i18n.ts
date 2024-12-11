@@ -8,7 +8,7 @@ import type { ComfyCommandImpl } from '../src/stores/commandStore'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
 
-const localePath = './src/locales/en.json'
+const localePath = './src/locales/en/main.json'
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
   for (const [category, _] of CORE_MENU_COMMANDS) {
