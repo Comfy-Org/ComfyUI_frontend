@@ -61,7 +61,7 @@ import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
-import { st, t, te } from '@/i18n'
+import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
