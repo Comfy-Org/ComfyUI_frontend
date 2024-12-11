@@ -1,52 +1,200 @@
 {
   "AddNoise": {
-    "display_name": "ノイズを追加"
+    "display_name": "ノイズを追加",
+    "inputs": {
+      "latent_image": {
+        "name": "潜在イメージ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "noise": {
+        "name": "ノイズ"
+      },
+      "sigmas": {
+        "name": "シグマ"
+      }
+    }
   },
   "AlignYourStepsScheduler": {
-    "display_name": "ステップを整列"
+    "display_name": "ステップを整列",
+    "inputs": {
+      "denoise": {
+        "name": "ノイズ除去"
+      },
+      "model_type": {
+        "name": "モデルタイプ"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "BasicGuider": {
-    "display_name": "基本ガイダー"
+    "display_name": "基本ガイダー",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "BasicScheduler": {
-    "display_name": "基本スケジューラー"
+    "display_name": "基本スケジューラー",
+    "inputs": {
+      "denoise": {
+        "name": "ノイズ除去"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "scheduler": {
+        "name": "スケジューラ"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "BetaSamplingScheduler": {
-    "display_name": "ベータサンプリングスケジューラー"
+    "display_name": "ベータサンプリングスケジューラー",
+    "inputs": {
+      "alpha": {
+        "name": "アルファ"
+      },
+      "beta": {
+        "name": "ベータ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "CFGGuider": {
-    "display_name": "CFGガイダー"
+    "display_name": "CFGガイダー",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    }
   },
   "CLIPAttentionMultiply": {
-    "display_name": "CLIP注意の乗算"
+    "display_name": "CLIP注意の乗算",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "k": {
+        "name": "k"
+      },
+      "out": {
+        "name": "出力"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
   },
   "CLIPLoader": {
     "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
-    "display_name": "CLIPを読み込む"
+    "display_name": "CLIPを読み込む",
+    "inputs": {
+      "clip_name": {
+        "name": "clip名"
+      },
+      "type": {
+        "name": "タイプ"
+      }
+    }
   },
   "CLIPMergeAdd": {
-    "display_name": "CLIPマージ追加"
+    "display_name": "CLIPマージ追加",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      }
+    }
   },
   "CLIPMergeSimple": {
-    "display_name": "CLIPマージシンプル"
+    "display_name": "CLIPマージシンプル",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "ratio": {
+        "name": "比率"
+      }
+    }
   },
   "CLIPMergeSubtract": {
-    "display_name": "CLIPマージ減算"
+    "display_name": "CLIPマージ減算",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "multiplier": {
+        "name": "乗数"
+      }
+    }
   },
   "CLIPSave": {
-    "display_name": "CLIPを保存"
+    "display_name": "CLIPを保存",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      }
+    }
   },
   "CLIPSetLastLayer": {
-    "display_name": "CLIPの最終層を設定"
+    "display_name": "CLIPの最終層を設定",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "stop_at_clip_layer": {
+        "name": "クリップ_レイヤーで停止"
+      }
+    }
   },
   "CLIPTextEncode": {
     "description": "テキストプロンプトをCLIPモデルを使用してエンコードし、特定の画像を生成するために拡散モデルをガイドするために使用できる埋め込みに変換します。",
     "display_name": "CLIPテキストエンコード（プロンプト）",
     "inputs": {
       "clip": {
+        "name": "クリップ",
         "tooltip": "テキストのエンコードに使用されるCLIPモデル。"
       },
       "text": {
+        "name": "テキスト",
         "tooltip": "エンコードするテキスト。"
       }
     },
@@ -57,40 +205,175 @@
     }
   },
   "CLIPTextEncodeControlnet": {
-    "display_name": "CLIPテキストエンコードコントロールネット"
+    "display_name": "CLIPテキストエンコードコントロールネット",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "text": {
+        "name": "テキスト"
+      }
+    }
   },
   "CLIPTextEncodeFlux": {
-    "display_name": "CLIPテキストエンコードフラックス"
+    "display_name": "CLIPテキストエンコードフラックス",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "clip_l": {
+        "name": "クリップ_l"
+      },
+      "guidance": {
+        "name": "ガイダンス"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
   },
   "CLIPTextEncodeHunyuanDiT": {
-    "display_name": "CLIPテキストエンコードフンユアンDiT"
+    "display_name": "CLIPテキストエンコードフンユアンDiT",
+    "inputs": {
+      "bert": {
+        "name": "bert"
+      },
+      "clip": {
+        "name": "クリップ"
+      },
+      "mt5xl": {
+        "name": "mt5xl"
+      }
+    }
   },
   "CLIPTextEncodeSD3": {
-    "display_name": "CLIPテキストエンコードSD3"
+    "display_name": "CLIPテキストエンコードSD3",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "clip_g": {
+        "name": "クリップ_g"
+      },
+      "clip_l": {
+        "name": "クリップ_l"
+      },
+      "empty_padding": {
+        "name": "空のパディング"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
   },
   "CLIPTextEncodeSDXL": {
-    "display_name": "CLIPテキストエンコードSDXL"
+    "display_name": "CLIPテキストエンコードSDXL",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "crop_h": {
+        "name": "crop_h"
+      },
+      "crop_w": {
+        "name": "crop_w"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "target_height": {
+        "name": "目標の高さ"
+      },
+      "target_width": {
+        "name": "目標の幅"
+      },
+      "text_g": {
+        "name": "テキスト_g"
+      },
+      "text_l": {
+        "name": "テキスト_l"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "CLIPTextEncodeSDXLRefiner": {
-    "display_name": "CLIPテキストエンコードSDXLリファイナー"
+    "display_name": "CLIPテキストエンコードSDXLリファイナー",
+    "inputs": {
+      "ascore": {
+        "name": "ascore"
+      },
+      "clip": {
+        "name": "クリップ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "text": {
+        "name": "テキスト"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "CLIPVisionEncode": {
-    "display_name": "CLIPビジョンエンコード"
+    "display_name": "CLIPビジョンエンコード",
+    "inputs": {
+      "clip_vision": {
+        "name": "クリップビジョン"
+      },
+      "crop": {
+        "name": "クロップ"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "CLIPVisionLoader": {
-    "display_name": "CLIPビジョンを読み込む"
+    "display_name": "CLIPビジョンを読み込む",
+    "inputs": {
+      "clip_name": {
+        "name": "クリップ名"
+      }
+    }
   },
   "Canny": {
-    "display_name": "キャニー"
+    "display_name": "キャニー",
+    "inputs": {
+      "high_threshold": {
+        "name": "高い閾値"
+      },
+      "image": {
+        "name": "イメージ"
+      },
+      "low_threshold": {
+        "name": "低い閾値"
+      }
+    }
   },
   "CheckpointLoader": {
-    "display_name": "設定でチェックポイントを読み込む（非推奨）"
+    "display_name": "設定でチェックポイントを読み込む（非推奨）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名"
+      },
+      "config_name": {
+        "name": "設定名"
+      }
+    }
   },
   "CheckpointLoaderSimple": {
     "description": "拡散モデルのチェックポイントを読み込みます。拡散モデルは潜在変数のノイズを除去するために使用されます。",
     "display_name": "チェックポイントを読み込む",
     "inputs": {
       "ckpt_name": {
+        "name": "ckpt名",
         "tooltip": "読み込むチェックポイント（モデル）の名前。"
       }
     },
@@ -107,52 +390,276 @@
     }
   },
   "CheckpointSave": {
-    "display_name": "チェックポイントを保存"
+    "display_name": "チェックポイントを保存",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "CombineHooks2": {
-    "display_name": "フックを組み合わせる [2]"
+    "display_name": "フックを組み合わせる [2]",
+    "inputs": {
+      "hooks_A": {
+        "name": "フック_A"
+      },
+      "hooks_B": {
+        "name": "フック_B"
+      }
+    }
   },
   "CombineHooks4": {
-    "display_name": "フックを組み合わせる [4]"
+    "display_name": "フックを組み合わせる [4]",
+    "inputs": {
+      "hooks_A": {
+        "name": "フック_A"
+      },
+      "hooks_B": {
+        "name": "フック_B"
+      },
+      "hooks_C": {
+        "name": "フック_C"
+      },
+      "hooks_D": {
+        "name": "フック_D"
+      }
+    }
   },
   "CombineHooks8": {
-    "display_name": "フックを組み合わせる [8]"
+    "display_name": "フックを組み合わせる [8]",
+    "inputs": {
+      "hooks_A": {
+        "name": "フック_A"
+      },
+      "hooks_B": {
+        "name": "フック_B"
+      },
+      "hooks_C": {
+        "name": "フック_C"
+      },
+      "hooks_D": {
+        "name": "フック_D"
+      },
+      "hooks_E": {
+        "name": "フック_E"
+      },
+      "hooks_F": {
+        "name": "フック_F"
+      },
+      "hooks_G": {
+        "name": "フック_G"
+      },
+      "hooks_H": {
+        "name": "フック_H"
+      }
+    }
   },
   "ConditioningAverage": {
-    "display_name": "条件付け平均"
+    "display_name": "条件付け平均",
+    "inputs": {
+      "conditioning_from": {
+        "name": "条件付け元"
+      },
+      "conditioning_to": {
+        "name": "条件付け先"
+      },
+      "conditioning_to_strength": {
+        "name": "条件付け先の強度"
+      }
+    }
   },
   "ConditioningCombine": {
-    "display_name": "条件付け（組み合わせ）"
+    "display_name": "条件付け（組み合わせ）",
+    "inputs": {
+      "conditioning_1": {
+        "name": "条件付け_1"
+      },
+      "conditioning_2": {
+        "name": "条件付け_2"
+      }
+    }
   },
   "ConditioningConcat": {
-    "display_name": "条件付け（連結）"
+    "display_name": "条件付け（連結）",
+    "inputs": {
+      "conditioning_from": {
+        "name": "条件付け元"
+      },
+      "conditioning_to": {
+        "name": "条件付け先"
+      }
+    }
   },
   "ConditioningSetArea": {
-    "display_name": "条件付け（エリア設定）"
+    "display_name": "条件付け（エリア設定）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件付け"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "ConditioningSetAreaPercentage": {
-    "display_name": "条件付け（パーセンテージでエリア設定）"
+    "display_name": "条件付け（パーセンテージでエリア設定）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件付け"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "ConditioningSetAreaStrength": {
-    "display_name": "条件付けエリア強度"
+    "display_name": "条件付けエリア強度",
+    "inputs": {
+      "conditioning": {
+        "name": "条件付け"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
   },
   "ConditioningSetDefaultCombine": {
-    "display_name": "条件付けデフォルト組み合わせを設定"
+    "display_name": "条件付けデフォルト組み合わせを設定",
+    "inputs": {
+      "cond": {
+        "name": "条件"
+      },
+      "cond_DEFAULT": {
+        "name": "デフォルト条件"
+      },
+      "hooks": {
+        "name": "フック"
+      }
+    }
   },
   "ConditioningSetMask": {
-    "display_name": "条件付け（マスク設定）"
+    "display_name": "条件付け（マスク設定）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件付け"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "set_cond_area": {
+        "name": "条件付けエリア設定"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
   },
   "ConditioningSetProperties": {
-    "display_name": "条件付けプロパティ設定"
+    "display_name": "条件付けプロパティ設定",
+    "inputs": {
+      "cond_NEW": {
+        "name": "新しい条件"
+      },
+      "hooks": {
+        "name": "フック"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "set_cond_area": {
+        "name": "条件付けエリア設定"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "timesteps": {
+        "name": "タイムステップ"
+      }
+    }
   },
   "ConditioningSetPropertiesAndCombine": {
-    "display_name": "条件付けプロパティ設定と組み合わせ"
+    "display_name": "条件付けプロパティ設定と組み合わせ",
+    "inputs": {
+      "cond": {
+        "name": "条件"
+      },
+      "cond_NEW": {
+        "name": "新しい条件"
+      },
+      "hooks": {
+        "name": "フック"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "set_cond_area": {
+        "name": "条件付けエリア設定"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "timesteps": {
+        "name": "タイムステップ"
+      }
+    }
   },
   "ConditioningSetTimestepRange": {
-    "display_name": "条件付けタイムステップ範囲"
+    "display_name": "条件付けタイムステップ範囲",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "end": {
+        "name": "終了"
+      },
+      "start": {
+        "name": "開始"
+      }
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "タイムステップ範囲",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    },
     "outputs": {
       "1": {
         "name": "範囲前"
@@ -163,13 +670,58 @@
     }
   },
   "ConditioningZeroOut": {
-    "display_name": "条件付けゼロアウト"
+    "display_name": "条件付けゼロアウト",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      }
+    }
   },
   "ControlNetApply": {
-    "display_name": "ControlNetを適用（旧）"
+    "display_name": "ControlNetを適用（旧）",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "control_net": {
+        "name": "コントロールネット"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
   },
   "ControlNetApplyAdvanced": {
     "display_name": "ControlNetを適用",
+    "inputs": {
+      "control_net": {
+        "name": "コントロールネット"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -181,6 +733,32 @@
   },
   "ControlNetApplySD3": {
     "display_name": "VAEでControlNetを適用",
+    "inputs": {
+      "control_net": {
+        "name": "コントロールネット"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -192,6 +770,35 @@
   },
   "ControlNetInpaintingAliMamaApply": {
     "display_name": "ControlNetインペインティングAliMamaを適用",
+    "inputs": {
+      "control_net": {
+        "name": "コントロールネット"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -202,10 +809,26 @@
     }
   },
   "ControlNetLoader": {
-    "display_name": "ControlNetモデルを読み込む"
+    "display_name": "ControlNetモデルを読み込む",
+    "inputs": {
+      "control_net_name": {
+        "name": "コントロールネット名"
+      }
+    }
   },
   "CreateHookKeyframe": {
     "display_name": "フックキーフレームを作成",
+    "inputs": {
+      "prev_hook_kf": {
+        "name": "前のフックキーフレーム"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "strength_mult": {
+        "name": "強度倍数"
+      }
+    },
     "outputs": {
       "0": {
         "name": "フックKF"
@@ -214,6 +837,23 @@
   },
   "CreateHookKeyframesFromFloats": {
     "display_name": "フックキーフレームを浮動小数点から作成",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "floats_strength": {
+        "name": "浮動小数点数の強度"
+      },
+      "prev_hook_kf": {
+        "name": "前のフックキーフレーム"
+      },
+      "print_keyframes": {
+        "name": "キーフレームを印刷"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    },
     "outputs": {
       "0": {
         "name": "フックKF"
@@ -222,6 +862,32 @@
   },
   "CreateHookKeyframesInterpolated": {
     "display_name": "フックキーフレームを補間",
+    "inputs": {
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "interpolation": {
+        "name": "補間"
+      },
+      "keyframes_count": {
+        "name": "キーフレーム数"
+      },
+      "prev_hook_kf": {
+        "name": "prev_hook_kf"
+      },
+      "print_keyframes": {
+        "name": "キーフレームを印刷"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "strength_end": {
+        "name": "strength_end"
+      },
+      "strength_start": {
+        "name": "strength_start"
+      }
+    },
     "outputs": {
       "0": {
         "name": "フックKF"
@@ -229,19 +895,86 @@
     }
   },
   "CreateHookLora": {
-    "display_name": "フックLoRAを作成"
+    "display_name": "フックLoRAを作成",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      },
+      "strength_clip": {
+        "name": "strength_clip"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    }
   },
   "CreateHookLoraModelOnly": {
-    "display_name": "フックLoRA（モデルのみ）"
+    "display_name": "フックLoRA（モデルのみ）",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    }
   },
   "CreateHookModelAsLora": {
-    "display_name": "フックモデルをLoRAとして作成"
+    "display_name": "フックモデルをLoRAとして作成",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      },
+      "strength_clip": {
+        "name": "strength_clip"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    }
   },
   "CreateHookModelAsLoraModelOnly": {
-    "display_name": "フックモデルをLoRAとして作成（モデルのみ）"
+    "display_name": "フックモデルをLoRAとして作成（モデルのみ）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    }
   },
   "CropMask": {
-    "display_name": "マスクをトリミング"
+    "display_name": "マスクをトリミング",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "DevToolsDeprecatedNode": {
     "description": "非推奨のノード",
@@ -253,7 +986,12 @@
   },
   "DevToolsErrorRaiseNodeWithMessage": {
     "description": "開発目的のためにメッセージ付きのエラーを発生させる",
-    "display_name": "メッセージ付きエラーを発生させる"
+    "display_name": "メッセージ付きエラーを発生させる",
+    "inputs": {
+      "message": {
+        "name": "メッセージ"
+      }
+    }
   },
   "DevToolsExperimentalNode": {
     "description": "実験的なノード",
@@ -261,19 +999,51 @@
   },
   "DevToolsLongComboDropdown": {
     "description": "長いコンボドロップダウン",
-    "display_name": "ロングコンボドロップダウン"
+    "display_name": "ロングコンボドロップダウン",
+    "inputs": {
+      "option": {
+        "name": "オプション"
+      }
+    }
   },
   "DevToolsNodeWithForceInput": {
     "description": "強制入力を持つノード",
-    "display_name": "強制入力ノード"
+    "display_name": "強制入力ノード",
+    "inputs": {
+      "float_input": {
+        "name": "float_input"
+      },
+      "int_input": {
+        "name": "int_input"
+      },
+      "int_input_widget": {
+        "name": "int_input_widget"
+      }
+    }
   },
   "DevToolsNodeWithOnlyOptionalInput": {
     "description": "オプション入力のみを持つノード",
-    "display_name": "オプション入力のみのノード"
+    "display_name": "オプション入力のみのノード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "text": {
+        "name": "テキスト"
+      }
+    }
   },
   "DevToolsNodeWithOptionalInput": {
     "description": "オプション入力を持つノード",
-    "display_name": "オプション入力ノード"
+    "display_name": "オプション入力ノード",
+    "inputs": {
+      "optional_input": {
+        "name": "オプション入力"
+      },
+      "required_input": {
+        "name": "必須入力"
+      }
+    }
   },
   "DevToolsNodeWithOutputList": {
     "description": "出力リストを持つノード",
@@ -289,42 +1059,139 @@
   },
   "DevToolsNodeWithStringInput": {
     "description": "文字列入力を持つノード",
-    "display_name": "文字列入力ノード"
+    "display_name": "文字列入力ノード",
+    "inputs": {
+      "string_input": {
+        "name": "文字列入力"
+      }
+    }
   },
   "DevToolsNodeWithUnionInput": {
     "description": "ユニオン入力を持つノード",
-    "display_name": "ユニオン入力ノード"
+    "display_name": "ユニオン入力ノード",
+    "inputs": {
+      "int_input": {
+        "name": "整数入力"
+      },
+      "string_input": {
+        "name": "文字列入力"
+      },
+      "string_or_int_input": {
+        "name": "文字列または整数入力"
+      }
+    }
   },
   "DiffControlNetLoader": {
-    "display_name": "ControlNetモデルを読み込む（diff）"
+    "display_name": "ControlNetモデルを読み込む（diff）",
+    "inputs": {
+      "control_net_name": {
+        "name": "control_net_name"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "DifferentialDiffusion": {
-    "display_name": "差分拡散"
+    "display_name": "差分拡散",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "DiffusersLoader": {
-    "display_name": "ディフューザーを読み込む"
+    "display_name": "ディフューザーを読み込む",
+    "inputs": {
+      "model_path": {
+        "name": "モデルパス"
+      }
+    }
   },
   "DisableNoise": {
     "display_name": "ノイズを無効にする"
   },
   "DualCFGGuider": {
-    "display_name": "デュアルCFGガイダー"
+    "display_name": "デュアルCFGガイダー",
+    "inputs": {
+      "cfg_cond2_negative": {
+        "name": "cfg_cond2_negative"
+      },
+      "cfg_conds": {
+        "name": "cfg_conds"
+      },
+      "cond1": {
+        "name": "cond1"
+      },
+      "cond2": {
+        "name": "cond2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      }
+    }
   },
   "DualCLIPLoader": {
     "description": "[レシピ]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
-    "display_name": "デュアルCLIPを読み込む"
+    "display_name": "デュアルCLIPを読み込む",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "type": {
+        "name": "タイプ"
+      }
+    }
   },
   "EmptyImage": {
-    "display_name": "空の画像"
+    "display_name": "空の画像",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "color": {
+        "name": "色"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "空のLTXV潜在ビデオ"
+    "display_name": "空のLTXV潜在ビデオ",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "EmptyLatentAudio": {
     "display_name": "空の潜在音声",
     "inputs": {
       "batch_size": {
+        "name": "バッチサイズ",
         "tooltip": "バッチ内の潜在画像の数。"
+      },
+      "seconds": {
+        "name": "秒"
       }
     }
   },
@@ -333,12 +1200,15 @@
     "display_name": "空の潜在画像",
     "inputs": {
       "batch_size": {
+        "name": "バッチサイズ",
         "tooltip": "バッチ内の潜在画像の数。"
       },
       "height": {
+        "name": "高さ",
         "tooltip": "潜在画像の高さ（ピクセル単位）。"
       },
       "width": {
+        "name": "幅",
         "tooltip": "潜在画像の幅（ピクセル単位）。"
       }
     },
@@ -349,106 +1219,516 @@
     }
   },
   "EmptyMochiLatentVideo": {
-    "display_name": "空のMochi潜在ビデオ"
+    "display_name": "空のMochi潜在ビデオ",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "EmptySD3LatentImage": {
-    "display_name": "空のSD3潜在画像"
+    "display_name": "空のSD3潜在画像",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "ExponentialScheduler": {
-    "display_name": "指数スケジューラー"
+    "display_name": "指数スケジューラー",
+    "inputs": {
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "FeatherMask": {
-    "display_name": "フェザー マスク"
+    "display_name": "フェザー マスク",
+    "inputs": {
+      "bottom": {
+        "name": "下"
+      },
+      "left": {
+        "name": "左"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "right": {
+        "name": "右"
+      },
+      "top": {
+        "name": "上"
+      }
+    }
   },
   "FlipSigmas": {
-    "display_name": "シグマを反転"
+    "display_name": "シグマを反転",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    }
   },
   "FluxGuidance": {
-    "display_name": "フラックスガイダンス"
+    "display_name": "フラックスガイダンス",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "guidance": {
+        "name": "ガイダンス"
+      }
+    }
   },
   "FreeU": {
-    "display_name": "FreeU"
+    "display_name": "FreeU",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
   },
   "FreeU_V2": {
-    "display_name": "FreeU_V2"
+    "display_name": "FreeU_V2",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
   },
   "GITSScheduler": {
-    "display_name": "GITSスケジューラー"
+    "display_name": "GITSスケジューラー",
+    "inputs": {
+      "coeff": {
+        "name": "係数"
+      },
+      "denoise": {
+        "name": "ノイズ除去"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGENを読み込む"
+    "display_name": "GLIGENを読み込む",
+    "inputs": {
+      "gligen_name": {
+        "name": "gligen_name"
+      }
+    }
   },
   "GLIGENTextBoxApply": {
-    "display_name": "GLIGENテキストボックスを適用"
+    "display_name": "GLIGENテキストボックスを適用",
+    "inputs": {
+      "clip": {
+        "name": "クリップ"
+      },
+      "conditioning_to": {
+        "name": "条件付け先"
+      },
+      "gligen_textbox_model": {
+        "name": "gligen_textbox_model"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "text": {
+        "name": "テキスト"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "GrowMask": {
-    "display_name": "マスクを拡大"
+    "display_name": "マスクを拡大",
+    "inputs": {
+      "expand": {
+        "name": "拡大"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "tapered_corners": {
+        "name": "テーパードコーナー"
+      }
+    }
   },
   "HyperTile": {
-    "display_name": "ハイパータイル"
+    "display_name": "ハイパータイル",
+    "inputs": {
+      "max_depth": {
+        "name": "最大深度"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "scale_depth": {
+        "name": "スケール深度"
+      },
+      "swap_size": {
+        "name": "スワップサイズ"
+      },
+      "tile_size": {
+        "name": "タイルサイズ"
+      }
+    }
   },
   "HypernetworkLoader": {
-    "display_name": "ハイパーネットワークを読み込む"
+    "display_name": "ハイパーネットワークを読み込む",
+    "inputs": {
+      "hypernetwork_name": {
+        "name": "hypernetwork_name"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
   },
   "ImageBatch": {
-    "display_name": "画像バッチ"
+    "display_name": "画像バッチ",
+    "inputs": {
+      "image1": {
+        "name": "画像1"
+      },
+      "image2": {
+        "name": "画像2"
+      }
+    }
   },
   "ImageBlend": {
-    "display_name": "画像ブレンド"
+    "display_name": "画像ブレンド",
+    "inputs": {
+      "blend_factor": {
+        "name": "ブレンドファクター"
+      },
+      "blend_mode": {
+        "name": "ブレンドモード"
+      },
+      "image1": {
+        "name": "画像1"
+      },
+      "image2": {
+        "name": "画像2"
+      }
+    }
   },
   "ImageBlur": {
-    "display_name": "画像ぼかし"
+    "display_name": "画像ぼかし",
+    "inputs": {
+      "blur_radius": {
+        "name": "ブラーレイディウス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "sigma": {
+        "name": "シグマ"
+      }
+    }
   },
   "ImageColorToMask": {
-    "display_name": "画像色をマスクに変換"
+    "display_name": "画像色をマスクに変換",
+    "inputs": {
+      "color": {
+        "name": "色"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "ImageCompositeMasked": {
-    "display_name": "マスクされた画像合成"
+    "display_name": "マスクされた画像合成",
+    "inputs": {
+      "destination": {
+        "name": "宛先"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "resize_source": {
+        "name": "ソースのリサイズ"
+      },
+      "source": {
+        "name": "ソース"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "ImageCrop": {
-    "display_name": "画像トリミング"
+    "display_name": "画像トリミング",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "ImageFromBatch": {
-    "display_name": "バッチから画像を取得"
+    "display_name": "バッチから画像を取得",
+    "inputs": {
+      "batch_index": {
+        "name": "バッチインデックス"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "length": {
+        "name": "長さ"
+      }
+    }
   },
   "ImageInvert": {
-    "display_name": "画像を反転"
+    "display_name": "画像を反転",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "画像のみのチェックポイントローダー（img2vidモデル）"
+    "display_name": "画像のみのチェックポイントローダー（img2vidモデル）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
   },
   "ImageOnlyCheckpointSave": {
-    "display_name": "画像のみのチェックポイント保存"
+    "display_name": "画像のみのチェックポイント保存",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "ImagePadForOutpaint": {
-    "display_name": "アウトペイント用に画像をパッド"
+    "display_name": "アウトペイント用に画像をパッド",
+    "inputs": {
+      "bottom": {
+        "name": "下"
+      },
+      "feathering": {
+        "name": "フェザリング"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "left": {
+        "name": "左"
+      },
+      "right": {
+        "name": "右"
+      },
+      "top": {
+        "name": "上"
+      }
+    }
   },
   "ImageQuantize": {
-    "display_name": "画像を量子化"
+    "display_name": "画像を量子化",
+    "inputs": {
+      "colors": {
+        "name": "色"
+      },
+      "dither": {
+        "name": "ディザリング"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "ImageScale": {
-    "display_name": "画像を拡大"
+    "display_name": "画像を拡大",
+    "inputs": {
+      "crop": {
+        "name": "クロップ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "upscale_method": {
+        "name": "拡大方法"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "ImageScaleBy": {
-    "display_name": "画像を拡大（指定サイズ）"
+    "display_name": "画像を拡大（指定サイズ）",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "scale_by": {
+        "name": "スケールバイ"
+      },
+      "upscale_method": {
+        "name": "拡大方法"
+      }
+    }
   },
   "ImageScaleToTotalPixels": {
-    "display_name": "画像を総ピクセルにスケール"
+    "display_name": "画像を総ピクセルにスケール",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "megapixels": {
+        "name": "メガピクセル"
+      },
+      "upscale_method": {
+        "name": "拡大方法"
+      }
+    }
   },
   "ImageSharpen": {
-    "display_name": "画像をシャープ化"
+    "display_name": "画像をシャープ化",
+    "inputs": {
+      "alpha": {
+        "name": "アルファ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "sharpen_radius": {
+        "name": "シャープ化半径"
+      },
+      "sigma": {
+        "name": "シグマ"
+      }
+    }
   },
   "ImageToMask": {
-    "display_name": "画像をマスクに変換"
+    "display_name": "画像をマスクに変換",
+    "inputs": {
+      "channel": {
+        "name": "チャンネル"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "ImageUpscaleWithModel": {
-    "display_name": "モデルを使用して画像を拡大"
+    "display_name": "モデルを使用して画像を拡大",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "upscale_model": {
+        "name": "拡大モデル"
+      }
+    }
   },
   "InpaintModelConditioning": {
     "display_name": "インペイントモデル条件付け",
     "inputs": {
+      "mask": {
+        "name": "マスク"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
       "noise_mask": {
+        "name": "ノイズマスク",
         "tooltip": "潜在にノイズマスクを追加し、サンプリングがマスク内でのみ行われるようにします。モデルによっては結果が改善されるか、完全に壊れる可能性があります。"
+      },
+      "pixels": {
+        "name": "ピクセル"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -465,6 +1745,20 @@
   },
   "InstructPixToPixConditioning": {
     "display_name": "PixToPix条件付け",
+    "inputs": {
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "pixels": {
+        "name": "ピクセル"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -478,43 +1772,66 @@
     }
   },
   "InvertMask": {
-    "display_name": "マスクを反転"
+    "display_name": "マスクを反転",
+    "inputs": {
+      "mask": {
+        "name": "マスク"
+      }
+    }
   },
   "JoinImageWithAlpha": {
-    "display_name": "アルファで画像を結合"
+    "display_name": "アルファで画像を結合",
+    "inputs": {
+      "alpha": {
+        "name": "アルファ"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "KSampler": {
     "description": "提供されたモデル、正の条件付けと負の条件付けを使用して潜在画像のノイズを除去します。",
     "display_name": "Kサンプラー",
     "inputs": {
       "cfg": {
+        "name": "設定",
         "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。値が高いほど、生成される画像はプロンプトにより近くなりますが、値が高すぎると品質に悪影響を及ぼす可能性があります。"
       },
       "denoise": {
+        "name": "ノイズ除去",
         "tooltip": "適用されるデノイズの量。値が低いほど、初期画像の構造を維持し、画像から画像へのサンプリングが可能になります。"
       },
       "latent_image": {
+        "name": "潜在画像",
         "tooltip": "デノイズする潜在画像。"
       },
       "model": {
+        "name": "モデル",
         "tooltip": "入力潜在のデノイズに使用されるモデル。"
       },
       "negative": {
+        "name": "ネガティブ",
         "tooltip": "画像から除外したい属性を説明する条件付け。"
       },
       "positive": {
+        "name": "ポジティブ",
         "tooltip": "画像に含めたい属性を説明する条件付け。"
       },
       "sampler_name": {
+        "name": "サンプラー名",
         "tooltip": "サンプリング時に使用されるアルゴリズムで、生成される出力の品質、速度、スタイルに影響を与える可能性があります。"
       },
       "scheduler": {
+        "name": "スケジューラ",
         "tooltip": "スケジューラは、ノイズが徐々に除去されて画像が形成される方法を制御します。"
       },
       "seed": {
+        "name": "シード",
         "tooltip": "ノイズを生成するために使用されるランダムシード。"
       },
       "steps": {
+        "name": "ステップ",
         "tooltip": "デノイズプロセスで使用されるステップ数。"
       }
     },
@@ -525,16 +1842,87 @@
     }
   },
   "KSamplerAdvanced": {
-    "display_name": "Kサンプラー（高度）"
+    "display_name": "Kサンプラー（高度）",
+    "inputs": {
+      "add_noise": {
+        "name": "ノイズ追加"
+      },
+      "cfg": {
+        "name": "設定"
+      },
+      "end_at_step": {
+        "name": "ステップ終了"
+      },
+      "latent_image": {
+        "name": "潜在画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "noise_seed": {
+        "name": "ノイズシード"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "return_with_leftover_noise": {
+        "name": "残りのノイズと一緒に返す"
+      },
+      "sampler_name": {
+        "name": "サンプラー名"
+      },
+      "scheduler": {
+        "name": "スケジューラ"
+      },
+      "start_at_step": {
+        "name": "ステップ開始"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "KSamplerSelect": {
-    "display_name": "Kサンプラー選択"
+    "display_name": "Kサンプラー選択",
+    "inputs": {
+      "sampler_name": {
+        "name": "サンプラー名"
+      }
+    }
   },
   "KarrasScheduler": {
-    "display_name": "カラススケジューラー"
+    "display_name": "カラススケジューラー",
+    "inputs": {
+      "rho": {
+        "name": "ロー"
+      },
+      "sigma_max": {
+        "name": "シグマ_最大"
+      },
+      "sigma_min": {
+        "name": "シグマ_最小"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "LTXVConditioning": {
     "display_name": "LTXV条件付け",
+    "inputs": {
+      "frame_rate": {
+        "name": "フレームレート"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -547,8 +1935,33 @@
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
       "image_noise_scale": {
+        "name": "画像ノイズスケール",
         "tooltip": "条件付け画像の潜在に適用するノイズの量。"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
       }
     },
     "outputs": {
@@ -566,103 +1979,365 @@
   "LTXVScheduler": {
     "display_name": "LTXVスケジューラー",
     "inputs": {
+      "base_shift": {
+        "name": "基本シフト"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "max_shift": {
+        "name": "最大シフト"
+      },
+      "steps": {
+        "name": "ステップ"
+      },
       "stretch": {
+        "name": "ストレッチ",
         "tooltip": "シグマを[terminal, 1]の範囲に伸ばします。"
       },
       "terminal": {
+        "name": "端末",
         "tooltip": "ストレッチ後のシグマの端末値。"
       }
     }
   },
   "LaplaceScheduler": {
-    "display_name": "ラプラススケジューラー"
+    "display_name": "ラプラススケジューラー",
+    "inputs": {
+      "beta": {
+        "name": "ベータ"
+      },
+      "mu": {
+        "name": "ミュー"
+      },
+      "sigma_max": {
+        "name": "シグマ_最大"
+      },
+      "sigma_min": {
+        "name": "シグマ_最小"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "LatentAdd": {
-    "display_name": "潜在追加"
+    "display_name": "潜在追加",
+    "inputs": {
+      "samples1": {
+        "name": "サンプル1"
+      },
+      "samples2": {
+        "name": "サンプル2"
+      }
+    }
   },
   "LatentApplyOperation": {
-    "display_name": "潜在操作を適用"
+    "display_name": "潜在操作を適用",
+    "inputs": {
+      "operation": {
+        "name": "操作"
+      },
+      "samples": {
+        "name": "サンプル"
+      }
+    }
   },
   "LatentApplyOperationCFG": {
-    "display_name": "潜在操作CFGを適用"
+    "display_name": "潜在操作CFGを適用",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "operation": {
+        "name": "操作"
+      }
+    }
   },
   "LatentBatch": {
-    "display_name": "潜在バッチ"
+    "display_name": "潜在バッチ",
+    "inputs": {
+      "samples1": {
+        "name": "サンプル1"
+      },
+      "samples2": {
+        "name": "サンプル2"
+      }
+    }
   },
   "LatentBatchSeedBehavior": {
-    "display_name": "潜在バッチシード動作"
+    "display_name": "潜在バッチシード動作",
+    "inputs": {
+      "samples": {
+        "name": "サンプル"
+      },
+      "seed_behavior": {
+        "name": "シード行動"
+      }
+    }
   },
   "LatentBlend": {
-    "display_name": "潜在ブレンド"
+    "display_name": "潜在ブレンド",
+    "inputs": {
+      "blend_factor": {
+        "name": "ブレンド係数"
+      },
+      "samples1": {
+        "name": "サンプル1"
+      },
+      "samples2": {
+        "name": "サンプル2"
+      }
+    }
   },
   "LatentComposite": {
-    "display_name": "潜在合成"
+    "display_name": "潜在合成",
+    "inputs": {
+      "feather": {
+        "name": "フェザー"
+      },
+      "samples_from": {
+        "name": "samples_from"
+      },
+      "samples_to": {
+        "name": "samples_to"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "LatentCompositeMasked": {
-    "display_name": "マスクされた潜在合成"
+    "display_name": "マスクされた潜在合成",
+    "inputs": {
+      "destination": {
+        "name": "destination"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "resize_source": {
+        "name": "resize_source"
+      },
+      "source": {
+        "name": "source"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "LatentCrop": {
-    "display_name": "潜在トリミング"
+    "display_name": "潜在トリミング",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "幅"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "LatentFlip": {
-    "display_name": "潜在反転"
+    "display_name": "潜在反転",
+    "inputs": {
+      "flip_method": {
+        "name": "反転方法"
+      },
+      "samples": {
+        "name": "samples"
+      }
+    }
   },
   "LatentFromBatch": {
-    "display_name": "バッチから潜在を取得"
+    "display_name": "バッチから潜在を取得",
+    "inputs": {
+      "batch_index": {
+        "name": "バッチインデックス"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "samples": {
+        "name": "samples"
+      }
+    }
   },
   "LatentInterpolate": {
-    "display_name": "潜在補間"
+    "display_name": "潜在補間",
+    "inputs": {
+      "ratio": {
+        "name": "比率"
+      },
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      }
+    }
   },
   "LatentMultiply": {
-    "display_name": "潜在乗算"
+    "display_name": "潜在乗算",
+    "inputs": {
+      "multiplier": {
+        "name": "乗数"
+      },
+      "samples": {
+        "name": "samples"
+      }
+    }
   },
   "LatentOperationSharpen": {
-    "display_name": "潜在操作シャープ化"
+    "display_name": "潜在操作シャープ化",
+    "inputs": {
+      "alpha": {
+        "name": "アルファ"
+      },
+      "sharpen_radius": {
+        "name": "シャープ化半径"
+      },
+      "sigma": {
+        "name": "シグマ"
+      }
+    }
   },
   "LatentOperationTonemapReinhard": {
-    "display_name": "潜在操作トーンマップライナード"
+    "display_name": "潜在操作トーンマップライナード",
+    "inputs": {
+      "multiplier": {
+        "name": "乗数"
+      }
+    }
   },
   "LatentRotate": {
-    "display_name": "潜在回転"
+    "display_name": "潜在回転",
+    "inputs": {
+      "rotation": {
+        "name": "回転"
+      },
+      "samples": {
+        "name": "samples"
+      }
+    }
   },
   "LatentSubtract": {
-    "display_name": "潜在減算"
+    "display_name": "潜在減算",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      }
+    }
   },
   "LatentUpscale": {
-    "display_name": "潜在を拡大"
+    "display_name": "潜在を拡大",
+    "inputs": {
+      "crop": {
+        "name": "クロップ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "upscale_method": {
+        "name": "拡大方法"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "LatentUpscaleBy": {
-    "display_name": "潜在を拡大（指定サイズ）"
+    "display_name": "潜在を拡大（指定サイズ）",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "scale_by": {
+        "name": "スケールバイ"
+      },
+      "upscale_method": {
+        "name": "拡大方法"
+      }
+    }
   },
   "LoadAudio": {
-    "display_name": "音声を読み込む"
+    "display_name": "音声を読み込む",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      }
+    }
   },
   "LoadImage": {
-    "display_name": "画像を読み込む"
+    "display_name": "画像を読み込む",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "LoadImageMask": {
-    "display_name": "画像を読み込む（マスクとして）"
+    "display_name": "画像を読み込む（マスクとして）",
+    "inputs": {
+      "channel": {
+        "name": "チャンネル"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "LoadLatent": {
-    "display_name": "潜在を読み込む"
+    "display_name": "潜在を読み込む",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      }
+    }
   },
   "LoraLoader": {
     "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
     "display_name": "LoRAを読み込む",
     "inputs": {
       "clip": {
+        "name": "クリップ",
         "tooltip": "LoRAが適用されるCLIPモデル。"
       },
       "lora_name": {
+        "name": "lora_name",
         "tooltip": "LoRAの名前。"
       },
       "model": {
+        "name": "モデル",
         "tooltip": "LoRAが適用される拡散モデル。"
       },
       "strength_clip": {
+        "name": "クリップの強度",
         "tooltip": "CLIPモデルをどの程度変更するか。この値は負の値になる可能性があります。"
       },
       "strength_model": {
+        "name": "モデルの強度",
         "tooltip": "拡散モデルをどの程度変更するか。この値は負の値になる可能性があります。"
       }
     },
@@ -678,6 +2353,17 @@
   "LoraLoaderModelOnly": {
     "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
     "display_name": "LoRAローダーモデルのみ",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "strength_model": {
+        "name": "モデルの強度"
+      }
+    },
     "outputs": {
       "0": {
         "tooltip": "修正された拡散モデル。"
@@ -687,91 +2373,1423 @@
   "LoraSave": {
     "display_name": "LoRAを抽出して保存",
     "inputs": {
+      "bias_diff": {
+        "name": "バイアスの差"
+      },
+      "filename_prefix": {
+        "name": "ファイル名のプレフィックス"
+      },
+      "lora_type": {
+        "name": "lora_type"
+      },
       "model_diff": {
+        "name": "モデルの差",
         "tooltip": "loraに変換されるModelSubtract出力。"
       },
+      "rank": {
+        "name": "ランク"
+      },
       "text_encoder_diff": {
+        "name": "テキストエンコーダの差",
         "tooltip": "loraに変換されるCLIPSubtract出力。"
       }
     }
   },
   "MaskComposite": {
-    "display_name": "マスク合成"
+    "display_name": "マスク合成",
+    "inputs": {
+      "destination": {
+        "name": "目的地"
+      },
+      "operation": {
+        "name": "操作"
+      },
+      "source": {
+        "name": "ソース"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "MaskToImage": {
-    "display_name": "マスクを画像に変換"
+    "display_name": "マスクを画像に変換",
+    "inputs": {
+      "mask": {
+        "name": "マスク"
+      }
+    }
   },
   "ModelMergeAdd": {
-    "display_name": "モデルマージ追加"
+    "display_name": "モデルマージ追加",
+    "inputs": {
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      }
+    }
   },
   "ModelMergeAuraflow": {
-    "display_name": "モデルマージオーラフロー"
+    "display_name": "モデルマージオーラフロー",
+    "inputs": {
+      "cond_seq_linear_": {
+        "name": "cond_seq_linear."
+      },
+      "double_layers_0_": {
+        "name": "double_layers.0."
+      },
+      "double_layers_1_": {
+        "name": "double_layers.1."
+      },
+      "double_layers_2_": {
+        "name": "double_layers.2."
+      },
+      "double_layers_3_": {
+        "name": "double_layers.3."
+      },
+      "final_linear_": {
+        "name": "final_linear."
+      },
+      "init_x_linear_": {
+        "name": "init_x_linear."
+      },
+      "modF_": {
+        "name": "modF."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "positional_encoding": {
+        "name": "位置エンコーディング"
+      },
+      "register_tokens": {
+        "name": "トークンを登録"
+      },
+      "single_layers_0_": {
+        "name": "single_layers.0."
+      },
+      "single_layers_10_": {
+        "name": "single_layers.10."
+      },
+      "single_layers_11_": {
+        "name": "single_layers.11."
+      },
+      "single_layers_12_": {
+        "name": "single_layers.12."
+      },
+      "single_layers_13_": {
+        "name": "single_layers.13."
+      },
+      "single_layers_14_": {
+        "name": "single_layers.14."
+      },
+      "single_layers_15_": {
+        "name": "single_layers.15."
+      },
+      "single_layers_16_": {
+        "name": "single_layers.16."
+      },
+      "single_layers_17_": {
+        "name": "single_layers.17."
+      },
+      "single_layers_18_": {
+        "name": "single_layers.18."
+      },
+      "single_layers_19_": {
+        "name": "single_layers.19."
+      },
+      "single_layers_1_": {
+        "name": "single_layers.1."
+      },
+      "single_layers_20_": {
+        "name": "single_layers.20."
+      },
+      "single_layers_21_": {
+        "name": "single_layers.21."
+      },
+      "single_layers_22_": {
+        "name": "single_layers.22."
+      },
+      "single_layers_23_": {
+        "name": "single_layers.23."
+      },
+      "single_layers_24_": {
+        "name": "single_layers.24."
+      },
+      "single_layers_25_": {
+        "name": "single_layers.25."
+      },
+      "single_layers_26_": {
+        "name": "single_layers.26."
+      },
+      "single_layers_27_": {
+        "name": "single_layers.27."
+      },
+      "single_layers_28_": {
+        "name": "single_layers.28."
+      },
+      "single_layers_29_": {
+        "name": "single_layers.29."
+      },
+      "single_layers_2_": {
+        "name": "single_layers.2."
+      },
+      "single_layers_30_": {
+        "name": "single_layers.30."
+      },
+      "single_layers_31_": {
+        "name": "single_layers.31."
+      },
+      "single_layers_3_": {
+        "name": "single_layers.3."
+      },
+      "single_layers_4_": {
+        "name": "single_layers.4."
+      },
+      "single_layers_5_": {
+        "name": "single_layers.5."
+      },
+      "single_layers_6_": {
+        "name": "single_layers.6."
+      },
+      "single_layers_7_": {
+        "name": "single_layers.7."
+      },
+      "single_layers_8_": {
+        "name": "single_layers.8."
+      },
+      "single_layers_9_": {
+        "name": "single_layers.9."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
   },
   "ModelMergeBlocks": {
-    "display_name": "モデルマージブロック"
+    "display_name": "モデルマージブロック",
+    "inputs": {
+      "input": {
+        "name": "入力"
+      },
+      "middle": {
+        "name": "中間"
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "out": {
+        "name": "出力"
+      }
+    }
   },
   "ModelMergeFlux1": {
-    "display_name": "モデルマージフラックス1"
+    "display_name": "モデルマージフラックス1",
+    "inputs": {
+      "double_blocks_0_": {
+        "name": "double_blocks.0."
+      },
+      "double_blocks_10_": {
+        "name": "double_blocks.10."
+      },
+      "double_blocks_11_": {
+        "name": "double_blocks.11."
+      },
+      "double_blocks_12_": {
+        "name": "double_blocks.12."
+      },
+      "double_blocks_13_": {
+        "name": "double_blocks.13."
+      },
+      "double_blocks_14_": {
+        "name": "double_blocks.14."
+      },
+      "double_blocks_15_": {
+        "name": "double_blocks.15."
+      },
+      "double_blocks_16_": {
+        "name": "double_blocks.16."
+      },
+      "double_blocks_17_": {
+        "name": "double_blocks.17."
+      },
+      "double_blocks_18_": {
+        "name": "double_blocks.18."
+      },
+      "double_blocks_1_": {
+        "name": "double_blocks.1."
+      },
+      "double_blocks_2_": {
+        "name": "double_blocks.2."
+      },
+      "double_blocks_3_": {
+        "name": "double_blocks.3."
+      },
+      "double_blocks_4_": {
+        "name": "double_blocks.4."
+      },
+      "double_blocks_5_": {
+        "name": "double_blocks.5."
+      },
+      "double_blocks_6_": {
+        "name": "double_blocks.6."
+      },
+      "double_blocks_7_": {
+        "name": "double_blocks.7."
+      },
+      "double_blocks_8_": {
+        "name": "double_blocks.8."
+      },
+      "double_blocks_9_": {
+        "name": "double_blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "guidance_in": {
+        "name": "guidance_in"
+      },
+      "img_in_": {
+        "name": "img_in."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "single_blocks_0_": {
+        "name": "single_blocks.0."
+      },
+      "single_blocks_10_": {
+        "name": "single_blocks.10."
+      },
+      "single_blocks_11_": {
+        "name": "single_blocks.11."
+      },
+      "single_blocks_12_": {
+        "name": "single_blocks.12."
+      },
+      "single_blocks_13_": {
+        "name": "single_blocks.13."
+      },
+      "single_blocks_14_": {
+        "name": "single_blocks.14."
+      },
+      "single_blocks_15_": {
+        "name": "single_blocks.15."
+      },
+      "single_blocks_16_": {
+        "name": "single_blocks.16."
+      },
+      "single_blocks_17_": {
+        "name": "single_blocks.17."
+      },
+      "single_blocks_18_": {
+        "name": "single_blocks.18."
+      },
+      "single_blocks_19_": {
+        "name": "single_blocks.19."
+      },
+      "single_blocks_1_": {
+        "name": "single_blocks.1."
+      },
+      "single_blocks_20_": {
+        "name": "single_blocks.20."
+      },
+      "single_blocks_21_": {
+        "name": "single_blocks.21."
+      },
+      "single_blocks_22_": {
+        "name": "single_blocks.22."
+      },
+      "single_blocks_23_": {
+        "name": "single_blocks.23."
+      },
+      "single_blocks_24_": {
+        "name": "single_blocks.24."
+      },
+      "single_blocks_25_": {
+        "name": "single_blocks.25."
+      },
+      "single_blocks_26_": {
+        "name": "single_blocks.26."
+      },
+      "single_blocks_27_": {
+        "name": "single_blocks.27."
+      },
+      "single_blocks_28_": {
+        "name": "single_blocks.28."
+      },
+      "single_blocks_29_": {
+        "name": "single_blocks.29."
+      },
+      "single_blocks_2_": {
+        "name": "single_blocks.2."
+      },
+      "single_blocks_30_": {
+        "name": "single_blocks.30."
+      },
+      "single_blocks_31_": {
+        "name": "single_blocks.31."
+      },
+      "single_blocks_32_": {
+        "name": "single_blocks.32."
+      },
+      "single_blocks_33_": {
+        "name": "single_blocks.33."
+      },
+      "single_blocks_34_": {
+        "name": "single_blocks.34."
+      },
+      "single_blocks_35_": {
+        "name": "single_blocks.35."
+      },
+      "single_blocks_36_": {
+        "name": "single_blocks.36."
+      },
+      "single_blocks_37_": {
+        "name": "single_blocks.37."
+      },
+      "single_blocks_3_": {
+        "name": "single_blocks.3."
+      },
+      "single_blocks_4_": {
+        "name": "single_blocks.4."
+      },
+      "single_blocks_5_": {
+        "name": "single_blocks.5."
+      },
+      "single_blocks_6_": {
+        "name": "single_blocks.6."
+      },
+      "single_blocks_7_": {
+        "name": "single_blocks.7."
+      },
+      "single_blocks_8_": {
+        "name": "single_blocks.8."
+      },
+      "single_blocks_9_": {
+        "name": "single_blocks.9."
+      },
+      "time_in_": {
+        "name": "time_in."
+      },
+      "txt_in_": {
+        "name": "txt_in."
+      },
+      "vector_in_": {
+        "name": "vector_in."
+      }
+    }
   },
   "ModelMergeLTXV": {
-    "display_name": "モデルマージLTXV"
+    "display_name": "モデルマージLTXV",
+    "inputs": {
+      "adaln_single_": {
+        "name": "adaln_single."
+      },
+      "caption_projection_": {
+        "name": "キャプション投影."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "patchify_proj_": {
+        "name": "patchify_proj."
+      },
+      "proj_out_": {
+        "name": "proj_out."
+      },
+      "scale_shift_table": {
+        "name": "スケールシフトテーブル"
+      },
+      "transformer_blocks_0_": {
+        "name": "トランスフォーマーブロック.0."
+      },
+      "transformer_blocks_10_": {
+        "name": "トランスフォーマーブロック.10."
+      },
+      "transformer_blocks_11_": {
+        "name": "トランスフォーマーブロック.11."
+      },
+      "transformer_blocks_12_": {
+        "name": "トランスフォーマーブロック.12."
+      },
+      "transformer_blocks_13_": {
+        "name": "トランスフォーマーブロック.13."
+      },
+      "transformer_blocks_14_": {
+        "name": "トランスフォーマーブロック.14."
+      },
+      "transformer_blocks_15_": {
+        "name": "トランスフォーマーブロック.15."
+      },
+      "transformer_blocks_16_": {
+        "name": "トランスフォーマーブロック.16."
+      },
+      "transformer_blocks_17_": {
+        "name": "トランスフォーマーブロック.17."
+      },
+      "transformer_blocks_18_": {
+        "name": "トランスフォーマーブロック.18."
+      },
+      "transformer_blocks_19_": {
+        "name": "トランスフォーマーブロック.19."
+      },
+      "transformer_blocks_1_": {
+        "name": "トランスフォーマーブロック.1."
+      },
+      "transformer_blocks_20_": {
+        "name": "トランスフォーマーブロック.20."
+      },
+      "transformer_blocks_21_": {
+        "name": "トランスフォーマーブロック.21."
+      },
+      "transformer_blocks_22_": {
+        "name": "トランスフォーマーブロック.22."
+      },
+      "transformer_blocks_23_": {
+        "name": "トランスフォーマーブロック.23."
+      },
+      "transformer_blocks_24_": {
+        "name": "トランスフォーマーブロック.24."
+      },
+      "transformer_blocks_25_": {
+        "name": "トランスフォーマーブロック.25."
+      },
+      "transformer_blocks_26_": {
+        "name": "トランスフォーマーブロック.26."
+      },
+      "transformer_blocks_27_": {
+        "name": "トランスフォーマーブロック.27."
+      },
+      "transformer_blocks_2_": {
+        "name": "トランスフォーマーブロック.2."
+      },
+      "transformer_blocks_3_": {
+        "name": "トランスフォーマーブロック.3."
+      },
+      "transformer_blocks_4_": {
+        "name": "トランスフォーマーブロック.4."
+      },
+      "transformer_blocks_5_": {
+        "name": "トランスフォーマーブロック.5."
+      },
+      "transformer_blocks_6_": {
+        "name": "トランスフォーマーブロック.6."
+      },
+      "transformer_blocks_7_": {
+        "name": "トランスフォーマーブロック.7."
+      },
+      "transformer_blocks_8_": {
+        "name": "トランスフォーマーブロック.8."
+      },
+      "transformer_blocks_9_": {
+        "name": "トランスフォーマーブロック.9."
+      }
+    }
   },
   "ModelMergeMochiPreview": {
-    "display_name": "モデルマージMochiプレビュー"
+    "display_name": "モデルマージMochiプレビュー",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "pos_frequencies_": {
+        "name": "pos_frequencies."
+      },
+      "t5_y_embedder_": {
+        "name": "t5_y_embedder."
+      },
+      "t5_yproj_": {
+        "name": "t5_yproj."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
   },
   "ModelMergeSD1": {
-    "display_name": "モデルマージSD1"
+    "display_name": "モデルマージSD1",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0_": {
+        "name": "middle_block.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_block.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_block.2."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0_": {
+        "name": "output_blocks.0."
+      },
+      "output_blocks_10_": {
+        "name": "output_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "output_blocks.11."
+      },
+      "output_blocks_1_": {
+        "name": "output_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "output_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "output_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "output_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "output_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "output_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "output_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "output_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "output_blocks.9."
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
   },
   "ModelMergeSD2": {
-    "display_name": "モデルマージSD2"
+    "display_name": "モデルマージSD2",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0_": {
+        "name": "middle_block.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_block.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_block.2."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0_": {
+        "name": "output_blocks.0."
+      },
+      "output_blocks_10_": {
+        "name": "output_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "output_blocks.11."
+      },
+      "output_blocks_1_": {
+        "name": "output_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "output_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "output_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "output_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "output_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "output_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "output_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "output_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "output_blocks.9."
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
   },
   "ModelMergeSD35_Large": {
-    "display_name": "モデルマージSD35_Large"
+    "display_name": "モデルマージSD35_Large",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_24_": {
+        "name": "joint_blocks.24."
+      },
+      "joint_blocks_25_": {
+        "name": "joint_blocks.25."
+      },
+      "joint_blocks_26_": {
+        "name": "joint_blocks.26."
+      },
+      "joint_blocks_27_": {
+        "name": "joint_blocks.27."
+      },
+      "joint_blocks_28_": {
+        "name": "joint_blocks.28."
+      },
+      "joint_blocks_29_": {
+        "name": "joint_blocks.29."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_30_": {
+        "name": "joint_blocks.30."
+      },
+      "joint_blocks_31_": {
+        "name": "joint_blocks.31."
+      },
+      "joint_blocks_32_": {
+        "name": "joint_blocks.32."
+      },
+      "joint_blocks_33_": {
+        "name": "joint_blocks.33."
+      },
+      "joint_blocks_34_": {
+        "name": "joint_blocks.34."
+      },
+      "joint_blocks_35_": {
+        "name": "joint_blocks.35."
+      },
+      "joint_blocks_36_": {
+        "name": "joint_blocks.36."
+      },
+      "joint_blocks_37_": {
+        "name": "joint_blocks.37."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
   },
   "ModelMergeSD3_2B": {
-    "display_name": "モデルマージSD3_2B"
+    "display_name": "モデルマージSD3_2B",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
   },
   "ModelMergeSDXL": {
-    "display_name": "モデルマージSDXL"
+    "display_name": "モデルマージSDXL",
+    "inputs": {
+      "input_blocks_0": {
+        "name": "input_blocks.0"
+      },
+      "input_blocks_1": {
+        "name": "input_blocks.1"
+      },
+      "input_blocks_2": {
+        "name": "input_blocks.2"
+      },
+      "input_blocks_3": {
+        "name": "input_blocks.3"
+      },
+      "input_blocks_4": {
+        "name": "input_blocks.4"
+      },
+      "input_blocks_5": {
+        "name": "input_blocks.5"
+      },
+      "input_blocks_6": {
+        "name": "input_blocks.6"
+      },
+      "input_blocks_7": {
+        "name": "input_blocks.7"
+      },
+      "input_blocks_8": {
+        "name": "input_blocks.8"
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0": {
+        "name": "middle_block.0"
+      },
+      "middle_block_1": {
+        "name": "middle_block.1"
+      },
+      "middle_block_2": {
+        "name": "middle_block.2"
+      },
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0": {
+        "name": "output_blocks.0"
+      },
+      "output_blocks_1": {
+        "name": "output_blocks.1"
+      },
+      "output_blocks_2": {
+        "name": "output_blocks.2"
+      },
+      "output_blocks_3": {
+        "name": "output_blocks.3"
+      },
+      "output_blocks_4": {
+        "name": "output_blocks.4"
+      },
+      "output_blocks_5": {
+        "name": "output_blocks.5"
+      },
+      "output_blocks_6": {
+        "name": "output_blocks.6"
+      },
+      "output_blocks_7": {
+        "name": "output_blocks.7"
+      },
+      "output_blocks_8": {
+        "name": "output_blocks.8"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
   },
   "ModelMergeSimple": {
-    "display_name": "モデルマージシンプル"
+    "display_name": "モデルマージシンプル",
+    "inputs": {
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "ratio": {
+        "name": "比率"
+      }
+    }
   },
   "ModelMergeSubtract": {
-    "display_name": "モデルマージ減算"
+    "display_name": "モデルマージ減算",
+    "inputs": {
+      "model1": {
+        "name": "モデル1"
+      },
+      "model2": {
+        "name": "モデル2"
+      },
+      "multiplier": {
+        "name": "乗数"
+      }
+    }
   },
   "ModelSamplingAuraFlow": {
-    "display_name": "モデルサンプリングオーラフロー"
+    "display_name": "モデルサンプリングオーラフロー",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "shift": {
+        "name": "シフト"
+      }
+    }
   },
   "ModelSamplingContinuousEDM": {
-    "display_name": "モデルサンプリング連続EDM"
+    "display_name": "モデルサンプリング連続EDM",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "sampling": {
+        "name": "サンプリング"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
   },
   "ModelSamplingContinuousV": {
-    "display_name": "モデルサンプリング連続V"
+    "display_name": "モデルサンプリング連続V",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "sampling": {
+        "name": "サンプリング"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
   },
   "ModelSamplingDiscrete": {
-    "display_name": "モデルサンプリング離散"
+    "display_name": "モデルサンプリング離散",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "sampling": {
+        "name": "サンプリング"
+      },
+      "zsnr": {
+        "name": "zsnr"
+      }
+    }
   },
   "ModelSamplingFlux": {
-    "display_name": "モデルサンプリングフラックス"
+    "display_name": "モデルサンプリングフラックス",
+    "inputs": {
+      "base_shift": {
+        "name": "基本シフト"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "max_shift": {
+        "name": "最大シフト"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "ModelSamplingLTXV": {
-    "display_name": "モデルサンプリングLTXV"
+    "display_name": "モデルサンプリングLTXV",
+    "inputs": {
+      "base_shift": {
+        "name": "基本シフト"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "max_shift": {
+        "name": "最大シフト"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "ModelSamplingSD3": {
-    "display_name": "モデルサンプリングSD3"
+    "display_name": "モデルサンプリングSD3",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "shift": {
+        "name": "シフト"
+      }
+    }
   },
   "ModelSamplingStableCascade": {
-    "display_name": "モデルサンプリング安定カスケード"
+    "display_name": "モデルサンプリング安定カスケード",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "shift": {
+        "name": "シフト"
+      }
+    }
   },
   "ModelSave": {
-    "display_name": "モデルを保存"
+    "display_name": "モデルを保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "Morphology": {
-    "display_name": "画像形態学"
+    "display_name": "画像形態学",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "kernel_size": {
+        "name": "カーネルサイズ"
+      },
+      "operation": {
+        "name": "操作"
+      }
+    }
   },
   "PairConditioningCombine": {
     "display_name": "ペア条件付け組み合わせ",
+    "inputs": {
+      "negative_A": {
+        "name": "ネガティブ_A"
+      },
+      "negative_B": {
+        "name": "ネガティブ_B"
+      },
+      "positive_A": {
+        "name": "ポジティブ_A"
+      },
+      "positive_B": {
+        "name": "ポジティブ_B"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -783,6 +3801,23 @@
   },
   "PairConditioningSetDefaultCombine": {
     "display_name": "ペア条件付けデフォルト組み合わせを設定",
+    "inputs": {
+      "hooks": {
+        "name": "フック"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "negative_DEFAULT": {
+        "name": "ネガティブ_DEFAULT"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "positive_DEFAULT": {
+        "name": "ポジティブ_DEFAULT"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -794,6 +3829,29 @@
   },
   "PairConditioningSetProperties": {
     "display_name": "ペア条件付けプロパティ設定",
+    "inputs": {
+      "hooks": {
+        "name": "フック"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "negative_NEW": {
+        "name": "ネガティブ_NEW"
+      },
+      "positive_NEW": {
+        "name": "ポジティブ_NEW"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "timesteps": {
+        "name": "タイムステップ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -805,6 +3863,35 @@
   },
   "PairConditioningSetPropertiesAndCombine": {
     "display_name": "ペア条件付けプロパティ設定と組み合わせ",
+    "inputs": {
+      "hooks": {
+        "name": "フック"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "negative_NEW": {
+        "name": "ネガティブ_NEW"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "positive_NEW": {
+        "name": "ポジティブ_NEW"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "timesteps": {
+        "name": "タイムステップ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -815,59 +3902,257 @@
     }
   },
   "PatchModelAddDownscale": {
-    "display_name": "パッチモデル追加ダウンスケール（Kohya Deep Shrink）"
+    "display_name": "パッチモデル追加ダウンスケール（Kohya Deep Shrink）",
+    "inputs": {
+      "block_number": {
+        "name": "ブロック番号"
+      },
+      "downscale_after_skip": {
+        "name": "スキップ後のダウンスケール"
+      },
+      "downscale_factor": {
+        "name": "ダウンスケール係数"
+      },
+      "downscale_method": {
+        "name": "ダウンスケール方法"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      },
+      "upscale_method": {
+        "name": "アップスケール方法"
+      }
+    }
   },
   "PerpNeg": {
-    "display_name": "Perp-Neg（PerpNegGuiderによって非推奨）"
+    "display_name": "Perp-Neg（PerpNegGuiderによって非推奨）",
+    "inputs": {
+      "empty_conditioning": {
+        "name": "空のコンディショニング"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "neg_scale": {
+        "name": "ネガティブスケール"
+      }
+    }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegガイダー"
+    "display_name": "PerpNegガイダー",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "empty_conditioning": {
+        "name": "空のコンディショニング"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "neg_scale": {
+        "name": "ネガティブスケール"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    }
   },
   "PerturbedAttentionGuidance": {
-    "display_name": "摂動注意ガイダンス"
+    "display_name": "摂動注意ガイダンス",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "scale": {
+        "name": "スケール"
+      }
+    }
   },
   "PhotoMakerEncode": {
-    "display_name": "フォトメーカーエンコード"
+    "display_name": "フォトメーカーエンコード",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "photomaker": {
+        "name": "photomaker"
+      },
+      "text": {
+        "name": "テキスト"
+      }
+    }
   },
   "PhotoMakerLoader": {
-    "display_name": "フォトメーカーを読み込む"
+    "display_name": "フォトメーカーを読み込む",
+    "inputs": {
+      "photomaker_model_name": {
+        "name": "photomakerモデル名"
+      }
+    }
   },
   "PolyexponentialScheduler": {
-    "display_name": "ポリ指数スケジューラー"
+    "display_name": "ポリ指数スケジューラー",
+    "inputs": {
+      "rho": {
+        "name": "ロー"
+      },
+      "sigma_max": {
+        "name": "シグママックス"
+      },
+      "sigma_min": {
+        "name": "シグマミン"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "PorterDuffImageComposite": {
-    "display_name": "ポーターダフ画像合成"
+    "display_name": "ポーターダフ画像合成",
+    "inputs": {
+      "destination": {
+        "name": "デスティネーション"
+      },
+      "destination_alpha": {
+        "name": "デスティネーションアルファ"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "source": {
+        "name": "ソース"
+      },
+      "source_alpha": {
+        "name": "ソースアルファ"
+      }
+    }
   },
   "PreviewAudio": {
-    "display_name": "オーディオプレビュー"
+    "display_name": "オーディオプレビュー",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      }
+    }
   },
   "PreviewImage": {
     "description": "入力画像をComfyUI出力ディレクトリに保存します。",
-    "display_name": "画像プレビュー"
+    "display_name": "画像プレビュー",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      }
+    }
   },
   "RandomNoise": {
-    "display_name": "ランダムノイズ"
+    "display_name": "ランダムノイズ",
+    "inputs": {
+      "noise_seed": {
+        "name": "ノイズシード"
+      }
+    }
   },
   "RebatchImages": {
-    "display_name": "画像を再バッチ"
+    "display_name": "画像を再バッチ",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "images": {
+        "name": "画像"
+      }
+    }
   },
   "RebatchLatents": {
-    "display_name": "潜在を再バッチ"
+    "display_name": "潜在を再バッチ",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "latents": {
+        "name": "潜在変数"
+      }
+    }
   },
   "RepeatImageBatch": {
-    "display_name": "画像バッチを繰り返す"
+    "display_name": "画像バッチを繰り返す",
+    "inputs": {
+      "amount": {
+        "name": "量"
+      },
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "RepeatLatentBatch": {
-    "display_name": "潜在バッチを繰り返す"
+    "display_name": "潜在バッチを繰り返す",
+    "inputs": {
+      "amount": {
+        "name": "量"
+      },
+      "samples": {
+        "name": "サンプル"
+      }
+    }
   },
   "RescaleCFG": {
-    "display_name": "CFGを再スケール"
+    "display_name": "CFGを再スケール",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "multiplier": {
+        "name": "乗数"
+      }
+    }
   },
   "SDTurboScheduler": {
-    "display_name": "SDターボスケジューラー"
+    "display_name": "SDターボスケジューラー",
+    "inputs": {
+      "denoise": {
+        "name": "ノイズ除去"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "SD_4XUpscale_Conditioning": {
     "display_name": "SD_4X拡大条件付け",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "noise_augmentation": {
+        "name": "ノイズ増強"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "scale_ratio": {
+        "name": "スケール比"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -882,6 +4167,29 @@
   },
   "SV3D_Conditioning": {
     "display_name": "SV3D条件付け",
+    "inputs": {
+      "clip_vision": {
+        "name": "クリップビジョン"
+      },
+      "elevation": {
+        "name": "高度"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "init_image": {
+        "name": "初期画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "ビデオフレーム"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -896,6 +4204,35 @@
   },
   "SVD_img2vid_Conditioning": {
     "display_name": "SVD_img2vid条件付け",
+    "inputs": {
+      "augmentation_level": {
+        "name": "増強レベル"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "init_image": {
+        "name": "初期画像"
+      },
+      "motion_bucket_id": {
+        "name": "モーションバケットID"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "ビデオフレーム"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -910,6 +4247,35 @@
   },
   "SamplerCustom": {
     "display_name": "カスタムサンプラー",
+    "inputs": {
+      "add_noise": {
+        "name": "ノイズを追加"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "latent_image": {
+        "name": "潜在画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "noise_seed": {
+        "name": "ノイズシード"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "sampler": {
+        "name": "サンプラー"
+      },
+      "sigmas": {
+        "name": "シグマ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "出力"
@@ -921,6 +4287,23 @@
   },
   "SamplerCustomAdvanced": {
     "display_name": "カスタムサンプラー（高度）",
+    "inputs": {
+      "guider": {
+        "name": "ガイダー"
+      },
+      "latent_image": {
+        "name": "潜在イメージ"
+      },
+      "noise": {
+        "name": "ノイズ"
+      },
+      "sampler": {
+        "name": "サンプラー"
+      },
+      "sigmas": {
+        "name": "シグマ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "出力"
@@ -931,93 +4314,379 @@
     }
   },
   "SamplerDPMAdaptative": {
-    "display_name": "サンプラーDPM適応"
+    "display_name": "サンプラーDPM適応",
+    "inputs": {
+      "accept_safety": {
+        "name": "accept_safety"
+      },
+      "atol": {
+        "name": "atol"
+      },
+      "dcoeff": {
+        "name": "dcoeff"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "h_init": {
+        "name": "h_init"
+      },
+      "icoeff": {
+        "name": "icoeff"
+      },
+      "order": {
+        "name": "順序"
+      },
+      "pcoeff": {
+        "name": "pcoeff"
+      },
+      "rtol": {
+        "name": "rtol"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerDPMPP_2M_SDE": {
-    "display_name": "サンプラーDPMPP_2M_SDE"
+    "display_name": "サンプラーDPMPP_2M_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "ノイズデバイス"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "solver_type": {
+        "name": "ソルバータイプ"
+      }
+    }
   },
   "SamplerDPMPP_2S_Ancestral": {
-    "display_name": "サンプラーDPMPP_2S_祖先"
+    "display_name": "サンプラーDPMPP_2S_祖先",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerDPMPP_3M_SDE": {
-    "display_name": "サンプラーDPMPP_3M_SDE"
+    "display_name": "サンプラーDPMPP_3M_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "ノイズデバイス"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerDPMPP_SDE": {
-    "display_name": "サンプラーDPMPP_SDE"
+    "display_name": "サンプラーDPMPP_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "ノイズデバイス"
+      },
+      "r": {
+        "name": "r"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerEulerAncestral": {
-    "display_name": "サンプラーオイラー祖先"
+    "display_name": "サンプラーオイラー祖先",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerEulerAncestralCFGPP": {
-    "display_name": "サンプラーオイラー祖先CFG++"
+    "display_name": "サンプラーオイラー祖先CFG++",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerEulerCFGpp": {
-    "display_name": "サンプラーオイラーCFG++"
+    "display_name": "サンプラーオイラーCFG++",
+    "inputs": {
+      "version": {
+        "name": "バージョン"
+      }
+    }
   },
   "SamplerLCMUpscale": {
-    "display_name": "サンプラーLCM拡大"
+    "display_name": "サンプラーLCM拡大",
+    "inputs": {
+      "scale_ratio": {
+        "name": "スケール比"
+      },
+      "scale_steps": {
+        "name": "スケールステップ"
+      },
+      "upscale_method": {
+        "name": "アップスケール方法"
+      }
+    }
   },
   "SamplerLMS": {
-    "display_name": "サンプラーLMS"
+    "display_name": "サンプラーLMS",
+    "inputs": {
+      "order": {
+        "name": "順序"
+      }
+    }
   },
   "SaveAnimatedPNG": {
-    "display_name": "アニメーションPNGを保存"
+    "display_name": "アニメーションPNGを保存",
+    "inputs": {
+      "compress_level": {
+        "name": "圧縮レベル"
+      },
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "画像"
+      }
+    }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "アニメーションWEBPを保存"
+    "display_name": "アニメーションWEBPを保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "lossless": {
+        "name": "ロスレス"
+      },
+      "method": {
+        "name": "方法"
+      },
+      "quality": {
+        "name": "品質"
+      }
+    }
   },
   "SaveAudio": {
-    "display_name": "オーディオを保存"
+    "display_name": "オーディオを保存",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
+      "filename_prefix": {
+        "name": "ファイル名_プレフィックス"
+      }
+    }
   },
   "SaveImage": {
     "description": "入力画像をComfyUI出力ディレクトリに保存します。",
     "display_name": "画像を保存",
     "inputs": {
       "filename_prefix": {
+        "name": "ファイル名_プレフィックス",
         "tooltip": "保存するファイルのプレフィックス。この中には、ノードからの値を含めるために、%date:yyyy-MM-dd%や%Empty Latent Image.width%などのフォーマット情報が含まれる場合があります。"
       },
       "images": {
+        "name": "画像",
         "tooltip": "保存する画像。"
       }
     }
   },
   "SaveImageWebsocket": {
-    "display_name": "画像を保存するWebSocket"
+    "display_name": "画像を保存するWebSocket",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      }
+    }
   },
   "SaveLatent": {
-    "display_name": "潜在を保存"
+    "display_name": "潜在を保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名_プレフィックス"
+      },
+      "samples": {
+        "name": "サンプル"
+      }
+    }
   },
   "SelfAttentionGuidance": {
-    "display_name": "自己注意ガイダンス"
+    "display_name": "自己注意ガイダンス",
+    "inputs": {
+      "blur_sigma": {
+        "name": "ブラーシグマ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "scale": {
+        "name": "スケール"
+      }
+    }
   },
   "SetClipHooks": {
-    "display_name": "CLIPフックを設定"
+    "display_name": "CLIPフックを設定",
+    "inputs": {
+      "apply_to_conds": {
+        "name": "apply_to_conds"
+      },
+      "clip": {
+        "name": "クリップ"
+      },
+      "hooks": {
+        "name": "フック"
+      },
+      "schedule_clip": {
+        "name": "schedule_clip"
+      }
+    }
   },
   "SetHookKeyframes": {
-    "display_name": "フックキーフレームを設定"
+    "display_name": "フックキーフレームを設定",
+    "inputs": {
+      "hook_kf": {
+        "name": "フック_kf"
+      },
+      "hooks": {
+        "name": "フック"
+      }
+    }
   },
   "SetLatentNoiseMask": {
-    "display_name": "潜在ノイズマスクを設定"
+    "display_name": "潜在ノイズマスクを設定",
+    "inputs": {
+      "mask": {
+        "name": "マスク"
+      },
+      "samples": {
+        "name": "サンプル"
+      }
+    }
   },
   "SetUnionControlNetType": {
-    "display_name": "Union ControlNetタイプを設定"
+    "display_name": "Union ControlNetタイプを設定",
+    "inputs": {
+      "control_net": {
+        "name": "control_net"
+      },
+      "type": {
+        "name": "タイプ"
+      }
+    }
   },
   "SkipLayerGuidanceDiT": {
     "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
-    "display_name": "SkipLayerGuidanceDiT"
+    "display_name": "SkipLayerGuidanceDiT",
+    "inputs": {
+      "double_layers": {
+        "name": "ダブルレイヤー"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "rescaling_scale": {
+        "name": "リスケーリングスケール"
+      },
+      "scale": {
+        "name": "スケール"
+      },
+      "single_layers": {
+        "name": "シングルレイヤー"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    }
   },
   "SkipLayerGuidanceSD3": {
     "description": "すべてのDiTモデルで使用できるSkipLayerGuidanceノードの一般的なバージョン。",
-    "display_name": "SkipLayerGuidanceSD3"
+    "display_name": "SkipLayerGuidanceSD3",
+    "inputs": {
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "layers": {
+        "name": "レイヤー"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "scale": {
+        "name": "スケール"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    }
   },
   "SolidMask": {
-    "display_name": "ソリッドマスク"
+    "display_name": "ソリッドマスク",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "value": {
+        "name": "値"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "SplitImageWithAlpha": {
-    "display_name": "アルファで画像を分割"
+    "display_name": "アルファで画像を分割",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    }
   },
   "SplitSigmas": {
     "display_name": "シグマを分割",
+    "inputs": {
+      "sigmas": {
+        "name": "シグマ"
+      },
+      "step": {
+        "name": "ステップ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "高シグマ"
@@ -1029,6 +4698,14 @@
   },
   "SplitSigmasDenoise": {
     "display_name": "シグマを分割してノイズ除去",
+    "inputs": {
+      "denoise": {
+        "name": "ノイズ除去"
+      },
+      "sigmas": {
+        "name": "シグマ"
+      }
+    },
     "outputs": {
       "0": {
         "name": "高シグマ"
@@ -1040,6 +4717,20 @@
   },
   "StableCascade_EmptyLatentImage": {
     "display_name": "安定カスケード_空の潜在画像",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "compression": {
+        "name": "圧縮"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ステージC"
@@ -1050,10 +4741,29 @@
     }
   },
   "StableCascade_StageB_Conditioning": {
-    "display_name": "安定カスケード_ステージB条件付け"
+    "display_name": "安定カスケード_ステージB条件付け",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "stage_c": {
+        "name": "ステージc"
+      }
+    }
   },
   "StableCascade_StageC_VAEEncode": {
     "display_name": "安定カスケード_ステージC_VAEエンコード",
+    "inputs": {
+      "compression": {
+        "name": "圧縮"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ステージC"
@@ -1065,6 +4775,14 @@
   },
   "StableCascade_SuperResolutionControlnet": {
     "display_name": "安定カスケード_超解像Controlnet",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "コントロールネット入力"
@@ -1079,6 +4797,32 @@
   },
   "StableZero123_Conditioning": {
     "display_name": "安定ゼロ123条件付け",
+    "inputs": {
+      "azimuth": {
+        "name": "方位角"
+      },
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision": {
+        "name": "クリップビジョン"
+      },
+      "elevation": {
+        "name": "高度"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "init_image": {
+        "name": "初期画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -1093,6 +4837,38 @@
   },
   "StableZero123_Conditioning_Batched": {
     "display_name": "安定ゼロ123条件付け（バッチ）",
+    "inputs": {
+      "azimuth": {
+        "name": "方位角"
+      },
+      "azimuth_batch_increment": {
+        "name": "方位角バッチ増分"
+      },
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision": {
+        "name": "クリップビジョン"
+      },
+      "elevation": {
+        "name": "高度"
+      },
+      "elevation_batch_increment": {
+        "name": "高度バッチ増分"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "init_image": {
+        "name": "初期画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
     "outputs": {
       "0": {
         "name": "ポジティブ"
@@ -1106,47 +4882,170 @@
     }
   },
   "StyleModelApply": {
-    "display_name": "スタイルモデルを適用"
+    "display_name": "スタイルモデルを適用",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "クリップビジョン出力"
+      },
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "strength_type": {
+        "name": "強度タイプ"
+      },
+      "style_model": {
+        "name": "スタイルモデル"
+      }
+    }
   },
   "StyleModelLoader": {
-    "display_name": "スタイルモデルを読み込む"
+    "display_name": "スタイルモデルを読み込む",
+    "inputs": {
+      "style_model_name": {
+        "name": "スタイルモデル名"
+      }
+    }
   },
   "ThresholdMask": {
-    "display_name": "しきい値マスク"
+    "display_name": "しきい値マスク",
+    "inputs": {
+      "mask": {
+        "name": "マスク"
+      },
+      "value": {
+        "name": "値"
+      }
+    }
   },
   "TomePatchModel": {
-    "display_name": "トメパッチモデル"
+    "display_name": "トメパッチモデル",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "ratio": {
+        "name": "比率"
+      }
+    }
   },
   "TorchCompileModel": {
-    "display_name": "Torchコンパイルモデル"
+    "display_name": "Torchコンパイルモデル",
+    "inputs": {
+      "backend": {
+        "name": "バックエンド"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "TripleCLIPLoader": {
     "description": "[レシピ]\n\nsd3: clip-l, clip-g, t5",
-    "display_name": "トリプルCLIPを読み込む"
+    "display_name": "トリプルCLIPを読み込む",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "clip_name3": {
+        "name": "clip_name3"
+      }
+    }
   },
   "UNETLoader": {
-    "display_name": "拡散モデルを読み込む"
+    "display_name": "拡散モデルを読み込む",
+    "inputs": {
+      "unet_name": {
+        "name": "unet_name"
+      },
+      "weight_dtype": {
+        "name": "重みdtype"
+      }
+    }
   },
   "UNetCrossAttentionMultiply": {
-    "display_name": "UNetクロス注意の乗算"
+    "display_name": "UNetクロス注意の乗算",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "out": {
+        "name": "出力"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
   },
   "UNetSelfAttentionMultiply": {
-    "display_name": "UNet自己注意の乗算"
+    "display_name": "UNet自己注意の乗算",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "out": {
+        "name": "出力"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
   },
   "UNetTemporalAttentionMultiply": {
-    "display_name": "UNet時間的注意の乗算"
+    "display_name": "UNet時間的注意の乗算",
+    "inputs": {
+      "cross_structural": {
+        "name": "クロス構造"
+      },
+      "cross_temporal": {
+        "name": "クロス時間"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "self_structural": {
+        "name": "自己構造"
+      },
+      "self_temporal": {
+        "name": "自己時間"
+      }
+    }
   },
   "UpscaleModelLoader": {
-    "display_name": "拡大モデルを読み込む"
+    "display_name": "拡大モデルを読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "モデル名"
+      }
+    }
   },
   "VAEDecode": {
     "description": "潜在画像をピクセル空間画像にデコードします。",
     "display_name": "VAEデコード",
     "inputs": {
       "samples": {
+        "name": "サンプル",
         "tooltip": "デコードされる潜在。"
       },
       "vae": {
+        "name": "vae",
         "tooltip": "潜在のデコードに使用されるVAEモデル。"
       }
     },
@@ -1157,45 +5056,184 @@
     }
   },
   "VAEDecodeAudio": {
-    "display_name": "VAEデコード音声"
+    "display_name": "VAEデコード音声",
+    "inputs": {
+      "samples": {
+        "name": "サンプル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEDecodeTiled": {
-    "display_name": "VAEデコード（タイル）"
+    "display_name": "VAEデコード（タイル）",
+    "inputs": {
+      "overlap": {
+        "name": "オーバーラップ"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "tile_size": {
+        "name": "タイルサイズ"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncode": {
-    "display_name": "VAEエンコード"
+    "display_name": "VAEエンコード",
+    "inputs": {
+      "pixels": {
+        "name": "ピクセル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncodeAudio": {
-    "display_name": "VAEエンコード音声"
+    "display_name": "VAEエンコード音声",
+    "inputs": {
+      "audio": {
+        "name": "オーディオ"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncodeForInpaint": {
-    "display_name": "VAEエンコード（インペイント用）"
+    "display_name": "VAEエンコード（インペイント用）",
+    "inputs": {
+      "grow_mask_by": {
+        "name": "マスクの拡大"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "pixels": {
+        "name": "ピクセル"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAEエンコード（タイル）"
+    "display_name": "VAEエンコード（タイル）",
+    "inputs": {
+      "pixels": {
+        "name": "ピクセル"
+      },
+      "tile_size": {
+        "name": "タイルサイズ"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAELoader": {
-    "display_name": "VAEを読み込む"
+    "display_name": "VAEを読み込む",
+    "inputs": {
+      "vae_name": {
+        "name": "vae_name"
+      }
+    }
   },
   "VAESave": {
-    "display_name": "VAEを保存"
+    "display_name": "VAEを保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "ファイル名プレフィックス"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VPScheduler": {
-    "display_name": "VPスケジューラー"
+    "display_name": "VPスケジューラー",
+    "inputs": {
+      "beta_d": {
+        "name": "beta_d"
+      },
+      "beta_min": {
+        "name": "beta_min"
+      },
+      "eps_s": {
+        "name": "eps_s"
+      },
+      "steps": {
+        "name": "ステップ"
+      }
+    }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "ビデオ線形CFGガイダンス"
+    "display_name": "ビデオ線形CFGガイダンス",
+    "inputs": {
+      "min_cfg": {
+        "name": "最小cfg"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "ビデオ三角形CFGガイダンス"
+    "display_name": "ビデオ三角形CFGガイダンス",
+    "inputs": {
+      "min_cfg": {
+        "name": "最小cfg"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    }
   },
   "WebcamCapture": {
-    "display_name": "ウェブカメラキャプチャ"
+    "display_name": "ウェブカメラキャプチャ",
+    "inputs": {
+      "capture_on_queue": {
+        "name": "キューでキャプチャ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPチェックポイントローダー"
+    "display_name": "unCLIPチェックポイントローダー",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
   },
   "unCLIPConditioning": {
-    "display_name": "unCLIP条件付け"
+    "display_name": "unCLIP条件付け",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "noise_augmentation": {
+        "name": "ノイズ増強"
+      },
+      "strength": {
+        "name": "強度"
+      }
+    }
   }
 }

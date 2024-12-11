@@ -1,33 +1,128 @@
 {
   "AddNoise": {
-    "display_name": "AddNoise"
+    "display_name": "AddNoise",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "noise": {
+        "name": "noise"
+      },
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "latent_image": {
+        "name": "latent_image"
+      }
+    }
   },
   "AlignYourStepsScheduler": {
-    "display_name": "AlignYourStepsScheduler"
+    "display_name": "AlignYourStepsScheduler",
+    "inputs": {
+      "model_type": {
+        "name": "model_type"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "denoise": {
+        "name": "denoise"
+      }
+    }
   },
   "BasicGuider": {
-    "display_name": "BasicGuider"
+    "display_name": "BasicGuider",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "conditioning": {
+        "name": "conditioning"
+      }
+    }
   },
   "BasicScheduler": {
-    "display_name": "BasicScheduler"
+    "display_name": "BasicScheduler",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scheduler": {
+        "name": "scheduler"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "denoise": {
+        "name": "denoise"
+      }
+    }
   },
   "BetaSamplingScheduler": {
-    "display_name": "BetaSamplingScheduler"
+    "display_name": "BetaSamplingScheduler",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "alpha": {
+        "name": "alpha"
+      },
+      "beta": {
+        "name": "beta"
+      }
+    }
   },
   "Canny": {
-    "display_name": "Canny"
+    "display_name": "Canny",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "low_threshold": {
+        "name": "low_threshold"
+      },
+      "high_threshold": {
+        "name": "high_threshold"
+      }
+    }
   },
   "CFGGuider": {
-    "display_name": "CFGGuider"
+    "display_name": "CFGGuider",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "cfg": {
+        "name": "cfg"
+      }
+    }
   },
   "CheckpointLoader": {
-    "display_name": "Load Checkpoint With Config (DEPRECATED)"
+    "display_name": "Load Checkpoint With Config (DEPRECATED)",
+    "inputs": {
+      "config_name": {
+        "name": "config_name"
+      },
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
   },
   "CheckpointLoaderSimple": {
     "display_name": "Load Checkpoint",
     "description": "Loads a diffusion model checkpoint, diffusion models are used to denoise latents.",
     "inputs": {
       "ckpt_name": {
+        "name": "ckpt_name",
         "tooltip": "The name of the checkpoint (model) to load."
       }
     },
@@ -44,38 +139,125 @@
     }
   },
   "CheckpointSave": {
-    "display_name": "Save Checkpoint"
+    "display_name": "Save Checkpoint",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "CLIPAttentionMultiply": {
-    "display_name": "CLIPAttentionMultiply"
+    "display_name": "CLIPAttentionMultiply",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "q": {
+        "name": "q"
+      },
+      "k": {
+        "name": "k"
+      },
+      "v": {
+        "name": "v"
+      },
+      "out": {
+        "name": "out"
+      }
+    }
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5"
+    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "inputs": {
+      "clip_name": {
+        "name": "clip_name"
+      },
+      "type": {
+        "name": "type"
+      }
+    }
   },
   "CLIPMergeAdd": {
-    "display_name": "CLIPMergeAdd"
+    "display_name": "CLIPMergeAdd",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      }
+    }
   },
   "CLIPMergeSimple": {
-    "display_name": "CLIPMergeSimple"
+    "display_name": "CLIPMergeSimple",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "ratio": {
+        "name": "ratio"
+      }
+    }
   },
   "CLIPMergeSubtract": {
-    "display_name": "CLIPMergeSubtract"
+    "display_name": "CLIPMergeSubtract",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    }
   },
   "CLIPSave": {
-    "display_name": "CLIPSave"
+    "display_name": "CLIPSave",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "CLIPSetLastLayer": {
-    "display_name": "CLIP Set Last Layer"
+    "display_name": "CLIP Set Last Layer",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "stop_at_clip_layer": {
+        "name": "stop_at_clip_layer"
+      }
+    }
   },
   "CLIPTextEncode": {
     "display_name": "CLIP Text Encode (Prompt)",
     "description": "Encodes a text prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images.",
     "inputs": {
       "text": {
+        "name": "text",
         "tooltip": "The text to be encoded."
       },
       "clip": {
+        "name": "clip",
         "tooltip": "The CLIP model used for encoding the text."
       }
     },
@@ -86,73 +268,398 @@
     }
   },
   "CLIPTextEncodeControlnet": {
-    "display_name": "CLIPTextEncodeControlnet"
+    "display_name": "CLIPTextEncodeControlnet",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "text": {
+        "name": "text"
+      }
+    }
   },
   "CLIPTextEncodeFlux": {
-    "display_name": "CLIPTextEncodeFlux"
+    "display_name": "CLIPTextEncodeFlux",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      },
+      "guidance": {
+        "name": "guidance"
+      }
+    }
   },
   "CLIPTextEncodeHunyuanDiT": {
-    "display_name": "CLIPTextEncodeHunyuanDiT"
+    "display_name": "CLIPTextEncodeHunyuanDiT",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "bert": {
+        "name": "bert"
+      },
+      "mt5xl": {
+        "name": "mt5xl"
+      }
+    }
   },
   "CLIPTextEncodeSD3": {
-    "display_name": "CLIPTextEncodeSD3"
+    "display_name": "CLIPTextEncodeSD3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "clip_g": {
+        "name": "clip_g"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      },
+      "empty_padding": {
+        "name": "empty_padding"
+      }
+    }
   },
   "CLIPTextEncodeSDXL": {
-    "display_name": "CLIPTextEncodeSDXL"
+    "display_name": "CLIPTextEncodeSDXL",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "crop_w": {
+        "name": "crop_w"
+      },
+      "crop_h": {
+        "name": "crop_h"
+      },
+      "target_width": {
+        "name": "target_width"
+      },
+      "target_height": {
+        "name": "target_height"
+      },
+      "text_g": {
+        "name": "text_g"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "text_l": {
+        "name": "text_l"
+      }
+    }
   },
   "CLIPTextEncodeSDXLRefiner": {
-    "display_name": "CLIPTextEncodeSDXLRefiner"
+    "display_name": "CLIPTextEncodeSDXLRefiner",
+    "inputs": {
+      "ascore": {
+        "name": "ascore"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "text": {
+        "name": "text"
+      },
+      "clip": {
+        "name": "clip"
+      }
+    }
   },
   "CLIPVisionEncode": {
-    "display_name": "CLIP Vision Encode"
+    "display_name": "CLIP Vision Encode",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "image": {
+        "name": "image"
+      },
+      "crop": {
+        "name": "crop"
+      }
+    }
   },
   "CLIPVisionLoader": {
-    "display_name": "Load CLIP Vision"
+    "display_name": "Load CLIP Vision",
+    "inputs": {
+      "clip_name": {
+        "name": "clip_name"
+      }
+    }
   },
   "CombineHooks2": {
-    "display_name": "Combine Hooks [2]"
+    "display_name": "Combine Hooks [2]",
+    "inputs": {
+      "hooks_A": {
+        "name": "hooks_A"
+      },
+      "hooks_B": {
+        "name": "hooks_B"
+      }
+    }
   },
   "CombineHooks4": {
-    "display_name": "Combine Hooks [4]"
+    "display_name": "Combine Hooks [4]",
+    "inputs": {
+      "hooks_A": {
+        "name": "hooks_A"
+      },
+      "hooks_B": {
+        "name": "hooks_B"
+      },
+      "hooks_C": {
+        "name": "hooks_C"
+      },
+      "hooks_D": {
+        "name": "hooks_D"
+      }
+    }
   },
   "CombineHooks8": {
-    "display_name": "Combine Hooks [8]"
+    "display_name": "Combine Hooks [8]",
+    "inputs": {
+      "hooks_A": {
+        "name": "hooks_A"
+      },
+      "hooks_B": {
+        "name": "hooks_B"
+      },
+      "hooks_C": {
+        "name": "hooks_C"
+      },
+      "hooks_D": {
+        "name": "hooks_D"
+      },
+      "hooks_E": {
+        "name": "hooks_E"
+      },
+      "hooks_F": {
+        "name": "hooks_F"
+      },
+      "hooks_G": {
+        "name": "hooks_G"
+      },
+      "hooks_H": {
+        "name": "hooks_H"
+      }
+    }
   },
   "ConditioningAverage": {
-    "display_name": "ConditioningAverage"
+    "display_name": "ConditioningAverage",
+    "inputs": {
+      "conditioning_to": {
+        "name": "conditioning_to"
+      },
+      "conditioning_from": {
+        "name": "conditioning_from"
+      },
+      "conditioning_to_strength": {
+        "name": "conditioning_to_strength"
+      }
+    }
   },
   "ConditioningCombine": {
-    "display_name": "Conditioning (Combine)"
+    "display_name": "Conditioning (Combine)",
+    "inputs": {
+      "conditioning_1": {
+        "name": "conditioning_1"
+      },
+      "conditioning_2": {
+        "name": "conditioning_2"
+      }
+    }
   },
   "ConditioningConcat": {
-    "display_name": "Conditioning (Concat)"
+    "display_name": "Conditioning (Concat)",
+    "inputs": {
+      "conditioning_to": {
+        "name": "conditioning_to"
+      },
+      "conditioning_from": {
+        "name": "conditioning_from"
+      }
+    }
   },
   "ConditioningSetArea": {
-    "display_name": "Conditioning (Set Area)"
+    "display_name": "Conditioning (Set Area)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
   },
   "ConditioningSetAreaPercentage": {
-    "display_name": "Conditioning (Set Area with Percentage)"
+    "display_name": "Conditioning (Set Area with Percentage)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
   },
   "ConditioningSetAreaStrength": {
-    "display_name": "ConditioningSetAreaStrength"
+    "display_name": "ConditioningSetAreaStrength",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
   },
   "ConditioningSetDefaultCombine": {
-    "display_name": "Cond Set Default Combine"
+    "display_name": "Cond Set Default Combine",
+    "inputs": {
+      "cond": {
+        "name": "cond"
+      },
+      "cond_DEFAULT": {
+        "name": "cond_DEFAULT"
+      },
+      "hooks": {
+        "name": "hooks"
+      }
+    }
   },
   "ConditioningSetMask": {
-    "display_name": "Conditioning (Set Mask)"
+    "display_name": "Conditioning (Set Mask)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      }
+    }
   },
   "ConditioningSetProperties": {
-    "display_name": "Cond Set Props"
+    "display_name": "Cond Set Props",
+    "inputs": {
+      "cond_NEW": {
+        "name": "cond_NEW"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "hooks": {
+        "name": "hooks"
+      },
+      "timesteps": {
+        "name": "timesteps"
+      }
+    }
   },
   "ConditioningSetPropertiesAndCombine": {
-    "display_name": "Cond Set Props Combine"
+    "display_name": "Cond Set Props Combine",
+    "inputs": {
+      "cond": {
+        "name": "cond"
+      },
+      "cond_NEW": {
+        "name": "cond_NEW"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "hooks": {
+        "name": "hooks"
+      },
+      "timesteps": {
+        "name": "timesteps"
+      }
+    }
   },
   "ConditioningSetTimestepRange": {
-    "display_name": "ConditioningSetTimestepRange"
+    "display_name": "ConditioningSetTimestepRange",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "start": {
+        "name": "start"
+      },
+      "end": {
+        "name": "end"
+      }
+    }
   },
   "ConditioningTimestepsRange": {
     "display_name": "Timesteps Range",
+    "inputs": {
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
     "outputs": {
       "1": {
         "name": "BEFORE_RANGE"
@@ -163,13 +670,58 @@
     }
   },
   "ConditioningZeroOut": {
-    "display_name": "ConditioningZeroOut"
+    "display_name": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      }
+    }
   },
   "ControlNetApply": {
-    "display_name": "Apply ControlNet (OLD)"
+    "display_name": "Apply ControlNet (OLD)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "control_net": {
+        "name": "control_net"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
   },
   "ControlNetApplyAdvanced": {
     "display_name": "Apply ControlNet",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "control_net": {
+        "name": "control_net"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -181,6 +733,32 @@
   },
   "ControlNetApplySD3": {
     "display_name": "Apply Controlnet with VAE",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "control_net": {
+        "name": "control_net"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -192,6 +770,35 @@
   },
   "ControlNetInpaintingAliMamaApply": {
     "display_name": "ControlNetInpaintingAliMamaApply",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "control_net": {
+        "name": "control_net"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -202,10 +809,26 @@
     }
   },
   "ControlNetLoader": {
-    "display_name": "Load ControlNet Model"
+    "display_name": "Load ControlNet Model",
+    "inputs": {
+      "control_net_name": {
+        "name": "control_net_name"
+      }
+    }
   },
   "CreateHookKeyframe": {
     "display_name": "Create Hook Keyframe",
+    "inputs": {
+      "strength_mult": {
+        "name": "strength_mult"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "prev_hook_kf": {
+        "name": "prev_hook_kf"
+      }
+    },
     "outputs": {
       "0": {
         "name": "HOOK_KF"
@@ -214,6 +837,23 @@
   },
   "CreateHookKeyframesFromFloats": {
     "display_name": "Create Hook Keyframes From Floats",
+    "inputs": {
+      "floats_strength": {
+        "name": "floats_strength"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "print_keyframes": {
+        "name": "print_keyframes"
+      },
+      "prev_hook_kf": {
+        "name": "prev_hook_kf"
+      }
+    },
     "outputs": {
       "0": {
         "name": "HOOK_KF"
@@ -222,6 +862,32 @@
   },
   "CreateHookKeyframesInterpolated": {
     "display_name": "Create Hook Keyframes Interp.",
+    "inputs": {
+      "strength_start": {
+        "name": "strength_start"
+      },
+      "strength_end": {
+        "name": "strength_end"
+      },
+      "interpolation": {
+        "name": "interpolation"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "keyframes_count": {
+        "name": "keyframes_count"
+      },
+      "print_keyframes": {
+        "name": "print_keyframes"
+      },
+      "prev_hook_kf": {
+        "name": "prev_hook_kf"
+      }
+    },
     "outputs": {
       "0": {
         "name": "HOOK_KF"
@@ -229,19 +895,86 @@
     }
   },
   "CreateHookLora": {
-    "display_name": "Create Hook LoRA"
+    "display_name": "Create Hook LoRA",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      },
+      "strength_clip": {
+        "name": "strength_clip"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      }
+    }
   },
   "CreateHookLoraModelOnly": {
-    "display_name": "Create Hook LoRA (MO)"
+    "display_name": "Create Hook LoRA (MO)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      }
+    }
   },
   "CreateHookModelAsLora": {
-    "display_name": "Create Hook Model as LoRA"
+    "display_name": "Create Hook Model as LoRA",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      },
+      "strength_clip": {
+        "name": "strength_clip"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      }
+    }
   },
   "CreateHookModelAsLoraModelOnly": {
-    "display_name": "Create Hook Model as LoRA (MO)"
+    "display_name": "Create Hook Model as LoRA (MO)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      },
+      "prev_hooks": {
+        "name": "prev_hooks"
+      }
+    }
   },
   "CropMask": {
-    "display_name": "CropMask"
+    "display_name": "CropMask",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    }
   },
   "DevToolsDeprecatedNode": {
     "display_name": "Deprecated Node",
@@ -253,7 +986,12 @@
   },
   "DevToolsErrorRaiseNodeWithMessage": {
     "display_name": "Raise Error with Message",
-    "description": "Raise an error with message for development purposes"
+    "description": "Raise an error with message for development purposes",
+    "inputs": {
+      "message": {
+        "name": "message"
+      }
+    }
   },
   "DevToolsExperimentalNode": {
     "display_name": "Experimental Node",
@@ -261,19 +999,51 @@
   },
   "DevToolsLongComboDropdown": {
     "display_name": "Long Combo Dropdown",
-    "description": "A long combo dropdown"
+    "description": "A long combo dropdown",
+    "inputs": {
+      "option": {
+        "name": "option"
+      }
+    }
   },
   "DevToolsNodeWithForceInput": {
     "display_name": "Node With Force Input",
-    "description": "A node with a forced input"
+    "description": "A node with a forced input",
+    "inputs": {
+      "int_input": {
+        "name": "int_input"
+      },
+      "int_input_widget": {
+        "name": "int_input_widget"
+      },
+      "float_input": {
+        "name": "float_input"
+      }
+    }
   },
   "DevToolsNodeWithOnlyOptionalInput": {
     "display_name": "Node With Only Optional Input",
-    "description": "A node with only optional input"
+    "description": "A node with only optional input",
+    "inputs": {
+      "text": {
+        "name": "text"
+      },
+      "clip": {
+        "name": "clip"
+      }
+    }
   },
   "DevToolsNodeWithOptionalInput": {
     "display_name": "Node With Optional Input",
-    "description": "A node with an optional input"
+    "description": "A node with an optional input",
+    "inputs": {
+      "required_input": {
+        "name": "required_input"
+      },
+      "optional_input": {
+        "name": "optional_input"
+      }
+    }
   },
   "DevToolsNodeWithOutputList": {
     "display_name": "Node With Output List",
@@ -289,38 +1059,121 @@
   },
   "DevToolsNodeWithStringInput": {
     "display_name": "Node With String Input",
-    "description": "A node with a string input"
+    "description": "A node with a string input",
+    "inputs": {
+      "string_input": {
+        "name": "string_input"
+      }
+    }
   },
   "DevToolsNodeWithUnionInput": {
     "display_name": "Node With Union Input",
-    "description": "A node with a union input"
+    "description": "A node with a union input",
+    "inputs": {
+      "string_or_int_input": {
+        "name": "string_or_int_input"
+      },
+      "string_input": {
+        "name": "string_input"
+      },
+      "int_input": {
+        "name": "int_input"
+      }
+    }
   },
   "DiffControlNetLoader": {
-    "display_name": "Load ControlNet Model (diff)"
+    "display_name": "Load ControlNet Model (diff)",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "control_net_name": {
+        "name": "control_net_name"
+      }
+    }
   },
   "DifferentialDiffusion": {
-    "display_name": "Differential Diffusion"
+    "display_name": "Differential Diffusion",
+    "inputs": {
+      "model": {
+        "name": "model"
+      }
+    }
   },
   "DiffusersLoader": {
-    "display_name": "DiffusersLoader"
+    "display_name": "DiffusersLoader",
+    "inputs": {
+      "model_path": {
+        "name": "model_path"
+      }
+    }
   },
   "DisableNoise": {
     "display_name": "DisableNoise"
   },
   "DualCFGGuider": {
-    "display_name": "DualCFGGuider"
+    "display_name": "DualCFGGuider",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "cond1": {
+        "name": "cond1"
+      },
+      "cond2": {
+        "name": "cond2"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "cfg_conds": {
+        "name": "cfg_conds"
+      },
+      "cfg_cond2_negative": {
+        "name": "cfg_cond2_negative"
+      }
+    }
   },
   "DualCLIPLoader": {
     "display_name": "DualCLIPLoader",
-    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5"
+    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "type": {
+        "name": "type"
+      }
+    }
   },
   "EmptyImage": {
-    "display_name": "EmptyImage"
+    "display_name": "EmptyImage",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "color": {
+        "name": "color"
+      }
+    }
   },
   "EmptyLatentAudio": {
     "display_name": "EmptyLatentAudio",
     "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
       "batch_size": {
+        "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
       }
     }
@@ -330,12 +1183,15 @@
     "description": "Create a new batch of empty latent images to be denoised via sampling.",
     "inputs": {
       "width": {
+        "name": "width",
         "tooltip": "The width of the latent images in pixels."
       },
       "height": {
+        "name": "height",
         "tooltip": "The height of the latent images in pixels."
       },
       "batch_size": {
+        "name": "batch_size",
         "tooltip": "The number of latent images in the batch."
       }
     },
@@ -346,108 +1202,532 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo"
+    "display_name": "EmptyLTXVLatentVideo",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
   },
   "EmptyMochiLatentVideo": {
-    "display_name": "EmptyMochiLatentVideo"
+    "display_name": "EmptyMochiLatentVideo",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
   },
   "EmptySD3LatentImage": {
-    "display_name": "EmptySD3LatentImage"
+    "display_name": "EmptySD3LatentImage",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
   },
   "ExponentialScheduler": {
-    "display_name": "ExponentialScheduler"
+    "display_name": "ExponentialScheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
   },
   "FeatherMask": {
-    "display_name": "FeatherMask"
+    "display_name": "FeatherMask",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "left": {
+        "name": "left"
+      },
+      "top": {
+        "name": "top"
+      },
+      "right": {
+        "name": "right"
+      },
+      "bottom": {
+        "name": "bottom"
+      }
+    }
   },
   "FlipSigmas": {
-    "display_name": "FlipSigmas"
+    "display_name": "FlipSigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    }
   },
   "FluxGuidance": {
-    "display_name": "FluxGuidance"
+    "display_name": "FluxGuidance",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "guidance": {
+        "name": "guidance"
+      }
+    }
   },
   "FreeU": {
-    "display_name": "FreeU"
+    "display_name": "FreeU",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
   },
   "FreeU_V2": {
-    "display_name": "FreeU_V2"
+    "display_name": "FreeU_V2",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
   },
   "GITSScheduler": {
-    "display_name": "GITSScheduler"
+    "display_name": "GITSScheduler",
+    "inputs": {
+      "coeff": {
+        "name": "coeff"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "denoise": {
+        "name": "denoise"
+      }
+    }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGENLoader"
+    "display_name": "GLIGENLoader",
+    "inputs": {
+      "gligen_name": {
+        "name": "gligen_name"
+      }
+    }
   },
   "GLIGENTextBoxApply": {
-    "display_name": "GLIGENTextBoxApply"
+    "display_name": "GLIGENTextBoxApply",
+    "inputs": {
+      "conditioning_to": {
+        "name": "conditioning_to"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "gligen_textbox_model": {
+        "name": "gligen_textbox_model"
+      },
+      "text": {
+        "name": "text"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "GrowMask": {
-    "display_name": "GrowMask"
+    "display_name": "GrowMask",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "expand": {
+        "name": "expand"
+      },
+      "tapered_corners": {
+        "name": "tapered_corners"
+      }
+    }
   },
   "HypernetworkLoader": {
-    "display_name": "HypernetworkLoader"
+    "display_name": "HypernetworkLoader",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "hypernetwork_name": {
+        "name": "hypernetwork_name"
+      },
+      "strength": {
+        "name": "strength"
+      }
+    }
   },
   "HyperTile": {
-    "display_name": "HyperTile"
+    "display_name": "HyperTile",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      },
+      "swap_size": {
+        "name": "swap_size"
+      },
+      "max_depth": {
+        "name": "max_depth"
+      },
+      "scale_depth": {
+        "name": "scale_depth"
+      }
+    }
   },
   "ImageBatch": {
-    "display_name": "Batch Images"
+    "display_name": "Batch Images",
+    "inputs": {
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      }
+    }
   },
   "ImageBlend": {
-    "display_name": "Image Blend"
+    "display_name": "Image Blend",
+    "inputs": {
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "blend_factor": {
+        "name": "blend_factor"
+      },
+      "blend_mode": {
+        "name": "blend_mode"
+      }
+    }
   },
   "ImageBlur": {
-    "display_name": "Image Blur"
+    "display_name": "Image Blur",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "blur_radius": {
+        "name": "blur_radius"
+      },
+      "sigma": {
+        "name": "sigma"
+      }
+    }
   },
   "ImageColorToMask": {
-    "display_name": "ImageColorToMask"
+    "display_name": "ImageColorToMask",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "color": {
+        "name": "color"
+      }
+    }
   },
   "ImageCompositeMasked": {
-    "display_name": "ImageCompositeMasked"
+    "display_name": "ImageCompositeMasked",
+    "inputs": {
+      "destination": {
+        "name": "destination"
+      },
+      "source": {
+        "name": "source"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "resize_source": {
+        "name": "resize_source"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    }
   },
   "ImageCrop": {
-    "display_name": "Image Crop"
+    "display_name": "Image Crop",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "ImageFromBatch": {
-    "display_name": "ImageFromBatch"
+    "display_name": "ImageFromBatch",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "batch_index": {
+        "name": "batch_index"
+      },
+      "length": {
+        "name": "length"
+      }
+    }
   },
   "ImageInvert": {
-    "display_name": "Invert Image"
+    "display_name": "Invert Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "Image Only Checkpoint Loader (img2vid model)"
+    "display_name": "Image Only Checkpoint Loader (img2vid model)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
   },
   "ImageOnlyCheckpointSave": {
-    "display_name": "ImageOnlyCheckpointSave"
+    "display_name": "ImageOnlyCheckpointSave",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "ImagePadForOutpaint": {
-    "display_name": "Pad Image for Outpainting"
+    "display_name": "Pad Image for Outpainting",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "left": {
+        "name": "left"
+      },
+      "top": {
+        "name": "top"
+      },
+      "right": {
+        "name": "right"
+      },
+      "bottom": {
+        "name": "bottom"
+      },
+      "feathering": {
+        "name": "feathering"
+      }
+    }
   },
   "ImageQuantize": {
-    "display_name": "Image Quantize"
+    "display_name": "Image Quantize",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "colors": {
+        "name": "colors"
+      },
+      "dither": {
+        "name": "dither"
+      }
+    }
   },
   "ImageScale": {
-    "display_name": "Upscale Image"
+    "display_name": "Upscale Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "crop": {
+        "name": "crop"
+      }
+    }
   },
   "ImageScaleBy": {
-    "display_name": "Upscale Image By"
+    "display_name": "Upscale Image By",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "scale_by": {
+        "name": "scale_by"
+      }
+    }
   },
   "ImageScaleToTotalPixels": {
-    "display_name": "Scale Image to Total Pixels"
+    "display_name": "Scale Image to Total Pixels",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "megapixels": {
+        "name": "megapixels"
+      }
+    }
   },
   "ImageSharpen": {
-    "display_name": "Image Sharpen"
+    "display_name": "Image Sharpen",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "sharpen_radius": {
+        "name": "sharpen_radius"
+      },
+      "sigma": {
+        "name": "sigma"
+      },
+      "alpha": {
+        "name": "alpha"
+      }
+    }
   },
   "ImageToMask": {
-    "display_name": "Convert Image to Mask"
+    "display_name": "Convert Image to Mask",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "channel": {
+        "name": "channel"
+      }
+    }
   },
   "ImageUpscaleWithModel": {
-    "display_name": "Upscale Image (using Model)"
+    "display_name": "Upscale Image (using Model)",
+    "inputs": {
+      "upscale_model": {
+        "name": "upscale_model"
+      },
+      "image": {
+        "name": "image"
+      }
+    }
   },
   "InpaintModelConditioning": {
     "display_name": "InpaintModelConditioning",
     "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "pixels": {
+        "name": "pixels"
+      },
+      "mask": {
+        "name": "mask"
+      },
       "noise_mask": {
+        "name": "noise_mask",
         "tooltip": "Add a noise mask to the latent so sampling will only happen within the mask. Might improve results or completely break things depending on the model."
       }
     },
@@ -465,6 +1745,20 @@
   },
   "InstructPixToPixConditioning": {
     "display_name": "InstructPixToPixConditioning",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "pixels": {
+        "name": "pixels"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -478,46 +1772,83 @@
     }
   },
   "InvertMask": {
-    "display_name": "InvertMask"
+    "display_name": "InvertMask",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      }
+    }
   },
   "JoinImageWithAlpha": {
-    "display_name": "Join Image with Alpha"
+    "display_name": "Join Image with Alpha",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "alpha": {
+        "name": "alpha"
+      }
+    }
   },
   "KarrasScheduler": {
-    "display_name": "KarrasScheduler"
+    "display_name": "KarrasScheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "rho": {
+        "name": "rho"
+      }
+    }
   },
   "KSampler": {
     "display_name": "KSampler",
     "description": "Uses the provided model, positive and negative conditioning to denoise the latent image.",
     "inputs": {
       "model": {
+        "name": "model",
         "tooltip": "The model used for denoising the input latent."
       },
       "seed": {
+        "name": "seed",
         "tooltip": "The random seed used for creating the noise."
       },
       "steps": {
+        "name": "steps",
         "tooltip": "The number of steps used in the denoising process."
       },
       "cfg": {
+        "name": "cfg",
         "tooltip": "The Classifier-Free Guidance scale balances creativity and adherence to the prompt. Higher values result in images more closely matching the prompt however too high values will negatively impact quality."
       },
       "sampler_name": {
+        "name": "sampler_name",
         "tooltip": "The algorithm used when sampling, this can affect the quality, speed, and style of the generated output."
       },
       "scheduler": {
+        "name": "scheduler",
         "tooltip": "The scheduler controls how noise is gradually removed to form the image."
       },
       "positive": {
+        "name": "positive",
         "tooltip": "The conditioning describing the attributes you want to include in the image."
       },
       "negative": {
+        "name": "negative",
         "tooltip": "The conditioning describing the attributes you want to exclude from the image."
       },
       "latent_image": {
+        "name": "latent_image",
         "tooltip": "The latent image to denoise."
       },
       "denoise": {
+        "name": "denoise",
         "tooltip": "The amount of denoising applied, lower values will maintain the structure of the initial image allowing for image to image sampling."
       }
     },
@@ -528,100 +1859,394 @@
     }
   },
   "KSamplerAdvanced": {
-    "display_name": "KSampler (Advanced)"
+    "display_name": "KSampler (Advanced)",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "add_noise": {
+        "name": "add_noise"
+      },
+      "noise_seed": {
+        "name": "noise_seed"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "sampler_name": {
+        "name": "sampler_name"
+      },
+      "scheduler": {
+        "name": "scheduler"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "latent_image": {
+        "name": "latent_image"
+      },
+      "start_at_step": {
+        "name": "start_at_step"
+      },
+      "end_at_step": {
+        "name": "end_at_step"
+      },
+      "return_with_leftover_noise": {
+        "name": "return_with_leftover_noise"
+      }
+    }
   },
   "KSamplerSelect": {
-    "display_name": "KSamplerSelect"
+    "display_name": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": {
+        "name": "sampler_name"
+      }
+    }
   },
   "LaplaceScheduler": {
-    "display_name": "LaplaceScheduler"
+    "display_name": "LaplaceScheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "beta": {
+        "name": "beta"
+      }
+    }
   },
   "LatentAdd": {
-    "display_name": "LatentAdd"
+    "display_name": "LatentAdd",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      }
+    }
   },
   "LatentApplyOperation": {
-    "display_name": "LatentApplyOperation"
+    "display_name": "LatentApplyOperation",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "operation": {
+        "name": "operation"
+      }
+    }
   },
   "LatentApplyOperationCFG": {
-    "display_name": "LatentApplyOperationCFG"
+    "display_name": "LatentApplyOperationCFG",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "operation": {
+        "name": "operation"
+      }
+    }
   },
   "LatentBatch": {
-    "display_name": "LatentBatch"
+    "display_name": "LatentBatch",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      }
+    }
   },
   "LatentBatchSeedBehavior": {
-    "display_name": "LatentBatchSeedBehavior"
+    "display_name": "LatentBatchSeedBehavior",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "seed_behavior": {
+        "name": "seed_behavior"
+      }
+    }
   },
   "LatentBlend": {
-    "display_name": "Latent Blend"
+    "display_name": "Latent Blend",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      },
+      "blend_factor": {
+        "name": "blend_factor"
+      }
+    }
   },
   "LatentComposite": {
-    "display_name": "Latent Composite"
+    "display_name": "Latent Composite",
+    "inputs": {
+      "samples_to": {
+        "name": "samples_to"
+      },
+      "samples_from": {
+        "name": "samples_from"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "feather": {
+        "name": "feather"
+      }
+    }
   },
   "LatentCompositeMasked": {
-    "display_name": "LatentCompositeMasked"
+    "display_name": "LatentCompositeMasked",
+    "inputs": {
+      "destination": {
+        "name": "destination"
+      },
+      "source": {
+        "name": "source"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "resize_source": {
+        "name": "resize_source"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    }
   },
   "LatentCrop": {
-    "display_name": "Crop Latent"
+    "display_name": "Crop Latent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
   },
   "LatentFlip": {
-    "display_name": "Flip Latent"
+    "display_name": "Flip Latent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "flip_method": {
+        "name": "flip_method"
+      }
+    }
   },
   "LatentFromBatch": {
-    "display_name": "Latent From Batch"
+    "display_name": "Latent From Batch",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "batch_index": {
+        "name": "batch_index"
+      },
+      "length": {
+        "name": "length"
+      }
+    }
   },
   "LatentInterpolate": {
-    "display_name": "LatentInterpolate"
+    "display_name": "LatentInterpolate",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      },
+      "ratio": {
+        "name": "ratio"
+      }
+    }
   },
   "LatentMultiply": {
-    "display_name": "LatentMultiply"
+    "display_name": "LatentMultiply",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    }
   },
   "LatentOperationSharpen": {
-    "display_name": "LatentOperationSharpen"
+    "display_name": "LatentOperationSharpen",
+    "inputs": {
+      "sharpen_radius": {
+        "name": "sharpen_radius"
+      },
+      "sigma": {
+        "name": "sigma"
+      },
+      "alpha": {
+        "name": "alpha"
+      }
+    }
   },
   "LatentOperationTonemapReinhard": {
-    "display_name": "LatentOperationTonemapReinhard"
+    "display_name": "LatentOperationTonemapReinhard",
+    "inputs": {
+      "multiplier": {
+        "name": "multiplier"
+      }
+    }
   },
   "LatentRotate": {
-    "display_name": "Rotate Latent"
+    "display_name": "Rotate Latent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "rotation": {
+        "name": "rotation"
+      }
+    }
   },
   "LatentSubtract": {
-    "display_name": "LatentSubtract"
+    "display_name": "LatentSubtract",
+    "inputs": {
+      "samples1": {
+        "name": "samples1"
+      },
+      "samples2": {
+        "name": "samples2"
+      }
+    }
   },
   "LatentUpscale": {
-    "display_name": "Upscale Latent"
+    "display_name": "Upscale Latent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "crop": {
+        "name": "crop"
+      }
+    }
   },
   "LatentUpscaleBy": {
-    "display_name": "Upscale Latent By"
+    "display_name": "Upscale Latent By",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      },
+      "scale_by": {
+        "name": "scale_by"
+      }
+    }
   },
   "LoadAudio": {
-    "display_name": "LoadAudio"
+    "display_name": "LoadAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    }
   },
   "LoadImage": {
-    "display_name": "Load Image"
+    "display_name": "Load Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
   },
   "LoadImageMask": {
-    "display_name": "Load Image (as Mask)"
+    "display_name": "Load Image (as Mask)",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "channel": {
+        "name": "channel"
+      }
+    }
   },
   "LoadLatent": {
-    "display_name": "LoadLatent"
+    "display_name": "LoadLatent",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      }
+    }
   },
   "LoraLoader": {
     "display_name": "Load LoRA",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
+        "name": "model",
         "tooltip": "The diffusion model the LoRA will be applied to."
       },
       "clip": {
+        "name": "clip",
         "tooltip": "The CLIP model the LoRA will be applied to."
       },
       "lora_name": {
+        "name": "lora_name",
         "tooltip": "The name of the LoRA."
       },
       "strength_model": {
+        "name": "strength_model",
         "tooltip": "How strongly to modify the diffusion model. This value can be negative."
       },
       "strength_clip": {
+        "name": "strength_clip",
         "tooltip": "How strongly to modify the CLIP model. This value can be negative."
       }
     },
@@ -637,6 +2262,17 @@
   "LoraLoaderModelOnly": {
     "display_name": "LoraLoaderModelOnly",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
     "outputs": {
       "0": {
         "tooltip": "The modified diffusion model."
@@ -646,16 +2282,41 @@
   "LoraSave": {
     "display_name": "Extract and Save Lora",
     "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "rank": {
+        "name": "rank"
+      },
+      "lora_type": {
+        "name": "lora_type"
+      },
+      "bias_diff": {
+        "name": "bias_diff"
+      },
       "model_diff": {
+        "name": "model_diff",
         "tooltip": "The ModelSubtract output to be converted to a lora."
       },
       "text_encoder_diff": {
+        "name": "text_encoder_diff",
         "tooltip": "The CLIPSubtract output to be converted to a lora."
       }
     }
   },
   "LTXVConditioning": {
     "display_name": "LTXVConditioning",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "frame_rate": {
+        "name": "frame_rate"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -668,7 +2329,32 @@
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
       "image_noise_scale": {
+        "name": "image_noise_scale",
         "tooltip": "Amount of noise to apply on conditioning image latent."
       }
     },
@@ -687,91 +2373,1423 @@
   "LTXVScheduler": {
     "display_name": "LTXVScheduler",
     "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "max_shift": {
+        "name": "max_shift"
+      },
+      "base_shift": {
+        "name": "base_shift"
+      },
       "stretch": {
+        "name": "stretch",
         "tooltip": "Stretch the sigmas to be in the range [terminal, 1]."
       },
       "terminal": {
+        "name": "terminal",
         "tooltip": "The terminal value of the sigmas after stretching."
+      },
+      "latent": {
+        "name": "latent"
       }
     }
   },
   "MaskComposite": {
-    "display_name": "MaskComposite"
+    "display_name": "MaskComposite",
+    "inputs": {
+      "destination": {
+        "name": "destination"
+      },
+      "source": {
+        "name": "source"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      },
+      "operation": {
+        "name": "operation"
+      }
+    }
   },
   "MaskToImage": {
-    "display_name": "Convert Mask to Image"
+    "display_name": "Convert Mask to Image",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      }
+    }
   },
   "ModelMergeAdd": {
-    "display_name": "ModelMergeAdd"
+    "display_name": "ModelMergeAdd",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      }
+    }
   },
   "ModelMergeAuraflow": {
-    "display_name": "ModelMergeAuraflow"
+    "display_name": "ModelMergeAuraflow",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "init_x_linear_": {
+        "name": "init_x_linear."
+      },
+      "positional_encoding": {
+        "name": "positional_encoding"
+      },
+      "cond_seq_linear_": {
+        "name": "cond_seq_linear."
+      },
+      "register_tokens": {
+        "name": "register_tokens"
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "double_layers_0_": {
+        "name": "double_layers.0."
+      },
+      "double_layers_1_": {
+        "name": "double_layers.1."
+      },
+      "double_layers_2_": {
+        "name": "double_layers.2."
+      },
+      "double_layers_3_": {
+        "name": "double_layers.3."
+      },
+      "single_layers_0_": {
+        "name": "single_layers.0."
+      },
+      "single_layers_1_": {
+        "name": "single_layers.1."
+      },
+      "single_layers_2_": {
+        "name": "single_layers.2."
+      },
+      "single_layers_3_": {
+        "name": "single_layers.3."
+      },
+      "single_layers_4_": {
+        "name": "single_layers.4."
+      },
+      "single_layers_5_": {
+        "name": "single_layers.5."
+      },
+      "single_layers_6_": {
+        "name": "single_layers.6."
+      },
+      "single_layers_7_": {
+        "name": "single_layers.7."
+      },
+      "single_layers_8_": {
+        "name": "single_layers.8."
+      },
+      "single_layers_9_": {
+        "name": "single_layers.9."
+      },
+      "single_layers_10_": {
+        "name": "single_layers.10."
+      },
+      "single_layers_11_": {
+        "name": "single_layers.11."
+      },
+      "single_layers_12_": {
+        "name": "single_layers.12."
+      },
+      "single_layers_13_": {
+        "name": "single_layers.13."
+      },
+      "single_layers_14_": {
+        "name": "single_layers.14."
+      },
+      "single_layers_15_": {
+        "name": "single_layers.15."
+      },
+      "single_layers_16_": {
+        "name": "single_layers.16."
+      },
+      "single_layers_17_": {
+        "name": "single_layers.17."
+      },
+      "single_layers_18_": {
+        "name": "single_layers.18."
+      },
+      "single_layers_19_": {
+        "name": "single_layers.19."
+      },
+      "single_layers_20_": {
+        "name": "single_layers.20."
+      },
+      "single_layers_21_": {
+        "name": "single_layers.21."
+      },
+      "single_layers_22_": {
+        "name": "single_layers.22."
+      },
+      "single_layers_23_": {
+        "name": "single_layers.23."
+      },
+      "single_layers_24_": {
+        "name": "single_layers.24."
+      },
+      "single_layers_25_": {
+        "name": "single_layers.25."
+      },
+      "single_layers_26_": {
+        "name": "single_layers.26."
+      },
+      "single_layers_27_": {
+        "name": "single_layers.27."
+      },
+      "single_layers_28_": {
+        "name": "single_layers.28."
+      },
+      "single_layers_29_": {
+        "name": "single_layers.29."
+      },
+      "single_layers_30_": {
+        "name": "single_layers.30."
+      },
+      "single_layers_31_": {
+        "name": "single_layers.31."
+      },
+      "modF_": {
+        "name": "modF."
+      },
+      "final_linear_": {
+        "name": "final_linear."
+      }
+    }
   },
   "ModelMergeBlocks": {
-    "display_name": "ModelMergeBlocks"
+    "display_name": "ModelMergeBlocks",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "input": {
+        "name": "input"
+      },
+      "middle": {
+        "name": "middle"
+      },
+      "out": {
+        "name": "out"
+      }
+    }
   },
   "ModelMergeFlux1": {
-    "display_name": "ModelMergeFlux1"
+    "display_name": "ModelMergeFlux1",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "img_in_": {
+        "name": "img_in."
+      },
+      "time_in_": {
+        "name": "time_in."
+      },
+      "guidance_in": {
+        "name": "guidance_in"
+      },
+      "vector_in_": {
+        "name": "vector_in."
+      },
+      "txt_in_": {
+        "name": "txt_in."
+      },
+      "double_blocks_0_": {
+        "name": "double_blocks.0."
+      },
+      "double_blocks_1_": {
+        "name": "double_blocks.1."
+      },
+      "double_blocks_2_": {
+        "name": "double_blocks.2."
+      },
+      "double_blocks_3_": {
+        "name": "double_blocks.3."
+      },
+      "double_blocks_4_": {
+        "name": "double_blocks.4."
+      },
+      "double_blocks_5_": {
+        "name": "double_blocks.5."
+      },
+      "double_blocks_6_": {
+        "name": "double_blocks.6."
+      },
+      "double_blocks_7_": {
+        "name": "double_blocks.7."
+      },
+      "double_blocks_8_": {
+        "name": "double_blocks.8."
+      },
+      "double_blocks_9_": {
+        "name": "double_blocks.9."
+      },
+      "double_blocks_10_": {
+        "name": "double_blocks.10."
+      },
+      "double_blocks_11_": {
+        "name": "double_blocks.11."
+      },
+      "double_blocks_12_": {
+        "name": "double_blocks.12."
+      },
+      "double_blocks_13_": {
+        "name": "double_blocks.13."
+      },
+      "double_blocks_14_": {
+        "name": "double_blocks.14."
+      },
+      "double_blocks_15_": {
+        "name": "double_blocks.15."
+      },
+      "double_blocks_16_": {
+        "name": "double_blocks.16."
+      },
+      "double_blocks_17_": {
+        "name": "double_blocks.17."
+      },
+      "double_blocks_18_": {
+        "name": "double_blocks.18."
+      },
+      "single_blocks_0_": {
+        "name": "single_blocks.0."
+      },
+      "single_blocks_1_": {
+        "name": "single_blocks.1."
+      },
+      "single_blocks_2_": {
+        "name": "single_blocks.2."
+      },
+      "single_blocks_3_": {
+        "name": "single_blocks.3."
+      },
+      "single_blocks_4_": {
+        "name": "single_blocks.4."
+      },
+      "single_blocks_5_": {
+        "name": "single_blocks.5."
+      },
+      "single_blocks_6_": {
+        "name": "single_blocks.6."
+      },
+      "single_blocks_7_": {
+        "name": "single_blocks.7."
+      },
+      "single_blocks_8_": {
+        "name": "single_blocks.8."
+      },
+      "single_blocks_9_": {
+        "name": "single_blocks.9."
+      },
+      "single_blocks_10_": {
+        "name": "single_blocks.10."
+      },
+      "single_blocks_11_": {
+        "name": "single_blocks.11."
+      },
+      "single_blocks_12_": {
+        "name": "single_blocks.12."
+      },
+      "single_blocks_13_": {
+        "name": "single_blocks.13."
+      },
+      "single_blocks_14_": {
+        "name": "single_blocks.14."
+      },
+      "single_blocks_15_": {
+        "name": "single_blocks.15."
+      },
+      "single_blocks_16_": {
+        "name": "single_blocks.16."
+      },
+      "single_blocks_17_": {
+        "name": "single_blocks.17."
+      },
+      "single_blocks_18_": {
+        "name": "single_blocks.18."
+      },
+      "single_blocks_19_": {
+        "name": "single_blocks.19."
+      },
+      "single_blocks_20_": {
+        "name": "single_blocks.20."
+      },
+      "single_blocks_21_": {
+        "name": "single_blocks.21."
+      },
+      "single_blocks_22_": {
+        "name": "single_blocks.22."
+      },
+      "single_blocks_23_": {
+        "name": "single_blocks.23."
+      },
+      "single_blocks_24_": {
+        "name": "single_blocks.24."
+      },
+      "single_blocks_25_": {
+        "name": "single_blocks.25."
+      },
+      "single_blocks_26_": {
+        "name": "single_blocks.26."
+      },
+      "single_blocks_27_": {
+        "name": "single_blocks.27."
+      },
+      "single_blocks_28_": {
+        "name": "single_blocks.28."
+      },
+      "single_blocks_29_": {
+        "name": "single_blocks.29."
+      },
+      "single_blocks_30_": {
+        "name": "single_blocks.30."
+      },
+      "single_blocks_31_": {
+        "name": "single_blocks.31."
+      },
+      "single_blocks_32_": {
+        "name": "single_blocks.32."
+      },
+      "single_blocks_33_": {
+        "name": "single_blocks.33."
+      },
+      "single_blocks_34_": {
+        "name": "single_blocks.34."
+      },
+      "single_blocks_35_": {
+        "name": "single_blocks.35."
+      },
+      "single_blocks_36_": {
+        "name": "single_blocks.36."
+      },
+      "single_blocks_37_": {
+        "name": "single_blocks.37."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      }
+    }
   },
   "ModelMergeLTXV": {
-    "display_name": "ModelMergeLTXV"
+    "display_name": "ModelMergeLTXV",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "patchify_proj_": {
+        "name": "patchify_proj."
+      },
+      "adaln_single_": {
+        "name": "adaln_single."
+      },
+      "caption_projection_": {
+        "name": "caption_projection."
+      },
+      "transformer_blocks_0_": {
+        "name": "transformer_blocks.0."
+      },
+      "transformer_blocks_1_": {
+        "name": "transformer_blocks.1."
+      },
+      "transformer_blocks_2_": {
+        "name": "transformer_blocks.2."
+      },
+      "transformer_blocks_3_": {
+        "name": "transformer_blocks.3."
+      },
+      "transformer_blocks_4_": {
+        "name": "transformer_blocks.4."
+      },
+      "transformer_blocks_5_": {
+        "name": "transformer_blocks.5."
+      },
+      "transformer_blocks_6_": {
+        "name": "transformer_blocks.6."
+      },
+      "transformer_blocks_7_": {
+        "name": "transformer_blocks.7."
+      },
+      "transformer_blocks_8_": {
+        "name": "transformer_blocks.8."
+      },
+      "transformer_blocks_9_": {
+        "name": "transformer_blocks.9."
+      },
+      "transformer_blocks_10_": {
+        "name": "transformer_blocks.10."
+      },
+      "transformer_blocks_11_": {
+        "name": "transformer_blocks.11."
+      },
+      "transformer_blocks_12_": {
+        "name": "transformer_blocks.12."
+      },
+      "transformer_blocks_13_": {
+        "name": "transformer_blocks.13."
+      },
+      "transformer_blocks_14_": {
+        "name": "transformer_blocks.14."
+      },
+      "transformer_blocks_15_": {
+        "name": "transformer_blocks.15."
+      },
+      "transformer_blocks_16_": {
+        "name": "transformer_blocks.16."
+      },
+      "transformer_blocks_17_": {
+        "name": "transformer_blocks.17."
+      },
+      "transformer_blocks_18_": {
+        "name": "transformer_blocks.18."
+      },
+      "transformer_blocks_19_": {
+        "name": "transformer_blocks.19."
+      },
+      "transformer_blocks_20_": {
+        "name": "transformer_blocks.20."
+      },
+      "transformer_blocks_21_": {
+        "name": "transformer_blocks.21."
+      },
+      "transformer_blocks_22_": {
+        "name": "transformer_blocks.22."
+      },
+      "transformer_blocks_23_": {
+        "name": "transformer_blocks.23."
+      },
+      "transformer_blocks_24_": {
+        "name": "transformer_blocks.24."
+      },
+      "transformer_blocks_25_": {
+        "name": "transformer_blocks.25."
+      },
+      "transformer_blocks_26_": {
+        "name": "transformer_blocks.26."
+      },
+      "transformer_blocks_27_": {
+        "name": "transformer_blocks.27."
+      },
+      "scale_shift_table": {
+        "name": "scale_shift_table"
+      },
+      "proj_out_": {
+        "name": "proj_out."
+      }
+    }
   },
   "ModelMergeMochiPreview": {
-    "display_name": "ModelMergeMochiPreview"
+    "display_name": "ModelMergeMochiPreview",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_frequencies_": {
+        "name": "pos_frequencies."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "t5_y_embedder_": {
+        "name": "t5_y_embedder."
+      },
+      "t5_yproj_": {
+        "name": "t5_yproj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      }
+    }
   },
   "ModelMergeSD1": {
-    "display_name": "ModelMergeSD1"
+    "display_name": "ModelMergeSD1",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "middle_block_0_": {
+        "name": "middle_block.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_block.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_block.2."
+      },
+      "output_blocks_0_": {
+        "name": "output_blocks.0."
+      },
+      "output_blocks_1_": {
+        "name": "output_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "output_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "output_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "output_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "output_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "output_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "output_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "output_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "output_blocks.9."
+      },
+      "output_blocks_10_": {
+        "name": "output_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "output_blocks.11."
+      },
+      "out_": {
+        "name": "out."
+      }
+    }
   },
   "ModelMergeSD2": {
-    "display_name": "ModelMergeSD2"
+    "display_name": "ModelMergeSD2",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "input_blocks_0_": {
+        "name": "input_blocks.0."
+      },
+      "input_blocks_1_": {
+        "name": "input_blocks.1."
+      },
+      "input_blocks_2_": {
+        "name": "input_blocks.2."
+      },
+      "input_blocks_3_": {
+        "name": "input_blocks.3."
+      },
+      "input_blocks_4_": {
+        "name": "input_blocks.4."
+      },
+      "input_blocks_5_": {
+        "name": "input_blocks.5."
+      },
+      "input_blocks_6_": {
+        "name": "input_blocks.6."
+      },
+      "input_blocks_7_": {
+        "name": "input_blocks.7."
+      },
+      "input_blocks_8_": {
+        "name": "input_blocks.8."
+      },
+      "input_blocks_9_": {
+        "name": "input_blocks.9."
+      },
+      "input_blocks_10_": {
+        "name": "input_blocks.10."
+      },
+      "input_blocks_11_": {
+        "name": "input_blocks.11."
+      },
+      "middle_block_0_": {
+        "name": "middle_block.0."
+      },
+      "middle_block_1_": {
+        "name": "middle_block.1."
+      },
+      "middle_block_2_": {
+        "name": "middle_block.2."
+      },
+      "output_blocks_0_": {
+        "name": "output_blocks.0."
+      },
+      "output_blocks_1_": {
+        "name": "output_blocks.1."
+      },
+      "output_blocks_2_": {
+        "name": "output_blocks.2."
+      },
+      "output_blocks_3_": {
+        "name": "output_blocks.3."
+      },
+      "output_blocks_4_": {
+        "name": "output_blocks.4."
+      },
+      "output_blocks_5_": {
+        "name": "output_blocks.5."
+      },
+      "output_blocks_6_": {
+        "name": "output_blocks.6."
+      },
+      "output_blocks_7_": {
+        "name": "output_blocks.7."
+      },
+      "output_blocks_8_": {
+        "name": "output_blocks.8."
+      },
+      "output_blocks_9_": {
+        "name": "output_blocks.9."
+      },
+      "output_blocks_10_": {
+        "name": "output_blocks.10."
+      },
+      "output_blocks_11_": {
+        "name": "output_blocks.11."
+      },
+      "out_": {
+        "name": "out."
+      }
+    }
   },
   "ModelMergeSD3_2B": {
-    "display_name": "ModelMergeSD3_2B"
+    "display_name": "ModelMergeSD3_2B",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      }
+    }
   },
   "ModelMergeSD35_Large": {
-    "display_name": "ModelMergeSD35_Large"
+    "display_name": "ModelMergeSD35_Large",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_24_": {
+        "name": "joint_blocks.24."
+      },
+      "joint_blocks_25_": {
+        "name": "joint_blocks.25."
+      },
+      "joint_blocks_26_": {
+        "name": "joint_blocks.26."
+      },
+      "joint_blocks_27_": {
+        "name": "joint_blocks.27."
+      },
+      "joint_blocks_28_": {
+        "name": "joint_blocks.28."
+      },
+      "joint_blocks_29_": {
+        "name": "joint_blocks.29."
+      },
+      "joint_blocks_30_": {
+        "name": "joint_blocks.30."
+      },
+      "joint_blocks_31_": {
+        "name": "joint_blocks.31."
+      },
+      "joint_blocks_32_": {
+        "name": "joint_blocks.32."
+      },
+      "joint_blocks_33_": {
+        "name": "joint_blocks.33."
+      },
+      "joint_blocks_34_": {
+        "name": "joint_blocks.34."
+      },
+      "joint_blocks_35_": {
+        "name": "joint_blocks.35."
+      },
+      "joint_blocks_36_": {
+        "name": "joint_blocks.36."
+      },
+      "joint_blocks_37_": {
+        "name": "joint_blocks.37."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      }
+    }
   },
   "ModelMergeSDXL": {
-    "display_name": "ModelMergeSDXL"
+    "display_name": "ModelMergeSDXL",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "input_blocks_0": {
+        "name": "input_blocks.0"
+      },
+      "input_blocks_1": {
+        "name": "input_blocks.1"
+      },
+      "input_blocks_2": {
+        "name": "input_blocks.2"
+      },
+      "input_blocks_3": {
+        "name": "input_blocks.3"
+      },
+      "input_blocks_4": {
+        "name": "input_blocks.4"
+      },
+      "input_blocks_5": {
+        "name": "input_blocks.5"
+      },
+      "input_blocks_6": {
+        "name": "input_blocks.6"
+      },
+      "input_blocks_7": {
+        "name": "input_blocks.7"
+      },
+      "input_blocks_8": {
+        "name": "input_blocks.8"
+      },
+      "middle_block_0": {
+        "name": "middle_block.0"
+      },
+      "middle_block_1": {
+        "name": "middle_block.1"
+      },
+      "middle_block_2": {
+        "name": "middle_block.2"
+      },
+      "output_blocks_0": {
+        "name": "output_blocks.0"
+      },
+      "output_blocks_1": {
+        "name": "output_blocks.1"
+      },
+      "output_blocks_2": {
+        "name": "output_blocks.2"
+      },
+      "output_blocks_3": {
+        "name": "output_blocks.3"
+      },
+      "output_blocks_4": {
+        "name": "output_blocks.4"
+      },
+      "output_blocks_5": {
+        "name": "output_blocks.5"
+      },
+      "output_blocks_6": {
+        "name": "output_blocks.6"
+      },
+      "output_blocks_7": {
+        "name": "output_blocks.7"
+      },
+      "output_blocks_8": {
+        "name": "output_blocks.8"
+      },
+      "out_": {
+        "name": "out."
+      }
+    }
   },
   "ModelMergeSimple": {
-    "display_name": "ModelMergeSimple"
+    "display_name": "ModelMergeSimple",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "ratio": {
+        "name": "ratio"
+      }
+    }
   },
   "ModelMergeSubtract": {
-    "display_name": "ModelMergeSubtract"
+    "display_name": "ModelMergeSubtract",
+    "inputs": {
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    }
   },
   "ModelSamplingAuraFlow": {
-    "display_name": "ModelSamplingAuraFlow"
+    "display_name": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    }
   },
   "ModelSamplingContinuousEDM": {
-    "display_name": "ModelSamplingContinuousEDM"
+    "display_name": "ModelSamplingContinuousEDM",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
   },
   "ModelSamplingContinuousV": {
-    "display_name": "ModelSamplingContinuousV"
+    "display_name": "ModelSamplingContinuousV",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
   },
   "ModelSamplingDiscrete": {
-    "display_name": "ModelSamplingDiscrete"
+    "display_name": "ModelSamplingDiscrete",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "sampling": {
+        "name": "sampling"
+      },
+      "zsnr": {
+        "name": "zsnr"
+      }
+    }
   },
   "ModelSamplingFlux": {
-    "display_name": "ModelSamplingFlux"
+    "display_name": "ModelSamplingFlux",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "max_shift": {
+        "name": "max_shift"
+      },
+      "base_shift": {
+        "name": "base_shift"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    }
   },
   "ModelSamplingLTXV": {
-    "display_name": "ModelSamplingLTXV"
+    "display_name": "ModelSamplingLTXV",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "max_shift": {
+        "name": "max_shift"
+      },
+      "base_shift": {
+        "name": "base_shift"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    }
   },
   "ModelSamplingSD3": {
-    "display_name": "ModelSamplingSD3"
+    "display_name": "ModelSamplingSD3",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    }
   },
   "ModelSamplingStableCascade": {
-    "display_name": "ModelSamplingStableCascade"
+    "display_name": "ModelSamplingStableCascade",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "shift": {
+        "name": "shift"
+      }
+    }
   },
   "ModelSave": {
-    "display_name": "ModelSave"
+    "display_name": "ModelSave",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "Morphology": {
-    "display_name": "ImageMorphology"
+    "display_name": "ImageMorphology",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "operation": {
+        "name": "operation"
+      },
+      "kernel_size": {
+        "name": "kernel_size"
+      }
+    }
   },
   "PairConditioningCombine": {
     "display_name": "Cond Pair Combine",
+    "inputs": {
+      "positive_A": {
+        "name": "positive_A"
+      },
+      "negative_A": {
+        "name": "negative_A"
+      },
+      "positive_B": {
+        "name": "positive_B"
+      },
+      "negative_B": {
+        "name": "negative_B"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -783,6 +3801,23 @@
   },
   "PairConditioningSetDefaultCombine": {
     "display_name": "Cond Pair Set Default Combine",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive_DEFAULT": {
+        "name": "positive_DEFAULT"
+      },
+      "negative_DEFAULT": {
+        "name": "negative_DEFAULT"
+      },
+      "hooks": {
+        "name": "hooks"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -794,6 +3829,29 @@
   },
   "PairConditioningSetProperties": {
     "display_name": "Cond Pair Set Props",
+    "inputs": {
+      "positive_NEW": {
+        "name": "positive_NEW"
+      },
+      "negative_NEW": {
+        "name": "negative_NEW"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "hooks": {
+        "name": "hooks"
+      },
+      "timesteps": {
+        "name": "timesteps"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -805,6 +3863,35 @@
   },
   "PairConditioningSetPropertiesAndCombine": {
     "display_name": "Cond Pair Set Props Combine",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive_NEW": {
+        "name": "positive_NEW"
+      },
+      "negative_NEW": {
+        "name": "negative_NEW"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "set_cond_area": {
+        "name": "set_cond_area"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "hooks": {
+        "name": "hooks"
+      },
+      "timesteps": {
+        "name": "timesteps"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -815,56 +3902,255 @@
     }
   },
   "PatchModelAddDownscale": {
-    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)"
+    "display_name": "PatchModelAddDownscale (Kohya Deep Shrink)",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "block_number": {
+        "name": "block_number"
+      },
+      "downscale_factor": {
+        "name": "downscale_factor"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "downscale_after_skip": {
+        "name": "downscale_after_skip"
+      },
+      "downscale_method": {
+        "name": "downscale_method"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      }
+    }
   },
   "PerpNeg": {
-    "display_name": "Perp-Neg (DEPRECATED by PerpNegGuider)"
+    "display_name": "Perp-Neg (DEPRECATED by PerpNegGuider)",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "empty_conditioning": {
+        "name": "empty_conditioning"
+      },
+      "neg_scale": {
+        "name": "neg_scale"
+      }
+    }
   },
   "PerpNegGuider": {
-    "display_name": "PerpNegGuider"
+    "display_name": "PerpNegGuider",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "empty_conditioning": {
+        "name": "empty_conditioning"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "neg_scale": {
+        "name": "neg_scale"
+      }
+    }
   },
   "PerturbedAttentionGuidance": {
-    "display_name": "PerturbedAttentionGuidance"
+    "display_name": "PerturbedAttentionGuidance",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      }
+    }
   },
   "PhotoMakerEncode": {
-    "display_name": "PhotoMakerEncode"
+    "display_name": "PhotoMakerEncode",
+    "inputs": {
+      "photomaker": {
+        "name": "photomaker"
+      },
+      "image": {
+        "name": "image"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "text": {
+        "name": "text"
+      }
+    }
   },
   "PhotoMakerLoader": {
-    "display_name": "PhotoMakerLoader"
+    "display_name": "PhotoMakerLoader",
+    "inputs": {
+      "photomaker_model_name": {
+        "name": "photomaker_model_name"
+      }
+    }
   },
   "PolyexponentialScheduler": {
-    "display_name": "PolyexponentialScheduler"
+    "display_name": "PolyexponentialScheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "rho": {
+        "name": "rho"
+      }
+    }
   },
   "PorterDuffImageComposite": {
-    "display_name": "Porter-Duff Image Composite"
+    "display_name": "Porter-Duff Image Composite",
+    "inputs": {
+      "source": {
+        "name": "source"
+      },
+      "source_alpha": {
+        "name": "source_alpha"
+      },
+      "destination": {
+        "name": "destination"
+      },
+      "destination_alpha": {
+        "name": "destination_alpha"
+      },
+      "mode": {
+        "name": "mode"
+      }
+    }
   },
   "PreviewAudio": {
-    "display_name": "PreviewAudio"
+    "display_name": "PreviewAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      }
+    }
   },
   "PreviewImage": {
     "display_name": "Preview Image",
-    "description": "Saves the input images to your ComfyUI output directory."
+    "description": "Saves the input images to your ComfyUI output directory.",
+    "inputs": {
+      "images": {
+        "name": "images"
+      }
+    }
   },
   "RandomNoise": {
-    "display_name": "RandomNoise"
+    "display_name": "RandomNoise",
+    "inputs": {
+      "noise_seed": {
+        "name": "noise_seed"
+      }
+    }
   },
   "RebatchImages": {
-    "display_name": "Rebatch Images"
+    "display_name": "Rebatch Images",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
   },
   "RebatchLatents": {
-    "display_name": "Rebatch Latents"
+    "display_name": "Rebatch Latents",
+    "inputs": {
+      "latents": {
+        "name": "latents"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    }
   },
   "RepeatImageBatch": {
-    "display_name": "RepeatImageBatch"
+    "display_name": "RepeatImageBatch",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "amount": {
+        "name": "amount"
+      }
+    }
   },
   "RepeatLatentBatch": {
-    "display_name": "Repeat Latent Batch"
+    "display_name": "Repeat Latent Batch",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "amount": {
+        "name": "amount"
+      }
+    }
   },
   "RescaleCFG": {
-    "display_name": "RescaleCFG"
+    "display_name": "RescaleCFG",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "multiplier": {
+        "name": "multiplier"
+      }
+    }
   },
   "SamplerCustom": {
     "display_name": "SamplerCustom",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "add_noise": {
+        "name": "add_noise"
+      },
+      "noise_seed": {
+        "name": "noise_seed"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "sampler": {
+        "name": "sampler"
+      },
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "latent_image": {
+        "name": "latent_image"
+      }
+    },
     "outputs": {
       "0": {
         "name": "output"
@@ -876,6 +4162,23 @@
   },
   "SamplerCustomAdvanced": {
     "display_name": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": {
+        "name": "noise"
+      },
+      "guider": {
+        "name": "guider"
+      },
+      "sampler": {
+        "name": "sampler"
+      },
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "latent_image": {
+        "name": "latent_image"
+      }
+    },
     "outputs": {
       "0": {
         "name": "output"
@@ -886,64 +4189,254 @@
     }
   },
   "SamplerDPMAdaptative": {
-    "display_name": "SamplerDPMAdaptative"
+    "display_name": "SamplerDPMAdaptative",
+    "inputs": {
+      "order": {
+        "name": "order"
+      },
+      "rtol": {
+        "name": "rtol"
+      },
+      "atol": {
+        "name": "atol"
+      },
+      "h_init": {
+        "name": "h_init"
+      },
+      "pcoeff": {
+        "name": "pcoeff"
+      },
+      "icoeff": {
+        "name": "icoeff"
+      },
+      "dcoeff": {
+        "name": "dcoeff"
+      },
+      "accept_safety": {
+        "name": "accept_safety"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerDPMPP_2M_SDE": {
-    "display_name": "SamplerDPMPP_2M_SDE"
+    "display_name": "SamplerDPMPP_2M_SDE",
+    "inputs": {
+      "solver_type": {
+        "name": "solver_type"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "noise_device": {
+        "name": "noise_device"
+      }
+    }
   },
   "SamplerDPMPP_2S_Ancestral": {
-    "display_name": "SamplerDPMPP_2S_Ancestral"
+    "display_name": "SamplerDPMPP_2S_Ancestral",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerDPMPP_3M_SDE": {
-    "display_name": "SamplerDPMPP_3M_SDE"
+    "display_name": "SamplerDPMPP_3M_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "noise_device": {
+        "name": "noise_device"
+      }
+    }
   },
   "SamplerDPMPP_SDE": {
-    "display_name": "SamplerDPMPP_SDE"
+    "display_name": "SamplerDPMPP_SDE",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "r": {
+        "name": "r"
+      },
+      "noise_device": {
+        "name": "noise_device"
+      }
+    }
   },
   "SamplerEulerAncestral": {
-    "display_name": "SamplerEulerAncestral"
+    "display_name": "SamplerEulerAncestral",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerEulerAncestralCFGPP": {
-    "display_name": "SamplerEulerAncestralCFG++"
+    "display_name": "SamplerEulerAncestralCFG++",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
   },
   "SamplerEulerCFGpp": {
-    "display_name": "SamplerEulerCFG++"
+    "display_name": "SamplerEulerCFG++",
+    "inputs": {
+      "version": {
+        "name": "version"
+      }
+    }
   },
   "SamplerLCMUpscale": {
-    "display_name": "SamplerLCMUpscale"
+    "display_name": "SamplerLCMUpscale",
+    "inputs": {
+      "scale_ratio": {
+        "name": "scale_ratio"
+      },
+      "scale_steps": {
+        "name": "scale_steps"
+      },
+      "upscale_method": {
+        "name": "upscale_method"
+      }
+    }
   },
   "SamplerLMS": {
-    "display_name": "SamplerLMS"
+    "display_name": "SamplerLMS",
+    "inputs": {
+      "order": {
+        "name": "order"
+      }
+    }
   },
   "SaveAnimatedPNG": {
-    "display_name": "SaveAnimatedPNG"
+    "display_name": "SaveAnimatedPNG",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "compress_level": {
+        "name": "compress_level"
+      }
+    }
   },
   "SaveAnimatedWEBP": {
-    "display_name": "SaveAnimatedWEBP"
+    "display_name": "SaveAnimatedWEBP",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "lossless": {
+        "name": "lossless"
+      },
+      "quality": {
+        "name": "quality"
+      },
+      "method": {
+        "name": "method"
+      }
+    }
   },
   "SaveAudio": {
-    "display_name": "SaveAudio"
+    "display_name": "SaveAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "SaveImage": {
     "display_name": "Save Image",
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "images": {
+        "name": "images",
         "tooltip": "The images to save."
       },
       "filename_prefix": {
+        "name": "filename_prefix",
         "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
       }
     }
   },
   "SaveImageWebsocket": {
-    "display_name": "SaveImageWebsocket"
+    "display_name": "SaveImageWebsocket",
+    "inputs": {
+      "images": {
+        "name": "images"
+      }
+    }
   },
   "SaveLatent": {
-    "display_name": "SaveLatent"
+    "display_name": "SaveLatent",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "SD_4XUpscale_Conditioning": {
     "display_name": "SD_4XUpscale_Conditioning",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "scale_ratio": {
+        "name": "scale_ratio"
+      },
+      "noise_augmentation": {
+        "name": "noise_augmentation"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -957,39 +4450,163 @@
     }
   },
   "SDTurboScheduler": {
-    "display_name": "SDTurboScheduler"
+    "display_name": "SDTurboScheduler",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "denoise": {
+        "name": "denoise"
+      }
+    }
   },
   "SelfAttentionGuidance": {
-    "display_name": "Self-Attention Guidance"
+    "display_name": "Self-Attention Guidance",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "blur_sigma": {
+        "name": "blur_sigma"
+      }
+    }
   },
   "SetClipHooks": {
-    "display_name": "Set CLIP Hooks"
+    "display_name": "Set CLIP Hooks",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "apply_to_conds": {
+        "name": "apply_to_conds"
+      },
+      "schedule_clip": {
+        "name": "schedule_clip"
+      },
+      "hooks": {
+        "name": "hooks"
+      }
+    }
   },
   "SetHookKeyframes": {
-    "display_name": "Set Hook Keyframes"
+    "display_name": "Set Hook Keyframes",
+    "inputs": {
+      "hooks": {
+        "name": "hooks"
+      },
+      "hook_kf": {
+        "name": "hook_kf"
+      }
+    }
   },
   "SetLatentNoiseMask": {
-    "display_name": "Set Latent Noise Mask"
+    "display_name": "Set Latent Noise Mask",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "mask": {
+        "name": "mask"
+      }
+    }
   },
   "SetUnionControlNetType": {
-    "display_name": "SetUnionControlNetType"
+    "display_name": "SetUnionControlNetType",
+    "inputs": {
+      "control_net": {
+        "name": "control_net"
+      },
+      "type": {
+        "name": "type"
+      }
+    }
   },
   "SkipLayerGuidanceDiT": {
     "display_name": "SkipLayerGuidanceDiT",
-    "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model."
+    "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "double_layers": {
+        "name": "double_layers"
+      },
+      "single_layers": {
+        "name": "single_layers"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      },
+      "rescaling_scale": {
+        "name": "rescaling_scale"
+      }
+    }
   },
   "SkipLayerGuidanceSD3": {
     "display_name": "SkipLayerGuidanceSD3",
-    "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model."
+    "description": "Generic version of SkipLayerGuidance node that can be used on every DiT model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "layers": {
+        "name": "layers"
+      },
+      "scale": {
+        "name": "scale"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    }
   },
   "SolidMask": {
-    "display_name": "SolidMask"
+    "display_name": "SolidMask",
+    "inputs": {
+      "value": {
+        "name": "value"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      }
+    }
   },
   "SplitImageWithAlpha": {
-    "display_name": "Split Image with Alpha"
+    "display_name": "Split Image with Alpha",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    }
   },
   "SplitSigmas": {
     "display_name": "SplitSigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "step": {
+        "name": "step"
+      }
+    },
     "outputs": {
       "0": {
         "name": "high_sigmas"
@@ -1001,6 +4618,14 @@
   },
   "SplitSigmasDenoise": {
     "display_name": "SplitSigmasDenoise",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      },
+      "denoise": {
+        "name": "denoise"
+      }
+    },
     "outputs": {
       "0": {
         "name": "high_sigmas"
@@ -1012,6 +4637,20 @@
   },
   "StableCascade_EmptyLatentImage": {
     "display_name": "StableCascade_EmptyLatentImage",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "compression": {
+        "name": "compression"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      }
+    },
     "outputs": {
       "0": {
         "name": "stage_c"
@@ -1022,10 +4661,29 @@
     }
   },
   "StableCascade_StageB_Conditioning": {
-    "display_name": "StableCascade_StageB_Conditioning"
+    "display_name": "StableCascade_StageB_Conditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "stage_c": {
+        "name": "stage_c"
+      }
+    }
   },
   "StableCascade_StageC_VAEEncode": {
     "display_name": "StableCascade_StageC_VAEEncode",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "compression": {
+        "name": "compression"
+      }
+    },
     "outputs": {
       "0": {
         "name": "stage_c"
@@ -1037,6 +4695,14 @@
   },
   "StableCascade_SuperResolutionControlnet": {
     "display_name": "StableCascade_SuperResolutionControlnet",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
     "outputs": {
       "0": {
         "name": "controlnet_input"
@@ -1051,6 +4717,32 @@
   },
   "StableZero123_Conditioning": {
     "display_name": "StableZero123_Conditioning",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "init_image": {
+        "name": "init_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "elevation": {
+        "name": "elevation"
+      },
+      "azimuth": {
+        "name": "azimuth"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -1065,6 +4757,38 @@
   },
   "StableZero123_Conditioning_Batched": {
     "display_name": "StableZero123_Conditioning_Batched",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "init_image": {
+        "name": "init_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "elevation": {
+        "name": "elevation"
+      },
+      "azimuth": {
+        "name": "azimuth"
+      },
+      "elevation_batch_increment": {
+        "name": "elevation_batch_increment"
+      },
+      "azimuth_batch_increment": {
+        "name": "azimuth_batch_increment"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -1078,13 +4802,58 @@
     }
   },
   "StyleModelApply": {
-    "display_name": "Apply Style Model"
+    "display_name": "Apply Style Model",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "style_model": {
+        "name": "style_model"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "strength_type": {
+        "name": "strength_type"
+      }
+    }
   },
   "StyleModelLoader": {
-    "display_name": "Load Style Model"
+    "display_name": "Load Style Model",
+    "inputs": {
+      "style_model_name": {
+        "name": "style_model_name"
+      }
+    }
   },
   "SV3D_Conditioning": {
     "display_name": "SV3D_Conditioning",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "init_image": {
+        "name": "init_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "elevation": {
+        "name": "elevation"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -1099,6 +4868,35 @@
   },
   "SVD_img2vid_Conditioning": {
     "display_name": "SVD_img2vid_Conditioning",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "init_image": {
+        "name": "init_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "video_frames": {
+        "name": "video_frames"
+      },
+      "motion_bucket_id": {
+        "name": "motion_bucket_id"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "augmentation_level": {
+        "name": "augmentation_level"
+      }
+    },
     "outputs": {
       "0": {
         "name": "positive"
@@ -1112,47 +4910,167 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "ThresholdMask"
+    "display_name": "ThresholdMask",
+    "inputs": {
+      "mask": {
+        "name": "mask"
+      },
+      "value": {
+        "name": "value"
+      }
+    }
   },
   "TomePatchModel": {
-    "display_name": "TomePatchModel"
+    "display_name": "TomePatchModel",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "ratio": {
+        "name": "ratio"
+      }
+    }
   },
   "TorchCompileModel": {
-    "display_name": "TorchCompileModel"
+    "display_name": "TorchCompileModel",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "backend": {
+        "name": "backend"
+      }
+    }
   },
   "TripleCLIPLoader": {
     "display_name": "TripleCLIPLoader",
-    "description": "[Recipes]\n\nsd3: clip-l, clip-g, t5"
+    "description": "[Recipes]\n\nsd3: clip-l, clip-g, t5",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "clip_name3": {
+        "name": "clip_name3"
+      }
+    }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIPCheckpointLoader"
+    "display_name": "unCLIPCheckpointLoader",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
   },
   "unCLIPConditioning": {
-    "display_name": "unCLIPConditioning"
+    "display_name": "unCLIPConditioning",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "strength": {
+        "name": "strength"
+      },
+      "noise_augmentation": {
+        "name": "noise_augmentation"
+      }
+    }
   },
   "UNetCrossAttentionMultiply": {
-    "display_name": "UNetCrossAttentionMultiply"
+    "display_name": "UNetCrossAttentionMultiply",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "q": {
+        "name": "q"
+      },
+      "k": {
+        "name": "k"
+      },
+      "v": {
+        "name": "v"
+      },
+      "out": {
+        "name": "out"
+      }
+    }
   },
   "UNETLoader": {
-    "display_name": "Load Diffusion Model"
+    "display_name": "Load Diffusion Model",
+    "inputs": {
+      "unet_name": {
+        "name": "unet_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    }
   },
   "UNetSelfAttentionMultiply": {
-    "display_name": "UNetSelfAttentionMultiply"
+    "display_name": "UNetSelfAttentionMultiply",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "q": {
+        "name": "q"
+      },
+      "k": {
+        "name": "k"
+      },
+      "v": {
+        "name": "v"
+      },
+      "out": {
+        "name": "out"
+      }
+    }
   },
   "UNetTemporalAttentionMultiply": {
-    "display_name": "UNetTemporalAttentionMultiply"
+    "display_name": "UNetTemporalAttentionMultiply",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "self_structural": {
+        "name": "self_structural"
+      },
+      "self_temporal": {
+        "name": "self_temporal"
+      },
+      "cross_structural": {
+        "name": "cross_structural"
+      },
+      "cross_temporal": {
+        "name": "cross_temporal"
+      }
+    }
   },
   "UpscaleModelLoader": {
-    "display_name": "Load Upscale Model"
+    "display_name": "Load Upscale Model",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    }
   },
   "VAEDecode": {
     "display_name": "VAE Decode",
     "description": "Decodes latent images back into pixel space images.",
     "inputs": {
       "samples": {
+        "name": "samples",
         "tooltip": "The latent to be decoded."
       },
       "vae": {
+        "name": "vae",
         "tooltip": "The VAE model used for decoding the latent."
       }
     },
@@ -1163,39 +5081,159 @@
     }
   },
   "VAEDecodeAudio": {
-    "display_name": "VAEDecodeAudio"
+    "display_name": "VAEDecodeAudio",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEDecodeTiled": {
-    "display_name": "VAE Decode (Tiled)"
+    "display_name": "VAE Decode (Tiled)",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
+      }
+    }
   },
   "VAEEncode": {
-    "display_name": "VAE Encode"
+    "display_name": "VAE Encode",
+    "inputs": {
+      "pixels": {
+        "name": "pixels"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncodeAudio": {
-    "display_name": "VAEEncodeAudio"
+    "display_name": "VAEEncodeAudio",
+    "inputs": {
+      "audio": {
+        "name": "audio"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
   },
   "VAEEncodeForInpaint": {
-    "display_name": "VAE Encode (for Inpainting)"
+    "display_name": "VAE Encode (for Inpainting)",
+    "inputs": {
+      "pixels": {
+        "name": "pixels"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "grow_mask_by": {
+        "name": "grow_mask_by"
+      }
+    }
   },
   "VAEEncodeTiled": {
-    "display_name": "VAE Encode (Tiled)"
+    "display_name": "VAE Encode (Tiled)",
+    "inputs": {
+      "pixels": {
+        "name": "pixels"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      }
+    }
   },
   "VAELoader": {
-    "display_name": "Load VAE"
+    "display_name": "Load VAE",
+    "inputs": {
+      "vae_name": {
+        "name": "vae_name"
+      }
+    }
   },
   "VAESave": {
-    "display_name": "VAESave"
+    "display_name": "VAESave",
+    "inputs": {
+      "vae": {
+        "name": "vae"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix"
+      }
+    }
   },
   "VideoLinearCFGGuidance": {
-    "display_name": "VideoLinearCFGGuidance"
+    "display_name": "VideoLinearCFGGuidance",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "min_cfg": {
+        "name": "min_cfg"
+      }
+    }
   },
   "VideoTriangleCFGGuidance": {
-    "display_name": "VideoTriangleCFGGuidance"
+    "display_name": "VideoTriangleCFGGuidance",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "min_cfg": {
+        "name": "min_cfg"
+      }
+    }
   },
   "VPScheduler": {
-    "display_name": "VPScheduler"
+    "display_name": "VPScheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "beta_d": {
+        "name": "beta_d"
+      },
+      "beta_min": {
+        "name": "beta_min"
+      },
+      "eps_s": {
+        "name": "eps_s"
+      }
+    }
   },
   "WebcamCapture": {
-    "display_name": "Webcam Capture"
+    "display_name": "Webcam Capture",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "capture_on_queue": {
+        "name": "capture_on_queue"
+      }
+    }
   }
 }
