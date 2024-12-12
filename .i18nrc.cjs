@@ -4,12 +4,14 @@
 const { defineConfig } = require('@lobehub/i18n-cli');
 
 module.exports = defineConfig({
-  entry: 'src/locales/en.json',
+  modelName: 'gpt-4',
+  splitToken: 1024,
+  entry: 'src/locales/en',
   entryLocale: 'en',
   output: 'src/locales',
-  outputLocales: ['zh', 'ru', 'ja'],
-  reference: `Keep following model names untranslated:
-  - flux
-  - photomaker
+  outputLocales: ['zh', 'ru', 'ja', 'ko'],
+  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg.
+  'latent' is the short form of 'latent space'.
+  'mask' is in the context of image processing.
   `
 });

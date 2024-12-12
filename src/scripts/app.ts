@@ -62,6 +62,7 @@ import { workflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1913,6 +1914,7 @@ export class ComfyApp {
           const type = _inputData[0]
           const options = _inputData[1] ?? {}
           const inputData = [type, options]
+          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
           const inputIsRequired = requiredInputs && inputName in requiredInputs
 
@@ -1930,11 +1932,18 @@ export class ComfyApp {
                 self.widgets[widgetType](this, inputName, inputData, app) || {}
               )
             }
+            if (config.widget) {
+              config.widget.label = st(nameKey, inputName)
+            }
           } else {
             // Node connection inputs
-            const inputOptions = inputIsRequired
+            const shapeOptions = inputIsRequired
               ? {}
               : { shape: LiteGraph.SlotShape.HollowCircle }
+            const inputOptions = {
+              ...shapeOptions,
+              label: st(nameKey, inputName)
+            }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
           }
@@ -1964,9 +1973,22 @@ export class ComfyApp {
           if (output instanceof Array) output = 'COMBO'
           const outputName = nodeData['output_name'][o] || output
           const outputIsList = nodeData['output_is_list'][o]
-          const outputOptions = outputIsList
+          const shapeOptions = outputIsList
             ? { shape: LiteGraph.GRID_SHAPE }
             : {}
+          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.outputs.${o}.name`
+          const typeKey = `dataTypes.${normalizeI18nKey(output)}`
+          const outputOptions = {
+            ...shapeOptions,
+            // If the output name is different from the output type, use the output name.
+            // e.g.
+            // - type ("INT"); name ("Positive") => translate name
+            // - type ("FLOAT"); name ("FLOAT") => translate type
+            label:
+              output !== outputName
+                ? st(nameKey, outputName)
+                : st(typeKey, outputName)
+          }
           this.addOutput(outputName, output, outputOptions)
         }
 
@@ -1980,7 +2002,7 @@ export class ComfyApp {
       }
 
       configure(data: any) {
-        // Keep 'name', 'type', and 'shape' information from the original node definition.
+        // Keep 'name', 'type', 'shape', and 'label' information from the original node definition.
         const merge = (
           current: Record<string, any>,
           incoming: Record<string, any>
@@ -1991,7 +2013,7 @@ export class ComfyApp {
             this.inputs.push(current as INodeInputSlot)
             return incoming
           }
-          for (const key of ['name', 'type', 'shape']) {
+          for (const key of ['name', 'type', 'shape', 'label']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
             }

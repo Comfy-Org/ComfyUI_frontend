@@ -17,9 +17,9 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useEventListener } from '@vueuse/core'
-import { electronAPI, isElectron } from './utils/envUtil'
 import { useToast } from 'primevue/usetoast'
 import Toast, { ToastMessageOptions } from 'primevue/toast'
+import { isElectron, electronAPI, showNativeMenu } from './utils/envUtil'
 
 const toast = useToast()
 const workspaceStore = useWorkspaceStore()
@@ -29,6 +29,17 @@ const handleKey = (e: KeyboardEvent) => {
 }
 useEventListener(window, 'keydown', handleKey)
 useEventListener(window, 'keyup', handleKey)
+
+const showContextMenu = (event: PointerEvent) => {
+  const { target } = event
+  switch (true) {
+    case target instanceof HTMLTextAreaElement:
+    case target instanceof HTMLInputElement && target.type === 'text':
+      // TODO: Context input menu explicitly for text input
+      showNativeMenu({ type: 'text' })
+      return
+  }
+}
 
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
@@ -40,6 +51,8 @@ onMounted(() => {
       toast.add(config)
     })
     electron['loaded']()
+
+    document.addEventListener('contextmenu', showContextMenu)
   }
 })
 </script>

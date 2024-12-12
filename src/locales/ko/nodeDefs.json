@@ -1,0 +1,5253 @@
+{
+  "AddNoise": {
+    "display_name": "노이즈 추가",
+    "inputs": {
+      "latent_image": {
+        "name": "잠재 이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "noise": {
+        "name": "노이즈"
+      },
+      "sigmas": {
+        "name": "시그마"
+      }
+    }
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "AlignYourSteps 스케쥴러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거"
+      },
+      "model_type": {
+        "name": "모델 유형"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "BasicGuider": {
+    "display_name": "기본 가이드",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "BasicScheduler": {
+    "display_name": "기본 스케줄러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scheduler": {
+        "name": "스케줄러"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "베타 샘플링 스케줄러",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "beta": {
+        "name": "베타"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "CFGGuider": {
+    "display_name": "CFG 가이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      }
+    }
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIP 어텐션 곱하기",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "k": {
+        "name": "k"
+      },
+      "out": {
+        "name": "아웃"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "CLIPLoader": {
+    "description": "[레시피]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "display_name": "CLIP 로드",
+    "inputs": {
+      "clip_name": {
+        "name": "클립 이름"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIP 병합 (더하기)",
+    "inputs": {
+      "clip1": {
+        "name": "클립1"
+      },
+      "clip2": {
+        "name": "클립2"
+      }
+    }
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIP 병합 (단순)",
+    "inputs": {
+      "clip1": {
+        "name": "클립1"
+      },
+      "clip2": {
+        "name": "클립2"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIP 병합 (빼기)",
+    "inputs": {
+      "clip1": {
+        "name": "클립1"
+      },
+      "clip2": {
+        "name": "클립2"
+      },
+      "multiplier": {
+        "name": "곱셈자"
+      }
+    }
+  },
+  "CLIPSave": {
+    "display_name": "CLIP 저장",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      }
+    }
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "CLIP 마지막 레이어 설정",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "stop_at_clip_layer": {
+        "name": "클립_레이어_중지"
+      }
+    }
+  },
+  "CLIPTextEncode": {
+    "description": "CLIP 모델을 사용하여 텍스트 프롬프트를 인코딩하여 확산 모델이 특정 이미지를 생성하도록 안내하는 임베딩으로 변환합니다.",
+    "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
+    "inputs": {
+      "clip": {
+        "name": "클립",
+        "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "인코딩할 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "확산 모델을 안내하는 데 사용되는 임베디드 텍스트를 포함하는 조건부입니다."
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIP 텍스트 인코딩 (컨트롤넷)",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "conditioning": {
+        "name": "조절"
+      },
+      "text": {
+        "name": "텍스트"
+      }
+    }
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIP 텍스트 인코딩 (FLUX)",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "clip_l": {
+        "name": "클립_l"
+      },
+      "guidance": {
+        "name": "지침"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIP 텍스트 인코딩 (HunyuanDiT)",
+    "inputs": {
+      "bert": {
+        "name": "bert"
+      },
+      "clip": {
+        "name": "클립"
+      },
+      "mt5xl": {
+        "name": "mt5xl"
+      }
+    }
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIP 텍스트 인코딩 (SD3)",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "clip_g": {
+        "name": "클립_g"
+      },
+      "clip_l": {
+        "name": "클립_l"
+      },
+      "empty_padding": {
+        "name": "빈_패딩"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIP 텍스트 인코딩 (SDXL)",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "crop_h": {
+        "name": "crop_h"
+      },
+      "crop_w": {
+        "name": "crop_w"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "target_height": {
+        "name": "목표_높이"
+      },
+      "target_width": {
+        "name": "목표_너비"
+      },
+      "text_g": {
+        "name": "텍스트_g"
+      },
+      "text_l": {
+        "name": "텍스트_l"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIP 텍스트 인코딩 (SDXL Refiner)",
+    "inputs": {
+      "ascore": {
+        "name": "ascore"
+      },
+      "clip": {
+        "name": "클립"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "텍스트"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIP 비전 인코딩",
+    "inputs": {
+      "clip_vision": {
+        "name": "클립_비전"
+      },
+      "crop": {
+        "name": "크롭"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "CLIPVisionLoader": {
+    "display_name": "CLIP 비전 로드",
+    "inputs": {
+      "clip_name": {
+        "name": "클립_이름"
+      }
+    }
+  },
+  "Canny": {
+    "display_name": "Canny 경계 필터",
+    "inputs": {
+      "high_threshold": {
+        "name": "높은 임계값"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "low_threshold": {
+        "name": "낮은 임계값"
+      }
+    }
+  },
+  "CheckpointLoader": {
+    "display_name": "구성으로 체크포인트 로드 (지원 중단)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt 이름"
+      },
+      "config_name": {
+        "name": "설정 이름"
+      }
+    }
+  },
+  "CheckpointLoaderSimple": {
+    "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
+    "display_name": "체크포인트 로드",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt 이름",
+        "tooltip": "로드할 체크포인트(모델)의 이름입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "노이즈 제거를 위한 잠재 모델입니다."
+      },
+      "1": {
+        "tooltip": "텍스트 프롬프트를 인코딩하는 데 사용되는 CLIP 모델입니다."
+      },
+      "2": {
+        "tooltip": "이미지를 잠재 공간으로 인코딩하고 디코딩하는 데 사용되는 VAE 모델입니다."
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "체크포인트 저장",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "CombineHooks2": {
+    "display_name": "후크 결합 [2]",
+    "inputs": {
+      "hooks_A": {
+        "name": "후크_A"
+      },
+      "hooks_B": {
+        "name": "후크_B"
+      }
+    }
+  },
+  "CombineHooks4": {
+    "display_name": "후크 결합 [4]",
+    "inputs": {
+      "hooks_A": {
+        "name": "후크_A"
+      },
+      "hooks_B": {
+        "name": "후크_B"
+      },
+      "hooks_C": {
+        "name": "후크_C"
+      },
+      "hooks_D": {
+        "name": "후크_D"
+      }
+    }
+  },
+  "CombineHooks8": {
+    "display_name": "후크 결합 [8]",
+    "inputs": {
+      "hooks_A": {
+        "name": "hooks_A"
+      },
+      "hooks_B": {
+        "name": "hooks_B"
+      },
+      "hooks_C": {
+        "name": "hooks_C"
+      },
+      "hooks_D": {
+        "name": "hooks_D"
+      },
+      "hooks_E": {
+        "name": "hooks_E"
+      },
+      "hooks_F": {
+        "name": "hooks_F"
+      },
+      "hooks_G": {
+        "name": "hooks_G"
+      },
+      "hooks_H": {
+        "name": "hooks_H"
+      }
+    }
+  },
+  "ConditioningAverage": {
+    "display_name": "조건 (평균)",
+    "inputs": {
+      "conditioning_from": {
+        "name": "조절_출처"
+      },
+      "conditioning_to": {
+        "name": "조절_대상"
+      },
+      "conditioning_to_strength": {
+        "name": "조절_대상_강도"
+      }
+    }
+  },
+  "ConditioningCombine": {
+    "display_name": "조건 (결합)",
+    "inputs": {
+      "conditioning_1": {
+        "name": "조절_1"
+      },
+      "conditioning_2": {
+        "name": "조절_2"
+      }
+    }
+  },
+  "ConditioningConcat": {
+    "display_name": "조건 (연결)",
+    "inputs": {
+      "conditioning_from": {
+        "name": "조절_출처"
+      },
+      "conditioning_to": {
+        "name": "조절_대상"
+      }
+    }
+  },
+  "ConditioningSetArea": {
+    "display_name": "조건 (영역 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "조건 (비율로 영역 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "조건 (영역 강도 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "조건 (기본 결합 설정)",
+    "inputs": {
+      "cond": {
+        "name": "조건"
+      },
+      "cond_DEFAULT": {
+        "name": "조건_기본"
+      },
+      "hooks": {
+        "name": "후크"
+      }
+    }
+  },
+  "ConditioningSetMask": {
+    "display_name": "조건 (마스크 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건_영역_설정"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ConditioningSetProperties": {
+    "display_name": "조건 (속성 설정)",
+    "inputs": {
+      "cond_NEW": {
+        "name": "조건_새로운"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건_영역_설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "시간단계"
+      }
+    }
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 (속성 설정 및 결합)",
+    "inputs": {
+      "cond": {
+        "name": "조건"
+      },
+      "cond_NEW": {
+        "name": "조건_새로운"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "set_cond_area": {
+        "name": "조건_영역_설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "시간단계"
+      }
+    }
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "조건 (타임스텝 범위 설정)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "end": {
+        "name": "끝"
+      },
+      "start": {
+        "name": "시작"
+      }
+    }
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "조건 (타임스텝 범위)",
+    "inputs": {
+      "end_percent": {
+        "name": "끝_퍼센트"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "범위_이전"
+      },
+      "2": {
+        "name": "범위_이후"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "조건 (제로 아웃)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      }
+    }
+  },
+  "ControlNetApply": {
+    "display_name": "컨트롤넷 적용 (구형)",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "control_net": {
+        "name": "컨트롤_넷"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "컨트롤넷 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤_넷"
+      },
+      "end_percent": {
+        "name": "끝_퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "컨트롤넷을 VAE와 함께 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤_넷"
+      },
+      "end_percent": {
+        "name": "끝_퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "컨트롤넷 인페인팅 AliMama 적용",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤_넷"
+      },
+      "end_percent": {
+        "name": "끝_퍼센트"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "컨트롤넷 모델 로드",
+    "inputs": {
+      "control_net_name": {
+        "name": "컨트롤_넷_이름"
+      }
+    }
+  },
+  "CreateHookKeyframe": {
+    "display_name": "후크 키프레임 생성",
+    "inputs": {
+      "prev_hook_kf": {
+        "name": "이전_후크_kf"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "strength_mult": {
+        "name": "강도_곱"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "부동 소수점으로 후크 키프레임 생성",
+    "inputs": {
+      "end_percent": {
+        "name": "끝_퍼센트"
+      },
+      "floats_strength": {
+        "name": "실수_강도"
+      },
+      "prev_hook_kf": {
+        "name": "이전_후크_kf"
+      },
+      "print_keyframes": {
+        "name": "프린트_키프레임"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "보간된 후크 키프레임 생성",
+    "inputs": {
+      "end_percent": {
+        "name": "종료_퍼센트"
+      },
+      "interpolation": {
+        "name": "보간"
+      },
+      "keyframes_count": {
+        "name": "키프레임_카운트"
+      },
+      "prev_hook_kf": {
+        "name": "이전_후크_kf"
+      },
+      "print_keyframes": {
+        "name": "키프레임_출력"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "strength_end": {
+        "name": "strength_end"
+      },
+      "strength_start": {
+        "name": "strength_start"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "후크_KF"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "후크 LoRA 생성",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_이름"
+      },
+      "prev_hooks": {
+        "name": "이전_후크"
+      },
+      "strength_clip": {
+        "name": "강도_클립"
+      },
+      "strength_model": {
+        "name": "강도_모델"
+      }
+    }
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "후크 LoRA 생성 (모델 전용)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_이름"
+      },
+      "prev_hooks": {
+        "name": "이전_후크"
+      },
+      "strength_model": {
+        "name": "강도_모델"
+      }
+    }
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "후크 모델을 LoRA로 생성",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_이름"
+      },
+      "prev_hooks": {
+        "name": "이전_후크"
+      },
+      "strength_clip": {
+        "name": "강도_클립"
+      },
+      "strength_model": {
+        "name": "강도_모델"
+      }
+    }
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "후크 모델을 LoRA로 생성 (모델 전용)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_이름"
+      },
+      "prev_hooks": {
+        "name": "이전_후크"
+      },
+      "strength_model": {
+        "name": "강도_모델"
+      }
+    }
+  },
+  "CropMask": {
+    "display_name": "마스크 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "DevToolsDeprecatedNode": {
+    "description": "지원 중단된 노드",
+    "display_name": "지원 중단된 노드"
+  },
+  "DevToolsErrorRaiseNode": {
+    "description": "개발 목적으로 오류를 발생시킵니다",
+    "display_name": "오류 발생"
+  },
+  "DevToolsErrorRaiseNodeWithMessage": {
+    "description": "개발 목적으로 메시지와 함께 오류를 발생시킵니다",
+    "display_name": "메시지와 함께 오류 발생",
+    "inputs": {
+      "message": {
+        "name": "메시지"
+      }
+    }
+  },
+  "DevToolsExperimentalNode": {
+    "description": "실험적 노드",
+    "display_name": "실험적 노드"
+  },
+  "DevToolsLongComboDropdown": {
+    "description": "긴 콤보 드롭다운",
+    "display_name": "긴 콤보 드롭다운",
+    "inputs": {
+      "option": {
+        "name": "옵션"
+      }
+    }
+  },
+  "DevToolsNodeWithForceInput": {
+    "description": "강제 입력이 있는 노드",
+    "display_name": "강제 입력이 있는 노드",
+    "inputs": {
+      "float_input": {
+        "name": "float_입력"
+      },
+      "int_input": {
+        "name": "int_입력"
+      },
+      "int_input_widget": {
+        "name": "int_입력_위젯"
+      }
+    }
+  },
+  "DevToolsNodeWithOnlyOptionalInput": {
+    "description": "선택적 입력만 있는 노드",
+    "display_name": "선택적 입력만 있는 노드",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "text": {
+        "name": "텍스트"
+      }
+    }
+  },
+  "DevToolsNodeWithOptionalInput": {
+    "description": "선택적 입력이 있는 노드",
+    "display_name": "선택적 입력이 있는 노드",
+    "inputs": {
+      "optional_input": {
+        "name": "선택적_입력"
+      },
+      "required_input": {
+        "name": "필수_입력"
+      }
+    }
+  },
+  "DevToolsNodeWithOutputList": {
+    "description": "출력 목록이 있는 노드",
+    "display_name": "출력 목록이 있는 노드",
+    "outputs": {
+      "0": {
+        "name": "정수 출력"
+      },
+      "1": {
+        "name": "정수 목록 출력"
+      }
+    }
+  },
+  "DevToolsNodeWithStringInput": {
+    "description": "문자열 입력이 있는 노드",
+    "display_name": "문자열 입력이 있는 노드",
+    "inputs": {
+      "string_input": {
+        "name": "문자열_입력"
+      }
+    }
+  },
+  "DevToolsNodeWithUnionInput": {
+    "description": "유니온 입력이 있는 노드",
+    "display_name": "유니온 입력이 있는 노드",
+    "inputs": {
+      "int_input": {
+        "name": "int_입력"
+      },
+      "string_input": {
+        "name": "문자열_입력"
+      },
+      "string_or_int_input": {
+        "name": "문자열_또는_int_입력"
+      }
+    }
+  },
+  "DiffControlNetLoader": {
+    "display_name": "컨트롤넷 모델 로드 (차이)",
+    "inputs": {
+      "control_net_name": {
+        "name": "control_net_이름"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "DifferentialDiffusion": {
+    "display_name": "차등 확산",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "DiffusersLoader": {
+    "display_name": "디퓨저 로더",
+    "inputs": {
+      "model_path": {
+        "name": "모델_경로"
+      }
+    }
+  },
+  "DisableNoise": {
+    "display_name": "노이즈 비활성화"
+  },
+  "DualCFGGuider": {
+    "display_name": "이중 CFG 가이드",
+    "inputs": {
+      "cfg_cond2_negative": {
+        "name": "cfg_cond2_negative"
+      },
+      "cfg_conds": {
+        "name": "cfg_conds"
+      },
+      "cond1": {
+        "name": "cond1"
+      },
+      "cond2": {
+        "name": "cond2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정적"
+      }
+    }
+  },
+  "DualCLIPLoader": {
+    "description": "[레시피]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "display_name": "이중 CLIP 로더",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "EmptyImage": {
+    "display_name": "빈 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "color": {
+        "name": "색"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "빈 LTXV 잠재 비디오",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptyLatentAudio": {
+    "display_name": "빈 잠재 오디오",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치의 잠재 이미지 수입니다."
+      },
+      "seconds": {
+        "name": "초"
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "샘플링을 통해 디노이즈할 빈 잠재 이미지의 새 배치를 생성합니다.",
+    "display_name": "빈 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치의 잠재 이미지 수입니다."
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "잠재 이미지의 높이(픽셀)입니다."
+      },
+      "width": {
+        "name": "너비",
+        "tooltip": "잠재 이미지의 너비(픽셀)입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "빈 잠재 이미지 배치입니다."
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "빈 Mochi 잠재 비디오",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "빈 SD3 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ExponentialScheduler": {
+    "display_name": "지수 스케줄러",
+    "inputs": {
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "FeatherMask": {
+    "display_name": "페더 마스크",
+    "inputs": {
+      "bottom": {
+        "name": "아래쪽"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "right": {
+        "name": "오른쪽"
+      },
+      "top": {
+        "name": "위쪽"
+      }
+    }
+  },
+  "FlipSigmas": {
+    "display_name": "시그마 뒤집기",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    }
+  },
+  "FluxGuidance": {
+    "display_name": "FLUX 가이드",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "guidance": {
+        "name": "지침"
+      }
+    }
+  },
+  "FreeU": {
+    "display_name": "FreeU",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU V2",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "GITSScheduler": {
+    "display_name": "GITS 스케줄러",
+    "inputs": {
+      "coeff": {
+        "name": "계수"
+      },
+      "denoise": {
+        "name": "노이즈 제거"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGEN 로더",
+    "inputs": {
+      "gligen_name": {
+        "name": "gligen_name"
+      }
+    }
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGEN 텍스트 박스 적용",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "conditioning_to": {
+        "name": "조절 대상"
+      },
+      "gligen_textbox_model": {
+        "name": "gligen_textbox_model"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "텍스트"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "GrowMask": {
+    "display_name": "마스크 확장",
+    "inputs": {
+      "expand": {
+        "name": "확장"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "tapered_corners": {
+        "name": "마름모 모서리"
+      }
+    }
+  },
+  "HyperTile": {
+    "display_name": "하이퍼 타일",
+    "inputs": {
+      "max_depth": {
+        "name": "최대 깊이"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale_depth": {
+        "name": "스케일 깊이"
+      },
+      "swap_size": {
+        "name": "스왑 크기"
+      },
+      "tile_size": {
+        "name": "타일 크기"
+      }
+    }
+  },
+  "HypernetworkLoader": {
+    "display_name": "하이퍼네트워크 로더",
+    "inputs": {
+      "hypernetwork_name": {
+        "name": "하이퍼네트워크 이름"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  },
+  "ImageBatch": {
+    "display_name": "이미지 배치",
+    "inputs": {
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      }
+    }
+  },
+  "ImageBlend": {
+    "display_name": "이미지 혼합",
+    "inputs": {
+      "blend_factor": {
+        "name": "블렌드 요소"
+      },
+      "blend_mode": {
+        "name": "블렌드 모드"
+      },
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      }
+    }
+  },
+  "ImageBlur": {
+    "display_name": "이미지 흐림",
+    "inputs": {
+      "blur_radius": {
+        "name": "블러 반경"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "ImageColorToMask": {
+    "display_name": "이미지 색상을 마스크로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageCompositeMasked": {
+    "display_name": "마스크된 이미지 합성",
+    "inputs": {
+      "destination": {
+        "name": "목적지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "resize_source": {
+        "name": "소스 크기 조정"
+      },
+      "source": {
+        "name": "소스"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageCrop": {
+    "display_name": "이미지 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageFromBatch": {
+    "display_name": "배치에서 이미지 가져오기",
+    "inputs": {
+      "batch_index": {
+        "name": "배치_인덱스"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "length": {
+        "name": "길이"
+      }
+    }
+  },
+  "ImageInvert": {
+    "display_name": "이미지 반전",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "이미지 전용 체크포인트 로더 (img2vid 모델)",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_이름"
+      }
+    }
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "이미지 전용 체크포인트 저장",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "아웃페인팅을 위한 이미지 패딩",
+    "inputs": {
+      "bottom": {
+        "name": "아래"
+      },
+      "feathering": {
+        "name": "깃털처리"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "left": {
+        "name": "왼쪽"
+      },
+      "right": {
+        "name": "오른쪽"
+      },
+      "top": {
+        "name": "위"
+      }
+    }
+  },
+  "ImageQuantize": {
+    "display_name": "이미지 양자화",
+    "inputs": {
+      "colors": {
+        "name": "색상"
+      },
+      "dither": {
+        "name": "디더링"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageScale": {
+    "display_name": "이미지 확대",
+    "inputs": {
+      "crop": {
+        "name": "자르기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "upscale_method": {
+        "name": "확대_방법"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ImageScaleBy": {
+    "display_name": "이미지 확대 비율",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "scale_by": {
+        "name": "확대_비율"
+      },
+      "upscale_method": {
+        "name": "확대_방법"
+      }
+    }
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "총 픽셀 수에 맞춰 이미지 크기 조정",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "megapixels": {
+        "name": "메가픽셀"
+      },
+      "upscale_method": {
+        "name": "확대_방법"
+      }
+    }
+  },
+  "ImageSharpen": {
+    "display_name": "이미지 선명화",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "sharpen_radius": {
+        "name": "선명도_반경"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "ImageToMask": {
+    "display_name": "이미지를 마스크로 변환",
+    "inputs": {
+      "channel": {
+        "name": "채널"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "모델을 사용한 이미지 확대",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "upscale_model": {
+        "name": "확대_모델"
+      }
+    }
+  },
+  "InpaintModelConditioning": {
+    "display_name": "인페인팅 모델 조건 설정",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "noise_mask": {
+        "name": "노이즈_마스크",
+        "tooltip": "잠재에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "픽셀 간 조건 설정",
+    "inputs": {
+      "negative": {
+        "name": "부정"
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "마스크 반전",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      }
+    }
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "알파와 함께 이미지 결합",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "KSampler": {
+    "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 이미지를 디노이즈합니다.",
+    "display_name": "KSampler",
+    "inputs": {
+      "cfg": {
+        "name": "cfg",
+        "tooltip": "Classifier-Free Guidance 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 값이 높을수록 프롬프트와 더 밀접하게 일치하는 이미지가 생성되지만, 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
+      },
+      "denoise": {
+        "name": "노이즈_제거",
+        "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
+      },
+      "latent_image": {
+        "name": "잠재_이미지",
+        "tooltip": "노이즈 제거할 잠재 이미지입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "입력 잠재의 노이즈 제거에 사용되는 모델입니다."
+      },
+      "negative": {
+        "name": "부정적",
+        "tooltip": "이미지에서 제외하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "positive": {
+        "name": "긍정적",
+        "tooltip": "이미지에 포함하고 싶은 속성을 설명하는 조건입니다."
+      },
+      "sampler_name": {
+        "name": "샘플러_이름",
+        "tooltip": "샘플링 시 사용되는 알고리즘으로, 생성된 출력의 품질, 속도 및 스타일에 영향을 미칠 수 있습니다."
+      },
+      "scheduler": {
+        "name": "스케줄러",
+        "tooltip": "스케줄러는 노이즈가 점진적으로 제거되어 이미지를 형성하는 방식을 제어합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      },
+      "steps": {
+        "name": "단계",
+        "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "노이즈가 제거된 잠재입니다."
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "고급 KSampler",
+    "inputs": {
+      "add_noise": {
+        "name": "노이즈_추가"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_at_step": {
+        "name": "종료_단계"
+      },
+      "latent_image": {
+        "name": "잠재_이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "noise_seed": {
+        "name": "노이즈_시드"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "return_with_leftover_noise": {
+        "name": "잔여_노이즈_반환"
+      },
+      "sampler_name": {
+        "name": "샘플러_이름"
+      },
+      "scheduler": {
+        "name": "스케줄러"
+      },
+      "start_at_step": {
+        "name": "시작_단계"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "KSamplerSelect": {
+    "display_name": "KSampler (선택)",
+    "inputs": {
+      "sampler_name": {
+        "name": "샘플러_이름"
+      }
+    }
+  },
+  "KarrasScheduler": {
+    "display_name": "Karras 스케줄러",
+    "inputs": {
+      "rho": {
+        "name": "로"
+      },
+      "sigma_max": {
+        "name": "시그마_최대"
+      },
+      "sigma_min": {
+        "name": "시그마_최소"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXV 조건 설정",
+    "inputs": {
+      "frame_rate": {
+        "name": "프레임_율"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXV 이미지에서 비디오로",
+    "inputs": {
+      "batch_size": {
+        "name": "배치_크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_noise_scale": {
+        "name": "이미지_노이즈_스케일",
+        "tooltip": "조건 이미지 잠재에 적용할 노이즈의 양입니다."
+      },
+      "length": {
+        "name": "길이"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXV 스케줄러",
+    "inputs": {
+      "base_shift": {
+        "name": "기본_이동"
+      },
+      "latent": {
+        "name": "잠재"
+      },
+      "max_shift": {
+        "name": "최대_이동"
+      },
+      "steps": {
+        "name": "단계"
+      },
+      "stretch": {
+        "name": "늘이기",
+        "tooltip": "시그마를 [terminal, 1] 범위로 늘립니다."
+      },
+      "terminal": {
+        "name": "터미널",
+        "tooltip": "늘린 후 시그마의 최종 값입니다."
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "라플라스 스케줄러",
+    "inputs": {
+      "beta": {
+        "name": "베타"
+      },
+      "mu": {
+        "name": "뮤"
+      },
+      "sigma_max": {
+        "name": "시그마_최대"
+      },
+      "sigma_min": {
+        "name": "시그마_최소"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "LatentAdd": {
+    "display_name": "잠재 데이터 연산 (더하기)",
+    "inputs": {
+      "samples1": {
+        "name": "샘플1"
+      },
+      "samples2": {
+        "name": "샘플2"
+      }
+    }
+  },
+  "LatentApplyOperation": {
+    "display_name": "잠재 데이터 연산 (연산 적용)",
+    "inputs": {
+      "operation": {
+        "name": "작업"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "operation": {
+        "name": "작업"
+      }
+    }
+  },
+  "LatentBatch": {
+    "display_name": "잠재 데이터 배치 연결",
+    "inputs": {
+      "samples1": {
+        "name": "샘플1"
+      },
+      "samples2": {
+        "name": "샘플2"
+      }
+    }
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "잠재 데이터 배치 시드 동작",
+    "inputs": {
+      "samples": {
+        "name": "샘플"
+      },
+      "seed_behavior": {
+        "name": "시드_행동"
+      }
+    }
+  },
+  "LatentBlend": {
+    "display_name": "잠재 데이터 연산 (혼합)",
+    "inputs": {
+      "blend_factor": {
+        "name": "블렌드_요소"
+      },
+      "samples1": {
+        "name": "샘플1"
+      },
+      "samples2": {
+        "name": "샘플2"
+      }
+    }
+  },
+  "LatentComposite": {
+    "display_name": "잠재 데이터 합성 (위치 기반)",
+    "inputs": {
+      "feather": {
+        "name": "깃털"
+      },
+      "samples_from": {
+        "name": "samples_from"
+      },
+      "samples_to": {
+        "name": "samples_to"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCompositeMasked": {
+    "display_name": "잠재 데이터 합성 (마스크 기반)",
+    "inputs": {
+      "destination": {
+        "name": "목적지"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "resize_source": {
+        "name": "소스_크기_조정"
+      },
+      "source": {
+        "name": "소스"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCrop": {
+    "display_name": "잠재 데이터 자르기",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "width": {
+        "name": "너비"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentFlip": {
+    "display_name": "잠재 데이터 연산 (뒤집기)",
+    "inputs": {
+      "flip_method": {
+        "name": "뒤집기_방법"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "LatentFromBatch": {
+    "display_name": "배치에서 잠재 데이터 가져오기",
+    "inputs": {
+      "batch_index": {
+        "name": "배치_인덱스"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "LatentInterpolate": {
+    "display_name": "잠재 데이터 연산 (보간)",
+    "inputs": {
+      "ratio": {
+        "name": "비율"
+      },
+      "samples1": {
+        "name": "샘플1"
+      },
+      "samples2": {
+        "name": "샘플2"
+      }
+    }
+  },
+  "LatentMultiply": {
+    "display_name": "잠재 데이터 연산 (곱하기)",
+    "inputs": {
+      "multiplier": {
+        "name": "곱셈자"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "LatentOperationSharpen": {
+    "display_name": "잠재 데이터 연산 (선명화)",
+    "inputs": {
+      "alpha": {
+        "name": "알파"
+      },
+      "sharpen_radius": {
+        "name": "선명도_반경"
+      },
+      "sigma": {
+        "name": "시그마"
+      }
+    }
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "잠재 데이터 연산 (톤맵 레인하르트)",
+    "inputs": {
+      "multiplier": {
+        "name": "곱셈자"
+      }
+    }
+  },
+  "LatentRotate": {
+    "display_name": "잠재 데이터 연산 (회전)",
+    "inputs": {
+      "rotation": {
+        "name": "회전"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "LatentSubtract": {
+    "display_name": "잠재 데이터 연산 (빼기)",
+    "inputs": {
+      "samples1": {
+        "name": "샘플1"
+      },
+      "samples2": {
+        "name": "샘플2"
+      }
+    }
+  },
+  "LatentUpscale": {
+    "display_name": "잠재 데이터 크기 조정",
+    "inputs": {
+      "crop": {
+        "name": "자르기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "upscale_method": {
+        "name": "업스케일_방법"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "LatentUpscaleBy": {
+    "display_name": "잠재 데이터 크기 배율 조정",
+    "inputs": {
+      "samples": {
+        "name": "샘플"
+      },
+      "scale_by": {
+        "name": "스케일_비율"
+      },
+      "upscale_method": {
+        "name": "업스케일_방법"
+      }
+    }
+  },
+  "LoadAudio": {
+    "display_name": "오디오 로드",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      }
+    }
+  },
+  "LoadImage": {
+    "display_name": "이미지 로드",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "LoadImageMask": {
+    "display_name": "마스크 이미지 로드",
+    "inputs": {
+      "channel": {
+        "name": "채널"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "LoadLatent": {
+    "display_name": "잠재 데이터 로드",
+    "inputs": {
+      "latent": {
+        "name": "잠재"
+      }
+    }
+  },
+  "LoraLoader": {
+    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "display_name": "LoRA 로드",
+    "inputs": {
+      "clip": {
+        "name": "클립",
+        "tooltip": "LoRA가 적용될 CLIP 모델입니다."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRA의 이름입니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      },
+      "strength_clip": {
+        "name": "강도_클립",
+        "tooltip": "CLIP 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+      },
+      "strength_model": {
+        "name": "강도_모델",
+        "tooltip": "확산 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      },
+      "1": {
+        "tooltip": "수정된 CLIP 모델입니다."
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "display_name": "LoRA 로드 (모델 전용)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "strength_model": {
+        "name": "강도_모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "LoRA 추출 및 저장",
+    "inputs": {
+      "bias_diff": {
+        "name": "편향_차이"
+      },
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "lora_type": {
+        "name": "lora_유형"
+      },
+      "model_diff": {
+        "name": "모델_차이",
+        "tooltip": "lora로 변환될 ModelSubtract 출력입니다."
+      },
+      "rank": {
+        "name": "순위"
+      },
+      "text_encoder_diff": {
+        "name": "텍스트_인코더_차이",
+        "tooltip": "lora로 변환될 CLIPSubtract 출력입니다."
+      }
+    }
+  },
+  "Mahiro": {
+    "description": "부정적인 프롬프트 사이의 차이보다는 긍정적인 프롬프트의 '방향'에 더 많이 확장하도록 안내를 수정합니다.",
+    "display_name": "Mahiro는 너무 귀여워서 더 나은 안내 기능을 받을 자격이 있습니다!! (。・ω・。)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "수정된_모델"
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "마스크 합성",
+    "inputs": {
+      "destination": {
+        "name": "목적지"
+      },
+      "operation": {
+        "name": "작업"
+      },
+      "source": {
+        "name": "소스"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "MaskToImage": {
+    "display_name": "마스크를 이미지로 변환",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      }
+    }
+  },
+  "ModelMergeAdd": {
+    "display_name": "모델 병합 (더하기)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      }
+    }
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "모델 병합 (AuraFlow)",
+    "inputs": {
+      "cond_seq_linear_": {
+        "name": "cond_seq_linear."
+      },
+      "double_layers_0_": {
+        "name": "double_layers.0."
+      },
+      "double_layers_1_": {
+        "name": "double_layers.1."
+      },
+      "double_layers_2_": {
+        "name": "double_layers.2."
+      },
+      "double_layers_3_": {
+        "name": "double_layers.3."
+      },
+      "final_linear_": {
+        "name": "final_linear."
+      },
+      "init_x_linear_": {
+        "name": "init_x_linear."
+      },
+      "modF_": {
+        "name": "modF."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "positional_encoding": {
+        "name": "위치 인코딩"
+      },
+      "register_tokens": {
+        "name": "토큰 등록"
+      },
+      "single_layers_0_": {
+        "name": "single_layers.0."
+      },
+      "single_layers_10_": {
+        "name": "single_layers.10."
+      },
+      "single_layers_11_": {
+        "name": "single_layers.11."
+      },
+      "single_layers_12_": {
+        "name": "single_layers.12."
+      },
+      "single_layers_13_": {
+        "name": "single_layers.13."
+      },
+      "single_layers_14_": {
+        "name": "single_layers.14."
+      },
+      "single_layers_15_": {
+        "name": "single_layers.15."
+      },
+      "single_layers_16_": {
+        "name": "single_layers.16."
+      },
+      "single_layers_17_": {
+        "name": "single_layers.17."
+      },
+      "single_layers_18_": {
+        "name": "single_layers.18."
+      },
+      "single_layers_19_": {
+        "name": "single_layers.19."
+      },
+      "single_layers_1_": {
+        "name": "single_layers.1."
+      },
+      "single_layers_20_": {
+        "name": "single_layers.20."
+      },
+      "single_layers_21_": {
+        "name": "single_layers.21."
+      },
+      "single_layers_22_": {
+        "name": "single_layers.22."
+      },
+      "single_layers_23_": {
+        "name": "single_layers.23."
+      },
+      "single_layers_24_": {
+        "name": "single_layers.24."
+      },
+      "single_layers_25_": {
+        "name": "single_layers.25."
+      },
+      "single_layers_26_": {
+        "name": "single_layers.26."
+      },
+      "single_layers_27_": {
+        "name": "single_layers.27."
+      },
+      "single_layers_28_": {
+        "name": "single_layers.28."
+      },
+      "single_layers_29_": {
+        "name": "single_layers.29."
+      },
+      "single_layers_2_": {
+        "name": "single_layers.2."
+      },
+      "single_layers_30_": {
+        "name": "single_layers.30."
+      },
+      "single_layers_31_": {
+        "name": "single_layers.31."
+      },
+      "single_layers_3_": {
+        "name": "single_layers.3."
+      },
+      "single_layers_4_": {
+        "name": "single_layers.4."
+      },
+      "single_layers_5_": {
+        "name": "single_layers.5."
+      },
+      "single_layers_6_": {
+        "name": "single_layers.6."
+      },
+      "single_layers_7_": {
+        "name": "single_layers.7."
+      },
+      "single_layers_8_": {
+        "name": "single_layers.8."
+      },
+      "single_layers_9_": {
+        "name": "single_layers.9."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
+  },
+  "ModelMergeBlocks": {
+    "display_name": "모델 병합 (블록)",
+    "inputs": {
+      "input": {
+        "name": "입력"
+      },
+      "middle": {
+        "name": "중간"
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out": {
+        "name": "출력"
+      }
+    }
+  },
+  "ModelMergeFlux1": {
+    "display_name": "모델 병합 (FLUX.1)",
+    "inputs": {
+      "double_blocks_0_": {
+        "name": "double_blocks.0."
+      },
+      "double_blocks_10_": {
+        "name": "double_blocks.10."
+      },
+      "double_blocks_11_": {
+        "name": "double_blocks.11."
+      },
+      "double_blocks_12_": {
+        "name": "double_blocks.12."
+      },
+      "double_blocks_13_": {
+        "name": "double_blocks.13."
+      },
+      "double_blocks_14_": {
+        "name": "double_blocks.14."
+      },
+      "double_blocks_15_": {
+        "name": "double_blocks.15."
+      },
+      "double_blocks_16_": {
+        "name": "double_blocks.16."
+      },
+      "double_blocks_17_": {
+        "name": "double_blocks.17."
+      },
+      "double_blocks_18_": {
+        "name": "double_blocks.18."
+      },
+      "double_blocks_1_": {
+        "name": "double_blocks.1."
+      },
+      "double_blocks_2_": {
+        "name": "double_blocks.2."
+      },
+      "double_blocks_3_": {
+        "name": "double_blocks.3."
+      },
+      "double_blocks_4_": {
+        "name": "double_blocks.4."
+      },
+      "double_blocks_5_": {
+        "name": "double_blocks.5."
+      },
+      "double_blocks_6_": {
+        "name": "double_blocks.6."
+      },
+      "double_blocks_7_": {
+        "name": "double_blocks.7."
+      },
+      "double_blocks_8_": {
+        "name": "double_blocks.8."
+      },
+      "double_blocks_9_": {
+        "name": "double_blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "guidance_in": {
+        "name": "guidance_in"
+      },
+      "img_in_": {
+        "name": "img_in."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "single_blocks_0_": {
+        "name": "single_blocks.0."
+      },
+      "single_blocks_10_": {
+        "name": "single_blocks.10."
+      },
+      "single_blocks_11_": {
+        "name": "single_blocks.11."
+      },
+      "single_blocks_12_": {
+        "name": "single_blocks.12."
+      },
+      "single_blocks_13_": {
+        "name": "single_blocks.13."
+      },
+      "single_blocks_14_": {
+        "name": "single_blocks.14."
+      },
+      "single_blocks_15_": {
+        "name": "single_blocks.15."
+      },
+      "single_blocks_16_": {
+        "name": "single_blocks.16."
+      },
+      "single_blocks_17_": {
+        "name": "single_blocks.17."
+      },
+      "single_blocks_18_": {
+        "name": "single_blocks.18."
+      },
+      "single_blocks_19_": {
+        "name": "single_blocks.19."
+      },
+      "single_blocks_1_": {
+        "name": "single_blocks.1."
+      },
+      "single_blocks_20_": {
+        "name": "single_blocks.20."
+      },
+      "single_blocks_21_": {
+        "name": "single_blocks.21."
+      },
+      "single_blocks_22_": {
+        "name": "single_blocks.22."
+      },
+      "single_blocks_23_": {
+        "name": "single_blocks.23."
+      },
+      "single_blocks_24_": {
+        "name": "single_blocks.24."
+      },
+      "single_blocks_25_": {
+        "name": "single_blocks.25."
+      },
+      "single_blocks_26_": {
+        "name": "single_blocks.26."
+      },
+      "single_blocks_27_": {
+        "name": "single_blocks.27."
+      },
+      "single_blocks_28_": {
+        "name": "single_blocks.28."
+      },
+      "single_blocks_29_": {
+        "name": "single_blocks.29."
+      },
+      "single_blocks_2_": {
+        "name": "single_blocks.2."
+      },
+      "single_blocks_30_": {
+        "name": "single_blocks.30."
+      },
+      "single_blocks_31_": {
+        "name": "single_blocks.31."
+      },
+      "single_blocks_32_": {
+        "name": "single_blocks.32."
+      },
+      "single_blocks_33_": {
+        "name": "single_blocks.33."
+      },
+      "single_blocks_34_": {
+        "name": "single_blocks.34."
+      },
+      "single_blocks_35_": {
+        "name": "single_blocks.35."
+      },
+      "single_blocks_36_": {
+        "name": "single_blocks.36."
+      },
+      "single_blocks_37_": {
+        "name": "single_blocks.37."
+      },
+      "single_blocks_3_": {
+        "name": "single_blocks.3."
+      },
+      "single_blocks_4_": {
+        "name": "single_blocks.4."
+      },
+      "single_blocks_5_": {
+        "name": "single_blocks.5."
+      },
+      "single_blocks_6_": {
+        "name": "single_blocks.6."
+      },
+      "single_blocks_7_": {
+        "name": "single_blocks.7."
+      },
+      "single_blocks_8_": {
+        "name": "single_blocks.8."
+      },
+      "single_blocks_9_": {
+        "name": "single_blocks.9."
+      },
+      "time_in_": {
+        "name": "time_in."
+      },
+      "txt_in_": {
+        "name": "txt_in."
+      },
+      "vector_in_": {
+        "name": "vector_in."
+      }
+    }
+  },
+  "ModelMergeLTXV": {
+    "display_name": "모델 병합 LTXV",
+    "inputs": {
+      "adaln_single_": {
+        "name": "adaln_single."
+      },
+      "caption_projection_": {
+        "name": "caption_projection."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "patchify_proj_": {
+        "name": "patchify_proj."
+      },
+      "proj_out_": {
+        "name": "proj_out."
+      },
+      "scale_shift_table": {
+        "name": "scale_shift_table"
+      },
+      "transformer_blocks_0_": {
+        "name": "transformer_blocks.0."
+      },
+      "transformer_blocks_10_": {
+        "name": "transformer_blocks.10."
+      },
+      "transformer_blocks_11_": {
+        "name": "transformer_blocks.11."
+      },
+      "transformer_blocks_12_": {
+        "name": "transformer_blocks.12."
+      },
+      "transformer_blocks_13_": {
+        "name": "transformer_blocks.13."
+      },
+      "transformer_blocks_14_": {
+        "name": "transformer_blocks.14."
+      },
+      "transformer_blocks_15_": {
+        "name": "transformer_blocks.15."
+      },
+      "transformer_blocks_16_": {
+        "name": "transformer_blocks.16."
+      },
+      "transformer_blocks_17_": {
+        "name": "transformer_blocks.17."
+      },
+      "transformer_blocks_18_": {
+        "name": "transformer_blocks.18."
+      },
+      "transformer_blocks_19_": {
+        "name": "transformer_blocks.19."
+      },
+      "transformer_blocks_1_": {
+        "name": "transformer_blocks.1."
+      },
+      "transformer_blocks_20_": {
+        "name": "transformer_blocks.20."
+      },
+      "transformer_blocks_21_": {
+        "name": "transformer_blocks.21."
+      },
+      "transformer_blocks_22_": {
+        "name": "transformer_blocks.22."
+      },
+      "transformer_blocks_23_": {
+        "name": "transformer_blocks.23."
+      },
+      "transformer_blocks_24_": {
+        "name": "transformer_blocks.24."
+      },
+      "transformer_blocks_25_": {
+        "name": "transformer_blocks.25."
+      },
+      "transformer_blocks_26_": {
+        "name": "transformer_blocks.26."
+      },
+      "transformer_blocks_27_": {
+        "name": "transformer_blocks.27."
+      },
+      "transformer_blocks_2_": {
+        "name": "transformer_blocks.2."
+      },
+      "transformer_blocks_3_": {
+        "name": "transformer_blocks.3."
+      },
+      "transformer_blocks_4_": {
+        "name": "transformer_blocks.4."
+      },
+      "transformer_blocks_5_": {
+        "name": "transformer_blocks.5."
+      },
+      "transformer_blocks_6_": {
+        "name": "transformer_blocks.6."
+      },
+      "transformer_blocks_7_": {
+        "name": "transformer_blocks.7."
+      },
+      "transformer_blocks_8_": {
+        "name": "transformer_blocks.8."
+      },
+      "transformer_blocks_9_": {
+        "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "모델 병합 (Mochi 프리뷰)",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_frequencies_": {
+        "name": "pos_frequencies."
+      },
+      "t5_y_embedder_": {
+        "name": "t5_y_embedder."
+      },
+      "t5_yproj_": {
+        "name": "t5_yproj."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
+  },
+  "ModelMergeSD1": {
+    "display_name": "모델 병합 (SD1)",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "입력_블록.0."
+      },
+      "input_blocks_10_": {
+        "name": "입력_블록.10."
+      },
+      "input_blocks_11_": {
+        "name": "입력_블록.11."
+      },
+      "input_blocks_1_": {
+        "name": "입력_블록.1."
+      },
+      "input_blocks_2_": {
+        "name": "입력_블록.2."
+      },
+      "input_blocks_3_": {
+        "name": "입력_블록.3."
+      },
+      "input_blocks_4_": {
+        "name": "입력_블록.4."
+      },
+      "input_blocks_5_": {
+        "name": "입력_블록.5."
+      },
+      "input_blocks_6_": {
+        "name": "입력_블록.6."
+      },
+      "input_blocks_7_": {
+        "name": "입력_블록.7."
+      },
+      "input_blocks_8_": {
+        "name": "입력_블록.8."
+      },
+      "input_blocks_9_": {
+        "name": "입력_블록.9."
+      },
+      "label_emb_": {
+        "name": "레이블_임베드."
+      },
+      "middle_block_0_": {
+        "name": "중간_블록.0."
+      },
+      "middle_block_1_": {
+        "name": "중간_블록.1."
+      },
+      "middle_block_2_": {
+        "name": "중간_블록.2."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "아웃."
+      },
+      "output_blocks_0_": {
+        "name": "출력_블록.0."
+      },
+      "output_blocks_10_": {
+        "name": "출력_블록.10."
+      },
+      "output_blocks_11_": {
+        "name": "출력_블록.11."
+      },
+      "output_blocks_1_": {
+        "name": "출력_블록.1."
+      },
+      "output_blocks_2_": {
+        "name": "출력_블록.2."
+      },
+      "output_blocks_3_": {
+        "name": "출력_블록.3."
+      },
+      "output_blocks_4_": {
+        "name": "출력_블록.4."
+      },
+      "output_blocks_5_": {
+        "name": "출력_블록.5."
+      },
+      "output_blocks_6_": {
+        "name": "출력_블록.6."
+      },
+      "output_blocks_7_": {
+        "name": "출력_블록.7."
+      },
+      "output_blocks_8_": {
+        "name": "출력_블록.8."
+      },
+      "output_blocks_9_": {
+        "name": "출력_블록.9."
+      },
+      "time_embed_": {
+        "name": "시간_임베드."
+      }
+    }
+  },
+  "ModelMergeSD2": {
+    "display_name": "모델 병합 (SD2)",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "입력_블록.0."
+      },
+      "input_blocks_10_": {
+        "name": "입력_블록.10."
+      },
+      "input_blocks_11_": {
+        "name": "입력_블록.11."
+      },
+      "input_blocks_1_": {
+        "name": "입력_블록.1."
+      },
+      "input_blocks_2_": {
+        "name": "입력_블록.2."
+      },
+      "input_blocks_3_": {
+        "name": "입력_블록.3."
+      },
+      "input_blocks_4_": {
+        "name": "입력_블록.4."
+      },
+      "input_blocks_5_": {
+        "name": "입력_블록.5."
+      },
+      "input_blocks_6_": {
+        "name": "입력_블록.6."
+      },
+      "input_blocks_7_": {
+        "name": "입력_블록.7."
+      },
+      "input_blocks_8_": {
+        "name": "입력_블록.8."
+      },
+      "input_blocks_9_": {
+        "name": "입력_블록.9."
+      },
+      "label_emb_": {
+        "name": "레이블_임베드."
+      },
+      "middle_block_0_": {
+        "name": "중간_블록.0."
+      },
+      "middle_block_1_": {
+        "name": "중간_블록.1."
+      },
+      "middle_block_2_": {
+        "name": "중간_블록.2."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "아웃."
+      },
+      "output_blocks_0_": {
+        "name": "출력_블록.0."
+      },
+      "output_blocks_10_": {
+        "name": "출력_블록.10."
+      },
+      "output_blocks_11_": {
+        "name": "출력_블록.11."
+      },
+      "output_blocks_1_": {
+        "name": "출력_블록.1."
+      },
+      "output_blocks_2_": {
+        "name": "출력_블록.2."
+      },
+      "output_blocks_3_": {
+        "name": "출력_블록.3."
+      },
+      "output_blocks_4_": {
+        "name": "출력_블록.4."
+      },
+      "output_blocks_5_": {
+        "name": "출력_블록.5."
+      },
+      "output_blocks_6_": {
+        "name": "출력_블록.6."
+      },
+      "output_blocks_7_": {
+        "name": "출력_블록.7."
+      },
+      "output_blocks_8_": {
+        "name": "출력_블록.8."
+      },
+      "output_blocks_9_": {
+        "name": "출력_블록.9."
+      },
+      "time_embed_": {
+        "name": "시간_임베드."
+      }
+    }
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "모델 병합 (SD35 Large)",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_24_": {
+        "name": "joint_blocks.24."
+      },
+      "joint_blocks_25_": {
+        "name": "joint_blocks.25."
+      },
+      "joint_blocks_26_": {
+        "name": "joint_blocks.26."
+      },
+      "joint_blocks_27_": {
+        "name": "joint_blocks.27."
+      },
+      "joint_blocks_28_": {
+        "name": "joint_blocks.28."
+      },
+      "joint_blocks_29_": {
+        "name": "joint_blocks.29."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_30_": {
+        "name": "joint_blocks.30."
+      },
+      "joint_blocks_31_": {
+        "name": "joint_blocks.31."
+      },
+      "joint_blocks_32_": {
+        "name": "joint_blocks.32."
+      },
+      "joint_blocks_33_": {
+        "name": "joint_blocks.33."
+      },
+      "joint_blocks_34_": {
+        "name": "joint_blocks.34."
+      },
+      "joint_blocks_35_": {
+        "name": "joint_blocks.35."
+      },
+      "joint_blocks_36_": {
+        "name": "joint_blocks.36."
+      },
+      "joint_blocks_37_": {
+        "name": "joint_blocks.37."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "모델 병합 (SD3 2B)",
+    "inputs": {
+      "context_embedder_": {
+        "name": "context_embedder."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "joint_blocks_0_": {
+        "name": "joint_blocks.0."
+      },
+      "joint_blocks_10_": {
+        "name": "joint_blocks.10."
+      },
+      "joint_blocks_11_": {
+        "name": "joint_blocks.11."
+      },
+      "joint_blocks_12_": {
+        "name": "joint_blocks.12."
+      },
+      "joint_blocks_13_": {
+        "name": "joint_blocks.13."
+      },
+      "joint_blocks_14_": {
+        "name": "joint_blocks.14."
+      },
+      "joint_blocks_15_": {
+        "name": "joint_blocks.15."
+      },
+      "joint_blocks_16_": {
+        "name": "joint_blocks.16."
+      },
+      "joint_blocks_17_": {
+        "name": "joint_blocks.17."
+      },
+      "joint_blocks_18_": {
+        "name": "joint_blocks.18."
+      },
+      "joint_blocks_19_": {
+        "name": "joint_blocks.19."
+      },
+      "joint_blocks_1_": {
+        "name": "joint_blocks.1."
+      },
+      "joint_blocks_20_": {
+        "name": "joint_blocks.20."
+      },
+      "joint_blocks_21_": {
+        "name": "joint_blocks.21."
+      },
+      "joint_blocks_22_": {
+        "name": "joint_blocks.22."
+      },
+      "joint_blocks_23_": {
+        "name": "joint_blocks.23."
+      },
+      "joint_blocks_2_": {
+        "name": "joint_blocks.2."
+      },
+      "joint_blocks_3_": {
+        "name": "joint_blocks.3."
+      },
+      "joint_blocks_4_": {
+        "name": "joint_blocks.4."
+      },
+      "joint_blocks_5_": {
+        "name": "joint_blocks.5."
+      },
+      "joint_blocks_6_": {
+        "name": "joint_blocks.6."
+      },
+      "joint_blocks_7_": {
+        "name": "joint_blocks.7."
+      },
+      "joint_blocks_8_": {
+        "name": "joint_blocks.8."
+      },
+      "joint_blocks_9_": {
+        "name": "joint_blocks.9."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "pos_embed_": {
+        "name": "pos_embed."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      },
+      "x_embedder_": {
+        "name": "x_embedder."
+      },
+      "y_embedder_": {
+        "name": "y_embedder."
+      }
+    }
+  },
+  "ModelMergeSDXL": {
+    "display_name": "모델 병합 (SDXL)",
+    "inputs": {
+      "input_blocks_0": {
+        "name": "input_blocks.0"
+      },
+      "input_blocks_1": {
+        "name": "input_blocks.1"
+      },
+      "input_blocks_2": {
+        "name": "input_blocks.2"
+      },
+      "input_blocks_3": {
+        "name": "input_blocks.3"
+      },
+      "input_blocks_4": {
+        "name": "input_blocks.4"
+      },
+      "input_blocks_5": {
+        "name": "input_blocks.5"
+      },
+      "input_blocks_6": {
+        "name": "input_blocks.6"
+      },
+      "input_blocks_7": {
+        "name": "input_blocks.7"
+      },
+      "input_blocks_8": {
+        "name": "input_blocks.8"
+      },
+      "label_emb_": {
+        "name": "label_emb."
+      },
+      "middle_block_0": {
+        "name": "middle_block.0"
+      },
+      "middle_block_1": {
+        "name": "middle_block.1"
+      },
+      "middle_block_2": {
+        "name": "middle_block.2"
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "out_": {
+        "name": "out."
+      },
+      "output_blocks_0": {
+        "name": "output_blocks.0"
+      },
+      "output_blocks_1": {
+        "name": "output_blocks.1"
+      },
+      "output_blocks_2": {
+        "name": "output_blocks.2"
+      },
+      "output_blocks_3": {
+        "name": "output_blocks.3"
+      },
+      "output_blocks_4": {
+        "name": "output_blocks.4"
+      },
+      "output_blocks_5": {
+        "name": "output_blocks.5"
+      },
+      "output_blocks_6": {
+        "name": "output_blocks.6"
+      },
+      "output_blocks_7": {
+        "name": "output_blocks.7"
+      },
+      "output_blocks_8": {
+        "name": "output_blocks.8"
+      },
+      "time_embed_": {
+        "name": "time_embed."
+      }
+    }
+  },
+  "ModelMergeSimple": {
+    "display_name": "모델 병합 (단순)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "ModelMergeSubtract": {
+    "display_name": "모델 병합 (빼기)",
+    "inputs": {
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "multiplier": {
+        "name": "곱셈자"
+      }
+    }
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "모델 샘플링 (AuraFlow)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "모델 샘플링 (연속 EDM)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "모델 샘플링 (연속 V)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      }
+    }
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "모델 샘플링 (이산)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "sampling": {
+        "name": "샘플링"
+      },
+      "zsnr": {
+        "name": "zsnr"
+      }
+    }
+  },
+  "ModelSamplingFlux": {
+    "display_name": "모델 샘플링 (FLUX)",
+    "inputs": {
+      "base_shift": {
+        "name": "기본_시프트"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "max_shift": {
+        "name": "최대_시프트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "모델 샘플링 (LTXV)",
+    "inputs": {
+      "base_shift": {
+        "name": "기본_시프트"
+      },
+      "latent": {
+        "name": "잠재"
+      },
+      "max_shift": {
+        "name": "최대_시프트"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "ModelSamplingSD3": {
+    "display_name": "모델 샘플링 (SD3)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "모델 샘플링 (StableCascade)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "shift": {
+        "name": "시프트"
+      }
+    }
+  },
+  "ModelSave": {
+    "display_name": "모델 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "Morphology": {
+    "display_name": "이미지 형태 변환",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "kernel_size": {
+        "name": "커널_크기"
+      },
+      "operation": {
+        "name": "작업"
+      }
+    }
+  },
+  "PairConditioningCombine": {
+    "display_name": "조건 쌍 (결합)",
+    "inputs": {
+      "negative_A": {
+        "name": "부정적_A"
+      },
+      "negative_B": {
+        "name": "부정적_B"
+      },
+      "positive_A": {
+        "name": "긍정적_A"
+      },
+      "positive_B": {
+        "name": "긍정적_B"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "조건 쌍 (기본 결합 설정)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "negative_DEFAULT": {
+        "name": "부정적_기본"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "positive_DEFAULT": {
+        "name": "긍정적_기본"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "조건 쌍 (속성 설정)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative_NEW": {
+        "name": "부정적_새로운"
+      },
+      "positive_NEW": {
+        "name": "긍정적_새로운"
+      },
+      "set_cond_area": {
+        "name": "조건_영역_설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "시간단계"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "조건 쌍 (속성 설정 및 결합)",
+    "inputs": {
+      "hooks": {
+        "name": "후크"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "negative_NEW": {
+        "name": "부정적_새로운"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "positive_NEW": {
+        "name": "긍정적_새로운"
+      },
+      "set_cond_area": {
+        "name": "조건_영역_설정"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "timesteps": {
+        "name": "시간단계"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)",
+    "inputs": {
+      "block_number": {
+        "name": "블록_번호"
+      },
+      "downscale_after_skip": {
+        "name": "스킵_후_다운스케일"
+      },
+      "downscale_factor": {
+        "name": "다운스케일_계수"
+      },
+      "downscale_method": {
+        "name": "다운스케일_방법"
+      },
+      "end_percent": {
+        "name": "종료_퍼센트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      },
+      "upscale_method": {
+        "name": "업스케일_방법"
+      }
+    }
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg (PerpNegGuider에 의해 지원 중단됨)",
+    "inputs": {
+      "empty_conditioning": {
+        "name": "빈_조절"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "neg_scale": {
+        "name": "neg_scale"
+      }
+    }
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNeg 가이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "empty_conditioning": {
+        "name": "빈_조절"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "neg_scale": {
+        "name": "neg_scale"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      }
+    }
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "교란 어텐션 유도 (PAG)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "스케일"
+      }
+    }
+  },
+  "PhotoMakerEncode": {
+    "display_name": "포토메이커 인코딩",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "photomaker": {
+        "name": "photomaker"
+      },
+      "text": {
+        "name": "텍스트"
+      }
+    }
+  },
+  "PhotoMakerLoader": {
+    "display_name": "포토메이커 로더",
+    "inputs": {
+      "photomaker_model_name": {
+        "name": "photomaker_모델_이름"
+      }
+    }
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "다항 지수 스케줄러",
+    "inputs": {
+      "rho": {
+        "name": "rho"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "포터-더프 이미지 합성",
+    "inputs": {
+      "destination": {
+        "name": "목적지"
+      },
+      "destination_alpha": {
+        "name": "목적지_알파"
+      },
+      "mode": {
+        "name": "모드"
+      },
+      "source": {
+        "name": "소스"
+      },
+      "source_alpha": {
+        "name": "소스_알파"
+      }
+    }
+  },
+  "PreviewAudio": {
+    "display_name": "오디오 미리듣기",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      }
+    }
+  },
+  "PreviewImage": {
+    "description": "입력 이미지를 ComfyUI 의 임시(temp) 폴더에 저장합니다.",
+    "display_name": "이미지 미리보기",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RandomNoise": {
+    "display_name": "무작위 노이즈",
+    "inputs": {
+      "noise_seed": {
+        "name": "노이즈_시드"
+      }
+    }
+  },
+  "RebatchImages": {
+    "display_name": "이미지 배치 재배치",
+    "inputs": {
+      "batch_size": {
+        "name": "배치_크기"
+      },
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RebatchLatents": {
+    "display_name": "잠재 데이터 배치 재배치",
+    "inputs": {
+      "batch_size": {
+        "name": "배치_크기"
+      },
+      "latents": {
+        "name": "잠재변수"
+      }
+    }
+  },
+  "RepeatImageBatch": {
+    "display_name": "이미지 반복 배치 생성",
+    "inputs": {
+      "amount": {
+        "name": "양"
+      },
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "RepeatLatentBatch": {
+    "display_name": "잠재 데이터 반복 배치 생성",
+    "inputs": {
+      "amount": {
+        "name": "양"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "RescaleCFG": {
+    "display_name": "CFG 리스케일",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "multiplier": {
+        "name": "곱셈기"
+      }
+    }
+  },
+  "SDTurboScheduler": {
+    "display_name": "SD-Turbo 스케줄러",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈_제거"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4X 확대 조건 설정",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "noise_augmentation": {
+        "name": "노이즈_증가"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "scale_ratio": {
+        "name": "스케일_비율"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D 조건 설정",
+    "inputs": {
+      "clip_vision": {
+        "name": "클립 비전"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "비디오 프레임"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD_img2vid 조건 설정",
+    "inputs": {
+      "augmentation_level": {
+        "name": "증강 레벨"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "init_image"
+      },
+      "motion_bucket_id": {
+        "name": "모션 버킷 아이디"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "비디오 프레임"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "사용자 정의 샘플러",
+    "inputs": {
+      "add_noise": {
+        "name": "노이즈_추가"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "latent_image": {
+        "name": "잠재_이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "negative": {
+        "name": "부정적"
+      },
+      "noise_seed": {
+        "name": "노이즈_시드"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "sampler": {
+        "name": "샘플러"
+      },
+      "sigmas": {
+        "name": "시그마"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "고급 사용자 정의 샘플러",
+    "inputs": {
+      "guider": {
+        "name": "가이더"
+      },
+      "latent_image": {
+        "name": "잠재 이미지"
+      },
+      "noise": {
+        "name": "노이즈"
+      },
+      "sampler": {
+        "name": "샘플러"
+      },
+      "sigmas": {
+        "name": "시그마"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력"
+      },
+      "1": {
+        "name": "노이즈 제거된 출력"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "DPMAdaptive 샘플러",
+    "inputs": {
+      "accept_safety": {
+        "name": "수용 안전성"
+      },
+      "atol": {
+        "name": "atol"
+      },
+      "dcoeff": {
+        "name": "dcoeff"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "h_init": {
+        "name": "h_init"
+      },
+      "icoeff": {
+        "name": "icoeff"
+      },
+      "order": {
+        "name": "순서"
+      },
+      "pcoeff": {
+        "name": "pcoeff"
+      },
+      "rtol": {
+        "name": "rtol"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "DPMPP_2M_SDE 샘플러러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 장치"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      },
+      "solver_type": {
+        "name": "솔버 유형"
+      }
+    }
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "DPMPP_2S_Ancestral 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "DPMPP_3M_SDE 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 장치"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "DPMPP_SDE 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "노이즈 장치"
+      },
+      "r": {
+        "name": "r"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "Eluer Ancestral 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "Eluer Acnestral CFG++ 샘플러",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s_noise"
+      }
+    }
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "Eluer CFG++ 샘플러",
+    "inputs": {
+      "version": {
+        "name": "버전"
+      }
+    }
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "LCM 확대 샘플러",
+    "inputs": {
+      "scale_ratio": {
+        "name": "스케일 비율"
+      },
+      "scale_steps": {
+        "name": "스케일 단계"
+      },
+      "upscale_method": {
+        "name": "업스케일 방법"
+      }
+    }
+  },
+  "SamplerLMS": {
+    "display_name": "LMS 샘플러",
+    "inputs": {
+      "order": {
+        "name": "순서"
+      }
+    }
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "애니메이션 PNG 저장",
+    "inputs": {
+      "compress_level": {
+        "name": "압축 레벨"
+      },
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "애니메이션 WEBP 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명 접두사"
+      },
+      "fps": {
+        "name": "fps"
+      },
+      "images": {
+        "name": "이미지"
+      },
+      "lossless": {
+        "name": "손실 없음"
+      },
+      "method": {
+        "name": "방법"
+      },
+      "quality": {
+        "name": "품질"
+      }
+    }
+  },
+  "SaveAudio": {
+    "display_name": "오디오 저장",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      }
+    }
+  },
+  "SaveImage": {
+    "description": "입력 이미지를 ComfyUI 출력 디렉토리에 저장합니다.",
+    "display_name": "이미지 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명_접두사",
+        "tooltip": "저장할 파일의 접두사입니다. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "저장할 이미지입니다."
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "이미지 웹소켓 전송",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SaveLatent": {
+    "display_name": "잠재 데이터 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "셀프 어텐션 가이드",
+    "inputs": {
+      "blur_sigma": {
+        "name": "블러_시그마"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "스케일"
+      }
+    }
+  },
+  "SetClipHooks": {
+    "display_name": "CLIP 후크 설정",
+    "inputs": {
+      "apply_to_conds": {
+        "name": "조건에_적용"
+      },
+      "clip": {
+        "name": "클립"
+      },
+      "hooks": {
+        "name": "후크"
+      },
+      "schedule_clip": {
+        "name": "스케줄_클립"
+      }
+    }
+  },
+  "SetHookKeyframes": {
+    "display_name": "후크 키프레임 설정",
+    "inputs": {
+      "hook_kf": {
+        "name": "후크_kf"
+      },
+      "hooks": {
+        "name": "후크"
+      }
+    }
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "잠재 데이터에 노이즈 마스크 설정",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "samples": {
+        "name": "샘플"
+      }
+    }
+  },
+  "SetUnionControlNetType": {
+    "display_name": "통합 컨트롤넷 유형 설정",
+    "inputs": {
+      "control_net": {
+        "name": "컨트롤_넷"
+      },
+      "type": {
+        "name": "유형"
+      }
+    }
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
+    "display_name": "SkipLayerGuidanceDiT",
+    "inputs": {
+      "double_layers": {
+        "name": "이중_레이어"
+      },
+      "end_percent": {
+        "name": "종료_퍼센트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "rescaling_scale": {
+        "name": "재조정_스케일"
+      },
+      "scale": {
+        "name": "스케일"
+      },
+      "single_layers": {
+        "name": "단일_레이어"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      }
+    }
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
+    "display_name": "SkipLayerGuidanceSD3",
+    "inputs": {
+      "end_percent": {
+        "name": "종료_퍼센트"
+      },
+      "layers": {
+        "name": "레이어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "scale": {
+        "name": "스케일"
+      },
+      "start_percent": {
+        "name": "시작_퍼센트"
+      }
+    }
+  },
+  "SolidMask": {
+    "display_name": "단색 마스크",
+    "inputs": {
+      "height": {
+        "name": "높이"
+      },
+      "value": {
+        "name": "값"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "이미지와 알파채널 분리",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    }
+  },
+  "SplitSigmas": {
+    "display_name": "시그마 분할 (스텝형)",
+    "inputs": {
+      "sigmas": {
+        "name": "시그마"
+      },
+      "step": {
+        "name": "단계"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "높은_시그마"
+      },
+      "1": {
+        "name": "낮은_시그마"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "시그마 분할 (디노이즈형)",
+    "inputs": {
+      "denoise": {
+        "name": "노이즈 제거"
+      },
+      "sigmas": {
+        "name": "시그마"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "높은_시그마"
+      },
+      "1": {
+        "name": "낮은_시그마"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "StableCascade 빈 잠재 이미지",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "compression": {
+        "name": "압축"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "단계_c"
+      },
+      "1": {
+        "name": "단계_b"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "StableCascasde_StageB 조건 설정",
+    "inputs": {
+      "conditioning": {
+        "name": "조절"
+      },
+      "stage_c": {
+        "name": "스테이지_c"
+      }
+    }
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "StableCascade_StageC VAE 인코딩",
+    "inputs": {
+      "compression": {
+        "name": "압축"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "단계_c"
+      },
+      "1": {
+        "name": "단계_b"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "StableCascade 초고해상도 컨트롤넷",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "controlnet_input"
+      },
+      "1": {
+        "name": "단계_c"
+      },
+      "2": {
+        "name": "단계_b"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "StableZero123 조건 설정",
+    "inputs": {
+      "azimuth": {
+        "name": "방위각"
+      },
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision": {
+        "name": "클립 비전"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "StableZero123 조건 설정_배치",
+    "inputs": {
+      "azimuth": {
+        "name": "방위각"
+      },
+      "azimuth_batch_increment": {
+        "name": "방위각 배치 증가"
+      },
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "clip_vision": {
+        "name": "클립 비전"
+      },
+      "elevation": {
+        "name": "고도"
+      },
+      "elevation_batch_increment": {
+        "name": "고도 배치 증가"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "init_image": {
+        "name": "초기 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "양성"
+      },
+      "1": {
+        "name": "음성"
+      },
+      "2": {
+        "name": "잠재"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "스타일 모델 적용",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "클립 비전 출력"
+      },
+      "conditioning": {
+        "name": "조절"
+      },
+      "strength": {
+        "name": "강도"
+      },
+      "strength_type": {
+        "name": "강도 유형"
+      },
+      "style_model": {
+        "name": "스타일 모델"
+      }
+    }
+  },
+  "StyleModelLoader": {
+    "display_name": "스타일 모델 로드",
+    "inputs": {
+      "style_model_name": {
+        "name": "스타일 모델 이름"
+      }
+    }
+  },
+  "ThresholdMask": {
+    "display_name": "임계값 마스크",
+    "inputs": {
+      "mask": {
+        "name": "마스크"
+      },
+      "value": {
+        "name": "값"
+      }
+    }
+  },
+  "TomePatchModel": {
+    "display_name": "토큰 병합(ToMe) 모델 패치",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "ratio": {
+        "name": "비율"
+      }
+    }
+  },
+  "TorchCompileModel": {
+    "display_name": "모델 토치 컴파일",
+    "inputs": {
+      "backend": {
+        "name": "백엔드"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "TripleCLIPLoader": {
+    "description": "[레시피]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "삼중 CLIP 로더",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "clip_name3": {
+        "name": "clip_name3"
+      }
+    }
+  },
+  "UNETLoader": {
+    "display_name": "확산 모델 로드",
+    "inputs": {
+      "unet_name": {
+        "name": "unet_name"
+      },
+      "weight_dtype": {
+        "name": "가중치 데이터 유형"
+      }
+    }
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNet 교차 어텐션 곱하기",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "out": {
+        "name": "아웃"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNet 셀프 어텐션 곱하기",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "out": {
+        "name": "아웃"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNet 템포럴 어텐션 곱하기",
+    "inputs": {
+      "cross_structural": {
+        "name": "cross_structural"
+      },
+      "cross_temporal": {
+        "name": "cross_temporal"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "self_structural": {
+        "name": "self_structural"
+      },
+      "self_temporal": {
+        "name": "self_temporal"
+      }
+    }
+  },
+  "UpscaleModelLoader": {
+    "display_name": "업스케일 모델 로드",
+    "inputs": {
+      "model_name": {
+        "name": "모델 이름"
+      }
+    }
+  },
+  "VAEDecode": {
+    "description": "잠재 데이터를 픽셀 공간 이미지로 디코딩합니다.",
+    "display_name": "VAE 디코드",
+    "inputs": {
+      "samples": {
+        "name": "샘플",
+        "tooltip": "디코딩할 잠재입니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "잠재 디코딩에 사용되는 VAE 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "디코딩된 이미지입니다."
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "VAE 디코드 오디오",
+    "inputs": {
+      "samples": {
+        "name": "샘플"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAE 디코드 (타일)",
+    "inputs": {
+      "overlap": {
+        "name": "중복"
+      },
+      "samples": {
+        "name": "샘플"
+      },
+      "tile_size": {
+        "name": "타일_크기"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncode": {
+    "display_name": "VAE 인코드",
+    "inputs": {
+      "pixels": {
+        "name": "픽셀"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeAudio": {
+    "display_name": "VAE 인코드 오디오",
+    "inputs": {
+      "audio": {
+        "name": "오디오"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAE 인코드 (인페인팅용)",
+    "inputs": {
+      "grow_mask_by": {
+        "name": "마스크_늘리기"
+      },
+      "mask": {
+        "name": "마스크"
+      },
+      "pixels": {
+        "name": "픽셀"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAE 인코드 (타일)",
+    "inputs": {
+      "pixels": {
+        "name": "픽셀"
+      },
+      "tile_size": {
+        "name": "타일_크기"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAELoader": {
+    "display_name": "VAE 로드",
+    "inputs": {
+      "vae_name": {
+        "name": "vae_이름"
+      }
+    }
+  },
+  "VAESave": {
+    "display_name": "VAE 저장",
+    "inputs": {
+      "filename_prefix": {
+        "name": "파일명_접두사"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VPScheduler": {
+    "display_name": "VP 스케줄러",
+    "inputs": {
+      "beta_d": {
+        "name": "베타_d"
+      },
+      "beta_min": {
+        "name": "베타_최소"
+      },
+      "eps_s": {
+        "name": "eps_s"
+      },
+      "steps": {
+        "name": "단계"
+      }
+    }
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "비디오 선형 CFG 가이드",
+    "inputs": {
+      "min_cfg": {
+        "name": "최소_cfg"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "비디오 삼각형 CFG 가이드",
+    "inputs": {
+      "min_cfg": {
+        "name": "최소_cfg"
+      },
+      "model": {
+        "name": "모델"
+      }
+    }
+  },
+  "WebcamCapture": {
+    "display_name": "웹캠 캡처",
+    "inputs": {
+      "capture_on_queue": {
+        "name": "큐에_캡처"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIP 체크포인트 로더",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIP 조건 설정",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "conditioning": {
+        "name": "조절"
+      },
+      "noise_augmentation": {
+        "name": "노이즈 증강"
+      },
+      "strength": {
+        "name": "강도"
+      }
+    }
+  }
+}

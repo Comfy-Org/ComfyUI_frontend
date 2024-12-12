@@ -21,7 +21,7 @@
             {{ $t('install.settings.autoUpdateDescription') }}
           </p>
         </div>
-        <InputSwitch v-model="autoUpdate" />
+        <ToggleSwitch v-model="autoUpdate" />
       </div>
 
       <Divider />
@@ -43,7 +43,7 @@
             {{ $t('install.settings.learnMoreAboutData') }}
           </a>
         </div>
-        <InputSwitch v-model="allowMetrics" />
+        <ToggleSwitch v-model="allowMetrics" />
       </div>
     </div>
 
@@ -98,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import InputSwitch from 'primevue/inputswitch'
+import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
 

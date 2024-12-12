@@ -514,6 +514,10 @@ export class ComfyPage {
     return { x: 427, y: 98 }
   }
 
+  get promptDialogInput() {
+    return this.page.locator('.p-dialog-content input[type="text"]')
+  }
+
   async disconnectEdge() {
     await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
@@ -778,14 +782,15 @@ export class ComfyPage {
   }
 
   async convertAllNodesToGroupNode(groupNodeName: string) {
-    this.page.on('dialog', async (dialog) => {
-      await dialog.accept(groupNodeName)
-    })
     await this.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
     await node!.clickContextMenuOption('Convert to Group Node')
+    await this.promptDialogInput.fill(groupNodeName)
+    await this.page.keyboard.press('Enter')
+    await this.promptDialogInput.waitFor({ state: 'hidden' })
     await this.nextFrame()
   }
+
   async convertOffsetToCanvas(pos: [number, number]) {
     return this.page.evaluate((pos) => {
       return window['app'].canvas.ds.convertOffsetToCanvas(pos)

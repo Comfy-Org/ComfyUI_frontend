@@ -46,7 +46,7 @@
             class="overflow-hidden text-ellipsis whitespace-nowrap"
             :title="slotProps.data.id"
           >
-            {{ slotProps.data.id }}
+            {{ slotProps.data.label }}
           </div>
         </template>
       </Column>
@@ -133,6 +133,8 @@ import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
+import { useI18n } from 'vue-i18n'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }
@@ -140,6 +142,7 @@ const filters = ref({
 
 const keybindingStore = useKeybindingStore()
 const commandStore = useCommandStore()
+const { t } = useI18n()
 
 interface ICommandData {
   id: string
@@ -149,6 +152,7 @@ interface ICommandData {
 const commandsData = computed<ICommandData[]>(() => {
   return Object.values(commandStore.commands).map((command) => ({
     id: command.id,
+    label: t(`commands.${normalizeI18nKey(command.id)}.label`, command.label),
     keybinding: keybindingStore.getKeybindingByCommandId(command.id)
   }))
 })

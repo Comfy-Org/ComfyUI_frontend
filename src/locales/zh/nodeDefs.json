@@ -1,0 +1,5253 @@
+{
+  "AddNoise": {
+    "display_name": "添加噪声",
+    "inputs": {
+      "latent_image": {
+        "name": "潜空间图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "noise": {
+        "name": "噪声"
+      },
+      "sigmas": {
+        "name": "西格玛"
+      }
+    }
+  },
+  "AlignYourStepsScheduler": {
+    "display_name": "对齐步骤调度器",
+    "inputs": {
+      "denoise": {
+        "name": "去噪"
+      },
+      "model_type": {
+        "name": "模型类型"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "BasicGuider": {
+    "display_name": "基本引导器",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "BasicScheduler": {
+    "display_name": "基本调度器",
+    "inputs": {
+      "denoise": {
+        "name": "去噪"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "scheduler": {
+        "name": "调度器"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "BetaSamplingScheduler": {
+    "display_name": "贝塔采样调度器",
+    "inputs": {
+      "alpha": {
+        "name": "阿尔法"
+      },
+      "beta": {
+        "name": "贝塔"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "CFGGuider": {
+    "display_name": "CFG引导器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      }
+    }
+  },
+  "CLIPAttentionMultiply": {
+    "display_name": "CLIP注意力乘法",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "k": {
+        "name": "k"
+      },
+      "out": {
+        "name": "输出"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "CLIPLoader": {
+    "description": "[配方]\n\n稳定扩散：clip-l\n稳定级联：clip-g\nsd3：t5 / clip-g / clip-l\n稳定音频：t5\nmochi：t5",
+    "display_name": "加载CLIP",
+    "inputs": {
+      "clip_name": {
+        "name": "clip名称"
+      },
+      "type": {
+        "name": "类型"
+      }
+    }
+  },
+  "CLIPMergeAdd": {
+    "display_name": "CLIP合并添加",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      }
+    }
+  },
+  "CLIPMergeSimple": {
+    "display_name": "CLIP合并简单",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "ratio": {
+        "name": "比例"
+      }
+    }
+  },
+  "CLIPMergeSubtract": {
+    "display_name": "CLIP合并减法",
+    "inputs": {
+      "clip1": {
+        "name": "clip1"
+      },
+      "clip2": {
+        "name": "clip2"
+      },
+      "multiplier": {
+        "name": "乘数"
+      }
+    }
+  },
+  "CLIPSave": {
+    "display_name": "保存CLIP",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      }
+    }
+  },
+  "CLIPSetLastLayer": {
+    "display_name": "设置CLIP最后一层",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "stop_at_clip_layer": {
+        "name": "停止在clip层"
+      }
+    }
+  },
+  "CLIPTextEncode": {
+    "description": "使用CLIP模型对文本提示进行编码，生成可以引导扩散模型生成特定图像的嵌入。",
+    "display_name": "CLIP文本编码（提示）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "用于编码文本的 CLIP 模型。"
+      },
+      "text": {
+        "name": "文本",
+        "tooltip": "要编码的文本。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "包含嵌入文本的条件，用于引导扩散模型。"
+      }
+    }
+  },
+  "CLIPTextEncodeControlnet": {
+    "display_name": "CLIP文本编码控制网",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "条件"
+      },
+      "text": {
+        "name": "文本"
+      }
+    }
+  },
+  "CLIPTextEncodeFlux": {
+    "display_name": "CLIP文本编码Flux",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "guidance": {
+        "name": "引导"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
+  },
+  "CLIPTextEncodeHunyuanDiT": {
+    "display_name": "CLIP文本编码混元DiT",
+    "inputs": {
+      "bert": {
+        "name": "bert"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "mt5xl": {
+        "name": "mt5xl"
+      }
+    }
+  },
+  "CLIPTextEncodeSD3": {
+    "display_name": "CLIP文本编码SD3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_g": {
+        "name": "clip_g"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "empty_padding": {
+        "name": "空白填充"
+      },
+      "t5xxl": {
+        "name": "t5xxl"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXL": {
+    "display_name": "CLIP文本编码SDXL",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "crop_h": {
+        "name": "裁剪高"
+      },
+      "crop_w": {
+        "name": "裁剪宽"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "target_height": {
+        "name": "目标高度"
+      },
+      "target_width": {
+        "name": "目标宽度"
+      },
+      "text_g": {
+        "name": "文本_g"
+      },
+      "text_l": {
+        "name": "文本_l"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "CLIPTextEncodeSDXLRefiner": {
+    "display_name": "CLIP文本编码SDXL精炼器",
+    "inputs": {
+      "ascore": {
+        "name": "ascore"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "text": {
+        "name": "文本"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "CLIPVisionEncode": {
+    "display_name": "CLIP视觉编码",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip视觉"
+      },
+      "crop": {
+        "name": "裁剪"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "CLIPVisionLoader": {
+    "display_name": "加载CLIP视觉",
+    "inputs": {
+      "clip_name": {
+        "name": "clip名称"
+      }
+    }
+  },
+  "Canny": {
+    "display_name": "Canny边缘检测",
+    "inputs": {
+      "high_threshold": {
+        "name": "高阈值"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "low_threshold": {
+        "name": "低阈值"
+      }
+    }
+  },
+  "CheckpointLoader": {
+    "display_name": "加载检查点配置（已弃用）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "检查点名称"
+      },
+      "config_name": {
+        "name": "配置名称"
+      }
+    }
+  },
+  "CheckpointLoaderSimple": {
+    "description": "加载扩散模型检查点，扩散模型用于去噪潜空间图像。",
+    "display_name": "加载检查点",
+    "inputs": {
+      "ckpt_name": {
+        "name": "检查点名称",
+        "tooltip": "要加载的检查点（模型）的名称。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "用于去噪潜空间变量的模型。"
+      },
+      "1": {
+        "tooltip": "用于编码文本提示的CLIP模型。"
+      },
+      "2": {
+        "tooltip": "用于将图像编码和解码到潜空间空间的VAE模型。"
+      }
+    }
+  },
+  "CheckpointSave": {
+    "display_name": "保存检查点",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "CombineHooks2": {
+    "display_name": "组合钩子 [2]",
+    "inputs": {
+      "hooks_A": {
+        "name": "钩子_A"
+      },
+      "hooks_B": {
+        "name": "钩子_B"
+      }
+    }
+  },
+  "CombineHooks4": {
+    "display_name": "组合钩子 [4]",
+    "inputs": {
+      "hooks_A": {
+        "name": "钩子_A"
+      },
+      "hooks_B": {
+        "name": "钩子_B"
+      },
+      "hooks_C": {
+        "name": "钩子_C"
+      },
+      "hooks_D": {
+        "name": "钩子_D"
+      }
+    }
+  },
+  "CombineHooks8": {
+    "display_name": "组合钩子 [8]",
+    "inputs": {
+      "hooks_A": {
+        "name": "钩子_A"
+      },
+      "hooks_B": {
+        "name": "钩子_B"
+      },
+      "hooks_C": {
+        "name": "钩子_C"
+      },
+      "hooks_D": {
+        "name": "钩子_D"
+      },
+      "hooks_E": {
+        "name": "钩子_E"
+      },
+      "hooks_F": {
+        "name": "钩子_F"
+      },
+      "hooks_G": {
+        "name": "钩子_G"
+      },
+      "hooks_H": {
+        "name": "钩子_H"
+      }
+    }
+  },
+  "ConditioningAverage": {
+    "display_name": "条件平均",
+    "inputs": {
+      "conditioning_from": {
+        "name": "条件化从"
+      },
+      "conditioning_to": {
+        "name": "条件化到"
+      },
+      "conditioning_to_strength": {
+        "name": "条件化到强度"
+      }
+    }
+  },
+  "ConditioningCombine": {
+    "display_name": "条件（组合）",
+    "inputs": {
+      "conditioning_1": {
+        "name": "条件化_1"
+      },
+      "conditioning_2": {
+        "name": "条件化_2"
+      }
+    }
+  },
+  "ConditioningConcat": {
+    "display_name": "条件（连接）",
+    "inputs": {
+      "conditioning_from": {
+        "name": "条件化从"
+      },
+      "conditioning_to": {
+        "name": "条件化到"
+      }
+    }
+  },
+  "ConditioningSetArea": {
+    "display_name": "条件（设置区域）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件化"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaPercentage": {
+    "display_name": "条件（按百分比设置区域）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件化"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ConditioningSetAreaStrength": {
+    "display_name": "条件设置区域强度",
+    "inputs": {
+      "conditioning": {
+        "name": "条件化"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  },
+  "ConditioningSetDefaultCombine": {
+    "display_name": "条件设置默认组合",
+    "inputs": {
+      "cond": {
+        "name": "条件"
+      },
+      "cond_DEFAULT": {
+        "name": "默认条件"
+      },
+      "hooks": {
+        "name": "钩子"
+      }
+    }
+  },
+  "ConditioningSetMask": {
+    "display_name": "条件（设置遮罩）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件化"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "set_cond_area": {
+        "name": "设置条件区域"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  },
+  "ConditioningSetProperties": {
+    "display_name": "条件设置属性",
+    "inputs": {
+      "cond_NEW": {
+        "name": "新条件"
+      },
+      "hooks": {
+        "name": "钩子"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "set_cond_area": {
+        "name": "设置条件区域"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "timesteps": {
+        "name": "时间步"
+      }
+    }
+  },
+  "ConditioningSetPropertiesAndCombine": {
+    "display_name": "条件设置属性组合",
+    "inputs": {
+      "cond": {
+        "name": "条件"
+      },
+      "cond_NEW": {
+        "name": "新条件"
+      },
+      "hooks": {
+        "name": "钩子"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "set_cond_area": {
+        "name": "设置条件区域"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "timesteps": {
+        "name": "时间步"
+      }
+    }
+  },
+  "ConditioningSetTimestepRange": {
+    "display_name": "条件设置时间步范围",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "end": {
+        "name": "结束"
+      },
+      "start": {
+        "name": "开始"
+      }
+    }
+  },
+  "ConditioningTimestepsRange": {
+    "display_name": "时间步范围",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      }
+    },
+    "outputs": {
+      "1": {
+        "name": "范围前"
+      },
+      "2": {
+        "name": "范围后"
+      }
+    }
+  },
+  "ConditioningZeroOut": {
+    "display_name": "条件零化",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      }
+    }
+  },
+  "ControlNetApply": {
+    "display_name": "应用控制网（旧）",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "control_net": {
+        "name": "控制网"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  },
+  "ControlNetApplyAdvanced": {
+    "display_name": "应用控制网",
+    "inputs": {
+      "control_net": {
+        "name": "控制网"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "ControlNetApplySD3": {
+    "display_name": "应用控制网与VAE",
+    "inputs": {
+      "control_net": {
+        "name": "控制网"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "ControlNetInpaintingAliMamaApply": {
+    "display_name": "控制网修复AliMama应用",
+    "inputs": {
+      "control_net": {
+        "name": "控制网"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "ControlNetLoader": {
+    "display_name": "加载控制网模型",
+    "inputs": {
+      "control_net_name": {
+        "name": "控制网名称"
+      }
+    }
+  },
+  "CreateHookKeyframe": {
+    "display_name": "创建钩子关键帧",
+    "inputs": {
+      "prev_hook_kf": {
+        "name": "前一个钩子关键帧"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "strength_mult": {
+        "name": "强度倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookKeyframesFromFloats": {
+    "display_name": "从浮点数创建钩子关键帧",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "floats_strength": {
+        "name": "浮点强度"
+      },
+      "prev_hook_kf": {
+        "name": "前一个钩子关键帧"
+      },
+      "print_keyframes": {
+        "name": "打印关键帧"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookKeyframesInterpolated": {
+    "display_name": "创建插值钩子关键帧",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "interpolation": {
+        "name": "插值"
+      },
+      "keyframes_count": {
+        "name": "关键帧数量"
+      },
+      "prev_hook_kf": {
+        "name": "前一个钩子关键帧"
+      },
+      "print_keyframes": {
+        "name": "打印关键帧"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "strength_end": {
+        "name": "结束强度"
+      },
+      "strength_start": {
+        "name": "开始强度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "钩子关键帧"
+      }
+    }
+  },
+  "CreateHookLora": {
+    "display_name": "创建钩子LoRA",
+    "inputs": {
+      "lora_name": {
+        "name": "lora名称"
+      },
+      "prev_hooks": {
+        "name": "前一个钩子"
+      },
+      "strength_clip": {
+        "name": "剪辑强度"
+      },
+      "strength_model": {
+        "name": "模型强度"
+      }
+    }
+  },
+  "CreateHookLoraModelOnly": {
+    "display_name": "仅创建钩子LoRA（MO）",
+    "inputs": {
+      "lora_name": {
+        "name": "lora名称"
+      },
+      "prev_hooks": {
+        "name": "前一个钩子"
+      },
+      "strength_model": {
+        "name": "模型强度"
+      }
+    }
+  },
+  "CreateHookModelAsLora": {
+    "display_name": "创建钩子模型作为LoRA",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称"
+      },
+      "prev_hooks": {
+        "name": "前一个钩子"
+      },
+      "strength_clip": {
+        "name": "剪辑强度"
+      },
+      "strength_model": {
+        "name": "模型强度"
+      }
+    }
+  },
+  "CreateHookModelAsLoraModelOnly": {
+    "display_name": "仅创建钩子模型作为LoRA（MO）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称"
+      },
+      "prev_hooks": {
+        "name": "前一个钩子"
+      },
+      "strength_model": {
+        "name": "模型强度"
+      }
+    }
+  },
+  "CropMask": {
+    "display_name": "裁剪遮罩",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "DevToolsDeprecatedNode": {
+    "description": "一个已弃用的节点",
+    "display_name": "已弃用节点"
+  },
+  "DevToolsErrorRaiseNode": {
+    "description": "出于开发目的引发错误",
+    "display_name": "引发错误"
+  },
+  "DevToolsErrorRaiseNodeWithMessage": {
+    "description": "出于开发目的引发带消息的错误",
+    "display_name": "带消息的引发错误",
+    "inputs": {
+      "message": {
+        "name": "消息"
+      }
+    }
+  },
+  "DevToolsExperimentalNode": {
+    "description": "一个实验性的节点",
+    "display_name": "实验性节点"
+  },
+  "DevToolsLongComboDropdown": {
+    "description": "一个长组合下拉菜单",
+    "display_name": "长组合下拉菜单",
+    "inputs": {
+      "option": {
+        "name": "选项"
+      }
+    }
+  },
+  "DevToolsNodeWithForceInput": {
+    "description": "一个具有强制输入的节点",
+    "display_name": "强制输入节点",
+    "inputs": {
+      "float_input": {
+        "name": "浮点数输入"
+      },
+      "int_input": {
+        "name": "整数输入"
+      },
+      "int_input_widget": {
+        "name": "整数输入小部件"
+      }
+    }
+  },
+  "DevToolsNodeWithOnlyOptionalInput": {
+    "description": "一个仅有可选输入的节点",
+    "display_name": "仅有可选输入的节点",
+    "inputs": {
+      "clip": {
+        "name": "剪辑"
+      },
+      "text": {
+        "name": "文本"
+      }
+    }
+  },
+  "DevToolsNodeWithOptionalInput": {
+    "description": "一个具有可选输入的节点",
+    "display_name": "具有可选输入的节点",
+    "inputs": {
+      "optional_input": {
+        "name": "可选输入"
+      },
+      "required_input": {
+        "name": "必需输入"
+      }
+    }
+  },
+  "DevToolsNodeWithOutputList": {
+    "description": "一个具有输出列表的节点",
+    "display_name": "具有输出列表的节点",
+    "outputs": {
+      "0": {
+        "name": "整数输出"
+      },
+      "1": {
+        "name": "整数列表输出"
+      }
+    }
+  },
+  "DevToolsNodeWithStringInput": {
+    "description": "一个具有字符串输入的节点",
+    "display_name": "具有字符串输入的节点",
+    "inputs": {
+      "string_input": {
+        "name": "字符串输入"
+      }
+    }
+  },
+  "DevToolsNodeWithUnionInput": {
+    "description": "一个具有联合输入的节点",
+    "display_name": "具有联合输入的节点",
+    "inputs": {
+      "int_input": {
+        "name": "整数输入"
+      },
+      "string_input": {
+        "name": "字符串输入"
+      },
+      "string_or_int_input": {
+        "name": "字符串或整数输入"
+      }
+    }
+  },
+  "DiffControlNetLoader": {
+    "display_name": "加载控制网模型（diff）",
+    "inputs": {
+      "control_net_name": {
+        "name": "控制网络名称"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "DifferentialDiffusion": {
+    "display_name": "差分扩散",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "DiffusersLoader": {
+    "display_name": "扩散器加载器",
+    "inputs": {
+      "model_path": {
+        "name": "模型路径"
+      }
+    }
+  },
+  "DisableNoise": {
+    "display_name": "禁用噪声"
+  },
+  "DualCFGGuider": {
+    "display_name": "双CFG引导器",
+    "inputs": {
+      "cfg_cond2_negative": {
+        "name": "cfg_cond2_negative"
+      },
+      "cfg_conds": {
+        "name": "cfg_conds"
+      },
+      "cond1": {
+        "name": "cond1"
+      },
+      "cond2": {
+        "name": "cond2"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative": {
+        "name": "负面"
+      }
+    }
+  },
+  "DualCLIPLoader": {
+    "description": "[配方]\n\nsdxl：clip-l，clip-g\nsd3：clip-l，clip-g / clip-l，t5 / clip-g，t5\nflux：clip-l，t5",
+    "display_name": "双CLIP加载器",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "type": {
+        "name": "类型"
+      }
+    }
+  },
+  "EmptyImage": {
+    "display_name": "空图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "color": {
+        "name": "颜色"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "EmptyLTXVLatentVideo": {
+    "display_name": "空LTXV潜空间视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "EmptyLatentAudio": {
+    "display_name": "空潜空间音频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中的潜空间图像数量。"
+      },
+      "seconds": {
+        "name": "秒"
+      }
+    }
+  },
+  "EmptyLatentImage": {
+    "description": "创建一批新的空潜空间图像，以通过采样进行去噪。",
+    "display_name": "空潜空间图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中的潜空间图像数量。"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "潜空间图像的高度（以像素为单位）。"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "潜空间图像的宽度（以像素为单位）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "空的潜空间图像批次。"
+      }
+    }
+  },
+  "EmptyMochiLatentVideo": {
+    "display_name": "空Mochi潜空间视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "EmptySD3LatentImage": {
+    "display_name": "空SD3潜空间图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "ExponentialScheduler": {
+    "display_name": "指数调度器",
+    "inputs": {
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "FeatherMask": {
+    "display_name": "羽毛遮罩",
+    "inputs": {
+      "bottom": {
+        "name": "底"
+      },
+      "left": {
+        "name": "左"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "right": {
+        "name": "右"
+      },
+      "top": {
+        "name": "顶"
+      }
+    }
+  },
+  "FlipSigmas": {
+    "display_name": "翻转Sigma",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    }
+  },
+  "FluxGuidance": {
+    "display_name": "Flux引导",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "guidance": {
+        "name": "引导"
+      }
+    }
+  },
+  "FreeU": {
+    "display_name": "FreeU",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "FreeU_V2": {
+    "display_name": "FreeU_V2",
+    "inputs": {
+      "b1": {
+        "name": "b1"
+      },
+      "b2": {
+        "name": "b2"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "s1": {
+        "name": "s1"
+      },
+      "s2": {
+        "name": "s2"
+      }
+    }
+  },
+  "GITSScheduler": {
+    "display_name": "GITS调度器",
+    "inputs": {
+      "coeff": {
+        "name": "系数"
+      },
+      "denoise": {
+        "name": "去噪"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "GLIGENLoader": {
+    "display_name": "GLIGEN加载器",
+    "inputs": {
+      "gligen_name": {
+        "name": "gligen_name"
+      }
+    }
+  },
+  "GLIGENTextBoxApply": {
+    "display_name": "GLIGEN文本框应用",
+    "inputs": {
+      "clip": {
+        "name": "剪辑"
+      },
+      "conditioning_to": {
+        "name": "条件到"
+      },
+      "gligen_textbox_model": {
+        "name": "gligen_textbox_model"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "text": {
+        "name": "文本"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "GrowMask": {
+    "display_name": "扩展遮罩",
+    "inputs": {
+      "expand": {
+        "name": "扩展"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "tapered_corners": {
+        "name": "锥形角"
+      }
+    }
+  },
+  "HyperTile": {
+    "display_name": "超平铺",
+    "inputs": {
+      "max_depth": {
+        "name": "最大深度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "scale_depth": {
+        "name": "规模深度"
+      },
+      "swap_size": {
+        "name": "交换大小"
+      },
+      "tile_size": {
+        "name": "瓷砖大小"
+      }
+    }
+  },
+  "HypernetworkLoader": {
+    "display_name": "超网络加载器",
+    "inputs": {
+      "hypernetwork_name": {
+        "name": "hypernetwork_name"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  },
+  "ImageBatch": {
+    "display_name": "图像批处理",
+    "inputs": {
+      "image1": {
+        "name": "图像1"
+      },
+      "image2": {
+        "name": "图像2"
+      }
+    }
+  },
+  "ImageBlend": {
+    "display_name": "图像混合",
+    "inputs": {
+      "blend_factor": {
+        "name": "混合因子"
+      },
+      "blend_mode": {
+        "name": "混合模式"
+      },
+      "image1": {
+        "name": "图像1"
+      },
+      "image2": {
+        "name": "图像2"
+      }
+    }
+  },
+  "ImageBlur": {
+    "display_name": "图像模糊",
+    "inputs": {
+      "blur_radius": {
+        "name": "模糊半径"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "sigma": {
+        "name": "西格玛"
+      }
+    }
+  },
+  "ImageColorToMask": {
+    "display_name": "图像颜色到遮罩",
+    "inputs": {
+      "color": {
+        "name": "颜色"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "ImageCompositeMasked": {
+    "display_name": "图像合成遮罩",
+    "inputs": {
+      "destination": {
+        "name": "目的地"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "resize_source": {
+        "name": "调整来源大小"
+      },
+      "source": {
+        "name": "来源"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageCrop": {
+    "display_name": "图像裁剪",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "ImageFromBatch": {
+    "display_name": "从批次获取图像",
+    "inputs": {
+      "batch_index": {
+        "name": "批次索引"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "length": {
+        "name": "长度"
+      }
+    }
+  },
+  "ImageInvert": {
+    "display_name": "反转图像",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "ImageOnlyCheckpointLoader": {
+    "display_name": "仅图像检查点加载器（img2vid模型）",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称"
+      }
+    }
+  },
+  "ImageOnlyCheckpointSave": {
+    "display_name": "仅图像检查点保存",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip视觉"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "ImagePadForOutpaint": {
+    "display_name": "为外绘填充图像",
+    "inputs": {
+      "bottom": {
+        "name": "下"
+      },
+      "feathering": {
+        "name": "羽化"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "left": {
+        "name": "左"
+      },
+      "right": {
+        "name": "右"
+      },
+      "top": {
+        "name": "上"
+      }
+    }
+  },
+  "ImageQuantize": {
+    "display_name": "图像量化",
+    "inputs": {
+      "colors": {
+        "name": "颜色"
+      },
+      "dither": {
+        "name": "抖动"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "ImageScale": {
+    "display_name": "图像放大",
+    "inputs": {
+      "crop": {
+        "name": "裁剪"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "ImageScaleBy": {
+    "display_name": "按比例放大图像",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "scale_by": {
+        "name": "按比例放大"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      }
+    }
+  },
+  "ImageScaleToTotalPixels": {
+    "display_name": "将图像缩放到总像素",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "megapixels": {
+        "name": "百万像素"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      }
+    }
+  },
+  "ImageSharpen": {
+    "display_name": "图像锐化",
+    "inputs": {
+      "alpha": {
+        "name": "阿尔法"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "sharpen_radius": {
+        "name": "锐化半径"
+      },
+      "sigma": {
+        "name": "西格玛"
+      }
+    }
+  },
+  "ImageToMask": {
+    "display_name": "将图像转换为遮罩",
+    "inputs": {
+      "channel": {
+        "name": "通道"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "ImageUpscaleWithModel": {
+    "display_name": "使用模型放大图像",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "upscale_model": {
+        "name": "放大模型"
+      }
+    }
+  },
+  "InpaintModelConditioning": {
+    "display_name": "修复模型条件",
+    "inputs": {
+      "mask": {
+        "name": "遮罩"
+      },
+      "negative": {
+        "name": "负"
+      },
+      "noise_mask": {
+        "name": "噪声遮罩",
+        "tooltip": "向潜空间图像添加噪声遮罩，以便采样仅在遮罩内进行。根据模型的不同，可能会改善结果或完全破坏效果。"
+      },
+      "pixels": {
+        "name": "像素"
+      },
+      "positive": {
+        "name": "正"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "InstructPixToPixConditioning": {
+    "display_name": "指令像素到像素条件",
+    "inputs": {
+      "negative": {
+        "name": "负"
+      },
+      "pixels": {
+        "name": "像素"
+      },
+      "positive": {
+        "name": "正"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "InvertMask": {
+    "display_name": "反转遮罩",
+    "inputs": {
+      "mask": {
+        "name": "遮罩"
+      }
+    }
+  },
+  "JoinImageWithAlpha": {
+    "display_name": "与Alpha合并图像",
+    "inputs": {
+      "alpha": {
+        "name": "阿尔法"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "KSampler": {
+    "description": "使用提供的模型、正向和负向条件去噪潜空间图像。",
+    "display_name": "K采样器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg",
+        "tooltip": "无分类器引导比例平衡创造力和对提示的遵循。更高的值会导致图像更接近提示，但过高的值会对质量产生负面影响。"
+      },
+      "denoise": {
+        "name": "去噪",
+        "tooltip": "应用的去噪量，较低的值将保持初始图像的结构，允许图像到图像的采样。"
+      },
+      "latent_image": {
+        "name": "潜空间图像",
+        "tooltip": "要去噪的潜空间图像。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用于去噪输入潜空间图像的模型。"
+      },
+      "negative": {
+        "name": "负",
+        "tooltip": "描述您希望在图像中排除的属性的条件。"
+      },
+      "positive": {
+        "name": "正",
+        "tooltip": "描述您希望在图像中包含的属性的条件。"
+      },
+      "sampler_name": {
+        "name": "采样器名称",
+        "tooltip": "在采样时使用的算法，这会影响生成输出的质量、速度和风格。"
+      },
+      "scheduler": {
+        "name": "调度器",
+        "tooltip": "调度器控制噪声如何逐渐去除以形成图像。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "用于生成噪声的随机种子。"
+      },
+      "steps": {
+        "name": "步骤",
+        "tooltip": "去噪过程中使用的步骤数量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "去噪后的潜空间变量。"
+      }
+    }
+  },
+  "KSamplerAdvanced": {
+    "display_name": "K采样器（高级）",
+    "inputs": {
+      "add_noise": {
+        "name": "添加噪声"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_at_step": {
+        "name": "结束步骤"
+      },
+      "latent_image": {
+        "name": "潜空间图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative": {
+        "name": "负"
+      },
+      "noise_seed": {
+        "name": "噪声种子"
+      },
+      "positive": {
+        "name": "正"
+      },
+      "return_with_leftover_noise": {
+        "name": "返回剩余噪声"
+      },
+      "sampler_name": {
+        "name": "采样器名称"
+      },
+      "scheduler": {
+        "name": "调度器"
+      },
+      "start_at_step": {
+        "name": "开始步骤"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "KSamplerSelect": {
+    "display_name": "K采样器选择",
+    "inputs": {
+      "sampler_name": {
+        "name": "采样器名称"
+      }
+    }
+  },
+  "KarrasScheduler": {
+    "display_name": "Karras调度器",
+    "inputs": {
+      "rho": {
+        "name": "rho"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "LTXVConditioning": {
+    "display_name": "LTXV条件",
+    "inputs": {
+      "frame_rate": {
+        "name": "帧率"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "LTXVImgToVideo": {
+    "display_name": "LTXV图像到视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "image_noise_scale": {
+        "name": "图像噪声比例",
+        "tooltip": "在条件图像潜空间图像上应用的噪声量。"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "LTXVScheduler": {
+    "display_name": "LTXV调度器",
+    "inputs": {
+      "base_shift": {
+        "name": "基础移位"
+      },
+      "latent": {
+        "name": "潜空间"
+      },
+      "max_shift": {
+        "name": "最大移位"
+      },
+      "steps": {
+        "name": "步骤"
+      },
+      "stretch": {
+        "name": "拉伸",
+        "tooltip": "将 sigma 拉伸到范围 [terminal, 1]。"
+      },
+      "terminal": {
+        "name": "终端",
+        "tooltip": "拉伸后 sigma 的终值。"
+      }
+    }
+  },
+  "LaplaceScheduler": {
+    "display_name": "拉普拉斯调度器",
+    "inputs": {
+      "beta": {
+        "name": "beta"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "sigma_max": {
+        "name": "sigma_max"
+      },
+      "sigma_min": {
+        "name": "sigma_min"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "LatentAdd": {
+    "display_name": "潜空间添加",
+    "inputs": {
+      "samples1": {
+        "name": "样本1"
+      },
+      "samples2": {
+        "name": "样本2"
+      }
+    }
+  },
+  "LatentApplyOperation": {
+    "display_name": "潜空间应用操作",
+    "inputs": {
+      "operation": {
+        "name": "操作"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "LatentApplyOperationCFG": {
+    "display_name": "潜空间应用操作CFG",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "operation": {
+        "name": "操作"
+      }
+    }
+  },
+  "LatentBatch": {
+    "display_name": "潜空间批处理",
+    "inputs": {
+      "samples1": {
+        "name": "样本1"
+      },
+      "samples2": {
+        "name": "样本2"
+      }
+    }
+  },
+  "LatentBatchSeedBehavior": {
+    "display_name": "潜空间批处理种子行为",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "seed_behavior": {
+        "name": "种子行为"
+      }
+    }
+  },
+  "LatentBlend": {
+    "display_name": "潜空间混合",
+    "inputs": {
+      "blend_factor": {
+        "name": "混合因子"
+      },
+      "samples1": {
+        "name": "样本1"
+      },
+      "samples2": {
+        "name": "样本2"
+      }
+    }
+  },
+  "LatentComposite": {
+    "display_name": "潜空间合成",
+    "inputs": {
+      "feather": {
+        "name": "羽化"
+      },
+      "samples_from": {
+        "name": "样本从"
+      },
+      "samples_to": {
+        "name": "样本到"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCompositeMasked": {
+    "display_name": "潜空间合成遮罩",
+    "inputs": {
+      "destination": {
+        "name": "目的地"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "resize_source": {
+        "name": "调整来源大小"
+      },
+      "source": {
+        "name": "来源"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentCrop": {
+    "display_name": "裁剪潜空间",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "width": {
+        "name": "宽度"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "LatentFlip": {
+    "display_name": "翻转潜空间",
+    "inputs": {
+      "flip_method": {
+        "name": "翻转方法"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "LatentFromBatch": {
+    "display_name": "从批次获取潜空间",
+    "inputs": {
+      "batch_index": {
+        "name": "批次索引"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "LatentInterpolate": {
+    "display_name": "潜空间插值",
+    "inputs": {
+      "ratio": {
+        "name": "比率"
+      },
+      "samples1": {
+        "name": "样本1"
+      },
+      "samples2": {
+        "name": "样本2"
+      }
+    }
+  },
+  "LatentMultiply": {
+    "display_name": "潜空间乘法",
+    "inputs": {
+      "multiplier": {
+        "name": "乘数"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "LatentOperationSharpen": {
+    "display_name": "潜空间操作锐化",
+    "inputs": {
+      "alpha": {
+        "name": "阿尔法"
+      },
+      "sharpen_radius": {
+        "name": "锐化半径"
+      },
+      "sigma": {
+        "name": "西格玛"
+      }
+    }
+  },
+  "LatentOperationTonemapReinhard": {
+    "display_name": "潜空间操作色调映射Reinhard",
+    "inputs": {
+      "multiplier": {
+        "name": "乘数"
+      }
+    }
+  },
+  "LatentRotate": {
+    "display_name": "旋转潜空间",
+    "inputs": {
+      "rotation": {
+        "name": "旋转"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "LatentSubtract": {
+    "display_name": "潜空间减法",
+    "inputs": {
+      "samples1": {
+        "name": "样本1"
+      },
+      "samples2": {
+        "name": "样本2"
+      }
+    }
+  },
+  "LatentUpscale": {
+    "display_name": "放大潜空间",
+    "inputs": {
+      "crop": {
+        "name": "裁剪"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "LatentUpscaleBy": {
+    "display_name": "按比例放大潜空间",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "scale_by": {
+        "name": "按比例放大"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      }
+    }
+  },
+  "LoadAudio": {
+    "display_name": "加载音频",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      }
+    }
+  },
+  "LoadImage": {
+    "display_name": "加载图像",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "LoadImageMask": {
+    "display_name": "加载图像（作为遮罩）",
+    "inputs": {
+      "channel": {
+        "name": "通道"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "LoadLatent": {
+    "display_name": "加载潜空间",
+    "inputs": {
+      "latent": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "LoraLoader": {
+    "description": "LoRA用于修改扩散和CLIP模型，改变潜空间图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
+    "display_name": "加载LoRA",
+    "inputs": {
+      "clip": {
+        "name": "剪辑",
+        "tooltip": "LoRA 将应用于的 CLIP 模型。"
+      },
+      "lora_name": {
+        "name": "lora名称",
+        "tooltip": "LoRA 的名称。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "LoRA 将应用于的扩散模型。"
+      },
+      "strength_clip": {
+        "name": "剪辑强度",
+        "tooltip": "修改 CLIP 模型的强度。此值可以为负。"
+      },
+      "strength_model": {
+        "name": "模型强度",
+        "tooltip": "修改扩散模型的强度。此值可以为负。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      },
+      "1": {
+        "tooltip": "修改后的CLIP模型。"
+      }
+    }
+  },
+  "LoraLoaderModelOnly": {
+    "description": "LoRA用于修改扩散和CLIP模型，改变潜空间图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
+    "display_name": "仅加载LoRA模型",
+    "inputs": {
+      "lora_name": {
+        "name": "lora名称"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "strength_model": {
+        "name": "模型强度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "修改后的扩散模型。"
+      }
+    }
+  },
+  "LoraSave": {
+    "display_name": "提取并保存LoRA",
+    "inputs": {
+      "bias_diff": {
+        "name": "偏差差异"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "lora_type": {
+        "name": "lora类型"
+      },
+      "model_diff": {
+        "name": "模型差异",
+        "tooltip": "要转换为 LoRA 的 ModelSubtract 输出。"
+      },
+      "rank": {
+        "name": "排名"
+      },
+      "text_encoder_diff": {
+        "name": "文本编码器差异",
+        "tooltip": "要转换为 LoRA 的 CLIPSubtract 输出。"
+      }
+    }
+  },
+  "Mahiro": {
+    "description": "修改引导以更多地侧重于正面提示的'方向'，而不是负面提示之间的差异。",
+    "display_name": "Mahiro太可爱了，她应该有一个更好的引导功能！！(。・ω・。)",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "修补后的模型"
+      }
+    }
+  },
+  "MaskComposite": {
+    "display_name": "遮罩合成",
+    "inputs": {
+      "destination": {
+        "name": "目标"
+      },
+      "operation": {
+        "name": "操作"
+      },
+      "source": {
+        "name": "源"
+      },
+      "x": {
+        "name": "x"
+      },
+      "y": {
+        "name": "y"
+      }
+    }
+  },
+  "MaskToImage": {
+    "display_name": "将遮罩转换为图像",
+    "inputs": {
+      "mask": {
+        "name": "遮罩"
+      }
+    }
+  },
+  "ModelMergeAdd": {
+    "display_name": "模型合并添加",
+    "inputs": {
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      }
+    }
+  },
+  "ModelMergeAuraflow": {
+    "display_name": "模型合并Auraflow",
+    "inputs": {
+      "cond_seq_linear_": {
+        "name": "条件序列线性."
+      },
+      "double_layers_0_": {
+        "name": "双层.0."
+      },
+      "double_layers_1_": {
+        "name": "双层.1."
+      },
+      "double_layers_2_": {
+        "name": "双层.2."
+      },
+      "double_layers_3_": {
+        "name": "双层.3."
+      },
+      "final_linear_": {
+        "name": "最终线性."
+      },
+      "init_x_linear_": {
+        "name": "初始x线性."
+      },
+      "modF_": {
+        "name": "modF."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "positional_encoding": {
+        "name": "位置编码"
+      },
+      "register_tokens": {
+        "name": "注册令牌"
+      },
+      "single_layers_0_": {
+        "name": "单层.0."
+      },
+      "single_layers_10_": {
+        "name": "单层.10."
+      },
+      "single_layers_11_": {
+        "name": "单层.11."
+      },
+      "single_layers_12_": {
+        "name": "单层.12."
+      },
+      "single_layers_13_": {
+        "name": "单层.13."
+      },
+      "single_layers_14_": {
+        "name": "单层.14."
+      },
+      "single_layers_15_": {
+        "name": "单层.15."
+      },
+      "single_layers_16_": {
+        "name": "单层.16."
+      },
+      "single_layers_17_": {
+        "name": "单层.17."
+      },
+      "single_layers_18_": {
+        "name": "单层.18."
+      },
+      "single_layers_19_": {
+        "name": "单层.19."
+      },
+      "single_layers_1_": {
+        "name": "单层.1."
+      },
+      "single_layers_20_": {
+        "name": "单层.20."
+      },
+      "single_layers_21_": {
+        "name": "单层.21."
+      },
+      "single_layers_22_": {
+        "name": "单层.22."
+      },
+      "single_layers_23_": {
+        "name": "单层.23."
+      },
+      "single_layers_24_": {
+        "name": "单层.24."
+      },
+      "single_layers_25_": {
+        "name": "单层.25."
+      },
+      "single_layers_26_": {
+        "name": "单层.26."
+      },
+      "single_layers_27_": {
+        "name": "单层.27."
+      },
+      "single_layers_28_": {
+        "name": "单层.28."
+      },
+      "single_layers_29_": {
+        "name": "单层.29."
+      },
+      "single_layers_2_": {
+        "name": "单层.2."
+      },
+      "single_layers_30_": {
+        "name": "单层.30."
+      },
+      "single_layers_31_": {
+        "name": "单层.31."
+      },
+      "single_layers_3_": {
+        "name": "单层.3."
+      },
+      "single_layers_4_": {
+        "name": "单层.4."
+      },
+      "single_layers_5_": {
+        "name": "单层.5."
+      },
+      "single_layers_6_": {
+        "name": "单层.6."
+      },
+      "single_layers_7_": {
+        "name": "单层.7."
+      },
+      "single_layers_8_": {
+        "name": "单层.8."
+      },
+      "single_layers_9_": {
+        "name": "单层.9."
+      },
+      "t_embedder_": {
+        "name": "t嵌入器."
+      }
+    }
+  },
+  "ModelMergeBlocks": {
+    "display_name": "模型合并块",
+    "inputs": {
+      "input": {
+        "name": "输入"
+      },
+      "middle": {
+        "name": "中间"
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "out": {
+        "name": "输出"
+      }
+    }
+  },
+  "ModelMergeFlux1": {
+    "display_name": "模型合并Flux1",
+    "inputs": {
+      "double_blocks_0_": {
+        "name": "双块.0."
+      },
+      "double_blocks_10_": {
+        "name": "双块.10."
+      },
+      "double_blocks_11_": {
+        "name": "双块.11."
+      },
+      "double_blocks_12_": {
+        "name": "双块.12."
+      },
+      "double_blocks_13_": {
+        "name": "双块.13."
+      },
+      "double_blocks_14_": {
+        "name": "双块.14."
+      },
+      "double_blocks_15_": {
+        "name": "双块.15."
+      },
+      "double_blocks_16_": {
+        "name": "双块.16."
+      },
+      "double_blocks_17_": {
+        "name": "双块.17."
+      },
+      "double_blocks_18_": {
+        "name": "双块.18."
+      },
+      "double_blocks_1_": {
+        "name": "双块.1."
+      },
+      "double_blocks_2_": {
+        "name": "双块.2."
+      },
+      "double_blocks_3_": {
+        "name": "双块.3."
+      },
+      "double_blocks_4_": {
+        "name": "双块.4."
+      },
+      "double_blocks_5_": {
+        "name": "双块.5."
+      },
+      "double_blocks_6_": {
+        "name": "双块.6."
+      },
+      "double_blocks_7_": {
+        "name": "双块.7."
+      },
+      "double_blocks_8_": {
+        "name": "双块.8."
+      },
+      "double_blocks_9_": {
+        "name": "双块.9."
+      },
+      "final_layer_": {
+        "name": "最终层."
+      },
+      "guidance_in": {
+        "name": "输入引导"
+      },
+      "img_in_": {
+        "name": "输入图像."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "single_blocks_0_": {
+        "name": "单块.0."
+      },
+      "single_blocks_10_": {
+        "name": "单块.10."
+      },
+      "single_blocks_11_": {
+        "name": "单块.11."
+      },
+      "single_blocks_12_": {
+        "name": "单块.12."
+      },
+      "single_blocks_13_": {
+        "name": "单块.13."
+      },
+      "single_blocks_14_": {
+        "name": "单块.14."
+      },
+      "single_blocks_15_": {
+        "name": "单块.15."
+      },
+      "single_blocks_16_": {
+        "name": "单块.16."
+      },
+      "single_blocks_17_": {
+        "name": "单块.17."
+      },
+      "single_blocks_18_": {
+        "name": "单块.18."
+      },
+      "single_blocks_19_": {
+        "name": "单块.19."
+      },
+      "single_blocks_1_": {
+        "name": "单块.1."
+      },
+      "single_blocks_20_": {
+        "name": "单块.20."
+      },
+      "single_blocks_21_": {
+        "name": "单块.21."
+      },
+      "single_blocks_22_": {
+        "name": "单块.22."
+      },
+      "single_blocks_23_": {
+        "name": "单块.23."
+      },
+      "single_blocks_24_": {
+        "name": "单块.24."
+      },
+      "single_blocks_25_": {
+        "name": "单块.25."
+      },
+      "single_blocks_26_": {
+        "name": "单块.26."
+      },
+      "single_blocks_27_": {
+        "name": "单块.27."
+      },
+      "single_blocks_28_": {
+        "name": "单块.28."
+      },
+      "single_blocks_29_": {
+        "name": "单块.29."
+      },
+      "single_blocks_2_": {
+        "name": "单块.2."
+      },
+      "single_blocks_30_": {
+        "name": "单块.30."
+      },
+      "single_blocks_31_": {
+        "name": "单块.31."
+      },
+      "single_blocks_32_": {
+        "name": "单块.32."
+      },
+      "single_blocks_33_": {
+        "name": "单块.33."
+      },
+      "single_blocks_34_": {
+        "name": "单块.34."
+      },
+      "single_blocks_35_": {
+        "name": "单块.35."
+      },
+      "single_blocks_36_": {
+        "name": "单块.36."
+      },
+      "single_blocks_37_": {
+        "name": "单块.37."
+      },
+      "single_blocks_3_": {
+        "name": "单块.3."
+      },
+      "single_blocks_4_": {
+        "name": "单块.4."
+      },
+      "single_blocks_5_": {
+        "name": "单块.5."
+      },
+      "single_blocks_6_": {
+        "name": "单块.6."
+      },
+      "single_blocks_7_": {
+        "name": "单块.7."
+      },
+      "single_blocks_8_": {
+        "name": "单块.8."
+      },
+      "single_blocks_9_": {
+        "name": "单块.9."
+      },
+      "time_in_": {
+        "name": "输入时间."
+      },
+      "txt_in_": {
+        "name": "输入文本."
+      },
+      "vector_in_": {
+        "name": "输入向量."
+      }
+    }
+  },
+  "ModelMergeLTXV": {
+    "display_name": "模型合并LTXV",
+    "inputs": {
+      "adaln_single_": {
+        "name": "adaln_single."
+      },
+      "caption_projection_": {
+        "name": "caption_projection."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "patchify_proj_": {
+        "name": "patchify_proj."
+      },
+      "proj_out_": {
+        "name": "proj_out."
+      },
+      "scale_shift_table": {
+        "name": "scale_shift_table"
+      },
+      "transformer_blocks_0_": {
+        "name": "transformer_blocks.0."
+      },
+      "transformer_blocks_10_": {
+        "name": "transformer_blocks.10."
+      },
+      "transformer_blocks_11_": {
+        "name": "transformer_blocks.11."
+      },
+      "transformer_blocks_12_": {
+        "name": "transformer_blocks.12."
+      },
+      "transformer_blocks_13_": {
+        "name": "transformer_blocks.13."
+      },
+      "transformer_blocks_14_": {
+        "name": "transformer_blocks.14."
+      },
+      "transformer_blocks_15_": {
+        "name": "transformer_blocks.15."
+      },
+      "transformer_blocks_16_": {
+        "name": "transformer_blocks.16."
+      },
+      "transformer_blocks_17_": {
+        "name": "transformer_blocks.17."
+      },
+      "transformer_blocks_18_": {
+        "name": "transformer_blocks.18."
+      },
+      "transformer_blocks_19_": {
+        "name": "transformer_blocks.19."
+      },
+      "transformer_blocks_1_": {
+        "name": "transformer_blocks.1."
+      },
+      "transformer_blocks_20_": {
+        "name": "transformer_blocks.20."
+      },
+      "transformer_blocks_21_": {
+        "name": "transformer_blocks.21."
+      },
+      "transformer_blocks_22_": {
+        "name": "transformer_blocks.22."
+      },
+      "transformer_blocks_23_": {
+        "name": "transformer_blocks.23."
+      },
+      "transformer_blocks_24_": {
+        "name": "transformer_blocks.24."
+      },
+      "transformer_blocks_25_": {
+        "name": "transformer_blocks.25."
+      },
+      "transformer_blocks_26_": {
+        "name": "transformer_blocks.26."
+      },
+      "transformer_blocks_27_": {
+        "name": "transformer_blocks.27."
+      },
+      "transformer_blocks_2_": {
+        "name": "transformer_blocks.2."
+      },
+      "transformer_blocks_3_": {
+        "name": "transformer_blocks.3."
+      },
+      "transformer_blocks_4_": {
+        "name": "transformer_blocks.4."
+      },
+      "transformer_blocks_5_": {
+        "name": "transformer_blocks.5."
+      },
+      "transformer_blocks_6_": {
+        "name": "transformer_blocks.6."
+      },
+      "transformer_blocks_7_": {
+        "name": "transformer_blocks.7."
+      },
+      "transformer_blocks_8_": {
+        "name": "transformer_blocks.8."
+      },
+      "transformer_blocks_9_": {
+        "name": "transformer_blocks.9."
+      }
+    }
+  },
+  "ModelMergeMochiPreview": {
+    "display_name": "模型合并Mochi预览",
+    "inputs": {
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "final_layer_": {
+        "name": "final_layer."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "pos_frequencies_": {
+        "name": "pos_frequencies."
+      },
+      "t5_y_embedder_": {
+        "name": "t5_y_embedder."
+      },
+      "t5_yproj_": {
+        "name": "t5_yproj."
+      },
+      "t_embedder_": {
+        "name": "t_embedder."
+      }
+    }
+  },
+  "ModelMergeSD1": {
+    "display_name": "模型合并SD1",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "输入块.0."
+      },
+      "input_blocks_10_": {
+        "name": "输入块.10."
+      },
+      "input_blocks_11_": {
+        "name": "输入块.11."
+      },
+      "input_blocks_1_": {
+        "name": "输入块.1."
+      },
+      "input_blocks_2_": {
+        "name": "输入块.2."
+      },
+      "input_blocks_3_": {
+        "name": "输入块.3."
+      },
+      "input_blocks_4_": {
+        "name": "输入块.4."
+      },
+      "input_blocks_5_": {
+        "name": "输入块.5."
+      },
+      "input_blocks_6_": {
+        "name": "输入块.6."
+      },
+      "input_blocks_7_": {
+        "name": "输入块.7."
+      },
+      "input_blocks_8_": {
+        "name": "输入块.8."
+      },
+      "input_blocks_9_": {
+        "name": "输入块.9."
+      },
+      "label_emb_": {
+        "name": "标签嵌入."
+      },
+      "middle_block_0_": {
+        "name": "中间块.0."
+      },
+      "middle_block_1_": {
+        "name": "中间块.1."
+      },
+      "middle_block_2_": {
+        "name": "中间块.2."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "out_": {
+        "name": "出."
+      },
+      "output_blocks_0_": {
+        "name": "输出块.0."
+      },
+      "output_blocks_10_": {
+        "name": "输出块.10."
+      },
+      "output_blocks_11_": {
+        "name": "输出块.11."
+      },
+      "output_blocks_1_": {
+        "name": "输出块.1."
+      },
+      "output_blocks_2_": {
+        "name": "输出块.2."
+      },
+      "output_blocks_3_": {
+        "name": "输出块.3."
+      },
+      "output_blocks_4_": {
+        "name": "输出块.4."
+      },
+      "output_blocks_5_": {
+        "name": "输出块.5."
+      },
+      "output_blocks_6_": {
+        "name": "输出块.6."
+      },
+      "output_blocks_7_": {
+        "name": "输出块.7."
+      },
+      "output_blocks_8_": {
+        "name": "输出块.8."
+      },
+      "output_blocks_9_": {
+        "name": "输出块.9."
+      },
+      "time_embed_": {
+        "name": "时间嵌入."
+      }
+    }
+  },
+  "ModelMergeSD2": {
+    "display_name": "模型合并SD2",
+    "inputs": {
+      "input_blocks_0_": {
+        "name": "输入块.0."
+      },
+      "input_blocks_10_": {
+        "name": "输入块.10."
+      },
+      "input_blocks_11_": {
+        "name": "输入块.11."
+      },
+      "input_blocks_1_": {
+        "name": "输入块.1."
+      },
+      "input_blocks_2_": {
+        "name": "输入块.2."
+      },
+      "input_blocks_3_": {
+        "name": "输入块.3."
+      },
+      "input_blocks_4_": {
+        "name": "输入块.4."
+      },
+      "input_blocks_5_": {
+        "name": "输入块.5."
+      },
+      "input_blocks_6_": {
+        "name": "输入块.6."
+      },
+      "input_blocks_7_": {
+        "name": "输入块.7."
+      },
+      "input_blocks_8_": {
+        "name": "输入块.8."
+      },
+      "input_blocks_9_": {
+        "name": "输入块.9."
+      },
+      "label_emb_": {
+        "name": "标签嵌入."
+      },
+      "middle_block_0_": {
+        "name": "中间块.0."
+      },
+      "middle_block_1_": {
+        "name": "中间块.1."
+      },
+      "middle_block_2_": {
+        "name": "中间块.2."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "out_": {
+        "name": "出."
+      },
+      "output_blocks_0_": {
+        "name": "输出块.0."
+      },
+      "output_blocks_10_": {
+        "name": "输出块.10."
+      },
+      "output_blocks_11_": {
+        "name": "输出块.11."
+      },
+      "output_blocks_1_": {
+        "name": "输出块.1."
+      },
+      "output_blocks_2_": {
+        "name": "输出块.2."
+      },
+      "output_blocks_3_": {
+        "name": "输出块.3."
+      },
+      "output_blocks_4_": {
+        "name": "输出块.4."
+      },
+      "output_blocks_5_": {
+        "name": "输出块.5."
+      },
+      "output_blocks_6_": {
+        "name": "输出块.6."
+      },
+      "output_blocks_7_": {
+        "name": "输出块.7."
+      },
+      "output_blocks_8_": {
+        "name": "输出块.8."
+      },
+      "output_blocks_9_": {
+        "name": "输出块.9."
+      },
+      "time_embed_": {
+        "name": "时间嵌入."
+      }
+    }
+  },
+  "ModelMergeSD35_Large": {
+    "display_name": "模型合并SD35_大",
+    "inputs": {
+      "context_embedder_": {
+        "name": "上下文嵌入器."
+      },
+      "final_layer_": {
+        "name": "最终层."
+      },
+      "joint_blocks_0_": {
+        "name": "联合块.0."
+      },
+      "joint_blocks_10_": {
+        "name": "联合块.10."
+      },
+      "joint_blocks_11_": {
+        "name": "联合块.11."
+      },
+      "joint_blocks_12_": {
+        "name": "联合块.12."
+      },
+      "joint_blocks_13_": {
+        "name": "联合块.13."
+      },
+      "joint_blocks_14_": {
+        "name": "联合块.14."
+      },
+      "joint_blocks_15_": {
+        "name": "联合块.15."
+      },
+      "joint_blocks_16_": {
+        "name": "联合块.16."
+      },
+      "joint_blocks_17_": {
+        "name": "联合块.17."
+      },
+      "joint_blocks_18_": {
+        "name": "联合块.18."
+      },
+      "joint_blocks_19_": {
+        "name": "联合块.19."
+      },
+      "joint_blocks_1_": {
+        "name": "联合块.1."
+      },
+      "joint_blocks_20_": {
+        "name": "联合块.20."
+      },
+      "joint_blocks_21_": {
+        "name": "联合块.21."
+      },
+      "joint_blocks_22_": {
+        "name": "联合块.22."
+      },
+      "joint_blocks_23_": {
+        "name": "联合块.23."
+      },
+      "joint_blocks_24_": {
+        "name": "联合块.24."
+      },
+      "joint_blocks_25_": {
+        "name": "联合块.25."
+      },
+      "joint_blocks_26_": {
+        "name": "联合块.26."
+      },
+      "joint_blocks_27_": {
+        "name": "联合块.27."
+      },
+      "joint_blocks_28_": {
+        "name": "联合块.28."
+      },
+      "joint_blocks_29_": {
+        "name": "联合块.29."
+      },
+      "joint_blocks_2_": {
+        "name": "联合块.2."
+      },
+      "joint_blocks_30_": {
+        "name": "联合块.30."
+      },
+      "joint_blocks_31_": {
+        "name": "联合块.31."
+      },
+      "joint_blocks_32_": {
+        "name": "联合块.32."
+      },
+      "joint_blocks_33_": {
+        "name": "联合块.33."
+      },
+      "joint_blocks_34_": {
+        "name": "联合块.34."
+      },
+      "joint_blocks_35_": {
+        "name": "联合块.35."
+      },
+      "joint_blocks_36_": {
+        "name": "联合块.36."
+      },
+      "joint_blocks_37_": {
+        "name": "联合块.37."
+      },
+      "joint_blocks_3_": {
+        "name": "联合块.3."
+      },
+      "joint_blocks_4_": {
+        "name": "联合块.4."
+      },
+      "joint_blocks_5_": {
+        "name": "联合块.5."
+      },
+      "joint_blocks_6_": {
+        "name": "联合块.6."
+      },
+      "joint_blocks_7_": {
+        "name": "联合块.7."
+      },
+      "joint_blocks_8_": {
+        "name": "联合块.8."
+      },
+      "joint_blocks_9_": {
+        "name": "联合块.9."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "pos_embed_": {
+        "name": "位置嵌入."
+      },
+      "t_embedder_": {
+        "name": "t嵌入器."
+      },
+      "x_embedder_": {
+        "name": "x嵌入器."
+      },
+      "y_embedder_": {
+        "name": "y嵌入器."
+      }
+    }
+  },
+  "ModelMergeSD3_2B": {
+    "display_name": "模型合并SD3_2B",
+    "inputs": {
+      "context_embedder_": {
+        "name": "上下文嵌入器."
+      },
+      "final_layer_": {
+        "name": "最终层."
+      },
+      "joint_blocks_0_": {
+        "name": "联合块.0."
+      },
+      "joint_blocks_10_": {
+        "name": "联合块.10."
+      },
+      "joint_blocks_11_": {
+        "name": "联合块.11."
+      },
+      "joint_blocks_12_": {
+        "name": "联合块.12."
+      },
+      "joint_blocks_13_": {
+        "name": "联合块.13."
+      },
+      "joint_blocks_14_": {
+        "name": "联合块.14."
+      },
+      "joint_blocks_15_": {
+        "name": "联合块.15."
+      },
+      "joint_blocks_16_": {
+        "name": "联合块.16."
+      },
+      "joint_blocks_17_": {
+        "name": "联合块.17."
+      },
+      "joint_blocks_18_": {
+        "name": "联合块.18."
+      },
+      "joint_blocks_19_": {
+        "name": "联合块.19."
+      },
+      "joint_blocks_1_": {
+        "name": "联合块.1."
+      },
+      "joint_blocks_20_": {
+        "name": "联合块.20."
+      },
+      "joint_blocks_21_": {
+        "name": "联合块.21."
+      },
+      "joint_blocks_22_": {
+        "name": "联合块.22."
+      },
+      "joint_blocks_23_": {
+        "name": "联合块.23."
+      },
+      "joint_blocks_2_": {
+        "name": "联合块.2."
+      },
+      "joint_blocks_3_": {
+        "name": "联合块.3."
+      },
+      "joint_blocks_4_": {
+        "name": "联合块.4."
+      },
+      "joint_blocks_5_": {
+        "name": "联合块.5."
+      },
+      "joint_blocks_6_": {
+        "name": "联合块.6."
+      },
+      "joint_blocks_7_": {
+        "name": "联合块.7."
+      },
+      "joint_blocks_8_": {
+        "name": "联合块.8."
+      },
+      "joint_blocks_9_": {
+        "name": "联合块.9."
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "pos_embed_": {
+        "name": "位置嵌入."
+      },
+      "t_embedder_": {
+        "name": "t嵌入器."
+      },
+      "x_embedder_": {
+        "name": "x嵌入器."
+      },
+      "y_embedder_": {
+        "name": "y嵌入器."
+      }
+    }
+  },
+  "ModelMergeSDXL": {
+    "display_name": "模型合并SDXL",
+    "inputs": {
+      "input_blocks_0": {
+        "name": "输入块.0"
+      },
+      "input_blocks_1": {
+        "name": "输入块.1"
+      },
+      "input_blocks_2": {
+        "name": "输入块.2"
+      },
+      "input_blocks_3": {
+        "name": "输入块.3"
+      },
+      "input_blocks_4": {
+        "name": "输入块.4"
+      },
+      "input_blocks_5": {
+        "name": "输入块.5"
+      },
+      "input_blocks_6": {
+        "name": "输入块.6"
+      },
+      "input_blocks_7": {
+        "name": "输入块.7"
+      },
+      "input_blocks_8": {
+        "name": "输入块.8"
+      },
+      "label_emb_": {
+        "name": "标签嵌入."
+      },
+      "middle_block_0": {
+        "name": "中间块.0"
+      },
+      "middle_block_1": {
+        "name": "中间块.1"
+      },
+      "middle_block_2": {
+        "name": "中间块.2"
+      },
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "out_": {
+        "name": "输出."
+      },
+      "output_blocks_0": {
+        "name": "输出块.0"
+      },
+      "output_blocks_1": {
+        "name": "输出块.1"
+      },
+      "output_blocks_2": {
+        "name": "输出块.2"
+      },
+      "output_blocks_3": {
+        "name": "输出块.3"
+      },
+      "output_blocks_4": {
+        "name": "输出块.4"
+      },
+      "output_blocks_5": {
+        "name": "输出块.5"
+      },
+      "output_blocks_6": {
+        "name": "输出块.6"
+      },
+      "output_blocks_7": {
+        "name": "输出块.7"
+      },
+      "output_blocks_8": {
+        "name": "输出块.8"
+      },
+      "time_embed_": {
+        "name": "时间嵌入."
+      }
+    }
+  },
+  "ModelMergeSimple": {
+    "display_name": "模型合并简单",
+    "inputs": {
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "ratio": {
+        "name": "比例"
+      }
+    }
+  },
+  "ModelMergeSubtract": {
+    "display_name": "模型合并减法",
+    "inputs": {
+      "model1": {
+        "name": "模型1"
+      },
+      "model2": {
+        "name": "模型2"
+      },
+      "multiplier": {
+        "name": "乘数"
+      }
+    }
+  },
+  "ModelSamplingAuraFlow": {
+    "display_name": "模型采样AuraFlow",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "shift": {
+        "name": "移位"
+      }
+    }
+  },
+  "ModelSamplingContinuousEDM": {
+    "display_name": "模型采样连续EDM",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "sampling": {
+        "name": "采样"
+      },
+      "sigma_max": {
+        "name": "最大西格玛"
+      },
+      "sigma_min": {
+        "name": "最小西格玛"
+      }
+    }
+  },
+  "ModelSamplingContinuousV": {
+    "display_name": "模型采样连续V",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "sampling": {
+        "name": "采样"
+      },
+      "sigma_max": {
+        "name": "最大西格玛"
+      },
+      "sigma_min": {
+        "name": "最小西格玛"
+      }
+    }
+  },
+  "ModelSamplingDiscrete": {
+    "display_name": "模型采样离散",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "sampling": {
+        "name": "采样"
+      },
+      "zsnr": {
+        "name": "zsnr"
+      }
+    }
+  },
+  "ModelSamplingFlux": {
+    "display_name": "模型采样Flux",
+    "inputs": {
+      "base_shift": {
+        "name": "基础偏移"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "max_shift": {
+        "name": "最大偏移"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "ModelSamplingLTXV": {
+    "display_name": "模型采样LTXV",
+    "inputs": {
+      "base_shift": {
+        "name": "基础偏移"
+      },
+      "latent": {
+        "name": "潜空间"
+      },
+      "max_shift": {
+        "name": "最大偏移"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "ModelSamplingSD3": {
+    "display_name": "模型采样SD3",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "shift": {
+        "name": "偏移"
+      }
+    }
+  },
+  "ModelSamplingStableCascade": {
+    "display_name": "模型采样稳定级联",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "shift": {
+        "name": "偏移"
+      }
+    }
+  },
+  "ModelSave": {
+    "display_name": "保存模型",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "Morphology": {
+    "display_name": "图像形态学",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "kernel_size": {
+        "name": "核心大小"
+      },
+      "operation": {
+        "name": "操作"
+      }
+    }
+  },
+  "PairConditioningCombine": {
+    "display_name": "条件对组合",
+    "inputs": {
+      "negative_A": {
+        "name": "负向_A"
+      },
+      "negative_B": {
+        "name": "负向_B"
+      },
+      "positive_A": {
+        "name": "正向_A"
+      },
+      "positive_B": {
+        "name": "正向_B"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "PairConditioningSetDefaultCombine": {
+    "display_name": "条件对设置默认组合",
+    "inputs": {
+      "hooks": {
+        "name": "钩子"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "negative_DEFAULT": {
+        "name": "默认负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "positive_DEFAULT": {
+        "name": "默认正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "PairConditioningSetProperties": {
+    "display_name": "条件对设置属性",
+    "inputs": {
+      "hooks": {
+        "name": "钩子"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "negative_NEW": {
+        "name": "新负向"
+      },
+      "positive_NEW": {
+        "name": "新正向"
+      },
+      "set_cond_area": {
+        "name": "设置条件区域"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "timesteps": {
+        "name": "时间步"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "PairConditioningSetPropertiesAndCombine": {
+    "display_name": "条件对设置属性组合",
+    "inputs": {
+      "hooks": {
+        "name": "钩子"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "negative": {
+        "name": "负向"
+      },
+      "negative_NEW": {
+        "name": "新负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "positive_NEW": {
+        "name": "新正向"
+      },
+      "set_cond_area": {
+        "name": "设置条件区域"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "timesteps": {
+        "name": "时间步"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      }
+    }
+  },
+  "PatchModelAddDownscale": {
+    "display_name": "补丁模型添加下采样（Kohya深度缩小）",
+    "inputs": {
+      "block_number": {
+        "name": "块数"
+      },
+      "downscale_after_skip": {
+        "name": "跳过后缩小"
+      },
+      "downscale_factor": {
+        "name": "缩小因子"
+      },
+      "downscale_method": {
+        "name": "缩小方法"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      }
+    }
+  },
+  "PerpNeg": {
+    "display_name": "Perp-Neg（已弃用，使用PerpNegGuider）",
+    "inputs": {
+      "empty_conditioning": {
+        "name": "空条件"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "neg_scale": {
+        "name": "负比例"
+      }
+    }
+  },
+  "PerpNegGuider": {
+    "display_name": "PerpNeg引导器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "empty_conditioning": {
+        "name": "空条件"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "neg_scale": {
+        "name": "负比例"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "positive": {
+        "name": "正面"
+      }
+    }
+  },
+  "PerturbedAttentionGuidance": {
+    "display_name": "扰动注意力引导",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "scale": {
+        "name": "规模"
+      }
+    }
+  },
+  "PhotoMakerEncode": {
+    "display_name": "PhotoMaker编码",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "photomaker": {
+        "name": "photomaker"
+      },
+      "text": {
+        "name": "文本"
+      }
+    }
+  },
+  "PhotoMakerLoader": {
+    "display_name": "PhotoMaker加载器",
+    "inputs": {
+      "photomaker_model_name": {
+        "name": "photomaker模型名称"
+      }
+    }
+  },
+  "PolyexponentialScheduler": {
+    "display_name": "多指数调度器",
+    "inputs": {
+      "rho": {
+        "name": "rho"
+      },
+      "sigma_max": {
+        "name": "sigma最大值"
+      },
+      "sigma_min": {
+        "name": "sigma最小值"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "PorterDuffImageComposite": {
+    "display_name": "Porter-Duff图像合成",
+    "inputs": {
+      "destination": {
+        "name": "目的地"
+      },
+      "destination_alpha": {
+        "name": "目的地alpha"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "source": {
+        "name": "源"
+      },
+      "source_alpha": {
+        "name": "源alpha"
+      }
+    }
+  },
+  "PreviewAudio": {
+    "display_name": "预览音频",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      }
+    }
+  },
+  "PreviewImage": {
+    "description": "将输入图像保存到您的ComfyUI输出目录。",
+    "display_name": "预览图像",
+    "inputs": {
+      "images": {
+        "name": "图像"
+      }
+    }
+  },
+  "RandomNoise": {
+    "display_name": "随机噪声",
+    "inputs": {
+      "noise_seed": {
+        "name": "噪声种子"
+      }
+    }
+  },
+  "RebatchImages": {
+    "display_name": "重新批处理图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "images": {
+        "name": "图像"
+      }
+    }
+  },
+  "RebatchLatents": {
+    "display_name": "重新批处理潜空间",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "latents": {
+        "name": "潜空间因素"
+      }
+    }
+  },
+  "RepeatImageBatch": {
+    "display_name": "重复图像批处理",
+    "inputs": {
+      "amount": {
+        "name": "数量"
+      },
+      "image": {
+        "name": "图像"
+      }
+    }
+  },
+  "RepeatLatentBatch": {
+    "display_name": "重复潜空间批处理",
+    "inputs": {
+      "amount": {
+        "name": "数量"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "RescaleCFG": {
+    "display_name": "重新缩放CFG",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "multiplier": {
+        "name": "乘数"
+      }
+    }
+  },
+  "SDTurboScheduler": {
+    "display_name": "SDTurbo调度器",
+    "inputs": {
+      "denoise": {
+        "name": "去噪"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "SD_4XUpscale_Conditioning": {
+    "display_name": "SD_4X放大条件",
+    "inputs": {
+      "images": {
+        "name": "图片"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "noise_augmentation": {
+        "name": "噪声增强"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "scale_ratio": {
+        "name": "缩放比例"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "SV3D_Conditioning": {
+    "display_name": "SV3D条件",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip视觉"
+      },
+      "elevation": {
+        "name": "海拔"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "init_image": {
+        "name": "初始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "视频帧"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "SVD_img2vid_Conditioning": {
+    "display_name": "SVD_img2vid条件",
+    "inputs": {
+      "augmentation_level": {
+        "name": "增强级别"
+      },
+      "clip_vision": {
+        "name": "clip_vision"
+      },
+      "fps": {
+        "name": "帧率"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "init_image": {
+        "name": "初始图像"
+      },
+      "motion_bucket_id": {
+        "name": "运动桶ID"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "video_frames": {
+        "name": "视频帧"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "SamplerCustom": {
+    "display_name": "自定义采样器",
+    "inputs": {
+      "add_noise": {
+        "name": "添加噪声"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "latent_image": {
+        "name": "潜空间图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative": {
+        "name": "负面"
+      },
+      "noise_seed": {
+        "name": "噪声种子"
+      },
+      "positive": {
+        "name": "正面"
+      },
+      "sampler": {
+        "name": "采样器"
+      },
+      "sigmas": {
+        "name": "西格玛"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出"
+      },
+      "1": {
+        "name": "去噪输出"
+      }
+    }
+  },
+  "SamplerCustomAdvanced": {
+    "display_name": "自定义采样器（高级）",
+    "inputs": {
+      "guider": {
+        "name": "引导器"
+      },
+      "latent_image": {
+        "name": "潜空间图像"
+      },
+      "noise": {
+        "name": "噪声"
+      },
+      "sampler": {
+        "name": "采样器"
+      },
+      "sigmas": {
+        "name": "西格玛"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出"
+      },
+      "1": {
+        "name": "去噪输出"
+      }
+    }
+  },
+  "SamplerDPMAdaptative": {
+    "display_name": "自适应DPM采样器",
+    "inputs": {
+      "accept_safety": {
+        "name": "接受安全"
+      },
+      "atol": {
+        "name": "绝对公差"
+      },
+      "dcoeff": {
+        "name": "d系数"
+      },
+      "eta": {
+        "name": "eta"
+      },
+      "h_init": {
+        "name": "h初始"
+      },
+      "icoeff": {
+        "name": "i系数"
+      },
+      "order": {
+        "name": "顺序"
+      },
+      "pcoeff": {
+        "name": "p系数"
+      },
+      "rtol": {
+        "name": "相对公差"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerDPMPP_2M_SDE": {
+    "display_name": "DPMPP_2M_SDE采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "噪声设备"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      },
+      "solver_type": {
+        "name": "求解器类型"
+      }
+    }
+  },
+  "SamplerDPMPP_2S_Ancestral": {
+    "display_name": "DPMPP_2S_祖先采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerDPMPP_3M_SDE": {
+    "display_name": "DPMPP_3M_SDE采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "噪声设备"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerDPMPP_SDE": {
+    "display_name": "DPMPP_SDE采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "noise_device": {
+        "name": "噪声设备"
+      },
+      "r": {
+        "name": "r"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerEulerAncestral": {
+    "display_name": "欧拉祖先采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerEulerAncestralCFGPP": {
+    "display_name": "欧拉祖先CFG++采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta"
+      },
+      "s_noise": {
+        "name": "s噪声"
+      }
+    }
+  },
+  "SamplerEulerCFGpp": {
+    "display_name": "欧拉CFG++采样器",
+    "inputs": {
+      "version": {
+        "name": "版本"
+      }
+    }
+  },
+  "SamplerLCMUpscale": {
+    "display_name": "LCM放大采样器",
+    "inputs": {
+      "scale_ratio": {
+        "name": "缩放比例"
+      },
+      "scale_steps": {
+        "name": "缩放步骤"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      }
+    }
+  },
+  "SamplerLMS": {
+    "display_name": "LMS采样器",
+    "inputs": {
+      "order": {
+        "name": "顺序"
+      }
+    }
+  },
+  "SaveAnimatedPNG": {
+    "display_name": "保存动画PNG",
+    "inputs": {
+      "compress_level": {
+        "name": "压缩级别"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "fps": {
+        "name": "帧率"
+      },
+      "images": {
+        "name": "图片"
+      }
+    }
+  },
+  "SaveAnimatedWEBP": {
+    "display_name": "保存动画WEBP",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "fps": {
+        "name": "帧率"
+      },
+      "images": {
+        "name": "图片"
+      },
+      "lossless": {
+        "name": "无损"
+      },
+      "method": {
+        "name": "方法"
+      },
+      "quality": {
+        "name": "质量"
+      }
+    }
+  },
+  "SaveAudio": {
+    "display_name": "保存音频",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "filename_prefix": {
+        "name": "文件名前缀"
+      }
+    }
+  },
+  "SaveImage": {
+    "description": "将输入图像保存到您的ComfyUI输出目录。",
+    "display_name": "保存图像",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "要保存的文件的前缀。这可能包括格式信息，例如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width% 以包含节点中的值。"
+      },
+      "images": {
+        "name": "图片",
+        "tooltip": "要保存的图像。"
+      }
+    }
+  },
+  "SaveImageWebsocket": {
+    "display_name": "保存图像Websocket",
+    "inputs": {
+      "images": {
+        "name": "图片"
+      }
+    }
+  },
+  "SaveLatent": {
+    "display_name": "保存潜空间",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "SelfAttentionGuidance": {
+    "display_name": "自注意力引导",
+    "inputs": {
+      "blur_sigma": {
+        "name": "模糊西格玛"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "scale": {
+        "name": "缩放"
+      }
+    }
+  },
+  "SetClipHooks": {
+    "display_name": "设置CLIP钩子",
+    "inputs": {
+      "apply_to_conds": {
+        "name": "应用于条件"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "hooks": {
+        "name": "钩子"
+      },
+      "schedule_clip": {
+        "name": "安排clip"
+      }
+    }
+  },
+  "SetHookKeyframes": {
+    "display_name": "设置钩子关键帧",
+    "inputs": {
+      "hook_kf": {
+        "name": "钩子关键帧"
+      },
+      "hooks": {
+        "name": "钩子"
+      }
+    }
+  },
+  "SetLatentNoiseMask": {
+    "display_name": "设置潜空间噪声遮罩",
+    "inputs": {
+      "mask": {
+        "name": "遮罩"
+      },
+      "samples": {
+        "name": "样本"
+      }
+    }
+  },
+  "SetUnionControlNetType": {
+    "display_name": "设置联合控制网类型",
+    "inputs": {
+      "control_net": {
+        "name": "控制网络"
+      },
+      "type": {
+        "name": "类型"
+      }
+    }
+  },
+  "SkipLayerGuidanceDiT": {
+    "description": "通用版本的跳过层引导节点，可用于每个DiT模型。",
+    "display_name": "跳过层引导DiT",
+    "inputs": {
+      "double_layers": {
+        "name": "双层"
+      },
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "rescaling_scale": {
+        "name": "重新缩放比例"
+      },
+      "scale": {
+        "name": "缩放"
+      },
+      "single_layers": {
+        "name": "单层"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      }
+    }
+  },
+  "SkipLayerGuidanceSD3": {
+    "description": "通用版本的跳过层引导节点，可用于每个DiT模型。",
+    "display_name": "跳过层引导SD3",
+    "inputs": {
+      "end_percent": {
+        "name": "结束百分比"
+      },
+      "layers": {
+        "name": "层"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "scale": {
+        "name": "缩放"
+      },
+      "start_percent": {
+        "name": "开始百分比"
+      }
+    }
+  },
+  "SolidMask": {
+    "display_name": "实心遮罩",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "value": {
+        "name": "值"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "SplitImageWithAlpha": {
+    "display_name": "按Alpha分割图像",
+    "inputs": {
+      "image": {
+        "name": "图片"
+      }
+    }
+  },
+  "SplitSigmas": {
+    "display_name": "分割Sigma",
+    "inputs": {
+      "sigmas": {
+        "name": "西格玛"
+      },
+      "step": {
+        "name": "步骤"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "高方差"
+      },
+      "1": {
+        "name": "低方差"
+      }
+    }
+  },
+  "SplitSigmasDenoise": {
+    "display_name": "分割Sigma去噪",
+    "inputs": {
+      "denoise": {
+        "name": "降噪"
+      },
+      "sigmas": {
+        "name": "西格玛"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "高方差"
+      },
+      "1": {
+        "name": "低方差"
+      }
+    }
+  },
+  "StableCascade_EmptyLatentImage": {
+    "display_name": "稳定级联_空潜空间图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "compression": {
+        "name": "压缩"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "阶段C"
+      },
+      "1": {
+        "name": "阶段B"
+      }
+    }
+  },
+  "StableCascade_StageB_Conditioning": {
+    "display_name": "稳定级联_B阶段条件",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "stage_c": {
+        "name": "阶段c"
+      }
+    }
+  },
+  "StableCascade_StageC_VAEEncode": {
+    "display_name": "稳定级联_C阶段VAE编码",
+    "inputs": {
+      "compression": {
+        "name": "压缩"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "阶段C"
+      },
+      "1": {
+        "name": "阶段B"
+      }
+    }
+  },
+  "StableCascade_SuperResolutionControlnet": {
+    "display_name": "稳定级联_超分辨率控制网",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "控制网输入"
+      },
+      "1": {
+        "name": "阶段C"
+      },
+      "2": {
+        "name": "阶段B"
+      }
+    }
+  },
+  "StableZero123_Conditioning": {
+    "display_name": "稳定零123条件",
+    "inputs": {
+      "azimuth": {
+        "name": "方位角"
+      },
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision": {
+        "name": "clip视觉"
+      },
+      "elevation": {
+        "name": "海拔"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "init_image": {
+        "name": "初始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "StableZero123_Conditioning_Batched": {
+    "display_name": "稳定零123条件_批处理",
+    "inputs": {
+      "azimuth": {
+        "name": "方位角"
+      },
+      "azimuth_batch_increment": {
+        "name": "方位角批量增量"
+      },
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "clip_vision": {
+        "name": "clip视觉"
+      },
+      "elevation": {
+        "name": "海拔"
+      },
+      "elevation_batch_increment": {
+        "name": "海拔批量增量"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "init_image": {
+        "name": "初始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面"
+      },
+      "1": {
+        "name": "负面"
+      },
+      "2": {
+        "name": "潜空间"
+      }
+    }
+  },
+  "StyleModelApply": {
+    "display_name": "应用风格模型",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "conditioning": {
+        "name": "条件"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "strength_type": {
+        "name": "强度类型"
+      },
+      "style_model": {
+        "name": "风格模型"
+      }
+    }
+  },
+  "StyleModelLoader": {
+    "display_name": "加载风格模型",
+    "inputs": {
+      "style_model_name": {
+        "name": "风格模型名称"
+      }
+    }
+  },
+  "ThresholdMask": {
+    "display_name": "阈值遮罩",
+    "inputs": {
+      "mask": {
+        "name": "遮罩"
+      },
+      "value": {
+        "name": "值"
+      }
+    }
+  },
+  "TomePatchModel": {
+    "display_name": "Tome补丁模型",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "ratio": {
+        "name": "比率"
+      }
+    }
+  },
+  "TorchCompileModel": {
+    "display_name": "Torch编译模型",
+    "inputs": {
+      "backend": {
+        "name": "后端"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "TripleCLIPLoader": {
+    "description": "[配方]\n\nsd3：clip-l，clip-g，t5",
+    "display_name": "三重CLIP加载器",
+    "inputs": {
+      "clip_name1": {
+        "name": "clip_name1"
+      },
+      "clip_name2": {
+        "name": "clip_name2"
+      },
+      "clip_name3": {
+        "name": "clip_name3"
+      }
+    }
+  },
+  "UNETLoader": {
+    "display_name": "加载扩散模型",
+    "inputs": {
+      "unet_name": {
+        "name": "unet_name"
+      },
+      "weight_dtype": {
+        "name": "权重数据类型"
+      }
+    }
+  },
+  "UNetCrossAttentionMultiply": {
+    "display_name": "UNet交叉注意力乘法",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "out": {
+        "name": "输出"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetSelfAttentionMultiply": {
+    "display_name": "UNet自注意力乘法",
+    "inputs": {
+      "k": {
+        "name": "k"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "out": {
+        "name": "输出"
+      },
+      "q": {
+        "name": "q"
+      },
+      "v": {
+        "name": "v"
+      }
+    }
+  },
+  "UNetTemporalAttentionMultiply": {
+    "display_name": "UNet时间注意力乘法",
+    "inputs": {
+      "cross_structural": {
+        "name": "交叉结构"
+      },
+      "cross_temporal": {
+        "name": "交叉时间"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "self_structural": {
+        "name": "自我结构"
+      },
+      "self_temporal": {
+        "name": "自我时间"
+      }
+    }
+  },
+  "UpscaleModelLoader": {
+    "display_name": "加载放大模型",
+    "inputs": {
+      "model_name": {
+        "name": "模型名称"
+      }
+    }
+  },
+  "VAEDecode": {
+    "description": "将潜空间图像解码回像素空间图像。",
+    "display_name": "VAE解码",
+    "inputs": {
+      "samples": {
+        "name": "样本",
+        "tooltip": "要解码的潜空间图像。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "用于解码潜空间图像的 VAE 模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "解码后的图像。"
+      }
+    }
+  },
+  "VAEDecodeAudio": {
+    "display_name": "VAE解码音频",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTiled": {
+    "display_name": "VAE解码（平铺）",
+    "inputs": {
+      "overlap": {
+        "name": "重叠"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "tile_size": {
+        "name": "瓷砖大小"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncode": {
+    "display_name": "VAE编码",
+    "inputs": {
+      "pixels": {
+        "name": "像素"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeAudio": {
+    "display_name": "VAE编码音频",
+    "inputs": {
+      "audio": {
+        "name": "音频"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeForInpaint": {
+    "display_name": "VAE编码（用于修复）",
+    "inputs": {
+      "grow_mask_by": {
+        "name": "增长遮罩"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "pixels": {
+        "name": "像素"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAEEncodeTiled": {
+    "display_name": "VAE编码（平铺）",
+    "inputs": {
+      "pixels": {
+        "name": "像素"
+      },
+      "tile_size": {
+        "name": "瓷砖大小"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VAELoader": {
+    "display_name": "加载VAE",
+    "inputs": {
+      "vae_name": {
+        "name": "vae名称"
+      }
+    }
+  },
+  "VAESave": {
+    "display_name": "保存VAE",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
+  "VPScheduler": {
+    "display_name": "VPS调度器",
+    "inputs": {
+      "beta_d": {
+        "name": "beta_d"
+      },
+      "beta_min": {
+        "name": "beta_min"
+      },
+      "eps_s": {
+        "name": "eps_s"
+      },
+      "steps": {
+        "name": "步骤"
+      }
+    }
+  },
+  "VideoLinearCFGGuidance": {
+    "display_name": "视频线性CFG引导",
+    "inputs": {
+      "min_cfg": {
+        "name": "最小配置"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "VideoTriangleCFGGuidance": {
+    "display_name": "视频三角形CFG引导",
+    "inputs": {
+      "min_cfg": {
+        "name": "最小配置"
+      },
+      "model": {
+        "name": "模型"
+      }
+    }
+  },
+  "WebcamCapture": {
+    "display_name": "网络摄像头捕获",
+    "inputs": {
+      "capture_on_queue": {
+        "name": "队列捕获"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
+  "unCLIPCheckpointLoader": {
+    "display_name": "unCLIP检查点加载器",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      }
+    }
+  },
+  "unCLIPConditioning": {
+    "display_name": "unCLIP条件",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "conditioning": {
+        "name": "条件"
+      },
+      "noise_augmentation": {
+        "name": "噪声增强"
+      },
+      "strength": {
+        "name": "强度"
+      }
+    }
+  }
+}
