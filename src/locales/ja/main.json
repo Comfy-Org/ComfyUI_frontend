@@ -353,6 +353,7 @@
     "Attention": "アテンション",
     "CUDA": "CUDA",
     "Cache": "キャッシュ",
+    "Directories": "ディレクトリ",
     "General": "一般",
     "Inference": "推論",
     "Memory": "メモリ",
@@ -427,11 +428,23 @@
       "name": "グローバル浮動小数点精度",
       "tooltip": "グローバル浮動小数点精度"
     },
+    "input-directory": {
+      "name": "入力ディレクトリ"
+    },
+    "listen": {
+      "name": "ホスト：リッスンするIPアドレス"
+    },
     "log-level": {
       "name": "ログの冗長性レベル"
     },
     "max-upload-size": {
       "name": "最大アップロードサイズ (MB)"
+    },
+    "output-directory": {
+      "name": "出力ディレクトリ"
+    },
+    "port": {
+      "name": "ポート：リッスンするポート"
     },
     "preview-method": {
       "name": "潜在プレビューに使用されるメソッド"

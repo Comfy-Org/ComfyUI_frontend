@@ -732,6 +732,12 @@
     "EditTokenWeight": "Edit Token Weight"
   },
   "serverConfigItems": {
+    "listen": {
+      "name": "Host: The IP address to listen on"
+    },
+    "port": {
+      "name": "Port: The port to listen on"
+    },
     "tls-keyfile": {
       "name": "TLS Key File: Path to TLS key file for HTTPS"
     },
@@ -835,6 +841,12 @@
     },
     "log-level": {
       "name": "Logging verbosity level"
+    },
+    "input-directory": {
+      "name": "Input directory"
+    },
+    "output-directory": {
+      "name": "Output directory"
     }
   },
   "serverConfigCategories": {
@@ -845,7 +857,8 @@
     "Preview": "Preview",
     "Cache": "Cache",
     "Attention": "Attention",
-    "General": "General"
+    "General": "General",
+    "Directories": "Directories"
   },
   "nodeCategories": {
     "_for_testing": "_for_testing",
