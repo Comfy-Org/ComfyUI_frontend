@@ -64,6 +64,8 @@ const terminalVisible = ref(true)
 
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
   status.value = newStatus
+
+  // Make critical error screen more obvious.
   if (newStatus === ProgressStatus.ERROR) terminalVisible.value = false
   else xterm?.clear()
 }
