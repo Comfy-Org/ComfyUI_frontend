@@ -15,11 +15,7 @@ import ruCommands from './locales/ru/commands.json'
 import jaCommands from './locales/ja/commands.json'
 import koCommands from './locales/ko/commands.json'
 
-function buildLocale(
-  main: typeof en,
-  nodes: typeof enNodes,
-  commands: typeof enCommands
-) {
+function buildLocale<M, N, C>(main: M, nodes: N, commands: C) {
   return {
     ...main,
     nodeDefs: nodes,
