@@ -1,98 +1,143 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px] select-none">
+  <div class="flex flex-col gap-6 w-[600px] h-[30rem] select-none">
     <!-- Installation Path Section -->
-    <div class="flex flex-col gap-4">
+    <div class="grow flex flex-col gap-4 text-neutral-300">
       <h2 class="text-2xl font-semibold text-neutral-100">
-        {{ $t('install.selectGpu') }}
+        {{ $t('install.gpuSelection.selectGpu') }}
       </h2>
 
-      <p class="text-neutral-400 my-0">
-        {{ $t('install.selectGpuDescription') }}
+      <p class="m-1 text-neutral-400">
+        {{ $t('install.gpuSelection.selectGpuDescription') }}:
       </p>
 
+      <!-- GPU Selection buttons -->
       <div
         class="flex gap-2 text-center transition-opacity"
         :class="{ selected: selected }"
       >
-        <img
+        <!-- NVIDIA -->
+        <div
+          v-if="platform !== 'darwin'"
           class="gpu-button"
           :class="{ selected: selected === 'nvidia' }"
-          alt="NVIDIA logo"
-          width="128"
-          height="128"
+          role="button"
           @click="pickGpu('nvidia')"
-          src="/assets/images/nvidia-logo.svg"
-        />
-        <img
+        >
+          <img
+            class="m-12"
+            alt="NVIDIA logo"
+            width="196"
+            height="32"
+            src="/assets/images/nvidia-logo.svg"
+          />
+        </div>
+        <!-- MPS -->
+        <div
+          v-if="platform === 'darwin'"
           class="gpu-button"
           :class="{ selected: selected === 'mps' }"
-          alt="AMD"
-          width="128"
-          height="128"
+          role="button"
           @click="pickGpu('mps')"
-          src="/assets/images/amd-header-logo.svg"
-        />
+        >
+          <img
+            class="rounded-lg hover-brighten"
+            alt="Apple Metal Performance Shaders Logo"
+            width="292"
+            ratio
+            src="/assets/images/apple-mps-logo.png"
+          />
+        </div>
+        <!-- Manual configuration -->
+        <div
+          class="gpu-button"
+          :class="{ selected: selected === 'unsupported' }"
+          role="button"
+          @click="pickGpu('unsupported')"
+        >
+          <img
+            class="m-12"
+            alt="Manual configuration"
+            width="196"
+            src="/assets/images/manual-configuration.svg"
+          />
+        </div>
+      </div>
+
+      <!-- Details on selected GPU -->
+      <p v-if="selected === 'nvidia'" class="m-1">
+        <Tag icon="pi pi-check" severity="success" :value="'TEAM GREEN'" />
+        It just works.
+      </p>
+
+      <p v-if="selected === 'mps'" class="m-1">
+        <Tag icon="pi pi-check" severity="success" :value="'MPS'" />
+        {{ $t('install.gpuSelection.mpsDescription') }}
+      </p>
+
+      <div v-if="selected === 'unsupported'" class="text-neutral-300">
+        <p class="m-1">
+          <Tag
+            icon="pi pi-exclamation-triangle"
+            severity="warn"
+            :value="t('icon.exclamation-triangle')"
+          />
+          {{ $t('install.gpuSelection.customSkipsPython') }}
+        </p>
+
+        <ul>
+          <li>
+            <strong>
+              {{ $t('install.gpuSelection.customComfyNeedsPython') }}
+            </strong>
+          </li>
+          <li>{{ $t('install.gpuSelection.customManualVenv') }}</li>
+          <li>{{ $t('install.gpuSelection.customInstallRequirements') }}</li>
+          <li>{{ $t('install.gpuSelection.customMayNotWork') }}</li>
+        </ul>
+      </div>
+
+      <div v-if="selected === 'cpu'">
+        <p class="m-1">
+          <Tag
+            icon="pi pi-exclamation-triangle"
+            severity="warn"
+            :value="t('icon.exclamation-triangle')"
+          ></Tag>
+          {{ $t('install.gpuSelection.cpuModeDescription') }}
+        </p>
+        <p class="m-1">
+          {{ $t('install.gpuSelection.cpuModeDescription2') }}
+        </p>
       </div>
     </div>
 
-    <!-- System Paths Info -->
-    <Accordion
-      class="transition-opacity"
+    <div
+      class="transition-opacity flex gap-3 h-0"
       :class="{
         'opacity-40': selected && selected !== 'cpu'
       }"
-      ref="accordion"
     >
-      <AccordionPanel value="0" class="rounded-lg">
-        <AccordionHeader
-          class="bg-neutral-900"
-          :class="{ disabled: selected }"
-          >{{ $t('install.cpuMode') }}</AccordionHeader
-        >
-        <AccordionContent :class="{ 'pointer-events-auto': selected }">
-          <p class="my-2 text-neutral-300">
-            <Tag
-              icon="pi pi-exclamation-triangle"
-              severity="warn"
-              :value="t('icon.exclamation-triangle')"
-            ></Tag>
-            {{ $t('install.cpuModeDescription') }}
-          </p>
-          <p class="my-2 text-neutral-300">
-            {{ $t('install.cpuModeDescription2') }}
-          </p>
-          <div class="mt-4 flex gap-3">
-            <ToggleSwitch
-              v-model="cpuMode"
-              inputId="cpu-mode"
-              @change="pickCpu"
-            />
-            <label for="cpu-mode" class="select-none"> Enable CPU Mode</label>
-          </div>
-        </AccordionContent>
-      </AccordionPanel>
-    </Accordion>
+      <ToggleSwitch
+        v-model="cpuMode"
+        inputId="cpu-mode"
+        @change="pickCpu"
+        class="-translate-y-40"
+      />
+      <label for="cpu-mode" class="select-none">
+        {{ $t('install.gpuSelection.enableCpuMode') }}
+      </label>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, GlobalComponents, ref } from 'vue'
+import { computed } from 'vue'
 import { electronAPI, GpuType } from '@/utils/envUtil'
-
 import ToggleSwitch from 'primevue/toggleswitch'
-
 import Tag from 'primevue/tag'
-
-import Accordion from 'primevue/accordion'
-import AccordionPanel from 'primevue/accordionpanel'
-import AccordionHeader from 'primevue/accordionheader'
-import AccordionContent from 'primevue/accordioncontent'
-
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-
-const accordion = ref(null)
 
 const cpuMode = computed({
   get: () => selected.value === 'cpu',
@@ -103,11 +148,11 @@ const selected = defineModel<GpuType>('gpu', {
 })
 
 const electron = electronAPI()
+const platform = electron.getPlatform()
 
 const pickGpu = (value: typeof selected.value) => {
   const newValue = selected.value === value ? null : value
   selected.value = newValue
-  if (newValue && newValue !== 'cpu') accordion.value.updateValue(null)
 }
 
 const pickCpu = () => {
@@ -116,6 +161,19 @@ const pickCpu = () => {
 </script>
 
 <style lang="postcss">
+:root {
+  --p-tag-gap: 0.5rem;
+}
+
+.hover-brighten {
+  @apply transition-colors;
+  transition-property: filter, box-shadow;
+
+  &:hover {
+    filter: brightness(107%) contrast(105%);
+    box-shadow: 0 0 0.25rem #ffffff79;
+  }
+}
 .p-accordioncontent-content {
   @apply bg-neutral-900 rounded-lg transition-colors;
 }
@@ -127,7 +185,7 @@ div.selected {
 }
 
 .gpu-button {
-  @apply grow flex flex-col items-stretch justify-stretch cursor-pointer rounded-lg p-12 bg-neutral-800 bg-opacity-50 hover:bg-opacity-75 transition-colors;
+  @apply w-1/2 m-0 cursor-pointer rounded-lg flex flex-col items-center justify-around bg-neutral-800 bg-opacity-50 hover:bg-opacity-75 transition-colors;
 
   &.selected {
     @apply opacity-100 bg-neutral-700 bg-opacity-50 hover:bg-opacity-60;

@@ -150,10 +150,10 @@ const install = () => {
   router.push('/server-start')
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!electron) return
 
-  const detectedGpu = electron.getGpu()
+  const detectedGpu = await electron.Config.getGpu()
   if (detectedGpu === 'mps' || detectedGpu === 'nvidia') gpu.value = detectedGpu
 })
 </script>
