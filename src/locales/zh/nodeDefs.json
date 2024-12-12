@@ -2395,6 +2395,20 @@
       }
     }
   },
+  "Mahiro": {
+    "description": "修改指导以更多地侧重于正面提示的'方向'，而不是负面提示之间的差异。",
+    "display_name": "Mahiro太可爱了，她应该有一个更好的指导功能！！(。・ω・。)",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "修补后的模型"
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "掩码合成",
     "inputs": {
