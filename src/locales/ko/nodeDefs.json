@@ -2395,6 +2395,20 @@
       }
     }
   },
+  "Mahiro": {
+    "description": "부정적인 프롬프트 사이의 차이보다는 긍정적인 프롬프트의 '방향'에 더 많이 확장하도록 안내를 수정합니다.",
+    "display_name": "Mahiro는 너무 귀여워서 더 나은 안내 기능을 받을 자격이 있습니다!! (。・ω・。)",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "수정된_모델"
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "마스크 합성",
     "inputs": {
