@@ -3,7 +3,7 @@
     "display_name": "添加噪声",
     "inputs": {
       "latent_image": {
-        "name": "潜在图像"
+        "name": "潜空间图像"
       },
       "model": {
         "name": "模型"
@@ -34,7 +34,7 @@
     "display_name": "基本引导器",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "model": {
         "name": "模型"
@@ -211,7 +211,7 @@
         "name": "clip"
       },
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "text": {
         "name": "文本"
@@ -228,7 +228,7 @@
         "name": "clip_l"
       },
       "guidance": {
-        "name": "指导"
+        "name": "引导"
       },
       "t5xxl": {
         "name": "t5xxl"
@@ -369,7 +369,7 @@
     }
   },
   "CheckpointLoaderSimple": {
-    "description": "加载扩散模型检查点，扩散模型用于去噪潜在图像。",
+    "description": "加载扩散模型检查点，扩散模型用于去噪潜空间图像。",
     "display_name": "加载检查点",
     "inputs": {
       "ckpt_name": {
@@ -379,13 +379,13 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "用于去噪潜在变量的模型。"
+        "tooltip": "用于去噪潜空间变量的模型。"
       },
       "1": {
         "tooltip": "用于编码文本提示的CLIP模型。"
       },
       "2": {
-        "tooltip": "用于将图像编码和解码到潜在空间的VAE模型。"
+        "tooltip": "用于将图像编码和解码到潜空间空间的VAE模型。"
       }
     }
   },
@@ -571,13 +571,13 @@
     }
   },
   "ConditioningSetMask": {
-    "display_name": "条件（设置掩码）",
+    "display_name": "条件（设置遮罩）",
     "inputs": {
       "conditioning": {
         "name": "条件化"
       },
       "mask": {
-        "name": "掩码"
+        "name": "遮罩"
       },
       "set_cond_area": {
         "name": "设置条件区域"
@@ -597,7 +597,7 @@
         "name": "钩子"
       },
       "mask": {
-        "name": "掩码"
+        "name": "遮罩"
       },
       "set_cond_area": {
         "name": "设置条件区域"
@@ -623,7 +623,7 @@
         "name": "钩子"
       },
       "mask": {
-        "name": "掩码"
+        "name": "遮罩"
       },
       "set_cond_area": {
         "name": "设置条件区域"
@@ -640,7 +640,7 @@
     "display_name": "条件设置时间步范围",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "end": {
         "name": "结束"
@@ -673,7 +673,7 @@
     "display_name": "条件零化",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       }
     }
   },
@@ -681,7 +681,7 @@
     "display_name": "应用控制网（旧）",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "control_net": {
         "name": "控制网"
@@ -957,7 +957,7 @@
     }
   },
   "CropMask": {
-    "display_name": "裁剪掩码",
+    "display_name": "裁剪遮罩",
     "inputs": {
       "height": {
         "name": "高度"
@@ -1167,7 +1167,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "空LTXV潜在视频",
+    "display_name": "空LTXV潜空间视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -1184,11 +1184,11 @@
     }
   },
   "EmptyLatentAudio": {
-    "display_name": "空潜在音频",
+    "display_name": "空潜空间音频",
     "inputs": {
       "batch_size": {
         "name": "批量大小",
-        "tooltip": "批次中的潜在图像数量。"
+        "tooltip": "批次中的潜空间图像数量。"
       },
       "seconds": {
         "name": "秒"
@@ -1196,30 +1196,30 @@
     }
   },
   "EmptyLatentImage": {
-    "description": "创建一批新的空潜在图像，以通过采样进行去噪。",
-    "display_name": "空潜在图像",
+    "description": "创建一批新的空潜空间图像，以通过采样进行去噪。",
+    "display_name": "空潜空间图像",
     "inputs": {
       "batch_size": {
         "name": "批量大小",
-        "tooltip": "批次中的潜在图像数量。"
+        "tooltip": "批次中的潜空间图像数量。"
       },
       "height": {
         "name": "高度",
-        "tooltip": "潜在图像的高度（以像素为单位）。"
+        "tooltip": "潜空间图像的高度（以像素为单位）。"
       },
       "width": {
         "name": "宽度",
-        "tooltip": "潜在图像的宽度（以像素为单位）。"
+        "tooltip": "潜空间图像的宽度（以像素为单位）。"
       }
     },
     "outputs": {
       "0": {
-        "tooltip": "空的潜在图像批次。"
+        "tooltip": "空的潜空间图像批次。"
       }
     }
   },
   "EmptyMochiLatentVideo": {
-    "display_name": "空Mochi潜在视频",
+    "display_name": "空Mochi潜空间视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -1236,7 +1236,7 @@
     }
   },
   "EmptySD3LatentImage": {
-    "display_name": "空SD3潜在图像",
+    "display_name": "空SD3潜空间图像",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -1264,7 +1264,7 @@
     }
   },
   "FeatherMask": {
-    "display_name": "羽毛掩码",
+    "display_name": "羽毛遮罩",
     "inputs": {
       "bottom": {
         "name": "底"
@@ -1295,10 +1295,10 @@
     "display_name": "Flux引导",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "guidance": {
-        "name": "指导"
+        "name": "引导"
       }
     }
   },
@@ -1371,7 +1371,7 @@
         "name": "剪辑"
       },
       "conditioning_to": {
-        "name": "调节到"
+        "name": "条件到"
       },
       "gligen_textbox_model": {
         "name": "gligen_textbox_model"
@@ -1394,7 +1394,7 @@
     }
   },
   "GrowMask": {
-    "display_name": "扩展掩码",
+    "display_name": "扩展遮罩",
     "inputs": {
       "expand": {
         "name": "扩展"
@@ -1484,7 +1484,7 @@
     }
   },
   "ImageColorToMask": {
-    "display_name": "图像颜色到掩码",
+    "display_name": "图像颜色到遮罩",
     "inputs": {
       "color": {
         "name": "颜色"
@@ -1495,7 +1495,7 @@
     }
   },
   "ImageCompositeMasked": {
-    "display_name": "图像合成掩码",
+    "display_name": "图像合成遮罩",
     "inputs": {
       "destination": {
         "name": "目的地"
@@ -1687,7 +1687,7 @@
     }
   },
   "ImageToMask": {
-    "display_name": "将图像转换为掩码",
+    "display_name": "将图像转换为遮罩",
     "inputs": {
       "channel": {
         "name": "通道"
@@ -1719,7 +1719,7 @@
       },
       "noise_mask": {
         "name": "噪声遮罩",
-        "tooltip": "向潜在图像添加噪声掩码，以便采样仅在掩码内进行。根据模型的不同，可能会改善结果或完全破坏效果。"
+        "tooltip": "向潜空间图像添加噪声遮罩，以便采样仅在遮罩内进行。根据模型的不同，可能会改善结果或完全破坏效果。"
       },
       "pixels": {
         "name": "像素"
@@ -1739,7 +1739,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -1767,12 +1767,12 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
   "InvertMask": {
-    "display_name": "反转掩码",
+    "display_name": "反转遮罩",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -1791,7 +1791,7 @@
     }
   },
   "KSampler": {
-    "description": "使用提供的模型、正向和负向条件去噪潜在图像。",
+    "description": "使用提供的模型、正向和负向条件去噪潜空间图像。",
     "display_name": "K采样器",
     "inputs": {
       "cfg": {
@@ -1803,12 +1803,12 @@
         "tooltip": "应用的去噪量，较低的值将保持初始图像的结构，允许图像到图像的采样。"
       },
       "latent_image": {
-        "name": "潜在图像",
-        "tooltip": "要去噪的潜在图像。"
+        "name": "潜空间图像",
+        "tooltip": "要去噪的潜空间图像。"
       },
       "model": {
         "name": "模型",
-        "tooltip": "用于去噪输入潜在图像的模型。"
+        "tooltip": "用于去噪输入潜空间图像的模型。"
       },
       "negative": {
         "name": "负",
@@ -1837,7 +1837,7 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "去噪后的潜在变量。"
+        "tooltip": "去噪后的潜空间变量。"
       }
     }
   },
@@ -1854,7 +1854,7 @@
         "name": "结束步骤"
       },
       "latent_image": {
-        "name": "潜在图像"
+        "name": "潜空间图像"
       },
       "model": {
         "name": "模型"
@@ -1946,7 +1946,7 @@
       },
       "image_noise_scale": {
         "name": "图像噪声比例",
-        "tooltip": "在条件图像潜在图像上应用的噪声量。"
+        "tooltip": "在条件图像潜空间图像上应用的噪声量。"
       },
       "length": {
         "name": "长度"
@@ -1972,7 +1972,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -1983,7 +1983,7 @@
         "name": "基础移位"
       },
       "latent": {
-        "name": "潜在"
+        "name": "潜空间"
       },
       "max_shift": {
         "name": "最大移位"
@@ -2022,7 +2022,7 @@
     }
   },
   "LatentAdd": {
-    "display_name": "潜在添加",
+    "display_name": "潜空间添加",
     "inputs": {
       "samples1": {
         "name": "样本1"
@@ -2033,7 +2033,7 @@
     }
   },
   "LatentApplyOperation": {
-    "display_name": "潜在应用操作",
+    "display_name": "潜空间应用操作",
     "inputs": {
       "operation": {
         "name": "操作"
@@ -2044,7 +2044,7 @@
     }
   },
   "LatentApplyOperationCFG": {
-    "display_name": "潜在应用操作CFG",
+    "display_name": "潜空间应用操作CFG",
     "inputs": {
       "model": {
         "name": "模型"
@@ -2055,7 +2055,7 @@
     }
   },
   "LatentBatch": {
-    "display_name": "潜在批处理",
+    "display_name": "潜空间批处理",
     "inputs": {
       "samples1": {
         "name": "样本1"
@@ -2066,7 +2066,7 @@
     }
   },
   "LatentBatchSeedBehavior": {
-    "display_name": "潜在批处理种子行为",
+    "display_name": "潜空间批处理种子行为",
     "inputs": {
       "samples": {
         "name": "样本"
@@ -2077,7 +2077,7 @@
     }
   },
   "LatentBlend": {
-    "display_name": "潜在混合",
+    "display_name": "潜空间混合",
     "inputs": {
       "blend_factor": {
         "name": "混合因子"
@@ -2091,7 +2091,7 @@
     }
   },
   "LatentComposite": {
-    "display_name": "潜在合成",
+    "display_name": "潜空间合成",
     "inputs": {
       "feather": {
         "name": "羽化"
@@ -2111,7 +2111,7 @@
     }
   },
   "LatentCompositeMasked": {
-    "display_name": "潜在合成掩码",
+    "display_name": "潜空间合成遮罩",
     "inputs": {
       "destination": {
         "name": "目的地"
@@ -2134,7 +2134,7 @@
     }
   },
   "LatentCrop": {
-    "display_name": "裁剪潜在",
+    "display_name": "裁剪潜空间",
     "inputs": {
       "height": {
         "name": "高度"
@@ -2154,7 +2154,7 @@
     }
   },
   "LatentFlip": {
-    "display_name": "翻转潜在",
+    "display_name": "翻转潜空间",
     "inputs": {
       "flip_method": {
         "name": "翻转方法"
@@ -2165,7 +2165,7 @@
     }
   },
   "LatentFromBatch": {
-    "display_name": "从批次获取潜在",
+    "display_name": "从批次获取潜空间",
     "inputs": {
       "batch_index": {
         "name": "批次索引"
@@ -2179,7 +2179,7 @@
     }
   },
   "LatentInterpolate": {
-    "display_name": "潜在插值",
+    "display_name": "潜空间插值",
     "inputs": {
       "ratio": {
         "name": "比率"
@@ -2193,7 +2193,7 @@
     }
   },
   "LatentMultiply": {
-    "display_name": "潜在乘法",
+    "display_name": "潜空间乘法",
     "inputs": {
       "multiplier": {
         "name": "乘数"
@@ -2204,7 +2204,7 @@
     }
   },
   "LatentOperationSharpen": {
-    "display_name": "潜在操作锐化",
+    "display_name": "潜空间操作锐化",
     "inputs": {
       "alpha": {
         "name": "阿尔法"
@@ -2218,7 +2218,7 @@
     }
   },
   "LatentOperationTonemapReinhard": {
-    "display_name": "潜在操作色调映射Reinhard",
+    "display_name": "潜空间操作色调映射Reinhard",
     "inputs": {
       "multiplier": {
         "name": "乘数"
@@ -2226,7 +2226,7 @@
     }
   },
   "LatentRotate": {
-    "display_name": "旋转潜在",
+    "display_name": "旋转潜空间",
     "inputs": {
       "rotation": {
         "name": "旋转"
@@ -2237,7 +2237,7 @@
     }
   },
   "LatentSubtract": {
-    "display_name": "潜在减法",
+    "display_name": "潜空间减法",
     "inputs": {
       "samples1": {
         "name": "样本1"
@@ -2248,7 +2248,7 @@
     }
   },
   "LatentUpscale": {
-    "display_name": "放大潜在",
+    "display_name": "放大潜空间",
     "inputs": {
       "crop": {
         "name": "裁剪"
@@ -2268,7 +2268,7 @@
     }
   },
   "LatentUpscaleBy": {
-    "display_name": "按比例放大潜在",
+    "display_name": "按比例放大潜空间",
     "inputs": {
       "samples": {
         "name": "样本"
@@ -2298,7 +2298,7 @@
     }
   },
   "LoadImageMask": {
-    "display_name": "加载图像（作为掩码）",
+    "display_name": "加载图像（作为遮罩）",
     "inputs": {
       "channel": {
         "name": "通道"
@@ -2309,15 +2309,15 @@
     }
   },
   "LoadLatent": {
-    "display_name": "加载潜在",
+    "display_name": "加载潜空间",
     "inputs": {
       "latent": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
   "LoraLoader": {
-    "description": "LoRA用于修改扩散和CLIP模型，改变潜在图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
+    "description": "LoRA用于修改扩散和CLIP模型，改变潜空间图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
     "display_name": "加载LoRA",
     "inputs": {
       "clip": {
@@ -2351,7 +2351,7 @@
     }
   },
   "LoraLoaderModelOnly": {
-    "description": "LoRA用于修改扩散和CLIP模型，改变潜在图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
+    "description": "LoRA用于修改扩散和CLIP模型，改变潜空间图像的去噪方式，例如应用风格。多个LoRA节点可以链接在一起。",
     "display_name": "仅加载LoRA模型",
     "inputs": {
       "lora_name": {
@@ -2396,8 +2396,8 @@
     }
   },
   "Mahiro": {
-    "description": "修改指导以更多地侧重于正面提示的'方向'，而不是负面提示之间的差异。",
-    "display_name": "Mahiro太可爱了，她应该有一个更好的指导功能！！(。・ω・。)",
+    "description": "修改引导以更多地侧重于正面提示的'方向'，而不是负面提示之间的差异。",
+    "display_name": "Mahiro太可爱了，她应该有一个更好的引导功能！！(。・ω・。)",
     "inputs": {
       "model": {
         "name": "模型"
@@ -2410,7 +2410,7 @@
     }
   },
   "MaskComposite": {
-    "display_name": "掩码合成",
+    "display_name": "遮罩合成",
     "inputs": {
       "destination": {
         "name": "目标"
@@ -2430,7 +2430,7 @@
     }
   },
   "MaskToImage": {
-    "display_name": "将掩码转换为图像",
+    "display_name": "将遮罩转换为图像",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -2672,7 +2672,7 @@
         "name": "最终层."
       },
       "guidance_in": {
-        "name": "输入指导"
+        "name": "输入引导"
       },
       "img_in_": {
         "name": "输入图像."
@@ -3731,7 +3731,7 @@
         "name": "基础偏移"
       },
       "latent": {
-        "name": "潜在"
+        "name": "潜空间"
       },
       "max_shift": {
         "name": "最大偏移"
@@ -4091,13 +4091,13 @@
     }
   },
   "RebatchLatents": {
-    "display_name": "重新批处理潜在",
+    "display_name": "重新批处理潜空间",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
       },
       "latents": {
-        "name": "潜在因素"
+        "name": "潜空间因素"
       }
     }
   },
@@ -4113,7 +4113,7 @@
     }
   },
   "RepeatLatentBatch": {
-    "display_name": "重复潜在批处理",
+    "display_name": "重复潜空间批处理",
     "inputs": {
       "amount": {
         "name": "数量"
@@ -4175,7 +4175,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -4212,7 +4212,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -4255,7 +4255,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -4269,7 +4269,7 @@
         "name": "cfg"
       },
       "latent_image": {
-        "name": "潜在图像"
+        "name": "潜空间图像"
       },
       "model": {
         "name": "模型"
@@ -4306,7 +4306,7 @@
         "name": "引导器"
       },
       "latent_image": {
-        "name": "潜在图像"
+        "name": "潜空间图像"
       },
       "noise": {
         "name": "噪声"
@@ -4547,7 +4547,7 @@
     }
   },
   "SaveLatent": {
-    "display_name": "保存潜在",
+    "display_name": "保存潜空间",
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀"
@@ -4600,7 +4600,7 @@
     }
   },
   "SetLatentNoiseMask": {
-    "display_name": "设置潜在噪声掩码",
+    "display_name": "设置潜空间噪声遮罩",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -4670,7 +4670,7 @@
     }
   },
   "SolidMask": {
-    "display_name": "实心掩码",
+    "display_name": "实心遮罩",
     "inputs": {
       "height": {
         "name": "高度"
@@ -4730,7 +4730,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "稳定级联_空潜在图像",
+    "display_name": "稳定级联_空潜空间图像",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -4758,7 +4758,7 @@
     "display_name": "稳定级联_B阶段条件",
     "inputs": {
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "stage_c": {
         "name": "阶段c"
@@ -4845,7 +4845,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -4891,7 +4891,7 @@
         "name": "负面"
       },
       "2": {
-        "name": "潜在"
+        "name": "潜空间"
       }
     }
   },
@@ -4902,7 +4902,7 @@
         "name": "clip视觉输出"
       },
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "strength": {
         "name": "强度"
@@ -4924,7 +4924,7 @@
     }
   },
   "ThresholdMask": {
-    "display_name": "阈值掩码",
+    "display_name": "阈值遮罩",
     "inputs": {
       "mask": {
         "name": "遮罩"
@@ -5051,16 +5051,16 @@
     }
   },
   "VAEDecode": {
-    "description": "将潜在图像解码回像素空间图像。",
+    "description": "将潜空间图像解码回像素空间图像。",
     "display_name": "VAE解码",
     "inputs": {
       "samples": {
         "name": "样本",
-        "tooltip": "要解码的潜在图像。"
+        "tooltip": "要解码的潜空间图像。"
       },
       "vae": {
         "name": "vae",
-        "tooltip": "用于解码潜在图像的 VAE 模型。"
+        "tooltip": "用于解码潜空间图像的 VAE 模型。"
       }
     },
     "outputs": {
@@ -5240,7 +5240,7 @@
         "name": "clip_vision_output"
       },
       "conditioning": {
-        "name": "调节"
+        "name": "条件"
       },
       "noise_augmentation": {
         "name": "噪声增强"
