@@ -1,0 +1,183 @@
+{
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "사용자 정의 노드 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "입력 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "로그 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml 열기"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "모델 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "출력 폴더 열기"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "DevTools 열기"
+  },
+  "Comfy-Desktop_OpenFeedbackPage": {
+    "label": "피드백"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "재설치"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "재시작"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "템플릿 탐색"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "선택한 노드에 뷰 맞추기"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "뷰 재설정"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "캔버스 링크 가시성 토글"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "캔버스 잠금 토글"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "선택한 노드 우회/우회 해제"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "선택한 노드 축소/확장"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "선택한 노드 음소거/음소거 해제"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "선택한 노드 고정/고정 해제"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "선택한 항목 고정/고정 해제"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "확대"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "축소"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "보류 중인 작업 지우기"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "워크플로우 지우기"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "워크플로우 내보내기"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "워크플로우 내보내기 (API 형식)"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "그룹을 내용에 맞게 맞추기"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "선택한 노드 그룹화"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "선택한 노드를 그룹 노드로 변환"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "그룹 노드 관리"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "선택한 그룹 노드 분리"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Comfy-Org 디스코드 열기"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "ComfyUI 문서 열기"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "ComfyUI 문제 열기"
+  },
+  "Comfy_Interrupt": {
+    "label": "중단"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "기본 워크플로우 로드"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "새로운 빈 워크플로우"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "클립스페이스"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "워크플로우 열기"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "큐 프롬프트"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "큐 프롬프트 (앞)"
+  },
+  "Comfy_Redo": {
+    "label": "다시 실행"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "노드 정의 새로 고침"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "워크플로우 저장"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "다른 이름으로 워크플로우 저장"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "설정 대화상자 보기"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "테마 토글 (어두운/밝은)"
+  },
+  "Comfy_Undo": {
+    "label": "실행 취소"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "다음 열린 워크플로우"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "이전 열린 워크플로우"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "검색 상자 토글"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "하단 패널 토글"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "터미널 하단 패널 토글"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "로그 하단 패널 토글"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "포커스 모드 토글"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "모델 라이브러리 사이드바 토글",
+    "tooltip": "모델 라이브러리"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "노드 라이브러리 사이드바 토글",
+    "tooltip": "노드 라이브러리"
+  },
+  "Workspace_ToggleSidebarTab_queue": {
+    "label": "큐 사이드바 토글",
+    "tooltip": "큐"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "워크플로우 사이드바 토글",
+    "tooltip": "워크플로우"
+  }
+}

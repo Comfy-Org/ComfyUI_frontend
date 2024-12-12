@@ -1,0 +1,183 @@
+{
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "カスタムノードフォルダを開く"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "入力フォルダを開く"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "ログフォルダを開く"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yamlを開く"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "モデルフォルダを開く"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "出力フォルダを開く"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "DevToolsを開く"
+  },
+  "Comfy-Desktop_OpenFeedbackPage": {
+    "label": "フィードバック"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "再インストール"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "再起動"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "テンプレートを参照"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "選択したノードにビューを合わせる"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "ビューをリセット"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "キャンバスのリンクの可視性を切り替え"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "キャンバスのロックを切り替え"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "選択したノードのバイパス/バイパス解除"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "選択したノードの折りたたみ/展開"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "選択したノードのミュート/ミュート解除"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "選択したノードのピン留め/ピン留め解除"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "選択したアイテムのピン留め/ピン留め解除"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "ズームイン"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "ズームアウト"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "保留中のタスクをクリア"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "ワークフローをクリア"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "ワークフローをエクスポート"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "ワークフローをエクスポート（API形式）"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "グループを内容に合わせて調整"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "選択したノードをグループ化"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "選択したノードをグループノードに変換"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "グループノードの管理"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "選択したグループノードのグループ解除"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Comfy-OrgのDiscordを開く"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "ComfyUIのドキュメントを開く"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "ComfyUIの問題を開く"
+  },
+  "Comfy_Interrupt": {
+    "label": "中断"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "デフォルトのワークフローを読み込む"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "新しい空白のワークフロー"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "クリップスペース"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "ワークフローを開く"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "キュープロンプト"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "キュープロンプト（フロント）"
+  },
+  "Comfy_Redo": {
+    "label": "やり直す"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "ノード定義を更新"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "ワークフローを保存する"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "名前を付けてワークフローを保存"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "設定ダイアログを表示"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "テーマの切り替え（ダーク/ライト）"
+  },
+  "Comfy_Undo": {
+    "label": "元に戻す"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "次の開いたワークフロー"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "前の開いたワークフロー"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "検索ボックスの切り替え"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "ボトムパネルの切り替え"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "ターミナルボトムパネルの切り替え"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "ログボトムパネルの切り替え"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "フォーカスモードの切り替え"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "モデルライブラリサイドバーの切り替え",
+    "tooltip": "モデルライブラリ"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "ノードライブラリサイドバーの切り替え",
+    "tooltip": "ノードライブラリ"
+  },
+  "Workspace_ToggleSidebarTab_queue": {
+    "label": "キューサイドバーの切り替え",
+    "tooltip": "キュー"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "ワークフローサイドバーの切り替え",
+    "tooltip": "ワークフロー"
+  }
+}

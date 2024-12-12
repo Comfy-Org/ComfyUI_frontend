@@ -47,7 +47,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     useCommandStore().registerCommand({
       id: `Workspace.ToggleBottomPanelTab.${tab.id}`,
       icon: 'pi pi-list',
-      label: tab.title,
+      label: `Toggle ${tab.title} Bottom Panel`,
       function: () => toggleBottomPanelTab(tab.id)
     })
   }
