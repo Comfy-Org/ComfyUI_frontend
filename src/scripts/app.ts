@@ -1914,6 +1914,7 @@ export class ComfyApp {
           const type = _inputData[0]
           const options = _inputData[1] ?? {}
           const inputData = [type, options]
+          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`
 
           const inputIsRequired = requiredInputs && inputName in requiredInputs
 
@@ -1931,6 +1932,9 @@ export class ComfyApp {
                 self.widgets[widgetType](this, inputName, inputData, app) || {}
               )
             }
+            if (config.widget) {
+              config.widget.label = st(nameKey, inputName)
+            }
           } else {
             // Node connection inputs
             const shapeOptions = inputIsRequired
@@ -1938,10 +1942,7 @@ export class ComfyApp {
               : { shape: LiteGraph.SlotShape.HollowCircle }
             const inputOptions = {
               ...shapeOptions,
-              label: st(
-                `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`,
-                inputName
-              )
+              label: st(nameKey, inputName)
             }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false

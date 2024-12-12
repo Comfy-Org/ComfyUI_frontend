@@ -79,7 +79,7 @@
     "display_name": "CFG引导器",
     "inputs": {
       "cfg": {
-        "name": "配置"
+        "name": "cfg"
       },
       "model": {
         "name": "模型"
@@ -1795,7 +1795,7 @@
     "display_name": "K采样器",
     "inputs": {
       "cfg": {
-        "name": "配置",
+        "name": "cfg",
         "tooltip": "无分类器引导比例平衡创造力和对提示的遵循。更高的值会导致图像更接近提示，但过高的值会对质量产生负面影响。"
       },
       "denoise": {
@@ -1848,7 +1848,7 @@
         "name": "添加噪声"
       },
       "cfg": {
-        "name": "配置"
+        "name": "cfg"
       },
       "end_at_step": {
         "name": "结束步骤"
@@ -3948,7 +3948,7 @@
     "display_name": "PerpNeg引导器",
     "inputs": {
       "cfg": {
-        "name": "配置"
+        "name": "cfg"
       },
       "empty_conditioning": {
         "name": "空条件"
@@ -4252,7 +4252,7 @@
         "name": "添加噪声"
       },
       "cfg": {
-        "name": "配置"
+        "name": "cfg"
       },
       "latent_image": {
         "name": "潜在图像"

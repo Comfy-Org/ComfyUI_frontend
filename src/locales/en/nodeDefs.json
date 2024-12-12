@@ -2395,6 +2395,20 @@
       }
     }
   },
+  "Mahiro": {
+    "display_name": "Mahiro is so cute that she deserves a better guidance function!! (。・ω・。)",
+    "description": "Modify the guidance to scale more on the 'direction' of the positive prompt rather than the difference between the negative prompt.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "patched_model"
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskComposite",
     "inputs": {

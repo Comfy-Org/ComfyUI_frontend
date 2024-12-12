@@ -1795,7 +1795,7 @@
     "display_name": "Kサンプラー",
     "inputs": {
       "cfg": {
-        "name": "設定",
+        "name": "cfg",
         "tooltip": "Classifier-Free Guidanceスケールは、創造性とプロンプトへの遵守のバランスを取ります。値が高いほど、生成される画像はプロンプトにより近くなりますが、値が高すぎると品質に悪影響を及ぼす可能性があります。"
       },
       "denoise": {
@@ -1848,7 +1848,7 @@
         "name": "ノイズ追加"
       },
       "cfg": {
-        "name": "設定"
+        "name": "cfg"
       },
       "end_at_step": {
         "name": "ステップ終了"
