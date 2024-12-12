@@ -21,21 +21,6 @@ export interface ServerConfig<T> extends FormItem {
 }
 
 export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
-  // We only need these settings in the web version. Desktop app manages them already.
-  {
-    id: 'listen',
-    name: 'Host: The IP address to listen on',
-    category: ['Network'],
-    type: 'text',
-    defaultValue: '127.0.0.1'
-  },
-  {
-    id: 'port',
-    name: 'Port: The port to listen on',
-    category: ['Network'],
-    type: 'number',
-    defaultValue: 8188
-  },
   // Launch behavior
   {
     id: 'auto-launch',
@@ -65,10 +50,18 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   // Network settings
   {
     id: 'listen',
-    name: 'Listen: Specify the IP address to listen on',
+    name: 'Host: The IP address to listen on',
     category: ['Network'],
     type: 'text',
     defaultValue: '127.0.0.1'
+  },
+  {
+    id: 'port',
+    name: 'Port: The port to listen on',
+    category: ['Network'],
+    type: 'number',
+    // The default launch port for desktop app is 8000 instead of 8188.
+    defaultValue: 8000
   },
   {
     id: 'tls-keyfile',
@@ -441,18 +434,18 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
       }
     }
   },
-  /// Launch settings
+  // Directories
   {
     id: 'input-directory',
-    name: 'ComfyUI input directory',
-    category: ['Launch'],
+    name: 'Input directory',
+    category: ['Directories'],
     type: 'text',
     defaultValue: ''
   },
   {
     id: 'output-directory',
-    name: 'ComfyUI output directory',
-    category: ['Launch'],
+    name: 'Output directory',
+    category: ['Directories'],
     type: 'text',
     defaultValue: ''
   }
