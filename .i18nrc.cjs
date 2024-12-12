@@ -10,5 +10,5 @@ module.exports = defineConfig({
   entryLocale: 'en',
   output: 'src/locales',
   outputLocales: ['zh', 'ru', 'ja', 'ko'],
-  reference: `Special names to keep untranslated: flux, photomaker, clip, vae`
+  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg`
 });
