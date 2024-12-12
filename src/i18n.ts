@@ -27,7 +27,7 @@ function buildLocale(
   }
 }
 
-const messages: Record<string, typeof en> = {
+const messages = {
   en: buildLocale(en, enNodes, enCommands),
   zh: buildLocale(zh, zhNodes, zhCommands),
   ru: buildLocale(ru, ruNodes, ruCommands),
