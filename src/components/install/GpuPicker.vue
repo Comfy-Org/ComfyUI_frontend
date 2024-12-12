@@ -65,8 +65,8 @@
 
       <!-- Details on selected GPU -->
       <p v-if="selected === 'nvidia'" class="m-1">
-        <Tag icon="pi pi-check" severity="success" :value="'TEAM GREEN'" />
-        It just works.
+        <Tag icon="pi pi-check" severity="success" :value="'CUDA'" />
+        {{ $t('install.gpuSelection.nvidiaDescription') }}
       </p>
 
       <p v-if="selected === 'mps'" class="m-1">

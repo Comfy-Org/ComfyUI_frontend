@@ -138,6 +138,7 @@
       "cpuModeDescription": "CPU mode is intended for developers and rare edge cases only.",
       "cpuModeDescription2": "If you are not absolutely certain you need this, please ignore this box and select your GPU above.",
       "enableCpuMode": "Enable CPU Mode",
+      "nvidiaDescription": "NVIDIA devices are directly supported using pytorch CUDA builds.",
       "mpsDescription": "Apple Metal Performance Shaders are supported using pytorch nightly.",
       "customSkipsPython": "This option skips the normal python setup.",
       "customComfyNeedsPython": "ComfyUI will not work until python is setup",
