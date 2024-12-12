@@ -25,9 +25,9 @@
     "HOOK_KEYFRAMES": "钩子关键帧",
     "IMAGE": "图像",
     "INT": "整数",
-    "LATENT": "潜在",
-    "LATENT_OPERATION": "潜在操作",
-    "MASK": "掩码",
+    "LATENT": "潜空间",
+    "LATENT_OPERATION": "潜空间操作",
+    "MASK": "遮罩",
     "MODEL": "模型",
     "NOISE": "噪声",
     "PHOTOMAKER": "PHOTOMAKER",
@@ -300,10 +300,10 @@
     "image": "图像",
     "inpaint": "修复",
     "instructpix2pix": "指令图像到图像",
-    "latent": "潜在",
+    "latent": "潜空间",
     "loaders": "加载器",
     "ltxv": "LTXV",
-    "mask": "掩码",
+    "mask": "遮罩",
     "model": "模型",
     "model_merging": "模型合并",
     "model_patches": "模型补丁",
@@ -434,7 +434,7 @@
       "name": "最大上传大小 (MB)"
     },
     "preview-method": {
-      "name": "用于潜在预览的方法"
+      "name": "用于潜空间预览的方法"
     },
     "preview-size": {
       "name": "预览图像的大小"
