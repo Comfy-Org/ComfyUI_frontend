@@ -3,7 +3,7 @@
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
     <Stepper class="stepper" value="0" @update:value="setHighestStep">
-      <StepList>
+      <StepList class="select-none">
         <Step value="0">
           {{ $t('install.gpu') }}
         </Step>
