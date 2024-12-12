@@ -134,7 +134,7 @@ const colorPalettes: ColorPalettes = {
         'fg-color': '#222',
         'bg-color': '#DDD',
         'comfy-menu-bg': '#F5F5F5',
-        'comfy-menu-secondary-bg': '#D9D9D9',
+        'comfy-menu-secondary-bg': '#EEE',
         'comfy-input-bg': '#C9C9C9',
         'input-text': '#222',
         'descrip-text': '#444',
