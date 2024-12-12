@@ -155,6 +155,7 @@
     "reinstall": "Reinstall",
     "reportIssue": "Report Issue",
     "openLogs": "Open Logs",
+    "showTerminal": "Show Terminal",
     "process": {
       "initial-state": "Loading...",
       "python-setup": "Setting up Python Environment...",

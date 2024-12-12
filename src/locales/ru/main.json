@@ -488,7 +488,8 @@
       "starting-server": "Запуск сервера ComfyUI..."
     },
     "reinstall": "Переустановить",
-    "reportIssue": "Сообщить о проблеме"
+    "reportIssue": "Сообщить о проблеме",
+    "showTerminal": "Показать терминал"
   },
   "settingsCategories": {
     "About": "О программе",

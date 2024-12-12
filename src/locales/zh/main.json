@@ -488,7 +488,8 @@
       "starting-server": "正在启动 ComfyUI 服务器..."
     },
     "reinstall": "重新安装",
-    "reportIssue": "报告问题"
+    "reportIssue": "报告问题",
+    "showTerminal": "显示终端"
   },
   "settingsCategories": {
     "About": "关于",

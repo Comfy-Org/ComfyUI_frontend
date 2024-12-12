@@ -10,27 +10,36 @@
     </h2>
     <div
       v-if="status === ProgressStatus.ERROR"
-      class="flex items-center my-4 gap-2"
+      class="flex flex-col items-center gap-4"
     >
+      <div class="flex items-center my-4 gap-2">
+        <Button
+          icon="pi pi-flag"
+          severity="secondary"
+          :label="t('serverStart.reportIssue')"
+          @click="reportIssue"
+        />
+        <Button
+          icon="pi pi-file"
+          severity="secondary"
+          :label="t('serverStart.openLogs')"
+          @click="openLogs"
+        />
+        <Button
+          icon="pi pi-refresh"
+          :label="t('serverStart.reinstall')"
+          @click="reinstall"
+        />
+      </div>
       <Button
-        icon="pi pi-flag"
+        v-if="!terminalVisible"
+        icon="pi pi-search"
         severity="secondary"
-        :label="t('serverStart.reportIssue')"
-        @click="reportIssue"
-      />
-      <Button
-        icon="pi pi-file"
-        severity="secondary"
-        :label="t('serverStart.openLogs')"
-        @click="openLogs"
-      />
-      <Button
-        icon="pi pi-refresh"
-        :label="t('serverStart.reinstall')"
-        @click="reinstall"
+        :label="t('serverStart.showTerminal')"
+        @click="terminalVisible = true"
       />
     </div>
-    <BaseTerminal @created="terminalCreated" />
+    <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
   </div>
 </template>
 
@@ -51,9 +60,14 @@ const status = ref<ProgressStatus>(ProgressStatus.INITIAL_STATE)
 const electronVersion = ref<string>('')
 let xterm: Terminal | undefined
 
+const terminalVisible = ref(true)
+
 const updateProgress = ({ status: newStatus }: { status: ProgressStatus }) => {
   status.value = newStatus
-  if (newStatus !== ProgressStatus.ERROR) xterm?.clear()
+
+  // Make critical error screen more obvious.
+  if (newStatus === ProgressStatus.ERROR) terminalVisible.value = false
+  else xterm?.clear()
 }
 
 const terminalCreated = (
