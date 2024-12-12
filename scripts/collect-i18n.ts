@@ -10,6 +10,7 @@ import type { ComfyApi } from '../src/scripts/api'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
+const commandsPath = './src/locales/en/commands.json'
 
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
@@ -20,15 +21,18 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 }
 
 test('collect-i18n', async ({ comfyPage }) => {
-  const commands = await comfyPage.page.evaluate(() => {
-    const workspace = window['app'].extensionManager
-    const commands = workspace.command.commands as ComfyCommandImpl[]
-    return commands.map((command) => ({
-      id: command.id,
-      label: command.label,
-      menubarLabel: command.menubarLabel
-    }))
-  })
+  const commands = (
+    await comfyPage.page.evaluate(() => {
+      const workspace = window['app'].extensionManager
+      const commands = workspace.command.commands as ComfyCommandImpl[]
+      return commands.map((command) => ({
+        id: command.id,
+        label: command.label,
+        menubarLabel: command.menubarLabel,
+        tooltip: command.tooltip
+      }))
+    })
+  ).sort((a, b) => a.id.localeCompare(b.id))
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
 
@@ -42,6 +46,16 @@ test('collect-i18n', async ({ comfyPage }) => {
 
   const allLabelsLocale = Object.fromEntries(
     Array.from(allLabels).map((label) => [normalizeI18nKey(label), label])
+  )
+
+  const allCommandsLocale = Object.fromEntries(
+    commands.map((command) => [
+      normalizeI18nKey(command.id),
+      {
+        label: command.label,
+        tooltip: command.tooltip
+      }
+    ])
   )
 
   // Settings
@@ -235,4 +249,5 @@ test('collect-i18n', async ({ comfyPage }) => {
   )
 
   fs.writeFileSync(nodeDefsPath, JSON.stringify(allNodeDefsLocale, null, 2))
+  fs.writeFileSync(commandsPath, JSON.stringify(allCommandsLocale, null, 2))
 })

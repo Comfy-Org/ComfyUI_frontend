@@ -1,0 +1,183 @@
+{
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "打开自定义节点文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "打开输入文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "打开日志文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "打开 extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "打开模型文件夹"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "打开输出文件夹"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "打开开发者工具"
+  },
+  "Comfy-Desktop_OpenFeedbackPage": {
+    "label": "反馈"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "重新安装"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "重启"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "浏览模板"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "适应选定节点的视图"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "重置视图"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "画布切换链接可见性"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "画布切换锁定"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "绕过/取消绕过选定的节点"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "折叠/展开选定的节点"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "静音/取消静音选定的节点"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "固定/取消固定选定的节点"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "固定/取消固定选定的项目"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "放大"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "缩小"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "清除待处理任务"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "清除工作流"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "导出工作流"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "导出工作流（API格式）"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "适应组内容"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "组选定的节点"
+  },
+  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
+    "label": "将选定节点转换为组节点"
+  },
+  "Comfy_GroupNode_ManageGroupNodes": {
+    "label": "管理组节点"
+  },
+  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
+    "label": "取消选定组节点的分组"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "打开Comfy-Org Discord"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "打开ComfyUI文档"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "打开ComfyUI问题"
+  },
+  "Comfy_Interrupt": {
+    "label": "中断"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "加载默认工作流"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "新建空白工作流"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "剪辑空间"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "打开工作流"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "队列提示"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "队列提示（前端）"
+  },
+  "Comfy_Redo": {
+    "label": "重做"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "刷新节点定义"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "保存工作流"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "另存工作流"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "显示设置对话框"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "切换主题（暗/亮）"
+  },
+  "Comfy_Undo": {
+    "label": "撤销"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "下一个打开的工作流"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "上一个打开的工作流"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "切换搜索框"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "切换底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "切换终端底部面板"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "切换日志底部面板"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "切换焦点模式"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "切换模型库侧边栏",
+    "tooltip": "模型库"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "切换节点库侧边栏",
+    "tooltip": "节点库"
+  },
+  "Workspace_ToggleSidebarTab_queue": {
+    "label": "切换队列侧边栏",
+    "tooltip": "队列"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "切换工作流侧边栏",
+    "tooltip": "工作流"
+  }
+}

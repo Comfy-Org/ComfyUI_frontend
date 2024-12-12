@@ -246,7 +246,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Canvas.ToggleLock',
       icon: 'pi pi-lock',
-      label: 'Toggle Lock',
+      label: 'Canvas Toggle Lock',
       function: () => {
         app.canvas['read_only'] = !app.canvas['read_only']
       }
@@ -254,7 +254,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Canvas.ToggleLinkVisibility',
       icon: 'pi pi-eye',
-      label: 'Toggle Link Visibility',
+      label: 'Canvas Toggle Link Visibility',
       versionAdded: '1.3.6',
 
       function: (() => {
@@ -298,7 +298,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ShowSettingsDialog',
       icon: 'pi pi-cog',
-      label: 'Settings',
+      label: 'Show Settings Dialog',
       versionAdded: '1.3.7',
       function: () => {
         showSettingsDialog()
@@ -404,7 +404,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleTheme',
       icon: 'pi pi-moon',
-      label: 'Toggle Theme',
+      label: 'Toggle Theme (Dark/Light)',
       versionAdded: '1.3.12',
       function: (() => {
         let previousDarkTheme: string = 'dark'
@@ -462,7 +462,8 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Help.OpenComfyUIIssues',
       icon: 'pi pi-github',
-      label: 'ComfyUI Issues',
+      label: 'Open ComfyUI Issues',
+      menubarLabel: 'ComfyUI Issues',
       versionAdded: '1.5.5',
       function: () => {
         window.open(
@@ -474,7 +475,8 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Help.OpenComfyUIDocs',
       icon: 'pi pi-info-circle',
-      label: 'ComfyUI Docs',
+      label: 'Open ComfyUI Docs',
+      menubarLabel: 'ComfyUI Docs',
       versionAdded: '1.5.5',
       function: () => {
         window.open('https://docs.comfy.org/', '_blank')
@@ -483,7 +485,8 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Help.OpenComfyOrgDiscord',
       icon: 'pi pi-discord',
-      label: 'Comfy-Org Discord',
+      label: 'Open Comfy-Org Discord',
+      menubarLabel: 'Comfy-Org Discord',
       versionAdded: '1.5.5',
       function: () => {
         window.open('https://www.comfy.org/discord', '_blank')
