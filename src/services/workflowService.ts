@@ -15,8 +15,8 @@ import { useToastStore } from '@/stores/toastStore'
 async function getFilename(defaultName: string): Promise<string | null> {
   if (useSettingStore().get('Comfy.PromptFilename')) {
     let filename = await showPromptDialog({
-      title: 'Export Workflow',
-      message: 'Enter the filename:',
+      title: t('workflowService.exportWorkflow'),
+      message: t('workflowService.enterFilename') + ':',
       defaultValue: defaultName
     })
     if (!filename) return null
@@ -56,8 +56,8 @@ export const workflowService = {
    */
   async saveWorkflowAs(workflow: ComfyWorkflow) {
     const newFilename = await showPromptDialog({
-      title: 'Save workflow',
-      message: 'Enter the filename:',
+      title: t('workflowService.saveWorkflow'),
+      message: t('workflowService.enterFilename') + ':',
       defaultValue: workflow.filename
     })
     if (!newFilename) return

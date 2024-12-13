@@ -11,7 +11,7 @@ import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionEr
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import { i18n } from '@/i18n'
+import { t } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 
 export function showLoadWorkflowWarning(props: {
@@ -60,7 +60,7 @@ export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
 export function showTemplateWorkflowsDialog() {
   useDialogStore().showDialog({
     key: 'global-template-workflows',
-    title: i18n.global.t('templateWorkflows.title'),
+    title: t('templateWorkflows.title'),
     component: TemplateWorkflowsContent
   })
 }
