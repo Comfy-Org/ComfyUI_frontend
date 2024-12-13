@@ -139,7 +139,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
   async renameWorkflow(locator: Locator, newName: string) {
     await locator.click({ button: 'right' })
-    await this.root
+    await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
       .click()
     await this.page.keyboard.type(newName)
