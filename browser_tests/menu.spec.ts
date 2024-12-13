@@ -435,6 +435,36 @@ test.describe('Menu', () => {
       ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
+    test('Can export same workflow with different locales', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('default')
+
+      // Setup download listener before triggering the export
+      const downloadPromise = comfyPage.page.waitForEvent('download')
+      await comfyPage.menu.topbar.exportWorkflow('exported_default.json')
+
+      // Wait for the download and get the file content
+      const download = await downloadPromise
+      expect(download.suggestedFilename()).toBe('exported_default.json')
+
+      // Get the exported workflow content
+      const downloadedContent = await comfyPage.getExportedWorkflow({
+        api: false
+      })
+
+      await comfyPage.setSetting('Comfy.Locale', 'zh')
+      await comfyPage.reload()
+
+      const downloadedContentZh = await comfyPage.getExportedWorkflow({
+        api: false
+      })
+
+      // Compare the exported workflow with the original
+      expect(downloadedContent).toBeDefined()
+      expect(downloadedContent).toEqual(downloadedContentZh)
+    })
+
     test('Can save workflow as with same name', async ({ comfyPage }) => {
       await comfyPage.menu.topbar.saveWorkflow('workflow5.json')
       expect(
