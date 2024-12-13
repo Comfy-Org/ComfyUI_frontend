@@ -102,6 +102,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         }
       },
       {
+        id: 'Comfy-Desktop.OpenUserGuide',
+        label: 'Desktop User Guide',
+        icon: 'pi pi-book',
+        function() {
+          window.open('https://comfyorg.notion.site/', '_blank')
+        }
+      },
+      {
         id: 'Comfy-Desktop.Reinstall',
         label: 'Reinstall',
         icon: 'pi pi-refresh',
@@ -128,7 +136,10 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
     menuCommands: [
       {
         path: ['Help'],
-        commands: ['Comfy-Desktop.OpenFeedbackPage']
+        commands: [
+          'Comfy-Desktop.OpenUserGuide',
+          'Comfy-Desktop.OpenFeedbackPage'
+        ]
       },
       {
         path: ['Help'],
