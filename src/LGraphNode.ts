@@ -1421,7 +1421,7 @@ export class LGraphNode implements Positionable, IPinnable {
     if (this.inputs) {
       for (let i = 0, l = this.inputs.length; i < l; ++i) {
         const input = this.inputs[i]
-        const text = input.label || input.name || ""
+        const text = input.label || input.localized_name || input.name || ""
         const text_width = compute_text_size(text)
         if (input_width < text_width)
           input_width = text_width
@@ -1431,7 +1431,7 @@ export class LGraphNode implements Positionable, IPinnable {
     if (this.outputs) {
       for (let i = 0, l = this.outputs.length; i < l; ++i) {
         const output = this.outputs[i]
-        const text = output.label || output.name || ""
+        const text = output.label || output.localized_name || output.name || ""
         const text_width = compute_text_size(text)
         if (output_width < text_width)
           output_width = text_width

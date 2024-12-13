@@ -190,7 +190,24 @@ export interface IOptionalSlotData<TSlot extends INodeInputSlot | INodeOutputSlo
 export type ISlotType = number | string
 
 export interface INodeSlot {
+  /**
+   * The name of the slot in English.
+   * Will be included in the serialized data.
+   */
   name: string
+  /**
+   * The localized name of the slot to display in the UI.
+   * Takes higher priority than {@link name} if set.
+   * Will be included in the serialized data.
+   */
+  localized_name?: string
+  /**
+   * The name of the slot to display in the UI, modified by the user.
+   * Takes higher priority than {@link display_name} if set.
+   * Will be included in the serialized data.
+   */
+  label?: string
+
   type: ISlotType
   dir?: LinkDirection
   removable?: boolean
@@ -198,7 +215,6 @@ export interface INodeSlot {
   not_subgraph_input?: boolean
   color_off?: CanvasColour
   color_on?: CanvasColour
-  label?: string
   locked?: boolean
   nameLocked?: boolean
   pos?: Point

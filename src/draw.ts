@@ -117,7 +117,7 @@ export function drawSlot(
 
   // render slot label
   if (render_text) {
-    const text = slot.label != null ? slot.label : slot.name
+    const text = slot.label || slot.localized_name || slot.name
     if (text) {
       // TODO: Finish impl.  Highlight text on mouseover unless we're connecting links.
       ctx.fillStyle = label_color
