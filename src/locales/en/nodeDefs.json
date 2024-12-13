@@ -335,6 +335,9 @@
   "CLIPTextEncodeSDXL": {
     "display_name": "CLIPTextEncodeSDXL",
     "inputs": {
+      "clip": {
+        "name": "clip"
+      },
       "width": {
         "name": "width"
       },
@@ -355,9 +358,6 @@
       },
       "text_g": {
         "name": "text_g"
-      },
-      "clip": {
-        "name": "clip"
       },
       "text_l": {
         "name": "text_l"
