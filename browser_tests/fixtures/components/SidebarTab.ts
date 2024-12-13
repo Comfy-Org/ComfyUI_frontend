@@ -85,32 +85,36 @@ export class WorkflowsSidebarTab extends SidebarTab {
     super(page, 'workflows')
   }
 
+  get root() {
+    return this.page.locator('.workflows-sidebar-tab')
+  }
+
   get browseGalleryButton() {
-    return this.page.locator('.browse-templates-button')
+    return this.root.locator('.browse-templates-button')
   }
 
   get newBlankWorkflowButton() {
-    return this.page.locator('.new-blank-workflow-button')
+    return this.root.locator('.new-blank-workflow-button')
   }
 
   get openWorkflowButton() {
-    return this.page.locator('.open-workflow-button')
+    return this.root.locator('.open-workflow-button')
   }
 
   async getOpenedWorkflowNames() {
-    return await this.page
+    return await this.root
       .locator('.comfyui-workflows-open .node-label')
       .allInnerTexts()
   }
 
   async getActiveWorkflowName() {
-    return await this.page
+    return await this.root
       .locator('.comfyui-workflows-open .p-tree-node-selected .node-label')
       .innerText()
   }
 
   async getTopLevelSavedWorkflowNames() {
-    return await this.page
+    return await this.root
       .locator('.comfyui-workflows-browse .node-label')
       .allInnerTexts()
   }
@@ -122,20 +126,20 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 
   getOpenedItem(name: string) {
-    return this.page.locator('.comfyui-workflows-open .node-label', {
+    return this.root.locator('.comfyui-workflows-open .node-label', {
       hasText: name
     })
   }
 
   getPersistedItem(name: string) {
-    return this.page.locator('.comfyui-workflows-browse .node-label', {
+    return this.root.locator('.comfyui-workflows-browse .node-label', {
       hasText: name
     })
   }
 
   async renameWorkflow(locator: Locator, newName: string) {
     await locator.click({ button: 'right' })
-    await this.page
+    await this.root
       .locator('.p-contextmenu-item-content', { hasText: 'Rename' })
       .click()
     await this.page.keyboard.type(newName)
