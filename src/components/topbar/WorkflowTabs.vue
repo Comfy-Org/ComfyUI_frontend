@@ -1,6 +1,6 @@
 <template>
   <SelectButton
-    class="workflow-tabs bg-transparent flex flex-wrap"
+    class="workflow-tabs bg-transparent inline"
     :class="props.class"
     :modelValue="selectedWorkflow"
     @update:modelValue="onWorkflowChange"
@@ -41,12 +41,20 @@
       </div>
     </template>
   </SelectButton>
+  <Button
+    class="new-blank-workflow-button"
+    icon="pi pi-plus"
+    text
+    severity="secondary"
+    @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+  />
   <ContextMenu ref="menu" :model="contextMenuItems" />
 </template>
 
 <script setup lang="ts">
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
+import { useCommandStore } from '@/stores/commandStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
@@ -158,6 +166,8 @@ const contextMenuItems = computed(() => {
     }
   ]
 })
+
+const commandStore = useCommandStore()
 </script>
 
 <style scoped>
