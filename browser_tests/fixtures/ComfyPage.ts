@@ -840,6 +840,11 @@ export class ComfyPage {
         .activeWorkflow?.isModified
     })
   }
+  async getExportedWorkflow({ api = false }: { api?: boolean } = {}) {
+    return this.page.evaluate(async (api) => {
+      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
+    }, api)
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
