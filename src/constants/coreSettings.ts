@@ -397,7 +397,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Opened workflows position',
     type: 'combo',
     options: ['Sidebar', 'Topbar'],
-    defaultValue: 'Sidebar'
+    defaultValue: 'Topbar'
   },
   {
     id: 'Comfy.Graph.CanvasMenu',
