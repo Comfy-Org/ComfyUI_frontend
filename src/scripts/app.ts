@@ -63,6 +63,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { ISerialisedGraph } from '@comfyorg/litegraph'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1942,7 +1943,7 @@ export class ComfyApp {
               : { shape: LiteGraph.SlotShape.HollowCircle }
             const inputOptions = {
               ...shapeOptions,
-              label: st(nameKey, inputName)
+              localized_name: st(nameKey, inputName)
             }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
@@ -1984,7 +1985,7 @@ export class ComfyApp {
             // e.g.
             // - type ("INT"); name ("Positive") => translate name
             // - type ("FLOAT"); name ("FLOAT") => translate type
-            label:
+            localized_name:
               output !== outputName
                 ? st(nameKey, outputName)
                 : st(typeKey, outputName)
@@ -2002,7 +2003,7 @@ export class ComfyApp {
       }
 
       configure(data: any) {
-        // Keep 'name', 'type', 'shape', and 'label' information from the original node definition.
+        // Keep 'name', 'type', 'shape', and 'localized_name' information from the original node definition.
         const merge = (
           current: Record<string, any>,
           incoming: Record<string, any>
@@ -2013,7 +2014,7 @@ export class ComfyApp {
             this.inputs.push(current as INodeInputSlot)
             return incoming
           }
-          for (const key of ['name', 'type', 'shape', 'label']) {
+          for (const key of ['name', 'type', 'shape', 'localized_name']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
             }
@@ -2353,6 +2354,17 @@ export class ComfyApp {
     }
 
     const workflow = this.serializeGraph(graph)
+
+    // Remove localized_name from the workflow
+    for (const node of workflow.nodes) {
+      for (const slot of node.inputs) {
+        delete slot.localized_name
+      }
+      for (const slot of node.outputs) {
+        delete slot.localized_name
+      }
+    }
+
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {

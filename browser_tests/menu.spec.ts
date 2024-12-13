@@ -435,6 +435,26 @@ test.describe('Menu', () => {
       ).toEqual(['*Unsaved Workflow.json', 'workflow3.json', 'workflow4.json'])
     })
 
+    test('Exported workflow does not contain localized slot names', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('default')
+      const exportedWorkflow = await comfyPage.getExportedWorkflow({
+        api: false
+      })
+      expect(exportedWorkflow).toBeDefined()
+      for (const node of exportedWorkflow.nodes) {
+        for (const slot of node.inputs) {
+          expect(slot.localized_name).toBeUndefined()
+          expect(slot.label).toBeUndefined()
+        }
+        for (const slot of node.outputs) {
+          expect(slot.localized_name).toBeUndefined()
+          expect(slot.label).toBeUndefined()
+        }
+      }
+    })
+
     test('Can export same workflow with different locales', async ({
       comfyPage
     }) => {
