@@ -949,5 +949,10 @@
   "welcome": {
     "getStarted": "はじめる",
     "title": "ComfyUIへようこそ"
+  },
+  "workflowService": {
+    "enterFilename": "ファイル名を入力",
+    "exportWorkflow": "ワークフローをエクスポート",
+    "saveWorkflow": "ワークフローを保存"
   }
 }
