@@ -132,7 +132,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { electronAPI, GpuType } from '@/utils/envUtil'
+import { electronAPI, TorchDeviceType } from '@/utils/envUtil'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
 import { useI18n } from 'vue-i18n'
@@ -143,7 +143,7 @@ const cpuMode = computed({
   get: () => selected.value === 'cpu',
   set: () => pickGpu('cpu')
 })
-const selected = defineModel<GpuType>('gpu', {
+const selected = defineModel<TorchDeviceType>('device', {
   required: true
 })
 

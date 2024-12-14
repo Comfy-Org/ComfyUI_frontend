@@ -19,14 +19,14 @@
       </StepList>
       <StepPanels>
         <StepPanel value="0" v-slot="{ activateCallback }">
-          <GpuPicker v-model:gpu="gpu" />
+          <GpuPicker v-model:device="device" />
           <div class="flex pt-6 justify-end">
             <Button
               label="Next"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('1')"
-              :disabled="typeof gpu !== 'string'"
+              :disabled="typeof device !== 'string'"
             />
           </div>
         </StepPanel>
@@ -108,12 +108,16 @@ import StepPanel from 'primevue/steppanel'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
-import { electronAPI, type GpuType } from '@/utils/envUtil'
+import {
+  electronAPI,
+  type InstallOptions,
+  type TorchDeviceType
+} from '@/utils/envUtil'
 import { ref, computed, toRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import GpuPicker from '@/components/install/GpuPicker.vue'
 
-const gpu = ref<GpuType>(null)
+const device = ref<TorchDeviceType>(null)
 
 const installPath = ref('')
 const pathError = ref('')
@@ -133,18 +137,18 @@ const setHighestStep = (value: string | number) => {
 }
 
 const hasError = computed(() => pathError.value !== '')
-const noGpu = computed(() => typeof gpu.value !== 'string')
+const noGpu = computed(() => typeof device.value !== 'string')
 
 const electron = electronAPI()
 const router = useRouter()
 const install = () => {
-  const options = {
+  const options: InstallOptions = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
     migrationItemIds: toRaw(migrationItemIds.value),
-    gpu: gpu.value
+    device: device.value
   }
   electron.installComfyUI(options)
   router.push('/server-start')
@@ -153,8 +157,9 @@ const install = () => {
 onMounted(async () => {
   if (!electron) return
 
-  const detectedGpu = await electron.Config.getGpu()
-  if (detectedGpu === 'mps' || detectedGpu === 'nvidia') gpu.value = detectedGpu
+  const detectedGpu = await electron.Config.getDetectedGpu()
+  if (detectedGpu === 'mps' || detectedGpu === 'nvidia')
+    device.value = detectedGpu
 })
 </script>
 

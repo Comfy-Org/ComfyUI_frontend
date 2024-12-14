@@ -1,6 +1,7 @@
 import { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-export type GpuType = Parameters<ElectronAPI['installComfyUI']>[0]['gpu']
+export type InstallOptions = Parameters<ElectronAPI['installComfyUI']>[0]
+export type TorchDeviceType = InstallOptions['device']
 
 export function isElectron() {
   return 'electronAPI' in window && window['electronAPI'] !== undefined
