@@ -68,6 +68,7 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { app } from '@/scripts/app'
 
 const workspaceStore = useWorkspaceStore()
 const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
@@ -80,7 +81,8 @@ const queueModeMenuItemLookup = computed(() => ({
     label: t('menu.queue'),
     tooltip: t('menu.disabledTooltip'),
     command: () => {
-      queueMode.value = 'disabled'
+      // queueMode.value = 'disabled'
+      app.ui.setAutoQueueMode('disabled')
     }
   },
   instant: {
@@ -88,7 +90,8 @@ const queueModeMenuItemLookup = computed(() => ({
     label: `${t('menu.queue')} (${t('menu.instant')})`,
     tooltip: t('menu.instantTooltip'),
     command: () => {
-      queueMode.value = 'instant'
+      // queueMode.value = 'instant'
+      app.ui.setAutoQueueMode('instant')
     }
   },
   change: {
@@ -96,7 +99,8 @@ const queueModeMenuItemLookup = computed(() => ({
     label: `${t('menu.queue')} (${t('menu.onChange')})`,
     tooltip: t('menu.onChangeTooltip'),
     command: () => {
-      queueMode.value = 'change'
+      // queueMode.value = 'change'
+      app.ui.setAutoQueueMode('change')
     }
   }
 }))

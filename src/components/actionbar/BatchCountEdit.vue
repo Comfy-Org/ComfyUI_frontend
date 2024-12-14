@@ -35,6 +35,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { storeToRefs } from 'pinia'
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
+import { app } from '@/scripts/app'
 
 interface Props {
   class?: string
@@ -63,7 +64,8 @@ const handleClick = (increment: boolean) => {
     newCount = Math.floor(originalCount / 2)
   }
 
-  batchCount.value = newCount
+  // batchCount.value = newCount
+  app.ui.setBatchCount(newCount)
 }
 </script>
 

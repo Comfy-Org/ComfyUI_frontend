@@ -9,6 +9,7 @@ import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -493,7 +494,9 @@ export class ComfyUI {
               min: '1',
               style: { width: '35%', marginLeft: '0.4em' },
               oninput: (i) => {
-                this.batchCount = i.target.value
+                // this.batchCount = i.target.value
+                this.setBatchCount(parseInt(i.target.value))
+
                 /* Even though an <input> element with a type of range logically represents a number (since
               it's used for numeric input), the value it holds is still treated as a string in HTML and
               JavaScript. This behavior is consistent across all <input> elements regardless of their type
@@ -512,7 +515,9 @@ export class ComfyUI {
               max: '100',
               value: this.batchCount,
               oninput: (i) => {
-                this.batchCount = i.srcElement.value
+                // this.batchCount = i.srcElement.value
+                this.setBatchCount(parseInt(i.srcElement.value))
+
                 // Note
                 ;(
                   document.getElementById(
@@ -662,5 +667,15 @@ export class ComfyUI {
       }
       this.lastQueueSize = status.exec_info.queue_remaining
     }
+  }
+
+  setBatchCount(value: number) {
+    this.batchCount = value
+    useQueueSettingsStore().batchCount = value
+  }
+
+  setAutoQueueMode(value: 'disabled' | 'instant' | 'change') {
+    this.autoQueueMode = value
+    useQueueSettingsStore().mode = value
   }
 }
