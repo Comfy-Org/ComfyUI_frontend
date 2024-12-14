@@ -9,6 +9,7 @@ import { showSettingsDialog } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 
 export const ComfyDialog = _ComfyDialog
 
@@ -344,7 +345,6 @@ export class ComfyUI {
   app: ComfyApp
   dialog: _ComfyDialog
   settings: ComfySettingsDialog
-  batchCount: number
   lastQueueSize: number
   queue: ComfyList
   history: ComfyList
@@ -361,7 +361,6 @@ export class ComfyUI {
     this.dialog = new ComfyDialog()
     this.settings = new ComfySettingsDialog(app)
 
-    this.batchCount = 1
     this.lastQueueSize = 0
     this.queue = new ComfyList('Queue')
     this.history = new ComfyList('History', 'history', true)
@@ -372,6 +371,14 @@ export class ComfyUI {
     })
 
     this.setup(document.body)
+  }
+
+  get batchCount() {
+    return useQueueSettingsStore().batchCount
+  }
+
+  set batchCount(value: number) {
+    useQueueSettingsStore().batchCount = value
   }
 
   setup(containerElement: HTMLElement) {
