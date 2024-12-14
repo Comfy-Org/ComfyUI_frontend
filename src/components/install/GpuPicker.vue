@@ -120,7 +120,6 @@
       <ToggleSwitch
         v-model="cpuMode"
         inputId="cpu-mode"
-        @change="pickCpu"
         class="-translate-y-40"
       />
       <label for="cpu-mode" class="select-none">
@@ -141,7 +140,9 @@ const { t } = useI18n()
 
 const cpuMode = computed({
   get: () => selected.value === 'cpu',
-  set: () => pickGpu('cpu')
+  set: (value) => {
+    selected.value = value ? 'cpu' : null
+  }
 })
 const selected = defineModel<TorchDeviceType>('device', {
   required: true
@@ -153,10 +154,6 @@ const platform = electron.getPlatform()
 const pickGpu = (value: typeof selected.value) => {
   const newValue = selected.value === value ? null : value
   selected.value = newValue
-}
-
-const pickCpu = () => {
-  selected.value = selected.value === 'cpu' ? null : 'cpu'
 }
 </script>
 
