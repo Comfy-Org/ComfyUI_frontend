@@ -949,5 +949,10 @@
   "welcome": {
     "getStarted": "Начать",
     "title": "Добро пожаловать в ComfyUI"
+  },
+  "workflowService": {
+    "enterFilename": "Введите имя файла",
+    "exportWorkflow": "Экспорт рабочего процесса",
+    "saveWorkflow": "Сохранить рабочий процесс"
   }
 }

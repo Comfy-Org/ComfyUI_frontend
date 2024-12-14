@@ -949,5 +949,10 @@
   "welcome": {
     "getStarted": "시작하기",
     "title": "ComfyUI에 오신 것을 환영합니다"
+  },
+  "workflowService": {
+    "enterFilename": "파일 이름 입력",
+    "exportWorkflow": "워크플로우 내보내기",
+    "saveWorkflow": "워크플로우 저장"
   }
 }

@@ -615,6 +615,11 @@
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
   },
+  "workflowService": {
+    "exportWorkflow": "Export Workflow",
+    "enterFilename": "Enter the filename",
+    "saveWorkflow": "Save workflow"
+  },
   "electronFileDownload": {
     "inProgress": "In Progress",
     "pause": "Pause Download",
