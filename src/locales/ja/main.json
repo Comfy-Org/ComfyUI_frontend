@@ -27,6 +27,8 @@
     "INT": "整数",
     "LATENT": "潜在",
     "LATENT_OPERATION": "潜在操作",
+    "LOAD_3D": "3Dをロード",
+    "LOAD_3D_ANIMATION": "3Dアニメーションをロード",
     "MASK": "マスク",
     "MODEL": "モデル",
     "NOISE": "ノイズ",
@@ -274,6 +276,7 @@
     "Zoom Out": "ズームアウト"
   },
   "nodeCategories": {
+    "3d": "3d",
     "3d_models": "3Dモデル",
     "DevTools": "デブツール",
     "_for_testing": "_テスト用",

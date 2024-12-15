@@ -2190,6 +2190,107 @@
       }
     }
   },
+  "Load3D": {
+    "display_name": "Load 3D",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "mesh_path"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "Load 3D - Animation",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
+      },
+      "animation_speed": {
+        "name": "animation_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "mesh_path"
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "LoadAudio",
     "inputs": {

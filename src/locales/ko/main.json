@@ -27,6 +27,8 @@
     "INT": "정수",
     "LATENT": "잠재",
     "LATENT_OPERATION": "잠재 연산",
+    "LOAD_3D": "3D_로드",
+    "LOAD_3D_ANIMATION": "3D_애니메이션_로드",
     "MASK": "마스크",
     "MODEL": "모델",
     "NOISE": "노이즈",
@@ -274,6 +276,7 @@
     "Zoom Out": "축소"
   },
   "nodeCategories": {
+    "3d": "3d",
     "3d_models": "3D 모델",
     "DevTools": "개발자 도구",
     "_for_testing": "_테스트용",
