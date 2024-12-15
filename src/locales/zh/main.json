@@ -27,6 +27,8 @@
     "INT": "整数",
     "LATENT": "潜空间",
     "LATENT_OPERATION": "潜空间操作",
+    "LOAD_3D": "加载3D",
+    "LOAD_3D_ANIMATION": "加载3D动画",
     "MASK": "遮罩",
     "MODEL": "模型",
     "NOISE": "噪声",
@@ -274,6 +276,7 @@
     "Zoom Out": "缩小"
   },
   "nodeCategories": {
+    "3d": "3d",
     "3d_models": "3D模型",
     "DevTools": "开发工具",
     "_for_testing": "_用于测试",

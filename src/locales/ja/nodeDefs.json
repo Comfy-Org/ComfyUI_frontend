@@ -2281,6 +2281,107 @@
       }
     }
   },
+  "Load3D": {
+    "display_name": "3Dを読み込む",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "素材"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3Dを読み込む - アニメーション",
+    "inputs": {
+      "animation_speed": {
+        "name": "アニメーション速度"
+      },
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "素材"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "音声を読み込む",
     "inputs": {

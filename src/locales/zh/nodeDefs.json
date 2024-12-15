@@ -2281,6 +2281,107 @@
       }
     }
   },
+  "Load3D": {
+    "display_name": "加载3D",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      },
+      "2": {
+        "name": "网格路径"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "加载3D - 动画",
+    "inputs": {
+      "animation_speed": {
+        "name": "动画速度"
+      },
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      },
+      "2": {
+        "name": "网格路径"
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "加载音频",
     "inputs": {
