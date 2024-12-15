@@ -1081,6 +1081,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "シンプルスライダー",
+    "inputs": {
+      "value": {
+        "name": "値"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
     "inputs": {

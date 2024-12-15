@@ -1081,6 +1081,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "Простой Слайдер",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
     "inputs": {

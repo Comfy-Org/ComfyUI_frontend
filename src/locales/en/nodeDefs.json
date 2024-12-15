@@ -1081,6 +1081,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "Simple Slider",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Load ControlNet Model (diff)",
     "inputs": {
