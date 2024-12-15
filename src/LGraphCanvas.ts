@@ -6240,8 +6240,7 @@ export class LGraphCanvas {
           ctx.textAlign = "center"
           ctx.fillStyle = text_color
           ctx.fillText(
-            w.label ||
-            w.name +
+            (w.label || w.name) +
             "  " +
             Number(w.value).toFixed(
               w.options.precision != null ? w.options.precision : 3,
