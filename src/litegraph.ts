@@ -81,6 +81,7 @@ export type {
   ISerialisedGraph,
 } from "./types/serialisation"
 export { CanvasPointer } from "./CanvasPointer"
+export { Reroute } from "./Reroute"
 export { createBounds } from "./measure"
 
 export function clamp(v: number, a: number, b: number): number {

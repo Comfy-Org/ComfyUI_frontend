@@ -17,6 +17,7 @@ import { LGraphNode } from "./LGraphNode"
 import { SlotShape, SlotDirection, SlotType, LabelPosition } from "./draw"
 import type { Dictionary, ISlotType, Rect } from "./interfaces"
 import { distance, isInsideRectangle, overlapBounding } from "./measure"
+import { Reroute } from "./Reroute"
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -265,6 +266,7 @@ export class LiteGraphGlobal {
   LGraphCanvas = LGraphCanvas
   ContextMenu = ContextMenu
   CurveEditor = CurveEditor
+  Reroute = Reroute
 
   onNodeTypeRegistered?(type: string, base_class: typeof LGraphNode): void
   onNodeTypeReplaced?(type: string, base_class: typeof LGraphNode, prev: unknown): void

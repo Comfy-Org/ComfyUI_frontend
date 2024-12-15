@@ -89,6 +89,7 @@ LiteGraphGlobal {
   "OUTPUT": 2,
   "RIGHT": 4,
   "ROUND_SHAPE": 2,
+  "Reroute": [Function],
   "SPLINE_LINK": 2,
   "STRAIGHT_LINK": 0,
   "SlotDirection": {
