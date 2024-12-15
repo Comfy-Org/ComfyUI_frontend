@@ -803,6 +803,10 @@ class Load3d {
   }
 
   setViewPosition(position: 'front' | 'top' | 'right' | 'isometric') {
+    if (!this.currentModel) {
+      return
+    }
+
     const box = new THREE.Box3()
     let center = new THREE.Vector3()
     let size = new THREE.Vector3()
