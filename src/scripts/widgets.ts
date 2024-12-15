@@ -341,21 +341,20 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
     widget.callback?.(widget.value)
   })
 
-  inputEl.addEventListener('mousedown', (event: PointerEvent) => {
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
     if (event.button === 1) {
       event.preventDefault()
       app.canvas.processMouseDown(event)
     }
   })
 
-  inputEl.addEventListener('mousemove', (event: PointerEvent) => {
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
     if (event.buttons === 4) {
-      app.canvas.pointer.onDragStart(app.canvas.pointer)
       app.canvas.processMouseMove(event)
     }
   })
 
-  inputEl.addEventListener('mouseup', (event: PointerEvent) => {
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
     if (event.button === 1) {
       app.canvas.processMouseUp(event)
     }
