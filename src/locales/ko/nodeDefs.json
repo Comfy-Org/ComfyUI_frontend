@@ -1081,6 +1081,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "간단한 슬라이더",
+    "inputs": {
+      "value": {
+        "name": "값"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
     "inputs": {

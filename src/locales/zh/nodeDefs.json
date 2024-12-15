@@ -1081,6 +1081,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "简单滑块",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "加载控制网模型（diff）",
     "inputs": {
