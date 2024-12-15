@@ -48,4 +48,8 @@ test.describe('Optional input', () => {
     expect(vaeInput.link).toBeNull()
     expect(convertedInput.link).not.toBeNull()
   })
+  test('slider', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('simple_slider')
+    await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
+  })
 })
