@@ -283,21 +283,21 @@ export class Reroute implements Positionable, LinkSegment, Serialisable<Serialis
     ctx.arc(pos[0], pos[1], Reroute.radius, 0, 2 * Math.PI)
     ctx.fill()
 
-    ctx.lineWidth = 1
+    ctx.lineWidth = Reroute.radius * 0.1
     ctx.strokeStyle = "rgb(0,0,0,0.5)"
     ctx.stroke()
 
     ctx.fillStyle = "#ffffff55"
     ctx.strokeStyle = "rgb(0,0,0,0.3)"
     ctx.beginPath()
-    ctx.arc(pos[0], pos[1], 8, 0, 2 * Math.PI)
+    ctx.arc(pos[0], pos[1], Reroute.radius * 0.8, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
 
     if (this.selected) {
       ctx.strokeStyle = "#fff"
       ctx.beginPath()
-      ctx.arc(pos[0], pos[1], 12, 0, 2 * Math.PI)
+      ctx.arc(pos[0], pos[1], Reroute.radius * 1.2, 0, 2 * Math.PI)
       ctx.stroke()
     }
   }
