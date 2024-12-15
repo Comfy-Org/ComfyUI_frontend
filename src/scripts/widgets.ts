@@ -343,13 +343,12 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
 
   inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
     if (event.button === 1) {
-      event.preventDefault()
       app.canvas.processMouseDown(event)
     }
   })
 
   inputEl.addEventListener('pointermove', (event: PointerEvent) => {
-    if (event.buttons === 4) {
+    if ((event.buttons & 4) === 4) {
       app.canvas.processMouseMove(event)
     }
   })
