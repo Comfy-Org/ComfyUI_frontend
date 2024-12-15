@@ -16,7 +16,8 @@
         class="border-none w-full"
       />
     </ScrollPanel>
-    <Divider layout="vertical" class="mx-1 2xl:mx-4" />
+    <Divider layout="vertical" class="mx-1 2xl:mx-4 hidden md:flex" />
+    <Divider layout="horizontal" class="flex md:hidden" />
     <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
@@ -248,6 +249,10 @@ const tabValue = computed(() =>
 
   .settings-sidebar {
     width: 100%;
+  }
+
+  .settings-content {
+    height: 350px;
   }
 }
 
