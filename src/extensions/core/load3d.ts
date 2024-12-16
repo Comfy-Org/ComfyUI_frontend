@@ -1638,6 +1638,15 @@ app.registerExtension({
 app.registerExtension({
   name: 'Comfy.Preview3D',
 
+  async beforeRegisterNodeDef(nodeType, nodeData) {
+    if (
+      // @ts-expect-error ComfyNode
+      ['Preview3D'].includes(nodeType.comfyClass)
+    ) {
+      nodeData.input.required.image = ['PREVIEW_3D']
+    }
+  },
+
   getCustomWidgets(app) {
     return {
       PREVIEW_3D(node, inputName) {
@@ -1734,17 +1743,25 @@ app.registerExtension({
       (w: IWidget) => w.name === 'up_direction'
     )
 
-    configureLoad3D(
-      load3d,
-      'output',
-      modelWidget,
-      showGrid,
-      cameraType,
-      view,
-      material,
-      bgColor,
-      lightIntensity,
-      upDirection
-    )
+    const onExecuted = node.onExecuted
+
+    node.onExecuted = function (message: any) {
+      onExecuted?.apply(this, arguments)
+
+      modelWidget.value = message.model_file[0]
+
+      configureLoad3D(
+        load3d,
+        'output',
+        modelWidget,
+        showGrid,
+        cameraType,
+        view,
+        material,
+        bgColor,
+        lightIntensity,
+        upDirection
+      )
+    }
   }
 })
