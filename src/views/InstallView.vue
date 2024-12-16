@@ -2,25 +2,46 @@
   <div
     class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
   >
-    <Stepper class="mt-[5vh] 2xl:mt-[20vh]" value="1">
-      <StepList>
-        <Step value="1" :disabled="hasError">
+    <Stepper class="stepper" value="0" @update:value="setHighestStep">
+      <StepList class="select-none">
+        <Step value="0">
+          {{ $t('install.gpu') }}
+        </Step>
+        <Step value="1" :disabled="noGpu">
           {{ $t('install.installLocation') }}
         </Step>
-        <Step value="2" :disabled="hasError">
+        <Step value="2" :disabled="noGpu || hasError || highestStep < 1">
           {{ $t('install.migration') }}
         </Step>
-        <Step value="3" :disabled="hasError">
+        <Step value="3" :disabled="noGpu || hasError || highestStep < 2">
           {{ $t('install.desktopSettings') }}
         </Step>
       </StepList>
       <StepPanels>
+        <StepPanel value="0" v-slot="{ activateCallback }">
+          <GpuPicker v-model:device="device" />
+          <div class="flex pt-6 justify-end">
+            <Button
+              label="Next"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+              @click="activateCallback('1')"
+              :disabled="typeof device !== 'string'"
+            />
+          </div>
+        </StepPanel>
         <StepPanel value="1" v-slot="{ activateCallback }">
           <InstallLocationPicker
             v-model:installPath="installPath"
             v-model:pathError="pathError"
           />
-          <div class="flex pt-6 justify-end">
+          <div class="flex pt-6 justify-between">
+            <Button
+              label="Back"
+              severity="secondary"
+              icon="pi pi-arrow-left"
+              @click="activateCallback('0')"
+            />
             <Button
               label="Next"
               icon="pi pi-arrow-right"
@@ -87,9 +108,16 @@ import StepPanel from 'primevue/steppanel'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
-import { electronAPI } from '@/utils/envUtil'
-import { ref, computed, toRaw } from 'vue'
+import {
+  electronAPI,
+  type InstallOptions,
+  type TorchDeviceType
+} from '@/utils/envUtil'
+import { ref, computed, toRaw, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import GpuPicker from '@/components/install/GpuPicker.vue'
+
+const device = ref<TorchDeviceType>(null)
 
 const installPath = ref('')
 const pathError = ref('')
@@ -100,24 +128,47 @@ const migrationItemIds = ref<string[]>([])
 const autoUpdate = ref(true)
 const allowMetrics = ref(true)
 
-const hasError = computed(() => pathError.value !== '')
+/** Forces each install step to be visited at least once. */
+const highestStep = ref(0)
 
+const setHighestStep = (value: string | number) => {
+  const int = typeof value === 'number' ? value : parseInt(value, 10)
+  if (!isNaN(int) && int > highestStep.value) highestStep.value = int
+}
+
+const hasError = computed(() => pathError.value !== '')
+const noGpu = computed(() => typeof device.value !== 'string')
+
+const electron = electronAPI()
 const router = useRouter()
 const install = () => {
-  const options = toRaw({
+  const options: InstallOptions = {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
-    migrationItemIds: toRaw(migrationItemIds.value)
-  })
-  electronAPI().installComfyUI(options)
+    migrationItemIds: toRaw(migrationItemIds.value),
+    device: device.value
+  }
+  electron.installComfyUI(options)
   router.push('/server-start')
 }
+
+onMounted(async () => {
+  if (!electron) return
+
+  const detectedGpu = await electron.Config.getDetectedGpu()
+  if (detectedGpu === 'mps' || detectedGpu === 'nvidia')
+    device.value = detectedGpu
+})
 </script>
 
-<style scoped>
+<style lang="postcss" scoped>
 :deep(.p-steppanel) {
   @apply bg-transparent;
+}
+
+.stepper {
+  margin-top: max(1rem, max(0px, calc((100vh - 42rem) * 0.5)));
 }
 </style>

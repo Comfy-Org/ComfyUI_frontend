@@ -78,7 +78,8 @@
     "file": "File",
     "inbox": "Inbox",
     "box": "Box",
-    "briefcase": "Briefcase"
+    "briefcase": "Briefcase",
+    "exclamation-triangle": "Warning"
   },
   "welcome": {
     "title": "Welcome to ComfyUI",
@@ -129,6 +130,22 @@
     "migrationOptional": "Migration is optional. If you don't have an existing installation, you can skip this step.",
     "desktopAppSettings": "Desktop App Settings",
     "desktopAppSettingsDescription": "Configure how ComfyUI behaves on your desktop. You can change these settings later.",
+    "gpu": "GPU",
+    "gpuSelection": {
+      "selectGpu": "Select GPU",
+      "selectGpuDescription": "Select the type of GPU you have",
+      "cpuMode": "CPU Mode",
+      "cpuModeDescription": "CPU mode is intended for developers and rare edge cases only.",
+      "cpuModeDescription2": "If you are not absolutely certain you need this, please ignore this box and select your GPU above.",
+      "enableCpuMode": "Enable CPU Mode",
+      "nvidiaDescription": "NVIDIA devices are directly supported using pytorch CUDA builds.",
+      "mpsDescription": "Apple Metal Performance Shaders are supported using pytorch nightly.",
+      "customSkipsPython": "This option skips the normal python setup.",
+      "customComfyNeedsPython": "ComfyUI will not work until python is setup",
+      "customManualVenv": "Manually configure python venv",
+      "customInstallRequirements": "Install all requirements and dependencies (e.g. custom torch)",
+      "customMayNotWork": "This is entirely unsupported, and may simply not work"
+    },
     "settings": {
       "autoUpdate": "Automatic Updates",
       "allowMetrics": "Crash Reports",
