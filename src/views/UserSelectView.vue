@@ -7,13 +7,14 @@
       class="mt-[5vh] 2xl:mt-[20vh] min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
-      <form class="flex w-full flex-col items-center">
+      <div class="flex w-full flex-col items-center">
         <div class="flex w-full flex-col gap-2">
           <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
           <InputText
             id="new-user-input"
             v-model="newUsername"
             :placeholder="$t('userSelect.enterUsername')"
+            @keyup.enter="login"
           />
         </div>
         <Divider />
@@ -35,7 +36,7 @@
         <footer class="mt-5">
           <Button :label="$t('userSelect.next')" @click="login" />
         </footer>
-      </form>
+      </div>
     </main>
   </div>
 </template>
