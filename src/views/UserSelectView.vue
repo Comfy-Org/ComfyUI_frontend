@@ -14,6 +14,7 @@
             id="new-user-input"
             v-model="newUsername"
             :placeholder="$t('userSelect.enterUsername')"
+            @keyup.enter="login"
           />
         </div>
         <Divider />
