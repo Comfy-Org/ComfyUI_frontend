@@ -1,7 +1,12 @@
 <template>
   <div class="task-item" @contextmenu="handleContextMenu">
     <div class="task-result-preview">
-      <template v-if="task.displayStatus === TaskItemDisplayStatus.Completed">
+      <template
+        v-if="
+          task.displayStatus === TaskItemDisplayStatus.Completed ||
+          cancelledWithResults
+        "
+      >
         <ResultItem
           v-if="flatOutputs.length"
           :result="coverResult"
@@ -20,7 +25,7 @@
         >...</span
       >
       <i
-        v-else-if="task.displayStatus === TaskItemDisplayStatus.Cancelled"
+        v-else-if="cancelledWithoutResults"
         class="pi pi-exclamation-triangle"
       ></i>
       <i
@@ -64,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
@@ -162,6 +167,20 @@ const onProgressPreviewReceived = async ({ detail }: CustomEvent) => {
     progressPreviewBlobUrl.value = URL.createObjectURL(detail)
   }
 }
+
+const cancelledWithResults = computed(() => {
+  return (
+    props.task.displayStatus === TaskItemDisplayStatus.Cancelled &&
+    flatOutputs.length
+  )
+})
+
+const cancelledWithoutResults = computed(() => {
+  return (
+    props.task.displayStatus === TaskItemDisplayStatus.Cancelled &&
+    flatOutputs.length === 0
+  )
+})
 </script>
 
 <style scoped>
