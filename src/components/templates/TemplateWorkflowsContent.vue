@@ -15,7 +15,7 @@
             @click="loadWorkflow(template)"
           >
             <img
-              :src="`/templates/${template}.jpg`"
+              :src="`templates/${template}.jpg`"
               class="w-64 h-64 rounded-lg object-cover"
             />
             <a>
