@@ -373,7 +373,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           groupNodes.map((g) =>
             $el('option', {
               textContent: g,
-              selected: `${PREFIX}${SEPARATOR}` + g === type,
+              selected: `${PREFIX}${SEPARATOR}${g}` === type,
               value: g
             })
           )
@@ -512,7 +512,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     this.element.replaceChildren(outer)
     this.changeGroup(
       type
-        ? groupNodes.find((g) => `${PREFIX}${SEPARATOR}` + g === type)
+        ? groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
+            groupNodes[0]
         : groupNodes[0]
     )
     this.element.showModal()
