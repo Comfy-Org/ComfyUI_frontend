@@ -177,6 +177,13 @@
     "installLocation": "安装位置",
     "installLocationDescription": "选择 ComfyUI 用户数据的目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
     "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "manualConfiguration": {
+      "createVenv": "您需要在以下目录中创建虚拟环境",
+      "requirements": "需求",
+      "restartWhenFinished": "配置虚拟环境完成后，请重新启动ComfyUI。",
+      "title": "手动配置",
+      "virtualEnvironmentPath": "虚拟环境路径"
+    },
     "migrateFromExistingInstallation": "从现有安装迁移",
     "migration": "迁移",
     "migrationOptional": "迁移是可选的。如果您没有现有安装，可以跳过此步骤。",

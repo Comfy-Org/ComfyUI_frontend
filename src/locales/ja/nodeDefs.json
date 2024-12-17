@@ -1157,6 +1157,23 @@
       }
     }
   },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
+  },
   "EmptyImage": {
     "display_name": "空の画像",
     "inputs": {

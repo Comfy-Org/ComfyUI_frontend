@@ -1157,6 +1157,23 @@
       }
     }
   },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
   "EmptyImage": {
     "display_name": "빈 이미지",
     "inputs": {
