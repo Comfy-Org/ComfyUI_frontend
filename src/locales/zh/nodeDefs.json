@@ -1157,6 +1157,23 @@
       }
     }
   },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "空的混元潜在视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
   "EmptyImage": {
     "display_name": "空图像",
     "inputs": {
