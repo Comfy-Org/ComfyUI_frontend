@@ -177,6 +177,13 @@
     "installLocation": "설치 위치",
     "installLocationDescription": "ComfyUI의 사용자 데이터 디렉토리를 선택하십시오. 선택한 위치에 Python 환경이 설치됩니다. 선택한 디스크에 충분한 공간(~15GB)이 남아 있는지 확인하십시오.",
     "installLocationTooltip": "ComfyUI의 사용자 데이터 디렉토리. 저장소:\n- Python 환경\n- 모델\n- 사용자 정의 노드\n",
+    "manualConfiguration": {
+      "createVenv": "다음 디렉토리에 가상 환경을 생성해야 합니다",
+      "requirements": "요구 사항",
+      "restartWhenFinished": "가상 환경 구성을 완료하면 ComfyUI를 다시 시작해주세요.",
+      "title": "수동 구성",
+      "virtualEnvironmentPath": "가상 환경 경로"
+    },
     "migrateFromExistingInstallation": "기존 설치에서 마이그레이션",
     "migration": "마이그레이션",
     "migrationOptional": "마이그레이션은 선택 사항입니다. 기존에 설치된 것이 없다면, 이 단계를 건너뛸 수 있습니다.",

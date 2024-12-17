@@ -177,6 +177,13 @@
     "installLocation": "インストール先",
     "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
     "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
+    "manualConfiguration": {
+      "createVenv": "次のディレクトリに仮想環境を作成する必要があります",
+      "requirements": "要件",
+      "restartWhenFinished": "仮想環境の設定が完了したら、ComfyUIを再起動してください。",
+      "title": "マニュアル設定",
+      "virtualEnvironmentPath": "仮想環境のパス"
+    },
     "migrateFromExistingInstallation": "既存のインストールから移行",
     "migration": "移行",
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",

@@ -146,6 +146,13 @@
       "customInstallRequirements": "Install all requirements and dependencies (e.g. custom torch)",
       "customMayNotWork": "This is entirely unsupported, and may simply not work"
     },
+    "manualConfiguration": {
+      "title": "Manual Configuration",
+      "requirements": "Requirements",
+      "createVenv": "You will need to create a virtual environment in the following directory",
+      "virtualEnvironmentPath": "Virtual environment path",
+      "restartWhenFinished": "When you have finished configuring the virtual environment, please restart ComfyUI."
+    },
     "settings": {
       "autoUpdate": "Automatic Updates",
       "allowMetrics": "Crash Reports",
