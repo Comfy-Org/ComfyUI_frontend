@@ -152,7 +152,8 @@ const install = () => {
   }
   electron.installComfyUI(options)
 
-  const nextPage = options.device === 'unsupported' ? '/manual-configuration' : '/server-start'
+  const nextPage =
+    options.device === 'unsupported' ? '/manual-configuration' : '/server-start'
   router.push(nextPage)
 }
 
