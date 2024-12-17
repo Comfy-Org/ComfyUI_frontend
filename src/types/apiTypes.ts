@@ -18,7 +18,8 @@ export type ResultItem = z.infer<typeof zResultItem>
 const zOutputs = z
   .object({
     audio: z.array(zResultItem).optional(),
-    images: z.array(zResultItem).optional()
+    images: z.array(zResultItem).optional(),
+    animated: z.array(z.boolean()).optional()
   })
   .passthrough()
 
