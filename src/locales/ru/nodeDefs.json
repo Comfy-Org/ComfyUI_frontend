@@ -1157,6 +1157,23 @@
       }
     }
   },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "ПустойHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    }
+  },
   "EmptyImage": {
     "display_name": "Пустое изображение",
     "inputs": {
