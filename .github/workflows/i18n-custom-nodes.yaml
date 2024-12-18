@@ -10,6 +10,11 @@ on:
         description: 'Repository to update locales for'
         required: true
         type: string
+      fork_owner:
+        description: 'Owner of the forked repository'
+        required: false
+        type: string
+        default: 'Comfy-Org'
 
 jobs:
   update-locales:
@@ -79,6 +84,9 @@ jobs:
       # We do want electron specific UIs to be translated.
       run: npm run dev:electron &
       working-directory: ComfyUI_frontend
+    - name: Capture base i18n
+      run: npx tsx scripts/diff-i18n capture
+      working-directory: ComfyUI_frontend
     - name: Update en.json
       run: npm run collect-i18n
       env:
@@ -89,3 +97,31 @@ jobs:
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       working-directory: ComfyUI_frontend
+    - name: Diff base vs updated i18n
+      run: npx tsx scripts/diff-i18n diff
+      working-directory: ComfyUI_frontend
+    - name: Update i18n in custom node repository
+      run: |
+        LOCALE_DIR=ComfyUI/custom_nodes/${{ inputs.repository }}/locales/
+        install -d "$LOCALE_DIR"
+        cp -rf ComfyUI_frontend/temp/diff/* "$LOCALE_DIR"
+    - name: Check and create fork of custom node repository
+      run: |
+        gh repo fork ${{ inputs.owner }}/${{ inputs.repository }} --clone=false || {
+          echo "Fork failed - repository might already be forked"
+          # Exit 0 to prevent the workflow from failing
+          exit 0
+        }
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    - name: Commit and push changes
+      run: |
+        git checkout -b update-locales
+        git add -A
+        git commit -m "Update locales"
+        git remote add org_fork git@github.com:${{ inputs.fork_owner }}/${{ inputs.repository }}.git
+        git push org_fork update-locales
+        gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
+      working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
