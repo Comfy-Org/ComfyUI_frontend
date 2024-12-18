@@ -6,7 +6,9 @@
 /tests-ui/ @Comfy-Org/comfy_maintainer
 /browser_tests/ @Comfy-Org/comfy_maintainer
 /.env_example @Comfy-Org/comfy_maintainer
-/src/locales/ @Comfy-Org/comfy_maintainer
+
+# Translations (AIGODLIKE team)
+/src/locales/ @Yorha4D @KarryCharon @Comfy-Org/comfy_maintainer
 
 # Japanese translation
 /src/locales/ja.json @shinshin86 @Comfy-Org/comfy_maintainer
