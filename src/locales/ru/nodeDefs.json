@@ -650,6 +650,31 @@
       }
     }
   },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      },
+      "seconds_start": {
+        "name": "секунды_начала"
+      },
+      "seconds_total": {
+        "name": "всего_секунд"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
+      }
+    }
+  },
   "ConditioningTimestepsRange": {
     "display_name": "Диапазон временных шагов",
     "inputs": {
@@ -4177,6 +4202,35 @@
       },
       "source_alpha": {
         "name": "альфа_источника"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "Предварительный просмотр 3D",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "camera_type": {
+        "name": "тип_камеры"
+      },
+      "light_intensity": {
+        "name": "интенсивность_света"
+      },
+      "material": {
+        "name": "материал"
+      },
+      "model_file": {
+        "name": "файл_модели"
+      },
+      "show_grid": {
+        "name": "показать_сетку"
+      },
+      "up_direction": {
+        "name": "направление_вверх"
+      },
+      "view": {
+        "name": "вид"
       }
     }
   },

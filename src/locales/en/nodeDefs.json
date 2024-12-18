@@ -650,6 +650,31 @@
       }
     }
   },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "seconds_start": {
+        "name": "seconds_start"
+      },
+      "seconds_total": {
+        "name": "seconds_total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
+      }
+    }
+  },
   "ConditioningTimestepsRange": {
     "display_name": "Timesteps Range",
     "inputs": {
@@ -4177,6 +4202,35 @@
       },
       "mode": {
         "name": "mode"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "Preview 3D",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
       }
     }
   },

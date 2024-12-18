@@ -650,6 +650,31 @@
       }
     }
   },
+  "ConditioningStableAudio": {
+    "display_name": "StableAudio条件",
+    "inputs": {
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "seconds_start": {
+        "name": "开始秒数"
+      },
+      "seconds_total": {
+        "name": "总秒数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "负向"
+      }
+    }
+  },
   "ConditioningTimestepsRange": {
     "display_name": "时间步范围",
     "inputs": {
@@ -4177,6 +4202,35 @@
       },
       "source_alpha": {
         "name": "源alpha"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "3D预览",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
       }
     }
   },

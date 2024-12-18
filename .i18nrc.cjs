@@ -10,7 +10,7 @@ module.exports = defineConfig({
   entryLocale: 'en',
   output: 'src/locales',
   outputLocales: ['zh', 'ru', 'ja', 'ko'],
-  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg.
+  reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
   `

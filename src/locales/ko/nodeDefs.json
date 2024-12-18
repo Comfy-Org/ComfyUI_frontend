@@ -650,6 +650,31 @@
       }
     }
   },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "negative": {
+        "name": "부정적"
+      },
+      "positive": {
+        "name": "긍정적"
+      },
+      "seconds_start": {
+        "name": "초 시작"
+      },
+      "seconds_total": {
+        "name": "총 초"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정적"
+      },
+      "1": {
+        "name": "부정적"
+      }
+    }
+  },
   "ConditioningTimestepsRange": {
     "display_name": "조건 (타임스텝 범위)",
     "inputs": {
@@ -4177,6 +4202,35 @@
       },
       "source_alpha": {
         "name": "소스_알파"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "3D 미리보기",
+    "inputs": {
+      "bg_color": {
+        "name": "배경색"
+      },
+      "camera_type": {
+        "name": "카메라 유형"
+      },
+      "light_intensity": {
+        "name": "빛의 강도"
+      },
+      "material": {
+        "name": "재료"
+      },
+      "model_file": {
+        "name": "모델 파일"
+      },
+      "show_grid": {
+        "name": "그리드 표시"
+      },
+      "up_direction": {
+        "name": "위 방향"
+      },
+      "view": {
+        "name": "보기"
       }
     }
   },
