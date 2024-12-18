@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - core/1.5
     paths:
       - "package.json"
 
