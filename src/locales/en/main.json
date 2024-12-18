@@ -561,6 +561,12 @@
       "coverImagePreview": "Fit Image Preview",
       "clearPendingTasks": "Clear Pending Tasks",
       "filter": "Filter Outputs",
+      "history": "History",
+      "running": "Running",
+      "pending": "Pending",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
       "filters": {
         "hideCached": "Hide Cached",
         "hideCanceled": "Hide Canceled"
