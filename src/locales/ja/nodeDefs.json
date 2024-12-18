@@ -650,6 +650,31 @@
       }
     }
   },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "seconds_start": {
+        "name": "秒_開始"
+      },
+      "seconds_total": {
+        "name": "秒_合計"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
+      }
+    }
+  },
   "ConditioningTimestepsRange": {
     "display_name": "タイムステップ範囲",
     "inputs": {
@@ -4177,6 +4202,35 @@
       },
       "source_alpha": {
         "name": "ソースアルファ"
+      }
+    }
+  },
+  "Preview3D": {
+    "display_name": "3Dプレビュー",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "マテリアル"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
       }
     }
   },
