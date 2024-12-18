@@ -52,15 +52,29 @@ pause
 
 ### Stable Release
 
-Stable releases are published weekly in the ComfyUI main repository, aligned with ComfyUI backend's stable release schedule.
-
-#### Feature Freeze
-
-There will be a 2-day feature freeze before each stable release. During this period, no new major features will be merged.
+Stable releases are published bi-weekly in the ComfyUI main repository.
 
 ## Release Summary
 
 ### Major features
+
+<details>
+  <summary>v1.5: Native translation (i18n)</summary>
+
+  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language 
+  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native 
+  implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
+  
+  More details available here: https://blog.comfy.org/p/native-localization-support-i18n
+</details>
+
+<details>
+  <summary>v1.4: New mask editor</summary>
+
+  https://github.com/Comfy-Org/ComfyUI_frontend/pull/1284 implements a new mask editor.
+
+  ![image](https://github.com/user-attachments/assets/f0ea6ee5-00ee-4e5d-a09c-6938e86a1f17)
+</details>
 
 <details>
   <summary>v1.3.22: Integrated server terminal</summary>
