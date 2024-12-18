@@ -37,7 +37,7 @@ function translateOptions(options: (SettingOption | string)[]) {
 
     return {
       text: t(
-        `settingsDialog.${normalizeI18nKey(props.setting.id)}.options.${normalizeI18nKey(optionLabel)}`,
+        `settings.${normalizeI18nKey(props.setting.id)}.options.${normalizeI18nKey(optionLabel)}`,
         optionLabel
       ),
       value: optionValue
@@ -49,9 +49,9 @@ const formItem = computed(() => {
   const normalizedId = normalizeI18nKey(props.setting.id)
   return {
     ...props.setting,
-    name: t(`settingsDialog.${normalizedId}.name`, props.setting.name),
+    name: t(`settings.${normalizedId}.name`, props.setting.name),
     tooltip: props.setting.tooltip
-      ? t(`settingsDialog.${normalizedId}.tooltip`, props.setting.tooltip)
+      ? t(`settings.${normalizedId}.tooltip`, props.setting.tooltip)
       : undefined,
     options: props.setting.options
       ? translateOptions(props.setting.options)

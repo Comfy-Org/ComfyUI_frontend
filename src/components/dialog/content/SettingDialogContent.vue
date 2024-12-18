@@ -190,7 +190,7 @@ const handleSearch = (query: string) => {
     const idLower = setting.id.toLowerCase()
     const nameLower = setting.name.toLowerCase()
     const translatedName = t(
-      `settingsDialog.${normalizeI18nKey(setting.id)}.name`
+      `settings.${normalizeI18nKey(setting.id)}.name`
     ).toLocaleLowerCase()
 
     return (
