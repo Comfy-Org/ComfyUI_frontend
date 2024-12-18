@@ -41,30 +41,22 @@ function getAllJsonFiles(dir: string): string[] {
 }
 
 // Find additions in new object compared to base
-function findAdditions(
-  base: any,
-  updated: any,
-  prefix = ''
-): Record<string, any> {
+function findAdditions(base: any, updated: any): Record<string, any> {
   const additions: Record<string, any> = {}
 
   for (const key in updated) {
-    const currentPrefix = prefix ? `${prefix}.${key}` : key
-
     if (!(key in base)) {
-      additions[currentPrefix] = updated[key]
+      additions[key] = updated[key]
     } else if (
       typeof updated[key] === 'object' &&
       !Array.isArray(updated[key]) &&
       typeof base[key] === 'object' &&
       !Array.isArray(base[key])
     ) {
-      const nestedAdditions = findAdditions(
-        base[key],
-        updated[key],
-        currentPrefix
-      )
-      Object.assign(additions, nestedAdditions)
+      const nestedAdditions = findAdditions(base[key], updated[key])
+      if (Object.keys(nestedAdditions).length > 0) {
+        additions[key] = nestedAdditions
+      }
     }
   }
 
