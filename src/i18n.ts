@@ -14,21 +14,27 @@ import zhCommands from './locales/zh/commands.json'
 import ruCommands from './locales/ru/commands.json'
 import jaCommands from './locales/ja/commands.json'
 import koCommands from './locales/ko/commands.json'
+import enSettings from './locales/en/settings.json'
+import zhSettings from './locales/zh/settings.json'
+import ruSettings from './locales/ru/settings.json'
+import jaSettings from './locales/ja/settings.json'
+import koSettings from './locales/ko/settings.json'
 
-function buildLocale<M, N, C>(main: M, nodes: N, commands: C) {
+function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
     ...main,
     nodeDefs: nodes,
-    commands: commands
+    commands: commands,
+    settings: settings
   }
 }
 
 const messages = {
-  en: buildLocale(en, enNodes, enCommands),
-  zh: buildLocale(zh, zhNodes, zhCommands),
-  ru: buildLocale(ru, ruNodes, ruCommands),
-  ja: buildLocale(ja, jaNodes, jaCommands),
-  ko: buildLocale(ko, koNodes, koCommands)
+  en: buildLocale(en, enNodes, enCommands, enSettings),
+  zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
+  ru: buildLocale(ru, ruNodes, ruCommands, ruSettings),
+  ja: buildLocale(ja, jaNodes, jaCommands, jaSettings),
+  ko: buildLocale(ko, koNodes, koCommands, koSettings)
 }
 
 export const i18n = createI18n({
@@ -39,8 +45,8 @@ export const i18n = createI18n({
   messages,
   // Ignore warnings for locale options as each option is in its own language.
   // e.g. "English", "中文", "Русский", "日本語", "한국어"
-  missingWarn: /^(?!settingsDialog\.Comfy_Locale\.options\.).+/,
-  fallbackWarn: /^(?!settingsDialog\.Comfy_Locale\.options\.).+/
+  missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
+  fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
 })
 
 /** Convenience shorthand: i18n.global */
