@@ -1425,7 +1425,7 @@ function addConvertToGroupOptions() {
     options.splice(index + 1, null, {
       content: `Manage Group Nodes`,
       disabled,
-      callback: manageGroupNodes
+      callback: () => manageGroupNodes()
     })
   }
 
