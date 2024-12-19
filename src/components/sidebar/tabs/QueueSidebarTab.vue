@@ -153,7 +153,6 @@ const scrollContainer = ref<HTMLElement[] | null>(null)
 const sidebarContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const expandedGroup = ref<string | null>(null)
-const isAccordionAnimating = ref(false)
 const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
@@ -221,16 +220,17 @@ const checkAndLoadMore = () => {
 watch(
   expandedGroup,
   (val) => {
-    const { reset } = useInfiniteScroll(
-      scrollContainer.value?.[0],
-      () => {
-        if (visibleTasks.value.length < allTasks.value.length) {
-          loadMoreItems()
-        }
-      },
-      { distance: SCROLL_THRESHOLD }
-    )
-    if (!val) reset()
+    if (val) {
+      useInfiniteScroll(
+        scrollContainer.value?.[0],
+        () => {
+          if (visibleTasks.value.length < allTasks.value.length) {
+            loadMoreItems()
+          }
+        },
+        { distance: SCROLL_THRESHOLD }
+      )
+    }
   },
   { immediate: true }
 )
