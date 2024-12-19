@@ -1,17 +1,6 @@
 <template>
   <div :class="props.class">
-    <IconField
-      class="iconfield-relative"
-      :class="{ 'with-text': props.modelValue }"
-    >
-      <InputIcon :class="props.icon" />
-      <InputText
-        class="search-box-input"
-        :class="{ ['with-filter']: props.filterIcon }"
-        @input="handleInput"
-        :modelValue="props.modelValue"
-        :placeholder="props.placeholder"
-      />
+    <IconField>
       <Button
         v-if="props.filterIcon"
         class="p-inputicon filter-button"
@@ -20,6 +9,13 @@
         severity="contrast"
         @click="$emit('showFilter', $event)"
       />
+      <InputText
+        class="search-box-input w-full"
+        @input="handleInput"
+        :modelValue="props.modelValue"
+        :placeholder="props.placeholder"
+      />
+      <InputIcon v-if="!props.modelValue" :class="props.icon" />
       <Button
         v-if="props.modelValue"
         class="p-inputicon clear-button"
@@ -98,40 +94,11 @@ const clearSearch = () => {
 </script>
 
 <style scoped>
-.iconfield-relative {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-box-input {
-  width: 100%;
-  padding-left: 36px;
-  padding-right: 36px;
-}
-
-.search-box-input.with-filter {
-  padding-right: 72px;
+:deep(.p-inputtext) {
+  --p-form-field-padding-x: 0.625rem;
 }
 
 .p-button.p-inputicon {
-  padding: 0;
-  width: auto;
-  border: none !important;
-}
-
-/* When modelValue is empty (no 'with-text' class), the filter button stays at the far right */
-.iconfield-relative:not(.with-text) .filter-button {
-  right: 8px;
-}
-
-/* When modelValue is not empty ('with-text' class is present), move the filter button to the left */
-.iconfield-relative.with-text .filter-button {
-  right: 36px;
-}
-
-/* When modelValue is not empty (and the clear button is displayed), place the clear button at the far right */
-.iconfield-relative.with-text .clear-button {
-  right: 8px;
+  @apply p-0 w-auto border-none;
 }
 </style>
