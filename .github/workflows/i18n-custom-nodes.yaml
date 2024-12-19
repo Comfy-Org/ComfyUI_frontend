@@ -116,6 +116,8 @@ jobs:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     - name: Commit and push changes
       run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
         git checkout -b update-locales
         git add -A
         git commit -m "Update locales"
