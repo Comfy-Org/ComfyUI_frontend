@@ -5319,6 +5319,9 @@
   "VAEEncodeTiled": {
     "display_name": "VAE 인코드 (타일)",
     "inputs": {
+      "overlap": {
+        "name": "중첩"
+      },
       "pixels": {
         "name": "픽셀"
       },
