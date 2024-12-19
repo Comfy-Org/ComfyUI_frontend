@@ -8,7 +8,7 @@
 /.env_example @Comfy-Org/comfy_maintainer
 
 # Translations (AIGODLIKE team + shinshin86)
-/src/locales/ @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer
+/src/locales/ @Yorha4D @KarryCharon @DorotaLuna @shinshin86 @Comfy-Org/comfy_maintainer
 
 # Load 3D extension
 /src/extensions/core/load3d.ts @jtydhr88 @Comfy-Org/comfy_frontend_devs
