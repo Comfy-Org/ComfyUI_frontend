@@ -5319,6 +5319,9 @@
   "VAEEncodeTiled": {
     "display_name": "VAE编码（平铺）",
     "inputs": {
+      "overlap": {
+        "name": "重叠"
+      },
       "pixels": {
         "name": "像素"
       },

@@ -5319,6 +5319,9 @@
   "VAEEncodeTiled": {
     "display_name": "VAEエンコード（タイル）",
     "inputs": {
+      "overlap": {
+        "name": "オーバーラップ"
+      },
       "pixels": {
         "name": "ピクセル"
       },
