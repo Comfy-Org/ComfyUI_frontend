@@ -121,7 +121,7 @@ jobs:
         git checkout -b update-locales
         git add -A
         git commit -m "Update locales"
-        git remote add org_fork https://${{ secrets.GH_TOKEN }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git
+        git remote add org_fork https://${{ inputs.fork_owner }}:${{ secrets.GH_TOKEN }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git
         git push org_fork update-locales
         gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
