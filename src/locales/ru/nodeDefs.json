@@ -5319,6 +5319,9 @@
   "VAEEncodeTiled": {
     "display_name": "Кодировать VAE (плитками)",
     "inputs": {
+      "overlap": {
+        "name": "перекрытие"
+      },
       "pixels": {
         "name": "пиксели"
       },

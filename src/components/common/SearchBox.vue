@@ -1,21 +1,28 @@
 <template>
   <div :class="props.class">
     <IconField>
-      <InputIcon :class="props.icon" />
-      <InputText
-        class="search-box-input"
-        :class="{ ['with-filter']: props.filterIcon }"
-        @input="handleInput"
-        :modelValue="props.modelValue"
-        :placeholder="props.placeholder"
-      />
       <Button
         v-if="props.filterIcon"
-        class="p-inputicon"
+        class="p-inputicon filter-button"
         :icon="props.filterIcon"
         text
         severity="contrast"
         @click="$emit('showFilter', $event)"
+      />
+      <InputText
+        class="search-box-input w-full"
+        @input="handleInput"
+        :modelValue="props.modelValue"
+        :placeholder="props.placeholder"
+      />
+      <InputIcon v-if="!props.modelValue" :class="props.icon" />
+      <Button
+        v-if="props.modelValue"
+        class="p-inputicon clear-button"
+        icon="pi pi-times"
+        text
+        severity="contrast"
+        @click="clearSearch"
       />
     </IconField>
     <div
@@ -79,21 +86,19 @@ const handleInput = (event: Event) => {
   emit('update:modelValue', target.value)
   emitSearch(target.value)
 }
+
+const clearSearch = () => {
+  emit('update:modelValue', '')
+  emitSearch('')
+}
 </script>
 
 <style scoped>
-.search-box-input {
-  width: 100%;
-  padding-left: 36px;
-}
-
-.search-box-input.with-filter {
-  padding-right: 36px;
+:deep(.p-inputtext) {
+  --p-form-field-padding-x: 0.625rem;
 }
 
 .p-button.p-inputicon {
-  padding: 0;
-  width: auto;
-  border: none !important;
+  @apply p-0 w-auto border-none;
 }
 </style>

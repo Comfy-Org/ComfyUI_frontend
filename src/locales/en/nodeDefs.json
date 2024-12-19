@@ -5352,6 +5352,9 @@
       },
       "tile_size": {
         "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
       }
     }
   },
