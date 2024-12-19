@@ -120,7 +120,7 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
         # Configure the remote with token
-        git remote set-url origin "https://${{ secrets.GH_TOKEN }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
+        git remote set-url origin "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
 
         # Create and switch to new branch
         git checkout -b update-locales
