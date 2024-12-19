@@ -119,10 +119,9 @@ jobs:
           --method PUT \
           -H "Accept: application/vnd.github+json" \
           "/repos/${{ inputs.fork_owner }}/${{ inputs.repository }}/actions/permissions/workflow" \
-          -f can_approve_pull_request_reviews=true \
-          -f default_workflow_permissions="write" \
-          -f enabled=true \
-          --input-format json
+          -F can_approve_pull_request_reviews=true \
+          -F default_workflow_permissions="write" \
+          -F enabled=true
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     - name: Commit and push changes
