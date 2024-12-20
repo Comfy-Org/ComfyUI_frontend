@@ -574,14 +574,20 @@
     "queue": "Очередь",
     "queueTab": {
       "backToAllTasks": "Вернуться ко всем задачам",
+      "cancelled": "Отменено",
       "clearPendingTasks": "Очистить отложенные задачи",
+      "completed": "Завершено",
       "containImagePreview": "Предпросмотр заливающего изображения",
       "coverImagePreview": "Предпросмотр подходящего изображения",
+      "failed": "Не удалось",
       "filter": "Фильтровать выводы",
       "filters": {
         "hideCached": "Скрыть кэшированные",
         "hideCanceled": "Скрыть отмененные"
       },
+      "history": "История",
+      "pending": "Ожидание",
+      "running": "Выполняется",
       "showFlatList": "Показать плоский список"
     },
     "themeToggle": "Переключить тему",

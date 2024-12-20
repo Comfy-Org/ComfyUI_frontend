@@ -574,14 +574,20 @@
     "queue": "큐",
     "queueTab": {
       "backToAllTasks": "모든 작업으로 돌아가기",
+      "cancelled": "취소됨",
       "clearPendingTasks": "보류 중인 작업 지우기",
+      "completed": "완료됨",
       "containImagePreview": "이미지 미리보기 채우기",
       "coverImagePreview": "이미지 미리보기 맞추기",
+      "failed": "실패함",
       "filter": "출력 필터",
       "filters": {
         "hideCached": "캐시 숨기기",
         "hideCanceled": "취소된 작업 숨기기"
       },
+      "history": "역사",
+      "pending": "대기 중",
+      "running": "실행 중",
       "showFlatList": "평면 목록 표시"
     },
     "themeToggle": "테마 전환",

@@ -574,14 +574,20 @@
     "queue": "キュー",
     "queueTab": {
       "backToAllTasks": "すべてのタスクに戻る",
+      "cancelled": "キャンセル",
       "clearPendingTasks": "保留中のタスクをクリア",
+      "completed": "完了",
       "containImagePreview": "画像プレビューを含める",
       "coverImagePreview": "画像プレビューに合わせる",
+      "failed": "失敗",
       "filter": "出力をフィルタ",
       "filters": {
         "hideCached": "キャッシュを非表示",
         "hideCanceled": "キャンセル済みを非表示"
       },
+      "history": "履歴",
+      "pending": "保留中",
+      "running": "実行中",
       "showFlatList": "フラットリストを表示"
     },
     "themeToggle": "テーマの切り替え",
