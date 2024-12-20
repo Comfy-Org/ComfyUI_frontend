@@ -11,6 +11,7 @@ import type { ComfyApi } from '../src/scripts/api'
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 const commandsPath = './src/locales/en/commands.json'
+const settingsPath = './src/locales/en/settings.json'
 
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
@@ -231,7 +232,6 @@ test('collect-i18n', async ({ comfyPage }) => {
       {
         ...locale,
         menuLabels: allLabelsLocale,
-        settingsDialog: allSettingsLocale,
         // Do merge for settingsCategories as there are some manual translations
         // for special panels like "About" and "Keybinding".
         settingsCategories: {
@@ -250,4 +250,5 @@ test('collect-i18n', async ({ comfyPage }) => {
 
   fs.writeFileSync(nodeDefsPath, JSON.stringify(allNodeDefsLocale, null, 2))
   fs.writeFileSync(commandsPath, JSON.stringify(allCommandsLocale, null, 2))
+  fs.writeFileSync(settingsPath, JSON.stringify(allSettingsLocale, null, 2))
 })

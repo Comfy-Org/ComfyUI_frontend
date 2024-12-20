@@ -2,7 +2,8 @@
   <Splitter
     class="splitter-overlay-root splitter-overlay"
     :pt:gutter="sidebarPanelVisible ? '' : 'hidden'"
-    stateKey="sidebar-splitter"
+    :key="activeSidebarTabId"
+    :stateKey="activeSidebarTabId"
     stateStorage="local"
   >
     <SplitterPanel
@@ -62,6 +63,9 @@ const sidebarPanelVisible = computed(
 )
 const bottomPanelVisible = computed(
   () => useBottomPanelStore().bottomPanelVisible
+)
+const activeSidebarTabId = computed(
+  () => useSidebarTabStore().activeSidebarTabId
 )
 </script>
 

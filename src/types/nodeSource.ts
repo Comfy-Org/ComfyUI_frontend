@@ -37,7 +37,11 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       badgeText: '🦊'
     }
   } else if (modules[0] === 'custom_nodes') {
-    const displayName = shortenNodeName(modules[1])
+    const moduleName = modules[1]
+    // Custom nodes installed via ComfyNodeRegistry will be in the format of
+    // custom_nodes.<custom node name>@<version>
+    const customNodeName = moduleName.split('@')[0]
+    const displayName = shortenNodeName(customNodeName)
     return {
       type: NodeSourceType.CustomNodes,
       className: 'comfy-custom-nodes',
