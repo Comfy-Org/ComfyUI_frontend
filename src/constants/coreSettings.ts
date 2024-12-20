@@ -437,14 +437,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
-    id: 'Comfy.Settings.ExtensionPanel',
-    name: 'Show extension panel in settings dialog',
-    type: 'boolean',
-    defaultValue: false,
-    experimental: true,
-    versionAdded: '1.3.11'
-  },
-  {
     id: 'Comfy.Validation.NodeDefs',
     name: 'Validate node definitions (slow)',
     type: 'boolean',

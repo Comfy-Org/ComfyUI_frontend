@@ -9,6 +9,17 @@ import { useMenuItemStore } from './menuItemStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useWidgetStore } from './widgetStore'
 
+/**
+ * These extensions are always active, even if they are disabled in the setting.
+ * TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1996):
+ * Migrate logic to out of extensions/core, as features provided
+ * by these extensions are now essential to core.
+ */
+export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [
+  'Comfy.ColorPalette',
+  'Comfy.WidgetInputs'
+]
+
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
@@ -31,6 +42,10 @@ export const useExtensionStore = defineStore('extension', () => {
   const enabledExtensions = computed(() => {
     return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
   })
+
+  function isExtensionAlwaysEnabled(name: string) {
+    return ALWAYS_ENABLED_EXTENSIONS.includes(name)
+  }
 
   function registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
@@ -80,6 +95,10 @@ export const useExtensionStore = defineStore('extension', () => {
     // allowed since v1.3.12.
     // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
     disabledExtensionNames.value.add('pysssss.SnapToGrid')
+
+    for (const name of ALWAYS_ENABLED_EXTENSIONS) {
+      disabledExtensionNames.value.delete(name)
+    }
   }
 
   // Some core extensions are registered before the store is initialized, e.g.
@@ -95,6 +114,7 @@ export const useExtensionStore = defineStore('extension', () => {
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionEnabled,
+    isExtensionAlwaysEnabled,
     registerExtension,
     loadDisabledExtensionNames
   }
