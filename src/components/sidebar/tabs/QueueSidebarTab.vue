@@ -50,12 +50,14 @@
     </template>
     <template #body>
       <div
-        v-if="visibleTasks.length > 0"
+        v-if="
+          Object.values(visibleTasksByType).some((group) => group.groupTotal)
+        "
         ref="sidebarContainer"
         class="overflow-hidden h-full flex flex-col"
       >
         <Accordion
-          v-for="(group, taskType) in tasksByType"
+          v-for="taskType in ACCORDION_ORDER"
           expandIcon="pi pi-plus"
           collapseIcon="pi pi-minus"
           :class="expandedGroup === taskType ? 'flex-grow' : 'flex-shrink'"
@@ -63,19 +65,23 @@
           @update:value="(e) => (expandedGroup = e)"
           :key="taskType"
         >
-          <AccordionPanel :value="taskType" class="h-full flex flex-col">
+          <AccordionPanel
+            v-if="visibleTasksByType[taskType]"
+            :value="taskType"
+            class="h-full flex flex-col"
+          >
             <AccordionHeader>
               <span class="font-bold whitespace-nowrap"
                 >{{ $t(`sideToolbar.queueTab.${taskType}`) }} ({{
-                  group.groupTotal
-                }})</span
-              >
+                  visibleTasksByType[taskType]?.groupTotal
+                }})
+              </span>
             </AccordionHeader>
             <AccordionContent class="h-0 flex-grow">
               <div class="scroll-container" ref="scrollContainer">
                 <div class="queue-grid">
                   <TaskItem
-                    v-for="task in group.tasks"
+                    v-for="task in visibleTasksByType[taskType]?.tasks"
                     :key="task.key"
                     :task="task"
                     :isFlatTask="isExpanded || isInFolderView"
@@ -161,6 +167,7 @@ const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
+const ACCORDION_ORDER = ['pending', 'running', 'history']
 
 const allTasks = computed(() =>
   isInFolderView.value
@@ -171,10 +178,13 @@ const allTasks = computed(() =>
       ? queueStore.flatTasks
       : queueStore.tasks
 )
-const tasksByType = computed<
+const visibleTasksByType = computed<
   Record<string, { groupTotal: number; tasks: TaskItemImpl[] }>
 >(() => {
-  return visibleTasks.value.reduce((groups, task) => {
+  const groupedTaks: Record<
+    string,
+    { groupTotal: number; tasks: TaskItemImpl[] }
+  > = visibleTasks.value.reduce((groups, task) => {
     const taskType = task.taskType.toLowerCase()
     if (!groups[taskType]) {
       groups[taskType] = {
@@ -187,6 +197,25 @@ const tasksByType = computed<
     groups[taskType].tasks.push(task)
     return groups
   }, {})
+  if (queueStore.hasPendingTasks && !('pending' in groupedTaks)) {
+    groupedTaks.pending = {
+      tasks: [],
+      groupTotal: queueStore.pendingTasks.length
+    }
+  }
+  if (queueStore.hasRunningTasks && !('running' in groupedTaks)) {
+    groupedTaks.running = {
+      tasks: [],
+      groupTotal: queueStore.runningTasks.length
+    }
+  }
+  if (queueStore.hasHistoryTasks && !('history' in groupedTaks)) {
+    groupedTaks.history = {
+      tasks: [],
+      groupTotal: queueStore.historyTasks.length
+    }
+  }
+  return groupedTaks
 })
 
 const allGalleryItems = computed(() =>

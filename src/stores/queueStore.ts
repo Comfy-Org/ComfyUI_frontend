@@ -352,6 +352,8 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const hasPendingTasks = computed<boolean>(() => pendingTasks.value.length > 0)
+  const hasRunningTasks = computed<boolean>(() => runningTasks.value.length > 0)
+  const hasHistoryTasks = computed<boolean>(() => historyTasks.value.length > 0)
 
   const update = async () => {
     isLoading.value = true
@@ -423,6 +425,8 @@ export const useQueueStore = defineStore('queue', () => {
     flatTasks,
     lastHistoryQueueIndex,
     hasPendingTasks,
+    hasRunningTasks,
+    hasHistoryTasks,
 
     update,
     clear,
