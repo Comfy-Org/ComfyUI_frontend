@@ -2500,6 +2500,11 @@ export class LGraphCanvas {
           node.onNodeTitleDblClick?.(e, pos, this)
         }
         node.onDblClick?.(e, pos, this)
+        this.emitEvent({
+          subType: "node-double-click",
+          originalEvent: e,
+          node,
+        })
         this.processNodeDblClicked(node)
       }
 

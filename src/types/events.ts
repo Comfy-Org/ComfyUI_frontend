@@ -48,6 +48,7 @@ export type CanvasEventDetail =
   | DragggingCanvasEventDetail
   | ReadOnlyEventDetail
   | GroupDoubleClickEventDetail
+  | NodeDoubleClickEventDetail
   | EmptyDoubleClickEventDetail
   | ConnectingWidgetLinkEventDetail
   | EmptyReleaseEventDetail
@@ -79,6 +80,11 @@ export interface EmptyDoubleClickEventDetail extends OriginalEvent {
 export interface GroupDoubleClickEventDetail extends OriginalEvent {
   subType: "group-double-click"
   group: LGraphGroup
+}
+
+export interface NodeDoubleClickEventDetail extends OriginalEvent {
+  subType: "node-double-click"
+  node: LGraphNode
 }
 
 export interface DragggingCanvasEventDetail {
