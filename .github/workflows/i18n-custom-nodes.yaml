@@ -107,20 +107,43 @@ jobs:
         cp -rf ComfyUI_frontend/temp/diff/* "$LOCALE_DIR"
     - name: Check and create fork of custom node repository
       run: |
+        # Try to fork the repository
         gh repo fork ${{ inputs.owner }}/${{ inputs.repository }} --clone=false || {
           echo "Fork failed - repository might already be forked"
           # Exit 0 to prevent the workflow from failing
           exit 0
         }
+
+        # Enable workflows on the forked repository
+        gh api \
+          --method PUT \
+          -H "Accept: application/vnd.github+json" \
+          "/repos/${{ inputs.fork_owner }}/${{ inputs.repository }}/actions/permissions/workflow" \
+          -F can_approve_pull_request_reviews=true \
+          -F default_workflow_permissions="write" \
+          -F enabled=true
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     - name: Commit and push changes
       run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+
+        # Configure the remote with token
+        git remote set-url origin "https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
+
+        # Create and switch to new branch
         git checkout -b update-locales
+
+        # Stage and commit changes
         git add -A
         git commit -m "Update locales"
-        git remote add org_fork git@github.com:${{ inputs.fork_owner }}/${{ inputs.repository }}.git
-        git push org_fork update-locales
+
+        # Force push to create the branch
+        echo "Pushing changes to ${{ inputs.fork_owner }}/${{ inputs.repository }}"
+        git push -f origin update-locales
+
+        # Create PR using gh cli
         gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
       env:
