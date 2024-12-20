@@ -234,7 +234,7 @@ const loadMoreItems = () => {
 }
 
 const checkAndLoadMore = () => {
-  if (!scrollContainer.value?.length) return // Ensure scrollContainer is an array and not empty
+  if (!scrollContainer.value?.length) return
 
   scrollContainer.value.forEach((container) => {
     if (!container) return
