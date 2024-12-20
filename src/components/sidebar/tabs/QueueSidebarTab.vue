@@ -227,38 +227,46 @@ const allGalleryItems = computed(() =>
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
-  const newTasks = allTasks.value.slice(
-    currentLength,
-    currentLength + ITEMS_PER_PAGE
-  )
+  const newTasks = allTasks.value
+    .filter((task) => task.taskType.toLowerCase() === expandedGroup.value)
+    .slice(currentLength, currentLength + ITEMS_PER_PAGE)
   visibleTasks.value.push(...newTasks)
 }
 
 const checkAndLoadMore = () => {
-  if (!scrollContainer.value?.[0]) return
+  if (!scrollContainer.value?.length) return // Ensure scrollContainer is an array and not empty
 
-  const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value[0]
-  if (
-    scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
-    expandedGroup.value
-  ) {
-    loadMoreItems()
-  }
+  scrollContainer.value.forEach((container) => {
+    if (!container) return
+
+    const { scrollHeight, scrollTop, clientHeight } = container
+    if (
+      scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
+      expandedGroup.value
+    ) {
+      loadMoreItems()
+    }
+  })
 }
 
 watch(
   expandedGroup,
   (val) => {
     if (val) {
-      useInfiniteScroll(
-        scrollContainer.value?.[0],
-        () => {
-          if (visibleTasks.value.length < allTasks.value.length) {
-            loadMoreItems()
-          }
-        },
-        { distance: SCROLL_THRESHOLD }
-      )
+      scrollContainer.value.forEach((container) => {
+        useInfiniteScroll(
+          container,
+          () => {
+            if (visibleTasks.value.length < allTasks.value.length) {
+              loadMoreItems()
+            }
+          },
+          { distance: SCROLL_THRESHOLD }
+        )
+        nextTick(() => {
+          updateVisibleTasks()
+        })
+      })
     }
   },
   { immediate: true }
@@ -273,7 +281,9 @@ useResizeObserver(sidebarContainer, () => {
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+  visibleTasks.value = allTasks.value
+    .filter((task) => task.taskType.toLowerCase() === expandedGroup.value)
+    .slice(0, ITEMS_PER_PAGE)
 }
 
 const toggleExpanded = () => {
@@ -434,6 +444,6 @@ watch(
   @apply bg-transparent;
 }
 :deep(.p-accordioncontent-content) {
-  @apply bg-transparent h-full pb-0;
+  @apply bg-transparent h-full p-0;
 }
 </style>
