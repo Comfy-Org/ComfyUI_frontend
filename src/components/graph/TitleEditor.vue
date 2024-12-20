@@ -13,14 +13,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, CSSProperties, watch } from 'vue'
+import { ref, CSSProperties, watch } from 'vue'
 import { app } from '@/scripts/app'
 import { LGraphGroup, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import EditableText from '@/components/common/EditableText.vue'
-import { ComfyExtension } from '@/types/comfy'
 import { useSettingStore } from '@/stores/settingStore'
 import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
 import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useEventListener } from '@vueuse/core'
 
 const settingStore = useSettingStore()
 
@@ -97,54 +97,38 @@ watch(
 )
 
 const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
-  if (!settingStore.get('Comfy.Group.DoubleClickTitleToEdit')) {
-    return
-  }
-
   if (event.detail.subType === 'group-double-click') {
+    if (!settingStore.get('Comfy.Group.DoubleClickTitleToEdit')) {
+      return
+    }
+
     const group: LGraphGroup = event.detail.group
     const [x, y] = group.pos
 
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y
     // Only allow editing if the click is on the title bar
-    if (relativeY > group.titleHeight) {
+    if (relativeY <= group.titleHeight) {
+      titleEditorStore.titleEditorTarget = group
+    }
+  } else if (event.detail.subType === 'node-double-click') {
+    if (!settingStore.get('Comfy.Node.DoubleClickTitleToEdit')) {
       return
     }
 
-    titleEditorStore.titleEditorTarget = group
-  }
-}
+    const node: LGraphNode = event.detail.node
+    const [x, y] = node.pos
 
-const extension: ComfyExtension = {
-  name: 'Comfy.NodeTitleEditor',
-  nodeCreated(node: LGraphNode) {
-    // Store the original callback
-    const originalCallback = node.onNodeTitleDblClick
-
-    node.onNodeTitleDblClick = function (e: MouseEvent, ...args: any[]) {
-      if (!settingStore.get('Comfy.Node.DoubleClickTitleToEdit')) {
-        return
-      }
-
-      titleEditorStore.titleEditorTarget = this
-
-      // Call the original callback if it exists
-      if (typeof originalCallback === 'function') {
-        originalCallback.call(this, e, ...args)
-      }
+    const e = event.detail.originalEvent
+    const relativeY = e.canvasY - y
+    // Only allow editing if the click is on the title bar
+    if (relativeY <= 0) {
+      titleEditorStore.titleEditorTarget = node
     }
   }
 }
 
-onMounted(() => {
-  document.addEventListener('litegraph:canvas', canvasEventHandler)
-  app.registerExtension(extension)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('litegraph:canvas', canvasEventHandler)
-})
+useEventListener(document, 'litegraph:canvas', canvasEventHandler)
 </script>
 
 <style scoped>
