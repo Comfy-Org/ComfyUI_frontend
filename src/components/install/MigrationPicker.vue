@@ -57,18 +57,6 @@
             </p>
           </div>
         </div>
-        <div class="flex items-center gap-3 p-2 rounded cursor-not-allowed">
-          <Checkbox disabled :binary="true" />
-          <div>
-            <label class="text-neutral-200 font-medium">
-              {{ $t('install.customNodes') }}
-              <Tag severity="secondary"> {{ $t('g.comingSoon') }}... </Tag>
-            </label>
-            <p class="text-sm text-neutral-400 my-1">
-              {{ $t('install.customNodesDescription') }}
-            </p>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -82,7 +70,6 @@
 <script setup lang="ts">
 import { ref, computed, watchEffect } from 'vue'
 import { electronAPI } from '@/utils/envUtil'
-import Tag from 'primevue/tag'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
