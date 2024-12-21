@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "テキストをエンコードし、PixArt Alphaの解像度条件を設定します。PixArt Sigmaには適用されません。",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "text": {
+        "name": "テキスト"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPテキストエンコードSD3",
     "inputs": {

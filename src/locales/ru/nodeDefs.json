@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "Кодирует текст и устанавливает условие разрешения для PixArt Alpha. Не применяется к PixArt Sigma.",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "text": {
+        "name": "текст"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "Кодирование текста CLIP SD3",
     "inputs": {

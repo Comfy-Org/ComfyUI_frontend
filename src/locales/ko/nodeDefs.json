@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "텍스트를 인코딩하고 PixArt Alpha의 해상도 조건을 설정합니다. PixArt Sigma에는 적용되지 않습니다.",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "클립"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "text": {
+        "name": "텍스트"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIP 텍스트 인코딩 (SD3)",
     "inputs": {
