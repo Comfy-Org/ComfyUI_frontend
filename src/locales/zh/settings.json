@@ -262,9 +262,6 @@
     "name": "前端显示的服务器配置值",
     "tooltip": "仅用于前端显示的服务器配置值"
   },
-  "Comfy_Settings_ExtensionPanel": {
-    "name": "在设置对话框中显示扩展面板"
-  },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
     "options": {

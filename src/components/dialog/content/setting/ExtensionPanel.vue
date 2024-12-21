@@ -38,6 +38,9 @@
       >
         <template #body="slotProps">
           <ToggleSwitch
+            :disabled="
+              extensionStore.isExtensionAlwaysEnabled(slotProps.data.name)
+            "
             v-model="editingEnabledExtensions[slotProps.data.name]"
             @change="updateExtensionStatus"
           />
