@@ -59,7 +59,9 @@
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
     "noTasksFoundMessage": "There are no tasks in the queue.",
-    "newFolder": "New Folder"
+    "newFolder": "New Folder",
+    "enableAll": "Enable All",
+    "disableAll": "Disable All"
   },
   "color": {
     "default": "Default",
