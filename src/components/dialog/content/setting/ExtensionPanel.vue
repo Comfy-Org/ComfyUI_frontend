@@ -1,10 +1,20 @@
 <template>
   <PanelTemplate value="Extension" class="extension-panel">
     <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="$t('g.searchExtensions') + '...'"
-      />
+      <div class="flex flex-row items-center">
+        <SearchBox
+          class="flex-grow"
+          v-model="filters['global'].value"
+          :placeholder="$t('g.searchExtensions') + '...'"
+        />
+        <Button
+          icon="pi pi-ellipsis-v"
+          text
+          severity="secondary"
+          @click="menu.show($event)"
+        />
+        <ContextMenu ref="menu" :model="contextMenuItems" />
+      </div>
       <Message v-if="hasChanges" severity="info" pt:text="w-full">
         <ul>
           <li v-for="ext in changedExtensions" :key="ext.name">
@@ -58,6 +68,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
+import ContextMenu from 'primevue/contextmenu'
 import Message from 'primevue/message'
 import { FilterMatchMode } from '@primevue/core/api'
 import PanelTemplate from './PanelTemplate.vue'
@@ -104,8 +115,38 @@ const updateExtensionStatus = () => {
   ])
 }
 
+const enableAllExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    editingEnabledExtensions.value[ext.name] = true
+  })
+  updateExtensionStatus()
+}
+
+const disableAllExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isExtensionAlwaysEnabled(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  updateExtensionStatus()
+}
+
 const applyChanges = () => {
   // Refresh the page to apply changes
   window.location.reload()
 }
+
+const menu = ref<InstanceType<typeof ContextMenu>>()
+const contextMenuItems = [
+  {
+    label: 'Enable All',
+    icon: 'pi pi-check',
+    command: enableAllExtensions
+  },
+  {
+    label: 'Disable All',
+    icon: 'pi pi-times',
+    command: disableAllExtensions
+  }
+]
 </script>
