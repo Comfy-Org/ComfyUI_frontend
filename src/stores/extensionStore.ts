@@ -16,8 +16,7 @@ import { useWidgetStore } from './widgetStore'
  * by these extensions are now essential to core.
  */
 export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [
-  'Comfy.ColorPalette',
-  'Comfy.WidgetInputs'
+  'Comfy.ColorPalette'
 ]
 
 export const useExtensionStore = defineStore('extension', () => {
