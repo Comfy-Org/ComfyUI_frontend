@@ -262,9 +262,6 @@
     "name": "프론트엔드 표시를 위한 서버 구성 값",
     "tooltip": "프론트엔드 표시를 위해 사용되는 서버 구성 값만 해당됩니다."
   },
-  "Comfy_Settings_ExtensionPanel": {
-    "name": "설정 대화 상자에서 확장 패널 표시"
-  },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
     "options": {

@@ -262,9 +262,6 @@
     "name": "フロントエンド表示用のサーバー設定値",
     "tooltip": "フロントエンド表示のみに使用されるサーバー設定値"
   },
-  "Comfy_Settings_ExtensionPanel": {
-    "name": "設定ダイアログに拡張パネルを表示"
-  },
   "Comfy_Sidebar_Location": {
     "name": "サイドバーの位置",
     "options": {

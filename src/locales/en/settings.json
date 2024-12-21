@@ -262,9 +262,6 @@
     "name": "Server config values for frontend display",
     "tooltip": "Server config values used for frontend display only"
   },
-  "Comfy_Settings_ExtensionPanel": {
-    "name": "Show extension panel in settings dialog"
-  },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",
     "options": {
