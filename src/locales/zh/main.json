@@ -574,14 +574,20 @@
     "queue": "队列",
     "queueTab": {
       "backToAllTasks": "返回",
+      "cancelled": "已取消",
       "clearPendingTasks": "清除待处理任务",
+      "completed": "已完成",
       "containImagePreview": "填充图像预览",
       "coverImagePreview": "适应图像预览",
+      "failed": "失败",
       "filter": "过滤输出",
       "filters": {
         "hideCached": "隐藏缓存",
         "hideCanceled": "隐藏已取消"
       },
+      "history": "历史",
+      "pending": "待处理",
+      "running": "运行中",
       "showFlatList": "平铺结果"
     },
     "themeToggle": "主题切换",

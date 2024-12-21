@@ -50,22 +50,51 @@
     </template>
     <template #body>
       <div
-        v-if="visibleTasks.length > 0"
-        ref="scrollContainer"
-        class="scroll-container"
+        v-if="
+          Object.values(visibleTasksByType).some((group) => group.groupTotal)
+        "
+        ref="sidebarContainer"
+        class="overflow-hidden h-full flex flex-col"
       >
-        <div class="queue-grid">
-          <TaskItem
-            v-for="task in visibleTasks"
-            :key="task.key"
-            :task="task"
-            :isFlatTask="isExpanded || isInFolderView"
-            @contextmenu="handleContextMenu"
-            @preview="handlePreview"
-            @taskOutputLengthClicked="enterFolderView($event)"
-          />
-        </div>
-        <div ref="loadMoreTrigger" style="height: 1px" />
+        <Accordion
+          v-for="taskType in ACCORDION_ORDER"
+          expandIcon="pi pi-plus"
+          collapseIcon="pi pi-minus"
+          :class="expandedGroup === taskType ? 'flex-grow' : 'flex-shrink'"
+          :value="expandedGroup"
+          @update:value="(e) => (expandedGroup = e)"
+          :key="taskType"
+        >
+          <AccordionPanel
+            v-if="visibleTasksByType[taskType]"
+            :value="taskType"
+            class="h-full flex flex-col"
+          >
+            <AccordionHeader>
+              <span class="font-bold whitespace-nowrap"
+                >{{ $t(`sideToolbar.queueTab.${taskType}`) }} ({{
+                  visibleTasksByType[taskType]?.groupTotal
+                }})
+              </span>
+            </AccordionHeader>
+            <AccordionContent class="h-0 flex-grow">
+              <div class="scroll-container" ref="scrollContainer">
+                <div class="queue-grid">
+                  <TaskItem
+                    v-for="task in visibleTasksByType[taskType]?.tasks"
+                    :key="task.key"
+                    :task="task"
+                    :isFlatTask="isExpanded || isInFolderView"
+                    @contextmenu="handleContextMenu"
+                    @preview="handlePreview"
+                    @taskOutputLengthClicked="enterFolderView($event)"
+                  />
+                </div>
+              </div>
+              <div ref="loadMoreTrigger" style="height: 1px" />
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
       </div>
       <div v-else-if="queueStore.isLoading">
         <ProgressSpinner
@@ -100,6 +129,10 @@ import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
+import Accordion from 'primevue/accordion'
+import AccordionPanel from 'primevue/accordionpanel'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionContent from 'primevue/accordioncontent'
 import TaskItem from './queue/TaskItem.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
@@ -122,8 +155,10 @@ const { t } = useI18n()
 // Expanded view: show all outputs in a flat list.
 const isExpanded = ref(false)
 const visibleTasks = ref<TaskItemImpl[]>([])
-const scrollContainer = ref<HTMLElement | null>(null)
+const scrollContainer = ref<HTMLElement[] | null>(null)
+const sidebarContainer = ref<HTMLElement | null>(null)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
+const expandedGroup = ref<string | null>(null)
 const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
@@ -132,6 +167,7 @@ const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
 
 const ITEMS_PER_PAGE = 8
 const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
+const ACCORDION_ORDER = ['pending', 'running', 'history']
 
 const allTasks = computed(() =>
   isInFolderView.value
@@ -142,6 +178,46 @@ const allTasks = computed(() =>
       ? queueStore.flatTasks
       : queueStore.tasks
 )
+const visibleTasksByType = computed<
+  Record<string, { groupTotal: number; tasks: TaskItemImpl[] }>
+>(() => {
+  const groupedTaks: Record<
+    string,
+    { groupTotal: number; tasks: TaskItemImpl[] }
+  > = visibleTasks.value.reduce((groups, task) => {
+    const taskType = task.taskType.toLowerCase()
+    if (!groups[taskType]) {
+      groups[taskType] = {
+        tasks: [],
+        groupTotal: allTasks.value.filter(
+          (task) => task.taskType.toLowerCase() === taskType
+        ).length
+      }
+    }
+    groups[taskType].tasks.push(task)
+    return groups
+  }, {})
+  if (queueStore.hasPendingTasks && !('pending' in groupedTaks)) {
+    groupedTaks.pending = {
+      tasks: [],
+      groupTotal: queueStore.pendingTasks.length
+    }
+  }
+  if (queueStore.hasRunningTasks && !('running' in groupedTaks)) {
+    groupedTaks.running = {
+      tasks: [],
+      groupTotal: queueStore.runningTasks.length
+    }
+  }
+  if (queueStore.hasHistoryTasks && !('history' in groupedTaks)) {
+    groupedTaks.history = {
+      tasks: [],
+      groupTotal: queueStore.historyTasks.length
+    }
+  }
+  return groupedTaks
+})
+
 const allGalleryItems = computed(() =>
   allTasks.value.flatMap((task: TaskItemImpl) => {
     const previewOutput = task.previewOutput
@@ -151,42 +227,63 @@ const allGalleryItems = computed(() =>
 
 const loadMoreItems = () => {
   const currentLength = visibleTasks.value.length
-  const newTasks = allTasks.value.slice(
-    currentLength,
-    currentLength + ITEMS_PER_PAGE
-  )
+  const newTasks = allTasks.value
+    .filter((task) => task.taskType.toLowerCase() === expandedGroup.value)
+    .slice(currentLength, currentLength + ITEMS_PER_PAGE)
   visibleTasks.value.push(...newTasks)
 }
 
 const checkAndLoadMore = () => {
-  if (!scrollContainer.value) return
+  if (!scrollContainer.value?.length) return
 
-  const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value
-  if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
-    loadMoreItems()
-  }
-}
+  scrollContainer.value.forEach((container) => {
+    if (!container) return
 
-useInfiniteScroll(
-  scrollContainer,
-  () => {
-    if (visibleTasks.value.length < allTasks.value.length) {
+    const { scrollHeight, scrollTop, clientHeight } = container
+    if (
+      scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD &&
+      expandedGroup.value
+    ) {
       loadMoreItems()
     }
+  })
+}
+
+watch(
+  expandedGroup,
+  (val) => {
+    if (val) {
+      scrollContainer.value.forEach((container) => {
+        useInfiniteScroll(
+          container,
+          () => {
+            if (visibleTasks.value.length < allTasks.value.length) {
+              loadMoreItems()
+            }
+          },
+          { distance: SCROLL_THRESHOLD }
+        )
+        nextTick(() => {
+          updateVisibleTasks()
+        })
+      })
+    }
   },
-  { distance: SCROLL_THRESHOLD }
+  { immediate: true }
 )
 
 // Use ResizeObserver to detect container size changes
 // This is necessary as the sidebar tab can change size when user drags the splitter.
-useResizeObserver(scrollContainer, () => {
+useResizeObserver(sidebarContainer, () => {
   nextTick(() => {
     checkAndLoadMore()
   })
 })
 
 const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
+  visibleTasks.value = allTasks.value
+    .filter((task) => task.taskType.toLowerCase() === expandedGroup.value)
+    .slice(0, ITEMS_PER_PAGE)
 }
 
 const toggleExpanded = () => {
@@ -341,5 +438,12 @@ watch(
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   padding: 0.5rem;
   gap: 0.5rem;
+}
+
+:deep(.p-accordionheader) {
+  @apply bg-transparent;
+}
+:deep(.p-accordioncontent-content) {
+  @apply bg-transparent h-full p-0;
 }
 </style>
