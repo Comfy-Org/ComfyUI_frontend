@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "对文本进行编码并为PixArt Alpha设置分辨率条件。不适用于PixArt Sigma。",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "text": {
+        "name": "文本"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIP文本编码SD3",
     "inputs": {

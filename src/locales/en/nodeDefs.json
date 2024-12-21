@@ -312,6 +312,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "description": "Encodes text and sets the resolution conditioning for PixArt Alpha. Does not apply to PixArt Sigma.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "text": {
+        "name": "text"
+      },
+      "clip": {
+        "name": "clip"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPTextEncodeSD3",
     "inputs": {
