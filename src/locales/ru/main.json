@@ -235,6 +235,7 @@
     "toggleBottomPanel": "Переключить нижнюю панель"
   },
   "menuLabels": {
+    "About ComfyUI": "О ComfyUI",
     "Browse Templates": "Просмотреть шаблоны",
     "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные узлы",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",

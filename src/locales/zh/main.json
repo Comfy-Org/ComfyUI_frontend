@@ -235,6 +235,7 @@
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
+    "About ComfyUI": "关于ComfyUI",
     "Browse Templates": "浏览模板",
     "Bypass/Unbypass Selected Nodes": "旁路/取消旁路选定节点",
     "Canvas Toggle Link Visibility": "切换链接可见性",

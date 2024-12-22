@@ -235,6 +235,7 @@
     "toggleBottomPanel": "下部パネルを切り替え"
   },
   "menuLabels": {
+    "About ComfyUI": "ComfyUIについて",
     "Browse Templates": "テンプレートを参照",
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",

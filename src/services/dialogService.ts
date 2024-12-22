@@ -39,11 +39,27 @@ export function showMissingModelsWarning(props: {
   })
 }
 
-export function showSettingsDialog() {
+export function showSettingsDialog(
+  panel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+) {
+  const props = panel ? { props: { defaultPanel: panel } } : undefined
+
   useDialogStore().showDialog({
     key: 'global-settings',
     headerComponent: SettingDialogHeader,
-    component: SettingDialogContent
+    component: SettingDialogContent,
+    ...props
+  })
+}
+
+export function showAboutDialog() {
+  useDialogStore().showDialog({
+    key: 'global-settings',
+    headerComponent: SettingDialogHeader,
+    component: SettingDialogContent,
+    props: {
+      defaultPanel: 'about'
+    }
   })
 }
 
