@@ -500,6 +500,16 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         useSearchBoxStore().toggleVisible()
       }
+    },
+    {
+      id: 'Comfy.Help.AboutComfyUI',
+      icon: 'pi pi-info-circle',
+      label: 'Open About ComfyUI',
+      menubarLabel: 'About ComfyUI',
+      versionAdded: '1.6.4',
+      function: () => {
+        showSettingsDialog('about')
+      }
     }
   ]
 }
