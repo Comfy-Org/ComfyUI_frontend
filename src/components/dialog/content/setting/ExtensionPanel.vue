@@ -1,20 +1,10 @@
 <template>
   <PanelTemplate value="Extension" class="extension-panel">
     <template #header>
-      <div class="flex flex-row items-center">
-        <SearchBox
-          class="flex-grow"
-          v-model="filters['global'].value"
-          :placeholder="$t('g.searchExtensions') + '...'"
-        />
-        <Button
-          icon="pi pi-ellipsis-v"
-          text
-          severity="secondary"
-          @click="menu.show($event)"
-        />
-        <ContextMenu ref="menu" :model="contextMenuItems" />
-      </div>
+      <SearchBox
+        v-model="filters['global'].value"
+        :placeholder="$t('g.searchExtensions') + '...'"
+      />
       <Message v-if="hasChanges" severity="info" pt:text="w-full">
         <ul>
           <li v-for="ext in changedExtensions" :key="ext.name">
@@ -43,9 +33,19 @@
       <Column field="name" :header="$t('g.extensionName')" sortable></Column>
       <Column
         :pt="{
+          headerCell: 'flex items-center justify-end',
           bodyCell: 'flex items-center justify-end'
         }"
       >
+        <template #header>
+          <Button
+            icon="pi pi-ellipsis-h"
+            text
+            severity="secondary"
+            @click="menu.show($event)"
+          />
+          <ContextMenu ref="menu" :model="contextMenuItems" />
+        </template>
         <template #body="slotProps">
           <ToggleSwitch
             :disabled="
