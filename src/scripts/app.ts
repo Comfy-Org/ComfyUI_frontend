@@ -591,9 +591,27 @@ export class ComfyApp {
       options.push({
         content: 'Bypass',
         callback: (obj) => {
-          if (this.mode === LGraphEventMode.BYPASS)
-            this.mode = LGraphEventMode.ALWAYS
-          else this.mode = LGraphEventMode.BYPASS
+          const selectedNodes = app.canvas.selectedItems
+          const nodes: LGraphNode[] = []
+          if (selectedNodes) {
+            for (const n of selectedNodes) {
+              const node = this.graph.getNodeById(n.id)
+              nodes.push(node)
+            }
+          }
+
+          let toggle = false
+          for (const n of nodes) {
+            if (n.mode === LGraphEventMode.ALWAYS) {
+              toggle = true
+              break
+            }
+          }
+
+          for (const n of nodes) {
+            n.mode = toggle ? LGraphEventMode.BYPASS : LGraphEventMode.ALWAYS
+          }
+
           this.graph.change()
         }
       })
