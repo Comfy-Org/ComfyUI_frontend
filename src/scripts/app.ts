@@ -1547,6 +1547,7 @@ export class ComfyApp {
     api.addEventListener('executing', ({ detail }) => {
       this.progress = null
       this.graph.setDirtyCanvas(true, false)
+      this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
     })
 
@@ -1589,6 +1590,7 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
+      this.revokePreviews(id)
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -2835,11 +2837,21 @@ export class ComfyApp {
     app.graph.setDirtyCanvas(true, true)
   }
 
+  revokePreviews(nodeId: NodeId) {
+    if (this.nodePreviewImages[nodeId]) {
+      for (let blob of this.nodePreviewImages[nodeId]) {
+        URL.revokeObjectURL(blob)
+      }
+    }
+  }
   /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
+    for (let k in this.nodePreviewImages) {
+      this.revokePreviews(k)
+    }
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null
