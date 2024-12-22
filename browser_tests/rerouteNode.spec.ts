@@ -4,6 +4,10 @@ import { comfyPageFixture as test } from './fixtures/ComfyPage'
 test.describe('Reroute Node', () => {
   const WORKFLOW_NAME = 'reroute_nodes.json'
 
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
   test('loads from inserted workflow', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
       [WORKFLOW_NAME]: WORKFLOW_NAME
