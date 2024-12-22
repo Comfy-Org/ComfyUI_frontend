@@ -8,6 +8,10 @@ test.describe('Reroute Node', () => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
+  test.afterEach(async ({ comfyPage }) => {
+    await comfyPage.setupWorkflowsDirectory({})
+  })
+
   test('loads from inserted workflow', async ({ comfyPage }) => {
     await comfyPage.setupWorkflowsDirectory({
       [WORKFLOW_NAME]: WORKFLOW_NAME
