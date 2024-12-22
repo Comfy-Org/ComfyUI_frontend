@@ -1748,7 +1748,17 @@ app.registerExtension({
     node.onExecuted = function (message: any) {
       onExecuted?.apply(this, arguments)
 
-      modelWidget.value = message.model_file[0]
+      let filePath = message.model_file[0]
+
+      if (!filePath) {
+        const msg = 'unable to get model file path.'
+
+        console.error(msg)
+
+        useToastStore().addAlert(msg)
+      }
+
+      modelWidget.value = filePath.replaceAll('\\', '/')
 
       configureLoad3D(
         load3d,
