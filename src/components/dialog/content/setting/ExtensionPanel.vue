@@ -33,9 +33,19 @@
       <Column field="name" :header="$t('g.extensionName')" sortable></Column>
       <Column
         :pt="{
+          headerCell: 'flex items-center justify-end',
           bodyCell: 'flex items-center justify-end'
         }"
       >
+        <template #header>
+          <Button
+            icon="pi pi-ellipsis-h"
+            text
+            severity="secondary"
+            @click="menu.show($event)"
+          />
+          <ContextMenu ref="menu" :model="contextMenuItems" />
+        </template>
         <template #body="slotProps">
           <ToggleSwitch
             :disabled="
@@ -58,6 +68,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Button from 'primevue/button'
+import ContextMenu from 'primevue/contextmenu'
 import Message from 'primevue/message'
 import { FilterMatchMode } from '@primevue/core/api'
 import PanelTemplate from './PanelTemplate.vue'
@@ -104,8 +115,38 @@ const updateExtensionStatus = () => {
   ])
 }
 
+const enableAllExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    editingEnabledExtensions.value[ext.name] = true
+  })
+  updateExtensionStatus()
+}
+
+const disableAllExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isExtensionAlwaysEnabled(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  updateExtensionStatus()
+}
+
 const applyChanges = () => {
   // Refresh the page to apply changes
   window.location.reload()
 }
+
+const menu = ref<InstanceType<typeof ContextMenu>>()
+const contextMenuItems = [
+  {
+    label: 'Enable All',
+    icon: 'pi pi-check',
+    command: enableAllExtensions
+  },
+  {
+    label: 'Disable All',
+    icon: 'pi pi-times',
+    command: disableAllExtensions
+  }
+]
 </script>
