@@ -1547,6 +1547,7 @@ export class ComfyApp {
     api.addEventListener('executing', ({ detail }) => {
       this.progress = null
       this.graph.setDirtyCanvas(true, false)
+      this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
     })
 
@@ -1589,6 +1590,8 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
+      // Ensure clean up if `executing` event is missed.
+      this.revokePreviews(id)
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -2836,10 +2839,23 @@ export class ComfyApp {
   }
 
   /**
+   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
+   * @param nodeId ID of the node to revoke all preview images of
+   */
+  revokePreviews(nodeId: NodeId) {
+    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
+    for (const url of this.nodePreviewImages[nodeId]) {
+      URL.revokeObjectURL(url)
+    }
+  }
+  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
+    for (const id of Object.keys(this.nodePreviewImages)) {
+      this.revokePreviews(id)
+    }
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null
