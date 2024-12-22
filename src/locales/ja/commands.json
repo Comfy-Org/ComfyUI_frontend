@@ -95,6 +95,9 @@
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
     "label": "選択したグループノードのグループ解除"
   },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "ComfyUIについてを開く"
+  },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Comfy-OrgのDiscordを開く"
   },

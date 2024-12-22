@@ -95,6 +95,9 @@
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
     "label": "Ungroup selected group nodes"
   },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Open About ComfyUI"
+  },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Open Comfy-Org Discord"
   },
