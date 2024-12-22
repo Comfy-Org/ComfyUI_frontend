@@ -139,7 +139,9 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
 
 const onCloseWorkflow = (option: WorkflowOption, index: number) => {
   closeWorkflows([option])
-  runCleanups(cleanups)
+  cleanups[index].forEach((cb) => {
+    cb()
+  })
   cleanups.splice(index, 1)
 }
 
