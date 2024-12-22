@@ -203,7 +203,6 @@ watch(options, () => {
       const cleanupDraggable = draggable({
         element: tab as HTMLElement,
         getInitialData: (e) => {
-          console.log('get initial data', e)
           return {
             tabIndex: index
           }
@@ -233,10 +232,6 @@ watch(options, () => {
           targetTabIndex.value = null
         },
         onDropTargetChange: (e) => {
-          console.log(
-            'target changed',
-            e.location.current.dropTargets[0].data.tabIndex
-          )
           targetTabIndex.value = e.location.current.dropTargets[0].data
             .tabIndex as number
         }
