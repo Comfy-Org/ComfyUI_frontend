@@ -1,5 +1,7 @@
-import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from './fixtures/ComfyPage'
 
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -125,6 +127,23 @@ test.describe('Node search box', () => {
       await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
       await comfyPage.searchBox.removeFilter(0)
       await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+    })
+  })
+
+  test.describe('Input focus behavior', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.doubleClickCanvas()
+    })
+
+    test('focuses input after adding a filter', async ({ comfyPage }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await expect(comfyPage.searchBox.input).toHaveFocus()
+    })
+
+    test('focuses input after removing a filter', async ({ comfyPage }) => {
+      await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+      await comfyPage.searchBox.removeFilter(0)
+      await expect(comfyPage.searchBox.input).toHaveFocus()
     })
   })
 })
