@@ -155,6 +155,7 @@
     "appPathLocationTooltip": "ComfyUI의 앱 에셋 디렉토리. ComfyUI 코드 및 에셋을 저장합니다.",
     "chooseInstallationLocation": "설치 위치 선택",
     "customNodes": "사용자 정의 노드",
+    "customNodesDescription": "기존 ComfyUI 설치에서 사용자 정의 노드를 다시 설치합니다.",
     "desktopAppSettings": "데스크탑 앱 설정",
     "desktopAppSettingsDescription": "ComfyUI가 데스크탑에서 어떻게 작동하는지 구성하세요. 이 설정은 나중에 변경할 수 있습니다.",
     "desktopSettings": "데스크탑 설정",

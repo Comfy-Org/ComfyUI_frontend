@@ -155,6 +155,7 @@
     "appPathLocationTooltip": "Директория активов приложения ComfyUI. Хранит код и активы ComfyUI",
     "chooseInstallationLocation": "Выберите место установки",
     "customNodes": "Пользовательские узлы",
+    "customNodesDescription": "Переустановите пользовательские узлы из существующих установок ComfyUI.",
     "desktopAppSettings": "Настройки настольного приложения",
     "desktopAppSettingsDescription": "Настройте, как ComfyUI ведет себя на вашем рабочем столе. Вы можете изменить эти настройки позже.",
     "desktopSettings": "Настройки рабочего стола",
