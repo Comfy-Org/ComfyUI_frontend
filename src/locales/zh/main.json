@@ -155,7 +155,6 @@
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
     "chooseInstallationLocation": "选择安装位置",
     "customNodes": "自定义节点",
-    "customNodesDescription": "引用现有 ComfyUI 安装的自定义节点文件并安装其依赖项。",
     "desktopAppSettings": "桌面应用设置",
     "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
     "desktopSettings": "桌面设置",

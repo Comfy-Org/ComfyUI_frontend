@@ -155,7 +155,6 @@
     "appPathLocationTooltip": "ComfyUIのアプリ資産ディレクトリ。ComfyUIのコードとアセットを保存します",
     "chooseInstallationLocation": "インストール先を選択",
     "customNodes": "カスタムノード",
-    "customNodesDescription": "既存のComfyUIインストールからカスタムノードファイルを参照し、その依存関係をインストールします。",
     "desktopAppSettings": "デスクトップアプリの設定",
     "desktopAppSettingsDescription": "ComfyUIのデスクトップでの動作を設定します。これらの設定は後で変更可能です。",
     "desktopSettings": "デスクトップ設定",
