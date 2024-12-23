@@ -907,5 +907,19 @@ const makeMatcher = function <T>(
 export const comfyExpect = expect.extend({
   toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
   toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
-  toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed')
+  toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
+  async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
+    const isFocused = await locator.evaluate(
+      (el) => el === document.activeElement
+    )
+
+    await expect(async () => {
+      expect(isFocused).toBe(!this.isNot)
+    }).toPass(options)
+
+    return {
+      pass: isFocused,
+      message: () => `Expected element to ${isFocused ? 'not ' : ''}be focused.`
+    }
+  }
 })
