@@ -126,6 +126,7 @@
     "showReport": "レポートを表示",
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
+    "upload": "アップロード",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました"
   },
   "graphCanvasMenu": {
