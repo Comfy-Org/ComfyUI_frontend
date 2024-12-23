@@ -61,7 +61,9 @@
     "noTasksFoundMessage": "There are no tasks in the queue.",
     "newFolder": "New Folder",
     "enableAll": "Enable All",
-    "disableAll": "Disable All"
+    "disableAll": "Disable All",
+    "command": "Command",
+    "keybinding": "Keybinding"
   },
   "color": {
     "default": "Default",

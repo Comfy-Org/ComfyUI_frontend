@@ -37,7 +37,7 @@
       </Column>
       <Column
         field="id"
-        header="Command ID"
+        :header="$t('g.command')"
         sortable
         class="max-w-64 2xl:max-w-full"
       >
@@ -50,7 +50,7 @@
           </div>
         </template>
       </Column>
-      <Column field="keybinding" header="Keybinding">
+      <Column field="keybinding" :header="$t('g.keybinding')">
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
