@@ -6,7 +6,7 @@
       :value="selectedTab.templates"
       :numVisible="4"
       :numScroll="3"
-      :key="selectedTab.id"
+      :key="selectedTab.moduleName"
     >
       <template #item="slotProps">
         <Card>
@@ -17,7 +17,13 @@
                 @click="loadWorkflow(slotProps.data)"
               >
                 <img
+                  v-if="selectedTab.moduleName === 'default'"
                   :src="`templates/${slotProps.data}.jpg`"
+                  class="w-64 h-64 rounded-lg object-cover thumbnail"
+                />
+                <img
+                  v-else
+                  :src="`workflow_templates/${selectedTab.moduleName}/${slotProps.data}.jpg`"
                   class="w-64 h-64 rounded-lg object-cover thumbnail"
                 />
                 <a>
@@ -57,14 +63,14 @@ const { t } = useI18n()
 const loading = ref<string | null>(null)
 
 interface WorkflowTemplatesTab {
-  id: string
+  moduleName: string
   title: string
   templates: string[]
 }
 
 //These default templates are provided by the frontend
 const comfyUITemplates = {
-  id: 'default',
+  moduleName: 'default',
   title: 'ComfyUI',
   templates: ['default', 'image2image', 'upscale', 'flux_schnell']
 }
@@ -79,7 +85,7 @@ onMounted(async () => {
     tabs.value = [
       comfyUITemplates,
       ...Object.entries(workflowTemplates).map(([key, value]) => ({
-        id: key,
+        moduleName: key,
         title: key,
         templates: value
       }))
@@ -97,9 +103,19 @@ onMounted(async () => {
 
 const loadWorkflow = async (id: string) => {
   loading.value = id
-  const json = await fetch(api.fileURL(`templates/${id}.json`)).then((r) =>
-    r.json()
-  )
+  let json
+  if (selectedTab.value.moduleName === 'default') {
+    // Default templates provided by frontend are served on this separate endpoint
+    json = await fetch(api.fileURL(`templates/${id}.json`)).then((r) =>
+      r.json()
+    )
+  } else {
+    json = await fetch(
+      api.fileURL(
+        `workflow_templates/${selectedTab.value.moduleName}/${id}.json`
+      )
+    ).then((r) => r.json())
+  }
   useDialogStore().closeDialog()
   await app.loadGraphData(
     json,
