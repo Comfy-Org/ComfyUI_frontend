@@ -2,7 +2,7 @@
 import { useToastStore } from '@/stores/toastStore'
 import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
-import type { ColorPalettes, Palette } from '@/types/colorPalette'
+import type { ColorPalettes, Palette } from '@/types/colorPaletteTypes'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
 
 // Manage color palettes
