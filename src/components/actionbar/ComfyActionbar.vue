@@ -230,6 +230,10 @@ watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
   @apply p-1;
 }
 
+.is-docked :deep(.p-panel-content) {
+  @apply p-0;
+}
+
 :deep(.p-panel-header) {
   display: none;
 }
