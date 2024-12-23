@@ -13,6 +13,7 @@
       v-model="selectedFilterValue"
       :options="filterValues"
       filter
+      autoFilterFocus
     />
   </div>
   <div class="_footer">
