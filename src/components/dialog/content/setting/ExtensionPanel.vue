@@ -5,7 +5,12 @@
         v-model="filters['global'].value"
         :placeholder="$t('g.searchExtensions') + '...'"
       />
-      <Message v-if="hasChanges" severity="info" pt:text="w-full">
+      <Message
+        v-if="hasChanges"
+        severity="info"
+        pt:text="w-full"
+        class="max-h-96 overflow-y-auto"
+      >
         <ul>
           <li v-for="ext in changedExtensions" :key="ext.name">
             <span>
@@ -30,7 +35,15 @@
       size="small"
       :filters="filters"
     >
-      <Column field="name" :header="$t('g.extensionName')" sortable></Column>
+      <Column :header="$t('g.extensionName')" sortable>
+        <template #body="slotProps">
+          {{ slotProps.data.name }}
+          <Tag
+            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
+            value="Core"
+          />
+        </template>
+      </Column>
       <Column
         :pt="{
           headerCell: 'flex items-center justify-end',
@@ -48,9 +61,7 @@
         </template>
         <template #body="slotProps">
           <ToggleSwitch
-            :disabled="
-              extensionStore.isExtensionAlwaysEnabled(slotProps.data.name)
-            "
+            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             v-model="editingEnabledExtensions[slotProps.data.name]"
             @change="updateExtensionStatus"
           />
@@ -67,6 +78,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
+import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import Message from 'primevue/message'
@@ -117,6 +129,8 @@ const updateExtensionStatus = () => {
 
 const enableAllExtensions = () => {
   extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
     editingEnabledExtensions.value[ext.name] = true
   })
   updateExtensionStatus()
@@ -124,7 +138,16 @@ const enableAllExtensions = () => {
 
 const disableAllExtensions = () => {
   extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionAlwaysEnabled(ext.name)) return
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  updateExtensionStatus()
+}
+
+const disableThirdPartyExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isCoreExtension(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
@@ -147,6 +170,12 @@ const contextMenuItems = [
     label: 'Disable All',
     icon: 'pi pi-times',
     command: disableAllExtensions
+  },
+  {
+    label: 'Disable 3rd Party',
+    icon: 'pi pi-times',
+    command: disableThirdPartyExtensions,
+    disabled: !extensionStore.hasThirdPartyExtensions
   }
 ]
 </script>
