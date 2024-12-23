@@ -8,48 +8,12 @@
     optionLabel="label"
     dataKey="value"
   >
-    <template #option="{ option, index }">
-      <div
-        :class="[
-          'flex p-2 gap-2 workflow-tab',
-          { 'border border-dashed': index === draggingTabIndex },
-          {
-            'border-r-4 border-0 border-solid':
-              targetTabIndex === index && draggingTabIndex < index
-          },
-          {
-            'border-l-4 border-0 border-solid':
-              targetTabIndex === index && draggingTabIndex > index
-          }
-        ]"
+    <template #option="{ option }">
+      <WorkflowTab
         @contextmenu="showContextMenu($event, option)"
-        @click.middle="onCloseWorkflow(option, index)"
-      >
-        <span
-          class="workflow-label text-sm max-w-[150px] truncate inline-block"
-          v-tooltip.bottom="option.workflow.key"
-        >
-          {{ option.workflow.filename }}
-        </span>
-        <div class="relative">
-          <span
-            class="status-indicator"
-            v-if="
-              !workspaceStore.shiftDown &&
-              (option.workflow.isModified || !option.workflow.isPersisted)
-            "
-            >•</span
-          >
-          <Button
-            class="close-button p-0 w-auto"
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            size="small"
-            @click.stop="onCloseWorkflow(option, index)"
-          />
-        </div>
-      </div>
+        @click.middle="onCloseWorkflow(option)"
+        :workflow-option="option"
+      />
     </template>
   </SelectButton>
   <Button
@@ -63,20 +27,17 @@
 </template>
 
 <script setup lang="ts">
+import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
-import { computed, ref, watch, nextTick, onUnmounted } from 'vue'
+import { computed, ref } from 'vue'
 import { workflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import ContextMenu from 'primevue/contextmenu'
 import { useI18n } from 'vue-i18n'
-import {
-  draggable,
-  dropTargetForElements
-} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 
 interface WorkflowOption {
   value: string
@@ -92,11 +53,6 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
-
-const showContextMenu = (event, option) => {
-  rightClickedTab.value = option
-  menu.value.show(event)
-}
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -137,14 +93,14 @@ const closeWorkflows = async (options: WorkflowOption[]) => {
   }
 }
 
-const onCloseWorkflow = (option: WorkflowOption, index: number) => {
+const onCloseWorkflow = (option: WorkflowOption) => {
   closeWorkflows([option])
-  cleanups[index].forEach((cb) => {
-    cb()
-  })
-  cleanups.splice(index, 1)
 }
 
+const showContextMenu = (event, option) => {
+  rightClickedTab.value = option
+  menu.value.show(event)
+}
 const contextMenuItems = computed(() => {
   const tab = rightClickedTab.value as WorkflowOption
   if (!tab) return []
@@ -162,7 +118,7 @@ const contextMenuItems = computed(() => {
     },
     {
       label: t('tabMenu.closeTab'),
-      command: () => onCloseWorkflow(tab, index)
+      command: () => onCloseWorkflow(tab)
     },
     {
       label: t('tabMenu.closeTabsToLeft'),
@@ -186,64 +142,6 @@ const contextMenuItems = computed(() => {
   ]
 })
 const commandStore = useCommandStore()
-
-const draggingTabIndex = ref<number | null>(null)
-const targetTabIndex = ref<number | null>(null)
-let cleanups = []
-const runCleanups = (cleanups: (() => void)[]) => {
-  cleanups.forEach((cb) => {
-    cb()
-  })
-}
-watch(options, () => {
-  nextTick(() => {
-    const tabs = document.querySelectorAll('.workflow-tab')
-    cleanups = []
-    tabs.forEach((tab, index) => {
-      const cleanupDraggable = draggable({
-        element: tab as HTMLElement,
-        getInitialData: (e) => {
-          return {
-            tabIndex: index
-          }
-        },
-        onDrag: () => {
-          draggingTabIndex.value = index
-        },
-        onDrop: () => {
-          draggingTabIndex.value = null
-        }
-      })
-
-      const cleanupDropTarget = dropTargetForElements({
-        element: tab as HTMLElement,
-        getData: () => {
-          return {
-            tabIndex: index
-          }
-        },
-        onDrop: (e) => {
-          const fromIndex = e.source.data.tabIndex as number
-          const toIndex = e.location.current.dropTargets[0].data
-            .tabIndex as number
-          if (fromIndex !== toIndex) {
-            workflowStore.reorderWorkflows(fromIndex, toIndex)
-          }
-          targetTabIndex.value = null
-        },
-        onDropTargetChange: (e) => {
-          targetTabIndex.value = e.location.current.dropTargets[0].data
-            .tabIndex as number
-        }
-      })
-
-      cleanups.push([cleanupDraggable, cleanupDropTarget])
-    })
-  })
-})
-onUnmounted(() => {
-  runCleanups(cleanups)
-})
 </script>
 
 <style scoped>
@@ -263,14 +161,6 @@ onUnmounted(() => {
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
-}
-
-.status-indicator {
-  @apply absolute font-bold;
-  font-size: 1.5rem;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 :deep(.p-togglebutton:hover) .status-indicator {
