@@ -31,6 +31,8 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
+import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import FormColorPicker from '@/components/common/FormColorPicker.vue'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{
@@ -82,6 +84,10 @@ function getFormComponent(item: FormItem): Component {
       return InputSlider
     case 'combo':
       return Select
+    case 'image':
+      return FormImageUpload
+    case 'color':
+      return FormColorPicker
     default:
       return InputText
   }

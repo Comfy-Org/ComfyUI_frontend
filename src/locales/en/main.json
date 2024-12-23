@@ -63,7 +63,8 @@
     "enableAll": "Enable All",
     "disableAll": "Disable All",
     "command": "Command",
-    "keybinding": "Keybinding"
+    "keybinding": "Keybinding",
+    "upload": "Upload"
   },
   "color": {
     "default": "Default",
