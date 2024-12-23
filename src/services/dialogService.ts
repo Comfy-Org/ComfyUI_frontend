@@ -11,7 +11,7 @@ import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionEr
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import { i18n } from '@/i18n'
+import { t } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 
 export function showLoadWorkflowWarning(props: {
@@ -39,11 +39,27 @@ export function showMissingModelsWarning(props: {
   })
 }
 
-export function showSettingsDialog() {
+export function showSettingsDialog(
+  panel?: 'about' | 'keybinding' | 'extension' | 'server-config'
+) {
+  const props = panel ? { props: { defaultPanel: panel } } : undefined
+
   useDialogStore().showDialog({
     key: 'global-settings',
     headerComponent: SettingDialogHeader,
-    component: SettingDialogContent
+    component: SettingDialogContent,
+    ...props
+  })
+}
+
+export function showAboutDialog() {
+  useDialogStore().showDialog({
+    key: 'global-settings',
+    headerComponent: SettingDialogHeader,
+    component: SettingDialogContent,
+    props: {
+      defaultPanel: 'about'
+    }
   })
 }
 
@@ -60,7 +76,7 @@ export function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
 export function showTemplateWorkflowsDialog() {
   useDialogStore().showDialog({
     key: 'global-template-workflows',
-    title: i18n.global.t('templateWorkflows.title'),
+    title: t('templateWorkflows.title'),
     component: TemplateWorkflowsContent
   })
 }

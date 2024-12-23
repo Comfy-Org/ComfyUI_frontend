@@ -2,13 +2,10 @@
   <div ref="container" class="model-lib-node-container h-full w-full">
     <TreeExplorerTreeNode :node="node">
       <template #before-label>
-        <span
-          v-if="modelDef && modelDef.image"
-          class="model-lib-model-icon-container"
-        >
+        <span v-if="modelPreviewUrl" class="model-lib-model-icon-container">
           <span
             class="model-lib-model-icon"
-            :style="{ backgroundImage: `url(${modelDef.image})` }"
+            :style="{ backgroundImage: `url(${modelPreviewUrl})` }"
           >
           </span>
         </span>
@@ -43,6 +40,18 @@ const props = defineProps<{
 }>()
 
 const modelDef = computed(() => props.node.data)
+
+const modelPreviewUrl = computed(() => {
+  if (modelDef.value?.image) {
+    return modelDef.value.image
+  }
+  const folder = modelDef.value.directory
+  const path_index = modelDef.value.path_index
+  const extension = modelDef.value.file_name.split('.').pop()
+  const filename = modelDef.value.file_name.replace(`.${extension}`, '.webp')
+  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
+})
 
 const previewRef = ref<InstanceType<typeof ModelPreview> | null>(null)
 const modelPreviewStyle = ref<CSSProperties>({
@@ -129,9 +138,10 @@ onUnmounted(() => {
   background-position: center;
   display: inline-block;
   position: relative;
-  left: -2.5rem;
-  height: 2rem;
-  width: 2rem;
+  left: -2.2rem;
+  top: -0.1rem;
+  height: 1.7rem;
+  width: 1.7rem;
   vertical-align: top;
 }
 </style>

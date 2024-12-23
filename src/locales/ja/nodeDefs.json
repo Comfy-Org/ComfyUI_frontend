@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "テキストをエンコードし、PixArt Alphaの解像度条件を設定します。PixArt Sigmaには適用されません。",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "text": {
+        "name": "テキスト"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPテキストエンコードSD3",
     "inputs": {
@@ -647,6 +665,31 @@
       },
       "start": {
         "name": "開始"
+      }
+    }
+  },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "seconds_start": {
+        "name": "秒_開始"
+      },
+      "seconds_total": {
+        "name": "秒_合計"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ"
+      },
+      "1": {
+        "name": "ネガティブ"
       }
     }
   },
@@ -1081,6 +1124,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "シンプルスライダー",
+    "inputs": {
+      "value": {
+        "name": "値"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
     "inputs": {
@@ -1146,6 +1197,23 @@
       },
       "type": {
         "name": "タイプ"
+      }
+    }
+  },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
       }
     }
   },
@@ -2278,6 +2346,107 @@
       },
       "upscale_method": {
         "name": "拡大方法"
+      }
+    }
+  },
+  "Load3D": {
+    "display_name": "3Dを読み込む",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "素材"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "3Dを読み込む - アニメーション",
+    "inputs": {
+      "animation_speed": {
+        "name": "アニメーション速度"
+      },
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "素材"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像"
+      },
+      "1": {
+        "name": "マスク"
+      },
+      "2": {
+        "name": "メッシュパス"
       }
     }
   },
@@ -4054,6 +4223,35 @@
       }
     }
   },
+  "Preview3D": {
+    "display_name": "3Dプレビュー",
+    "inputs": {
+      "bg_color": {
+        "name": "背景色"
+      },
+      "camera_type": {
+        "name": "カメラタイプ"
+      },
+      "light_intensity": {
+        "name": "光の強度"
+      },
+      "material": {
+        "name": "マテリアル"
+      },
+      "model_file": {
+        "name": "モデルファイル"
+      },
+      "show_grid": {
+        "name": "グリッドを表示"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "ビュー"
+      }
+    }
+  },
   "PreviewAudio": {
     "display_name": "オーディオプレビュー",
     "inputs": {
@@ -5139,6 +5337,9 @@
   "VAEEncodeTiled": {
     "display_name": "VAEエンコード（タイル）",
     "inputs": {
+      "overlap": {
+        "name": "オーバーラップ"
+      },
       "pixels": {
         "name": "ピクセル"
       },

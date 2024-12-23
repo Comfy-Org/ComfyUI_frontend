@@ -52,6 +52,26 @@ declare module '@comfyorg/litegraph' {
       element: HTMLElement,
       options?: Record<string, any>
     ): DOMWidget
+
+    animatedImages?: boolean
+    imgs?: HTMLImageElement[]
+    images?: ExecutedWsMessage['output']
+
+    preview: string[]
+    /** Index of the currently selected image on a multi-image node such as Preview Image */
+    imageIndex?: number | null
+    imageRects: Rect[]
+    overIndex?: number | null
+    pointerDown?: { index: number | null; pos: Point } | null
+
+    setSizeForImage?(force?: boolean): void
+    /** @deprecated Unused */
+    inputHeight?: unknown
+
+    /** @deprecated Unused */
+    imageOffset?: number
+    /** Set by DOM widgets */
+    freeWidgetSpace?: number
   }
 
   interface INodeSlot {

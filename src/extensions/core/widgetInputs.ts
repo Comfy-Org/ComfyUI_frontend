@@ -3,8 +3,13 @@ import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
 import { LiteGraph, LGraphNode } from '@comfyorg/litegraph'
-import type { INodeInputSlot, IWidget } from '@comfyorg/litegraph'
+import type {
+  INodeInputSlot,
+  IWidget,
+  LiteGraphCanvasEvent
+} from '@comfyorg/litegraph'
 import type { InputSpec } from '@/types/apiTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = [
@@ -720,6 +725,40 @@ app.registerExtension({
       type: 'boolean',
       defaultValue: true
     })
+  },
+  setup() {
+    app.canvas.getWidgetLinkType = function (widget, node) {
+      const nodeDefStore = useNodeDefStore()
+      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const input = nodeDef.inputs.getInput(widget.name)
+      return input?.type
+    }
+
+    document.addEventListener(
+      'litegraph:canvas',
+      async (e: LiteGraphCanvasEvent) => {
+        if (e.detail.subType === 'connectingWidgetLink') {
+          const { node, link, widget } = e.detail
+          if (!node || !link || !widget) return
+
+          const nodeData = node.constructor.nodeData
+          if (!nodeData) return
+          const all = {
+            ...nodeData?.input?.required,
+            ...nodeData?.input?.optional
+          }
+          const inputSpec = all[widget.name]
+          if (!inputSpec) return
+
+          const input = convertToInput(node, widget, inputSpec)
+          if (!input) return
+
+          const originNode = link.node
+
+          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
+        }
+      }
+    )
   },
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     // Add menu options to convert to/from widgets

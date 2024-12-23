@@ -13,11 +13,14 @@ jest.mock('@/scripts/api', () => ({
 
 function enableMocks() {
   ;(api.getModels as jest.Mock).mockResolvedValue([
-    'sdxl.safetensors',
-    'sdv15.safetensors',
-    'noinfo.safetensors'
+    { name: 'sdxl.safetensors', pathIndex: 0 },
+    { name: 'sdv15.safetensors', pathIndex: 0 },
+    { name: 'noinfo.safetensors', pathIndex: 0 }
   ])
-  ;(api.getModelFolders as jest.Mock).mockResolvedValue(['checkpoints', 'vae'])
+  ;(api.getModelFolders as jest.Mock).mockResolvedValue([
+    { name: 'checkpoints', folders: ['/path/to/checkpoints'] },
+    { name: 'vae', folders: ['/path/to/vae'] }
+  ])
   ;(api.viewMetadata as jest.Mock).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
       return Promise.resolve({})
@@ -59,7 +62,7 @@ describe('useModelStore', () => {
     const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
-    const model = folderStore.models['sdxl.safetensors']
+    const model = folderStore.models['0/sdxl.safetensors']
     await model.load()
     expect(model.title).toBe('Title of sdxl.safetensors')
     expect(model.architecture_id).toBe('stable-diffusion-xl-base-v1')
@@ -77,7 +80,7 @@ describe('useModelStore', () => {
     const folderStore = await store.getLoadedModelFolder('checkpoints')
     expect(folderStore).not.toBeNull()
     if (!folderStore) return
-    const model = folderStore.models['noinfo.safetensors']
+    const model = folderStore.models['0/noinfo.safetensors']
     await model.load()
     expect(model.file_name).toBe('noinfo.safetensors')
     expect(model.title).toBe('noinfo')

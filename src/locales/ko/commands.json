@@ -23,6 +23,9 @@
   "Comfy-Desktop_OpenFeedbackPage": {
     "label": "피드백"
   },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "데스크톱 사용자 가이드"
+  },
   "Comfy-Desktop_Reinstall": {
     "label": "재설치"
   },
@@ -91,6 +94,9 @@
   },
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
     "label": "선택한 그룹 노드 분리"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "ComfyUI 정보 열기"
   },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Comfy-Org 디스코드 열기"

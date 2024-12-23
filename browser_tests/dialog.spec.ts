@@ -77,8 +77,12 @@ test.describe('Missing models warning', () => {
 test.describe('Settings', () => {
   test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
     await comfyPage.page.keyboard.press('Control+,')
-    const searchBox = comfyPage.page.locator('.settings-content')
-    await expect(searchBox).toBeVisible()
+    const settingsContent = comfyPage.page.locator('.settings-content')
+    await expect(settingsContent).toBeVisible()
+    const isUsableHeight = await settingsContent.evaluate(
+      (el) => el.clientHeight > 30
+    )
+    expect(isUsableHeight).toBeTruthy()
   })
 
   test('Can open settings with hotkey', async ({ comfyPage }) => {
@@ -94,7 +98,7 @@ test.describe('Settings', () => {
   test('Can change canvas zoom speed setting', async ({ comfyPage }) => {
     const maxSpeed = 2.5
     await comfyPage.setSetting('Comfy.Graph.ZoomSpeed', maxSpeed)
-    test.step('Setting should persist', async () => {
+    await test.step('Setting should persist', async () => {
       expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
     })
   })

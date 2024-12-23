@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "对文本进行编码并为PixArt Alpha设置分辨率条件。不适用于PixArt Sigma。",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "text": {
+        "name": "文本"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIP文本编码SD3",
     "inputs": {
@@ -647,6 +665,31 @@
       },
       "start": {
         "name": "开始"
+      }
+    }
+  },
+  "ConditioningStableAudio": {
+    "display_name": "StableAudio条件",
+    "inputs": {
+      "negative": {
+        "name": "负向"
+      },
+      "positive": {
+        "name": "正向"
+      },
+      "seconds_start": {
+        "name": "开始秒数"
+      },
+      "seconds_total": {
+        "name": "总秒数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向"
+      },
+      "1": {
+        "name": "负向"
       }
     }
   },
@@ -1081,6 +1124,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "简单滑块",
+    "inputs": {
+      "value": {
+        "name": "值"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "加载控制网模型（diff）",
     "inputs": {
@@ -1146,6 +1197,23 @@
       },
       "type": {
         "name": "类型"
+      }
+    }
+  },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "空的混元潜在视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
       }
     }
   },
@@ -2278,6 +2346,107 @@
       },
       "upscale_method": {
         "name": "放大方法"
+      }
+    }
+  },
+  "Load3D": {
+    "display_name": "加载3D",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      },
+      "2": {
+        "name": "网格路径"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "加载3D - 动画",
+    "inputs": {
+      "animation_speed": {
+        "name": "动画速度"
+      },
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像"
+      },
+      "1": {
+        "name": "遮罩"
+      },
+      "2": {
+        "name": "网格路径"
       }
     }
   },
@@ -4054,6 +4223,35 @@
       }
     }
   },
+  "Preview3D": {
+    "display_name": "3D预览",
+    "inputs": {
+      "bg_color": {
+        "name": "背景颜色"
+      },
+      "camera_type": {
+        "name": "相机类型"
+      },
+      "light_intensity": {
+        "name": "光照强度"
+      },
+      "material": {
+        "name": "材质"
+      },
+      "model_file": {
+        "name": "模型文件"
+      },
+      "show_grid": {
+        "name": "显示网格"
+      },
+      "up_direction": {
+        "name": "上方向"
+      },
+      "view": {
+        "name": "视图"
+      }
+    }
+  },
   "PreviewAudio": {
     "display_name": "预览音频",
     "inputs": {
@@ -5139,6 +5337,9 @@
   "VAEEncodeTiled": {
     "display_name": "VAE编码（平铺）",
     "inputs": {
+      "overlap": {
+        "name": "重叠"
+      },
       "pixels": {
         "name": "像素"
       },

@@ -312,6 +312,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "description": "Encodes text and sets the resolution conditioning for PixArt Alpha. Does not apply to PixArt Sigma.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "text": {
+        "name": "text"
+      },
+      "clip": {
+        "name": "clip"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPTextEncodeSD3",
     "inputs": {
@@ -335,6 +353,9 @@
   "CLIPTextEncodeSDXL": {
     "display_name": "CLIPTextEncodeSDXL",
     "inputs": {
+      "clip": {
+        "name": "clip"
+      },
       "width": {
         "name": "width"
       },
@@ -355,9 +376,6 @@
       },
       "text_g": {
         "name": "text_g"
-      },
-      "clip": {
-        "name": "clip"
       },
       "text_l": {
         "name": "text_l"
@@ -647,6 +665,31 @@
       },
       "end": {
         "name": "end"
+      }
+    }
+  },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "seconds_start": {
+        "name": "seconds_start"
+      },
+      "seconds_total": {
+        "name": "seconds_total"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive"
+      },
+      "1": {
+        "name": "negative"
       }
     }
   },
@@ -1081,6 +1124,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "Simple Slider",
+    "inputs": {
+      "value": {
+        "name": "value"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Load ControlNet Model (diff)",
     "inputs": {
@@ -1146,6 +1197,23 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
       }
     }
   },
@@ -2187,6 +2255,107 @@
       },
       "scale_by": {
         "name": "scale_by"
+      }
+    }
+  },
+  "Load3D": {
+    "display_name": "Load 3D",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "mesh_path"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "Load 3D - Animation",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "image": {
+        "name": "image"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
+      },
+      "animation_speed": {
+        "name": "animation_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image"
+      },
+      "1": {
+        "name": "mask"
+      },
+      "2": {
+        "name": "mesh_path"
       }
     }
   },
@@ -4054,6 +4223,35 @@
       }
     }
   },
+  "Preview3D": {
+    "display_name": "Preview 3D",
+    "inputs": {
+      "model_file": {
+        "name": "model_file"
+      },
+      "show_grid": {
+        "name": "show_grid"
+      },
+      "camera_type": {
+        "name": "camera_type"
+      },
+      "view": {
+        "name": "view"
+      },
+      "material": {
+        "name": "material"
+      },
+      "bg_color": {
+        "name": "bg_color"
+      },
+      "light_intensity": {
+        "name": "light_intensity"
+      },
+      "up_direction": {
+        "name": "up_direction"
+      }
+    }
+  },
   "PreviewAudio": {
     "display_name": "PreviewAudio",
     "inputs": {
@@ -5172,6 +5370,9 @@
       },
       "tile_size": {
         "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
       }
     }
   },

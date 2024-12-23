@@ -341,6 +341,24 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
     widget.callback?.(widget.value)
   })
 
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseDown(event)
+    }
+  })
+
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
+    if ((event.buttons & 4) === 4) {
+      app.canvas.processMouseMove(event)
+    }
+  })
+
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseUp(event)
+    }
+  })
+
   return { minWidth: 400, minHeight: 200, widget }
 }
 
@@ -490,7 +508,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     function showImage(name) {
       const img = new Image()
       img.onload = () => {
-        // @ts-expect-error
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
       }
@@ -503,7 +520,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       img.src = api.apiURL(
         `/view?filename=${encodeURIComponent(name)}&type=input&subfolder=${subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`
       )
-      // @ts-expect-error
       node.setSizeForImage?.()
     }
 

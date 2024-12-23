@@ -84,11 +84,9 @@ app.registerExtension({
 
       const img = new Image()
       img.onload = () => {
-        // @ts-expect-error adding extra property
         node.imgs = [img]
         app.graph.setDirtyCanvas(true)
         requestAnimationFrame(() => {
-          // @ts-expect-error accessing extra property
           node.setSizeForImage?.()
         })
       }
@@ -109,7 +107,6 @@ app.registerExtension({
     camera.serializeValue = async () => {
       if (captureOnQueue.value) {
         capture()
-        // @ts-expect-error accessing extra property
       } else if (!node.imgs?.length) {
         const err = `No webcam image captured`
         useToastStore().addAlert(err)

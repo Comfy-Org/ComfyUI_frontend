@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "Кодирует текст и устанавливает условие разрешения для PixArt Alpha. Не применяется к PixArt Sigma.",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "text": {
+        "name": "текст"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "Кодирование текста CLIP SD3",
     "inputs": {
@@ -647,6 +665,31 @@
       },
       "start": {
         "name": "начало"
+      }
+    }
+  },
+  "ConditioningStableAudio": {
+    "display_name": "ConditioningStableAudio",
+    "inputs": {
+      "negative": {
+        "name": "отрицательный"
+      },
+      "positive": {
+        "name": "положительный"
+      },
+      "seconds_start": {
+        "name": "секунды_начала"
+      },
+      "seconds_total": {
+        "name": "всего_секунд"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный"
+      },
+      "1": {
+        "name": "отрицательный"
       }
     }
   },
@@ -1081,6 +1124,14 @@
       }
     }
   },
+  "DevToolsSimpleSlider": {
+    "display_name": "Простой Слайдер",
+    "inputs": {
+      "value": {
+        "name": "значение"
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
     "inputs": {
@@ -1146,6 +1197,23 @@
       },
       "type": {
         "name": "тип"
+      }
+    }
+  },
+  "EmptyHunyuanLatentVideo": {
+    "display_name": "ПустойHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "width": {
+        "name": "ширина"
       }
     }
   },
@@ -2278,6 +2346,107 @@
       },
       "upscale_method": {
         "name": "метод_масштабирования"
+      }
+    }
+  },
+  "Load3D": {
+    "display_name": "Загрузить 3D",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "camera_type": {
+        "name": "тип_камеры"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "light_intensity": {
+        "name": "интенсивность_света"
+      },
+      "material": {
+        "name": "материал"
+      },
+      "model_file": {
+        "name": "файл_модели"
+      },
+      "show_grid": {
+        "name": "показать_сетку"
+      },
+      "up_direction": {
+        "name": "направление_вверх"
+      },
+      "view": {
+        "name": "вид"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображение"
+      },
+      "1": {
+        "name": "маска"
+      },
+      "2": {
+        "name": "путь_сетки"
+      }
+    }
+  },
+  "Load3DAnimation": {
+    "display_name": "Загрузить 3D - Анимация",
+    "inputs": {
+      "animation_speed": {
+        "name": "скорость_анимации"
+      },
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "camera_type": {
+        "name": "тип_камеры"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "light_intensity": {
+        "name": "интенсивность_света"
+      },
+      "material": {
+        "name": "материал"
+      },
+      "model_file": {
+        "name": "файл_модели"
+      },
+      "show_grid": {
+        "name": "показать_сетку"
+      },
+      "up_direction": {
+        "name": "направление_вверх"
+      },
+      "view": {
+        "name": "вид"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "изображение"
+      },
+      "1": {
+        "name": "маска"
+      },
+      "2": {
+        "name": "путь_сетки"
       }
     }
   },
@@ -4054,6 +4223,35 @@
       }
     }
   },
+  "Preview3D": {
+    "display_name": "Предварительный просмотр 3D",
+    "inputs": {
+      "bg_color": {
+        "name": "цвет_фона"
+      },
+      "camera_type": {
+        "name": "тип_камеры"
+      },
+      "light_intensity": {
+        "name": "интенсивность_света"
+      },
+      "material": {
+        "name": "материал"
+      },
+      "model_file": {
+        "name": "файл_модели"
+      },
+      "show_grid": {
+        "name": "показать_сетку"
+      },
+      "up_direction": {
+        "name": "направление_вверх"
+      },
+      "view": {
+        "name": "вид"
+      }
+    }
+  },
   "PreviewAudio": {
     "display_name": "Предварительный просмотр аудио",
     "inputs": {
@@ -5139,6 +5337,9 @@
   "VAEEncodeTiled": {
     "display_name": "Кодировать VAE (плитками)",
     "inputs": {
+      "overlap": {
+        "name": "перекрытие"
+      },
       "pixels": {
         "name": "пиксели"
       },

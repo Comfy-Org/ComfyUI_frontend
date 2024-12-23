@@ -397,7 +397,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Opened workflows position',
     type: 'combo',
     options: ['Sidebar', 'Topbar'],
-    defaultValue: 'Sidebar'
+    defaultValue: 'Topbar'
   },
   {
     id: 'Comfy.Graph.CanvasMenu',
@@ -434,14 +434,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Disabled extension names',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.3.11'
-  },
-  {
-    id: 'Comfy.Settings.ExtensionPanel',
-    name: 'Show extension panel in settings dialog',
-    type: 'boolean',
-    defaultValue: false,
-    experimental: true,
     versionAdded: '1.3.11'
   },
   {

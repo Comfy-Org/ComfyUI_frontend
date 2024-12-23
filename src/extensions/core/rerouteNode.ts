@@ -35,6 +35,7 @@ app.registerExtension({
         }
 
         this.onConnectionsChange = (type, index, connected, link_info) => {
+          if (app.configuringGraph) return
           this.applyOrientation()
 
           // Prevent multiple connections to different types when we have no input

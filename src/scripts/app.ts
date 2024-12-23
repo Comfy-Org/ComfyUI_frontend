@@ -21,7 +21,7 @@ import {
   type NodeId,
   validateComfyWorkflow
 } from '@/types/comfyWorkflow'
-import type { ComfyNodeDef } from '@/types/apiTypes'
+import type { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
@@ -121,7 +121,7 @@ export class ComfyApp {
   extensions: ComfyExtension[]
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
-  nodePreviewImages: Record<string, typeof Image>
+  nodePreviewImages: Record<string, string[]>
   graph: LGraph
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null
@@ -590,9 +590,13 @@ export class ComfyApp {
       options.push({
         content: 'Bypass',
         callback: (obj) => {
-          if (this.mode === LGraphEventMode.BYPASS)
-            this.mode = LGraphEventMode.ALWAYS
-          else this.mode = LGraphEventMode.BYPASS
+          const mode =
+            this.mode === LGraphEventMode.BYPASS
+              ? LGraphEventMode.ALWAYS
+              : LGraphEventMode.BYPASS
+          for (const item of app.canvas.selectedItems) {
+            if (item instanceof LGraphNode) item.mode = mode
+          }
           this.graph.change()
         }
       })
@@ -674,32 +678,36 @@ export class ComfyApp {
    * e.g. Draws images and handles thumbnail navigation on nodes that output images
    * @param {*} node The node to add the draw handler
    */
-  #addDrawBackgroundHandler(node) {
+  #addDrawBackgroundHandler(node: typeof LGraphNode) {
     const app = this
 
-    function getImageTop(node) {
-      let shiftY
+    function getImageTop(node: LGraphNode) {
+      let shiftY: number
       if (node.imageOffset != null) {
-        shiftY = node.imageOffset
-      } else {
-        if (node.widgets?.length) {
-          const w = node.widgets[node.widgets.length - 1]
-          shiftY = w.last_y
-          if (w.computeSize) {
-            shiftY += w.computeSize()[1] + 4
-          } else if (w.computedHeight) {
-            shiftY += w.computedHeight
-          } else {
-            shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
-          }
+        return node.imageOffset
+      } else if (node.widgets?.length) {
+        const w = node.widgets[node.widgets.length - 1]
+        shiftY = w.last_y
+        if (w.computeSize) {
+          // @ts-expect-error
+          shiftY += w.computeSize()[1] + 4
+          // @ts-expect-error
+        } else if (w.computedHeight) {
+          // @ts-expect-error
+          shiftY += w.computedHeight
         } else {
-          shiftY = node.computeSize()[1]
+          shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
         }
+      } else {
+        return node.computeSize()[1]
       }
       return shiftY
     }
 
-    node.prototype.setSizeForImage = function (force) {
+    node.prototype.setSizeForImage = function (
+      this: LGraphNode,
+      force: boolean
+    ) {
       if (!force && this.animatedImages) return
 
       if (this.inputHeight || this.freeWidgetSpace > 210) {
@@ -712,316 +720,322 @@ export class ComfyApp {
       }
     }
 
-    function unsafeDrawBackground(ctx) {
-      if (!this.flags.collapsed) {
-        let imgURLs = []
-        let imagesChanged = false
+    function unsafeDrawBackground(
+      this: LGraphNode,
+      ctx: CanvasRenderingContext2D
+    ) {
+      if (this.flags.collapsed) return
 
-        const output = app.nodeOutputs[this.id + '']
-        if (output?.images) {
-          this.animatedImages = output?.animated?.find(Boolean)
-          if (this.images !== output.images) {
-            this.images = output.images
-            imagesChanged = true
-            imgURLs = imgURLs.concat(
-              output.images.map((params) => {
-                return api.apiURL(
-                  '/view?' +
-                    new URLSearchParams(params).toString() +
-                    (this.animatedImages ? '' : app.getPreviewFormatParam()) +
-                    app.getRandParam()
-                )
-              })
-            )
-          }
+      const imgURLs: (string[] | string)[] = []
+      let imagesChanged = false
+
+      const output: ExecutedWsMessage['output'] = app.nodeOutputs[this.id + '']
+      if (output?.images && this.images !== output.images) {
+        this.animatedImages = output?.animated?.find(Boolean)
+        this.images = output.images
+        imagesChanged = true
+        const preview = this.animatedImages ? '' : app.getPreviewFormatParam()
+
+        for (const params of output.images) {
+          const imgUrlPart = new URLSearchParams(params).toString()
+          const rand = app.getRandParam()
+          const imgUrl = api.apiURL(`/view?${imgUrlPart}${preview}${rand}`)
+          imgURLs.push(imgUrl)
         }
+      }
 
-        const preview = app.nodePreviewImages[this.id + '']
-        if (this.preview !== preview) {
-          this.preview = preview
-          imagesChanged = true
-          if (preview != null) {
-            imgURLs.push(preview)
-          }
+      const preview = app.nodePreviewImages[this.id + '']
+      if (this.preview !== preview) {
+        this.preview = preview
+        imagesChanged = true
+        if (preview != null) {
+          imgURLs.push(preview)
         }
+      }
 
-        if (imagesChanged) {
-          this.imageIndex = null
-          if (imgURLs.length > 0) {
-            Promise.all(
-              imgURLs.map((src) => {
-                return new Promise((r) => {
-                  const img = new Image()
-                  img.onload = () => r(img)
-                  img.onerror = () => r(null)
-                  img.src = src
-                })
+      if (imagesChanged) {
+        this.imageIndex = null
+        if (imgURLs.length > 0) {
+          Promise.all(
+            imgURLs.map((src) => {
+              return new Promise<HTMLImageElement | null>((r) => {
+                const img = new Image()
+                img.onload = () => r(img)
+                img.onerror = () => r(null)
+                // @ts-expect-error
+                img.src = src
               })
-            ).then((imgs) => {
-              if (
-                (!output || this.images === output.images) &&
-                (!preview || this.preview === preview)
-              ) {
-                this.imgs = imgs.filter(Boolean)
-                this.setSizeForImage?.()
-                app.graph.setDirtyCanvas(true)
-              }
             })
-          } else {
-            this.imgs = null
-          }
-        }
-
-        const is_all_same_aspect_ratio = (imgs) => {
-          // assume: imgs.length >= 2
-          let ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
-
-          for (let i = 1; i < imgs.length; i++) {
-            let this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
-            if (ratio != this_ratio) return false
-          }
-
-          return true
-        }
-
-        if (this.imgs?.length) {
-          const widgetIdx = this.widgets?.findIndex(
-            (w) => w.name === ANIM_PREVIEW_WIDGET
-          )
-
-          if (this.animatedImages) {
-            // Instead of using the canvas we'll use a IMG
-            if (widgetIdx > -1) {
-              // Replace content
-              const widget = this.widgets[widgetIdx]
-              widget.options.host.updateImages(this.imgs)
-            } else {
-              const host = createImageHost(this)
-              this.setSizeForImage(true)
-              const widget = this.addDOMWidget(
-                ANIM_PREVIEW_WIDGET,
-                'img',
-                host.el,
-                {
-                  host,
-                  getHeight: host.getHeight,
-                  onDraw: host.onDraw,
-                  hideOnZoom: false
-                }
-              )
-              widget.serializeValue = () => undefined
-              widget.options.host.updateImages(this.imgs)
-            }
-            return
-          }
-
-          if (widgetIdx > -1) {
-            this.widgets[widgetIdx].onRemove?.()
-            this.widgets.splice(widgetIdx, 1)
-          }
-
-          const canvas = app.graph.list_of_graphcanvas[0]
-          const mouse = canvas.graph_mouse
-          if (!canvas.pointer_is_down && this.pointerDown) {
+          ).then((imgs) => {
             if (
-              mouse[0] === this.pointerDown.pos[0] &&
-              mouse[1] === this.pointerDown.pos[1]
+              (!output || this.images === output.images) &&
+              (!preview || this.preview === preview)
             ) {
-              this.imageIndex = this.pointerDown.index
+              this.imgs = imgs.filter(Boolean)
+              this.setSizeForImage?.()
+              app.graph.setDirtyCanvas(true)
             }
-            this.pointerDown = null
+          })
+        } else {
+          this.imgs = null
+        }
+      }
+
+      const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]) => {
+        // assume: imgs.length >= 2
+        const ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
+
+        for (let i = 1; i < imgs.length; i++) {
+          const this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
+          if (ratio != this_ratio) return false
+        }
+
+        return true
+      }
+
+      // Nothing to do
+      if (!this.imgs?.length) return
+
+      const widgetIdx = this.widgets?.findIndex(
+        (w) => w.name === ANIM_PREVIEW_WIDGET
+      )
+
+      if (this.animatedImages) {
+        // Instead of using the canvas we'll use a IMG
+        if (widgetIdx > -1) {
+          // Replace content
+          const widget = this.widgets[widgetIdx] as IWidget & {
+            options: { host: ReturnType<typeof createImageHost> }
           }
+          widget.options.host.updateImages(this.imgs)
+        } else {
+          const host = createImageHost(this)
+          this.setSizeForImage(true)
+          const widget = this.addDOMWidget(
+            ANIM_PREVIEW_WIDGET,
+            'img',
+            host.el,
+            {
+              host,
+              getHeight: host.getHeight,
+              onDraw: host.onDraw,
+              hideOnZoom: false
+            }
+          )
+          widget.serializeValue = () => undefined
+          widget.options.host.updateImages(this.imgs)
+        }
+        return
+      }
 
-          let imageIndex = this.imageIndex
-          const numImages = this.imgs.length
-          if (numImages === 1 && !imageIndex) {
-            this.imageIndex = imageIndex = 0
+      if (widgetIdx > -1) {
+        this.widgets[widgetIdx].onRemove?.()
+        this.widgets.splice(widgetIdx, 1)
+      }
+
+      const canvas = app.graph.list_of_graphcanvas[0]
+      const mouse = canvas.graph_mouse
+      if (!canvas.pointer_is_down && this.pointerDown) {
+        if (
+          mouse[0] === this.pointerDown.pos[0] &&
+          mouse[1] === this.pointerDown.pos[1]
+        ) {
+          this.imageIndex = this.pointerDown.index
+        }
+        this.pointerDown = null
+      }
+
+      let { imageIndex } = this
+      const numImages = this.imgs.length
+      if (numImages === 1 && !imageIndex) {
+        // This skips the thumbnail render section below
+        this.imageIndex = imageIndex = 0
+      }
+
+      const shiftY = getImageTop(this)
+
+      const dw = this.size[0]
+      const dh = this.size[1] - shiftY
+
+      if (imageIndex == null) {
+        // No image selected; draw thumbnails of all
+        let cellWidth: number
+        let cellHeight: number
+        let shiftX: number
+        let cell_padding: number
+        let cols: number
+
+        const compact_mode = is_all_same_aspect_ratio(this.imgs)
+        if (!compact_mode) {
+          // use rectangle cell style and border line
+          cell_padding = 2
+          // Prevent infinite canvas2d scale-up
+          const largestDimension = this.imgs.reduce(
+            (acc, current) =>
+              Math.max(acc, current.naturalWidth, current.naturalHeight),
+            0
+          )
+          const fakeImgs = []
+          fakeImgs.length = this.imgs.length
+          fakeImgs[0] = {
+            naturalWidth: largestDimension,
+            naturalHeight: largestDimension
           }
+          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
+            fakeImgs,
+            dw,
+            dh
+          ))
+        } else {
+          cell_padding = 0
+          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
+            this.imgs,
+            dw,
+            dh
+          ))
+        }
 
-          const top = getImageTop(this)
-          var shiftY = top
-
-          let dw = this.size[0]
-          let dh = this.size[1]
-          dh -= shiftY
-
-          if (imageIndex == null) {
-            var cellWidth, cellHeight, shiftX, cell_padding, cols
-
-            const compact_mode = is_all_same_aspect_ratio(this.imgs)
-            if (!compact_mode) {
-              // use rectangle cell style and border line
-              cell_padding = 2
-              // Prevent infinite canvas2d scale-up
-              const largestDimension = this.imgs.reduce(
-                (acc, current) =>
-                  Math.max(acc, current.naturalWidth, current.naturalHeight),
-                0
-              )
-              const fakeImgs = []
-              fakeImgs.length = this.imgs.length
-              fakeImgs[0] = {
-                naturalWidth: largestDimension,
-                naturalHeight: largestDimension
-              }
-              ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-                fakeImgs,
-                dw,
-                dh
-              ))
-            } else {
-              cell_padding = 0
-              ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-                this.imgs,
-                dw,
-                dh
-              ))
-            }
-
-            let anyHovered = false
-            this.imageRects = []
-            for (let i = 0; i < numImages; i++) {
-              const img = this.imgs[i]
-              const row = Math.floor(i / cols)
-              const col = i % cols
-              const x = col * cellWidth + shiftX
-              const y = row * cellHeight + shiftY
-              if (!anyHovered) {
-                anyHovered = LiteGraph.isInsideRectangle(
-                  mouse[0],
-                  mouse[1],
-                  x + this.pos[0],
-                  y + this.pos[1],
-                  cellWidth,
-                  cellHeight
-                )
-                if (anyHovered) {
-                  this.overIndex = i
-                  let value = 110
-                  if (canvas.pointer_is_down) {
-                    if (!this.pointerDown || this.pointerDown.index !== i) {
-                      this.pointerDown = { index: i, pos: [...mouse] }
-                    }
-                    value = 125
-                  }
-                  ctx.filter = `contrast(${value}%) brightness(${value}%)`
-                  canvas.canvas.style.cursor = 'pointer'
-                }
-              }
-              this.imageRects.push([x, y, cellWidth, cellHeight])
-
-              let wratio = cellWidth / img.width
-              let hratio = cellHeight / img.height
-              var ratio = Math.min(wratio, hratio)
-
-              let imgHeight = ratio * img.height
-              let imgY =
-                row * cellHeight + shiftY + (cellHeight - imgHeight) / 2
-              let imgWidth = ratio * img.width
-              let imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
-
-              ctx.drawImage(
-                img,
-                imgX + cell_padding,
-                imgY + cell_padding,
-                imgWidth - cell_padding * 2,
-                imgHeight - cell_padding * 2
-              )
-              if (!compact_mode) {
-                // rectangle cell and border line style
-                ctx.strokeStyle = '#8F8F8F'
-                ctx.lineWidth = 1
-                ctx.strokeRect(
-                  x + cell_padding,
-                  y + cell_padding,
-                  cellWidth - cell_padding * 2,
-                  cellHeight - cell_padding * 2
-                )
-              }
-
-              ctx.filter = 'none'
-            }
-
-            if (!anyHovered) {
-              this.pointerDown = null
-              this.overIndex = null
-            }
-          } else {
-            // Draw individual
-            let w = this.imgs[imageIndex].naturalWidth
-            let h = this.imgs[imageIndex].naturalHeight
-
-            const scaleX = dw / w
-            const scaleY = dh / h
-            const scale = Math.min(scaleX, scaleY, 1)
-
-            w *= scale
-            h *= scale
-
-            let x = (dw - w) / 2
-            let y = (dh - h) / 2 + shiftY
-            ctx.drawImage(this.imgs[imageIndex], x, y, w, h)
-
-            const drawButton = (x, y, sz, text) => {
-              const hovered = LiteGraph.isInsideRectangle(
-                mouse[0],
-                mouse[1],
-                x + this.pos[0],
-                y + this.pos[1],
-                sz,
-                sz
-              )
-              let fill = '#333'
-              let textFill = '#fff'
-              let isClicking = false
-              if (hovered) {
-                canvas.canvas.style.cursor = 'pointer'
-                if (canvas.pointer_is_down) {
-                  fill = '#1e90ff'
-                  isClicking = true
-                } else {
-                  fill = '#eee'
-                  textFill = '#000'
-                }
-              } else {
-                this.pointerWasDown = null
-              }
-
-              ctx.fillStyle = fill
-              ctx.beginPath()
-              ctx.roundRect(x, y, sz, sz, [4])
-              ctx.fill()
-              ctx.fillStyle = textFill
-              ctx.font = '12px Arial'
-              ctx.textAlign = 'center'
-              ctx.fillText(text, x + 15, y + 20)
-
-              return isClicking
-            }
-
-            if (numImages > 1) {
-              if (
-                drawButton(
-                  dw - 40,
-                  dh + top - 40,
-                  30,
-                  `${this.imageIndex + 1}/${numImages}`
-                )
-              ) {
-                let i =
-                  this.imageIndex + 1 >= numImages ? 0 : this.imageIndex + 1
-                if (!this.pointerDown || !this.pointerDown.index === i) {
+        let anyHovered = false
+        this.imageRects = []
+        for (let i = 0; i < numImages; i++) {
+          const img = this.imgs[i]
+          const row = Math.floor(i / cols)
+          const col = i % cols
+          const x = col * cellWidth + shiftX
+          const y = row * cellHeight + shiftY
+          if (!anyHovered) {
+            anyHovered = LiteGraph.isInsideRectangle(
+              mouse[0],
+              mouse[1],
+              x + this.pos[0],
+              y + this.pos[1],
+              cellWidth,
+              cellHeight
+            )
+            if (anyHovered) {
+              this.overIndex = i
+              let value = 110
+              if (canvas.pointer_is_down) {
+                if (!this.pointerDown || this.pointerDown.index !== i) {
                   this.pointerDown = { index: i, pos: [...mouse] }
                 }
+                value = 125
               }
-
-              if (drawButton(dw - 40, top + 10, 30, `x`)) {
-                if (!this.pointerDown || !this.pointerDown.index === null) {
-                  this.pointerDown = { index: null, pos: [...mouse] }
-                }
-              }
+              ctx.filter = `contrast(${value}%) brightness(${value}%)`
+              canvas.canvas.style.cursor = 'pointer'
             }
           }
+          this.imageRects.push([x, y, cellWidth, cellHeight])
+
+          const wratio = cellWidth / img.width
+          const hratio = cellHeight / img.height
+          const ratio = Math.min(wratio, hratio)
+
+          const imgHeight = ratio * img.height
+          const imgY = row * cellHeight + shiftY + (cellHeight - imgHeight) / 2
+          const imgWidth = ratio * img.width
+          const imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
+
+          ctx.drawImage(
+            img,
+            imgX + cell_padding,
+            imgY + cell_padding,
+            imgWidth - cell_padding * 2,
+            imgHeight - cell_padding * 2
+          )
+          if (!compact_mode) {
+            // rectangle cell and border line style
+            ctx.strokeStyle = '#8F8F8F'
+            ctx.lineWidth = 1
+            ctx.strokeRect(
+              x + cell_padding,
+              y + cell_padding,
+              cellWidth - cell_padding * 2,
+              cellHeight - cell_padding * 2
+            )
+          }
+
+          ctx.filter = 'none'
+        }
+
+        if (!anyHovered) {
+          this.pointerDown = null
+          this.overIndex = null
+        }
+
+        return
+      }
+      // Draw individual
+      let w = this.imgs[imageIndex].naturalWidth
+      let h = this.imgs[imageIndex].naturalHeight
+
+      const scaleX = dw / w
+      const scaleY = dh / h
+      const scale = Math.min(scaleX, scaleY, 1)
+
+      w *= scale
+      h *= scale
+
+      const x = (dw - w) / 2
+      const y = (dh - h) / 2 + shiftY
+      ctx.drawImage(this.imgs[imageIndex], x, y, w, h)
+
+      const drawButton = (
+        x: number,
+        y: number,
+        sz: number,
+        text: string
+      ): boolean => {
+        const hovered = LiteGraph.isInsideRectangle(
+          mouse[0],
+          mouse[1],
+          x + this.pos[0],
+          y + this.pos[1],
+          sz,
+          sz
+        )
+        let fill = '#333'
+        let textFill = '#fff'
+        let isClicking = false
+        if (hovered) {
+          canvas.canvas.style.cursor = 'pointer'
+          if (canvas.pointer_is_down) {
+            fill = '#1e90ff'
+            isClicking = true
+          } else {
+            fill = '#eee'
+            textFill = '#000'
+          }
+        }
+
+        ctx.fillStyle = fill
+        ctx.beginPath()
+        ctx.roundRect(x, y, sz, sz, [4])
+        ctx.fill()
+        ctx.fillStyle = textFill
+        ctx.font = '12px Arial'
+        ctx.textAlign = 'center'
+        ctx.fillText(text, x + 15, y + 20)
+
+        return isClicking
+      }
+
+      if (!(numImages > 1)) return
+
+      const imageNum = this.imageIndex + 1
+      if (
+        drawButton(dw - 40, dh + shiftY - 40, 30, `${imageNum}/${numImages}`)
+      ) {
+        const i = imageNum >= numImages ? 0 : imageNum
+        // @ts-expect-error
+        if (!this.pointerDown || !this.pointerDown.index === i) {
+          this.pointerDown = { index: i, pos: [...mouse] }
+        }
+      }
+
+      if (drawButton(dw - 40, shiftY + 10, 30, `x`)) {
+        if (!this.pointerDown || !this.pointerDown.index === null) {
+          this.pointerDown = { index: null, pos: [...mouse] }
         }
       }
     }
@@ -1537,6 +1551,7 @@ export class ComfyApp {
     api.addEventListener('executing', ({ detail }) => {
       this.progress = null
       this.graph.setDirtyCanvas(true, false)
+      this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
     })
 
@@ -1579,7 +1594,8 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
-      // @ts-expect-error
+      // Ensure clean up if `executing` event is missed.
+      this.revokePreviews(id)
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -1598,52 +1614,6 @@ export class ComfyApp {
         app.configuringGraph = false
       }
     }
-  }
-
-  #addWidgetLinkHandling() {
-    app.canvas.getWidgetLinkType = function (widget, node) {
-      const nodeDefStore = useNodeDefStore()
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs.getInput(widget.name)
-      return input?.type
-    }
-
-    type ConnectingWidgetLink = {
-      subType: 'connectingWidgetLink'
-      widget: IWidget
-      node: LGraphNode
-      link: { node: LGraphNode; slot: number }
-    }
-
-    document.addEventListener(
-      'litegraph:canvas',
-      async (e: CustomEvent<ConnectingWidgetLink>) => {
-        if (e.detail.subType === 'connectingWidgetLink') {
-          const { convertToInput } = await import(
-            '@/extensions/core/widgetInputs'
-          )
-
-          const { node, link, widget } = e.detail
-          if (!node || !link || !widget) return
-
-          const nodeData = node.constructor.nodeData
-          if (!nodeData) return
-          const all = {
-            ...nodeData?.input?.required,
-            ...nodeData?.input?.optional
-          }
-          const inputSpec = all[widget.name]
-          if (!inputSpec) return
-
-          const input = convertToInput(node, widget, inputSpec)
-          if (!input) return
-
-          const originNode = link.node
-
-          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
-        }
-      }
-    )
   }
 
   #addAfterConfigureHandler() {
@@ -1670,13 +1640,15 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
-    useExtensionStore().loadDisabledExtensionNames()
+    const extensionStore = useExtensionStore()
+    extensionStore.loadDisabledExtensionNames()
 
     const extensions = await api.getExtensions()
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
     await import('../extensions/core/index')
+    extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes('extensions/core'))
@@ -1772,7 +1744,6 @@ export class ComfyApp {
     this.#addDropHandler()
     this.#addCopyHandler()
     this.#addPasteHandler()
-    this.#addWidgetLinkHandling()
 
     await this.#invokeExtensionsAsync('setup')
   }
@@ -1942,7 +1913,7 @@ export class ComfyApp {
               : { shape: LiteGraph.SlotShape.HollowCircle }
             const inputOptions = {
               ...shapeOptions,
-              label: st(nameKey, inputName)
+              localized_name: st(nameKey, inputName)
             }
             this.addInput(inputName, type, inputOptions)
             widgetCreated = false
@@ -1984,7 +1955,7 @@ export class ComfyApp {
             // e.g.
             // - type ("INT"); name ("Positive") => translate name
             // - type ("FLOAT"); name ("FLOAT") => translate type
-            label:
+            localized_name:
               output !== outputName
                 ? st(nameKey, outputName)
                 : st(typeKey, outputName)
@@ -2002,7 +1973,7 @@ export class ComfyApp {
       }
 
       configure(data: any) {
-        // Keep 'name', 'type', 'shape', and 'label' information from the original node definition.
+        // Keep 'name', 'type', 'shape', and 'localized_name' information from the original node definition.
         const merge = (
           current: Record<string, any>,
           incoming: Record<string, any>
@@ -2013,7 +1984,7 @@ export class ComfyApp {
             this.inputs.push(current as INodeInputSlot)
             return incoming
           }
-          for (const key of ['name', 'type', 'shape', 'label']) {
+          for (const key of ['name', 'type', 'shape', 'localized_name']) {
             if (current[key] !== undefined) {
               result[key] = current[key]
             }
@@ -2353,6 +2324,17 @@ export class ComfyApp {
     }
 
     const workflow = this.serializeGraph(graph)
+
+    // Remove localized_name from the workflow
+    for (const node of workflow.nodes) {
+      for (const slot of node.inputs) {
+        delete slot.localized_name
+      }
+      for (const slot of node.outputs) {
+        delete slot.localized_name
+      }
+    }
+
     const output = {}
     // Process nodes in order of execution
     for (const outerNode of graph.computeExecutionOrder(false)) {
@@ -2863,10 +2845,23 @@ export class ComfyApp {
   }
 
   /**
+   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
+   * @param nodeId ID of the node to revoke all preview images of
+   */
+  revokePreviews(nodeId: NodeId) {
+    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
+    for (const url of this.nodePreviewImages[nodeId]) {
+      URL.revokeObjectURL(url)
+    }
+  }
+  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
+    for (const id of Object.keys(this.nodePreviewImages)) {
+      this.revokePreviews(id)
+    }
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null

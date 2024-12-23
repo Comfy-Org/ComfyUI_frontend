@@ -34,6 +34,8 @@ There are two ways to run the tests:
    ```
    This opens a user interface where you can select specific tests to run and inspect the test execution timeline.
 
+   To run the same test multiple times in Playwright's UI mode, you must launch the main ComfyUI process with the `--multi-user` flag.
+
    ![Playwright UI Mode](https://github.com/user-attachments/assets/6a1ebef0-90eb-4157-8694-f5ee94d03755)
 
 ## Screenshot Expectations

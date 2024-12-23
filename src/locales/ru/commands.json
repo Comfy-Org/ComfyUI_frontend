@@ -23,6 +23,9 @@
   "Comfy-Desktop_OpenFeedbackPage": {
     "label": "Обратная связь"
   },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Руководство пользователя для рабочего стола"
+  },
   "Comfy-Desktop_Reinstall": {
     "label": "Переустановить"
   },
@@ -91,6 +94,9 @@
   },
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
     "label": "Разгруппировать выбранные групповые узлы"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Открыть о ComfyUI"
   },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Открыть Comfy-Org Discord"
