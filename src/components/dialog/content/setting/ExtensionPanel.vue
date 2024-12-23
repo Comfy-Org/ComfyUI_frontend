@@ -5,7 +5,12 @@
         v-model="filters['global'].value"
         :placeholder="$t('g.searchExtensions') + '...'"
       />
-      <Message v-if="hasChanges" severity="info" pt:text="w-full">
+      <Message
+        v-if="hasChanges"
+        severity="info"
+        pt:text="w-full"
+        class="max-h-96 overflow-y-auto"
+      >
         <ul>
           <li v-for="ext in changedExtensions" :key="ext.name">
             <span>
@@ -48,9 +53,7 @@
         </template>
         <template #body="slotProps">
           <ToggleSwitch
-            :disabled="
-              extensionStore.isExtensionAlwaysEnabled(slotProps.data.name)
-            "
+            :disabled="extensionStore.isExtensionReadOnly(slotProps.data.name)"
             v-model="editingEnabledExtensions[slotProps.data.name]"
             @change="updateExtensionStatus"
           />
@@ -117,6 +120,8 @@ const updateExtensionStatus = () => {
 
 const enableAllExtensions = () => {
   extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
     editingEnabledExtensions.value[ext.name] = true
   })
   updateExtensionStatus()
@@ -124,7 +129,16 @@ const enableAllExtensions = () => {
 
 const disableAllExtensions = () => {
   extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionAlwaysEnabled(ext.name)) return
+    if (extensionStore.isExtensionReadOnly(ext.name)) return
+
+    editingEnabledExtensions.value[ext.name] = false
+  })
+  updateExtensionStatus()
+}
+
+const disableThirdPartyExtensions = () => {
+  extensionStore.extensions.forEach((ext) => {
+    if (extensionStore.isCoreExtension(ext.name)) return
 
     editingEnabledExtensions.value[ext.name] = false
   })
@@ -147,6 +161,12 @@ const contextMenuItems = [
     label: 'Disable All',
     icon: 'pi pi-times',
     command: disableAllExtensions
+  },
+  {
+    label: 'Disable 3rd Party',
+    icon: 'pi pi-times',
+    command: disableThirdPartyExtensions,
+    disabled: !extensionStore.hasThirdPartyExtensions
   }
 ]
 </script>

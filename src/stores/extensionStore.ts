@@ -19,6 +19,17 @@ export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [
   'Comfy.ColorPalette'
 ]
 
+export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
+  // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
+  // https://github.com/Comfy-Org/litegraph.js/pull/117
+  'pysssss.Locking',
+  // pysssss.SnapToGrid is replaced by Comfy.Graph.AlwaysSnapToGrid in ComfyUI core.
+  // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
+  // allowed since v1.3.12.
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
+  'pysssss.SnapToGrid'
+]
+
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
   const extensionByName = ref<Record<string, ComfyExtension>>({})
@@ -42,8 +53,11 @@ export const useExtensionStore = defineStore('extension', () => {
     return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
   })
 
-  function isExtensionAlwaysEnabled(name: string) {
-    return ALWAYS_ENABLED_EXTENSIONS.includes(name)
+  function isExtensionReadOnly(name: string) {
+    return (
+      ALWAYS_DISABLED_EXTENSIONS.includes(name) ||
+      ALWAYS_ENABLED_EXTENSIONS.includes(name)
+    )
   }
 
   function registerExtension(extension: ComfyExtension) {
@@ -86,19 +100,30 @@ export const useExtensionStore = defineStore('extension', () => {
     disabledExtensionNames.value = new Set(
       useSettingStore().get('Comfy.Extension.Disabled')
     )
-    // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    disabledExtensionNames.value.add('pysssss.Locking')
-    // pysssss.SnapToGrid is replaced by Comfy.Graph.AlwaysSnapToGrid in ComfyUI core.
-    // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
-    // allowed since v1.3.12.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
-    disabledExtensionNames.value.add('pysssss.SnapToGrid')
-
+    for (const name of ALWAYS_DISABLED_EXTENSIONS) {
+      disabledExtensionNames.value.add(name)
+    }
     for (const name of ALWAYS_ENABLED_EXTENSIONS) {
       disabledExtensionNames.value.delete(name)
     }
   }
+
+  /**
+   * Core extensions are extensions that are defined in the core package.
+   * See /extensions/core/index.ts for the list.
+   */
+  const coreExtensionNames = ref<string[]>([])
+  function captureCoreExtensions() {
+    coreExtensionNames.value = app.extensions.map((ext) => ext.name)
+  }
+
+  function isCoreExtension(name: string) {
+    return coreExtensionNames.value.includes(name)
+  }
+
+  const hasThirdPartyExtensions = computed(() => {
+    return extensions.value.some((ext) => !isCoreExtension(ext.name))
+  })
 
   // Some core extensions are registered before the store is initialized, e.g.
   // colorPalette.
@@ -113,8 +138,11 @@ export const useExtensionStore = defineStore('extension', () => {
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionEnabled,
-    isExtensionAlwaysEnabled,
+    isExtensionReadOnly,
     registerExtension,
-    loadDisabledExtensionNames
+    loadDisabledExtensionNames,
+    captureCoreExtensions,
+    isCoreExtension,
+    hasThirdPartyExtensions
   }
 })

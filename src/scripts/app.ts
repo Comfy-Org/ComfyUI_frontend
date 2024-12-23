@@ -1640,13 +1640,15 @@ export class ComfyApp {
    * Loads all extensions from the API into the window in parallel
    */
   async #loadExtensions() {
-    useExtensionStore().loadDisabledExtensionNames()
+    const extensionStore = useExtensionStore()
+    extensionStore.loadDisabledExtensionNames()
 
     const extensions = await api.getExtensions()
 
     // Need to load core extensions first as some custom extensions
     // may depend on them.
     await import('../extensions/core/index')
+    extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
         .filter((extension) => !extension.includes('extensions/core'))
