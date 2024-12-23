@@ -38,9 +38,10 @@
       <Column :header="$t('g.extensionName')" sortable>
         <template #body="slotProps">
           {{ slotProps.data.name }}
-          <Tag v-if="extensionStore.isCoreExtension(slotProps.data.name)"
-            >Core</Tag
-          >
+          <Tag
+            v-if="extensionStore.isCoreExtension(slotProps.data.name)"
+            value="Core"
+          />
         </template>
       </Column>
       <Column
