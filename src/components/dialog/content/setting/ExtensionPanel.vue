@@ -35,7 +35,14 @@
       size="small"
       :filters="filters"
     >
-      <Column field="name" :header="$t('g.extensionName')" sortable></Column>
+      <Column :header="$t('g.extensionName')" sortable>
+        <template #body="slotProps">
+          {{ slotProps.data.name }}
+          <Tag v-if="extensionStore.isCoreExtension(slotProps.data.name)"
+            >Core</Tag
+          >
+        </template>
+      </Column>
       <Column
         :pt="{
           headerCell: 'flex items-center justify-end',
@@ -70,6 +77,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
+import Tag from 'primevue/tag'
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import Message from 'primevue/message'
