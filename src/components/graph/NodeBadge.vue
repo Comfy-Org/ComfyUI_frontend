@@ -18,7 +18,7 @@ import { LGraphBadge } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import type { Palette } from '@/types/colorPalette'
+import type { Palette } from '@/types/colorPaletteTypes'
 
 const settingStore = useSettingStore()
 const nodeSourceBadgeMode = computed(
