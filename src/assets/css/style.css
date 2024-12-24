@@ -148,6 +148,40 @@ body {
   font-size: var(--comfy-textarea-font-size);
 }
 
+.tiptap {
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
+  overflow: hidden;
+  overflow-y: auto;
+  resize: none;
+  border: none;
+  box-sizing: border-box;
+  font-size: var(--comfy-textarea-font-size);
+  height: 100%;
+  padding: 0.5em;
+}
+
+.tiptap :first-child {
+  margin-top: 0;
+}
+
+.tiptap :last-child {
+  margin-bottom: 0;
+}
+
+.tiptap blockquote {
+  border-left: medium solid;
+  margin-left: 1em;
+  padding-left: 0.5em;
+}
+
+.tiptap pre {
+  border: thin dotted;
+  border-radius: 0.5em;
+  margin: 0.5em;
+  padding: 0.5em;
+}
+
 .comfy-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
