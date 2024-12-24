@@ -5351,6 +5351,14 @@
       "pixels": {
         "name": "пиксели"
       },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Используется только для видео VAEs: количество кадров для перекрытия."
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Используется только для видео VAEs: количество кадров для кодирования за один раз."
+      },
       "tile_size": {
         "name": "размер_плитки"
       },

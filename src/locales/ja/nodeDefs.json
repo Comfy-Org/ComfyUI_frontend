@@ -5351,6 +5351,14 @@
       "pixels": {
         "name": "ピクセル"
       },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "ビデオVAE専用：重複するフレームの数。"
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "ビデオVAE専用：一度にエンコードするフレームの数。"
+      },
       "tile_size": {
         "name": "タイルサイズ"
       },
