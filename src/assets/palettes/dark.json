@@ -4,7 +4,7 @@
   "colors": {
     "node_slot": {
       "CLIP": "#FFD500",
-      "clip_vision": "#A8DADC",
+      "CLIP_VISION": "#A8DADC",
       "CLIP_VISION_OUTPUT": "#ad7452",
       "CONDITIONING": "#FFA931",
       "CONTROL_NET": "#6EE7B7",
