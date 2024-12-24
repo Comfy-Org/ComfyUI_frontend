@@ -1,0 +1,10 @@
+[
+    {
+        "name": "Three Nodes Template",
+        "data": "{\"nodes\":[{\"id\":7,\"type\":\"CLIPTextEncode\",\"pos\":[413,389],\"size\":[425.27801513671875,180.6060791015625],\"flags\":{},\"order\":3,\"mode\":0,\"inputs\":[{\"name\":\"clip\",\"type\":\"CLIP\",\"link\":null}],\"outputs\":[{\"name\":\"CONDITIONING\",\"type\":\"CONDITIONING\",\"links\":[],\"slot_index\":0}],\"properties\":{\"Node name for S&R\":\"CLIPTextEncode\"},\"widgets_values\":[\"text, watermark\"]},{\"id\":6,\"type\":\"CLIPTextEncode\",\"pos\":[415,186],\"size\":[422.84503173828125,164.31304931640625],\"flags\":{},\"order\":2,\"mode\":0,\"inputs\":[{\"name\":\"clip\",\"type\":\"CLIP\",\"link\":null}],\"outputs\":[{\"name\":\"CONDITIONING\",\"type\":\"CONDITIONING\",\"links\":[],\"slot_index\":0}],\"properties\":{\"Node name for S&R\":\"CLIPTextEncode\"},\"widgets_values\":[\"beautiful scenery nature glass bottle landscape, , purple galaxy bottle,\"]},{\"id\":4,\"type\":\"CheckpointLoaderSimple\",\"pos\":[26,474],\"size\":[315,98],\"flags\":{},\"order\":1,\"mode\":0,\"inputs\":[],\"outputs\":[{\"name\":\"MODEL\",\"type\":\"MODEL\",\"links\":[],\"slot_index\":0},{\"name\":\"CLIP\",\"type\":\"CLIP\",\"links\":[],\"slot_index\":1},{\"name\":\"VAE\",\"type\":\"VAE\",\"links\":[],\"slot_index\":2}],\"properties\":{\"Node name for S&R\":\"CheckpointLoaderSimple\"},\"widgets_values\":[\"v1-5-pruned-emaonly.ckpt\"]}],\"groups\":[],\"reroutes\":[],\"links\":[{\"id\":5,\"origin_id\":4,\"origin_slot\":1,\"target_id\":7,\"target_slot\":0,\"type\":\"CLIP\"},{\"id\":3,\"origin_id\":4,\"origin_slot\":1,\"target_id\":6,\"target_slot\":0,\"type\":\"CLIP\"}]}"
+    },
+    {
+        "name": "Completely empty template",
+        "data": "{\"nodes\":[],\"groups\":[],\"reroutes\":[],\"links\":[]}"
+    }
+]
