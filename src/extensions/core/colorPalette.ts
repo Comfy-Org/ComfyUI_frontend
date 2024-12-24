@@ -276,7 +276,19 @@ app.registerExtension({
               colorPalette.colors.litegraph_base.hasOwnProperty(key) &&
               LiteGraph.hasOwnProperty(key)
             ) {
-              LiteGraph[key] = colorPalette.colors.litegraph_base[key]
+              const value = colorPalette.colors.litegraph_base[key]
+              if (key === 'NODE_DEFAULT_SHAPE' && typeof value === 'string') {
+                console.warn(
+                  `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
+                    LiteGraph.BOX_SHAPE,
+                    LiteGraph.ROUND_SHAPE,
+                    LiteGraph.CARD_SHAPE
+                  ].join(', ')}] but got ${value}`
+                )
+                LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE
+              } else {
+                LiteGraph[key] = value
+              }
             }
           }
         }
