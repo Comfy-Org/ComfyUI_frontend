@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import { useToastStore } from '@/stores/toastStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPaletteTypes'
@@ -88,42 +89,8 @@ app.registerExtension({
         }, {})
     }
 
-    function getSlotTypes() {
-      var types = []
-
-      const defs = node_defs
-      for (const nodeId in defs) {
-        const nodeData = defs[nodeId]
-
-        var inputs = nodeData['input']['required']
-        if (nodeData['input']['optional'] !== undefined) {
-          inputs = Object.assign(
-            {},
-            nodeData['input']['required'],
-            nodeData['input']['optional']
-          )
-        }
-
-        for (const inputName in inputs) {
-          const inputData = inputs[inputName]
-          const type = inputData[0]
-
-          if (!Array.isArray(type)) {
-            types.push(type)
-          }
-        }
-
-        for (const o in nodeData['output']) {
-          const output = nodeData['output'][o]
-          types.push(output)
-        }
-      }
-
-      return types
-    }
-
     function completeColorPalette(colorPalette) {
-      var types = getSlotTypes()
+      const types = useNodeDefStore().nodeDataTypes
 
       for (const type of types) {
         if (!colorPalette.colors.node_slot[type]) {
