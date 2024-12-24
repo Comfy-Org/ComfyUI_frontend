@@ -5287,6 +5287,14 @@
       "samples": {
         "name": "样本"
       },
+      "temporal_overlap": {
+        "name": "时间重叠",
+        "tooltip": "仅用于视频VAEs：重叠的帧数。"
+      },
+      "temporal_size": {
+        "name": "时间尺寸",
+        "tooltip": "仅用于视频VAEs：一次解码的帧数。"
+      },
       "tile_size": {
         "name": "瓷砖大小"
       },
