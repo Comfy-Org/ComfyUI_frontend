@@ -5287,6 +5287,14 @@
       "samples": {
         "name": "образцы"
       },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Используется только для видео VAE: количество кадров для перекрытия."
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Используется только для видео VAE: количество кадров для декодирования за раз."
+      },
       "tile_size": {
         "name": "размер_плитки"
       },

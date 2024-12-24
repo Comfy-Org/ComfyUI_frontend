@@ -1,3 +1,4 @@
+import { LiteGraph } from '@comfyorg/litegraph'
 import { z } from 'zod'
 
 const nodeSlotSchema = z
@@ -42,7 +43,11 @@ const litegraphBaseSchema = z
     NODE_DEFAULT_COLOR: z.string(),
     NODE_DEFAULT_BGCOLOR: z.string(),
     NODE_DEFAULT_BOXCOLOR: z.string(),
-    NODE_DEFAULT_SHAPE: z.string(),
+    NODE_DEFAULT_SHAPE: z.union([
+      z.literal(LiteGraph.BOX_SHAPE),
+      z.literal(LiteGraph.ROUND_SHAPE),
+      z.literal(LiteGraph.CARD_SHAPE)
+    ]),
     NODE_BOX_OUTLINE_COLOR: z.string(),
     NODE_BYPASS_BGCOLOR: z.string(),
     NODE_ERROR_COLOUR: z.string(),

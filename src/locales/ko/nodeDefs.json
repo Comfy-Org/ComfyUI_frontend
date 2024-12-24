@@ -5287,6 +5287,14 @@
       "samples": {
         "name": "샘플"
       },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "비디오 VAE에만 사용됩니다: 겹치는 프레임의 양."
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "비디오 VAE에만 사용됩니다: 한 번에 디코딩할 프레임의 양."
+      },
       "tile_size": {
         "name": "타일_크기"
       },

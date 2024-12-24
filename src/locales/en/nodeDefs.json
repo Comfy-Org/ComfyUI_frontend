@@ -5317,6 +5317,14 @@
       },
       "overlap": {
         "name": "overlap"
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Only used for video VAEs: Amount of frames to decode at a time."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Only used for video VAEs: Amount of frames to overlap."
       }
     }
   },
