@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ColorPalettes, Palette } from '@/types/colorPaletteTypes'
-import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
+import {
+  CORE_COLOR_PALETTES,
+  DEFAULT_COLOR_PALETTE
+} from '@/constants/coreColorPalettes'
 
 export const useColorPaletteStore = defineStore('colorPalette', () => {
   const customPalettes = ref<ColorPalettes>({})
-  const activePaletteId = ref<string>('')
+  const activePaletteId = ref<string>(DEFAULT_COLOR_PALETTE.id)
 
   const palettesLookup = computed(() => ({
     ...CORE_COLOR_PALETTES,
