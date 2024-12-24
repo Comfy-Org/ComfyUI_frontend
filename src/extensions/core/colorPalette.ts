@@ -4,24 +4,10 @@ import { app } from '../../scripts/app'
 import { $el } from '../../scripts/ui'
 import type { ColorPalettes, Palette } from '@/types/colorPaletteTypes'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
-import dark from '@/assets/palettes/dark.json'
-import light from '@/assets/palettes/light.json'
-import solarized from '@/assets/palettes/solarized.json'
-import arc from '@/assets/palettes/arc.json'
-import nord from '@/assets/palettes/nord.json'
-import github from '@/assets/palettes/github.json'
-
+import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
 // Manage color palettes
 
-const colorPalettes: ColorPalettes = {
-  dark,
-  light,
-  solarized,
-  arc,
-  nord,
-  github
-} as const
-
+const colorPalettes = CORE_COLOR_PALETTES
 const id = 'Comfy.ColorPalette'
 const idCustomColorPalettes = 'Comfy.CustomColorPalettes'
 const defaultColorPaletteId = 'dark'
