@@ -159,6 +159,7 @@
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
+    "cannotWrite": "无法写入所选路径",
     "chooseInstallationLocation": "选择安装位置",
     "customNodes": "自定义节点",
     "customNodesDescription": "从现有的ComfyUI安装中重新安装自定义节点。",
@@ -185,6 +186,7 @@
     "installLocation": "安装位置",
     "installLocationDescription": "选择 ComfyUI 用户数据的目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
     "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "insufficientFreeSpace": "空间不足 - 最小可用空间",
     "manualConfiguration": {
       "createVenv": "您需要在以下目录中创建虚拟环境",
       "requirements": "需求",
@@ -196,6 +198,8 @@
     "migration": "迁移",
     "migrationOptional": "迁移是可选的。如果您没有现有安装，可以跳过此步骤。",
     "migrationSourcePathDescription": "如果您有现有的 ComfyUI 安装，我们可以将您的现有用户文件和模型复制/链接到新安装。",
+    "parentMissing": "路径不存在 - 首先创建包含目录",
+    "pathExists": "目录已存在 - 请确保您已备份所有数据",
     "pathValidationFailed": "路径验证失败",
     "selectItemsToMigrate": "选择要迁移的项目",
     "settings": {
@@ -217,7 +221,8 @@
       },
       "learnMoreAboutData": "了解更多关于数据收集的信息"
     },
-    "systemLocations": "系统位置"
+    "systemLocations": "系统位置",
+    "unhandledError": "未知错误"
   },
   "menu": {
     "autoQueue": "自动执行",

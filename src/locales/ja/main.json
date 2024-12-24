@@ -159,6 +159,7 @@
   "install": {
     "appDataLocationTooltip": "ComfyUIのアプリデータディレクトリ。保存内容:\n- ログ\n- サーバー設定",
     "appPathLocationTooltip": "ComfyUIのアプリ資産ディレクトリ。ComfyUIのコードとアセットを保存します",
+    "cannotWrite": "選択したパスに書き込むことができません",
     "chooseInstallationLocation": "インストール先を選択",
     "customNodes": "カスタムノード",
     "customNodesDescription": "既存のComfyUIインストールからカスタムノードを再インストールします。",
@@ -185,6 +186,7 @@
     "installLocation": "インストール先",
     "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
     "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
+    "insufficientFreeSpace": "空き容量が不足しています - 最低限の空き容量",
     "manualConfiguration": {
       "createVenv": "次のディレクトリに仮想環境を作成する必要があります",
       "requirements": "要件",
@@ -196,6 +198,8 @@
     "migration": "移行",
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
     "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルやモデルを新しいインストールにコピー/リンクできます。",
+    "parentMissing": "パスが存在しません - 最初に含まれるディレクトリを作成してください",
+    "pathExists": "ディレクトリはすでに存在します - すべてのデータをバックアップしたことを確認してください",
     "pathValidationFailed": "パスの検証に失敗しました",
     "selectItemsToMigrate": "移行する項目を選択",
     "settings": {
@@ -217,7 +221,8 @@
       },
       "learnMoreAboutData": "データ収集の詳細を見る"
     },
-    "systemLocations": "システムの場所"
+    "systemLocations": "システムの場所",
+    "unhandledError": "未知のエラー"
   },
   "menu": {
     "autoQueue": "自動キュー",
