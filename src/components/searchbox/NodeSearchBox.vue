@@ -54,6 +54,7 @@
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
         <SearchFilterChip
+          :key="`${value[0].id}-${value[1]}`"
           @remove="onRemoveFilter($event, value)"
           :text="value[1]"
           :badge="value[0].invokeSequence.toUpperCase()"
