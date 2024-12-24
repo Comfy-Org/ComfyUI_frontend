@@ -327,7 +327,8 @@ export const workflowService = {
       skip_events: true,
       skip_render: true
     })
-    canvas.selectNodes()
+    canvas.reroutesEnabled = app.canvas.reroutesEnabled
+    canvas.selectItems()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard()
     if (old !== null) {
