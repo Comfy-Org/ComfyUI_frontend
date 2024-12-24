@@ -7,12 +7,15 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
   const customPalettes = ref<ColorPalettes>({})
   const activePaletteId = ref<string>('')
 
-  const palettes = computed(() => ({
+  const palettesLookup = computed(() => ({
     ...CORE_COLOR_PALETTES,
     ...customPalettes.value
   }))
 
-  const activePalette = computed(() => palettes.value[activePaletteId.value])
+  const palettes = computed(() => Object.values(palettesLookup.value))
+  const activePalette = computed(
+    () => palettesLookup.value[activePaletteId.value]
+  )
 
   async function addCustomPalette(palette: Palette) {
     customPalettes.value[palette.id] = palette
@@ -30,6 +33,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId,
 
     // Getters
+    palettesLookup,
     palettes,
     activePalette,
 
