@@ -9,7 +9,7 @@
     <div
       v-for="setting in group.settings"
       :key="setting.id"
-      class="setting-item flex items-center mb-4"
+      class="setting-item mb-4"
     >
       <SettingItem :setting="setting" />
     </div>
