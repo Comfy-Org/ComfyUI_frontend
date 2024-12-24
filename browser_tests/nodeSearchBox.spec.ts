@@ -107,26 +107,68 @@ test.describe('Node search box', () => {
   })
 
   test.describe('Filtering', () => {
+    const expectFilterChips = async (comfyPage, expectedTexts: string[]) => {
+      const chips = comfyPage.searchBox.filterChips
+
+      // Check that the number of chips matches the expected count
+      await expect(chips).toHaveCount(expectedTexts.length)
+
+      // Verify the text and visibility of each filter chip
+      await Promise.all(
+        expectedTexts.map(async (text, index) => {
+          const chip = chips.nth(index)
+          await expect(chip).toContainText(text)
+          await expect(chip).toBeVisible()
+        })
+      )
+    }
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.doubleClickCanvas()
     })
 
     test('Can add filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
-      await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+      await expectFilterChips(comfyPage, ['MODEL'])
     })
 
     test('Can add multiple filters', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
-      await expect(comfyPage.searchBox.filterChips).toHaveCount(2)
+      await expectFilterChips(comfyPage, ['MODEL', 'CLIP'])
     })
 
     test('Can remove filter', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
-      await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
       await comfyPage.searchBox.removeFilter(0)
-      await expect(comfyPage.searchBox.filterChips).toHaveCount(1)
+      await expectFilterChips(comfyPage, [])
+    })
+
+    test.describe('Removing from multiple filters', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
+        await comfyPage.searchBox.addFilter('CLIP', 'Output Type')
+        await comfyPage.searchBox.addFilter('utils', 'Category')
+      })
+
+      test('Can remove first filter', async ({ comfyPage }) => {
+        await comfyPage.searchBox.removeFilter(0)
+        await expectFilterChips(comfyPage, ['CLIP', 'utils'])
+        await comfyPage.searchBox.removeFilter(0)
+        await expectFilterChips(comfyPage, ['utils'])
+        await comfyPage.searchBox.removeFilter(0)
+        await expectFilterChips(comfyPage, [])
+      })
+
+      test('Can remove middle filter', async ({ comfyPage }) => {
+        await comfyPage.searchBox.removeFilter(1)
+        await expectFilterChips(comfyPage, ['MODEL', 'utils'])
+      })
+
+      test('Can remove last filter', async ({ comfyPage }) => {
+        await comfyPage.searchBox.removeFilter(2)
+        await expectFilterChips(comfyPage, ['MODEL', 'CLIP'])
+      })
     })
   })
 
