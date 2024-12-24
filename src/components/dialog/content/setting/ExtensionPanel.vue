@@ -2,7 +2,7 @@
   <PanelTemplate value="Extension" class="extension-panel">
     <template #header>
       <SearchBox
-        v-model="filters['name'].value"
+        v-model="filters['global'].value"
         :placeholder="$t('g.searchExtensions') + '...'"
       />
       <Message
@@ -35,7 +35,7 @@
       size="small"
       :filters="filters"
     >
-      <Column :header="$t('g.extensionName')" sortable>
+      <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
           <Tag
@@ -87,7 +87,7 @@ import PanelTemplate from './PanelTemplate.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 
 const filters = ref({
-  name: { value: '', matchMode: FilterMatchMode.CONTAINS }
+  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
 })
 
 const extensionStore = useExtensionStore()
