@@ -7,6 +7,9 @@ import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { IWidget } from '@comfyorg/litegraph'
+import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import { Markdown } from 'tiptap-markdown'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -362,6 +365,57 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
   return { minWidth: 400, minHeight: 200, widget }
 }
 
+function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
+  Markdown.configure({
+    html: false,
+    breaks: true
+  })
+  const editor = new Editor({
+    extensions: [StarterKit, Markdown],
+    content: opts.defaultVal
+  })
+
+  const inputEl = editor.options.element
+
+  const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
+    getValue() {
+      return editor.storage.markdown.getMarkdown()
+    },
+    setValue(v) {
+      editor.commands.setContent(v)
+    }
+  })
+  widget.inputEl = inputEl
+
+  editor.on('update', () => {
+    widget.callback?.(widget.value)
+  })
+
+  inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
+    event.stopPropagation()
+  })
+
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseDown(event)
+    }
+  })
+
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
+    if ((event.buttons & 4) === 4) {
+      app.canvas.processMouseMove(event)
+    }
+  })
+
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseUp(event)
+    }
+  })
+
+  return { minWidth: 400, minHeight: 200, widget }
+}
+
 function isSlider(display, app) {
   if (app.ui.settings.getSettingValue('Comfy.DisableSliders')) {
     return 'number'
@@ -473,6 +527,18 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     if (inputData[1].dynamicPrompts != undefined)
       res.widget.dynamicPrompts = inputData[1].dynamicPrompts
 
+    return res
+  },
+  MARKDOWN(node, inputName, inputData: InputSpec, app) {
+    const defaultVal = inputData[1].default || ''
+
+    let res
+    res = addMarkdownWidget(
+      node,
+      inputName,
+      { defaultVal, ...inputData[1] },
+      app
+    )
     return res
   },
   COMBO(node, inputName, inputData: InputSpec) {
