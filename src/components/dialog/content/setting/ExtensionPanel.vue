@@ -2,7 +2,7 @@
   <PanelTemplate value="Extension" class="extension-panel">
     <template #header>
       <SearchBox
-        v-model="filters['global'].value"
+        v-model="filters['name'].value"
         :placeholder="$t('g.searchExtensions') + '...'"
       />
       <Message
@@ -87,7 +87,7 @@ import PanelTemplate from './PanelTemplate.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 
 const filters = ref({
-  global: { value: '', matchMode: FilterMatchMode.CONTAINS }
+  name: { value: '', matchMode: FilterMatchMode.CONTAINS }
 })
 
 const extensionStore = useExtensionStore()
