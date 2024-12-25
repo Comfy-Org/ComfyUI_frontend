@@ -165,12 +165,15 @@ export const useColorPaletteService = () => {
 
   /**
    * Imports a color palette.
+   *
+   * @returns The imported palette.
    */
   const importColorPalette = async () => {
     const file = await uploadFile('application/json')
     const text = await file.text()
-    const data = JSON.parse(text)
-    addCustomColorPalette(data)
+    const palette = JSON.parse(text)
+    addCustomColorPalette(palette)
+    return palette
   }
 
   return {

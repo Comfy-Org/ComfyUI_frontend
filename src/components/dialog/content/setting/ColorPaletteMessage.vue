@@ -22,7 +22,7 @@
           icon="pi pi-upload"
           text
           :title="$t('g.import')"
-          @click="colorPaletteService.importColorPalette()"
+          @click="importCustomPalette"
         />
         <Button
           icon="pi pi-trash"
@@ -49,6 +49,13 @@ import { watch } from 'vue'
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
+
+const importCustomPalette = async () => {
+  const palette = await colorPaletteService.importColorPalette()
+  if (palette) {
+    colorPaletteService.loadColorPalette(palette.id)
+  }
+}
 
 watch(activePaletteId, () => {
   colorPaletteService.loadColorPalette(activePaletteId.value)
