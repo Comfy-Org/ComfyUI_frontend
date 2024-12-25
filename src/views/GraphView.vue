@@ -42,7 +42,6 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 setupAutoQueueHandler()
 
@@ -173,13 +172,6 @@ const onGraphReady = () => {
         SERVER_CONFIG_ITEMS,
         settingStore.get('Comfy.Server.ServerConfigValues')
       )
-
-      // Load color palette
-      const colorPaletteStore = useColorPaletteStore()
-      colorPaletteStore.customPalettes = settingStore.get(
-        'Comfy.CustomColorPalettes'
-      )
-      colorPaletteStore.activePaletteId = settingStore.get('Comfy.ColorPalette')
 
       // Load model folders
       useModelStore().loadModelFolders()

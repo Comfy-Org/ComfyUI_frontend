@@ -92,7 +92,7 @@ const colorsSchema = z
   })
   .passthrough()
 
-const paletteSchema = z.object({
+export const paletteSchema = z.object({
   id: z.string(),
   name: z.string(),
   colors: colorsSchema

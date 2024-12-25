@@ -20,12 +20,20 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     () => palettesLookup.value[activePaletteId.value]
   )
 
-  async function addCustomPalette(palette: Palette) {
+  function addCustomPalette(palette: Palette) {
+    if (palette.id in palettesLookup.value) {
+      throw new Error(`Palette with id ${palette.id} already exists`)
+    }
+
     customPalettes.value[palette.id] = palette
     activePaletteId.value = palette.id
   }
 
   function deleteCustomPalette(id: string) {
+    if (!(id in customPalettes.value)) {
+      throw new Error(`Palette with id ${id} does not exist`)
+    }
+
     delete customPalettes.value[id]
     activePaletteId.value = CORE_COLOR_PALETTES.dark.id
   }

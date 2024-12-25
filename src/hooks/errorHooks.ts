@@ -1,9 +1,8 @@
+import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
-import { useI18n } from 'vue-i18n'
 
 export function useErrorHandling() {
   const toast = useToastStore()
-  const { t } = useI18n()
 
   const toastErrorHandler = (error: any) => {
     toast.add({
@@ -15,12 +14,12 @@ export function useErrorHandling() {
   }
 
   const wrapWithErrorHandling =
-    (
-      action: (...args: any[]) => any,
+    <TArgs extends any[], TReturn>(
+      action: (...args: TArgs) => TReturn,
       errorHandler?: (error: any) => void,
       finallyHandler?: () => void
     ) =>
-    (...args: any[]) => {
+    (...args: TArgs): TReturn | undefined => {
       try {
         return action(...args)
       } catch (e) {
@@ -31,12 +30,12 @@ export function useErrorHandling() {
     }
 
   const wrapWithErrorHandlingAsync =
-    (
-      action: ((...args: any[]) => Promise<any>) | ((...args: any[]) => any),
+    <TArgs extends any[], TReturn>(
+      action: (...args: TArgs) => Promise<TReturn> | TReturn,
       errorHandler?: (error: any) => void,
       finallyHandler?: () => void
     ) =>
-    async (...args: any[]) => {
+    async (...args: TArgs): Promise<TReturn | undefined> => {
       try {
         return await action(...args)
       } catch (e) {
