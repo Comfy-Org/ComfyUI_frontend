@@ -73,10 +73,11 @@ onMounted(() => {
             }
           ),
           fgColor:
-            colorPaletteStore.activePalette.colors.litegraph_base
+            colorPaletteStore.completedActivePalette.colors.litegraph_base
               .BADGE_FG_COLOR,
           bgColor:
-            colorPaletteStore.activePalette.colors.litegraph_base.BADGE_BG_COLOR
+            colorPaletteStore.completedActivePalette.colors.litegraph_base
+              .BADGE_BG_COLOR
         })
       })
 

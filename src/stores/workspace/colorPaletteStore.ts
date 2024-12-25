@@ -16,11 +16,11 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
   }))
 
   const palettes = computed(() => Object.values(palettesLookup.value))
-  const activePalette = computed(
-    () => palettesLookup.value[activePaletteId.value]
+  const completedActivePalette = computed(() =>
+    completePalette(palettesLookup.value[activePaletteId.value])
   )
 
-  function addCustomPalette(palette: Palette) {
+  const addCustomPalette = (palette: Palette) => {
     if (palette.id in palettesLookup.value) {
       throw new Error(`Palette with id ${palette.id} already exists`)
     }
@@ -29,7 +29,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId.value = palette.id
   }
 
-  function deleteCustomPalette(id: string) {
+  const deleteCustomPalette = (id: string) => {
     if (!(id in customPalettes.value)) {
       throw new Error(`Palette with id ${id} does not exist`)
     }
@@ -38,8 +38,35 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId.value = CORE_COLOR_PALETTES.dark.id
   }
 
-  function isCustomPalette(id: string) {
+  const isCustomPalette = (id: string) => {
     return id in customPalettes.value
+  }
+
+  /**
+   * Completes the palette with default values for missing colors.
+   *
+   * @param palette - The palette to complete.
+   * @returns The completed palette.
+   */
+  const completePalette = (palette: Palette): Palette => {
+    return {
+      ...palette,
+      colors: {
+        ...palette.colors,
+        node_slot: {
+          ...DEFAULT_COLOR_PALETTE.colors.node_slot,
+          ...palette.colors.node_slot
+        },
+        litegraph_base: {
+          ...DEFAULT_COLOR_PALETTE.colors.litegraph_base,
+          ...palette.colors.litegraph_base
+        },
+        comfy_base: {
+          ...DEFAULT_COLOR_PALETTE.colors.comfy_base,
+          ...palette.colors.comfy_base
+        }
+      }
+    }
   }
 
   return {
@@ -50,11 +77,12 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     // Getters
     palettesLookup,
     palettes,
-    activePalette,
+    completedActivePalette,
 
     // Actions
     isCustomPalette,
     addCustomPalette,
-    deleteCustomPalette
+    deleteCustomPalette,
+    completePalette
   }
 })

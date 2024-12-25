@@ -6,7 +6,7 @@ import { paletteSchema, type Palette } from '@/types/colorPaletteTypes'
 import { fromZodError } from 'zod-validation-error'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
-import { DEFAULT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { toRaw } from 'vue'
 
@@ -17,7 +17,13 @@ export const useColorPaletteService = () => {
   const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
     useErrorHandling()
 
-  function validateColorPalette(data: unknown): Palette {
+  /**
+   * Validates the palette against the zod schema.
+   *
+   * @param data - The palette to validate.
+   * @returns The validated palette.
+   */
+  const validateColorPalette = (data: unknown): Palette => {
     const result = paletteSchema.safeParse(data)
     if (result.success) return result.data
 
@@ -32,52 +38,62 @@ export const useColorPaletteService = () => {
     )
   }
 
+  /**
+   * Deletes a custom color palette.
+   *
+   * @param colorPaletteId - The ID of the color palette to delete.
+   */
   const deleteCustomColorPalette = (colorPaletteId: string) => {
     colorPaletteStore.deleteCustomPalette(colorPaletteId)
     persistCustomColorPalettes()
   }
 
+  /**
+   * Adds a custom color palette.
+   *
+   * @param colorPalette - The palette to add.
+   */
   const addCustomColorPalette = (colorPalette: Palette) => {
     validateColorPalette(colorPalette)
     colorPaletteStore.addCustomPalette(colorPalette)
     persistCustomColorPalettes()
   }
 
-  /** Sets the colors of node slots and links */
+  /**
+   * Sets the colors of node slots and links.
+   *
+   * @param linkColorPalette - The palette to set.
+   */
   const loadLinkColorPalette = (
     linkColorPalette: Palette['colors']['node_slot']
   ) => {
     const types = Object.fromEntries(
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
     )
-    Object.assign(app.canvas.default_connection_color_byType, {
-      ...types,
-      ...linkColorPalette
-    })
-    Object.assign(LGraphCanvas.link_type_colors, {
-      ...types,
-      ...linkColorPalette
-    })
+    Object.assign(
+      app.canvas.default_connection_color_byType,
+      types,
+      linkColorPalette
+    )
+    Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
   }
 
+  /**
+   * Loads the LiteGraph color palette.
+   *
+   * @param liteGraphColorPalette - The palette to set.
+   */
   const loadLiteGraphColorPalette = (
-    liteGraphColorPalette: Palette['colors']['litegraph_base']
+    palette: Palette['colors']['litegraph_base']
   ) => {
-    // Fill in missing colors with defaults
-    const palette = Object.assign(
-      {},
-      DEFAULT_COLOR_PALETTE.colors.litegraph_base,
-      liteGraphColorPalette
-    )
-
     // Sets special case colors
-    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR
+    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR!
 
     // Sets the colors of the LiteGraph objects
-    app.canvas.node_title_color = palette.NODE_TITLE_COLOR
-    app.canvas.default_link_color = palette.LINK_COLOR
-    app.canvas.background_image = palette.BACKGROUND_IMAGE
-    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+    app.canvas.node_title_color = palette.NODE_TITLE_COLOR!
+    app.canvas.default_link_color = palette.LINK_COLOR!
+    app.canvas.background_image = palette.BACKGROUND_IMAGE!
+    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR!
     app.canvas._pattern = undefined
 
     for (const [key, value] of Object.entries(palette)) {
@@ -98,6 +114,11 @@ export const useColorPaletteService = () => {
     }
   }
 
+  /**
+   * Loads the Comfy color palette.
+   *
+   * @param comfyColorPalette - The palette to set.
+   */
   const loadComfyColorPalette = (
     comfyColorPalette: Palette['colors']['comfy_base']
   ) => {
@@ -109,21 +130,32 @@ export const useColorPaletteService = () => {
     }
   }
 
+  /**
+   * Loads the color palette.
+   *
+   * @param colorPaletteId - The ID of the color palette to load.
+   */
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
       throw new Error(`Color palette ${colorPaletteId} not found`)
     }
 
-    loadLinkColorPalette(colorPalette.colors.node_slot)
-    loadLiteGraphColorPalette(colorPalette.colors.litegraph_base)
-    loadComfyColorPalette(colorPalette.colors.comfy_base)
+    const completedPalette = colorPaletteStore.completePalette(colorPalette)
+    loadLinkColorPalette(completedPalette.colors.node_slot)
+    loadLiteGraphColorPalette(completedPalette.colors.litegraph_base)
+    loadComfyColorPalette(completedPalette.colors.comfy_base)
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
     settingStore.set('Comfy.ColorPalette', colorPaletteId)
   }
 
+  /**
+   * Exports a color palette.
+   *
+   * @param colorPaletteId - The ID of the color palette to export.
+   */
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
     if (!colorPalette) {
@@ -137,6 +169,9 @@ export const useColorPaletteService = () => {
     )
   }
 
+  /**
+   * Imports a color palette.
+   */
   const importColorPalette = async () => {
     const file = await uploadFile('application/json')
     const text = await file.text()

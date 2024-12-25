@@ -95,7 +95,7 @@ const props = defineProps({
 
 const colorPaletteStore = useColorPaletteStore()
 const litegraphColors = computed(
-  () => colorPaletteStore.activePalette.colors.litegraph_base
+  () => colorPaletteStore.completedActivePalette.colors.litegraph_base
 )
 
 const widgetStore = useWidgetStore()

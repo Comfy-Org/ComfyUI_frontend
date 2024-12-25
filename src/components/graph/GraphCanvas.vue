@@ -213,6 +213,8 @@ watchEffect(() => {
 
 const colorPaletteService = useColorPaletteService()
 watchEffect(() => {
+  if (!canvasStore.canvas) return
+
   colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
 })
 
