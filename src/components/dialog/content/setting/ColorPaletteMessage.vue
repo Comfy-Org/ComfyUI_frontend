@@ -16,6 +16,12 @@
           icon="pi pi-upload"
           @click="colorPaletteService.importColorPalette()"
         />
+        <Button
+          icon="pi pi-trash"
+          severity="danger"
+          @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
+          :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
+        />
       </div>
     </div>
   </Message>

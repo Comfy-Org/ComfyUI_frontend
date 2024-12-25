@@ -38,6 +38,10 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePaletteId.value = CORE_COLOR_PALETTES.dark.id
   }
 
+  function isCustomPalette(id: string) {
+    return id in customPalettes.value
+  }
+
   return {
     // State
     customPalettes,
@@ -49,6 +53,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
     activePalette,
 
     // Actions
+    isCustomPalette,
     addCustomPalette,
     deleteCustomPalette
   }
