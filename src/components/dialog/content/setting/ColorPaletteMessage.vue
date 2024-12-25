@@ -2,7 +2,7 @@
   <Message severity="info" icon="pi pi-palette" pt:text="w-full">
     <div class="flex items-center justify-between">
       <div>
-        {{ $t('settings.Comfy_ColorPalette.name') }}
+        {{ $t('settingsCategories.ColorPalette') }}
       </div>
       <div class="actions">
         <Select
