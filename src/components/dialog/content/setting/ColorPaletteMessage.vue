@@ -1,24 +1,31 @@
 <template>
   <Message severity="info" icon="pi pi-palette" pt:text="w-full">
     <div class="flex items-center justify-between">
-      <Select
-        v-model="activePaletteId"
-        :options="palettes"
-        optionLabel="name"
-        optionValue="id"
-      />
+      <div>
+        {{ $t('settings.Comfy_ColorPalette.name') }}
+      </div>
       <div class="actions">
+        <Select
+          class="w-44"
+          v-model="activePaletteId"
+          :options="palettes"
+          optionLabel="name"
+          optionValue="id"
+        />
         <Button
           icon="pi pi-download"
+          text
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
         />
         <Button
           icon="pi pi-upload"
+          text
           @click="colorPaletteService.importColorPalette()"
         />
         <Button
           icon="pi pi-trash"
           severity="danger"
+          text
           @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
         />
