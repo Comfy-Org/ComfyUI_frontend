@@ -670,13 +670,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'The active color palette id',
     type: 'hidden',
     defaultValue: 'dark',
-    versionModified: '1.6.5'
+    versionModified: '1.6.6'
   },
   {
     id: 'Comfy.CustomColorPalettes',
     name: 'Custom color palettes',
     type: 'hidden',
     defaultValue: {} as ColorPalettes,
-    versionAdded: '1.6.5'
+    versionModified: '1.6.6'
   }
 ]

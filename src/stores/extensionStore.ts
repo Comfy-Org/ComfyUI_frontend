@@ -11,13 +11,8 @@ import { useWidgetStore } from './widgetStore'
 
 /**
  * These extensions are always active, even if they are disabled in the setting.
- * TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1996):
- * Migrate logic to out of extensions/core, as features provided
- * by these extensions are now essential to core.
  */
-export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [
-  'Comfy.ColorPalette'
-]
+export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
 
 export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
