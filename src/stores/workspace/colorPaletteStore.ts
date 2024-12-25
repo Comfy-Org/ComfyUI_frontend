@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { ColorPalettes, Palette } from '@/types/colorPaletteTypes'
+import type {
+  ColorPalettes,
+  CompletedPalette,
+  Palette
+} from '@/types/colorPaletteTypes'
 import {
   CORE_COLOR_PALETTES,
   DEFAULT_COLOR_PALETTE
@@ -48,7 +52,7 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
    * @param palette - The palette to complete.
    * @returns The completed palette.
    */
-  const completePalette = (palette: Palette): Palette => {
+  const completePalette = (palette: Palette): CompletedPalette => {
     return {
       ...palette,
       colors: {

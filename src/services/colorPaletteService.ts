@@ -2,7 +2,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useErrorHandling } from '@/hooks/errorHooks'
-import { paletteSchema, type Palette } from '@/types/colorPaletteTypes'
+import { Colors, paletteSchema, type Palette } from '@/types/colorPaletteTypes'
 import { fromZodError } from 'zod-validation-error'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
@@ -64,9 +64,7 @@ export const useColorPaletteService = () => {
    *
    * @param linkColorPalette - The palette to set.
    */
-  const loadLinkColorPalette = (
-    linkColorPalette: Palette['colors']['node_slot']
-  ) => {
+  const loadLinkColorPalette = (linkColorPalette: Colors['node_slot']) => {
     const types = Object.fromEntries(
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
     )
@@ -83,17 +81,15 @@ export const useColorPaletteService = () => {
    *
    * @param liteGraphColorPalette - The palette to set.
    */
-  const loadLiteGraphColorPalette = (
-    palette: Palette['colors']['litegraph_base']
-  ) => {
+  const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
     // Sets special case colors
-    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR!
+    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR
 
     // Sets the colors of the LiteGraph objects
-    app.canvas.node_title_color = palette.NODE_TITLE_COLOR!
-    app.canvas.default_link_color = palette.LINK_COLOR!
-    app.canvas.background_image = palette.BACKGROUND_IMAGE!
-    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR!
+    app.canvas.node_title_color = palette.NODE_TITLE_COLOR
+    app.canvas.default_link_color = palette.LINK_COLOR
+    app.canvas.background_image = palette.BACKGROUND_IMAGE
+    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
     app.canvas._pattern = undefined
 
     for (const [key, value] of Object.entries(palette)) {
@@ -119,9 +115,7 @@ export const useColorPaletteService = () => {
    *
    * @param comfyColorPalette - The palette to set.
    */
-  const loadComfyColorPalette = (
-    comfyColorPalette: Palette['colors']['comfy_base']
-  ) => {
+  const loadComfyColorPalette = (comfyColorPalette: Colors['comfy_base']) => {
     if (comfyColorPalette) {
       const rootStyle = document.documentElement.style
       for (const [key, value] of Object.entries(comfyColorPalette)) {
