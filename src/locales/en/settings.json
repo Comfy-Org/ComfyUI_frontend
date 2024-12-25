@@ -6,10 +6,13 @@
     "name": "Send anonymous crash reports"
   },
   "Comfy_ColorPalette": {
-    "name": "Color Palette"
+    "name": "The active color palette id"
   },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
+  },
+  "Comfy_CustomColorPalettes": {
+    "name": "Custom color palettes"
   },
   "Comfy_DevMode": {
     "name": "Enable dev mode options (API save, etc.)"

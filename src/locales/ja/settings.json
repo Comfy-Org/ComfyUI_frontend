@@ -11,6 +11,9 @@
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },
+  "Comfy_CustomColorPalettes": {
+    "name": "カスタムカラーパレット"
+  },
   "Comfy_DOMClippingEnabled": {
     "name": "DOM要素のクリッピングを有効にする（有効にするとパフォーマンスが低下する可能性があります）"
   },

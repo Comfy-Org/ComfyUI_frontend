@@ -11,6 +11,9 @@
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },
+  "Comfy_CustomColorPalettes": {
+    "name": "사용자 정의 색상 팔레트"
+  },
   "Comfy_DOMClippingEnabled": {
     "name": "DOM 요소 클리핑 활성화 (활성화 시 성능 저하 가능)"
   },

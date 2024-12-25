@@ -428,7 +428,8 @@
     "Window": "Window",
     "Server-Config": "Server-Config",
     "About": "About",
-    "EditTokenWeight": "Edit Token Weight"
+    "EditTokenWeight": "Edit Token Weight",
+    "CustomColorPalettes": "Custom Color Palettes"
   },
   "serverConfigItems": {
     "listen": {
