@@ -15,17 +15,20 @@
         <Button
           icon="pi pi-download"
           text
+          :title="$t('g.download')"
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
         />
         <Button
           icon="pi pi-upload"
           text
+          :title="$t('g.import')"
           @click="colorPaletteService.importColorPalette()"
         />
         <Button
           icon="pi pi-trash"
           severity="danger"
           text
+          :title="$t('g.delete')"
           @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
         />
