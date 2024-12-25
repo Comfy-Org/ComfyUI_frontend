@@ -7,12 +7,15 @@ import { fromZodError } from 'zod-validation-error'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { DEFAULT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
+import { downloadBlob, uploadFile } from '@/scripts/utils'
+import { toRaw } from 'vue'
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
   const settingStore = useSettingStore()
   const nodeDefStore = useNodeDefStore()
-  const { wrapWithErrorHandling } = useErrorHandling()
+  const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } =
+    useErrorHandling()
 
   function validateColorPalette(data: unknown): Palette {
     const result = paletteSchema.safeParse(data)
@@ -118,11 +121,34 @@ export const useColorPaletteService = () => {
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
+    settingStore.set('Comfy.ColorPalette', colorPaletteId)
+  }
+
+  const exportColorPalette = (colorPaletteId: string) => {
+    const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
+    if (!colorPalette) {
+      throw new Error(`Color palette ${colorPaletteId} not found`)
+    }
+    downloadBlob(
+      colorPalette.id + '.json',
+      new Blob([JSON.stringify(toRaw(colorPalette), null, 2)], {
+        type: 'application/json'
+      })
+    )
+  }
+
+  const importColorPalette = async () => {
+    const file = await uploadFile('application/json')
+    const text = await file.text()
+    const data = JSON.parse(text)
+    addCustomColorPalette(data)
   }
 
   return {
     addCustomColorPalette: wrapWithErrorHandling(addCustomColorPalette),
     deleteCustomColorPalette: wrapWithErrorHandling(deleteCustomColorPalette),
-    loadColorPalette: wrapWithErrorHandling(loadColorPalette)
+    loadColorPalette: wrapWithErrorHandling(loadColorPalette),
+    exportColorPalette: wrapWithErrorHandling(exportColorPalette),
+    importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
   }
 }
