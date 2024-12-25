@@ -6,6 +6,7 @@ import { paletteSchema, type Palette } from '@/types/colorPaletteTypes'
 import { fromZodError } from 'zod-validation-error'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
+import { DEFAULT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
@@ -59,19 +60,24 @@ export const useColorPaletteService = () => {
   const loadLiteGraphColorPalette = (
     liteGraphColorPalette: Palette['colors']['litegraph_base']
   ) => {
-    // Sets special case colors
-    if (liteGraphColorPalette.NODE_BYPASS_BGCOLOR) {
-      app.bypassBgColor = liteGraphColorPalette.NODE_BYPASS_BGCOLOR
-    }
-    // Sets the colors of the LiteGraph objects
-    if (liteGraphColorPalette.NODE_TITLE_COLOR) {
-      app.canvas.node_title_color = liteGraphColorPalette.NODE_TITLE_COLOR
-    }
-    if (liteGraphColorPalette.LINK_COLOR) {
-      app.canvas.default_link_color = liteGraphColorPalette.LINK_COLOR
-    }
+    // Fill in missing colors with defaults
+    const palette = Object.assign(
+      {},
+      DEFAULT_COLOR_PALETTE.colors.litegraph_base,
+      liteGraphColorPalette
+    )
 
-    for (const [key, value] of Object.entries(liteGraphColorPalette)) {
+    // Sets special case colors
+    app.bypassBgColor = palette.NODE_BYPASS_BGCOLOR
+
+    // Sets the colors of the LiteGraph objects
+    app.canvas.node_title_color = palette.NODE_TITLE_COLOR
+    app.canvas.default_link_color = palette.LINK_COLOR
+    app.canvas.background_image = palette.BACKGROUND_IMAGE
+    app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+    app.canvas._pattern = undefined
+
+    for (const [key, value] of Object.entries(palette)) {
       if (Object.prototype.hasOwnProperty.call(LiteGraph, key)) {
         if (key === 'NODE_DEFAULT_SHAPE' && typeof value === 'string') {
           console.warn(
