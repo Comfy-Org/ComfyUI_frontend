@@ -211,6 +211,11 @@ watchEffect(() => {
   canvasStore.canvas.canvas.style.cursor = 'default'
 })
 
+const colorPaletteService = useColorPaletteService()
+watchEffect(() => {
+  colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
+})
+
 const workflowStore = useWorkflowStore()
 const persistCurrentWorkflow = () => {
   const workflow = JSON.stringify(comfyApp.serializeGraph())
@@ -319,11 +324,9 @@ onMounted(async () => {
 
   // Load color palette
   const colorPaletteStore = useColorPaletteStore()
-  const colorPaletteService = useColorPaletteService()
   colorPaletteStore.customPalettes = settingStore.get(
     'Comfy.CustomColorPalettes'
   )
-  colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
 
   // Start watching for locale change after the initial value is loaded.
   watch(
