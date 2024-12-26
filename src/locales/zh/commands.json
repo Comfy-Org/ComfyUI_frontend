@@ -95,6 +95,9 @@
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
     "label": "解散选中组节点"
   },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "打开关于ComfyUI"
+  },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "打开Comfy-Org Discord"
   },

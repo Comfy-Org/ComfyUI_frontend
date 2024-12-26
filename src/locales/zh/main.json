@@ -65,10 +65,12 @@
   "g": {
     "about": "关于",
     "add": "添加",
+    "back": "返回",
     "cancel": "取消",
     "close": "关闭",
     "color": "颜色",
     "comingSoon": "即将推出",
+    "command": "指令",
     "confirm": "确认",
     "copyToClipboard": "复制到剪贴板",
     "currentUser": "当前用户",
@@ -77,8 +79,10 @@
     "delete": "删除",
     "deprecated": "已弃用",
     "devices": "设备",
+    "disableAll": "禁用全部",
     "download": "下载",
     "empty": "空",
+    "enableAll": "启用全部",
     "error": "错误",
     "experimental": "测试版",
     "extensionName": "扩展名称",
@@ -87,12 +91,16 @@
     "goToNode": "转到节点",
     "icon": "图标",
     "imageFailedToLoad": "图像加载失败",
+    "import": "导入",
     "insert": "插入",
+    "install": "安装",
+    "keybinding": "按键绑定",
     "loadAllFolders": "加载所有文件夹",
     "loadWorkflow": "加载工作流",
     "loading": "加载中",
     "logs": "日志",
     "newFolder": "新文件夹",
+    "next": "下一个",
     "no": "否",
     "noResultsFound": "未找到结果",
     "noTasksFound": "未找到任务",
@@ -122,16 +130,8 @@
     "showReport": "显示报告",
     "systemInfo": "系统信息",
     "terminal": "终端",
-    "videoFailedToLoad": "视频加载失败",
-    "import": "导入",
-    "back": "返回",
-    "next": "下一个",
-    "install": "安装",
-    "enableAll": "启用全部",
-    "disableAll": "禁用全部",
-    "command": "指令",
-    "keybinding": "按键绑定",
-    "upload": "上传"
+    "upload": "上传",
+    "videoFailedToLoad": "视频加载失败"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
@@ -160,6 +160,7 @@
   "install": {
     "appDataLocationTooltip": "ComfyUI 的应用数据目录。存储：\n- 日志\n- 服务器配置",
     "appPathLocationTooltip": "ComfyUI 的应用资产目录。存储 ComfyUI 代码和资产",
+    "cannotWrite": "无法写入所选路径。",
     "chooseInstallationLocation": "选择安装位置",
     "customNodes": "自定义节点",
     "customNodesDescription": "引用现有 ComfyUI 安装的自定义节点文件并安装其依赖项。",
@@ -167,11 +168,6 @@
     "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
     "desktopSettings": "桌面设置",
     "failedToSelectDirectory": "选择目录失败",
-    "pathExists": "目录已存在 - 请确保您已备份全部数据",
-    "cannotWrite": "无法写入所选路径。",
-    "insufficientFreeSpace": "空间不足 - 最小可用空间",
-    "parentMissing": "路径不存在 - 请先创建包含该路径的目录",
-    "unhandledError": "未知错误",
     "gpu": "GPU",
     "gpuSelection": {
       "cpuMode": "CPU 模式",
@@ -191,6 +187,7 @@
     "installLocation": "安装位置",
     "installLocationDescription": "选择 ComfyUI 用户数据的存放目录。将安装一个 Python 环境到所选位置。请确保所选磁盘有足够的空间（约 15GB）。",
     "installLocationTooltip": "ComfyUI 的用户数据目录。存储：\n- Python 环境\n- 模型\n- 自定义节点\n",
+    "insufficientFreeSpace": "空间不足 - 最小可用空间",
     "manualConfiguration": {
       "createVenv": "您需要在以下目录中创建虚拟环境",
       "requirements": "依赖项",
@@ -202,6 +199,8 @@
     "migration": "迁移",
     "migrationOptional": "迁移是可选的。如果您之前没有安装过 ComfyUI，可以跳过此步骤。",
     "migrationSourcePathDescription": "如果您有可用的 ComfyUI，我们可以将您的现有用户文件和模型复制/链接到新安装。",
+    "parentMissing": "路径不存在 - 请先创建包含该路径的目录",
+    "pathExists": "目录已存在 - 请确保您已备份全部数据",
     "pathValidationFailed": "路径验证失败",
     "selectItemsToMigrate": "选择要迁移的项目",
     "settings": {
@@ -223,7 +222,8 @@
       },
       "learnMoreAboutData": "了解更多关于数据收集的信息"
     },
-    "systemLocations": "系统位置"
+    "systemLocations": "系统位置",
+    "unhandledError": "未知错误"
   },
   "menu": {
     "autoQueue": "自动执行",
@@ -249,6 +249,7 @@
     "toggleBottomPanel": "底部面板"
   },
   "menuLabels": {
+    "About ComfyUI": "关于ComfyUI",
     "Browse Templates": "浏览模板",
     "Bypass/Unbypass Selected Nodes": "忽略/取消忽略选定节点",
     "Canvas Toggle Link Visibility": "切换连线可见性",
@@ -309,7 +310,6 @@
     "Toggle Workflows Sidebar": "切换工作流侧边栏",
     "Undo": "撤销",
     "Ungroup selected group nodes": "解散选中组节点",
-    "About ComfyUI": "关于ComfyUI",
     "Workflow": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面"
@@ -542,6 +542,7 @@
     "ColorPalette": "色彩主题",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfy桌面版",
+    "CustomColorPalettes": "自定义色彩主题",
     "DevMode": "开发模式",
     "EditTokenWeight": "编辑令牌权重",
     "Extension": "扩展",
@@ -573,8 +574,7 @@
     "Tree Explorer": "树形浏览器",
     "Validation": "验证",
     "Window": "窗口",
-    "Workflow": "工作流",
-    "CustomColorPalettes": "自定义色彩主题"
+    "Workflow": "工作流"
   },
   "sideToolbar": {
     "browseTemplates": "浏览示例模板",

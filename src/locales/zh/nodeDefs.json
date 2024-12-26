@@ -200,7 +200,6 @@
     },
     "outputs": {
       "0": {
-        "name": "条件",
         "tooltip": "包含嵌入文本的条件，用于引导扩散模型。"
       }
     }
@@ -247,6 +246,24 @@
       },
       "mt5xl": {
         "name": "mt5xl"
+      }
+    }
+  },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "编码文本并设置PixArt Alpha的分辨率条件。不适用于PixArt Sigma。",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "剪辑"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "text": {
+        "name": "文本"
+      },
+      "width": {
+        "name": "宽度"
       }
     }
   },
@@ -5270,6 +5287,14 @@
       "samples": {
         "name": "Latent"
       },
+      "temporal_overlap": {
+        "name": "时间重叠",
+        "tooltip": "仅用于视频VAE：重叠的帧数。"
+      },
+      "temporal_size": {
+        "name": "时间尺寸",
+        "tooltip": "仅用于视频VAE：一次解码的帧数。"
+      },
       "tile_size": {
         "name": "分块尺寸"
       },
@@ -5325,6 +5350,14 @@
       },
       "pixels": {
         "name": "像素"
+      },
+      "temporal_overlap": {
+        "name": "时间重叠",
+        "tooltip": "仅用于视频VAE：重叠的帧数。"
+      },
+      "temporal_size": {
+        "name": "时间尺寸",
+        "tooltip": "仅用于视频VAE：一次编码的帧数。"
       },
       "tile_size": {
         "name": "分块尺寸"
