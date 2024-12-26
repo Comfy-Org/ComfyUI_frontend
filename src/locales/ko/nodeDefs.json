@@ -20,13 +20,13 @@
     "display_name": "AlignYourSteps 스케쥴러",
     "inputs": {
       "denoise": {
-        "name": "노이즈 제거"
+        "name": "노이즈 제거양"
       },
       "model_type": {
         "name": "모델 유형"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -34,7 +34,7 @@
     "display_name": "기본 가이드",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "model": {
         "name": "모델"
@@ -45,7 +45,7 @@
     "display_name": "기본 스케줄러",
     "inputs": {
       "denoise": {
-        "name": "노이즈 제거"
+        "name": "노이즈 제거양"
       },
       "model": {
         "name": "모델"
@@ -54,7 +54,7 @@
         "name": "스케줄러"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -71,7 +71,7 @@
         "name": "모델"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -85,10 +85,10 @@
         "name": "모델"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       }
     }
   },
@@ -96,13 +96,13 @@
     "display_name": "CLIP 어텐션 곱하기",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "k": {
         "name": "k"
       },
       "out": {
-        "name": "아웃"
+        "name": "out"
       },
       "q": {
         "name": "q"
@@ -113,11 +113,11 @@
     }
   },
   "CLIPLoader": {
-    "description": "[레시피]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[조합법]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
-        "name": "클립 이름"
+        "name": "CLIP 파일명"
       },
       "type": {
         "name": "유형"
@@ -128,10 +128,10 @@
     "display_name": "CLIP 병합 (더하기)",
     "inputs": {
       "clip1": {
-        "name": "클립1"
+        "name": "CLIP1"
       },
       "clip2": {
-        "name": "클립2"
+        "name": "CLIP2"
       }
     }
   },
@@ -139,10 +139,10 @@
     "display_name": "CLIP 병합 (단순)",
     "inputs": {
       "clip1": {
-        "name": "클립1"
+        "name": "CLIP1"
       },
       "clip2": {
-        "name": "클립2"
+        "name": "CLIP2"
       },
       "ratio": {
         "name": "비율"
@@ -153,13 +153,13 @@
     "display_name": "CLIP 병합 (빼기)",
     "inputs": {
       "clip1": {
-        "name": "클립1"
+        "name": "CLIP1"
       },
       "clip2": {
-        "name": "클립2"
+        "name": "CLIP2"
       },
       "multiplier": {
-        "name": "곱셈자"
+        "name": "배율"
       }
     }
   },
@@ -167,7 +167,7 @@
     "display_name": "CLIP 저장",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "filename_prefix": {
         "name": "파일명 접두사"
@@ -178,10 +178,10 @@
     "display_name": "CLIP 마지막 레이어 설정",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "stop_at_clip_layer": {
-        "name": "클립_레이어_중지"
+        "name": "CLIP 레이어 중단점"
       }
     }
   },
@@ -190,11 +190,11 @@
     "display_name": "CLIP 텍스트 인코딩 (프롬프트)",
     "inputs": {
       "clip": {
-        "name": "클립",
+        "name": "clip",
         "tooltip": "텍스트 인코딩에 사용되는 CLIP 모델입니다."
       },
       "text": {
-        "name": "텍스트",
+        "name": "프롬프트 텍스트",
         "tooltip": "인코딩할 텍스트입니다."
       }
     },
@@ -208,13 +208,13 @@
     "display_name": "CLIP 텍스트 인코딩 (컨트롤넷)",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "text": {
-        "name": "텍스트"
+        "name": "프롬프트 텍스트"
       }
     }
   },
@@ -222,16 +222,16 @@
     "display_name": "CLIP 텍스트 인코딩 (FLUX)",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "clip_l": {
-        "name": "클립_l"
+        "name": "clip-l 프롬프트"
       },
       "guidance": {
-        "name": "지침"
+        "name": "가이던스"
       },
       "t5xxl": {
-        "name": "t5xxl"
+        "name": "t5xxl 프롬프트"
       }
     }
   },
@@ -239,13 +239,13 @@
     "display_name": "CLIP 텍스트 인코딩 (HunyuanDiT)",
     "inputs": {
       "bert": {
-        "name": "bert"
+        "name": "bert 프롬프트"
       },
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "mt5xl": {
-        "name": "mt5xl"
+        "name": "mt5xl 프롬프트"
       }
     }
   },
@@ -254,13 +254,13 @@
     "display_name": "CLIPTextEncodePixArtAlpha",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "height": {
         "name": "높이"
       },
       "text": {
-        "name": "텍스트"
+        "name": "프롬프트 텍스트"
       },
       "width": {
         "name": "너비"
@@ -271,13 +271,13 @@
     "display_name": "CLIP 텍스트 인코딩 (SD3)",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "clip_g": {
-        "name": "클립_g"
+        "name": "clip-g 프롬프트"
       },
       "clip_l": {
-        "name": "클립_l"
+        "name": "clip-l 프롬프트"
       },
       "empty_padding": {
         "name": "빈_패딩"
@@ -291,28 +291,28 @@
     "display_name": "CLIP 텍스트 인코딩 (SDXL)",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "crop_h": {
-        "name": "crop_h"
+        "name": "크롭 높이"
       },
       "crop_w": {
-        "name": "crop_w"
+        "name": "크롭 너비"
       },
       "height": {
         "name": "높이"
       },
       "target_height": {
-        "name": "목표_높이"
+        "name": "목표 높이"
       },
       "target_width": {
-        "name": "목표_너비"
+        "name": "목표 너비"
       },
       "text_g": {
-        "name": "텍스트_g"
+        "name": "clip-g 프롬프트"
       },
       "text_l": {
-        "name": "텍스트_l"
+        "name": "clip-l 프롬프트"
       },
       "width": {
         "name": "너비"
@@ -326,7 +326,7 @@
         "name": "ascore"
       },
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "height": {
         "name": "높이"
@@ -340,13 +340,13 @@
     }
   },
   "CLIPVisionEncode": {
-    "display_name": "CLIP 비전 인코딩",
+    "display_name": "CLIP_VISION 인코딩",
     "inputs": {
       "clip_vision": {
-        "name": "클립_비전"
+        "name": "clip_vision"
       },
       "crop": {
-        "name": "크롭"
+        "name": "자르기 방법"
       },
       "image": {
         "name": "이미지"
@@ -354,10 +354,10 @@
     }
   },
   "CLIPVisionLoader": {
-    "display_name": "CLIP 비전 로드",
+    "display_name": "CLIP_VISION 로드",
     "inputs": {
       "clip_name": {
-        "name": "클립_이름"
+        "name": "CLIP 파일명"
       }
     }
   },
@@ -379,7 +379,7 @@
     "display_name": "구성으로 체크포인트 로드 (지원 중단)",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt 이름"
+        "name": "체크포인트 파일명"
       },
       "config_name": {
         "name": "설정 이름"
@@ -387,11 +387,11 @@
     }
   },
   "CheckpointLoaderSimple": {
-    "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터를 디노이즈하는 데 사용됩니다.",
+    "description": "확산 모델 체크포인트를 로드합니다. 확산 모델은 잠재 데이터의 노이즈를 제거하는 데 사용됩니다.",
     "display_name": "체크포인트 로드",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt 이름",
+        "name": "체크포인트 파일명",
         "tooltip": "로드할 체크포인트(모델)의 이름입니다."
       }
     },
@@ -411,7 +411,7 @@
     "display_name": "체크포인트 저장",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "filename_prefix": {
         "name": "파일명 접두사"
@@ -428,10 +428,10 @@
     "display_name": "후크 결합 [2]",
     "inputs": {
       "hooks_A": {
-        "name": "후크_A"
+        "name": "후크 A"
       },
       "hooks_B": {
-        "name": "후크_B"
+        "name": "후크 B"
       }
     }
   },
@@ -439,16 +439,16 @@
     "display_name": "후크 결합 [4]",
     "inputs": {
       "hooks_A": {
-        "name": "후크_A"
+        "name": "후크 A"
       },
       "hooks_B": {
-        "name": "후크_B"
+        "name": "후크 B"
       },
       "hooks_C": {
-        "name": "후크_C"
+        "name": "후크 C"
       },
       "hooks_D": {
-        "name": "후크_D"
+        "name": "후크 D"
       }
     }
   },
@@ -456,28 +456,28 @@
     "display_name": "후크 결합 [8]",
     "inputs": {
       "hooks_A": {
-        "name": "hooks_A"
+        "name": "후크 A"
       },
       "hooks_B": {
-        "name": "hooks_B"
+        "name": "후크 B"
       },
       "hooks_C": {
-        "name": "hooks_C"
+        "name": "후크 C"
       },
       "hooks_D": {
-        "name": "hooks_D"
+        "name": "후크 D"
       },
       "hooks_E": {
-        "name": "hooks_E"
+        "name": "후크 E"
       },
       "hooks_F": {
-        "name": "hooks_F"
+        "name": "후크 F"
       },
       "hooks_G": {
-        "name": "hooks_G"
+        "name": "후크 G"
       },
       "hooks_H": {
-        "name": "hooks_H"
+        "name": "후크 H"
       }
     }
   },
@@ -485,13 +485,13 @@
     "display_name": "조건 (평균)",
     "inputs": {
       "conditioning_from": {
-        "name": "조절_출처"
+        "name": "추가 조건"
       },
       "conditioning_to": {
-        "name": "조절_대상"
+        "name": "대상 조건"
       },
       "conditioning_to_strength": {
-        "name": "조절_대상_강도"
+        "name": "대상 조건 강도"
       }
     }
   },
@@ -499,10 +499,10 @@
     "display_name": "조건 (결합)",
     "inputs": {
       "conditioning_1": {
-        "name": "조절_1"
+        "name": "조건 1"
       },
       "conditioning_2": {
-        "name": "조절_2"
+        "name": "조건 2"
       }
     }
   },
@@ -510,10 +510,10 @@
     "display_name": "조건 (연결)",
     "inputs": {
       "conditioning_from": {
-        "name": "조절_출처"
+        "name": "추가 조건"
       },
       "conditioning_to": {
-        "name": "조절_대상"
+        "name": "대상 조건"
       }
     }
   },
@@ -521,7 +521,7 @@
     "display_name": "조건 (영역 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "height": {
         "name": "높이"
@@ -544,7 +544,7 @@
     "display_name": "조건 (비율로 영역 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "height": {
         "name": "높이"
@@ -567,7 +567,7 @@
     "display_name": "조건 (영역 강도 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "strength": {
         "name": "강도"
@@ -581,7 +581,7 @@
         "name": "조건"
       },
       "cond_DEFAULT": {
-        "name": "조건_기본"
+        "name": "기본 조건"
       },
       "hooks": {
         "name": "후크"
@@ -592,13 +592,13 @@
     "display_name": "조건 (마스크 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "mask": {
         "name": "마스크"
       },
       "set_cond_area": {
-        "name": "조건_영역_설정"
+        "name": "조건 영역 설정"
       },
       "strength": {
         "name": "강도"
@@ -609,7 +609,7 @@
     "display_name": "조건 (속성 설정)",
     "inputs": {
       "cond_NEW": {
-        "name": "조건_새로운"
+        "name": "새 조건"
       },
       "hooks": {
         "name": "후크"
@@ -618,13 +618,13 @@
         "name": "마스크"
       },
       "set_cond_area": {
-        "name": "조건_영역_설정"
+        "name": "조건 영역 설정"
       },
       "strength": {
         "name": "강도"
       },
       "timesteps": {
-        "name": "시간단계"
+        "name": "타임스텝 범위"
       }
     }
   },
@@ -635,7 +635,7 @@
         "name": "조건"
       },
       "cond_NEW": {
-        "name": "조건_새로운"
+        "name": "새 조건"
       },
       "hooks": {
         "name": "후크"
@@ -644,13 +644,13 @@
         "name": "마스크"
       },
       "set_cond_area": {
-        "name": "조건_영역_설정"
+        "name": "조건 영역 설정"
       },
       "strength": {
         "name": "강도"
       },
       "timesteps": {
-        "name": "시간단계"
+        "name": "타임스텝 범위"
       }
     }
   },
@@ -658,7 +658,7 @@
     "display_name": "조건 (타임스텝 범위 설정)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "end": {
         "name": "끝"
@@ -672,24 +672,24 @@
     "display_name": "ConditioningStableAudio",
     "inputs": {
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "seconds_start": {
-        "name": "초 시작"
+        "name": "시작(초)"
       },
       "seconds_total": {
-        "name": "총 초"
+        "name": "전체(초)"
       }
     },
     "outputs": {
       "0": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "부정적"
+        "name": "부정 조건"
       }
     }
   },
@@ -697,18 +697,18 @@
     "display_name": "조건 (타임스텝 범위)",
     "inputs": {
       "end_percent": {
-        "name": "끝_퍼센트"
+        "name": "종료 퍼센트"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       }
     },
     "outputs": {
       "1": {
-        "name": "범위_이전"
+        "name": "이전 범위"
       },
       "2": {
-        "name": "범위_이후"
+        "name": "이후 범위"
       }
     }
   },
@@ -716,7 +716,7 @@
     "display_name": "조건 (제로 아웃)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       }
     }
   },
@@ -724,10 +724,10 @@
     "display_name": "컨트롤넷 적용 (구형)",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "control_net": {
-        "name": "컨트롤_넷"
+        "name": "컨트롤넷"
       },
       "image": {
         "name": "이미지"
@@ -741,22 +741,22 @@
     "display_name": "컨트롤넷 적용",
     "inputs": {
       "control_net": {
-        "name": "컨트롤_넷"
+        "name": "컨트롤넷"
       },
       "end_percent": {
-        "name": "끝_퍼센트"
+        "name": "종료 퍼센트"
       },
       "image": {
         "name": "이미지"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "strength": {
         "name": "강도"
@@ -767,10 +767,10 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -778,22 +778,22 @@
     "display_name": "컨트롤넷을 VAE와 함께 적용",
     "inputs": {
       "control_net": {
-        "name": "컨트롤_넷"
+        "name": "컨트롤넷"
       },
       "end_percent": {
-        "name": "끝_퍼센트"
+        "name": "종료 퍼센트"
       },
       "image": {
         "name": "이미지"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "strength": {
         "name": "강도"
@@ -804,10 +804,10 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -815,10 +815,10 @@
     "display_name": "컨트롤넷 인페인팅 AliMama 적용",
     "inputs": {
       "control_net": {
-        "name": "컨트롤_넷"
+        "name": "컨트롤넷"
       },
       "end_percent": {
-        "name": "끝_퍼센트"
+        "name": "종료 퍼센트"
       },
       "image": {
         "name": "이미지"
@@ -827,13 +827,13 @@
         "name": "마스크"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "strength": {
         "name": "강도"
@@ -844,10 +844,10 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -855,7 +855,7 @@
     "display_name": "컨트롤넷 모델 로드",
     "inputs": {
       "control_net_name": {
-        "name": "컨트롤_넷_이름"
+        "name": "컨트롤넷 파일명"
       }
     }
   },
@@ -863,18 +863,18 @@
     "display_name": "후크 키프레임 생성",
     "inputs": {
       "prev_hook_kf": {
-        "name": "이전_후크_kf"
+        "name": "이전 KF 후크"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "strength_mult": {
-        "name": "강도_곱"
+        "name": "강도 곱"
       }
     },
     "outputs": {
       "0": {
-        "name": "후크_KF"
+        "name": "KF 후크"
       }
     }
   },
@@ -882,24 +882,24 @@
     "display_name": "부동 소수점으로 후크 키프레임 생성",
     "inputs": {
       "end_percent": {
-        "name": "끝_퍼센트"
+        "name": "종료 퍼센트"
       },
       "floats_strength": {
-        "name": "실수_강도"
+        "name": "실수 강도"
       },
       "prev_hook_kf": {
-        "name": "이전_후크_kf"
+        "name": "이전 KF 후크"
       },
       "print_keyframes": {
-        "name": "프린트_키프레임"
+        "name": "키프레임 출력"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       }
     },
     "outputs": {
       "0": {
-        "name": "후크_KF"
+        "name": "KF 후크"
       }
     }
   },
@@ -907,33 +907,33 @@
     "display_name": "보간된 후크 키프레임 생성",
     "inputs": {
       "end_percent": {
-        "name": "종료_퍼센트"
+        "name": "종료 퍼센트"
       },
       "interpolation": {
         "name": "보간"
       },
       "keyframes_count": {
-        "name": "키프레임_카운트"
+        "name": "키프레임 카운트"
       },
       "prev_hook_kf": {
-        "name": "이전_후크_kf"
+        "name": "이전 KF 후크"
       },
       "print_keyframes": {
-        "name": "키프레임_출력"
+        "name": "키프레임 출력"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "strength_end": {
-        "name": "strength_end"
+        "name": "종료 강도"
       },
       "strength_start": {
-        "name": "strength_start"
+        "name": "시작 강도"
       }
     },
     "outputs": {
       "0": {
-        "name": "후크_KF"
+        "name": "KF 후크"
       }
     }
   },
@@ -941,16 +941,16 @@
     "display_name": "후크 LoRA 생성",
     "inputs": {
       "lora_name": {
-        "name": "lora_이름"
+        "name": "LoRA 파일명"
       },
       "prev_hooks": {
-        "name": "이전_후크"
+        "name": "이전 후크"
       },
       "strength_clip": {
-        "name": "강도_클립"
+        "name": "CLIP 강도"
       },
       "strength_model": {
-        "name": "강도_모델"
+        "name": "모델 강도"
       }
     }
   },
@@ -958,13 +958,13 @@
     "display_name": "후크 LoRA 생성 (모델 전용)",
     "inputs": {
       "lora_name": {
-        "name": "lora_이름"
+        "name": "LoRA 파일명"
       },
       "prev_hooks": {
-        "name": "이전_후크"
+        "name": "이전 후크"
       },
       "strength_model": {
-        "name": "강도_모델"
+        "name": "모델 강도"
       }
     }
   },
@@ -972,16 +972,16 @@
     "display_name": "후크 모델을 LoRA로 생성",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt_이름"
+        "name": "체크포인트 파일명"
       },
       "prev_hooks": {
-        "name": "이전_후크"
+        "name": "이전 후크"
       },
       "strength_clip": {
-        "name": "강도_클립"
+        "name": "CLIP 강도"
       },
       "strength_model": {
-        "name": "강도_모델"
+        "name": "모델 강도"
       }
     }
   },
@@ -989,13 +989,13 @@
     "display_name": "후크 모델을 LoRA로 생성 (모델 전용)",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt_이름"
+        "name": "체크포인트 파일명"
       },
       "prev_hooks": {
-        "name": "이전_후크"
+        "name": "이전 후크"
       },
       "strength_model": {
-        "name": "강도_모델"
+        "name": "모델 강도"
       }
     }
   },
@@ -1054,13 +1054,13 @@
     "display_name": "강제 입력이 있는 노드",
     "inputs": {
       "float_input": {
-        "name": "float_입력"
+        "name": "실수 입력"
       },
       "int_input": {
-        "name": "int_입력"
+        "name": "정수 입력"
       },
       "int_input_widget": {
-        "name": "int_입력_위젯"
+        "name": "정수 입력 위젯"
       }
     }
   },
@@ -1069,7 +1069,7 @@
     "display_name": "선택적 입력만 있는 노드",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "text": {
         "name": "텍스트"
@@ -1081,10 +1081,10 @@
     "display_name": "선택적 입력이 있는 노드",
     "inputs": {
       "optional_input": {
-        "name": "선택적_입력"
+        "name": "선택적 입력"
       },
       "required_input": {
-        "name": "필수_입력"
+        "name": "필수 입력"
       }
     }
   },
@@ -1105,7 +1105,7 @@
     "display_name": "문자열 입력이 있는 노드",
     "inputs": {
       "string_input": {
-        "name": "문자열_입력"
+        "name": "문자열 입력"
       }
     }
   },
@@ -1114,13 +1114,13 @@
     "display_name": "유니온 입력이 있는 노드",
     "inputs": {
       "int_input": {
-        "name": "int_입력"
+        "name": "정수 입력"
       },
       "string_input": {
-        "name": "문자열_입력"
+        "name": "문자열 입력"
       },
       "string_or_int_input": {
-        "name": "문자열_또는_int_입력"
+        "name": "문자열 또는 정수 입력"
       }
     }
   },
@@ -1136,7 +1136,7 @@
     "display_name": "컨트롤넷 모델 로드 (차이)",
     "inputs": {
       "control_net_name": {
-        "name": "control_net_이름"
+        "name": "컨트롤넷 파일명"
       },
       "model": {
         "name": "모델"
@@ -1152,10 +1152,10 @@
     }
   },
   "DiffusersLoader": {
-    "display_name": "디퓨저 로더",
+    "display_name": "Diffusers 로드",
     "inputs": {
       "model_path": {
-        "name": "모델_경로"
+        "name": "모델 경로"
       }
     }
   },
@@ -1166,34 +1166,34 @@
     "display_name": "이중 CFG 가이드",
     "inputs": {
       "cfg_cond2_negative": {
-        "name": "cfg_cond2_negative"
+        "name": "(조건2 - 부정 조건) cfg"
       },
       "cfg_conds": {
-        "name": "cfg_conds"
+        "name": "전체 조건 cfg"
       },
       "cond1": {
-        "name": "cond1"
+        "name": "조건1"
       },
       "cond2": {
-        "name": "cond2"
+        "name": "조건2"
       },
       "model": {
         "name": "모델"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       }
     }
   },
   "DualCLIPLoader": {
-    "description": "[레시피]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
-    "display_name": "이중 CLIP 로더",
+    "description": "[조합법]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5",
+    "display_name": "이중 CLIP 로드",
     "inputs": {
       "clip_name1": {
-        "name": "clip_name1"
+        "name": "CLIP 파일명1"
       },
       "clip_name2": {
-        "name": "clip_name2"
+        "name": "CLIP 파일명2"
       },
       "type": {
         "name": "유형"
@@ -1201,7 +1201,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "빈 잠재 비디오 (Hunyuan)",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -1235,7 +1235,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "빈 LTXV 잠재 비디오",
+    "display_name": "빈 잠재 비디오 (LTXV)",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -1287,7 +1287,7 @@
     }
   },
   "EmptyMochiLatentVideo": {
-    "display_name": "빈 Mochi 잠재 비디오",
+    "display_name": "빈 잠재 비디오 (Mochi)",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -1304,7 +1304,7 @@
     }
   },
   "EmptySD3LatentImage": {
-    "display_name": "빈 SD3 잠재 이미지",
+    "display_name": "빈 잠재 이미지 (SD3)",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -1327,12 +1327,12 @@
         "name": "sigma_min"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
   "FeatherMask": {
-    "display_name": "페더 마스크",
+    "display_name": "마스크 가장자리 흐리게",
     "inputs": {
       "bottom": {
         "name": "아래쪽"
@@ -1355,7 +1355,7 @@
     "display_name": "시그마 뒤집기",
     "inputs": {
       "sigmas": {
-        "name": "sigmas"
+        "name": "시그마"
       }
     }
   },
@@ -1363,7 +1363,7 @@
     "display_name": "FLUX 가이드",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "guidance": {
         "name": "지침"
@@ -1417,18 +1417,18 @@
         "name": "계수"
       },
       "denoise": {
-        "name": "노이즈 제거"
+        "name": "노이즈 제거양"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
   "GLIGENLoader": {
-    "display_name": "GLIGEN 로더",
+    "display_name": "GLIGEN 로드",
     "inputs": {
       "gligen_name": {
-        "name": "gligen_name"
+        "name": "gligen 파일명"
       }
     }
   },
@@ -1436,13 +1436,13 @@
     "display_name": "GLIGEN 텍스트 박스 적용",
     "inputs": {
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "conditioning_to": {
-        "name": "조절 대상"
+        "name": "조건 대상"
       },
       "gligen_textbox_model": {
-        "name": "gligen_textbox_model"
+        "name": "gligen 텍스트상자 모델"
       },
       "height": {
         "name": "높이"
@@ -1496,7 +1496,7 @@
     }
   },
   "HypernetworkLoader": {
-    "display_name": "하이퍼네트워크 로더",
+    "display_name": "하이퍼네트워크 로드",
     "inputs": {
       "hypernetwork_name": {
         "name": "하이퍼네트워크 이름"
@@ -1524,10 +1524,10 @@
     "display_name": "이미지 혼합",
     "inputs": {
       "blend_factor": {
-        "name": "블렌드 요소"
+        "name": "혼합 계수"
       },
       "blend_mode": {
-        "name": "블렌드 모드"
+        "name": "혼합 모드"
       },
       "image1": {
         "name": "이미지1"
@@ -1566,16 +1566,16 @@
     "display_name": "마스크된 이미지 합성",
     "inputs": {
       "destination": {
-        "name": "목적지"
+        "name": "대상"
       },
       "mask": {
         "name": "마스크"
       },
       "resize_source": {
-        "name": "소스 크기 조정"
+        "name": "원본 크기 조정"
       },
       "source": {
-        "name": "소스"
+        "name": "원본"
       },
       "x": {
         "name": "x"
@@ -1609,7 +1609,7 @@
     "display_name": "배치에서 이미지 가져오기",
     "inputs": {
       "batch_index": {
-        "name": "배치_인덱스"
+        "name": "배치 번호"
       },
       "image": {
         "name": "이미지"
@@ -1628,10 +1628,10 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "이미지 전용 체크포인트 로더 (img2vid 모델)",
+    "display_name": "이미지 전용 체크포인트 로드 (img2vid 모델)",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt_이름"
+        "name": "체크포인트 파일명"
       }
     }
   },
@@ -1642,7 +1642,7 @@
         "name": "clip_vision"
       },
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       },
       "model": {
         "name": "모델"
@@ -1659,7 +1659,7 @@
         "name": "아래"
       },
       "feathering": {
-        "name": "깃털처리"
+        "name": "가장자리 흐림"
       },
       "image": {
         "name": "이미지"
@@ -1702,7 +1702,7 @@
         "name": "이미지"
       },
       "upscale_method": {
-        "name": "확대_방법"
+        "name": "확대 방법"
       },
       "width": {
         "name": "너비"
@@ -1716,10 +1716,10 @@
         "name": "이미지"
       },
       "scale_by": {
-        "name": "확대_비율"
+        "name": "배율"
       },
       "upscale_method": {
-        "name": "확대_방법"
+        "name": "확대 방법"
       }
     }
   },
@@ -1730,10 +1730,10 @@
         "name": "이미지"
       },
       "megapixels": {
-        "name": "메가픽셀"
+        "name": "메가픽셀수"
       },
       "upscale_method": {
-        "name": "확대_방법"
+        "name": "확대 방법"
       }
     }
   },
@@ -1747,7 +1747,7 @@
         "name": "이미지"
       },
       "sharpen_radius": {
-        "name": "선명도_반경"
+        "name": "선명화 반경"
       },
       "sigma": {
         "name": "시그마"
@@ -1772,7 +1772,7 @@
         "name": "이미지"
       },
       "upscale_model": {
-        "name": "확대_모델"
+        "name": "확대 모델"
       }
     }
   },
@@ -1783,17 +1783,17 @@
         "name": "마스크"
       },
       "negative": {
-        "name": "부정"
+        "name": "부정 조건"
       },
       "noise_mask": {
-        "name": "노이즈_마스크",
-        "tooltip": "잠재에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
+        "name": "노이즈 마스크",
+        "tooltip": "잠재 데이터에 노이즈 마스크를 추가하여 샘플링이 마스크 내에서만 발생하도록 합니다. 모델에 따라 결과가 개선되거나 완전히 망가질 수 있습니다."
       },
       "pixels": {
-        "name": "픽셀"
+        "name": "픽셀 이미지"
       },
       "positive": {
-        "name": "긍정"
+        "name": "긍정 조건"
       },
       "vae": {
         "name": "vae"
@@ -1801,27 +1801,27 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
   "InstructPixToPixConditioning": {
-    "display_name": "픽셀 간 조건 설정",
+    "display_name": "InstructPixToPix 조건 설정",
     "inputs": {
       "negative": {
-        "name": "부정"
+        "name": "부정 조건"
       },
       "pixels": {
         "name": "픽셀"
       },
       "positive": {
-        "name": "긍정"
+        "name": "긍정 조건"
       },
       "vae": {
         "name": "vae"
@@ -1829,13 +1829,13 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 이미지"
       }
     }
   },
@@ -1859,7 +1859,7 @@
     }
   },
   "KSampler": {
-    "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 이미지를 디노이즈합니다.",
+    "description": "제공된 모델, 긍정 및 부정 조건을 사용하여 잠재 데이터를 디노이즈합니다.",
     "display_name": "KSampler",
     "inputs": {
       "cfg": {
@@ -1871,23 +1871,23 @@
         "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
       },
       "latent_image": {
-        "name": "잠재_이미지",
-        "tooltip": "노이즈 제거할 잠재 이미지입니다."
+        "name": "잠재 데이터",
+        "tooltip": "노이즈 제거할 잠재 데이터입니다."
       },
       "model": {
         "name": "모델",
-        "tooltip": "입력 잠재의 노이즈 제거에 사용되는 모델입니다."
+        "tooltip": "입력 잠재 데이터의 노이즈 제거에 사용되는 모델입니다."
       },
       "negative": {
-        "name": "부정적",
+        "name": "부정 조건",
         "tooltip": "이미지에서 제외하고 싶은 속성을 설명하는 조건입니다."
       },
       "positive": {
-        "name": "긍정적",
+        "name": "긍정 조건",
         "tooltip": "이미지에 포함하고 싶은 속성을 설명하는 조건입니다."
       },
       "sampler_name": {
-        "name": "샘플러_이름",
+        "name": "샘플러 이름",
         "tooltip": "샘플링 시 사용되는 알고리즘으로, 생성된 출력의 품질, 속도 및 스타일에 영향을 미칠 수 있습니다."
       },
       "scheduler": {
@@ -1899,13 +1899,13 @@
         "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
       },
       "steps": {
-        "name": "단계",
+        "name": "스텝수",
         "tooltip": "노이즈 제거 과정에서 사용되는 단계 수입니다."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": "노이즈가 제거된 잠재입니다."
+        "tooltip": "노이즈가 제거된 잠재 데이터입니다."
       }
     }
   },
@@ -1913,43 +1913,43 @@
     "display_name": "고급 KSampler",
     "inputs": {
       "add_noise": {
-        "name": "노이즈_추가"
+        "name": "노이즈 추가"
       },
       "cfg": {
         "name": "cfg"
       },
       "end_at_step": {
-        "name": "종료_단계"
+        "name": "종료 스텝"
       },
       "latent_image": {
-        "name": "잠재_이미지"
+        "name": "잠재 데이터"
       },
       "model": {
         "name": "모델"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "noise_seed": {
-        "name": "노이즈_시드"
+        "name": "노이즈 시드"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "return_with_leftover_noise": {
-        "name": "잔여_노이즈_반환"
+        "name": "잔여 노이즈 반환"
       },
       "sampler_name": {
-        "name": "샘플러_이름"
+        "name": "샘플러 이름"
       },
       "scheduler": {
         "name": "스케줄러"
       },
       "start_at_step": {
-        "name": "시작_단계"
+        "name": "시작 스텝"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -1957,7 +1957,7 @@
     "display_name": "KSampler (선택)",
     "inputs": {
       "sampler_name": {
-        "name": "샘플러_이름"
+        "name": "샘플러 이름"
       }
     }
   },
@@ -1965,16 +1965,16 @@
     "display_name": "Karras 스케줄러",
     "inputs": {
       "rho": {
-        "name": "로"
+        "name": "rho"
       },
       "sigma_max": {
-        "name": "시그마_최대"
+        "name": "최대 시그마"
       },
       "sigma_min": {
-        "name": "시그마_최소"
+        "name": "최소 시그마"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -1982,29 +1982,29 @@
     "display_name": "LTXV 조건 설정",
     "inputs": {
       "frame_rate": {
-        "name": "프레임_율"
+        "name": "프레임율"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
   "LTXVImgToVideo": {
-    "display_name": "LTXV 이미지에서 비디오로",
+    "display_name": "이미지를 비디오로 (LTXV)",
     "inputs": {
       "batch_size": {
-        "name": "배치_크기"
+        "name": "배치 크기"
       },
       "height": {
         "name": "높이"
@@ -2013,17 +2013,17 @@
         "name": "이미지"
       },
       "image_noise_scale": {
-        "name": "이미지_노이즈_스케일",
-        "tooltip": "조건 이미지 잠재에 적용할 노이즈의 양입니다."
+        "name": "이미지 노이즈 규모",
+        "tooltip": "조건 이미지 잠재 비디오에 적용할 노이즈의 양입니다."
       },
       "length": {
         "name": "길이"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "vae": {
         "name": "vae"
@@ -2034,13 +2034,13 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -2048,24 +2048,24 @@
     "display_name": "LTXV 스케줄러",
     "inputs": {
       "base_shift": {
-        "name": "기본_이동"
+        "name": "기반 시프트"
       },
       "latent": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       },
       "max_shift": {
-        "name": "최대_이동"
+        "name": "최대 시프트"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       },
       "stretch": {
         "name": "늘이기",
-        "tooltip": "시그마를 [terminal, 1] 범위로 늘립니다."
+        "tooltip": "시그마를 [종료값, 1] 범위로 늘립니다."
       },
       "terminal": {
-        "name": "터미널",
-        "tooltip": "늘린 후 시그마의 최종 값입니다."
+        "name": "종료값",
+        "tooltip": "늘린 후 시그마의 종료값입니다."
       }
     }
   },
@@ -2073,19 +2073,19 @@
     "display_name": "라플라스 스케줄러",
     "inputs": {
       "beta": {
-        "name": "베타"
+        "name": "beta"
       },
       "mu": {
-        "name": "뮤"
+        "name": "mu"
       },
       "sigma_max": {
-        "name": "시그마_최대"
+        "name": "최대 시그마"
       },
       "sigma_min": {
-        "name": "시그마_최소"
+        "name": "최소 시그마"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -2093,10 +2093,10 @@
     "display_name": "잠재 데이터 연산 (더하기)",
     "inputs": {
       "samples1": {
-        "name": "샘플1"
+        "name": "잠재 데이터1"
       },
       "samples2": {
-        "name": "샘플2"
+        "name": "잠재 데이터2"
       }
     }
   },
@@ -2104,10 +2104,10 @@
     "display_name": "잠재 데이터 연산 (연산 적용)",
     "inputs": {
       "operation": {
-        "name": "작업"
+        "name": "연산"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -2118,7 +2118,7 @@
         "name": "모델"
       },
       "operation": {
-        "name": "작업"
+        "name": "연산"
       }
     }
   },
@@ -2126,10 +2126,10 @@
     "display_name": "잠재 데이터 배치 연결",
     "inputs": {
       "samples1": {
-        "name": "샘플1"
+        "name": "잠재 데이터1"
       },
       "samples2": {
-        "name": "샘플2"
+        "name": "잠재 데이터2"
       }
     }
   },
@@ -2137,10 +2137,10 @@
     "display_name": "잠재 데이터 배치 시드 동작",
     "inputs": {
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       },
       "seed_behavior": {
-        "name": "시드_행동"
+        "name": "시드 동작"
       }
     }
   },
@@ -2148,13 +2148,13 @@
     "display_name": "잠재 데이터 연산 (혼합)",
     "inputs": {
       "blend_factor": {
-        "name": "블렌드_요소"
+        "name": "혼합 계수"
       },
       "samples1": {
-        "name": "샘플1"
+        "name": "잠재 데이터1"
       },
       "samples2": {
-        "name": "샘플2"
+        "name": "잠재 데이터2"
       }
     }
   },
@@ -2162,13 +2162,13 @@
     "display_name": "잠재 데이터 합성 (위치 기반)",
     "inputs": {
       "feather": {
-        "name": "깃털"
+        "name": "가장자리 흐림"
       },
       "samples_from": {
-        "name": "samples_from"
+        "name": "추가 잠재 데이터"
       },
       "samples_to": {
-        "name": "samples_to"
+        "name": "대상 잠재 데이터"
       },
       "x": {
         "name": "x"
@@ -2182,16 +2182,16 @@
     "display_name": "잠재 데이터 합성 (마스크 기반)",
     "inputs": {
       "destination": {
-        "name": "목적지"
+        "name": "대상"
       },
       "mask": {
         "name": "마스크"
       },
       "resize_source": {
-        "name": "소스_크기_조정"
+        "name": "원본 크기 조정"
       },
       "source": {
-        "name": "소스"
+        "name": "원본"
       },
       "x": {
         "name": "x"
@@ -2208,7 +2208,7 @@
         "name": "높이"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       },
       "width": {
         "name": "너비"
@@ -2225,10 +2225,10 @@
     "display_name": "잠재 데이터 연산 (뒤집기)",
     "inputs": {
       "flip_method": {
-        "name": "뒤집기_방법"
+        "name": "뒤집기 방법"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -2253,10 +2253,10 @@
         "name": "비율"
       },
       "samples1": {
-        "name": "샘플1"
+        "name": "잠재 데이터1"
       },
       "samples2": {
-        "name": "샘플2"
+        "name": "잠재 데이터2"
       }
     }
   },
@@ -2264,10 +2264,10 @@
     "display_name": "잠재 데이터 연산 (곱하기)",
     "inputs": {
       "multiplier": {
-        "name": "곱셈자"
+        "name": "배율"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -2278,7 +2278,7 @@
         "name": "알파"
       },
       "sharpen_radius": {
-        "name": "선명도_반경"
+        "name": "선명화 반경"
       },
       "sigma": {
         "name": "시그마"
@@ -2289,7 +2289,7 @@
     "display_name": "잠재 데이터 연산 (톤맵 레인하르트)",
     "inputs": {
       "multiplier": {
-        "name": "곱셈자"
+        "name": "배율"
       }
     }
   },
@@ -2300,7 +2300,7 @@
         "name": "회전"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -2308,10 +2308,10 @@
     "display_name": "잠재 데이터 연산 (빼기)",
     "inputs": {
       "samples1": {
-        "name": "샘플1"
+        "name": "잠재 데이터1"
       },
       "samples2": {
-        "name": "샘플2"
+        "name": "잠재 데이터2"
       }
     }
   },
@@ -2325,10 +2325,10 @@
         "name": "높이"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       },
       "upscale_method": {
-        "name": "업스케일_방법"
+        "name": "업스케일 방법"
       },
       "width": {
         "name": "너비"
@@ -2339,13 +2339,13 @@
     "display_name": "잠재 데이터 크기 배율 조정",
     "inputs": {
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       },
       "scale_by": {
-        "name": "스케일_비율"
+        "name": "확대율"
       },
       "upscale_method": {
-        "name": "업스케일_방법"
+        "name": "확대 방법"
       }
     }
   },
@@ -2353,10 +2353,10 @@
     "display_name": "3D 로드",
     "inputs": {
       "bg_color": {
-        "name": "배경_색"
+        "name": "배경색"
       },
       "camera_type": {
-        "name": "카메라_유형"
+        "name": "카메라 유형"
       },
       "height": {
         "name": "높이"
@@ -2365,19 +2365,19 @@
         "name": "이미지"
       },
       "light_intensity": {
-        "name": "빛_강도"
+        "name": "조명 강도"
       },
       "material": {
         "name": "재질"
       },
       "model_file": {
-        "name": "모델_파일"
+        "name": "모델 파일"
       },
       "show_grid": {
-        "name": "그리드_보기"
+        "name": "그리드 보기"
       },
       "up_direction": {
-        "name": "위_방향"
+        "name": "위 방향"
       },
       "view": {
         "name": "보기"
@@ -2394,7 +2394,7 @@
         "name": "마스크"
       },
       "2": {
-        "name": "메시_경로"
+        "name": "메시 경로"
       }
     }
   },
@@ -2402,13 +2402,13 @@
     "display_name": "3D 로드 - 애니메이션",
     "inputs": {
       "animation_speed": {
-        "name": "애니메이션_속도"
+        "name": "애니메이션 속도"
       },
       "bg_color": {
-        "name": "배경_색"
+        "name": "배경색"
       },
       "camera_type": {
-        "name": "카메라_유형"
+        "name": "카메라 유형"
       },
       "height": {
         "name": "높이"
@@ -2417,19 +2417,19 @@
         "name": "이미지"
       },
       "light_intensity": {
-        "name": "빛_강도"
+        "name": "조명 강도"
       },
       "material": {
         "name": "재질"
       },
       "model_file": {
-        "name": "모델_파일"
+        "name": "모델 파일"
       },
       "show_grid": {
-        "name": "그리드_보기"
+        "name": "그리드 보기"
       },
       "up_direction": {
-        "name": "위_방향"
+        "name": "위 방향"
       },
       "view": {
         "name": "보기"
@@ -2446,7 +2446,7 @@
         "name": "마스크"
       },
       "2": {
-        "name": "메시_경로"
+        "name": "메시 경로"
       }
     }
   },
@@ -2481,20 +2481,20 @@
     "display_name": "잠재 데이터 로드",
     "inputs": {
       "latent": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
   "LoraLoader": {
-    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "description": "LoRA는 확산 모델과 CLIP 모델을 부분적으로 변경해서, 잠재 데이터의 노이즈 제거 방향을 바꿉니다. 여러 LoRA 노드를 연결할 수 있습니다.",
     "display_name": "LoRA 로드",
     "inputs": {
       "clip": {
-        "name": "클립",
+        "name": "clip",
         "tooltip": "LoRA가 적용될 CLIP 모델입니다."
       },
       "lora_name": {
-        "name": "lora_name",
+        "name": "LoRA 이름",
         "tooltip": "LoRA의 이름입니다."
       },
       "model": {
@@ -2502,12 +2502,12 @@
         "tooltip": "LoRA가 적용될 확산 모델입니다."
       },
       "strength_clip": {
-        "name": "강도_클립",
-        "tooltip": "CLIP 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+        "name": "클립 강도",
+        "tooltip": "CLIP 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
       },
       "strength_model": {
-        "name": "강도_모델",
-        "tooltip": "확산 모델을 수정하는 강도입니다. 이 값은 음수가 될 수 있습니다."
+        "name": "모델 강도",
+        "tooltip": "확산 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
       }
     },
     "outputs": {
@@ -2520,17 +2520,17 @@
     }
   },
   "LoraLoaderModelOnly": {
-    "description": "LoRA는 확산 및 CLIP 모델을 수정하는 데 사용되며, 잠재 데이터를 디노이즈하는 방식을 변경합니다. 여러 LoRA 노드를 연결할 수 있습니다.",
+    "description": "LoRA는 확산 모델과 CLIP 모델을 부분적으로 변경해서, 잠재 데이터의 노이즈 제거 방향을 바꿉니다. 여러 LoRA 노드를 연결할 수 있습니다. (이 노드는 CLIP 모델은 로드하지 않습니다.)",
     "display_name": "LoRA 로드 (모델 전용)",
     "inputs": {
       "lora_name": {
-        "name": "lora_name"
+        "name": "LoRA 이름"
       },
       "model": {
         "name": "모델"
       },
       "strength_model": {
-        "name": "강도_모델"
+        "name": "모델 강도"
       }
     },
     "outputs": {
@@ -2543,30 +2543,30 @@
     "display_name": "LoRA 추출 및 저장",
     "inputs": {
       "bias_diff": {
-        "name": "편향_차이"
+        "name": "차이 편향"
       },
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       },
       "lora_type": {
-        "name": "lora_유형"
+        "name": "LoRA 유형"
       },
       "model_diff": {
-        "name": "모델_차이",
-        "tooltip": "lora로 변환될 ModelSubtract 출력입니다."
+        "name": "모델 차이",
+        "tooltip": "LoRA로 변환 될 ModelSubtract 출력입니다."
       },
       "rank": {
         "name": "순위"
       },
       "text_encoder_diff": {
-        "name": "텍스트_인코더_차이",
-        "tooltip": "lora로 변환될 CLIPSubtract 출력입니다."
+        "name": "텍스트 인코더 차이",
+        "tooltip": "LoRA로 변환 될 CLIPSubtract 출력입니다."
       }
     }
   },
   "Mahiro": {
-    "description": "부정적인 프롬프트 사이의 차이보다는 긍정적인 프롬프트의 '방향'에 더 많이 확장하도록 안내를 수정합니다.",
-    "display_name": "Mahiro는 너무 귀여워서 더 나은 안내 기능을 받을 자격이 있습니다!! (。・ω・。)",
+    "description": "노이즈 제거의 '방향'을 긍정 조건과 부정 조건 차에 의한 것 보다는 긍정 조건 방향으로 더 크게 작동하도록 가이더 동작을 변경합니다.",
+    "display_name": "마히로",
     "inputs": {
       "model": {
         "name": "모델"
@@ -2574,7 +2574,7 @@
     },
     "outputs": {
       "0": {
-        "name": "수정된_모델"
+        "name": "변경된 모델"
       }
     }
   },
@@ -2582,13 +2582,13 @@
     "display_name": "마스크 합성",
     "inputs": {
       "destination": {
-        "name": "목적지"
+        "name": "대상"
       },
       "operation": {
-        "name": "작업"
+        "name": "연산"
       },
       "source": {
-        "name": "소스"
+        "name": "원본"
       },
       "x": {
         "name": "x"
@@ -2651,10 +2651,10 @@
         "name": "모델2"
       },
       "positional_encoding": {
-        "name": "위치 인코딩"
+        "name": "positional_encoding"
       },
       "register_tokens": {
-        "name": "토큰 등록"
+        "name": "register_tokens"
       },
       "single_layers_0_": {
         "name": "single_layers.0."
@@ -2761,10 +2761,10 @@
     "display_name": "모델 병합 (블록)",
     "inputs": {
       "input": {
-        "name": "입력"
+        "name": "input"
       },
       "middle": {
-        "name": "중간"
+        "name": "middle"
       },
       "model1": {
         "name": "모델1"
@@ -2773,7 +2773,7 @@
         "name": "모델2"
       },
       "out": {
-        "name": "출력"
+        "name": "out"
       }
     }
   },
@@ -2978,7 +2978,7 @@
     }
   },
   "ModelMergeLTXV": {
-    "display_name": "모델 병합 LTXV",
+    "display_name": "모델 병합 (LTXV)",
     "inputs": {
       "adaln_single_": {
         "name": "adaln_single."
@@ -3088,7 +3088,7 @@
     }
   },
   "ModelMergeMochiPreview": {
-    "display_name": "모델 병합 (Mochi 프리뷰)",
+    "display_name": "모델 병합 (Mochi Preview)",
     "inputs": {
       "blocks_0_": {
         "name": "blocks.0."
@@ -3261,52 +3261,52 @@
     "display_name": "모델 병합 (SD1)",
     "inputs": {
       "input_blocks_0_": {
-        "name": "입력_블록.0."
+        "name": "input_blocks.0."
       },
       "input_blocks_10_": {
-        "name": "입력_블록.10."
+        "name": "input_blocks.10."
       },
       "input_blocks_11_": {
-        "name": "입력_블록.11."
+        "name": "input_blocks.11."
       },
       "input_blocks_1_": {
-        "name": "입력_블록.1."
+        "name": "input_blocks.1."
       },
       "input_blocks_2_": {
-        "name": "입력_블록.2."
+        "name": "input_blocks.2."
       },
       "input_blocks_3_": {
-        "name": "입력_블록.3."
+        "name": "input_blocks.3."
       },
       "input_blocks_4_": {
-        "name": "입력_블록.4."
+        "name": "input_blocks.4."
       },
       "input_blocks_5_": {
-        "name": "입력_블록.5."
+        "name": "input_blocks.5."
       },
       "input_blocks_6_": {
-        "name": "입력_블록.6."
+        "name": "input_blocks.6."
       },
       "input_blocks_7_": {
-        "name": "입력_블록.7."
+        "name": "input_blocks.7."
       },
       "input_blocks_8_": {
-        "name": "입력_블록.8."
+        "name": "input_blocks.8."
       },
       "input_blocks_9_": {
-        "name": "입력_블록.9."
+        "name": "input_blocks.9."
       },
       "label_emb_": {
-        "name": "레이블_임베드."
+        "name": "label_emb."
       },
       "middle_block_0_": {
-        "name": "중간_블록.0."
+        "name": "middle_blocks.0."
       },
       "middle_block_1_": {
-        "name": "중간_블록.1."
+        "name": "middle_blocks.1."
       },
       "middle_block_2_": {
-        "name": "중간_블록.2."
+        "name": "middle_blocks.2."
       },
       "model1": {
         "name": "모델1"
@@ -3315,46 +3315,46 @@
         "name": "모델2"
       },
       "out_": {
-        "name": "아웃."
+        "name": "out."
       },
       "output_blocks_0_": {
-        "name": "출력_블록.0."
+        "name": "out_blocks.0."
       },
       "output_blocks_10_": {
-        "name": "출력_블록.10."
+        "name": "out_blocks.10."
       },
       "output_blocks_11_": {
-        "name": "출력_블록.11."
+        "name": "out_blocks.11."
       },
       "output_blocks_1_": {
-        "name": "출력_블록.1."
+        "name": "out_blocks.1."
       },
       "output_blocks_2_": {
-        "name": "출력_블록.2."
+        "name": "out_blocks.2."
       },
       "output_blocks_3_": {
-        "name": "출력_블록.3."
+        "name": "out_blocks.3."
       },
       "output_blocks_4_": {
-        "name": "출력_블록.4."
+        "name": "out_blocks.4."
       },
       "output_blocks_5_": {
-        "name": "출력_블록.5."
+        "name": "out_blocks.5."
       },
       "output_blocks_6_": {
-        "name": "출력_블록.6."
+        "name": "out_blocks.6."
       },
       "output_blocks_7_": {
-        "name": "출력_블록.7."
+        "name": "out_blocks.7."
       },
       "output_blocks_8_": {
-        "name": "출력_블록.8."
+        "name": "out_blocks.8."
       },
       "output_blocks_9_": {
-        "name": "출력_블록.9."
+        "name": "out_blocks.9."
       },
       "time_embed_": {
-        "name": "시간_임베드."
+        "name": "time_embed."
       }
     }
   },
@@ -3362,52 +3362,52 @@
     "display_name": "모델 병합 (SD2)",
     "inputs": {
       "input_blocks_0_": {
-        "name": "입력_블록.0."
+        "name": "input_blocks.0."
       },
       "input_blocks_10_": {
-        "name": "입력_블록.10."
+        "name": "input_blocks.10."
       },
       "input_blocks_11_": {
-        "name": "입력_블록.11."
+        "name": "input_blocks.11."
       },
       "input_blocks_1_": {
-        "name": "입력_블록.1."
+        "name": "input_blocks.1."
       },
       "input_blocks_2_": {
-        "name": "입력_블록.2."
+        "name": "input_blocks.2."
       },
       "input_blocks_3_": {
-        "name": "입력_블록.3."
+        "name": "input_blocks.3."
       },
       "input_blocks_4_": {
-        "name": "입력_블록.4."
+        "name": "input_blocks.4."
       },
       "input_blocks_5_": {
-        "name": "입력_블록.5."
+        "name": "input_blocks.5."
       },
       "input_blocks_6_": {
-        "name": "입력_블록.6."
+        "name": "input_blocks.6."
       },
       "input_blocks_7_": {
-        "name": "입력_블록.7."
+        "name": "input_blocks.7."
       },
       "input_blocks_8_": {
-        "name": "입력_블록.8."
+        "name": "input_blocks.8."
       },
       "input_blocks_9_": {
-        "name": "입력_블록.9."
+        "name": "input_blocks.9."
       },
       "label_emb_": {
-        "name": "레이블_임베드."
+        "name": "label_emb."
       },
       "middle_block_0_": {
-        "name": "중간_블록.0."
+        "name": "middle_blocks.0."
       },
       "middle_block_1_": {
-        "name": "중간_블록.1."
+        "name": "middle_blocks.1."
       },
       "middle_block_2_": {
-        "name": "중간_블록.2."
+        "name": "middle_blocks.2."
       },
       "model1": {
         "name": "모델1"
@@ -3416,46 +3416,46 @@
         "name": "모델2"
       },
       "out_": {
-        "name": "아웃."
+        "name": "out."
       },
       "output_blocks_0_": {
-        "name": "출력_블록.0."
+        "name": "out_blocks.0."
       },
       "output_blocks_10_": {
-        "name": "출력_블록.10."
+        "name": "out_blocks.10."
       },
       "output_blocks_11_": {
-        "name": "출력_블록.11."
+        "name": "out_blocks.11."
       },
       "output_blocks_1_": {
-        "name": "출력_블록.1."
+        "name": "out_blocks.1."
       },
       "output_blocks_2_": {
-        "name": "출력_블록.2."
+        "name": "out_blocks.2."
       },
       "output_blocks_3_": {
-        "name": "출력_블록.3."
+        "name": "out_blocks.3."
       },
       "output_blocks_4_": {
-        "name": "출력_블록.4."
+        "name": "out_blocks.4."
       },
       "output_blocks_5_": {
-        "name": "출력_블록.5."
+        "name": "out_blocks.5."
       },
       "output_blocks_6_": {
-        "name": "출력_블록.6."
+        "name": "out_blocks.6."
       },
       "output_blocks_7_": {
-        "name": "출력_블록.7."
+        "name": "out_blocks.7."
       },
       "output_blocks_8_": {
-        "name": "출력_블록.8."
+        "name": "out_blocks.8."
       },
       "output_blocks_9_": {
-        "name": "출력_블록.9."
+        "name": "out_blocks.9."
       },
       "time_embed_": {
-        "name": "시간_임베드."
+        "name": "time_embed."
       }
     }
   },
@@ -3810,7 +3810,7 @@
         "name": "모델2"
       },
       "multiplier": {
-        "name": "곱셈자"
+        "name": "배율"
       }
     }
   },
@@ -3835,10 +3835,10 @@
         "name": "샘플링"
       },
       "sigma_max": {
-        "name": "sigma_max"
+        "name": "최대 시그마"
       },
       "sigma_min": {
-        "name": "sigma_min"
+        "name": "최소 시그마"
       }
     }
   },
@@ -3852,10 +3852,10 @@
         "name": "샘플링"
       },
       "sigma_max": {
-        "name": "sigma_max"
+        "name": "최대 시그마"
       },
       "sigma_min": {
-        "name": "sigma_min"
+        "name": "최소 시그마"
       }
     }
   },
@@ -3883,7 +3883,7 @@
         "name": "높이"
       },
       "max_shift": {
-        "name": "최대_시프트"
+        "name": "최대 시프트"
       },
       "model": {
         "name": "모델"
@@ -3897,13 +3897,13 @@
     "display_name": "모델 샘플링 (LTXV)",
     "inputs": {
       "base_shift": {
-        "name": "기본_시프트"
+        "name": "기반 시프트"
       },
       "latent": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       },
       "max_shift": {
-        "name": "최대_시프트"
+        "name": "최대 시프트"
       },
       "model": {
         "name": "모델"
@@ -3936,7 +3936,7 @@
     "display_name": "모델 저장",
     "inputs": {
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       },
       "model": {
         "name": "모델"
@@ -3950,10 +3950,10 @@
         "name": "이미지"
       },
       "kernel_size": {
-        "name": "커널_크기"
+        "name": "커널 크기"
       },
       "operation": {
-        "name": "작업"
+        "name": "연산"
       }
     }
   },
@@ -3961,24 +3961,24 @@
     "display_name": "조건 쌍 (결합)",
     "inputs": {
       "negative_A": {
-        "name": "부정적_A"
+        "name": "부정 조건 A"
       },
       "negative_B": {
-        "name": "부정적_B"
+        "name": "부정 조건 B"
       },
       "positive_A": {
-        "name": "긍정적_A"
+        "name": "긍정 조건 A"
       },
       "positive_B": {
-        "name": "긍정적_B"
+        "name": "긍정 조건 B"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -3989,24 +3989,24 @@
         "name": "후크"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "negative_DEFAULT": {
-        "name": "부정적_기본"
+        "name": "기본 부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "positive_DEFAULT": {
-        "name": "긍정적_기본"
+        "name": "기본 긍정 조건"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -4020,27 +4020,27 @@
         "name": "마스크"
       },
       "negative_NEW": {
-        "name": "부정적_새로운"
+        "name": "새 부정 조건"
       },
       "positive_NEW": {
-        "name": "긍정적_새로운"
+        "name": "새 긍정 조건"
       },
       "set_cond_area": {
-        "name": "조건_영역_설정"
+        "name": "조건 영역 설정"
       },
       "strength": {
         "name": "강도"
       },
       "timesteps": {
-        "name": "시간단계"
+        "name": "타임스텝 범위"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -4054,33 +4054,33 @@
         "name": "마스크"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "negative_NEW": {
-        "name": "부정적_새로운"
+        "name": "새 부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "positive_NEW": {
-        "name": "긍정적_새로운"
+        "name": "새 긍정 조건"
       },
       "set_cond_area": {
-        "name": "조건_영역_설정"
+        "name": "조건 영역 설정"
       },
       "strength": {
         "name": "강도"
       },
       "timesteps": {
-        "name": "시간단계"
+        "name": "타임스텝 범위"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       }
     }
   },
@@ -4088,28 +4088,28 @@
     "display_name": "다운스케일 추가 모델 패치 (Kohya Deep Shrink)",
     "inputs": {
       "block_number": {
-        "name": "블록_번호"
+        "name": "블록 번호"
       },
       "downscale_after_skip": {
-        "name": "스킵_후_다운스케일"
+        "name": "스킵 후 다운스케일"
       },
       "downscale_factor": {
-        "name": "다운스케일_계수"
+        "name": "다운스케일 배율"
       },
       "downscale_method": {
-        "name": "다운스케일_방법"
+        "name": "다운스케일 방법"
       },
       "end_percent": {
-        "name": "종료_퍼센트"
+        "name": "종료 퍼센트"
       },
       "model": {
         "name": "모델"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       },
       "upscale_method": {
-        "name": "업스케일_방법"
+        "name": "업스케일 방법"
       }
     }
   },
@@ -4117,13 +4117,13 @@
     "display_name": "Perp-Neg (PerpNegGuider에 의해 지원 중단됨)",
     "inputs": {
       "empty_conditioning": {
-        "name": "빈_조절"
+        "name": "빈 조건"
       },
       "model": {
         "name": "모델"
       },
       "neg_scale": {
-        "name": "neg_scale"
+        "name": "부정 스케일"
       }
     }
   },
@@ -4134,19 +4134,19 @@
         "name": "cfg"
       },
       "empty_conditioning": {
-        "name": "빈_조절"
+        "name": "빈 조건"
       },
       "model": {
         "name": "모델"
       },
       "neg_scale": {
-        "name": "neg_scale"
+        "name": "부정 스케일"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       }
     }
   },
@@ -4171,7 +4171,7 @@
         "name": "이미지"
       },
       "photomaker": {
-        "name": "photomaker"
+        "name": "포토메이커 모델"
       },
       "text": {
         "name": "텍스트"
@@ -4179,10 +4179,10 @@
     }
   },
   "PhotoMakerLoader": {
-    "display_name": "포토메이커 로더",
+    "display_name": "포토메이커 로드",
     "inputs": {
       "photomaker_model_name": {
-        "name": "photomaker_모델_이름"
+        "name": "포토메이커 파일명"
       }
     }
   },
@@ -4193,13 +4193,13 @@
         "name": "rho"
       },
       "sigma_max": {
-        "name": "sigma_max"
+        "name": "최대 시그마"
       },
       "sigma_min": {
-        "name": "sigma_min"
+        "name": "최소 시그마"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -4207,19 +4207,19 @@
     "display_name": "포터-더프 이미지 합성",
     "inputs": {
       "destination": {
-        "name": "목적지"
+        "name": "대상"
       },
       "destination_alpha": {
-        "name": "목적지_알파"
+        "name": "대상 알파"
       },
       "mode": {
         "name": "모드"
       },
       "source": {
-        "name": "소스"
+        "name": "원본"
       },
       "source_alpha": {
-        "name": "소스_알파"
+        "name": "원본 알파"
       }
     }
   },
@@ -4233,10 +4233,10 @@
         "name": "카메라 유형"
       },
       "light_intensity": {
-        "name": "빛의 강도"
+        "name": "조명 강도"
       },
       "material": {
-        "name": "재료"
+        "name": "재질"
       },
       "model_file": {
         "name": "모델 파일"
@@ -4248,7 +4248,7 @@
         "name": "위 방향"
       },
       "view": {
-        "name": "보기"
+        "name": "뷰"
       }
     }
   },
@@ -4273,7 +4273,7 @@
     "display_name": "무작위 노이즈",
     "inputs": {
       "noise_seed": {
-        "name": "노이즈_시드"
+        "name": "노이즈 시드"
       }
     }
   },
@@ -4281,7 +4281,7 @@
     "display_name": "이미지 배치 재배치",
     "inputs": {
       "batch_size": {
-        "name": "배치_크기"
+        "name": "배치 크기"
       },
       "images": {
         "name": "이미지"
@@ -4292,10 +4292,10 @@
     "display_name": "잠재 데이터 배치 재배치",
     "inputs": {
       "batch_size": {
-        "name": "배치_크기"
+        "name": "배치 크기"
       },
       "latents": {
-        "name": "잠재변수"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -4303,7 +4303,7 @@
     "display_name": "이미지 반복 배치 생성",
     "inputs": {
       "amount": {
-        "name": "양"
+        "name": "개수"
       },
       "image": {
         "name": "이미지"
@@ -4314,21 +4314,21 @@
     "display_name": "잠재 데이터 반복 배치 생성",
     "inputs": {
       "amount": {
-        "name": "양"
+        "name": "개수"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
   "RescaleCFG": {
-    "display_name": "CFG 리스케일",
+    "display_name": "CFG 크기 재조정",
     "inputs": {
       "model": {
         "name": "모델"
       },
       "multiplier": {
-        "name": "곱셈기"
+        "name": "배율"
       }
     }
   },
@@ -4336,13 +4336,13 @@
     "display_name": "SD-Turbo 스케줄러",
     "inputs": {
       "denoise": {
-        "name": "노이즈_제거"
+        "name": "노이즈 제거양"
       },
       "model": {
         "name": "모델"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -4353,27 +4353,27 @@
         "name": "이미지"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "noise_augmentation": {
-        "name": "노이즈_증가"
+        "name": "노이즈 증강"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "scale_ratio": {
-        "name": "스케일_비율"
+        "name": "확대율"
       }
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 이미지"
       }
     }
   },
@@ -4381,7 +4381,7 @@
     "display_name": "SV3D 조건 설정",
     "inputs": {
       "clip_vision": {
-        "name": "클립 비전"
+        "name": "clip_vision"
       },
       "elevation": {
         "name": "고도"
@@ -4404,18 +4404,18 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
   "SVD_img2vid_Conditioning": {
-    "display_name": "SVD_img2vid 조건 설정",
+    "display_name": "이미지를 비디오로 조건 설정 (SVD)",
     "inputs": {
       "augmentation_level": {
         "name": "증강 레벨"
@@ -4430,10 +4430,10 @@
         "name": "높이"
       },
       "init_image": {
-        "name": "init_image"
+        "name": "초기 이미지"
       },
       "motion_bucket_id": {
-        "name": "모션 버킷 아이디"
+        "name": "모션 버킷 ID"
       },
       "vae": {
         "name": "vae"
@@ -4447,13 +4447,13 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 비디오"
       }
     }
   },
@@ -4461,25 +4461,25 @@
     "display_name": "사용자 정의 샘플러",
     "inputs": {
       "add_noise": {
-        "name": "노이즈_추가"
+        "name": "노이즈 추가"
       },
       "cfg": {
         "name": "cfg"
       },
       "latent_image": {
-        "name": "잠재_이미지"
+        "name": "잠재 데이터"
       },
       "model": {
         "name": "모델"
       },
       "negative": {
-        "name": "부정적"
+        "name": "부정 조건"
       },
       "noise_seed": {
-        "name": "노이즈_시드"
+        "name": "노이즈 시드"
       },
       "positive": {
-        "name": "긍정적"
+        "name": "긍정 조건"
       },
       "sampler": {
         "name": "샘플러"
@@ -4504,7 +4504,7 @@
         "name": "가이더"
       },
       "latent_image": {
-        "name": "잠재 이미지"
+        "name": "잠재 데이터"
       },
       "noise": {
         "name": "노이즈"
@@ -4529,7 +4529,7 @@
     "display_name": "DPMAdaptive 샘플러",
     "inputs": {
       "accept_safety": {
-        "name": "수용 안전성"
+        "name": "accept_safety"
       },
       "atol": {
         "name": "atol"
@@ -4541,13 +4541,13 @@
         "name": "eta"
       },
       "h_init": {
-        "name": "h_init"
+        "name": "초기 h"
       },
       "icoeff": {
         "name": "icoeff"
       },
       "order": {
-        "name": "순서"
+        "name": "order"
       },
       "pcoeff": {
         "name": "pcoeff"
@@ -4567,13 +4567,13 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "노이즈 장치"
+        "name": "노이즈 생성 장치"
       },
       "s_noise": {
         "name": "s_noise"
       },
       "solver_type": {
-        "name": "솔버 유형"
+        "name": "Solver 유형"
       }
     }
   },
@@ -4595,7 +4595,7 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "노이즈 장치"
+        "name": "노이즈 생성 장치"
       },
       "s_noise": {
         "name": "s_noise"
@@ -4609,7 +4609,7 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "노이즈 장치"
+        "name": "노이즈 생성 장치"
       },
       "r": {
         "name": "r"
@@ -4653,10 +4653,10 @@
     "display_name": "LCM 확대 샘플러",
     "inputs": {
       "scale_ratio": {
-        "name": "스케일 비율"
+        "name": "확대율"
       },
       "scale_steps": {
-        "name": "스케일 단계"
+        "name": "스텝수"
       },
       "upscale_method": {
         "name": "업스케일 방법"
@@ -4701,7 +4701,7 @@
         "name": "이미지"
       },
       "lossless": {
-        "name": "손실 없음"
+        "name": "무손실"
       },
       "method": {
         "name": "방법"
@@ -4718,7 +4718,7 @@
         "name": "오디오"
       },
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       }
     }
   },
@@ -4727,7 +4727,7 @@
     "display_name": "이미지 저장",
     "inputs": {
       "filename_prefix": {
-        "name": "파일명_접두사",
+        "name": "파일명 접두사",
         "tooltip": "저장할 파일의 접두사입니다. 여기에는 %date:yyyy-MM-dd% 또는 %Empty Latent Image.width%와 같은 형식 정보가 포함되어 노드의 값을 포함할 수 있습니다."
       },
       "images": {
@@ -4748,10 +4748,10 @@
     "display_name": "잠재 데이터 저장",
     "inputs": {
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -4759,7 +4759,7 @@
     "display_name": "셀프 어텐션 가이드",
     "inputs": {
       "blur_sigma": {
-        "name": "블러_시그마"
+        "name": "블러 시그마"
       },
       "model": {
         "name": "모델"
@@ -4776,7 +4776,7 @@
         "name": "조건에_적용"
       },
       "clip": {
-        "name": "클립"
+        "name": "clip"
       },
       "hooks": {
         "name": "후크"
@@ -4790,7 +4790,7 @@
     "display_name": "후크 키프레임 설정",
     "inputs": {
       "hook_kf": {
-        "name": "후크_kf"
+        "name": "KF 후크"
       },
       "hooks": {
         "name": "후크"
@@ -4804,7 +4804,7 @@
         "name": "마스크"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -4812,7 +4812,7 @@
     "display_name": "통합 컨트롤넷 유형 설정",
     "inputs": {
       "control_net": {
-        "name": "컨트롤_넷"
+        "name": "컨트롤넷"
       },
       "type": {
         "name": "유형"
@@ -4824,25 +4824,25 @@
     "display_name": "SkipLayerGuidanceDiT",
     "inputs": {
       "double_layers": {
-        "name": "이중_레이어"
+        "name": "double_layers"
       },
       "end_percent": {
-        "name": "종료_퍼센트"
+        "name": "종료 퍼센트"
       },
       "model": {
         "name": "모델"
       },
       "rescaling_scale": {
-        "name": "재조정_스케일"
+        "name": "크기 재조정 크기"
       },
       "scale": {
-        "name": "스케일"
+        "name": "크기"
       },
       "single_layers": {
         "name": "단일_레이어"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       }
     }
   },
@@ -4851,7 +4851,7 @@
     "display_name": "SkipLayerGuidanceSD3",
     "inputs": {
       "end_percent": {
-        "name": "종료_퍼센트"
+        "name": "종료 퍼센트"
       },
       "layers": {
         "name": "레이어"
@@ -4860,10 +4860,10 @@
         "name": "모델"
       },
       "scale": {
-        "name": "스케일"
+        "name": "크기"
       },
       "start_percent": {
-        "name": "시작_퍼센트"
+        "name": "시작 퍼센트"
       }
     }
   },
@@ -4890,29 +4890,29 @@
     }
   },
   "SplitSigmas": {
-    "display_name": "시그마 분할 (스텝형)",
+    "display_name": "시그마 분할 (스텝)",
     "inputs": {
       "sigmas": {
         "name": "시그마"
       },
       "step": {
-        "name": "단계"
+        "name": "분할 스텝"
       }
     },
     "outputs": {
       "0": {
-        "name": "높은_시그마"
+        "name": "높은 시그마"
       },
       "1": {
-        "name": "낮은_시그마"
+        "name": "낮은 시그마"
       }
     }
   },
   "SplitSigmasDenoise": {
-    "display_name": "시그마 분할 (디노이즈형)",
+    "display_name": "시그마 분할 (노이즈 제거양)",
     "inputs": {
       "denoise": {
-        "name": "노이즈 제거"
+        "name": "노이즈 제거양"
       },
       "sigmas": {
         "name": "시그마"
@@ -4920,10 +4920,10 @@
     },
     "outputs": {
       "0": {
-        "name": "높은_시그마"
+        "name": "높은 시그마"
       },
       "1": {
-        "name": "낮은_시그마"
+        "name": "낮은 시그마"
       }
     }
   },
@@ -4945,10 +4945,10 @@
     },
     "outputs": {
       "0": {
-        "name": "단계_c"
+        "name": "StageC 잠재 이미지"
       },
       "1": {
-        "name": "단계_b"
+        "name": "StageB 잠재 이미지"
       }
     }
   },
@@ -4956,10 +4956,10 @@
     "display_name": "StableCascasde_StageB 조건 설정",
     "inputs": {
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "stage_c": {
-        "name": "스테이지_c"
+        "name": "StageC 잠재 이미지"
       }
     }
   },
@@ -4978,10 +4978,10 @@
     },
     "outputs": {
       "0": {
-        "name": "단계_c"
+        "name": "StageC 잠재 이미지"
       },
       "1": {
-        "name": "단계_b"
+        "name": "StageB 잠재 이미지"
       }
     }
   },
@@ -5000,10 +5000,10 @@
         "name": "controlnet_input"
       },
       "1": {
-        "name": "단계_c"
+        "name": "StageC 잠재 이미지"
       },
       "2": {
-        "name": "단계_b"
+        "name": "StageB 잠재 이미지"
       }
     }
   },
@@ -5017,7 +5017,7 @@
         "name": "배치 크기"
       },
       "clip_vision": {
-        "name": "클립 비전"
+        "name": "clip_vision"
       },
       "elevation": {
         "name": "고도"
@@ -5037,13 +5037,13 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -5060,7 +5060,7 @@
         "name": "배치 크기"
       },
       "clip_vision": {
-        "name": "클립 비전"
+        "name": "clip_vision"
       },
       "elevation": {
         "name": "고도"
@@ -5083,13 +5083,13 @@
     },
     "outputs": {
       "0": {
-        "name": "양성"
+        "name": "긍정 조건"
       },
       "1": {
-        "name": "음성"
+        "name": "부정 조건"
       },
       "2": {
-        "name": "잠재"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -5097,10 +5097,10 @@
     "display_name": "스타일 모델 적용",
     "inputs": {
       "clip_vision_output": {
-        "name": "클립 비전 출력"
+        "name": "clip_vision 출력"
       },
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "strength": {
         "name": "강도"
@@ -5155,17 +5155,17 @@
     }
   },
   "TripleCLIPLoader": {
-    "description": "[레시피]\n\nsd3: clip-l, clip-g, t5",
-    "display_name": "삼중 CLIP 로더",
+    "description": "[조합법]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "삼중 CLIP 로드",
     "inputs": {
       "clip_name1": {
-        "name": "clip_name1"
+        "name": "CLIP 파일명1"
       },
       "clip_name2": {
-        "name": "clip_name2"
+        "name": "CLIP 파일명2"
       },
       "clip_name3": {
-        "name": "clip_name3"
+        "name": "CLIP 파일명3"
       }
     }
   },
@@ -5173,7 +5173,7 @@
     "display_name": "확산 모델 로드",
     "inputs": {
       "unet_name": {
-        "name": "unet_name"
+        "name": "UNet 모델 파일명"
       },
       "weight_dtype": {
         "name": "가중치 데이터 유형"
@@ -5190,7 +5190,7 @@
         "name": "모델"
       },
       "out": {
-        "name": "아웃"
+        "name": "out"
       },
       "q": {
         "name": "q"
@@ -5210,7 +5210,7 @@
         "name": "모델"
       },
       "out": {
-        "name": "아웃"
+        "name": "out"
       },
       "q": {
         "name": "q"
@@ -5224,19 +5224,19 @@
     "display_name": "UNet 템포럴 어텐션 곱하기",
     "inputs": {
       "cross_structural": {
-        "name": "cross_structural"
+        "name": "구조적 크로스"
       },
       "cross_temporal": {
-        "name": "cross_temporal"
+        "name": "시간적 크로스"
       },
       "model": {
         "name": "모델"
       },
       "self_structural": {
-        "name": "self_structural"
+        "name": "구조적 셀프"
       },
       "self_temporal": {
-        "name": "self_temporal"
+        "name": "시간적 셀프"
       }
     }
   },
@@ -5244,7 +5244,7 @@
     "display_name": "업스케일 모델 로드",
     "inputs": {
       "model_name": {
-        "name": "모델 이름"
+        "name": "모델 파일명"
       }
     }
   },
@@ -5268,10 +5268,10 @@
     }
   },
   "VAEDecodeAudio": {
-    "display_name": "VAE 디코드 오디오",
+    "display_name": "오디오 VAE 디코드",
     "inputs": {
       "samples": {
-        "name": "샘플"
+        "name": "잠재 오디오"
       },
       "vae": {
         "name": "vae"
@@ -5282,21 +5282,21 @@
     "display_name": "VAE 디코드 (타일)",
     "inputs": {
       "overlap": {
-        "name": "중복"
+        "name": "겹침"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       },
       "temporal_overlap": {
-        "name": "temporal_overlap",
+        "name": "시간 겹침",
         "tooltip": "비디오 VAE에만 사용됩니다: 겹치는 프레임의 양."
       },
       "temporal_size": {
-        "name": "temporal_size",
+        "name": "시간 크기",
         "tooltip": "비디오 VAE에만 사용됩니다: 한 번에 디코딩할 프레임의 양."
       },
       "tile_size": {
-        "name": "타일_크기"
+        "name": "타일 크기"
       },
       "vae": {
         "name": "vae"
@@ -5307,7 +5307,7 @@
     "display_name": "VAE 인코드",
     "inputs": {
       "pixels": {
-        "name": "픽셀"
+        "name": "픽셀 이미지"
       },
       "vae": {
         "name": "vae"
@@ -5315,7 +5315,7 @@
     }
   },
   "VAEEncodeAudio": {
-    "display_name": "VAE 인코드 오디오",
+    "display_name": "오디오 VAE 인코드",
     "inputs": {
       "audio": {
         "name": "오디오"
@@ -5329,7 +5329,7 @@
     "display_name": "VAE 인코드 (인페인팅용)",
     "inputs": {
       "grow_mask_by": {
-        "name": "마스크_늘리기"
+        "name": "마스크 확장"
       },
       "mask": {
         "name": "마스크"
@@ -5346,21 +5346,21 @@
     "display_name": "VAE 인코드 (타일)",
     "inputs": {
       "overlap": {
-        "name": "중첩"
+        "name": "겹침"
       },
       "pixels": {
         "name": "픽셀"
       },
       "temporal_overlap": {
-        "name": "temporal_overlap",
+        "name": "시간적 겹침",
         "tooltip": "비디오 VAE에만 사용됩니다: 겹치는 프레임의 양."
       },
       "temporal_size": {
-        "name": "temporal_size",
+        "name": "시간적 크기",
         "tooltip": "비디오 VAE에만 사용됩니다: 한 번에 인코딩할 프레임의 양."
       },
       "tile_size": {
-        "name": "타일_크기"
+        "name": "타일 크기"
       },
       "vae": {
         "name": "vae"
@@ -5371,7 +5371,7 @@
     "display_name": "VAE 로드",
     "inputs": {
       "vae_name": {
-        "name": "vae_이름"
+        "name": "vae 파일명"
       }
     }
   },
@@ -5379,7 +5379,7 @@
     "display_name": "VAE 저장",
     "inputs": {
       "filename_prefix": {
-        "name": "파일명_접두사"
+        "name": "파일명 접두사"
       },
       "vae": {
         "name": "vae"
@@ -5390,16 +5390,16 @@
     "display_name": "VP 스케줄러",
     "inputs": {
       "beta_d": {
-        "name": "베타_d"
+        "name": "beta_d"
       },
       "beta_min": {
-        "name": "베타_최소"
+        "name": "beta_min"
       },
       "eps_s": {
         "name": "eps_s"
       },
       "steps": {
-        "name": "단계"
+        "name": "스텝수"
       }
     }
   },
@@ -5407,7 +5407,7 @@
     "display_name": "비디오 선형 CFG 가이드",
     "inputs": {
       "min_cfg": {
-        "name": "최소_cfg"
+        "name": "최소 cfg"
       },
       "model": {
         "name": "모델"
@@ -5418,7 +5418,7 @@
     "display_name": "비디오 삼각형 CFG 가이드",
     "inputs": {
       "min_cfg": {
-        "name": "최소_cfg"
+        "name": "최소 cfg"
       },
       "model": {
         "name": "모델"
@@ -5429,7 +5429,7 @@
     "display_name": "웹캠 캡처",
     "inputs": {
       "capture_on_queue": {
-        "name": "큐에_캡처"
+        "name": "큐에서 캡처"
       },
       "height": {
         "name": "높이"
@@ -5443,10 +5443,10 @@
     }
   },
   "unCLIPCheckpointLoader": {
-    "display_name": "unCLIP 체크포인트 로더",
+    "display_name": "unCLIP 체크포인트 로드",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt_name"
+        "name": "체크포인트 파일명"
       }
     }
   },
@@ -5454,10 +5454,10 @@
     "display_name": "unCLIP 조건 설정",
     "inputs": {
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision 출력"
       },
       "conditioning": {
-        "name": "조절"
+        "name": "조건"
       },
       "noise_augmentation": {
         "name": "노이즈 증강"
