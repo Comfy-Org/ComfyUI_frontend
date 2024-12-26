@@ -12,23 +12,26 @@ import { appendJsonExt } from '@/utils/formatUtil'
 import { t } from '@/i18n'
 import { useToastStore } from '@/stores/toastStore'
 
-async function getFilename(defaultName: string): Promise<string | null> {
-  if (useSettingStore().get('Comfy.PromptFilename')) {
-    let filename = await showPromptDialog({
-      title: t('workflowService.exportWorkflow'),
-      message: t('workflowService.enterFilename') + ':',
-      defaultValue: defaultName
-    })
-    if (!filename) return null
-    if (!filename.toLowerCase().endsWith('.json')) {
-      filename += '.json'
-    }
-    return filename
-  }
-  return defaultName
-}
-
 export const useWorkflowService = () => {
+  const settingStore = useSettingStore()
+  const workflowStore = useWorkflowStore()
+  const toastStore = useToastStore()
+
+  async function getFilename(defaultName: string): Promise<string | null> {
+    if (settingStore.get('Comfy.PromptFilename')) {
+      let filename = await showPromptDialog({
+        title: t('workflowService.exportWorkflow'),
+        message: t('workflowService.enterFilename') + ':',
+        defaultValue: defaultName
+      })
+      if (!filename) return null
+      if (!filename.toLowerCase().endsWith('.json')) {
+        filename += '.json'
+      }
+      return filename
+    }
+    return defaultName
+  }
   /**
    * Export the current workflow as a JSON file
    * @param filename The filename to save the workflow as
@@ -38,7 +41,7 @@ export const useWorkflowService = () => {
     filename: string,
     promptProperty: 'workflow' | 'output'
   ): Promise<void> => {
-    const workflow = useWorkflowStore().activeWorkflow
+    const workflow = workflowStore.activeWorkflow
     if (workflow?.path) {
       filename = workflow.filename
     }
@@ -63,7 +66,6 @@ export const useWorkflowService = () => {
 
     const newPath = workflow.directory + '/' + appendJsonExt(newFilename)
     const newKey = newPath.substring(ComfyWorkflow.basePath.length)
-    const workflowStore = useWorkflowStore()
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
@@ -105,7 +107,7 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) {
       await saveWorkflowAs(workflow)
     } else {
-      await useWorkflowStore().saveWorkflow(workflow)
+      await workflowStore.saveWorkflow(workflow)
     }
   }
 
@@ -128,7 +130,7 @@ export const useWorkflowService = () => {
    * This is used to refresh the node definitions update, e.g. when the locale changes.
    */
   const reloadCurrentWorkflow = async () => {
-    const workflow = useWorkflowStore().activeWorkflow
+    const workflow = workflowStore.activeWorkflow
     if (workflow) {
       await openWorkflow(workflow, { force: true })
     }
@@ -143,7 +145,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { force: boolean } = { force: false }
   ) => {
-    if (useWorkflowStore().isActive(workflow) && !options.force) return
+    if (workflowStore.isActive(workflow) && !options.force) return
 
     const loadFromRemote = !workflow.isLoaded
     if (loadFromRemote) {
@@ -190,7 +192,6 @@ export const useWorkflowService = () => {
       }
     }
 
-    const workflowStore = useWorkflowStore()
     // If this is the last workflow, create a new default temporary workflow
     if (workflowStore.openWorkflows.length === 1) {
       await loadDefaultWorkflow()
@@ -205,7 +206,7 @@ export const useWorkflowService = () => {
   }
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
-    await useWorkflowStore().renameWorkflow(workflow, newPath)
+    await workflowStore.renameWorkflow(workflow, newPath)
   }
 
   /**
@@ -217,7 +218,7 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     silent = false
   ): Promise<boolean> => {
-    const bypassConfirm = !useSettingStore().get('Comfy.Workflow.ConfirmDelete')
+    const bypassConfirm = !settingStore.get('Comfy.Workflow.ConfirmDelete')
     let confirmed: boolean | null = bypassConfirm || silent
 
     if (!confirmed) {
@@ -230,7 +231,6 @@ export const useWorkflowService = () => {
       if (!confirmed) return false
     }
 
-    const workflowStore = useWorkflowStore()
     if (workflowStore.isOpen(workflow)) {
       const closed = await closeWorkflow(workflow, {
         warnIfUnsaved: !confirmed
@@ -239,7 +239,7 @@ export const useWorkflowService = () => {
     }
     await workflowStore.deleteWorkflow(workflow)
     if (!silent) {
-      useToastStore().add({
+      toastStore.add({
         severity: 'info',
         summary: t('sideToolbar.workflowTab.deleted'),
         life: 1000
@@ -336,14 +336,14 @@ export const useWorkflowService = () => {
   }
 
   const loadNextOpenedWorkflow = async () => {
-    const nextWorkflow = useWorkflowStore().openedWorkflowIndexShift(1)
+    const nextWorkflow = workflowStore.openedWorkflowIndexShift(1)
     if (nextWorkflow) {
       await openWorkflow(nextWorkflow)
     }
   }
 
   const loadPreviousOpenedWorkflow = async () => {
-    const previousWorkflow = useWorkflowStore().openedWorkflowIndexShift(-1)
+    const previousWorkflow = workflowStore.openedWorkflowIndexShift(-1)
     if (previousWorkflow) {
       await openWorkflow(previousWorkflow)
     }
