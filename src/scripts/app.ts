@@ -63,6 +63,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useExtensionService } from '@/services/extensionService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1641,7 +1642,9 @@ export class ComfyApp {
    */
   async #loadExtensions() {
     const extensionStore = useExtensionStore()
-    extensionStore.loadDisabledExtensionNames()
+    extensionStore.loadDisabledExtensionNames(
+      useSettingStore().get('Comfy.Extension.Disabled')
+    )
 
     const extensions = await api.getExtensions()
 
@@ -2780,12 +2783,7 @@ export class ComfyApp {
    * @param {ComfyExtension} extension
    */
   registerExtension(extension: ComfyExtension) {
-    if (this.vueAppReady) {
-      useExtensionStore().registerExtension(extension)
-    } else {
-      // For jest testing.
-      this.extensions.push(extension)
-    }
+    useExtensionService().registerExtension(extension)
   }
 
   /**
