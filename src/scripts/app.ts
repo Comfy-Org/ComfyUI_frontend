@@ -63,6 +63,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useExtensionService } from '@/services/extensionService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -118,7 +119,6 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  extensions: ComfyExtension[]
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
@@ -184,6 +184,13 @@ export class ComfyApp {
     return false
   }
 
+  /**
+   * @deprecated Use useExtensionStore().extensions instead
+   */
+  get extensions(): ComfyExtension[] {
+    return useExtensionStore().extensions
+  }
+
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
@@ -197,12 +204,6 @@ export class ComfyApp {
     })
     this.menu = new ComfyAppMenu(this)
     this.bypassBgColor = '#FF00FF'
-
-    /**
-     * List of extensions that are registered with the app
-     * @type {ComfyExtension[]}
-     */
-    this.extensions = []
 
     /**
      * Stores the execution output data for each node
@@ -223,7 +224,8 @@ export class ComfyApp {
 
   set nodeOutputs(value) {
     this._nodeOutputs = value
-    this.#invokeExtensions('onNodeOutputsUpdated', value)
+    if (this.vueAppReady)
+      useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
   }
 
   getPreviewFormatParam() {
@@ -388,64 +390,6 @@ export class ComfyApp {
 
       app.graph.setDirtyCanvas(true)
     }
-  }
-
-  get enabledExtensions() {
-    if (!this.vueAppReady) {
-      return this.extensions
-    }
-    return useExtensionStore().enabledExtensions
-  }
-
-  /**
-   * Invoke an extension callback
-   * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
-   * @returns
-   */
-  #invokeExtensions(method, ...args) {
-    let results = []
-    for (const ext of this.enabledExtensions) {
-      if (method in ext) {
-        try {
-          results.push(ext[method](...args, this))
-        } catch (error) {
-          console.error(
-            `Error calling extension '${ext.name}' method '${method}'`,
-            { error },
-            { extension: ext },
-            { args }
-          )
-        }
-      }
-    }
-    return results
-  }
-
-  /**
-   * Invoke an async extension callback
-   * Each callback will be invoked concurrently
-   * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
-   * @returns
-   */
-  async #invokeExtensionsAsync(method, ...args) {
-    return await Promise.all(
-      this.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            return await ext[method](...args, this)
-          } catch (error) {
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
-        }
-      })
-    )
   }
 
   #addRestoreWorkflowView() {
@@ -1637,32 +1581,6 @@ export class ComfyApp {
   }
 
   /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  async #loadExtensions() {
-    const extensionStore = useExtensionStore()
-    extensionStore.loadDisabledExtensionNames()
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) => !extension.includes('extensions/core'))
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
-
-  /**
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
@@ -1676,7 +1594,7 @@ export class ComfyApp {
       useWorkspaceStore().workflow.syncWorkflows(),
       this.ui.settings.load()
     ])
-    await this.#loadExtensions()
+    await useExtensionService().loadExtensions()
 
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
@@ -1708,7 +1626,7 @@ export class ComfyApp {
     ro.observe(this.bodyRight)
     ro.observe(this.bodyBottom)
 
-    await this.#invokeExtensionsAsync('init')
+    await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
     initWidgets(this)
 
@@ -1745,7 +1663,7 @@ export class ComfyApp {
     this.#addCopyHandler()
     this.#addPasteHandler()
 
-    await this.#invokeExtensionsAsync('setup')
+    await useExtensionService().invokeExtensionsAsync('setup')
   }
 
   resizeCanvas() {
@@ -1789,7 +1707,11 @@ export class ComfyApp {
 
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDef[] = Object.values(allNodeDefs)
-    this.#invokeExtensions('beforeRegisterVueAppNodeDefs', nodeDefArray, this)
+    useExtensionService().invokeExtensions(
+      'beforeRegisterVueAppNodeDefs',
+      nodeDefArray,
+      this
+    )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
@@ -1830,7 +1752,7 @@ export class ComfyApp {
     // Load node definitions from the backend
     const defs = await this.#getNodeDefs()
     await this.registerNodesFromDefs(defs)
-    await this.#invokeExtensionsAsync('registerCustomNodes')
+    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
@@ -1969,7 +1891,7 @@ export class ComfyApp {
         this.size = s
         this.serialize_widgets = true
 
-        app.#invokeExtensionsAsync('nodeCreated', this)
+        useExtensionService().invokeExtensionsAsync('nodeCreated', this)
       }
 
       configure(data: any) {
@@ -2006,14 +1928,18 @@ export class ComfyApp {
     this.#addDrawBackgroundHandler(node)
     this.#addNodeKeyHandler(node)
 
-    await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
+    await useExtensionService().invokeExtensionsAsync(
+      'beforeRegisterNodeDef',
+      node,
+      nodeData
+    )
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not move this to the class definition, it will be overwritten
     node.category = nodeData.category
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
-    await this.#invokeExtensionsAsync('addCustomNodeDefs', defs)
+    await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
     for (const nodeId in defs) {
@@ -2119,7 +2045,7 @@ export class ComfyApp {
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
-    await this.#invokeExtensionsAsync(
+    await useExtensionService().invokeExtensionsAsync(
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
@@ -2266,7 +2192,7 @@ export class ComfyApp {
         }
       }
 
-      this.#invokeExtensions('loadedGraphNode', node)
+      useExtensionService().invokeExtensions('loadedGraphNode', node)
     }
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
@@ -2277,7 +2203,10 @@ export class ComfyApp {
       const paths = await api.getFolderPaths()
       this.#showMissingModelsError(missingModels, paths)
     }
-    await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
     // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
     await workflowService.afterLoadNewGraph(workflow, this.graph.serialize())
     requestAnimationFrame(() => {
@@ -2778,14 +2707,10 @@ export class ComfyApp {
   /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
+   * @deprecated Use useExtensionService().registerExtension instead
    */
   registerExtension(extension: ComfyExtension) {
-    if (this.vueAppReady) {
-      useExtensionStore().registerExtension(extension)
-    } else {
-      // For jest testing.
-      this.extensions.push(extension)
-    }
+    useExtensionService().registerExtension(extension)
   }
 
   /**
@@ -2824,7 +2749,10 @@ export class ComfyApp {
       }
     }
 
-    await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+    await useExtensionService().invokeExtensionsAsync(
+      'refreshComboInNodes',
+      defs
+    )
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
