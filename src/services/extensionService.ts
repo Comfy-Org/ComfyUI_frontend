@@ -1,3 +1,4 @@
+import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useKeybindingStore } from '@/stores/keybindingStore'
@@ -9,14 +10,46 @@ import type { ComfyExtension } from '@/types/comfy'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
+  const settingStore = useSettingStore()
 
+  /**
+   * Loads all extensions from the API into the window in parallel
+   */
+  const loadExtensions = async () => {
+    extensionStore.loadDisabledExtensionNames(
+      settingStore.get('Comfy.Extension.Disabled')
+    )
+
+    const extensions = await api.getExtensions()
+
+    // Need to load core extensions first as some custom extensions
+    // may depend on them.
+    await import('../extensions/core/index')
+    extensionStore.captureCoreExtensions()
+    await Promise.all(
+      extensions
+        .filter((extension) => !extension.includes('extensions/core'))
+        .map(async (ext) => {
+          try {
+            await import(/* @vite-ignore */ api.fileURL(ext))
+          } catch (error) {
+            console.error('Error loading extension', ext, error)
+          }
+        })
+    )
+  }
+
+  /**
+   * Register an extension with the app
+   * @param extension The extension to register
+   */
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)
-    useSettingStore().loadExtensionSettings(extension)
+    settingStore.loadExtensionSettings(extension)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
       // TODO(huchenlei): We should deprecate the async return value of
@@ -85,6 +118,7 @@ export const useExtensionService = () => {
   }
 
   return {
+    loadExtensions,
     registerExtension,
     invokeExtensions,
     invokeExtensionsAsync

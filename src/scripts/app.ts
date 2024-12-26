@@ -1580,34 +1580,6 @@ export class ComfyApp {
   }
 
   /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  async #loadExtensions() {
-    const extensionStore = useExtensionStore()
-    extensionStore.loadDisabledExtensionNames(
-      useSettingStore().get('Comfy.Extension.Disabled')
-    )
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    extensionStore.captureCoreExtensions()
-    await Promise.all(
-      extensions
-        .filter((extension) => !extension.includes('extensions/core'))
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
-
-  /**
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
@@ -1621,7 +1593,7 @@ export class ComfyApp {
       useWorkspaceStore().workflow.syncWorkflows(),
       this.ui.settings.load()
     ])
-    await this.#loadExtensions()
+    await useExtensionService().loadExtensions()
 
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
@@ -2734,6 +2706,7 @@ export class ComfyApp {
   /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
+   * @deprecated Use useExtensionService().registerExtension instead
    */
   registerExtension(extension: ComfyExtension) {
     useExtensionService().registerExtension(extension)
