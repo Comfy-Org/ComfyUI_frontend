@@ -55,8 +55,8 @@ export const useWorkflowService = () => {
    */
   const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
     const newFilename = await showPromptDialog({
-      title: t('useWorkflowService().saveWorkflow'),
-      message: t('useWorkflowService().enterFilename') + ':',
+      title: t('workflowService.saveWorkflow'),
+      message: t('workflowService.enterFilename') + ':',
       defaultValue: workflow.filename
     })
     if (!newFilename) return
