@@ -58,7 +58,7 @@ import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
 import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
 import { st } from '@/i18n'
@@ -2041,7 +2041,7 @@ export class ComfyApp {
       graphData = validatedGraphData ?? graphData
     }
 
-    workflowService.beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
@@ -2207,8 +2207,11 @@ export class ComfyApp {
       'afterConfigureGraph',
       missingNodeTypes
     )
-    // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-    await workflowService.afterLoadNewGraph(workflow, this.graph.serialize())
+    await useWorkflowService().afterLoadNewGraph(
+      workflow,
+      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+      this.graph.serialize()
+    )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })
@@ -2522,10 +2525,10 @@ export class ComfyApp {
       } else if (pngInfo?.parameters) {
         // Note: Not putting this in `importA1111` as it is mostly not used
         // by external callers, and `importA1111` has no access to `app`.
-        workflowService.beforeLoadNewGraph()
+        useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
         // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-        workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
+        useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -2609,7 +2612,7 @@ export class ComfyApp {
   }
 
   loadApiJson(apiData, fileName: string) {
-    workflowService.beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes = Object.values(apiData).filter(
       // @ts-expect-error
@@ -2701,7 +2704,7 @@ export class ComfyApp {
     app.graph.arrange()
 
     // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-    workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
+    useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
   }
 
   /**

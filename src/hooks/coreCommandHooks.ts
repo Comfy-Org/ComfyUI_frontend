@@ -4,7 +4,7 @@ import {
   showSettingsDialog,
   showTemplateWorkflowsDialog
 } from '@/services/dialogService'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -52,7 +52,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-plus',
       label: 'New Blank Workflow',
       menubarLabel: 'New',
-      function: () => workflowService.loadBlankWorkflow()
+      function: () => useWorkflowService().loadBlankWorkflow()
     },
     {
       id: 'Comfy.OpenWorkflow',
@@ -67,7 +67,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.LoadDefaultWorkflow',
       icon: 'pi pi-code',
       label: 'Load Default Workflow',
-      function: () => workflowService.loadDefaultWorkflow()
+      function: () => useWorkflowService().loadDefaultWorkflow()
     },
     {
       id: 'Comfy.SaveWorkflow',
@@ -78,7 +78,7 @@ export function useCoreCommands(): ComfyCommand[] {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
 
-        await workflowService.saveWorkflow(workflow)
+        await useWorkflowService().saveWorkflow(workflow)
       }
     },
     {
@@ -90,7 +90,7 @@ export function useCoreCommands(): ComfyCommand[] {
         const workflow = useWorkflowStore().activeWorkflow as ComfyWorkflow
         if (!workflow) return
 
-        await workflowService.saveWorkflowAs(workflow)
+        await useWorkflowService().saveWorkflowAs(workflow)
       }
     },
     {
@@ -99,7 +99,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Export Workflow',
       menubarLabel: 'Export',
       function: () => {
-        workflowService.exportWorkflow('workflow', 'workflow')
+        useWorkflowService().exportWorkflow('workflow', 'workflow')
       }
     },
     {
@@ -108,7 +108,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Export Workflow (API Format)',
       menubarLabel: 'Export (API)',
       function: () => {
-        workflowService.exportWorkflow('workflow_api', 'output')
+        useWorkflowService().exportWorkflow('workflow_api', 'output')
       }
     },
     {
@@ -336,7 +336,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Next Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        workflowService.loadNextOpenedWorkflow()
+        useWorkflowService().loadNextOpenedWorkflow()
       }
     },
     {
@@ -345,7 +345,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Previous Opened Workflow',
       versionAdded: '1.3.9',
       function: () => {
-        workflowService.loadPreviousOpenedWorkflow()
+        useWorkflowService().loadPreviousOpenedWorkflow()
       }
     },
     {

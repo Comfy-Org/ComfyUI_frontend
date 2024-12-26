@@ -34,7 +34,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import ContextMenu from 'primevue/contextmenu'
 import { useI18n } from 'vue-i18n'
@@ -77,13 +77,13 @@ const onWorkflowChange = (option: WorkflowOption) => {
     return
   }
 
-  workflowService.openWorkflow(option.workflow)
+  useWorkflowService().openWorkflow(option.workflow)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
-      !(await workflowService.closeWorkflow(opt.workflow, {
+      !(await useWorkflowService().closeWorkflow(opt.workflow, {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {
@@ -110,7 +110,7 @@ const contextMenuItems = computed(() => {
     {
       label: t('tabMenu.duplicateTab'),
       command: () => {
-        workflowService.duplicateWorkflow(tab.workflow)
+        useWorkflowService().duplicateWorkflow(tab.workflow)
       }
     },
     {

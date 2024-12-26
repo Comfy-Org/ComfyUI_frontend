@@ -159,7 +159,7 @@ import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
@@ -202,7 +202,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    workflowService.closeWorkflow(workflow, {
+    useWorkflowService().closeWorkflow(workflow, {
       warnIfUnsaved: !workspaceStore.shiftDown
     })
   }
@@ -250,7 +250,7 @@ const renderTreeNode = (
     e: MouseEvent
   ) => {
     if (node.leaf) {
-      workflowService.openWorkflow(workflow)
+      useWorkflowService().openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, node)
     }
@@ -268,12 +268,12 @@ const renderTreeNode = (
               ? workflow.directory + '/' + appendJsonExt(newName)
               : ComfyWorkflow.basePath + appendJsonExt(newName)
 
-          await workflowService.renameWorkflow(workflow, newPath)
+          await useWorkflowService().renameWorkflow(workflow, newPath)
         },
         handleDelete: workflow.isTemporary
           ? undefined
           : async () => {
-              await workflowService.deleteWorkflow(workflow)
+              await useWorkflowService().deleteWorkflow(workflow)
             },
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
@@ -282,7 +282,7 @@ const renderTreeNode = (
               icon: 'pi pi-file-export',
               command: () => {
                 const workflow = node.data
-                workflowService.insertWorkflow(workflow)
+                useWorkflowService().insertWorkflow(workflow)
               }
             }
           ]
