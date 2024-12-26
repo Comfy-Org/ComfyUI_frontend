@@ -7,10 +7,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useSettingStore } from '@/stores/settingStore'
-import {
-  defaultColorPalette,
-  getColorPalette
-} from '@/extensions/core/colorPalette'
 import { app } from '@/scripts/app'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { BadgePosition } from '@comfyorg/litegraph'
@@ -18,9 +14,11 @@ import { LGraphBadge } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import type { Palette } from '@/types/colorPaletteTypes'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const settingStore = useSettingStore()
+const colorPaletteStore = useColorPaletteStore()
+
 const nodeSourceBadgeMode = computed(
   () => settingStore.get('Comfy.NodeBadge.NodeSourceBadgeMode') as NodeBadgeMode
 )
@@ -35,10 +33,6 @@ const nodeLifeCycleBadgeMode = computed(
 watch([nodeSourceBadgeMode, nodeIdBadgeMode, nodeLifeCycleBadgeMode], () => {
   app.graph?.setDirtyCanvas(true, true)
 })
-
-const colorPalette = computed<Palette | undefined>(() =>
-  getColorPalette(settingStore.get('Comfy.ColorPalette'))
-)
 
 const nodeDefStore = useNodeDefStore()
 function badgeTextVisible(
@@ -79,11 +73,11 @@ onMounted(() => {
             }
           ),
           fgColor:
-            colorPalette.value?.colors?.litegraph_base?.BADGE_FG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_FG_COLOR,
+            colorPaletteStore.completedActivePalette.colors.litegraph_base
+              .BADGE_FG_COLOR,
           bgColor:
-            colorPalette.value?.colors?.litegraph_base?.BADGE_BG_COLOR ||
-            defaultColorPalette.colors.litegraph_base.BADGE_BG_COLOR
+            colorPaletteStore.completedActivePalette.colors.litegraph_base
+              .BADGE_BG_COLOR
         })
       })
 

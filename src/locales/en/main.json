@@ -6,6 +6,7 @@
     "comingSoon": "Coming Soon",
     "firstTimeUIMessage": "This is the first time you use the new UI. Choose \"Menu > Use New Menu > Disabled\" to restore the old UI.",
     "download": "Download",
+    "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",
     "terminal": "Terminal",
@@ -427,7 +428,8 @@
     "Window": "Window",
     "Server-Config": "Server-Config",
     "About": "About",
-    "EditTokenWeight": "Edit Token Weight"
+    "EditTokenWeight": "Edit Token Weight",
+    "CustomColorPalettes": "Custom Color Palettes"
   },
   "serverConfigItems": {
     "listen": {

@@ -128,7 +128,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(handleRenameMock).toHaveBeenCalledOnce()
     expect(addToastSpy).toHaveBeenCalledWith({
       severity: 'error',
-      summary: 'g.error',
+      summary: 'Error',
       detail: 'Rename failed',
       life: 3000
     })

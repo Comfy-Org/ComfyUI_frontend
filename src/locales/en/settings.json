@@ -5,9 +5,6 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Send anonymous crash reports"
   },
-  "Comfy_ColorPalette": {
-    "name": "Color Palette"
-  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

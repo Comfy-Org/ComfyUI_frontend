@@ -65,6 +65,8 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { workflowService } from '@/services/workflowService'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -209,6 +211,13 @@ watchEffect(() => {
   canvasStore.canvas.canvas.style.cursor = 'default'
 })
 
+const colorPaletteService = useColorPaletteService()
+watchEffect(() => {
+  if (!canvasStore.canvas) return
+
+  colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
+})
+
 const workflowStore = useWorkflowStore()
 const persistCurrentWorkflow = () => {
   const workflow = JSON.stringify(comfyApp.serializeGraph())
@@ -314,6 +323,12 @@ onMounted(async () => {
   window['graph'] = comfyApp.graph
 
   comfyAppReady.value = true
+
+  // Load color palette
+  const colorPaletteStore = useColorPaletteStore()
+  colorPaletteStore.customPalettes = settingStore.get(
+    'Comfy.CustomColorPalettes'
+  )
 
   // Start watching for locale change after the initial value is loaded.
   watch(

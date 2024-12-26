@@ -14,3 +14,5 @@ export const CORE_COLOR_PALETTES: ColorPalettes = {
   nord,
   github
 } as const
+
+export const DEFAULT_COLOR_PALETTE = dark

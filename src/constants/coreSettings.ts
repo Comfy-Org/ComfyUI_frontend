@@ -1,3 +1,4 @@
+import type { ColorPalettes } from '@/types/colorPaletteTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
@@ -663,5 +664,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.5.6'
+  },
+  {
+    id: 'Comfy.ColorPalette',
+    name: 'The active color palette id',
+    type: 'hidden',
+    defaultValue: 'dark',
+    versionModified: '1.6.7'
+  },
+  {
+    id: 'Comfy.CustomColorPalettes',
+    name: 'Custom color palettes',
+    type: 'hidden',
+    defaultValue: {} as ColorPalettes,
+    versionModified: '1.6.7'
   }
 ]
