@@ -34,7 +34,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import ContextMenu from 'primevue/contextmenu'
 import { useI18n } from 'vue-i18n'
@@ -51,6 +51,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
 

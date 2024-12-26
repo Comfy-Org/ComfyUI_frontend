@@ -4,7 +4,7 @@ import {
   showSettingsDialog,
   showTemplateWorkflowsDialog
 } from '@/services/dialogService'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -22,6 +22,7 @@ import {
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 export function useCoreCommands(): ComfyCommand[] {
+  const workflowService = useWorkflowService()
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {

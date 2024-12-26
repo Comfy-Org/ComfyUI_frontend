@@ -64,7 +64,7 @@ import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 
@@ -335,7 +335,7 @@ onMounted(async () => {
     () => settingStore.get('Comfy.Locale'),
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      workflowService.reloadCurrentWorkflow()
+      useWorkflowService().reloadCurrentWorkflow()
     }
   )
 
