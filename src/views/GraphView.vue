@@ -42,6 +42,8 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { useEventListener } from '@vueuse/core'
+import { useKeybindingService } from '@/services/keybindingService'
 
 setupAutoQueueHandler()
 
@@ -159,6 +161,8 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
 })
+
+useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const onGraphReady = () => {
   requestIdleCallback(
