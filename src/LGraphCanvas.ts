@@ -2174,6 +2174,8 @@ export class LGraphCanvas {
           linkSegment.path &&
           this.ctx.isPointInStroke(linkSegment.path, x * dpi, y * dpi)
         ) {
+          this.ctx.lineWidth = lineWidth
+
           if (e.shiftKey && !e.altKey) {
             const slot = linkSegment.origin_slot
             const originNode = graph._nodes_by_id[linkSegment.origin_id]
@@ -2197,6 +2199,8 @@ export class LGraphCanvas {
             return
           }
         } else if (isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8)) {
+          this.ctx.lineWidth = lineWidth
+
           pointer.onClick = () => this.showLinkMenu(linkSegment, e)
           pointer.onDragStart = () => this.dragging_canvas = true
           pointer.finally = () => this.dragging_canvas = false
