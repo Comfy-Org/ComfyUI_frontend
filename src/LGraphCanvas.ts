@@ -2126,7 +2126,7 @@ export class LGraphCanvas {
       this.#processNodeClick(e, ctrlOrMeta, node)
     } else {
       // Reroutes
-      if (this.reroutesEnabled) {
+      if (this.reroutesEnabled && this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         const reroute = graph.getRerouteOnPos(x, y)
         if (reroute) {
           if (e.shiftKey) {
@@ -5548,6 +5548,7 @@ export class LGraphCanvas {
   drawConnections(ctx: CanvasRenderingContext2D): void {
     const rendered = this.renderedPaths
     rendered.clear()
+    if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
     const visibleReroutes: Reroute[] = []
 
     const now = LiteGraph.getTime()
@@ -8251,7 +8252,7 @@ export class LGraphCanvas {
       menu_info = this.getCanvasMenuOptions()
 
       // Check for reroutes
-      if (this.reroutesEnabled) {
+      if (this.reroutesEnabled && this.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
         const reroute = this.graph.getRerouteOnPos(event.canvasX, event.canvasY)
         if (reroute) {
           menu_info.unshift({
