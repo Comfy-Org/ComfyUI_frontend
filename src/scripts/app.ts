@@ -41,11 +41,7 @@ import {
 } from '@/stores/nodeDefStore'
 import { INodeInputSlot, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
-import {
-  showExecutionErrorDialog,
-  showLoadWorkflowWarning,
-  showMissingModelsWarning
-} from '@/services/dialogService'
+import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useModelStore } from '@/stores/modelStore'
@@ -1528,7 +1524,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       this.lastExecutionError = detail
-      showExecutionErrorDialog(detail)
+      useDialogService().showExecutionErrorDialog(detail)
       this.canvas.draw(true, true)
     })
 
@@ -1992,13 +1988,13 @@ export class ComfyApp {
 
   #showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      showLoadWorkflowWarning({ missingNodeTypes })
+      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
     }
   }
 
   #showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
-      showMissingModelsWarning({
+      useDialogService().showMissingModelsWarning({
         missingModels,
         paths
       })

@@ -5,7 +5,7 @@ import { toggleSwitch } from './ui/toggleSwitch'
 import { ComfySettingsDialog } from './ui/settings'
 import { ComfyApp, app } from './app'
 import { TaskItem, type StatusWsMessageStatus } from '@/types/apiTypes'
-import { showSettingsDialog } from '@/services/dialogService'
+import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -438,7 +438,9 @@ export class ComfyUI {
           $el('div.comfy-menu-actions', [
             $el('button.comfy-settings-btn', {
               textContent: '⚙️',
-              onclick: showSettingsDialog
+              onclick: () => {
+                useDialogService().showSettingsDialog()
+              }
             }),
             $el('button.comfy-close-menu-btn', {
               textContent: '\u00d7',
