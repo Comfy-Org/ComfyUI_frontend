@@ -4044,7 +4044,7 @@
       }
     }
   },
-  "PairConditioningSetPropertiesAndCombine": {  
+  "PairConditioningSetPropertiesAndCombine": {
     "display_name": "조건 쌍 (속성 설정 및 결합)",
     "inputs": {
       "hooks": {
