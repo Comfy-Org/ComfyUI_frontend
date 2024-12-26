@@ -241,14 +241,14 @@
   },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "배치 수 제한",
-    "tooltip": "한 번의 버튼 클릭으로 큐에 추가되는 최대 작업 수입니다."
+    "tooltip": "한 번의 버튼 클릭으로 실행 큐에 추가되는 최대 작업 수입니다."
   },
   "Comfy_Queue_ImageFit": {
-    "name": "큐 이미지 맞춤"
+    "name": "실행 큐 이미지 맞춤"
   },
   "Comfy_Queue_MaxHistoryItems": {
-    "name": "큐 기록 갯수",
-    "tooltip": "큐 기록에 표시되는 최대 작업 수입니다."
+    "name": "실행 큐 기록 갯수",
+    "tooltip": "실행 큐 기록에 표시되는 최대 작업 수입니다."
   },
   "Comfy_RerouteBeta": {
     "name": "경로재설정 베타 테스트 참여",
@@ -336,7 +336,7 @@
   },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "최대 FPS",
-    "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드러움의 대가로 GPU 사용량을 제한합니다. 0이면 화면 새로 고침 속도가 사용됩니다. 기본값: 0"
+    "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드럽게 동작하도록 GPU 사용률을 제한 합니다. 0이면 화면 주사율로 작동 합니다. 기본값: 0"
   },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
