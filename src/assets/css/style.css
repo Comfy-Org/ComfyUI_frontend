@@ -148,6 +148,55 @@ body {
   font-size: var(--comfy-textarea-font-size);
 }
 
+.comfy-markdown {
+  /* We assign the textarea and the Tiptap editor to the same CSS grid area to stack them on top of one another. */
+  display: grid;
+}
+
+.comfy-markdown > textarea {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.comfy-markdown .tiptap {
+  grid-area: 1 / 1 / 2 / 2;
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
+  overflow: hidden;
+  overflow-y: auto;
+  resize: none;
+  border: none;
+  box-sizing: border-box;
+  font-size: var(--comfy-textarea-font-size);
+  height: 100%;
+  padding: 0.5em;
+}
+
+.comfy-markdown.editing .tiptap {
+  display: none;
+}
+
+
+.comfy-markdown .tiptap :first-child {
+  margin-top: 0;
+}
+
+.comfy-markdown .tiptap :last-child {
+  margin-bottom: 0;
+}
+
+.comfy-markdown .tiptap blockquote {
+  border-left: medium solid;
+  margin-left: 1em;
+  padding-left: 0.5em;
+}
+
+.comfy-markdown .tiptap pre {
+  border: thin dotted;
+  border-radius: 0.5em;
+  margin: 0.5em;
+  padding: 0.5em;
+}
+
 .comfy-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
