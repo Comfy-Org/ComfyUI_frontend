@@ -9,10 +9,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { ComfyLink, ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyExtension } from '@/types/comfy'
-import {
-  deserialiseAndCreate,
-  serialise
-} from '@/extensions/core/vintageClipboard'
+import { deserialiseAndCreate, serialise } from '@/utils/vintageClipboard'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 import { useDialogService } from '@/services/dialogService'
 import { t } from '@/i18n'

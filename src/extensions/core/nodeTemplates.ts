@@ -5,7 +5,7 @@ import { ComfyDialog, $el } from '../../scripts/ui'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
 import { useToastStore } from '@/stores/toastStore'
-import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
+import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { useDialogService } from '@/services/dialogService'
 import { t } from '@/i18n'
 
