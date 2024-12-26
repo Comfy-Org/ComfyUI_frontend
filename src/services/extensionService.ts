@@ -1,3 +1,4 @@
+import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
@@ -74,7 +75,7 @@ export const useExtensionService = () => {
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args, this))
+          results.push(ext[method](...args, app))
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -103,7 +104,7 @@ export const useExtensionService = () => {
       extensionStore.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
-            return await ext[method](...args, this)
+            return await ext[method](...args, app)
           } catch (error) {
             console.error(
               `Error calling extension '${ext.name}' method '${method}'`,
