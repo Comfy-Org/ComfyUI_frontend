@@ -167,7 +167,7 @@
     "desktopAppSettingsDescription": "配置 ComfyUI 在桌面上的行为。您可以稍后更改这些设置。",
     "desktopSettings": "桌面设置",
     "failedToSelectDirectory": "选择目录失败",
-    "pathExists": "目录已存在 - 请确保您已备份全部数据Directory already exists - please ensure you have backed up all data",
+    "pathExists": "目录已存在 - 请确保您已备份全部数据",
     "cannotWrite": "无法写入所选路径。",
     "insufficientFreeSpace": "空间不足 - 最小可用空间",
     "parentMissing": "路径不存在 - 请先创建包含该路径的目录",

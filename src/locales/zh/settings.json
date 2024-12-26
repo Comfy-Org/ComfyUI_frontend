@@ -18,7 +18,7 @@
     "name": "启用开发模式选项（API保存等）"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "禁用默认浮动组件四舍五入。",
+    "name": "禁用默认浮点组件四舍五入。",
     "tooltip": "(需要重新加载页面) 当节点自身设置了四舍五入时，无法禁用该功能。"
   },
   "Comfy_DisableSliders": {
@@ -37,7 +37,7 @@
     "name": "禁用的扩展名称"
   },
   "Comfy_FloatRoundingPrecision": {
-    "name": "浮动组件四舍五入的小数位数 [0 = 自动]。",
+    "name": "浮点组件四舍五入的小数位数 [0 = 自动]。",
     "tooltip": "(需要重新加载页面)"
   },
   "Comfy_Graph_CanvasInfo": {
@@ -92,7 +92,7 @@
     }
   },
   "Comfy_LinkRenderMode": {
-    "name": "连线渲染模式",
+    "name": "连线渲染样式",
     "options": {
       "Hidden": "隐藏",
       "Linear": "直线",
