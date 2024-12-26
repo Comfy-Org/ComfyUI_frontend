@@ -31,7 +31,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     set: useSettingStore().set
   }))
   const workflow = computed(() => useWorkflowStore())
-  const colorPalette = computed(() => useColorPaletteService())
+  const colorPalette = useColorPaletteService()
 
   /**
    * Registers a sidebar tab.
