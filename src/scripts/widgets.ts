@@ -7,9 +7,10 @@ import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { IWidget } from '@comfyorg/litegraph'
-import { Editor } from '@tiptap/core'
-import StarterKit from '@tiptap/starter-kit'
-import { Markdown } from 'tiptap-markdown'
+import { Editor as TiptapEditor } from '@tiptap/core'
+import TiptapStarterKit from '@tiptap/starter-kit'
+import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
+import TiptapLink from '@tiptap/extension-link'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -366,28 +367,56 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
 }
 
 function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
-  Markdown.configure({
+  TiptapMarkdown.configure({
     html: false,
-    breaks: true
+    breaks: true,
+    transformPastedText: true
   })
-  const editor = new Editor({
-    extensions: [StarterKit, Markdown],
-    content: opts.defaultVal
+  const editor = new TiptapEditor({
+    extensions: [TiptapStarterKit, TiptapMarkdown, TiptapLink],
+    content: opts.defaultVal,
+    editable: false
   })
 
   const inputEl = editor.options.element
+  inputEl.classList.add('comfy-markdown')
+  const textarea = document.createElement('textarea')
+  inputEl.append(textarea)
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue() {
-      return editor.storage.markdown.getMarkdown()
+      return textarea.value
     },
     setValue(v) {
+      textarea.value = v
       editor.commands.setContent(v)
     }
   })
   widget.inputEl = inputEl
 
-  editor.on('update', () => {
+  editor.options.element.addEventListener(
+    'pointerdown',
+    (event: PointerEvent) => {
+      if (event.button !== 0) {
+        app.canvas.processMouseDown(event)
+        return
+      }
+      if (event.target instanceof HTMLAnchorElement) {
+        return
+      }
+      inputEl.classList.add('editing')
+      setTimeout(() => {
+        textarea.focus()
+      }, 0)
+    }
+  )
+
+  textarea.addEventListener('blur', () => {
+    inputEl.classList.remove('editing')
+  })
+
+  textarea.addEventListener('change', () => {
+    editor.commands.setContent(textarea.value)
     widget.callback?.(widget.value)
   })
 

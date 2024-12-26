@@ -86,6 +86,7 @@
     "@comfyorg/litegraph": "^0.8.48",
     "@primevue/themes": "^4.0.5",
     "@tiptap/core": "^2.10.4",
+    "@tiptap/extension-link": "^2.10.4",
     "@tiptap/starter-kit": "^2.10.4",
     "@vueuse/core": "^11.0.0",
     "@xterm/addon-fit": "^0.10.0",
