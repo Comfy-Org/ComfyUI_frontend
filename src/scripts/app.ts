@@ -127,8 +127,6 @@ export class ComfyApp {
   lastNodeErrors: any[] | null
   /** @type {ExecutionErrorWsMessage} */
   lastExecutionError: { node_id?: NodeId } | null
-  /** @type {ProgressWsMessage} */
-  progress: { value?: number; max?: number } | null
   configuringGraph: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -185,6 +183,14 @@ export class ComfyApp {
    */
   get extensions(): ComfyExtension[] {
     return useExtensionStore().extensions
+  }
+
+  /**
+   * The progress on the current executing node, if the node reports any.
+   * @deprecated Use useExecutionStore().executingNodeProgress instead
+   */
+  get progress() {
+    return useExecutionStore()._executingNodeProgress
   }
 
   constructor() {
@@ -1484,12 +1490,10 @@ export class ComfyApp {
     })
 
     api.addEventListener('progress', ({ detail }) => {
-      this.progress = detail
       this.graph.setDirtyCanvas(true, false)
     })
 
     api.addEventListener('executing', ({ detail }) => {
-      this.progress = null
       this.graph.setDirtyCanvas(true, false)
       this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
