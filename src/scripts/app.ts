@@ -224,7 +224,8 @@ export class ComfyApp {
 
   set nodeOutputs(value) {
     this._nodeOutputs = value
-    useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
+    if (this.vueAppReady)
+      useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
   }
 
   getPreviewFormatParam() {
