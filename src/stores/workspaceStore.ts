@@ -7,6 +7,7 @@ import { useCommandStore } from './commandStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 import { useSettingStore } from './settingStore'
 import { useWorkflowStore } from './workflowStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
@@ -30,6 +31,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     set: useSettingStore().set
   }))
   const workflow = computed(() => useWorkflowStore())
+  const colorPalette = useColorPaletteService()
 
   /**
    * Registers a sidebar tab.
@@ -71,6 +73,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     sidebarTab,
     setting,
     workflow,
+    colorPalette,
 
     registerSidebarTab,
     unregisterSidebarTab,

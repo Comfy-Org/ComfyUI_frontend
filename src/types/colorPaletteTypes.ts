@@ -34,7 +34,9 @@ const litegraphBaseSchema = z.object({
   NODE_DEFAULT_SHAPE: z.union([
     z.literal(LiteGraph.BOX_SHAPE),
     z.literal(LiteGraph.ROUND_SHAPE),
-    z.literal(LiteGraph.CARD_SHAPE)
+    z.literal(LiteGraph.CARD_SHAPE),
+    // Legacy palettes have string field for NODE_DEFAULT_SHAPE.
+    z.string()
   ]),
   NODE_BOX_OUTLINE_COLOR: z.string(),
   NODE_BYPASS_BGCOLOR: z.string(),
@@ -85,17 +87,22 @@ const partialColorsSchema = z.object({
   comfy_base: comfyBaseSchema.partial()
 })
 
-export const paletteSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  colors: partialColorsSchema
-})
+// Palette in the wild can have custom metadata fields such as 'version'.
+export const paletteSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    colors: partialColorsSchema
+  })
+  .passthrough()
 
-export const completedPaletteSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  colors: colorsSchema
-})
+export const completedPaletteSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    colors: colorsSchema
+  })
+  .passthrough()
 
 export const colorPalettesSchema = z.record(paletteSchema)
 
