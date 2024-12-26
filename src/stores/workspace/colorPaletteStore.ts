@@ -53,6 +53,15 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
    * @returns The completed palette.
    */
   const completePalette = (palette: Palette): CompletedPalette => {
+    // Set comfy-menu-secondary-bg to comfy-menu-bg if not set
+    if (
+      palette.colors.comfy_base['comfy-menu-bg'] &&
+      !palette.colors.comfy_base['comfy-menu-secondary-bg']
+    ) {
+      palette.colors.comfy_base['comfy-menu-secondary-bg'] =
+        palette.colors.comfy_base['comfy-menu-bg']
+    }
+
     return {
       ...palette,
       colors: {
