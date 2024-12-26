@@ -29,7 +29,64 @@ export const useExtensionService = () => {
       })()
     }
   }
+
+  /**
+   * Invoke an extension callback
+   * @param {keyof ComfyExtension} method The extension callback to execute
+   * @param  {any[]} args Any arguments to pass to the callback
+   * @returns
+   */
+  const invokeExtensions = (method: keyof ComfyExtension, ...args: any[]) => {
+    const results: any[] = []
+    for (const ext of extensionStore.enabledExtensions) {
+      if (method in ext) {
+        try {
+          results.push(ext[method](...args, this))
+        } catch (error) {
+          console.error(
+            `Error calling extension '${ext.name}' method '${method}'`,
+            { error },
+            { extension: ext },
+            { args }
+          )
+        }
+      }
+    }
+    return results
+  }
+
+  /**
+   * Invoke an async extension callback
+   * Each callback will be invoked concurrently
+   * @param {string} method The extension callback to execute
+   * @param  {...any} args Any arguments to pass to the callback
+   * @returns
+   */
+  const invokeExtensionsAsync = async (
+    method: keyof ComfyExtension,
+    ...args: any[]
+  ) => {
+    return await Promise.all(
+      extensionStore.enabledExtensions.map(async (ext) => {
+        if (method in ext) {
+          try {
+            return await ext[method](...args, this)
+          } catch (error) {
+            console.error(
+              `Error calling extension '${ext.name}' method '${method}'`,
+              { error },
+              { extension: ext },
+              { args }
+            )
+          }
+        }
+      })
+    )
+  }
+
   return {
-    registerExtension
+    registerExtension,
+    invokeExtensions,
+    invokeExtensionsAsync
   }
 }

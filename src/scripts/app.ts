@@ -224,7 +224,7 @@ export class ComfyApp {
 
   set nodeOutputs(value) {
     this._nodeOutputs = value
-    this.#invokeExtensions('onNodeOutputsUpdated', value)
+    useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
   }
 
   getPreviewFormatParam() {
@@ -389,64 +389,6 @@ export class ComfyApp {
 
       app.graph.setDirtyCanvas(true)
     }
-  }
-
-  get enabledExtensions() {
-    if (!this.vueAppReady) {
-      return this.extensions
-    }
-    return useExtensionStore().enabledExtensions
-  }
-
-  /**
-   * Invoke an extension callback
-   * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
-   * @returns
-   */
-  #invokeExtensions(method, ...args) {
-    let results = []
-    for (const ext of this.enabledExtensions) {
-      if (method in ext) {
-        try {
-          results.push(ext[method](...args, this))
-        } catch (error) {
-          console.error(
-            `Error calling extension '${ext.name}' method '${method}'`,
-            { error },
-            { extension: ext },
-            { args }
-          )
-        }
-      }
-    }
-    return results
-  }
-
-  /**
-   * Invoke an async extension callback
-   * Each callback will be invoked concurrently
-   * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
-   * @returns
-   */
-  async #invokeExtensionsAsync(method, ...args) {
-    return await Promise.all(
-      this.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            return await ext[method](...args, this)
-          } catch (error) {
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
-        }
-      })
-    )
   }
 
   #addRestoreWorkflowView() {
@@ -1711,7 +1653,7 @@ export class ComfyApp {
     ro.observe(this.bodyRight)
     ro.observe(this.bodyBottom)
 
-    await this.#invokeExtensionsAsync('init')
+    await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
     initWidgets(this)
 
@@ -1748,7 +1690,7 @@ export class ComfyApp {
     this.#addCopyHandler()
     this.#addPasteHandler()
 
-    await this.#invokeExtensionsAsync('setup')
+    await useExtensionService().invokeExtensionsAsync('setup')
   }
 
   resizeCanvas() {
@@ -1792,7 +1734,11 @@ export class ComfyApp {
 
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDef[] = Object.values(allNodeDefs)
-    this.#invokeExtensions('beforeRegisterVueAppNodeDefs', nodeDefArray, this)
+    useExtensionService().invokeExtensions(
+      'beforeRegisterVueAppNodeDefs',
+      nodeDefArray,
+      this
+    )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
@@ -1833,7 +1779,7 @@ export class ComfyApp {
     // Load node definitions from the backend
     const defs = await this.#getNodeDefs()
     await this.registerNodesFromDefs(defs)
-    await this.#invokeExtensionsAsync('registerCustomNodes')
+    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
@@ -1972,7 +1918,7 @@ export class ComfyApp {
         this.size = s
         this.serialize_widgets = true
 
-        app.#invokeExtensionsAsync('nodeCreated', this)
+        useExtensionService().invokeExtensionsAsync('nodeCreated', this)
       }
 
       configure(data: any) {
@@ -2009,14 +1955,18 @@ export class ComfyApp {
     this.#addDrawBackgroundHandler(node)
     this.#addNodeKeyHandler(node)
 
-    await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
+    await useExtensionService().invokeExtensionsAsync(
+      'beforeRegisterNodeDef',
+      node,
+      nodeData
+    )
     LiteGraph.registerNodeType(nodeId, node)
     // Note: Do not move this to the class definition, it will be overwritten
     node.category = nodeData.category
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
-    await this.#invokeExtensionsAsync('addCustomNodeDefs', defs)
+    await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
     for (const nodeId in defs) {
@@ -2122,7 +2072,7 @@ export class ComfyApp {
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
-    await this.#invokeExtensionsAsync(
+    await useExtensionService().invokeExtensionsAsync(
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
@@ -2269,7 +2219,7 @@ export class ComfyApp {
         }
       }
 
-      this.#invokeExtensions('loadedGraphNode', node)
+      useExtensionService().invokeExtensions('loadedGraphNode', node)
     }
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
@@ -2280,7 +2230,10 @@ export class ComfyApp {
       const paths = await api.getFolderPaths()
       this.#showMissingModelsError(missingModels, paths)
     }
-    await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
     // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
     await workflowService.afterLoadNewGraph(workflow, this.graph.serialize())
     requestAnimationFrame(() => {
@@ -2822,7 +2775,10 @@ export class ComfyApp {
       }
     }
 
-    await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+    await useExtensionService().invokeExtensionsAsync(
+      'refreshComboInNodes',
+      defs
+    )
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
