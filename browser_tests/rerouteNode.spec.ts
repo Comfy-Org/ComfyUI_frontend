@@ -30,6 +30,8 @@ test.describe('Reroute Node', () => {
     // Close the sidebar tab
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
+    // Move mouse to empty area to avoid trigger tooltip
+    await comfyPage.moveMouseToEmptyArea()
 
     await expect(comfyPage.canvas).toHaveScreenshot('reroute_inserted.png')
   })
