@@ -81,7 +81,7 @@ export const useExtensionStore = defineStore('extension', () => {
    */
   const coreExtensionNames = ref<string[]>([])
   function captureCoreExtensions() {
-    coreExtensionNames.value = app.extensions.map((ext) => ext.name)
+    coreExtensionNames.value = extensions.value.map((ext) => ext.name)
   }
 
   function isCoreExtension(name: string) {

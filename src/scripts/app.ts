@@ -119,7 +119,6 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  extensions: ComfyExtension[]
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
@@ -185,6 +184,13 @@ export class ComfyApp {
     return false
   }
 
+  /**
+   * @deprecated Use useExtensionStore().extensions instead
+   */
+  get extensions(): ComfyExtension[] {
+    return useExtensionStore().extensions
+  }
+
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
@@ -198,12 +204,6 @@ export class ComfyApp {
     })
     this.menu = new ComfyAppMenu(this)
     this.bypassBgColor = '#FF00FF'
-
-    /**
-     * List of extensions that are registered with the app
-     * @type {ComfyExtension[]}
-     */
-    this.extensions = []
 
     /**
      * Stores the execution output data for each node
