@@ -5,14 +5,8 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Отправлять анонимные отчеты о сбоях"
   },
-  "Comfy_ColorPalette": {
-    "name": "Цветовая палитра"
-  },
   "Comfy_ConfirmClear": {
     "name": "Требовать подтверждение при очистке рабочего процесса"
-  },
-  "Comfy_CustomColorPalettes": {
-    "name": "Пользовательские цветовые палитры"
   },
   "Comfy_DOMClippingEnabled": {
     "name": "Включить обрезку элементов DOM (включение может снизить производительность)"
