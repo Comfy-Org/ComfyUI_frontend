@@ -33,9 +33,6 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流中保存和恢复画布位置及缩放级别"
   },
-  "Comfy_Extension_Disabled": {
-    "name": "禁用的扩展名称"
-  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮动小部件四舍五入的小数位数 [0 = 自动]。",
     "tooltip": "(需要重新加载页面)"
@@ -68,12 +65,6 @@
   },
   "Comfy_InvertMenuScrolling": {
     "name": "反转上下文菜单滚动"
-  },
-  "Comfy_Keybinding_NewBindings": {
-    "name": "用户设置的键绑定"
-  },
-  "Comfy_Keybinding_UnsetBindings": {
-    "name": "用户取消的键绑定"
   },
   "Comfy_LinkRelease_Action": {
     "name": "释放链接时的操作（无修饰符）",
@@ -155,15 +146,6 @@
   "Comfy_NodeInputConversionSubmenus": {
     "name": "在节点上下文菜单中，将输入/小部件之间转换的条目放置在子菜单中。"
   },
-  "Comfy_NodeLibrary_Bookmarks": {
-    "name": "节点库书签及显示名称（已弃用）"
-  },
-  "Comfy_NodeLibrary_BookmarksCustomization": {
-    "name": "节点库书签自定义"
-  },
-  "Comfy_NodeLibrary_Bookmarks_V2": {
-    "name": "节点库书签v2及唯一名称"
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "节点搜索框实现",
     "options": {
@@ -243,9 +225,6 @@
     "name": "批处理计数限制",
     "tooltip": "一次点击按钮添加到队列的最大任务数量"
   },
-  "Comfy_Queue_ImageFit": {
-    "name": "队列图像适应"
-  },
   "Comfy_Queue_MaxHistoryItems": {
     "name": "队列历史大小",
     "tooltip": "队列历史中显示的最大任务数量。"
@@ -253,14 +232,6 @@
   "Comfy_RerouteBeta": {
     "name": "选择加入重定向测试版",
     "tooltip": "启用新的本地重定向。\n\n可以通过按住alt并从链接线拖动来添加重定向，或在链接菜单中添加。\n\n禁用此选项不会造成破坏 - 重定向将被隐藏。"
-  },
-  "Comfy_Server_LaunchArgs": {
-    "name": "服务器启动参数",
-    "tooltip": "这些是启动服务器时传递给服务器的实际参数。"
-  },
-  "Comfy_Server_ServerConfigValues": {
-    "name": "前端显示的服务器配置值",
-    "tooltip": "仅用于前端显示的服务器配置值"
   },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
