@@ -163,8 +163,6 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import ConfirmDialog from 'primevue/confirmdialog'
 
 const settingStore = useSettingStore()
@@ -195,6 +193,7 @@ const handleSearch = (query: string) => {
 
 const commandStore = useCommandStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const workspaceStore = useWorkspaceStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -202,7 +201,7 @@ const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
 const handleCloseWorkflow = (workflow?: ComfyWorkflow) => {
   if (workflow) {
-    useWorkflowService().closeWorkflow(workflow, {
+    workflowService.closeWorkflow(workflow, {
       warnIfUnsaved: !workspaceStore.shiftDown
     })
   }
@@ -234,9 +233,6 @@ const openWorkflowsTree = computed(() =>
   buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
 )
 
-const confirm = useConfirm()
-const toast = useToast()
-
 const renderTreeNode = (
   node: TreeNode,
   type: WorkflowTreeType
@@ -250,7 +246,7 @@ const renderTreeNode = (
     e: MouseEvent
   ) => {
     if (node.leaf) {
-      useWorkflowService().openWorkflow(workflow)
+      workflowService.openWorkflow(workflow)
     } else {
       toggleNodeOnEvent(e, node)
     }
@@ -268,12 +264,12 @@ const renderTreeNode = (
               ? workflow.directory + '/' + appendJsonExt(newName)
               : ComfyWorkflow.basePath + appendJsonExt(newName)
 
-          await useWorkflowService().renameWorkflow(workflow, newPath)
+          await workflowService.renameWorkflow(workflow, newPath)
         },
         handleDelete: workflow.isTemporary
           ? undefined
           : async () => {
-              await useWorkflowService().deleteWorkflow(workflow)
+              await workflowService.deleteWorkflow(workflow)
             },
         contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
           return [
@@ -282,7 +278,7 @@ const renderTreeNode = (
               icon: 'pi pi-file-export',
               command: () => {
                 const workflow = node.data
-                useWorkflowService().insertWorkflow(workflow)
+                workflowService.insertWorkflow(workflow)
               }
             }
           ]

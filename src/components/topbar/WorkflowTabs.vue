@@ -51,6 +51,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
 
@@ -77,13 +78,13 @@ const onWorkflowChange = (option: WorkflowOption) => {
     return
   }
 
-  useWorkflowService().openWorkflow(option.workflow)
+  workflowService.openWorkflow(option.workflow)
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
   for (const opt of options) {
     if (
-      !(await useWorkflowService().closeWorkflow(opt.workflow, {
+      !(await workflowService.closeWorkflow(opt.workflow, {
         warnIfUnsaved: !workspaceStore.shiftDown
       }))
     ) {
@@ -110,7 +111,7 @@ const contextMenuItems = computed(() => {
     {
       label: t('tabMenu.duplicateTab'),
       command: () => {
-        useWorkflowService().duplicateWorkflow(tab.workflow)
+        workflowService.duplicateWorkflow(tab.workflow)
       }
     },
     {
