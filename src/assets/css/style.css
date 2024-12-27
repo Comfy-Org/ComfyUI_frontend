@@ -638,7 +638,7 @@ dialog::backdrop {
 
 .litegraph.litecontextmenu
   .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: var(--border-color) !important;
+  background-color: var(--comfy-menu-hover-bg, var(--border-color)) !important;
   color: var(--fg-color);
 }
 
