@@ -6,7 +6,6 @@
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('g.searchSettings') + '...'"
-        :debounceTime="100"
       />
       <Listbox
         v-model="activeCategory"
@@ -68,13 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  ref,
-  computed,
-  onMounted,
-  watch,
-  defineAsyncComponent
-} from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
@@ -196,11 +189,18 @@ const searchResults = computed<ISettingGroup[]>(() => {
 
   filteredSettingIds.value.forEach((id) => {
     const setting = settingStore.settings[id]
-    const groupLabel = getSettingInfo(setting).subCategory
-    if (!groupedSettings[groupLabel]) {
-      groupedSettings[groupLabel] = []
+    const info = getSettingInfo(setting)
+    const groupLabel = info.subCategory
+
+    if (
+      activeCategory.value === null ||
+      activeCategory.value.label === info.category
+    ) {
+      if (!groupedSettings[groupLabel]) {
+        groupedSettings[groupLabel] = []
+      }
+      groupedSettings[groupLabel].push(setting)
     }
-    groupedSettings[groupLabel].push(setting)
   })
 
   return Object.entries(groupedSettings).map(([label, settings]) => ({
@@ -223,7 +223,7 @@ const searchResultsCategories = computed<Set<string>>(() => {
 const handleSearch = (query: string) => {
   if (!query) {
     filteredSettingIds.value = []
-    activeCategory.value = getDefaultCategory()
+    activeCategory.value ??= getDefaultCategory()
     return
   }
 
@@ -254,6 +254,13 @@ const inSearch = computed(
 const tabValue = computed(() =>
   inSearch.value ? 'Search Results' : activeCategory.value?.label
 )
+// Don't allow null category to be set outside of search.
+// In search mode, the active category can be null to show all search results.
+watch(activeCategory, (_, oldValue) => {
+  if (!tabValue.value) {
+    activeCategory.value = oldValue
+  }
+})
 </script>
 
 <style>
