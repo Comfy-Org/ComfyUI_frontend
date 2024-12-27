@@ -506,6 +506,7 @@ Our project supports multiple languages using `vue-i18n`. This allows users arou
  - ru (Русский)
  - ja (日本語)
  - ko (한국어)
+ - fr (Français)
 
 ### How to Add a New Language
 
