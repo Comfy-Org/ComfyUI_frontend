@@ -14,14 +14,13 @@ import {
   importA1111,
   getLatentMetadata
 } from './pnginfo'
-import { createImageHost, calculateImageGrid } from './ui/imagePreview'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
   validateComfyWorkflow
 } from '@/types/comfyWorkflow'
-import type { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
@@ -39,7 +38,7 @@ import {
   SYSTEM_NODE_DEFS,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { INodeInputSlot, Vector2 } from '@comfyorg/litegraph'
+import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
@@ -48,17 +47,14 @@ import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
-import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useWorkflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { st } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
 

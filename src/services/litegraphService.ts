@@ -12,12 +12,10 @@ import {
 } from '@comfyorg/litegraph'
 import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
 import { useExtensionService } from './extensionService'
-import { ComfyApp, app } from '@/scripts/app'
+import { ComfyApp, app, ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { useToastStore } from '@/stores/toastStore'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
-
-export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
