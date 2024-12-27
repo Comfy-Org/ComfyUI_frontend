@@ -11,6 +11,10 @@ import { Editor as TiptapEditor } from '@tiptap/core'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import TiptapLink from '@tiptap/extension-link'
+import TiptapTable from '@tiptap/extension-table'
+import TiptapTableCell from '@tiptap/extension-table-cell'
+import TiptapTableHeader from '@tiptap/extension-table-header'
+import TiptapTableRow from '@tiptap/extension-table-row'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -373,7 +377,15 @@ function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
     transformPastedText: true
   })
   const editor = new TiptapEditor({
-    extensions: [TiptapStarterKit, TiptapMarkdown, TiptapLink],
+    extensions: [
+      TiptapStarterKit,
+      TiptapMarkdown,
+      TiptapLink,
+      TiptapTable,
+      TiptapTableCell,
+      TiptapTableHeader,
+      TiptapTableRow
+    ],
     content: opts.defaultVal,
     editable: false
   })
