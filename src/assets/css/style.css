@@ -197,6 +197,21 @@ body {
   padding: 0.5em;
 }
 
+.comfy-markdown .tiptap table {
+  border-collapse: collapse;
+}
+
+.comfy-markdown .tiptap th {
+  text-align: left;
+  background: var(--comfy-menu-bg);
+}
+
+.comfy-markdown .tiptap th,
+.comfy-markdown .tiptap td {
+  padding: 0.5em;
+  border: thin solid;
+}
+
 .comfy-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
