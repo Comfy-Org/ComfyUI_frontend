@@ -18,6 +18,15 @@ import type { ComfyExtension } from '@/types/comfy'
 import { buildTree } from '@/utils/treeUtil'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 
+export const getSettingInfo = (setting: SettingParams) => {
+  const parts = setting.category || setting.id.split('.')
+  return {
+    category: parts[0],
+    subCategory: parts[1],
+    name: parts.slice(2).join('.')
+  }
+}
+
 export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
