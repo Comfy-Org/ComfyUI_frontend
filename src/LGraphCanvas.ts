@@ -8061,7 +8061,7 @@ export class LGraphCanvas {
     }
 
     const extra = this.getExtraMenuOptions?.(this, options)
-    return extra
+    return Array.isArray(extra)
       ? options.concat(extra)
       : options
   }
@@ -8159,7 +8159,7 @@ export class LGraphCanvas {
     if (outputs?.length) options[1].disabled = false
 
     const extra = node.getExtraMenuOptions?.(this, options)
-    if (extra) {
+    if (Array.isArray(extra) && extra.length > 0) {
       extra.push(null)
       options = extra.concat(options)
     }
