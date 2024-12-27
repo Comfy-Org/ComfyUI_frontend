@@ -1,8 +1,15 @@
 <template>
-  <div class="flex">
-    <Listbox v-model="selectedTab" :options="tabs" optionLabel="title" />
+  <div class="flex h-96">
+    <Listbox
+      v-model="selectedTab"
+      :options="tabs"
+      optionLabel="title"
+      scroll-height="auto"
+      class="listbox"
+      listStyle="max-height:unset"
+    />
     <Carousel
-      class="carousel"
+      class="carousel justify-center"
       :value="selectedTab.templates"
       :numVisible="4"
       :numScroll="3"
@@ -11,7 +18,7 @@
       <template #item="slotProps">
         <Card>
           <template #header>
-            <div class="flex center justify-center">
+            <div class="flex items-center justify-center">
               <div
                 class="relative overflow-hidden rounded-lg cursor-pointer w-64 h-64"
                 @click="loadWorkflow(slotProps.data)"
@@ -23,7 +30,7 @@
                 />
                 <img
                   v-else
-                  :src="`workflow_templates/${selectedTab.moduleName}/${slotProps.data}.jpg`"
+                  :src="`api/workflow_templates/${selectedTab.moduleName}/${slotProps.data}.jpg`"
                   class="w-64 h-64 rounded-lg object-cover thumbnail"
                 />
                 <a>
@@ -48,19 +55,16 @@
 </template>
 
 <script setup lang="ts">
-import { useDialogStore } from '@/stores/dialogStore'
 import Carousel from 'primevue/carousel'
 import Listbox from 'primevue/listbox'
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useToast } from 'primevue/usetoast'
 import { onMounted, ref } from 'vue'
+import { useDialogStore } from '@/stores/dialogStore'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useI18n } from 'vue-i18n'
-import toast from 'primevue/toast'
-const { t } = useI18n()
-
-const loading = ref<string | null>(null)
 
 interface WorkflowTemplatesTab {
   moduleName: string
@@ -68,16 +72,19 @@ interface WorkflowTemplatesTab {
   templates: string[]
 }
 
+const { t } = useI18n()
+const toast = useToast()
+
 //These default templates are provided by the frontend
-const comfyUITemplates = {
+const comfyUITemplates: WorkflowTemplatesTab = {
   moduleName: 'default',
   title: 'ComfyUI',
   templates: ['default', 'image2image', 'upscale', 'flux_schnell']
 }
 
 const tabs = ref<WorkflowTemplatesTab[]>([comfyUITemplates])
-
 const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
+const loading = ref<string | null>(null)
 
 onMounted(async () => {
   try {
@@ -111,7 +118,7 @@ const loadWorkflow = async (id: string) => {
     )
   } else {
     json = await fetch(
-      api.fileURL(
+      api.apiURL(
         `workflow_templates/${selectedTab.value.moduleName}/${id}.json`
       )
     ).then((r) => r.json())
@@ -138,6 +145,10 @@ const loadWorkflow = async (id: string) => {
   text-align: center;
 }
 
+.listbox {
+  overflow-y: auto;
+}
+
 .carousel {
   width: 1300px;
 }
@@ -149,7 +160,8 @@ img.thumbnail::before {
   height: 100%;
   background-color: var(--comfy-menu-secondary-bg);
   color: var(--fg-color);
-  content: '🗎';
+  font-family: primeicons, sans-serif;
+  content: '\e958'; /* Document icon from primevue */
   text-align: center;
   align-content: center;
   font-size: 64px;
