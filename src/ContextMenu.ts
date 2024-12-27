@@ -332,7 +332,7 @@ export class ContextMenu {
   }
 
   close(e?: MouseEvent, ignore_parent_menu?: boolean): void {
-    this.root.parentNode?.removeChild(this.root)
+    this.root.remove()
     if (this.parentMenu && !ignore_parent_menu) {
       this.parentMenu.lock = false
       this.parentMenu.current_submenu = null
@@ -360,8 +360,6 @@ export class ContextMenu {
   ): CustomEvent {
     const evt = document.createEvent("CustomEvent")
     evt.initCustomEvent(event_name, true, true, params) // canBubble, cancelable, detail
-    // @ts-expect-error
-    evt.srcElement = origin
     if (element.dispatchEvent) element.dispatchEvent(evt)
     // @ts-expect-error
     else if (element.__events) element.__events.dispatchEvent(evt)
