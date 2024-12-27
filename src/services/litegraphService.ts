@@ -345,7 +345,7 @@ export const useLitegraphService = () => {
         }
       }
 
-      return options
+      return []
     }
   }
 
