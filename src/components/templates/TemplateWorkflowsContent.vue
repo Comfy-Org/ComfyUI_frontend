@@ -119,7 +119,7 @@ const loadWorkflow = async (id: string) => {
   } else {
     json = await fetch(
       api.apiURL(
-        `workflow_templates/${selectedTab.value.moduleName}/${id}.json`
+        `/workflow_templates/${selectedTab.value.moduleName}/${id}.json`
       )
     ).then((r) => r.json())
   }
