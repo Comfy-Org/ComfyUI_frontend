@@ -175,7 +175,6 @@ body {
   display: none;
 }
 
-
 .comfy-markdown .tiptap :first-child {
   margin-top: 0;
 }
@@ -635,16 +634,12 @@ dialog::backdrop {
 .litegraph.litecontextmenu.dark {
   z-index: 9999 !important;
   background-color: var(--comfy-menu-bg) !important;
-  filter: brightness(95%);
-  will-change: transform;
 }
 
 .litegraph.litecontextmenu
   .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: var(--comfy-menu-bg) !important;
-  filter: brightness(155%);
-  will-change: transform;
-  color: var(--input-text);
+  background-color: var(--border-color) !important;
+  color: var(--fg-color);
 }
 
 .litegraph.litecontextmenu .litemenu-entry.submenu,
