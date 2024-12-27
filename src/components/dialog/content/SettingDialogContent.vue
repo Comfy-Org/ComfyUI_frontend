@@ -12,7 +12,10 @@
         :options="categories"
         optionLabel="translatedLabel"
         scrollHeight="100%"
-        :disabled="inSearch"
+        :optionDisabled="
+          (option: SettingTreeNode) =>
+            inSearch && !searchResultsCategories.has(option.label)
+        "
         class="border-none w-full"
       />
     </ScrollPanel>
@@ -70,7 +73,11 @@ import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
-import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import {
+  getSettingInfo,
+  SettingTreeNode,
+  useSettingStore
+} from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
@@ -153,8 +160,6 @@ const categories = computed<SettingTreeNode[]>(() =>
 )
 
 const activeCategory = ref<SettingTreeNode | null>(null)
-const searchResults = ref<ISettingGroup[]>([])
-
 watch(activeCategory, (newCategory, oldCategory) => {
   if (newCategory === null) {
     activeCategory.value = oldCategory
@@ -178,12 +183,42 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 }
 
 const searchQuery = ref<string>('')
+const filteredSettingIds = ref<string[]>([])
 const searchInProgress = ref<boolean>(false)
 watch(searchQuery, () => (searchInProgress.value = true))
 
+const searchResults = computed<ISettingGroup[]>(() => {
+  const groupedSettings: { [key: string]: SettingParams[] } = {}
+
+  filteredSettingIds.value.forEach((id) => {
+    const setting = settingStore.settings[id]
+    const groupLabel = getSettingInfo(setting).subCategory
+    if (!groupedSettings[groupLabel]) {
+      groupedSettings[groupLabel] = []
+    }
+    groupedSettings[groupLabel].push(setting)
+  })
+
+  return Object.entries(groupedSettings).map(([label, settings]) => ({
+    label,
+    settings
+  }))
+})
+
+/**
+ * Settings categories that contains at least one setting in search results.
+ */
+const searchResultsCategories = computed<Set<string>>(() => {
+  return new Set(
+    filteredSettingIds.value.map(
+      (id) => getSettingInfo(settingStore.settings[id]).category
+    )
+  )
+})
+
 const handleSearch = (query: string) => {
   if (!query) {
-    searchResults.value = []
+    filteredSettingIds.value = []
     return
   }
 
@@ -203,21 +238,7 @@ const handleSearch = (query: string) => {
     )
   })
 
-  const groupedSettings: { [key: string]: SettingParams[] } = {}
-  filteredSettings.forEach((setting) => {
-    const groupLabel = setting.id.split('.')[1]
-    if (!groupedSettings[groupLabel]) {
-      groupedSettings[groupLabel] = []
-    }
-    groupedSettings[groupLabel].push(setting)
-  })
-
-  searchResults.value = Object.entries(groupedSettings).map(
-    ([label, settings]) => ({
-      label,
-      settings
-    })
-  )
+  filteredSettingIds.value = filteredSettings.map((x) => x.id)
   searchInProgress.value = false
 }
 
