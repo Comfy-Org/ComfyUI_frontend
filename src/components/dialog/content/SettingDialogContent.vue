@@ -6,6 +6,7 @@
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('g.searchSettings') + '...'"
+        :debounceTime="100"
       />
       <Listbox
         v-model="activeCategory"
@@ -67,7 +68,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
+import {
+  ref,
+  computed,
+  onMounted,
+  watch,
+  defineAsyncComponent
+} from 'vue'
 import Listbox from 'primevue/listbox'
 import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
@@ -160,17 +167,14 @@ const categories = computed<SettingTreeNode[]>(() =>
 )
 
 const activeCategory = ref<SettingTreeNode | null>(null)
-watch(activeCategory, (newCategory, oldCategory) => {
-  if (newCategory === null) {
-    activeCategory.value = oldCategory
-  }
-})
-
-onMounted(() => {
-  activeCategory.value = props.defaultPanel
+const getDefaultCategory = () => {
+  return props.defaultPanel
     ? categories.value.find((x) => x.key === props.defaultPanel) ??
-      categories.value[0]
+        categories.value[0]
     : categories.value[0]
+}
+onMounted(() => {
+  activeCategory.value = getDefaultCategory()
 })
 
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -219,6 +223,7 @@ const searchResultsCategories = computed<Set<string>>(() => {
 const handleSearch = (query: string) => {
   if (!query) {
     filteredSettingIds.value = []
+    activeCategory.value = getDefaultCategory()
     return
   }
 
@@ -240,6 +245,7 @@ const handleSearch = (query: string) => {
 
   filteredSettingIds.value = filteredSettings.map((x) => x.id)
   searchInProgress.value = false
+  activeCategory.value = null
 }
 
 const inSearch = computed(
