@@ -1,23 +1,16 @@
-import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { ComfyDialog } from './dialog'
-import type { Setting, SettingParams } from '@/types/settingTypes'
+import type { SettingParams } from '@/types/settingTypes'
 import type { Settings } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
-  settingsValues: any
-  settingsLookup: Record<string, Setting>
-  settingsParamLookup: Record<string, SettingParams>
 
   constructor(app: ComfyApp) {
     super()
     this.app = app
-    this.settingsValues = {}
-    this.settingsLookup = {}
-    this.settingsParamLookup = {}
   }
 
   dispatchChange<T>(id: string, value: T, oldValue?: T) {
@@ -29,6 +22,27 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         }
       })
     )
+  }
+
+  /**
+   * @deprecated Use `settingStore.settingValues` instead.
+   */
+  get settingsValues() {
+    return useSettingStore().settingValues
+  }
+
+  /**
+   * @deprecated Use `settingStore.settingsById` instead.
+   */
+  get settingsLookup() {
+    return useSettingStore().settingsById
+  }
+
+  /**
+   * @deprecated Use `settingStore.settingsById` instead.
+   */
+  get settingsParamLookup() {
+    return useSettingStore().settingsById
   }
 
   /**
