@@ -85,9 +85,14 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   function get<K extends keyof Settings>(key: K): Settings[K] {
-    return (
-      settingValues.value[key] ?? app.ui.settings.getSettingDefaultValue(key)
-    )
+    return settingValues.value[key] ?? getDefaultValue(key)
+  }
+
+  function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
+    const param = settingsById.value[key]
+    return typeof param?.defaultValue === 'function'
+      ? param.defaultValue()
+      : param?.defaultValue
   }
 
   return {
@@ -98,6 +103,7 @@ export const useSettingStore = defineStore('setting', () => {
     loadExtensionSettings,
     set,
     get,
-    exists
+    exists,
+    getDefaultValue
   }
 })

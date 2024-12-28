@@ -78,11 +78,11 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return (value ?? defaultValue) as Settings[K]
   }
 
-  getSettingDefaultValue(id: string) {
-    const param = this.settingsParamLookup[id]
-    return typeof param?.defaultValue === 'function'
-      ? param.defaultValue()
-      : param?.defaultValue
+  /**
+   * @deprecated Use `settingStore.getDefaultValue` instead.
+   */
+  getSettingDefaultValue<K extends keyof Settings>(id: K): Settings[K] {
+    return useSettingStore().getDefaultValue(id)
   }
 
   async setSettingValueAsync<K extends keyof Settings>(
