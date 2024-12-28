@@ -33,11 +33,11 @@ export interface SettingTreeNode extends TreeNode {
 
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
-  const settings = ref<Record<string, SettingParams>>({})
+  const settingsById = ref<Record<string, SettingParams>>({})
 
   const settingTree = computed<SettingTreeNode>(() => {
     const root = buildTree(
-      Object.values(settings.value).filter(
+      Object.values(settingsById.value).filter(
         (setting: SettingParams) => setting.type !== 'hidden'
       ),
       (setting: SettingParams) => setting.category || setting.id.split('.')
@@ -62,7 +62,7 @@ export const useSettingStore = defineStore('setting', () => {
       const value = settingsDialog.getSettingValue(id)
       settingValues.value[id] = value
     }
-    settings.value = settingsDialog.settingsParamLookup
+    settingsById.value = settingsDialog.settingsParamLookup
 
     CORE_SETTINGS.forEach((setting: SettingParams) => {
       settingsDialog.addSetting(setting)
@@ -92,7 +92,7 @@ export const useSettingStore = defineStore('setting', () => {
 
   return {
     settingValues,
-    settings,
+    settingsById,
     settingTree,
     addSettings,
     loadExtensionSettings,

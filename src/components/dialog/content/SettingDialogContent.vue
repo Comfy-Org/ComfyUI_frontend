@@ -188,7 +188,7 @@ const searchResults = computed<ISettingGroup[]>(() => {
   const groupedSettings: { [key: string]: SettingParams[] } = {}
 
   filteredSettingIds.value.forEach((id) => {
-    const setting = settingStore.settings[id]
+    const setting = settingStore.settingsById[id]
     const info = getSettingInfo(setting)
     const groupLabel = info.subCategory
 
@@ -215,7 +215,7 @@ const searchResults = computed<ISettingGroup[]>(() => {
 const searchResultsCategories = computed<Set<string>>(() => {
   return new Set(
     filteredSettingIds.value.map(
-      (id) => getSettingInfo(settingStore.settings[id]).category
+      (id) => getSettingInfo(settingStore.settingsById[id]).category
     )
   )
 })
