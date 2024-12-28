@@ -196,22 +196,27 @@ watchEffect(() => {
   LiteGraph.alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
 })
 
-watch(settingStore.get('Comfy.WidgetControlMode'), () => {
-  for (const n of comfyApp.graph.nodes) {
-    if (!n.widgets) continue
-    for (const w of n.widgets) {
-      if (w[IS_CONTROL_WIDGET]) {
-        updateControlWidgetLabel(w)
-        if (w.linkedWidgets) {
-          for (const l of w.linkedWidgets) {
-            updateControlWidgetLabel(l)
+watch(
+  () => settingStore.get('Comfy.WidgetControlMode'),
+  () => {
+    if (!canvasStore.canvas) return
+
+    for (const n of comfyApp.graph.nodes) {
+      if (!n.widgets) continue
+      for (const w of n.widgets) {
+        if (w[IS_CONTROL_WIDGET]) {
+          updateControlWidgetLabel(w)
+          if (w.linkedWidgets) {
+            for (const l of w.linkedWidgets) {
+              updateControlWidgetLabel(l)
+            }
           }
         }
       }
     }
+    comfyApp.graph.setDirtyCanvas(true)
   }
-  comfyApp.graph.setDirtyCanvas(true)
-})
+)
 
 watchEffect(() => {
   if (!canvasStore.canvas) return
