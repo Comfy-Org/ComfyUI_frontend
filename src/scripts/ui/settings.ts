@@ -20,15 +20,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     this.settingsParamLookup = {}
   }
 
-  #dispatchChange<T>(id: string, value: T, oldValue?: T) {
-    // Keep the settingStore updated. Not using `store.set` as it would trigger
-    // setSettingValue again.
-    // `load` re-dispatch the change for any settings added before load so
-    // settingStore is always up to date.
-    if (this.app.vueAppReady) {
-      useSettingStore().settingValues[id] = value
-    }
-
+  dispatchChange<T>(id: string, value: T, oldValue?: T) {
     this.dispatchEvent(
       new CustomEvent(id + '.change', {
         detail: {
@@ -39,12 +31,19 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     )
   }
 
+  /**
+   * @deprecated Use `settingStore.get` instead.
+   */
   getSettingValue<K extends keyof Settings>(
     id: K,
     defaultValue?: Settings[K]
   ): Settings[K] {
-    let value = this.settingsValues[id]
-    return (value ?? defaultValue) as Settings[K]
+    if (defaultValue !== undefined) {
+      console.warn(
+        `Parameter defaultValue is deprecated. The default value in settings definition will be used instead.`
+      )
+    }
+    return useSettingStore().get(id)
   }
 
   /**
