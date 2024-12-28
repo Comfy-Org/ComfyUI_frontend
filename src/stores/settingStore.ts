@@ -1,19 +1,10 @@
-/**
- * TODO: Migrate scripts/ui/settings.ts here
- *
- * Currently the reactive settings act as a proxy of the legacy settings.
- * Every time a setting is changed, the settingStore dispatch the change to the
- * legacy settings. Every time the legacy settings are changed, the legacy
- * settings directly updates the settingStore.settingValues.
- */
-
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { app } from '@/scripts/app'
 import type { Settings } from '@/types/apiTypes'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
+import { api } from '@/scripts/api'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -60,7 +51,7 @@ export const useSettingStore = defineStore('setting', () => {
 
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     settingValues.value[key] = value
-    await app.ui.settings.setSettingValueAsync(key, value)
+    await api.storeSetting(key, value)
   }
 
   function get<K extends keyof Settings>(key: K): Settings[K] {

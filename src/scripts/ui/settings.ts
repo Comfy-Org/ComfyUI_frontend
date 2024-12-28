@@ -85,27 +85,25 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     return useSettingStore().getDefaultValue(id)
   }
 
+  /**
+   * @deprecated Use `settingStore.set` instead.
+   */
   async setSettingValueAsync<K extends keyof Settings>(
     id: K,
     value: Settings[K]
   ) {
-    value = this.tryMigrateDeprecatedValue(id, value)
-
-    let oldValue = this.getSettingValue(id, undefined)
-    this.settingsValues[id] = value
-
-    if (id in this.settingsLookup) {
-      this.settingsLookup[id].onChange?.(value, oldValue)
-    }
-    this.#dispatchChange(id, value, oldValue)
-
-    await api.storeSetting(id, value)
+    await useSettingStore().set(id, value)
   }
 
+  /**
+   * @deprecated Use `settingStore.set` instead.
+   */
   setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
-    this.setSettingValueAsync(id, value).catch((err) => {
-      useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
-    })
+    useSettingStore()
+      .set(id, value)
+      .catch((err) => {
+        useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
+      })
   }
 
   /**
