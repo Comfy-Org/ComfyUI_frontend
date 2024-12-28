@@ -27,7 +27,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   private tryMigrateDeprecatedValue(id: string, value: any) {
     if (this.app.vueAppReady) {
       const settingStore = useSettingStore()
-      const setting = settingStore.settings[id]
+      const setting = settingStore.settingsById[id]
       if (setting?.migrateDeprecatedValue) {
         return setting.migrateDeprecatedValue(value)
       }
@@ -149,7 +149,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
 
     this.settingsParamLookup[id] = params
     if (this.app.vueAppReady) {
-      useSettingStore().settings[id] = params
+      useSettingStore().settingsById[id] = params
     }
     this.settingsLookup[id] = {
       id,
