@@ -1,9 +1,5 @@
 // @ts-strict-ignore
-import {
-  type ComfyWidgetConstructor,
-  ComfyWidgets,
-  initWidgets
-} from './widgets'
+import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 import { ComfyUI, $el } from './ui'
 import { api, type ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -1048,7 +1044,6 @@ export class ComfyApp {
 
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
-    initWidgets(this)
 
     // Load previous workflow
     let restored = false
