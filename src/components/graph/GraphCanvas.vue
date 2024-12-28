@@ -67,6 +67,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useWorkflowService } from '@/services/workflowService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -193,6 +194,23 @@ watchEffect(() => {
 
 watchEffect(() => {
   LiteGraph.alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
+})
+
+watch(settingStore.get('Comfy.WidgetControlMode'), () => {
+  for (const n of comfyApp.graph.nodes) {
+    if (!n.widgets) continue
+    for (const w of n.widgets) {
+      if (w[IS_CONTROL_WIDGET]) {
+        updateControlWidgetLabel(w)
+        if (w.linkedWidgets) {
+          for (const l of w.linkedWidgets) {
+            updateControlWidgetLabel(l)
+          }
+        }
+      }
+    }
+  }
+  comfyApp.graph.setDirtyCanvas(true)
 })
 
 watchEffect(() => {

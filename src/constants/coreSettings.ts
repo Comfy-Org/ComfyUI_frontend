@@ -679,5 +679,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: {} as ColorPalettes,
     versionModified: '1.6.7'
+  },
+  {
+    id: 'Comfy.WidgetControlMode',
+    category: ['Comfy', 'Node Widget', 'WidgetControlMode'],
+    name: 'Widget control mode',
+    tooltip:
+      'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
+    type: 'combo',
+    defaultValue: 'after',
+    options: ['before', 'after'],
+    versionModified: '1.6.10'
   }
 ]

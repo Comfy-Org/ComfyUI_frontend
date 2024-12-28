@@ -24,17 +24,20 @@ export type ComfyWidgetConstructor = (
   widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
 
-let controlValueRunBefore = false
+function controlValueRunBefore() {
+  return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+}
+
 export function updateControlWidgetLabel(widget) {
   let replacement = 'after'
   let find = 'before'
-  if (controlValueRunBefore) {
+  if (controlValueRunBefore()) {
     ;[find, replacement] = [replacement, find]
   }
   widget.label = (widget.label ?? widget.name).replace(find, replacement)
 }
 
-const IS_CONTROL_WIDGET = Symbol()
+export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 function getNumberDefaults(
@@ -252,7 +255,7 @@ export function addValueControlWidgets(
   }
 
   valueControl.beforeQueued = () => {
-    if (controlValueRunBefore) {
+    if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
@@ -262,7 +265,7 @@ export function addValueControlWidgets(
   }
 
   valueControl.afterQueued = () => {
-    if (!controlValueRunBefore) {
+    if (!controlValueRunBefore()) {
       applyWidgetControl()
     }
   }
@@ -463,36 +466,6 @@ function isSlider(display, app) {
   }
 
   return display === 'slider' ? 'slider' : 'number'
-}
-
-export function initWidgets(app) {
-  app.ui.settings.addSetting({
-    id: 'Comfy.WidgetControlMode',
-    category: ['Comfy', 'Node Widget', 'WidgetControlMode'],
-    name: 'Widget control mode',
-    tooltip:
-      'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
-    type: 'combo',
-    defaultValue: 'after',
-    options: ['before', 'after'],
-    onChange(value) {
-      controlValueRunBefore = value === 'before'
-      for (const n of app.graph.nodes) {
-        if (!n.widgets) continue
-        for (const w of n.widgets) {
-          if (w[IS_CONTROL_WIDGET]) {
-            updateControlWidgetLabel(w)
-            if (w.linkedWidgets) {
-              for (const l of w.linkedWidgets) {
-                updateControlWidgetLabel(l)
-              }
-            }
-          }
-        }
-      }
-      app.graph.setDirtyCanvas(true)
-    }
-  })
 }
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
