@@ -103,9 +103,6 @@
     "name": "使用新画笔编辑器",
     "tooltip": "切换到新的画笔编辑器界面"
   },
-  "Comfy_MenuPosition": {
-    "name": "保存旧版菜单位置"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "自动加载所有模型文件夹",
     "tooltip": "开启后，打开模型库会加载所有文件夹内的模型（可能导致卡顿）。关闭后，仅加载当前文件夹内的模型。"

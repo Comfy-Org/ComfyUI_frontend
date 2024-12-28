@@ -103,9 +103,6 @@
     "name": "Utiliser le nouvel éditeur de masque",
     "tooltip": "Passer à la nouvelle interface de l'éditeur de masque"
   },
-  "Comfy_MenuPosition": {
-    "name": "Sauvegarder la position du menu hérité"
-  },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Charger automatiquement tous les dossiers de modèles",
     "tooltip": "Si vrai, tous les dossiers seront chargés dès que vous ouvrez la bibliothèque de modèles (cela peut causer des retards pendant le chargement). Si faux, les dossiers de modèles de niveau racine ne seront chargés que lorsque vous cliquerez dessus."

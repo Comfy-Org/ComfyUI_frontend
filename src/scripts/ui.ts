@@ -169,19 +169,8 @@ function dragElement(dragEl, settings): () => void {
   }
 
   let savePos = undefined
-  settings.addSetting({
-    id: 'Comfy.MenuPosition',
-    category: ['Comfy', 'Menu', 'MenuPosition'],
-    name: "Save legacy menu's position",
-    type: 'boolean',
-    defaultValue: savePos,
-    onChange(value) {
-      if (savePos === undefined && value) {
-        restorePos()
-      }
-      savePos = value
-    }
-  })
+  restorePos()
+  savePos = true
 
   function dragMouseDown(e) {
     e = e || window.event
