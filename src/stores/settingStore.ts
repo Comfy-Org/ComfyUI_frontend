@@ -19,6 +19,10 @@ export interface SettingTreeNode extends TreeNode {
   data?: SettingParams
 }
 
+function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
+  return setting?.migrateDeprecatedValue?.(value) ?? value
+}
+
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
@@ -50,8 +54,9 @@ export const useSettingStore = defineStore('setting', () => {
   }
 
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    settingValues.value[key] = value
-    await api.storeSetting(key, value)
+    const newValue = tryMigrateDeprecatedValue(settingsById.value[key], value)
+    settingValues.value[key] = newValue
+    await api.storeSetting(key, newValue)
   }
 
   function get<K extends keyof Settings>(key: K): Settings[K] {
@@ -76,11 +81,22 @@ export const useSettingStore = defineStore('setting', () => {
     settingsById.value[setting.id] = setting
   }
 
+  async function loadSettingValues() {
+    const values = await api.getSettings()
+    for (const [key, value] of Object.entries(values)) {
+      settingValues.value[key] = tryMigrateDeprecatedValue(
+        settingsById.value[key],
+        value
+      )
+    }
+  }
+
   return {
     settingValues,
     settingsById,
     settingTree,
     addSetting,
+    loadSettingValues,
     set,
     get,
     exists,

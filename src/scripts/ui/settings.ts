@@ -20,21 +20,6 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     this.settingsParamLookup = {}
   }
 
-  get settings() {
-    return Object.values(this.settingsLookup)
-  }
-
-  private tryMigrateDeprecatedValue(id: string, value: any) {
-    if (this.app.vueAppReady) {
-      const settingStore = useSettingStore()
-      const setting = settingStore.settingsById[id]
-      if (setting?.migrateDeprecatedValue) {
-        return setting.migrateDeprecatedValue(value)
-      }
-    }
-    return value
-  }
-
   #dispatchChange<T>(id: string, value: T, oldValue?: T) {
     // Keep the settingStore updated. Not using `store.set` as it would trigger
     // setSettingValue again.
@@ -52,22 +37,6 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
         }
       })
     )
-  }
-
-  async load() {
-    this.settingsValues = await api.getSettings()
-
-    // Trigger onChange for any settings added before load
-    for (const id in this.settingsLookup) {
-      const compatId = id
-      this.settingsValues[compatId] = this.tryMigrateDeprecatedValue(
-        id,
-        this.settingsValues[compatId]
-      )
-      const value = this.settingsValues[compatId]
-      this.settingsLookup[id].onChange?.(value)
-      this.#dispatchChange(id, value)
-    }
   }
 
   getSettingValue<K extends keyof Settings>(

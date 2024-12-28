@@ -1008,7 +1008,7 @@ export class ComfyApp {
 
     await Promise.all([
       useWorkspaceStore().workflow.syncWorkflows(),
-      this.ui.settings.load()
+      useSettingStore().loadSettingValues()
     ])
     await useExtensionService().loadExtensions()
 
