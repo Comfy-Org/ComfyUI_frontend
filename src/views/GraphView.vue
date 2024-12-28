@@ -44,6 +44,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
 import { useEventListener } from '@vueuse/core'
 import { useKeybindingService } from '@/services/keybindingService'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
 
 setupAutoQueueHandler()
 
@@ -108,7 +109,9 @@ watchEffect(() => {
 })
 
 const init = () => {
-  settingStore.addSettings(app.ui.settings)
+  CORE_SETTINGS.forEach((setting) => {
+    settingStore.addSetting(setting)
+  })
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()

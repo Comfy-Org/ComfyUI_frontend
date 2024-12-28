@@ -108,14 +108,10 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  refreshSetting(id: keyof Settings) {
-    const value = this.getSettingValue(id)
-    this.settingsLookup[id].onChange?.(value)
-    this.#dispatchChange(id, value)
-  }
-
   /**
-   * Deprecated for external callers/extensions. Use `ComfyExtension.settings` field instead.
+   * @deprecated Deprecated for external callers/extensions. Use
+   * `ComfyExtension.settings` field instead.
+   *
    * Example:
    * ```ts
    * app.registerExtension({
@@ -132,41 +128,15 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * ```
    */
   addSetting(params: SettingParams) {
-    const { id, name, type, defaultValue, onChange } = params
-    if (!id) {
-      throw new Error('Settings must have an ID')
-    }
+    const settingStore = useSettingStore()
+    settingStore.addSetting(params)
 
-    if (id in this.settingsLookup) {
-      throw new Error(`Setting ${id} of type ${type} must have a unique ID.`)
-    }
-
-    const value = this.getSettingValue(id) ?? defaultValue
-
-    // Trigger initial setting of value
-    onChange?.(value, undefined)
-    this.#dispatchChange(id, value)
-
-    this.settingsParamLookup[id] = params
-    if (this.app.vueAppReady) {
-      useSettingStore().settingsById[id] = params
-    }
-    this.settingsLookup[id] = {
-      id,
-      onChange,
-      name,
-      render: () => {
-        console.warn('[ComfyUI] Setting render is deprecated', id)
-      }
-    } as Setting
-
-    const self = this
     return {
       get value() {
-        return self.getSettingValue(id, defaultValue)
+        return settingStore.get(params.id)
       },
       set value(v) {
-        self.setSettingValue(id, v)
+        settingStore.set(params.id, v)
       }
     }
   }

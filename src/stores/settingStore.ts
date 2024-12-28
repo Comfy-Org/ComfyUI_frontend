@@ -10,13 +10,10 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { app } from '@/scripts/app'
-import { ComfySettingsDialog } from '@/scripts/ui/settings'
 import type { Settings } from '@/types/apiTypes'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from 'primevue/treenode'
-import type { ComfyExtension } from '@/types/comfy'
 import { buildTree } from '@/utils/treeUtil'
-import { CORE_SETTINGS } from '@/constants/coreSettings'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -57,24 +54,6 @@ export const useSettingStore = defineStore('setting', () => {
     return root
   })
 
-  function addSettings(settingsDialog: ComfySettingsDialog) {
-    for (const id in settingsDialog.settingsLookup) {
-      const value = settingsDialog.getSettingValue(id)
-      settingValues.value[id] = value
-    }
-    settingsById.value = settingsDialog.settingsParamLookup
-
-    CORE_SETTINGS.forEach((setting: SettingParams) => {
-      settingsDialog.addSetting(setting)
-    })
-  }
-
-  function loadExtensionSettings(extension: ComfyExtension) {
-    extension.settings?.forEach((setting: SettingParams) => {
-      app.ui.settings.addSetting(setting)
-    })
-  }
-
   function exists(key: string) {
     return settingValues.value[key] !== undefined
   }
@@ -95,12 +74,22 @@ export const useSettingStore = defineStore('setting', () => {
       : param?.defaultValue
   }
 
+  function addSetting(setting: SettingParams) {
+    if (!setting.id) {
+      throw new Error('Settings must have an ID')
+    }
+    if (setting.id in settingsById.value) {
+      throw new Error(`Setting ${setting.id} must have a unique ID.`)
+    }
+
+    settingsById.value[setting.id] = setting
+  }
+
   return {
     settingValues,
     settingsById,
     settingTree,
-    addSettings,
-    loadExtensionSettings,
+    addSetting,
     set,
     get,
     exists,
