@@ -148,6 +148,69 @@ body {
   font-size: var(--comfy-textarea-font-size);
 }
 
+.comfy-markdown {
+  /* We assign the textarea and the Tiptap editor to the same CSS grid area to stack them on top of one another. */
+  display: grid;
+}
+
+.comfy-markdown > textarea {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.comfy-markdown .tiptap {
+  grid-area: 1 / 1 / 2 / 2;
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
+  overflow: hidden;
+  overflow-y: auto;
+  resize: none;
+  border: none;
+  box-sizing: border-box;
+  font-size: var(--comfy-textarea-font-size);
+  height: 100%;
+  padding: 0.5em;
+}
+
+.comfy-markdown.editing .tiptap {
+  display: none;
+}
+
+.comfy-markdown .tiptap :first-child {
+  margin-top: 0;
+}
+
+.comfy-markdown .tiptap :last-child {
+  margin-bottom: 0;
+}
+
+.comfy-markdown .tiptap blockquote {
+  border-left: medium solid;
+  margin-left: 1em;
+  padding-left: 0.5em;
+}
+
+.comfy-markdown .tiptap pre {
+  border: thin dotted;
+  border-radius: 0.5em;
+  margin: 0.5em;
+  padding: 0.5em;
+}
+
+.comfy-markdown .tiptap table {
+  border-collapse: collapse;
+}
+
+.comfy-markdown .tiptap th {
+  text-align: left;
+  background: var(--comfy-menu-bg);
+}
+
+.comfy-markdown .tiptap th,
+.comfy-markdown .tiptap td {
+  padding: 0.5em;
+  border: thin solid;
+}
+
 .comfy-modal {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
@@ -586,16 +649,12 @@ dialog::backdrop {
 .litegraph.litecontextmenu.dark {
   z-index: 9999 !important;
   background-color: var(--comfy-menu-bg) !important;
-  filter: brightness(95%);
-  will-change: transform;
 }
 
 .litegraph.litecontextmenu
   .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: var(--comfy-menu-bg) !important;
-  filter: brightness(155%);
-  will-change: transform;
-  color: var(--input-text);
+  background-color: var(--comfy-menu-hover-bg, var(--border-color)) !important;
+  color: var(--fg-color);
 }
 
 .litegraph.litecontextmenu .litemenu-entry.submenu,

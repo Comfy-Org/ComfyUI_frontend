@@ -36,31 +36,31 @@
     "label": "浏览模板"
   },
   "Comfy_Canvas_FitView": {
-    "label": "适应选定节点的视图"
+    "label": "适应视图到选中节点"
   },
   "Comfy_Canvas_ResetView": {
     "label": "重置视图"
   },
   "Comfy_Canvas_ToggleLinkVisibility": {
-    "label": "画布切换链接可见性"
+    "label": "切换链接可见性"
   },
   "Comfy_Canvas_ToggleLock": {
-    "label": "画布切换锁定"
+    "label": "锁定视图"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
-    "label": "绕过/取消绕过选定的节点"
+    "label": "忽略/取消忽略选中节点"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
-    "label": "折叠/展开选定的节点"
+    "label": "折叠/展开选中节点"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
-    "label": "静音/取消静音选定的节点"
+    "label": "静音/取消静音选中节点"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
-    "label": "固定/取消固定选定的节点"
+    "label": "固定/取消固定选中节点"
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "固定/取消固定选定的项目"
+    "label": "固定/取消固定选中项"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "放大"
@@ -81,19 +81,19 @@
     "label": "导出工作流（API格式）"
   },
   "Comfy_Graph_FitGroupToContents": {
-    "label": "适应组内容"
+    "label": "适应节点框到内容"
   },
   "Comfy_Graph_GroupSelectedNodes": {
-    "label": "组选定的节点"
+    "label": "添加框到选中节点"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "将选定节点转换为组节点"
+    "label": "将选中节点转换为组节点"
   },
   "Comfy_GroupNode_ManageGroupNodes": {
     "label": "管理组节点"
   },
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "取消选定组节点的分组"
+    "label": "解散选中组节点"
   },
   "Comfy_Help_AboutComfyUI": {
     "label": "打开关于ComfyUI"
@@ -117,16 +117,16 @@
     "label": "新建空白工作流"
   },
   "Comfy_OpenClipspace": {
-    "label": "剪辑空间"
+    "label": "打开剪贴板"
   },
   "Comfy_OpenWorkflow": {
     "label": "打开工作流"
   },
   "Comfy_QueuePrompt": {
-    "label": "队列提示"
+    "label": "执行提示词"
   },
   "Comfy_QueuePromptFront": {
-    "label": "队列提示（前端）"
+    "label": "执行提示词（前端）"
   },
   "Comfy_Redo": {
     "label": "重做"
@@ -144,7 +144,7 @@
     "label": "显示设置对话框"
   },
   "Comfy_ToggleTheme": {
-    "label": "切换主题（暗/亮）"
+    "label": "切换主题"
   },
   "Comfy_Undo": {
     "label": "撤销"
@@ -179,8 +179,8 @@
     "tooltip": "节点库"
   },
   "Workspace_ToggleSidebarTab_queue": {
-    "label": "切换队列侧边栏",
-    "tooltip": "队列"
+    "label": "切换执行队列侧边栏",
+    "tooltip": "执行队列"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切换工作流侧边栏",

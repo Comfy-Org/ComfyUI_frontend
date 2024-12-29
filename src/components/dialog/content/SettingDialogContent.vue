@@ -12,7 +12,10 @@
         :options="categories"
         optionLabel="translatedLabel"
         scrollHeight="100%"
-        :disabled="inSearch"
+        :optionDisabled="
+          (option: SettingTreeNode) =>
+            inSearch && !searchResultsCategories.has(option.label)
+        "
         class="border-none w-full"
       />
     </ScrollPanel>
@@ -32,6 +35,7 @@
           <template #header>
             <CurrentUserMessage v-if="tabValue === 'Comfy'" />
             <FirstTimeUIMessage v-if="tabValue === 'Comfy'" />
+            <ColorPaletteMessage v-if="tabValue === 'Appearance'" />
           </template>
           <SettingsPanel :settingGroups="sortedGroups(category)" />
         </PanelTemplate>
@@ -69,7 +73,11 @@ import Tabs from 'primevue/tabs'
 import TabPanels from 'primevue/tabpanels'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
-import { SettingTreeNode, useSettingStore } from '@/stores/settingStore'
+import {
+  getSettingInfo,
+  SettingTreeNode,
+  useSettingStore
+} from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SettingsPanel from './setting/SettingsPanel.vue'
@@ -77,6 +85,7 @@ import PanelTemplate from './setting/PanelTemplate.vue'
 import AboutPanel from './setting/AboutPanel.vue'
 import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
 import CurrentUserMessage from './setting/CurrentUserMessage.vue'
+import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
 import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -151,19 +160,14 @@ const categories = computed<SettingTreeNode[]>(() =>
 )
 
 const activeCategory = ref<SettingTreeNode | null>(null)
-const searchResults = ref<ISettingGroup[]>([])
-
-watch(activeCategory, (newCategory, oldCategory) => {
-  if (newCategory === null) {
-    activeCategory.value = oldCategory
-  }
-})
-
-onMounted(() => {
-  activeCategory.value = props.defaultPanel
+const getDefaultCategory = () => {
+  return props.defaultPanel
     ? categories.value.find((x) => x.key === props.defaultPanel) ??
-      categories.value[0]
+        categories.value[0]
     : categories.value[0]
+}
+onMounted(() => {
+  activeCategory.value = getDefaultCategory()
 })
 
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
@@ -176,12 +180,50 @@ const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
 }
 
 const searchQuery = ref<string>('')
+const filteredSettingIds = ref<string[]>([])
 const searchInProgress = ref<boolean>(false)
 watch(searchQuery, () => (searchInProgress.value = true))
 
+const searchResults = computed<ISettingGroup[]>(() => {
+  const groupedSettings: { [key: string]: SettingParams[] } = {}
+
+  filteredSettingIds.value.forEach((id) => {
+    const setting = settingStore.settingsById[id]
+    const info = getSettingInfo(setting)
+    const groupLabel = info.subCategory
+
+    if (
+      activeCategory.value === null ||
+      activeCategory.value.label === info.category
+    ) {
+      if (!groupedSettings[groupLabel]) {
+        groupedSettings[groupLabel] = []
+      }
+      groupedSettings[groupLabel].push(setting)
+    }
+  })
+
+  return Object.entries(groupedSettings).map(([label, settings]) => ({
+    label,
+    settings
+  }))
+})
+
+/**
+ * Settings categories that contains at least one setting in search results.
+ */
+const searchResultsCategories = computed<Set<string>>(() => {
+  return new Set(
+    filteredSettingIds.value.map(
+      (id) => getSettingInfo(settingStore.settingsById[id]).category
+    )
+  )
+})
+
 const handleSearch = (query: string) => {
   if (!query) {
-    searchResults.value = []
+    filteredSettingIds.value = []
+    activeCategory.value ??= getDefaultCategory()
     return
   }
 
@@ -201,22 +243,9 @@ const handleSearch = (query: string) => {
     )
   })
 
-  const groupedSettings: { [key: string]: SettingParams[] } = {}
-  filteredSettings.forEach((setting) => {
-    const groupLabel = setting.id.split('.')[1]
-    if (!groupedSettings[groupLabel]) {
-      groupedSettings[groupLabel] = []
-    }
-    groupedSettings[groupLabel].push(setting)
-  })
-
-  searchResults.value = Object.entries(groupedSettings).map(
-    ([label, settings]) => ({
-      label,
-      settings
-    })
-  )
+  filteredSettingIds.value = filteredSettings.map((x) => x.id)
   searchInProgress.value = false
+  activeCategory.value = null
 }
 
 const inSearch = computed(
@@ -225,6 +254,13 @@ const inSearch = computed(
 const tabValue = computed(() =>
   inSearch.value ? 'Search Results' : activeCategory.value?.label
 )
+// Don't allow null category to be set outside of search.
+// In search mode, the active category can be null to show all search results.
+watch(activeCategory, (_, oldValue) => {
+  if (!tabValue.value) {
+    activeCategory.value = oldValue
+  }
+})
 </script>
 
 <style>

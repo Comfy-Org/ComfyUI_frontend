@@ -1,10 +1,7 @@
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
-import {
-  showSettingsDialog,
-  showTemplateWorkflowsDialog
-} from '@/services/dialogService'
-import { workflowService } from '@/services/workflowService'
+import { useDialogService } from '@/services/dialogService'
+import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
 import { useQueueSettingsStore, useQueueStore } from '@/stores/queueStore'
@@ -22,6 +19,8 @@ import {
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 
 export function useCoreCommands(): ComfyCommand[] {
+  const workflowService = useWorkflowService()
+  const dialogService = useDialogService()
   const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -199,7 +198,9 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.BrowseTemplates',
       icon: 'pi pi-folder-open',
       label: 'Browse Templates',
-      function: showTemplateWorkflowsDialog
+      function: () => {
+        dialogService.showTemplateWorkflowsDialog()
+      }
     },
     {
       id: 'Comfy.Canvas.ZoomIn',
@@ -301,7 +302,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Show Settings Dialog',
       versionAdded: '1.3.7',
       function: () => {
-        showSettingsDialog()
+        dialogService.showSettingsDialog()
       }
     },
     {
@@ -508,7 +509,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'About ComfyUI',
       versionAdded: '1.6.4',
       function: () => {
-        showSettingsDialog('about')
+        dialogService.showSettingsDialog('about')
       }
     }
   ]

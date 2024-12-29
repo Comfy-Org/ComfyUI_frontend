@@ -1,24 +1,26 @@
 <!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="form-label flex flex-grow items-center">
-    <span class="text-muted" :class="props.labelClass">
-      <slot name="name-prefix"></slot>
-      {{ props.item.name }}
-      <i
-        v-if="props.item.tooltip"
-        class="pi pi-info-circle bg-transparent"
-        v-tooltip="props.item.tooltip"
+  <div class="flex flex-row items-center gap-2">
+    <div class="form-label flex flex-grow items-center">
+      <span class="text-muted" :class="props.labelClass">
+        <slot name="name-prefix"></slot>
+        {{ props.item.name }}
+        <i
+          v-if="props.item.tooltip"
+          class="pi pi-info-circle bg-transparent"
+          v-tooltip="props.item.tooltip"
+        />
+        <slot name="name-suffix"></slot>
+      </span>
+    </div>
+    <div class="form-input flex justify-end">
+      <component
+        :is="markRaw(getFormComponent(props.item))"
+        :id="props.id"
+        v-model:modelValue="formValue"
+        v-bind="getFormAttrs(props.item)"
       />
-      <slot name="name-suffix"></slot>
-    </span>
-  </div>
-  <div class="form-input flex justify-end">
-    <component
-      :is="markRaw(getFormComponent(props.item))"
-      :id="props.id"
-      v-model:modelValue="formValue"
-      v-bind="getFormAttrs(props.item)"
-    />
+    </div>
   </div>
 </template>
 
@@ -31,6 +33,8 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
+import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import FormColorPicker from '@/components/common/FormColorPicker.vue'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{
@@ -82,6 +86,10 @@ function getFormComponent(item: FormItem): Component {
       return InputSlider
     case 'combo':
       return Select
+    case 'image':
+      return FormImageUpload
+    case 'color':
+      return FormColorPicker
     default:
       return InputText
   }

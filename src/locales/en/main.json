@@ -6,6 +6,7 @@
     "comingSoon": "Coming Soon",
     "firstTimeUIMessage": "This is the first time you use the new UI. Choose \"Menu > Use New Menu > Disabled\" to restore the old UI.",
     "download": "Download",
+    "import": "Import",
     "loadAllFolders": "Load All Folders",
     "refresh": "Refresh",
     "terminal": "Terminal",
@@ -42,6 +43,9 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "install": "Install",
     "overwrite": "Overwrite",
     "customize": "Customize",
     "experimental": "BETA",
@@ -63,7 +67,8 @@
     "enableAll": "Enable All",
     "disableAll": "Disable All",
     "command": "Command",
-    "keybinding": "Keybinding"
+    "keybinding": "Keybinding",
+    "upload": "Upload"
   },
   "color": {
     "default": "Default",
@@ -124,6 +129,11 @@
     "systemLocations": "System Locations",
     "failedToSelectDirectory": "Failed to select directory",
     "pathValidationFailed": "Failed to validate path",
+    "pathExists": "Directory already exists - please ensure you have backed up all data",
+    "cannotWrite": "Unable to write to the selected path",
+    "insufficientFreeSpace": "Insufficient space - minimum free space",
+    "parentMissing": "Path does not exist - create the containing directory first",
+    "unhandledError": "Unknown error",
     "installLocationDescription": "Select the directory for ComfyUI's user data. A python environment will be installed to the selected location. Please make sure the selected disk has enough space (~15GB) left.",
     "installLocationTooltip": "ComfyUI's user data directory. Stores:\n- Python Environment\n- Models\n- Custom nodes\n",
     "appDataLocationTooltip": "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
@@ -418,7 +428,8 @@
     "Window": "Window",
     "Server-Config": "Server-Config",
     "About": "About",
-    "EditTokenWeight": "Edit Token Weight"
+    "EditTokenWeight": "Edit Token Weight",
+    "CustomColorPalettes": "Custom Color Palettes"
   },
   "serverConfigItems": {
     "listen": {

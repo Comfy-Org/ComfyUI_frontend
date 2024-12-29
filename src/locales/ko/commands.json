@@ -72,13 +72,13 @@
     "label": "보류 중인 작업 지우기"
   },
   "Comfy_ClearWorkflow": {
-    "label": "워크플로우 지우기"
+    "label": "워크플로 지우기"
   },
   "Comfy_ExportWorkflow": {
-    "label": "워크플로우 내보내기"
+    "label": "워크플로 내보내기"
   },
   "Comfy_ExportWorkflowAPI": {
-    "label": "워크플로우 내보내기 (API 형식)"
+    "label": "워크플로 내보내기 (API 형식)"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"
@@ -111,22 +111,22 @@
     "label": "중단"
   },
   "Comfy_LoadDefaultWorkflow": {
-    "label": "기본 워크플로우 로드"
+    "label": "기본 워크플로 로드"
   },
   "Comfy_NewBlankWorkflow": {
-    "label": "새로운 빈 워크플로우"
+    "label": "새로운 빈 워크플로"
   },
   "Comfy_OpenClipspace": {
     "label": "클립스페이스"
   },
   "Comfy_OpenWorkflow": {
-    "label": "워크플로우 열기"
+    "label": "워크플로 열기"
   },
   "Comfy_QueuePrompt": {
-    "label": "큐 프롬프트"
+    "label": "실행 큐에 프롬프트 추가"
   },
   "Comfy_QueuePromptFront": {
-    "label": "큐 프롬프트 (앞)"
+    "label": "실행 큐 맨 앞에 프롬프트 추가"
   },
   "Comfy_Redo": {
     "label": "다시 실행"
@@ -135,25 +135,25 @@
     "label": "노드 정의 새로 고침"
   },
   "Comfy_SaveWorkflow": {
-    "label": "워크플로우 저장"
+    "label": "워크플로 저장"
   },
   "Comfy_SaveWorkflowAs": {
-    "label": "다른 이름으로 워크플로우 저장"
+    "label": "다른 이름으로 워크플로 저장"
   },
   "Comfy_ShowSettingsDialog": {
     "label": "설정 대화상자 보기"
   },
   "Comfy_ToggleTheme": {
-    "label": "테마 토글 (어두운/밝은)"
+    "label": "밝기 테마 전환 (어두운/밝은)"
   },
   "Comfy_Undo": {
     "label": "실행 취소"
   },
   "Workspace_NextOpenedWorkflow": {
-    "label": "다음 열린 워크플로우"
+    "label": "다음 열린 워크플로"
   },
   "Workspace_PreviousOpenedWorkflow": {
-    "label": "이전 열린 워크플로우"
+    "label": "이전 열린 워크플로"
   },
   "Workspace_SearchBox_Toggle": {
     "label": "검색 상자 토글"
@@ -179,11 +179,11 @@
     "tooltip": "노드 라이브러리"
   },
   "Workspace_ToggleSidebarTab_queue": {
-    "label": "큐 사이드바 토글",
-    "tooltip": "큐"
+    "label": "실행 큐 사이드바 토글",
+    "tooltip": "실행 큐"
   },
   "Workspace_ToggleSidebarTab_workflows": {
-    "label": "워크플로우 사이드바 토글",
-    "tooltip": "워크플로우"
+    "label": "워크플로 사이드바 토글",
+    "tooltip": "워크플로"
   }
 }

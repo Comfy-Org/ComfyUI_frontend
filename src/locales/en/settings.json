@@ -5,9 +5,6 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Send anonymous crash reports"
   },
-  "Comfy_ColorPalette": {
-    "name": "Color Palette"
-  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },
@@ -32,9 +29,6 @@
   },
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
-  },
-  "Comfy_Extension_Disabled": {
-    "name": "Disabled extension names"
   },
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
@@ -68,12 +62,6 @@
   },
   "Comfy_InvertMenuScrolling": {
     "name": "Invert Context Menu Scrolling"
-  },
-  "Comfy_Keybinding_NewBindings": {
-    "name": "Keybindings set by the user"
-  },
-  "Comfy_Keybinding_UnsetBindings": {
-    "name": "Keybindings unset by the user"
   },
   "Comfy_LinkRelease_Action": {
     "name": "Action on link release (No modifier)",
@@ -114,9 +102,6 @@
   "Comfy_MaskEditor_UseNewEditor": {
     "name": "Use new mask editor",
     "tooltip": "Switch to the new mask editor interface"
-  },
-  "Comfy_MenuPosition": {
-    "name": "Save legacy menu's position"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Automatically load all model folders",
@@ -184,15 +169,6 @@
   "Comfy_NodeInputConversionSubmenus": {
     "name": "In the node context menu, place the entries that convert between input/widget in sub-menus."
   },
-  "Comfy_NodeLibrary_Bookmarks": {
-    "name": "Node library bookmarks with display name (deprecated)"
-  },
-  "Comfy_NodeLibrary_Bookmarks_V2": {
-    "name": "Node library bookmarks v2 with unique name"
-  },
-  "Comfy_NodeLibrary_BookmarksCustomization": {
-    "name": "Node library bookmarks customization"
-  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Node search box implementation",
     "options": {
@@ -239,9 +215,6 @@
   "Comfy_PromptFilename": {
     "name": "Prompt for filename when saving workflow"
   },
-  "Comfy_Queue_ImageFit": {
-    "name": "Queue image fit"
-  },
   "Comfy_Queue_MaxHistoryItems": {
     "name": "Queue history size",
     "tooltip": "The maximum number of tasks that show in the queue history."
@@ -253,14 +226,6 @@
   "Comfy_RerouteBeta": {
     "name": "Opt-in to the reroute beta test",
     "tooltip": "Enables the new native reroutes.\n\nReroutes can be added by holding alt and dragging from a link line, or on the link menu.\n\nDisabling this option is non-destructive - reroutes are hidden."
-  },
-  "Comfy_Server_LaunchArgs": {
-    "name": "Server launch arguments",
-    "tooltip": "These are the actual arguments that are passed to the server when it is launched."
-  },
-  "Comfy_Server_ServerConfigValues": {
-    "name": "Server config values for frontend display",
-    "tooltip": "Server config values used for frontend display only"
   },
   "Comfy_Sidebar_Location": {
     "name": "Sidebar location",

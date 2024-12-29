@@ -35,7 +35,7 @@
       size="small"
       :filters="filters"
     >
-      <Column :header="$t('g.extensionName')" sortable>
+      <Column :header="$t('g.extensionName')" sortable field="name">
         <template #body="slotProps">
           {{ slotProps.data.name }}
           <Tag

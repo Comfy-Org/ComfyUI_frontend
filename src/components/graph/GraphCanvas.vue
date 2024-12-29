@@ -64,7 +64,11 @@ import { setStorageValue } from '@/scripts/utils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useColorPaletteService } from '@/services/colorPaletteService'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -193,6 +197,28 @@ watchEffect(() => {
   LiteGraph.alwaysSnapToGrid = settingStore.get('pysssss.SnapToGrid')
 })
 
+watch(
+  () => settingStore.get('Comfy.WidgetControlMode'),
+  () => {
+    if (!canvasStore.canvas) return
+
+    for (const n of comfyApp.graph.nodes) {
+      if (!n.widgets) continue
+      for (const w of n.widgets) {
+        if (w[IS_CONTROL_WIDGET]) {
+          updateControlWidgetLabel(w)
+          if (w.linkedWidgets) {
+            for (const l of w.linkedWidgets) {
+              updateControlWidgetLabel(l)
+            }
+          }
+        }
+      }
+    }
+    comfyApp.graph.setDirtyCanvas(true)
+  }
+)
+
 watchEffect(() => {
   if (!canvasStore.canvas) return
 
@@ -207,6 +233,13 @@ watchEffect(() => {
   }
 
   canvasStore.canvas.canvas.style.cursor = 'default'
+})
+
+const colorPaletteService = useColorPaletteService()
+watchEffect(() => {
+  if (!canvasStore.canvas) return
+
+  colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
 })
 
 const workflowStore = useWorkflowStore()
@@ -305,6 +338,10 @@ onMounted(async () => {
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
+  await settingStore.loadSettingValues()
+  CORE_SETTINGS.forEach((setting) => {
+    settingStore.addSetting(setting)
+  })
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
@@ -315,12 +352,18 @@ onMounted(async () => {
 
   comfyAppReady.value = true
 
+  // Load color palette
+  const colorPaletteStore = useColorPaletteStore()
+  colorPaletteStore.customPalettes = settingStore.get(
+    'Comfy.CustomColorPalettes'
+  )
+
   // Start watching for locale change after the initial value is loaded.
   watch(
     () => settingStore.get('Comfy.Locale'),
     async () => {
       await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      workflowService.reloadCurrentWorkflow()
+      useWorkflowService().reloadCurrentWorkflow()
     }
   )
 

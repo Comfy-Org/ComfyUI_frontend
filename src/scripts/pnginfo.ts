@@ -3,7 +3,6 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import { api } from './api'
 import { getFromPngFile } from './metadata/png'
 import { getFromFlacFile } from './metadata/flac'
-import { workflowService } from '@/services/workflowService'
 
 // Original functions left in for backwards compatibility
 export function getPngMetadata(file: File): Promise<Record<string, string>> {

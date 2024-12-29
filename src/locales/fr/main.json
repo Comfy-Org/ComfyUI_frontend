@@ -1,0 +1,654 @@
+{
+  "color": {
+    "blue": "Bleu",
+    "custom": "Personnalisé",
+    "default": "Par défaut",
+    "green": "Vert",
+    "pink": "Rose",
+    "red": "Rouge",
+    "yellow": "Jaune"
+  },
+  "dataTypes": {
+    "AUDIO": "AUDIO",
+    "BOOLEAN": "BOOLEAN",
+    "CLIP": "CLIP",
+    "CLIP_VISION": "CLIP_VISION",
+    "CLIP_VISION_OUTPUT": "SORTIE_CLIP_VISION",
+    "COMBO": "COMBO",
+    "CONDITIONING": "CONDITIONNEMENT",
+    "CONTROL_NET": "RESEAU_DE_CONTROLE",
+    "FLOAT": "FLOTTANT",
+    "FLOATS": "FLOTTANTS",
+    "GLIGEN": "GLIGEN",
+    "GUIDER": "GUIDE",
+    "HOOKS": "CROCHETS",
+    "HOOK_KEYFRAMES": "CLEFS_DE_CROCHET",
+    "IMAGE": "IMAGE",
+    "INT": "ENTIER",
+    "LATENT": "LATENT",
+    "LATENT_OPERATION": "OPERATION_LATENTE",
+    "LOAD_3D": "CHARGER_3D",
+    "LOAD_3D_ANIMATION": "CHARGER_ANIMATION_3D",
+    "MASK": "MASQUE",
+    "MODEL": "MODÈLE",
+    "NOISE": "BRUIT",
+    "PHOTOMAKER": "PHOTOMAKER",
+    "SAMPLER": "ÉCHANTILLONNEUR",
+    "SIGMAS": "SIGMAS",
+    "STRING": "CHAÎNE",
+    "STYLE_MODEL": "MODÈLE_DE_STYLE",
+    "TIMESTEPS_RANGE": "PLAGE_DES_ÉTAPES_TEMPORELLES",
+    "UPSCALE_MODEL": "MODÈLE_DE_MISE_À_L'ÉCHELLE",
+    "VAE": "VAE",
+    "WEBCAM": "WEBCAM"
+  },
+  "desktopMenu": {
+    "confirmReinstall": "Cela effacera votre fichier extra_models_config.yaml,\net commencera l'installation à nouveau.\n\nÊtes-vous sûr ?",
+    "reinstall": "Réinstaller"
+  },
+  "downloadGit": {
+    "gitWebsite": "Télécharger git",
+    "instructions": "Veuillez télécharger et installer la dernière version pour votre système d'exploitation. Le bouton Télécharger git ci-dessous ouvre la page de téléchargement de git-scm.com.",
+    "message": "Impossible de localiser git. Une copie fonctionnelle de git est nécessaire pour un fonctionnement normal.",
+    "skip": "Passer",
+    "title": "Télécharger git",
+    "warning": "Si vous êtes sûr de ne pas avoir besoin de git installé, ou s'il y a eu une erreur, vous pouvez cliquer sur Passer pour contourner cette vérification. Essayer de faire fonctionner ComfyUI sans une copie fonctionnelle de git n'est actuellement pas pris en charge."
+  },
+  "electronFileDownload": {
+    "cancel": "Annuler le téléchargement",
+    "cancelled": "Annulé",
+    "inProgress": "En cours",
+    "pause": "Pause du téléchargement",
+    "paused": "En pause",
+    "resume": "Reprendre le téléchargement"
+  },
+  "g": {
+    "about": "À propos",
+    "add": "Ajouter",
+    "back": "Retour",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "color": "Couleur",
+    "comingSoon": "Bientôt disponible",
+    "command": "Commande",
+    "confirm": "Confirmer",
+    "copyToClipboard": "Copier dans le presse-papiers",
+    "currentUser": "Utilisateur actuel",
+    "customize": "Personnaliser",
+    "customizeFolder": "Personnaliser le dossier",
+    "delete": "Supprimer",
+    "deprecated": "DEPR",
+    "devices": "Appareils",
+    "disableAll": "Désactiver tout",
+    "download": "Télécharger",
+    "empty": "Vide",
+    "enableAll": "Activer tout",
+    "error": "Erreur",
+    "experimental": "BETA",
+    "extensionName": "Nom de l'extension",
+    "findIssues": "Trouver des problèmes",
+    "firstTimeUIMessage": "C'est la première fois que vous utilisez la nouvelle interface utilisateur. Choisissez \"Menu > Utiliser le nouveau menu > Désactivé\" pour restaurer l'ancienne interface utilisateur.",
+    "goToNode": "Aller au nœud",
+    "icon": "Icône",
+    "imageFailedToLoad": "Échec du chargement de l'image",
+    "import": "Importer",
+    "insert": "Insérer",
+    "install": "Installer",
+    "keybinding": "Raccourci clavier",
+    "loadAllFolders": "Charger tous les dossiers",
+    "loadWorkflow": "Charger le flux de travail",
+    "loading": "Chargement",
+    "logs": "Journaux",
+    "newFolder": "Nouveau dossier",
+    "next": "Suivant",
+    "no": "Non",
+    "noResultsFound": "Aucun résultat trouvé",
+    "noTasksFound": "Aucune tâche trouvée",
+    "noTasksFoundMessage": "Il n'y a pas de tâches dans la file d'attente.",
+    "noWorkflowsFound": "Aucun flux de travail trouvé.",
+    "openNewIssue": "Ouvrir un nouveau problème",
+    "overwrite": "Écraser",
+    "reconnected": "Reconnecté",
+    "reconnecting": "Reconnexion",
+    "refresh": "Rafraîchir",
+    "reloadToApplyChanges": "Recharger pour appliquer les modifications",
+    "rename": "Renommer",
+    "reportIssue": "Envoyer le rapport",
+    "reportIssueTooltip": "Soumettre le rapport d'erreur à Comfy Org",
+    "reportSent": "Rapport soumis",
+    "reset": "Réinitialiser",
+    "resetKeybindingsTooltip": "Réinitialiser les raccourcis clavier par défaut",
+    "save": "Enregistrer",
+    "searchExtensions": "Rechercher des extensions",
+    "searchFailedMessage": "Nous n'avons trouvé aucun paramètre correspondant à votre recherche. Essayez d'ajuster vos termes de recherche.",
+    "searchKeybindings": "Rechercher des raccourcis clavier",
+    "searchModels": "Rechercher des modèles",
+    "searchNodes": "Rechercher des nœuds",
+    "searchSettings": "Rechercher des paramètres",
+    "searchWorkflows": "Rechercher des flux de travail",
+    "settings": "Paramètres",
+    "showReport": "Afficher le rapport",
+    "systemInfo": "Informations système",
+    "terminal": "Terminal",
+    "upload": "Téléverser",
+    "videoFailedToLoad": "Échec du chargement de la vidéo"
+  },
+  "graphCanvasMenu": {
+    "fitView": "Adapter la vue",
+    "panMode": "Mode panoramique",
+    "resetView": "Réinitialiser la vue",
+    "selectMode": "Mode sélection",
+    "toggleLinkVisibility": "Basculer la visibilité des liens",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière"
+  },
+  "groupNode": {
+    "create": "Créer un nœud de groupe",
+    "enterName": "Entrer le nom"
+  },
+  "icon": {
+    "bookmark": "Favori",
+    "box": "Boîte",
+    "briefcase": "Porte-documents",
+    "exclamation-triangle": "Avertissement",
+    "file": "Fichier",
+    "folder": "Dossier",
+    "heart": "Cœur",
+    "inbox": "Boîte de réception",
+    "star": "Étoile"
+  },
+  "install": {
+    "appDataLocationTooltip": "Répertoire des données de l'application ComfyUI. Stocke :\n- Logs\n- Configurations du serveur",
+    "appPathLocationTooltip": "Répertoire des ressources de l'application ComfyUI. Stocke le code et les ressources de ComfyUI",
+    "cannotWrite": "Impossible d'écrire sur le chemin sélectionné",
+    "chooseInstallationLocation": "Choisissez l'emplacement d'installation",
+    "customNodes": "Nœuds personnalisés",
+    "customNodesDescription": "Réinstallez les nœuds personnalisés à partir des installations existantes de ComfyUI.",
+    "desktopAppSettings": "Paramètres de l'application de bureau",
+    "desktopAppSettingsDescription": "Configurez comment ComfyUI se comporte sur votre bureau. Vous pouvez modifier ces paramètres plus tard.",
+    "desktopSettings": "Paramètres de bureau",
+    "failedToSelectDirectory": "Échec de la sélection du répertoire",
+    "gpu": "GPU",
+    "gpuSelection": {
+      "cpuMode": "Mode CPU",
+      "cpuModeDescription": "Le mode CPU est destiné aux développeurs et aux cas limites rares uniquement.",
+      "cpuModeDescription2": "Si vous n'êtes pas absolument certain d'en avoir besoin, veuillez ignorer cette case et sélectionnez votre GPU ci-dessus.",
+      "customComfyNeedsPython": "ComfyUI ne fonctionnera pas tant que python n'est pas configuré",
+      "customInstallRequirements": "Installez toutes les exigences et dépendances (par exemple, torch personnalisé)",
+      "customManualVenv": "Configurer manuellement l'environnement virtuel python",
+      "customMayNotWork": "Ceci n'est pas du tout pris en charge, et peut simplement ne pas fonctionner",
+      "customSkipsPython": "Cette option saute la configuration python normale.",
+      "enableCpuMode": "Activer le mode CPU",
+      "mpsDescription": "Les shaders de performance métallique d'Apple sont pris en charge en utilisant la version nocturne de pytorch.",
+      "nvidiaDescription": "Les appareils NVIDIA sont directement pris en charge en utilisant les builds CUDA de pytorch.",
+      "selectGpu": "Sélectionnez le GPU",
+      "selectGpuDescription": "Sélectionnez le type de GPU que vous avez"
+    },
+    "installLocation": "Emplacement d'installation",
+    "installLocationDescription": "Sélectionnez le répertoire pour les données utilisateur de ComfyUI. Un environnement python sera installé à l'emplacement sélectionné. Veuillez vous assurer que le disque sélectionné a suffisamment d'espace (~15GB) restant.",
+    "installLocationTooltip": "Répertoire des données utilisateur de ComfyUI. Stocke :\n- Environnement Python\n- Modèles\n- Nœuds personnalisés\n",
+    "insufficientFreeSpace": "Espace insuffisant - espace libre minimum",
+    "manualConfiguration": {
+      "createVenv": "Vous devrez créer un environnement virtuel dans le répertoire suivant",
+      "requirements": "Exigences",
+      "restartWhenFinished": "Lorsque vous avez terminé de configurer l'environnement virtuel, veuillez redémarrer ComfyUI.",
+      "title": "Configuration manuelle",
+      "virtualEnvironmentPath": "Chemin de l'environnement virtuel"
+    },
+    "migrateFromExistingInstallation": "Migrer à partir d'une installation existante",
+    "migration": "Migration",
+    "migrationOptional": "La migration est facultative. Si vous n'avez pas d'installation existante, vous pouvez sauter cette étape.",
+    "migrationSourcePathDescription": "Si vous avez une installation existante de ComfyUI, nous pouvons copier/lier vos fichiers utilisateur et modèles existants à la nouvelle installation.",
+    "parentMissing": "Le chemin n'existe pas - créez d'abord le répertoire contenant",
+    "pathExists": "Le répertoire existe déjà - veuillez vous assurer que vous avez sauvegardé toutes les données",
+    "pathValidationFailed": "Échec de la validation du chemin",
+    "selectItemsToMigrate": "Sélectionnez les éléments à migrer",
+    "settings": {
+      "allowMetrics": "Rapports de plantage",
+      "allowMetricsDescription": "Aidez à améliorer ComfyUI en envoyant des rapports de plantage anonymes. Aucune information personnelle ou contenu de flux de travail ne sera collecté. Cela peut être désactivé à tout moment dans le menu des paramètres.",
+      "autoUpdate": "Mises à jour automatiques",
+      "autoUpdateDescription": "Téléchargez et installez automatiquement les mises à jour lorsqu'elles deviennent disponibles. Vous serez toujours informé avant l'installation des mises à jour.",
+      "dataCollectionDialog": {
+        "customNodeConfigurations": "Configurations de nœuds personnalisés",
+        "errorReports": "Message d'erreur et trace de la pile",
+        "fileSystemInformation": "Informations sur le système de fichiers",
+        "personalInformation": "Informations personnelles",
+        "systemInfo": "Matériel, type d'OS et version de l'application",
+        "title": "À propos de la collecte de données",
+        "whatWeCollect": "Ce que nous collectons :",
+        "whatWeDoNotCollect": "Ce que nous ne collectons pas :",
+        "workflowContent": "Contenu du flux de travail",
+        "workflowContents": "Contenus du flux de travail"
+      },
+      "learnMoreAboutData": "En savoir plus sur la collecte de données"
+    },
+    "systemLocations": "Emplacements système",
+    "unhandledError": "Erreur inconnue"
+  },
+  "menu": {
+    "autoQueue": "File d'attente automatique",
+    "batchCount": "Nombre de lots",
+    "batchCountTooltip": "Le nombre de fois que la génération du flux de travail doit être mise en file d'attente",
+    "clear": "Effacer le flux de travail",
+    "clipspace": "Ouvrir Clipspace",
+    "disabled": "Désactivé",
+    "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
+    "execute": "Exécuter",
+    "hideMenu": "Masquer le menu",
+    "instant": "Instantané",
+    "instantTooltip": "Le flux de travail sera mis en file d'attente immédiatement après la fin d'une génération",
+    "interrupt": "Annuler l'exécution en cours",
+    "onChange": "Sur modification",
+    "onChangeTooltip": "Le flux de travail sera mis en file d'attente une fois une modification effectuée",
+    "queue": "File d'attente",
+    "queueWorkflow": "Mettre le flux de travail en file d'attente (Maj pour mettre en tête de file)",
+    "queueWorkflowFront": "Mettre le flux de travail en tête de file",
+    "refresh": "Actualiser les définitions des nœuds",
+    "resetView": "Réinitialiser la vue du canevas",
+    "showMenu": "Afficher le menu",
+    "toggleBottomPanel": "Basculer le panneau inférieur"
+  },
+  "menuLabels": {
+    "About ComfyUI": "À propos de ComfyUI",
+    "Browse Templates": "Parcourir les modèles",
+    "Bypass/Unbypass Selected Nodes": "Contourner/Ne pas contourner les nœuds sélectionnés",
+    "Canvas Toggle Link Visibility": "Basculer la visibilité du lien de la toile",
+    "Canvas Toggle Lock": "Basculer le verrouillage de la toile",
+    "Clear Pending Tasks": "Effacer les tâches en attente",
+    "Clear Workflow": "Effacer le flux de travail",
+    "Clipspace": "Espace de clip",
+    "Collapse/Expand Selected Nodes": "Réduire/Étendre les nœuds sélectionnés",
+    "Comfy-Org Discord": "Discord de Comfy-Org",
+    "ComfyUI Docs": "Docs de ComfyUI",
+    "ComfyUI Issues": "Problèmes de ComfyUI",
+    "Convert selected nodes to group node": "Convertir les nœuds sélectionnés en nœud de groupe",
+    "Desktop User Guide": "Guide de l'utilisateur de bureau",
+    "Edit": "Éditer",
+    "Export": "Exporter",
+    "Export (API)": "Exporter (API)",
+    "Feedback": "Retour d'information",
+    "Fit Group To Contents": "Ajuster le groupe au contenu",
+    "Fit view to selected nodes": "Ajuster la vue aux nœuds sélectionnés",
+    "Group Selected Nodes": "Grouper les nœuds sélectionnés",
+    "Help": "Aide",
+    "Interrupt": "Interrompre",
+    "Load Default Workflow": "Charger le flux de travail par défaut",
+    "Manage group nodes": "Gérer les nœuds de groupe",
+    "Mute/Unmute Selected Nodes": "Mettre en sourdine/Activer le son des nœuds sélectionnés",
+    "New": "Nouveau",
+    "Next Opened Workflow": "Prochain flux de travail ouvert",
+    "Open": "Ouvrir",
+    "Open Custom Nodes Folder": "Ouvrir le dossier des nœuds personnalisés",
+    "Open DevTools": "Ouvrir DevTools",
+    "Open Inputs Folder": "Ouvrir le dossier des entrées",
+    "Open Logs Folder": "Ouvrir le dossier des journaux",
+    "Open Models Folder": "Ouvrir le dossier des modèles",
+    "Open Outputs Folder": "Ouvrir le dossier des sorties",
+    "Open extra_model_paths_yaml": "Ouvrir extra_model_paths.yaml",
+    "Pin/Unpin Selected Items": "Épingler/Désépingler les éléments sélectionnés",
+    "Pin/Unpin Selected Nodes": "Épingler/Désépingler les nœuds sélectionnés",
+    "Previous Opened Workflow": "Flux de travail ouvert précédent",
+    "Queue Prompt": "Invite de file d'attente",
+    "Queue Prompt (Front)": "Invite de file d'attente (Front)",
+    "Redo": "Refaire",
+    "Refresh Node Definitions": "Actualiser les définitions de nœud",
+    "Reinstall": "Réinstaller",
+    "Reset View": "Réinitialiser la vue",
+    "Restart": "Redémarrer",
+    "Save": "Enregistrer",
+    "Save As": "Enregistrer sous",
+    "Show Settings Dialog": "Afficher la boîte de dialogue des paramètres",
+    "Toggle Bottom Panel": "Basculer le panneau inférieur",
+    "Toggle Focus Mode": "Basculer le mode focus",
+    "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
+    "Toggle Model Library Sidebar": "Basculer la barre latérale de la bibliothèque de modèles",
+    "Toggle Node Library Sidebar": "Basculer la barre latérale de la bibliothèque de nœuds",
+    "Toggle Queue Sidebar": "Basculer la barre latérale de la file d'attente",
+    "Toggle Search Box": "Basculer la boîte de recherche",
+    "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
+    "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
+    "Toggle Workflows Sidebar": "Basculer la barre latérale des flux de travail",
+    "Undo": "Annuler",
+    "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
+    "Workflow": "Flux de travail",
+    "Zoom In": "Zoom avant",
+    "Zoom Out": "Zoom arrière"
+  },
+  "nodeCategories": {
+    "3d": "3d",
+    "3d_models": "modèles_3d",
+    "DevTools": "OutilsDeDéveloppement",
+    "_for_testing": "_pour_test",
+    "advanced": "avancé",
+    "animation": "animation",
+    "api": "api",
+    "attention_experiments": "expériences_d'attention",
+    "audio": "audio",
+    "batch": "lot",
+    "clip": "clip",
+    "combine": "combiner",
+    "compositing": "composition",
+    "cond pair": "cond pair",
+    "cond single": "cond unique",
+    "conditioning": "conditionnement",
+    "controlnet": "controlnet",
+    "create": "créer",
+    "custom_sampling": "échantillonnage_personnalisé",
+    "deprecated": "déprécié",
+    "flux": "flux",
+    "gligen": "gligen",
+    "guidance": "guidance",
+    "guiders": "guides",
+    "hooks": "crochets",
+    "image": "image",
+    "inpaint": "inpaint",
+    "instructpix2pix": "instructpix2pix",
+    "latent": "latent",
+    "loaders": "chargeurs",
+    "ltxv": "ltxv",
+    "mask": "masque",
+    "model": "modèle",
+    "model_merging": "fusion_de_modèles",
+    "model_patches": "patches_de_modèle",
+    "model_specific": "spécifique_au_modèle",
+    "noise": "bruit",
+    "operations": "opérations",
+    "photomaker": "photomaker",
+    "postprocessing": "post-traitement",
+    "preprocessors": "préprocesseurs",
+    "samplers": "échantillonneurs",
+    "sampling": "échantillonnage",
+    "schedulers": "planificateurs",
+    "scheduling": "planification",
+    "sd3": "sd3",
+    "sigmas": "sigmas",
+    "stable_cascade": "stable_cascade",
+    "style_model": "modèle_de_style",
+    "transform": "transformer",
+    "unet": "unet",
+    "upscale_diffusion": "diffusion_de_mise_à_l'échelle",
+    "upscaling": "mise_à_l'échelle",
+    "video": "vidéo",
+    "video_models": "modèles_vidéo"
+  },
+  "nodeTemplates": {
+    "enterName": "Entrez le nom",
+    "saveAsTemplate": "Enregistrer comme modèle"
+  },
+  "notSupported": {
+    "continue": "Continuer",
+    "continueTooltip": "Je suis sûr que mon appareil est pris en charge",
+    "learnMore": "En savoir plus",
+    "message": "Seuls les appareils suivants sont pris en charge :",
+    "reportIssue": "Signaler un problème",
+    "supportedDevices": {
+      "macos": "MacOS (M1 ou ultérieur)",
+      "windows": "Windows (GPU Nvidia avec support CUDA)"
+    },
+    "title": "Votre appareil n'est pas pris en charge"
+  },
+  "serverConfig": {
+    "modifiedConfigs": "Vous avez modifié les configurations suivantes du serveur. Redémarrez pour appliquer les modifications.",
+    "restart": "Redémarrer",
+    "revertChanges": "Annuler les modifications"
+  },
+  "serverConfigCategories": {
+    "Attention": "Attention",
+    "CUDA": "CUDA",
+    "Cache": "Cache",
+    "Directories": "Répertoires",
+    "General": "Général",
+    "Inference": "Inférence",
+    "Memory": "Mémoire",
+    "Network": "Réseau",
+    "Preview": "Aperçu"
+  },
+  "serverConfigItems": {
+    "cache-classic": {
+      "name": "Utiliser le système de cache classique"
+    },
+    "cache-lru": {
+      "name": "Utiliser le cache LRU avec un maximum de N résultats de nœuds mis en cache.",
+      "tooltip": "Peut utiliser plus de RAM/VRAM."
+    },
+    "cpu-vae": {
+      "name": "Exécuter VAE sur CPU"
+    },
+    "cross-attention-method": {
+      "name": "Méthode d'attention croisée"
+    },
+    "cuda-device": {
+      "name": "Index de l'appareil CUDA à utiliser"
+    },
+    "cuda-malloc": {
+      "name": "Utiliser CUDA malloc pour l'allocation de mémoire"
+    },
+    "default-hashing-function": {
+      "name": "Fonction de hachage par défaut pour les fichiers de modèle"
+    },
+    "deterministic": {
+      "name": "Faire utiliser à pytorch des algorithmes déterministes plus lents quand il le peut.",
+      "tooltip": "Notez que cela peut ne pas rendre les images déterministes dans tous les cas."
+    },
+    "directml": {
+      "name": "Index de l'appareil DirectML"
+    },
+    "disable-all-custom-nodes": {
+      "name": "Désactiver le chargement de tous les nœuds personnalisés."
+    },
+    "disable-ipex-optimize": {
+      "name": "Désactiver l'optimisation IPEX"
+    },
+    "disable-metadata": {
+      "name": "Désactiver l'enregistrement des métadonnées d'invite dans les fichiers."
+    },
+    "disable-smart-memory": {
+      "name": "Désactiver la gestion intelligente de la mémoire",
+      "tooltip": "Force ComfyUI à décharger agressivement vers la ram régulière au lieu de garder les modèles dans la vram quand il le peut."
+    },
+    "disable-xformers": {
+      "name": "Désactiver l'optimisation xFormers"
+    },
+    "dont-print-server": {
+      "name": "Ne pas imprimer la sortie du serveur sur la console."
+    },
+    "dont-upcast-attention": {
+      "name": "Prévenir l'attention de conversion ascendante"
+    },
+    "enable-cors-header": {
+      "name": "Activer l'en-tête CORS: Utilisez \"*\" pour toutes les origines ou spécifiez le domaine"
+    },
+    "fast": {
+      "name": "Activer certaines optimisations non testées et potentiellement dégradantes pour la qualité."
+    },
+    "force-channels-last": {
+      "name": "Forcer le format de mémoire des derniers canaux"
+    },
+    "force-upcast-attention": {
+      "name": "Forcer l'attention de conversion ascendante"
+    },
+    "global-precision": {
+      "name": "Précision globale des points flottants",
+      "tooltip": "Précision globale des points flottants"
+    },
+    "input-directory": {
+      "name": "Répertoire d'entrée"
+    },
+    "listen": {
+      "name": "Hôte: L'adresse IP à écouter"
+    },
+    "log-level": {
+      "name": "Niveau de verbosité de la journalisation"
+    },
+    "max-upload-size": {
+      "name": "Taille maximale de téléchargement (MB)"
+    },
+    "output-directory": {
+      "name": "Répertoire de sortie"
+    },
+    "port": {
+      "name": "Port: Le port à écouter"
+    },
+    "preview-method": {
+      "name": "Méthode utilisée pour les aperçus latents"
+    },
+    "preview-size": {
+      "name": "Taille des images d'aperçu"
+    },
+    "reserve-vram": {
+      "name": "VRAM réservée (GB)",
+      "tooltip": "Définissez la quantité de vram en GB que vous souhaitez réserver pour l'utilisation de votre OS/autres logiciels. Par défaut, une certaine quantité est réservée en fonction de votre OS."
+    },
+    "text-encoder-precision": {
+      "name": "Précision de l'encodeur de texte",
+      "tooltip": "Précision de l'encodeur de texte"
+    },
+    "tls-certfile": {
+      "name": "Fichier de certificat TLS: Chemin vers le fichier de certificat TLS pour HTTPS"
+    },
+    "tls-keyfile": {
+      "name": "Fichier de clé TLS: Chemin vers le fichier de clé TLS pour HTTPS"
+    },
+    "unet-precision": {
+      "name": "Précision UNET",
+      "tooltip": "Précision UNET"
+    },
+    "vae-precision": {
+      "name": "Précision VAE",
+      "tooltip": "Précision VAE"
+    },
+    "vram-management": {
+      "name": "Mode de gestion de la VRAM"
+    }
+  },
+  "serverStart": {
+    "openLogs": "Ouvrir les journaux",
+    "process": {
+      "error": "Impossible de démarrer ComfyUI Desktop",
+      "initial-state": "Chargement...",
+      "python-setup": "Configuration de l'environnement Python...",
+      "ready": "Finalisation...",
+      "starting-server": "Démarrage du serveur ComfyUI..."
+    },
+    "reinstall": "Réinstaller",
+    "reportIssue": "Signaler un problème",
+    "showTerminal": "Afficher le terminal"
+  },
+  "settingsCategories": {
+    "About": "À Propos",
+    "Appearance": "Apparence",
+    "BrushAdjustment": "Ajustement de Brosse",
+    "Canvas": "Toile",
+    "ColorPalette": "Palette de Couleurs",
+    "Comfy": "Confort",
+    "Comfy-Desktop": "Comfy-Desktop",
+    "CustomColorPalettes": "Palettes de Couleurs Personnalisées",
+    "DevMode": "Mode Développeur",
+    "EditTokenWeight": "Modifier le Poids du Jeton",
+    "Extension": "Extension",
+    "General": "Général",
+    "Graph": "Graphique",
+    "Group": "Groupe",
+    "Keybinding": "Raccourci Clavier",
+    "Link": "Lien",
+    "LinkRelease": "Libération de Lien",
+    "LiteGraph": "Lite Graph",
+    "Locale": "Locale",
+    "Mask Editor": "Éditeur de Masque",
+    "Menu": "Menu",
+    "ModelLibrary": "Bibliothèque de Modèles",
+    "NewEditor": "Nouvel Éditeur",
+    "Node": "Nœud",
+    "Node Search Box": "Boîte de Recherche de Nœud",
+    "Node Widget": "Widget de Nœud",
+    "NodeInputConversionSubmenus": "Sous-menus de Conversion d'Entrée de Nœud",
+    "NodeLibrary": "Bibliothèque de Nœuds",
+    "Pointer": "Pointeur",
+    "Queue": "File d'Attente",
+    "QueueButton": "Bouton de File d'Attente",
+    "RerouteBeta": "Reroute Beta",
+    "Server": "Serveur",
+    "Server-Config": "Config-Serveur",
+    "Settings": "Paramètres",
+    "Sidebar": "Barre Latérale",
+    "Tree Explorer": "Explorateur d'Arbre",
+    "Validation": "Validation",
+    "Window": "Fenêtre",
+    "Workflow": "Flux de Travail"
+  },
+  "sideToolbar": {
+    "browseTemplates": "Parcourir les modèles d'exemple",
+    "downloads": "Téléchargements",
+    "logout": "Déconnexion",
+    "modelLibrary": "Bibliothèque de modèles",
+    "newBlankWorkflow": "Créer un nouveau flux de travail vierge",
+    "nodeLibrary": "Bibliothèque de nœuds",
+    "nodeLibraryTab": {
+      "sortOrder": "Ordre de tri"
+    },
+    "openWorkflow": "Ouvrir le flux de travail dans le système de fichiers local",
+    "queue": "File d'attente",
+    "queueTab": {
+      "backToAllTasks": "Retour à toutes les tâches",
+      "clearPendingTasks": "Effacer les tâches en attente",
+      "containImagePreview": "Remplir l'aperçu de l'image",
+      "coverImagePreview": "Adapter l'aperçu de l'image",
+      "filter": "Filtrer les sorties",
+      "filters": {
+        "hideCached": "Masquer le cache",
+        "hideCanceled": "Masquer les annulations"
+      },
+      "showFlatList": "Afficher la liste plate"
+    },
+    "themeToggle": "Changer de thème",
+    "workflowTab": {
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
+      "confirmDeleteTitle": "Supprimer le flux de travail ?",
+      "confirmOverwrite": "Le fichier ci-dessous existe déjà. Souhaitez-vous le remplacer ?",
+      "confirmOverwriteTitle": "Écraser le fichier existant ?",
+      "deleteFailed": "La tentative de suppression du flux de travail a échoué.",
+      "deleteFailedTitle": "Échec de la suppression",
+      "deleted": "Flux de travail supprimé",
+      "dirtyClose": "Les fichiers ci-dessous ont été modifiés. Souhaitez-vous les enregistrer avant de fermer ?",
+      "dirtyCloseTitle": "Enregistrer les modifications ?",
+      "workflowTreeType": {
+        "bookmarks": "Favoris",
+        "browse": "Parcourir",
+        "open": "Ouvrir"
+      }
+    },
+    "workflows": "Flux de travail"
+  },
+  "tabMenu": {
+    "closeOtherTabs": "Fermer les autres onglets",
+    "closeTab": "Fermer l'onglet",
+    "closeTabsToLeft": "Fermer les onglets à gauche",
+    "closeTabsToRight": "Fermer les onglets à droite",
+    "duplicateTab": "Dupliquer l'onglet"
+  },
+  "templateWorkflows": {
+    "template": {
+      "default": "Génération d'images",
+      "flux_schnell": "Flux Schnell",
+      "image2image": "Image à Image",
+      "upscale": "Upscale en 2 passes"
+    },
+    "title": "Commencez avec un modèle"
+  },
+  "userSelect": {
+    "enterUsername": "Entrez un nom d'utilisateur",
+    "existingUser": "Utilisateur existant",
+    "newUser": "Nouvel utilisateur",
+    "next": "Suivant",
+    "selectUser": "Sélectionnez un utilisateur"
+  },
+  "welcome": {
+    "getStarted": "Commencer",
+    "title": "Bienvenue sur ComfyUI"
+  },
+  "workflowService": {
+    "enterFilename": "Entrez le nom du fichier",
+    "exportWorkflow": "Exporter le flux de travail",
+    "saveWorkflow": "Enregistrer le flux de travail"
+  }
+}

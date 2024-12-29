@@ -57,7 +57,7 @@ const handleClick = (increment: boolean) => {
   let newCount: number
   if (increment) {
     const originalCount = batchCount.value - 1
-    newCount = originalCount * 2
+    newCount = Math.min(originalCount * 2, maxQueueCount.value)
   } else {
     const originalCount = batchCount.value + 1
     newCount = Math.floor(originalCount / 2)

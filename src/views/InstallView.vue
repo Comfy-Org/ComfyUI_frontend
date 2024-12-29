@@ -22,7 +22,7 @@
           <GpuPicker v-model:device="device" />
           <div class="flex pt-6 justify-end">
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('1')"
@@ -37,13 +37,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('0')"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('2')"
@@ -58,13 +58,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('1')"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('3')"
@@ -78,13 +78,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('2')"
             />
             <Button
-              label="Install"
+              :label="$t('g.install')"
               icon="pi pi-check"
               iconPos="right"
               :disabled="hasError"

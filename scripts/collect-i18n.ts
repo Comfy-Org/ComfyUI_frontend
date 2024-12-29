@@ -65,6 +65,7 @@ test('collect-i18n', async ({ comfyPage }) => {
     const settings = workspace.setting.settings as Record<string, SettingParams>
     return Object.values(settings)
       .sort((a, b) => a.id.localeCompare(b.id))
+      .filter((setting) => setting.type !== 'hidden')
       .map((setting) => ({
         id: setting.id,
         name: setting.name,

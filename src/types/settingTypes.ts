@@ -6,6 +6,8 @@ export type SettingInputType =
   | 'slider'
   | 'combo'
   | 'text'
+  | 'image'
+  | 'color'
   | 'hidden'
 
 export type SettingCustomRenderer = (

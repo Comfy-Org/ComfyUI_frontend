@@ -1,4 +1,4 @@
-import { expect, Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {

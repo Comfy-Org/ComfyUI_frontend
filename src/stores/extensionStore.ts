@@ -1,23 +1,11 @@
 import { ref, computed, markRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type { ComfyExtension } from '@/types/comfy'
-import { useKeybindingStore } from './keybindingStore'
-import { useCommandStore } from './commandStore'
-import { useSettingStore } from './settingStore'
-import { app } from '@/scripts/app'
-import { useMenuItemStore } from './menuItemStore'
-import { useBottomPanelStore } from './workspace/bottomPanelStore'
-import { useWidgetStore } from './widgetStore'
 
 /**
  * These extensions are always active, even if they are disabled in the setting.
- * TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1996):
- * Migrate logic to out of extensions/core, as features provided
- * by these extensions are now essential to core.
  */
-export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [
-  'Comfy.ColorPalette'
-]
+export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
 
 export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
@@ -74,32 +62,10 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
-    useKeybindingStore().loadExtensionKeybindings(extension)
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
-    useSettingStore().loadExtensionSettings(extension)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
-    if (extension.getCustomWidgets) {
-      // TODO(huchenlei): We should deprecate the async return value of
-      // getCustomWidgets.
-      ;(async () => {
-        if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
-          useWidgetStore().registerCustomWidgets(widgets)
-        }
-      })()
-    }
-    /*
-     * Extensions are currently stored in both extensionStore and app.extensions.
-     * Legacy jest tests still depend on app.extensions being populated.
-     */
-    app.extensions.push(extension)
   }
 
-  function loadDisabledExtensionNames() {
-    disabledExtensionNames.value = new Set(
-      useSettingStore().get('Comfy.Extension.Disabled')
-    )
+  function loadDisabledExtensionNames(names: string[]) {
+    disabledExtensionNames.value = new Set(names)
     for (const name of ALWAYS_DISABLED_EXTENSIONS) {
       disabledExtensionNames.value.add(name)
     }
@@ -114,7 +80,7 @@ export const useExtensionStore = defineStore('extension', () => {
    */
   const coreExtensionNames = ref<string[]>([])
   function captureCoreExtensions() {
-    coreExtensionNames.value = app.extensions.map((ext) => ext.name)
+    coreExtensionNames.value = extensions.value.map((ext) => ext.name)
   }
 
   function isCoreExtension(name: string) {
@@ -124,14 +90,6 @@ export const useExtensionStore = defineStore('extension', () => {
   const hasThirdPartyExtensions = computed(() => {
     return extensions.value.some((ext) => !isCoreExtension(ext.name))
   })
-
-  // Some core extensions are registered before the store is initialized, e.g.
-  // colorPalette.
-  // Register them manually here so the state of app.extensions and
-  // extensionByName are in sync.
-  for (const ext of app.extensions) {
-    extensionByName.value[ext.name] = markRaw(ext)
-  }
 
   return {
     extensions,

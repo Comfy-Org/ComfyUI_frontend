@@ -42,6 +42,8 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { useEventListener } from '@vueuse/core'
+import { useKeybindingService } from '@/services/keybindingService'
 
 setupAutoQueueHandler()
 
@@ -92,7 +94,7 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
-    app.ui.menuContainer.style.removeProperty('display')
+    app.ui.menuContainer.style.setProperty('display', 'block')
     app.ui.restoreMenuPosition()
   } else {
     app.ui.menuContainer.style.setProperty('display', 'none')
@@ -106,7 +108,6 @@ watchEffect(() => {
 })
 
 const init = () => {
-  settingStore.addSettings(app.ui.settings)
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
@@ -159,6 +160,8 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
 })
+
+useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
 const onGraphReady = () => {
   requestIdleCallback(

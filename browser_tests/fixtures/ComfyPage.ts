@@ -845,6 +845,12 @@ export class ComfyPage {
       return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
     }, api)
   }
+  async setFocusMode(focusMode: boolean) {
+    await this.page.evaluate((focusMode) => {
+      window['app'].extensionManager.focusMode = focusMode
+    }, focusMode)
+    await this.nextFrame()
+  }
 }
 
 export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
