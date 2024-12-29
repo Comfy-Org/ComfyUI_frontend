@@ -704,3 +704,68 @@ test.describe('Menu', () => {
     })
   })
 })
+
+test.describe('Queue sidebar', () => {
+  let queueTab
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    queueTab = comfyPage.menu.queueTab
+  })
+
+  test.describe('Virtual scrolling', () => {
+    const buffer = 1 // number of pre-rendered rows
+    const layouts = [
+      { description: 'Five columns layout', width: 95, rows: 4, cols: 5 },
+      { description: 'Three columns layout', width: 55, rows: 4, cols: 3 },
+      { description: 'Two columns layout', width: 40, rows: 4, cols: 2 }
+    ]
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .createHistory()
+        .withTask(
+          comfyPage.createHistoryTask().withOutput('example.png').repeat(50)
+        )
+        .done()
+    })
+
+    layouts.forEach(({ description, width, rows, cols }) => {
+      const visibleTasks = rows * cols
+      const preRenderedTasks = buffer * cols * 2
+      const expectRenderLimit = visibleTasks + preRenderedTasks
+
+      test.describe(description, () => {
+        test.beforeEach(async () => {
+          await queueTab.setWidth(width)
+          await queueTab.open()
+          await queueTab.waitForImagesLoaded()
+        })
+
+        test.afterEach(async ({ comfyPage }) => {
+          await comfyPage.page.evaluate(() => {
+            localStorage.clear()
+            sessionStorage.clear()
+          })
+        })
+
+        test('only renders items in view', async () => {
+          const renderedCount = await queueTab.visibleResults.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('tears down items above after scrolling down', async () => {
+          await queueTab.scrollResultsDown()
+          const renderedCount = await queueTab.visibleResults.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('tears down items below and re-renders items above after scrolling down then up', async () => {
+          await queueTab.scrollResultsDown()
+          await queueTab.scrollResultsUp()
+          const renderedCount = await queueTab.visibleResults.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+      })
+    })
+  })
+})
