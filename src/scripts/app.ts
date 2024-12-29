@@ -1001,9 +1001,6 @@ export class ComfyApp {
    */
   async setup(canvasEl: HTMLCanvasElement) {
     this.canvasEl = canvasEl
-    // Show menu container for GraphView.
-    this.ui.menuContainer.style.display = 'block'
-
     this.resizeCanvas()
 
     await useWorkspaceStore().workflow.syncWorkflows()

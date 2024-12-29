@@ -122,8 +122,8 @@ export const useSettingStore = defineStore('setting', () => {
         setting,
         settingValues.value[setting.id]
       )
-      onChange(setting, settingValues.value[setting.id], undefined)
     }
+    onChange(setting, get(setting.id), undefined)
   }
 
   /*
