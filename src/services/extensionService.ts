@@ -50,7 +50,9 @@ export const useExtensionService = () => {
     useKeybindingStore().loadExtensionKeybindings(extension)
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)
-    settingStore.loadExtensionSettings(extension)
+    extension.settings?.forEach((setting) => {
+      settingStore.addSetting(setting)
+    })
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
       // TODO(huchenlei): We should deprecate the async return value of

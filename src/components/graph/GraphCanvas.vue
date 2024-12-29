@@ -68,6 +68,7 @@ import { useWorkflowService } from '@/services/workflowService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -337,6 +338,10 @@ onMounted(async () => {
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
+  await settingStore.loadSettingValues()
+  CORE_SETTINGS.forEach((setting) => {
+    settingStore.addSetting(setting)
+  })
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false

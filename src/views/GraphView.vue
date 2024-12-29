@@ -94,7 +94,7 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
-    app.ui.menuContainer.style.removeProperty('display')
+    app.ui.menuContainer.style.setProperty('display', 'block')
     app.ui.restoreMenuPosition()
   } else {
     app.ui.menuContainer.style.setProperty('display', 'none')
@@ -108,7 +108,6 @@ watchEffect(() => {
 })
 
 const init = () => {
-  settingStore.addSettings(app.ui.settings)
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()

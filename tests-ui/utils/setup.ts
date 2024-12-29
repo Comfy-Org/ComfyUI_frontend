@@ -1,6 +1,4 @@
 // @ts-strict-ignore
-import type { ComfySettingsDialog } from '@/scripts/ui/settings'
-import type { ComfyApp } from '@/scripts/app'
 import '../../src/scripts/api'
 import { ComfyNodeDef } from '@/types/apiTypes'
 
@@ -95,31 +93,6 @@ export function mockApi(config: APIConfig = {}) {
     get api() {
       return mockApi
     }
-  }))
-}
-
-export const mockSettingStore = () => {
-  let app: ComfyApp | null = null
-
-  const mockedSettingStore = {
-    addSettings(settings: ComfySettingsDialog) {
-      app = settings.app
-    },
-
-    set(key: string, value: any) {
-      app?.ui.settings.setSettingValue(key, value)
-    },
-
-    get(key: string) {
-      return (
-        app?.ui.settings.getSettingValue(key) ??
-        app?.ui.settings.getSettingDefaultValue(key)
-      )
-    }
-  }
-
-  jest.mock('@/stores/settingStore', () => ({
-    useSettingStore: jest.fn(() => mockedSettingStore)
   }))
 }
 

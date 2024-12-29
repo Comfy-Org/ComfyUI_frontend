@@ -1,49 +1,19 @@
-import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { ComfyDialog } from './dialog'
-import type { Setting, SettingParams } from '@/types/settingTypes'
+import type { SettingParams } from '@/types/settingTypes'
 import type { Settings } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp
-  settingsValues: any
-  settingsLookup: Record<string, Setting>
-  settingsParamLookup: Record<string, SettingParams>
 
   constructor(app: ComfyApp) {
     super()
     this.app = app
-    this.settingsValues = {}
-    this.settingsLookup = {}
-    this.settingsParamLookup = {}
   }
 
-  get settings() {
-    return Object.values(this.settingsLookup)
-  }
-
-  private tryMigrateDeprecatedValue(id: string, value: any) {
-    if (this.app.vueAppReady) {
-      const settingStore = useSettingStore()
-      const setting = settingStore.settingsById[id]
-      if (setting?.migrateDeprecatedValue) {
-        return setting.migrateDeprecatedValue(value)
-      }
-    }
-    return value
-  }
-
-  #dispatchChange<T>(id: string, value: T, oldValue?: T) {
-    // Keep the settingStore updated. Not using `store.set` as it would trigger
-    // setSettingValue again.
-    // `load` re-dispatch the change for any settings added before load so
-    // settingStore is always up to date.
-    if (this.app.vueAppReady) {
-      useSettingStore().settingValues[id] = value
-    }
-
+  dispatchChange<T>(id: string, value: T, oldValue?: T) {
     this.dispatchEvent(
       new CustomEvent(id + '.change', {
         detail: {
@@ -54,68 +24,74 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     )
   }
 
-  async load() {
-    this.settingsValues = await api.getSettings()
-
-    // Trigger onChange for any settings added before load
-    for (const id in this.settingsLookup) {
-      const compatId = id
-      this.settingsValues[compatId] = this.tryMigrateDeprecatedValue(
-        id,
-        this.settingsValues[compatId]
-      )
-      const value = this.settingsValues[compatId]
-      this.settingsLookup[id].onChange?.(value)
-      this.#dispatchChange(id, value)
-    }
+  /**
+   * @deprecated Use `settingStore.settingValues` instead.
+   */
+  get settingsValues() {
+    return useSettingStore().settingValues
   }
 
+  /**
+   * @deprecated Use `settingStore.settingsById` instead.
+   */
+  get settingsLookup() {
+    return useSettingStore().settingsById
+  }
+
+  /**
+   * @deprecated Use `settingStore.settingsById` instead.
+   */
+  get settingsParamLookup() {
+    return useSettingStore().settingsById
+  }
+
+  /**
+   * @deprecated Use `settingStore.get` instead.
+   */
   getSettingValue<K extends keyof Settings>(
     id: K,
     defaultValue?: Settings[K]
   ): Settings[K] {
-    let value = this.settingsValues[id]
-    return (value ?? defaultValue) as Settings[K]
+    if (defaultValue !== undefined) {
+      console.warn(
+        `Parameter defaultValue is deprecated. The default value in settings definition will be used instead.`
+      )
+    }
+    return useSettingStore().get(id)
   }
 
-  getSettingDefaultValue(id: string) {
-    const param = this.settingsParamLookup[id]
-    return typeof param?.defaultValue === 'function'
-      ? param.defaultValue()
-      : param?.defaultValue
+  /**
+   * @deprecated Use `settingStore.getDefaultValue` instead.
+   */
+  getSettingDefaultValue<K extends keyof Settings>(id: K): Settings[K] {
+    return useSettingStore().getDefaultValue(id)
   }
 
+  /**
+   * @deprecated Use `settingStore.set` instead.
+   */
   async setSettingValueAsync<K extends keyof Settings>(
     id: K,
     value: Settings[K]
   ) {
-    value = this.tryMigrateDeprecatedValue(id, value)
-
-    let oldValue = this.getSettingValue(id, undefined)
-    this.settingsValues[id] = value
-
-    if (id in this.settingsLookup) {
-      this.settingsLookup[id].onChange?.(value, oldValue)
-    }
-    this.#dispatchChange(id, value, oldValue)
-
-    await api.storeSetting(id, value)
-  }
-
-  setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
-    this.setSettingValueAsync(id, value).catch((err) => {
-      useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
-    })
-  }
-
-  refreshSetting(id: keyof Settings) {
-    const value = this.getSettingValue(id)
-    this.settingsLookup[id].onChange?.(value)
-    this.#dispatchChange(id, value)
+    await useSettingStore().set(id, value)
   }
 
   /**
-   * Deprecated for external callers/extensions. Use `ComfyExtension.settings` field instead.
+   * @deprecated Use `settingStore.set` instead.
+   */
+  setSettingValue<K extends keyof Settings>(id: K, value: Settings[K]) {
+    useSettingStore()
+      .set(id, value)
+      .catch((err) => {
+        useToastStore().addAlert(`Error saving setting '${id}': ${err}`)
+      })
+  }
+
+  /**
+   * @deprecated Deprecated for external callers/extensions. Use
+   * `ComfyExtension.settings` field instead.
+   *
    * Example:
    * ```ts
    * app.registerExtension({
@@ -132,41 +108,15 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
    * ```
    */
   addSetting(params: SettingParams) {
-    const { id, name, type, defaultValue, onChange } = params
-    if (!id) {
-      throw new Error('Settings must have an ID')
-    }
+    const settingStore = useSettingStore()
+    settingStore.addSetting(params)
 
-    if (id in this.settingsLookup) {
-      throw new Error(`Setting ${id} of type ${type} must have a unique ID.`)
-    }
-
-    const value = this.getSettingValue(id) ?? defaultValue
-
-    // Trigger initial setting of value
-    onChange?.(value, undefined)
-    this.#dispatchChange(id, value)
-
-    this.settingsParamLookup[id] = params
-    if (this.app.vueAppReady) {
-      useSettingStore().settingsById[id] = params
-    }
-    this.settingsLookup[id] = {
-      id,
-      onChange,
-      name,
-      render: () => {
-        console.warn('[ComfyUI] Setting render is deprecated', id)
-      }
-    } as Setting
-
-    const self = this
     return {
       get value() {
-        return self.getSettingValue(id, defaultValue)
+        return settingStore.get(params.id)
       },
       set value(v) {
-        self.setSettingValue(id, v)
+        settingStore.set(params.id, v)
       }
     }
   }
