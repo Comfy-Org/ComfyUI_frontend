@@ -36,16 +36,6 @@ export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
 
-  watch(
-    settingValues,
-    (newValues, oldValues) => {
-      Object.entries(newValues).forEach(([key, value]) => {
-        onChange(settingsById.value[key], value, oldValues[key])
-      })
-    },
-    { deep: true }
-  )
-
   const settingTree = computed<SettingTreeNode>(() => {
     const root = buildTree(
       Object.values(settingsById.value).filter(
@@ -72,16 +62,34 @@ export const useSettingStore = defineStore('setting', () => {
     return settingValues.value[key] !== undefined
   }
 
+  /**
+   * Set a setting value.
+   * @param key - The key of the setting to set.
+   * @param value - The value to set.
+   */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     const newValue = tryMigrateDeprecatedValue(settingsById.value[key], value)
+    const oldValue = settingValues.value[key]
+    onChange(settingsById.value[key], newValue, oldValue)
+
     settingValues.value[key] = newValue
     await api.storeSetting(key, newValue)
   }
 
+  /**
+   * Get a setting value.
+   * @param key - The key of the setting to get.
+   * @returns The value of the setting.
+   */
   function get<K extends keyof Settings>(key: K): Settings[K] {
     return settingValues.value[key] ?? getDefaultValue(key)
   }
 
+  /**
+   * Get the default value of a setting.
+   * @param key - The key of the setting to get.
+   * @returns The default value of the setting.
+   */
   function getDefaultValue<K extends keyof Settings>(key: K): Settings[K] {
     const param = settingsById.value[key]
     return typeof param?.defaultValue === 'function'
@@ -89,6 +97,10 @@ export const useSettingStore = defineStore('setting', () => {
       : param?.defaultValue
   }
 
+  /**
+   * Register a setting.
+   * @param setting - The setting to register.
+   */
   function addSetting(setting: SettingParams) {
     if (!setting.id) {
       throw new Error('Settings must have an ID')
@@ -100,16 +112,25 @@ export const useSettingStore = defineStore('setting', () => {
     settingsById.value[setting.id] = setting
 
     if (settingValues.value[setting.id] !== undefined) {
+      settingValues.value[setting.id] = tryMigrateDeprecatedValue(
+        setting,
+        settingValues.value[setting.id]
+      )
       onChange(setting, settingValues.value[setting.id], undefined)
     }
   }
 
+  /*
+   * Load setting values from server.
+   * This needs to be called before any setting is registered.
+   */
   async function loadSettingValues() {
-    const values = await api.getSettings()
-    for (const [key, value] of Object.entries(values)) {
-      values[key] = tryMigrateDeprecatedValue(settingsById.value[key], value)
+    if (Object.keys(settingsById.value).length) {
+      throw new Error(
+        'Setting values must be loaded before any setting is registered.'
+      )
     }
-    settingValues.value = values
+    settingValues.value = await api.getSettings()
   }
 
   return {

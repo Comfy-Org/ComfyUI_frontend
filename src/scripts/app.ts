@@ -1006,10 +1006,7 @@ export class ComfyApp {
 
     this.resizeCanvas()
 
-    await Promise.all([
-      useWorkspaceStore().workflow.syncWorkflows(),
-      useSettingStore().loadSettingValues()
-    ])
+    await useWorkspaceStore().workflow.syncWorkflows()
     await useExtensionService().loadExtensions()
 
     this.#addProcessMouseHandler()
