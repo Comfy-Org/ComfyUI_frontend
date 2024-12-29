@@ -32,7 +32,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -111,7 +110,7 @@ const init = () => {
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingStore().loadCoreKeybindings()
+  useKeybindingService().registerCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
   useBottomPanelStore().registerCoreBottomPanelTabs()
   app.extensionManager = useWorkspaceStore()
@@ -168,7 +167,7 @@ const onGraphReady = () => {
     () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
-      useKeybindingStore().loadUserKeybindings()
+      useKeybindingService().registerUserKeybindings()
 
       // Load server config
       useServerConfigStore().loadServerConfig(
