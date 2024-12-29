@@ -43,7 +43,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
 import { useEventListener } from '@vueuse/core'
 import { useKeybindingService } from '@/services/keybindingService'
-import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 
 setupAutoQueueHandler()
 
