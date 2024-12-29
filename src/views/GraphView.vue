@@ -44,6 +44,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
 import { useEventListener } from '@vueuse/core'
 import { useKeybindingService } from '@/services/keybindingService'
+import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 
 setupAutoQueueHandler()
 
@@ -111,7 +112,7 @@ const init = () => {
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingStore().loadCoreKeybindings()
+  useKeybindingService().registerCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
   useBottomPanelStore().registerCoreBottomPanelTabs()
   app.extensionManager = useWorkspaceStore()
@@ -168,7 +169,7 @@ const onGraphReady = () => {
     () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
-      useKeybindingStore().loadUserKeybindings()
+      useKeybindingService().registerUserKeybindings()
 
       // Load server config
       useServerConfigStore().loadServerConfig(

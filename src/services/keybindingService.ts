@@ -1,9 +1,16 @@
+import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
-import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import {
+  KeybindingImpl,
+  KeyComboImpl,
+  useKeybindingStore
+} from '@/stores/keybindingStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 export const useKeybindingService = () => {
   const keybindingStore = useKeybindingStore()
   const commandStore = useCommandStore()
+  const settingStore = useSettingStore()
 
   const keybindHandler = async function (event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
@@ -54,7 +61,41 @@ export const useKeybindingService = () => {
     }
   }
 
+  const registerCoreKeybindings = () => {
+    for (const keybinding of CORE_KEYBINDINGS) {
+      keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
+    }
+  }
+
+  function registerUserKeybindings() {
+    // Unset bindings first as new bindings might conflict with default bindings.
+    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
+    for (const keybinding of unsetBindings) {
+      keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
+    }
+    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
+    for (const keybinding of newBindings) {
+      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+    }
+  }
+
+  async function persistUserKeybindings() {
+    // TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1079):
+    // Allow setting multiple values at once in settingStore
+    await settingStore.set(
+      'Comfy.Keybinding.NewBindings',
+      Object.values(keybindingStore.userKeybindings.value)
+    )
+    await settingStore.set(
+      'Comfy.Keybinding.UnsetBindings',
+      Object.values(keybindingStore.userUnsetKeybindings.value)
+    )
+  }
+
   return {
-    keybindHandler
+    keybindHandler,
+    registerCoreKeybindings,
+    registerUserKeybindings,
+    persistUserKeybindings
   }
 }

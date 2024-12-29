@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
-import { useSettingStore } from './settingStore'
-import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
@@ -245,25 +243,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
-  function loadUserKeybindings() {
-    const settingStore = useSettingStore()
-    // Unset bindings first as new bindings might conflict with default bindings.
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      unsetKeybinding(new KeybindingImpl(keybinding))
-    }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      addUserKeybinding(new KeybindingImpl(keybinding))
-    }
-  }
-
-  function loadCoreKeybindings() {
-    for (const keybinding of CORE_KEYBINDINGS) {
-      addDefaultKeybinding(new KeybindingImpl(keybinding))
-    }
-  }
-
   function loadExtensionKeybindings(extension: ComfyExtension) {
     if (extension.keybindings) {
       for (const keybinding of extension.keybindings) {
@@ -277,20 +256,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
         }
       }
     }
-  }
-
-  async function persistUserKeybindings() {
-    const settingStore = useSettingStore()
-    // TODO(https://github.com/Comfy-Org/ComfyUI_frontend/issues/1079):
-    // Allow setting multiple values at once in settingStore
-    await settingStore.set(
-      'Comfy.Keybinding.NewBindings',
-      Object.values(userKeybindings.value)
-    )
-    await settingStore.set(
-      'Comfy.Keybinding.UnsetBindings',
-      Object.values(userUnsetKeybindings.value)
-    )
   }
 
   function resetKeybindings() {
@@ -312,6 +277,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   return {
     keybindings,
+    userKeybindings,
+    userUnsetKeybindings,
     getKeybinding,
     getKeybindingsByCommandId,
     getKeybindingByCommandId,
@@ -319,10 +286,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addUserKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
-    loadUserKeybindings,
-    loadCoreKeybindings,
     loadExtensionKeybindings,
-    persistUserKeybindings,
     resetKeybindings,
     isCommandKeybindingModified
   }
