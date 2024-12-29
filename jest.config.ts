@@ -21,8 +21,7 @@ const jestConfig: JestConfigWithTsJest = {
   },
   clearMocks: true,
   resetModules: true,
-  setupFiles: ['./tests-ui/tests/globalSetup.ts'],
-  setupFilesAfterEnv: ['./tests-ui/tests/afterSetup.ts']
+  setupFiles: ['./tests-ui/tests/globalSetup.ts']
 }
 
 export default jestConfig
