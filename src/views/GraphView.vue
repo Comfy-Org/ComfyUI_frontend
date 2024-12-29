@@ -32,7 +32,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -44,7 +43,6 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
 import { useEventListener } from '@vueuse/core'
 import { useKeybindingService } from '@/services/keybindingService'
-import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 
 setupAutoQueueHandler()
 
