@@ -236,10 +236,25 @@ const handleSearch = (query: string) => {
       `settings.${normalizeI18nKey(setting.id)}.name`
     ).toLocaleLowerCase()
 
+    let translatedCategories: string[] = []
+    if (Array.isArray(setting.category)) {
+      translatedCategories = setting.category.map((cat) =>
+        t(
+          `settingsCategories.${normalizeI18nKey(cat)}`,
+          cat
+        ).toLocaleLowerCase()
+      )
+    }
+
+    const hasCategoryMatch = translatedCategories.some((catText) =>
+      catText.includes(queryLower)
+    )
+
     return (
       idLower.includes(queryLower) ||
       nameLower.includes(queryLower) ||
-      translatedName.includes(queryLower)
+      translatedName.includes(queryLower) ||
+      hasCategoryMatch
     )
   })
 
