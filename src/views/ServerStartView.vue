@@ -1,5 +1,5 @@
 <template>
-  <BaseViewTemplate dark>
+  <BaseViewTemplate dark class="flex-col">
     <h2 class="text-2xl font-bold">
       {{ t(`serverStart.process.${status}`) }}
       <span v-if="status === ProgressStatus.ERROR">
