@@ -471,8 +471,7 @@ navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to
 - `git clone https://github.com/comfyanonymous/ComfyUI_examples.git` to `tests-ui/ComfyUI_examples` or the EXAMPLE_REPO_PATH location specified in .env
 - `npm i` to install all dependencies
 - `npm run test:generate` to fetch `tests-ui/data/object_info.json`
-- `npm run test:generate:examples` to extract the example workflows
-- `npm run test` to execute all unit tests.
+- `npm run test:jest` to execute all unit tests.
 
 ### Component Test
 

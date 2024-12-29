@@ -19,8 +19,7 @@ jobs:
     - name: Run Jest tests
       run: |
         npm run test:generate
-        npm run test:generate:examples
-        npm run test:jest:fast -- --verbose
+        npm run test:jest -- --verbose
       working-directory: ComfyUI_frontend
 
   playwright-tests-chromium:
