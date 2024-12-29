@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import type { Settings } from '@/types/apiTypes'
 import type { SettingParams } from '@/types/settingTypes'
@@ -58,6 +58,11 @@ export const useSettingStore = defineStore('setting', () => {
     return root
   })
 
+  /**
+   * Check if a setting's value exists, i.e. if the user has set it manually.
+   * @param key - The key of the setting to check.
+   * @returns Whether the setting exists.
+   */
   function exists(key: string) {
     return settingValues.value[key] !== undefined
   }
