@@ -1,13 +1,19 @@
 <template>
   <div class="flex h-96" data-testid="template-workflows-content">
-    <Listbox
-      v-model="selectedTab"
-      :options="tabs"
-      optionLabel="title"
-      scroll-height="auto"
-      class="listbox"
-      listStyle="max-height:unset"
-    />
+    <div class="relative">
+      <ProgressSpinner
+        v-if="!workflowTemplatesStore.isLoaded"
+        class="absolute w-8 h-full inset-0"
+      />
+      <Listbox
+        v-model="selectedTab"
+        :options="tabs"
+        optionLabel="title"
+        scroll-height="auto"
+        class="overflow-y-auto w-64 h-full"
+        listStyle="max-height:unset"
+      />
+    </div>
     <Carousel
       class="carousel justify-center"
       :value="selectedTab.templates"
@@ -20,7 +26,7 @@
           <TemplateWorkflowCard
             :moduleName="selectedTab.moduleName"
             :workflowName="slotProps.data"
-            :loading="slotProps.data === loading"
+            :loading="slotProps.data === workflowLoading"
           />
         </div>
       </template>
@@ -31,13 +37,14 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel'
 import Listbox from 'primevue/listbox'
-import { useToast } from 'primevue/usetoast'
-import { onMounted, ref } from 'vue'
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed, onMounted, ref } from 'vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useI18n } from 'vue-i18n'
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
+import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 
 interface WorkflowTemplatesTab {
   moduleName: string
@@ -46,7 +53,6 @@ interface WorkflowTemplatesTab {
 }
 
 const { t } = useI18n()
-const toast = useToast()
 
 //These default templates are provided by the frontend
 const comfyUITemplates: WorkflowTemplatesTab = {
@@ -55,34 +61,27 @@ const comfyUITemplates: WorkflowTemplatesTab = {
   templates: ['default', 'image2image', 'upscale', 'flux_schnell']
 }
 
-const tabs = ref<WorkflowTemplatesTab[]>([comfyUITemplates])
+const workflowTemplatesStore = useWorkflowTemplatesStore()
 const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
-const loading = ref<string | null>(null)
+const workflowLoading = ref<string | null>(null)
+
+const tabs = computed<WorkflowTemplatesTab[]>(() => {
+  return [
+    comfyUITemplates,
+    ...Object.entries(workflowTemplatesStore.items).map(([key, value]) => ({
+      moduleName: key,
+      title: key,
+      templates: value
+    }))
+  ]
+})
 
 onMounted(async () => {
-  try {
-    const workflowTemplates = await api.getWorkflowTemplates()
-    tabs.value = [
-      comfyUITemplates,
-      ...Object.entries(workflowTemplates).map(([key, value]) => ({
-        moduleName: key,
-        title: key,
-        templates: value
-      }))
-    ]
-  } catch (error) {
-    console.error('Error fetching workflow templates:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to fetch workflow templates',
-      life: 5000
-    })
-  }
+  await workflowTemplatesStore.loadWorkflowTemplates()
 })
 
 const loadWorkflow = async (id: string) => {
-  loading.value = id
+  workflowLoading.value = id
   let json
   if (selectedTab.value.moduleName === 'default') {
     // Default templates provided by frontend are served on this separate endpoint
@@ -109,10 +108,6 @@ const loadWorkflow = async (id: string) => {
 </script>
 
 <style lang="css" scoped>
-.listbox {
-  overflow-y: auto;
-}
-
 .carousel {
   width: 1300px;
 }
