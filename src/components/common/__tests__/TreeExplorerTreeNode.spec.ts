@@ -129,8 +129,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(addToastSpy).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'Error',
-      detail: 'Rename failed',
-      life: 3000
+      detail: 'Rename failed'
     })
   })
 })
