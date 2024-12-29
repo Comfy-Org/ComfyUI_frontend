@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, Ref, ref, toRaw } from 'vue'
 import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
-import type { ComfyExtension } from '@/types/comfy'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string
@@ -243,21 +242,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return true
   }
 
-  function loadExtensionKeybindings(extension: ComfyExtension) {
-    if (extension.keybindings) {
-      for (const keybinding of extension.keybindings) {
-        try {
-          addDefaultKeybinding(new KeybindingImpl(keybinding))
-        } catch (error) {
-          console.warn(
-            `Failed to load keybinding for extension ${extension.name}`,
-            error
-          )
-        }
-      }
-    }
-  }
-
   function resetKeybindings() {
     userKeybindings.value = {}
     userUnsetKeybindings.value = {}
@@ -286,7 +270,6 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     addUserKeybinding,
     unsetKeybinding,
     updateKeybindingOnCommand,
-    loadExtensionKeybindings,
     resetKeybindings,
     isCommandKeybindingModified
   }

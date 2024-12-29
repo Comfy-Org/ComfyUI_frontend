@@ -2,16 +2,19 @@ import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { useKeybindingStore } from '@/stores/keybindingStore'
+import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
+import { useErrorHandling } from '@/hooks/errorHooks'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
+  const keybindingStore = useKeybindingStore()
+  const { wrapWithErrorHandling } = useErrorHandling()
 
   /**
    * Loads all extensions from the API into the window in parallel
@@ -47,12 +50,17 @@ export const useExtensionService = () => {
   const registerExtension = (extension: ComfyExtension) => {
     extensionStore.registerExtension(extension)
 
-    useKeybindingStore().loadExtensionKeybindings(extension)
+    const addKeybinding = wrapWithErrorHandling(
+      keybindingStore.addDefaultKeybinding
+    )
+    const addSetting = wrapWithErrorHandling(settingStore.addSetting)
+
+    extension.keybindings?.forEach((keybinding) => {
+      addKeybinding(new KeybindingImpl(keybinding))
+    })
     useCommandStore().loadExtensionCommands(extension)
     useMenuItemStore().loadExtensionMenuCommands(extension)
-    extension.settings?.forEach((setting) => {
-      settingStore.addSetting(setting)
-    })
+    extension.settings?.forEach(addSetting)
     useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
     if (extension.getCustomWidgets) {
       // TODO(huchenlei): We should deprecate the async return value of
