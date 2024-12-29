@@ -6,7 +6,8 @@
         class="absolute w-8 h-full inset-0"
       />
       <Listbox
-        v-model="selectedTab"
+        :model-value="selectedTab"
+        @update:model-value="handleTabSelection"
         :options="tabs"
         optionLabel="title"
         scroll-height="auto"
@@ -98,6 +99,12 @@ const tabs = computed<WorkflowTemplatesTab[]>(() => {
 onMounted(async () => {
   await workflowTemplatesStore.loadWorkflowTemplates()
 })
+
+const handleTabSelection = (selection: WorkflowTemplatesTab | null) => {
+  //Listbox allows deselecting so this special case is ignored here
+  if (selection !== selectedTab.value && selection !== null)
+    selectedTab.value = selection
+}
 
 const loadWorkflow = async (id: string) => {
   workflowLoading.value = id
