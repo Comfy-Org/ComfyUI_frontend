@@ -8,8 +8,7 @@ export function useErrorHandling() {
     toast.add({
       severity: 'error',
       summary: t('g.error'),
-      detail: error.message,
-      life: 3000
+      detail: error.message
     })
   }
 
