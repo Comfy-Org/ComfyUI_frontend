@@ -17,6 +17,7 @@
     <Carousel
       class="carousel justify-center"
       :value="selectedTab.templates"
+      :responsive-options="responsiveOptions"
       :numVisible="4"
       :numScroll="3"
       :key="selectedTab.moduleName"
@@ -60,6 +61,24 @@ const comfyUITemplates: WorkflowTemplatesTab = {
   title: 'ComfyUI',
   templates: ['default', 'image2image', 'upscale', 'flux_schnell']
 }
+
+const responsiveOptions = ref([
+  {
+    breakpoint: '1660px',
+    numVisible: 3,
+    numScroll: 2
+  },
+  {
+    breakpoint: '1360px',
+    numVisible: 2,
+    numScroll: 1
+  },
+  {
+    breakpoint: '960px',
+    numVisible: 1,
+    numScroll: 1
+  }
+])
 
 const workflowTemplatesStore = useWorkflowTemplatesStore()
 const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
@@ -109,6 +128,6 @@ const loadWorkflow = async (id: string) => {
 
 <style lang="css" scoped>
 .carousel {
-  width: 1300px;
+  width: 66vw;
 }
 </style>
