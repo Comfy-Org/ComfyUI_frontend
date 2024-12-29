@@ -88,8 +88,7 @@ jobs:
     - name: Run UI tests
       run: |
         npm run test:generate
-        npm run test:generate:examples
-        npm run test:jest:fast -- --verbose
+        npm run test:jest -- --verbose
       working-directory: ComfyUI_frontend
 
     - name: Install Playwright Browsers
