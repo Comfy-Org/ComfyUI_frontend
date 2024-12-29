@@ -721,19 +721,38 @@ test.describe('Queue sidebar', () => {
         .done()
     })
 
-    test('can load results after opening', async () => {
+    test('can load tasks after opening', async () => {
       await queueTab.open()
       await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleResults.count()).toBe(1)
+      expect(await queueTab.visibleTasks.count()).toBe(1)
     })
 
-    test('can load results after closing then opening', async () => {
+    test('can load tasks after closing then opening', async () => {
       await queueTab.open()
       await queueTab.close()
       await queueTab.open()
       await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleResults.count()).toBe(1)
+      expect(await queueTab.visibleTasks.count()).toBe(1)
     })
+  })
+
+  test.describe('Flat outputs', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .createHistory()
+        .withTask(
+          comfyPage
+            .createHistoryTask()
+            .withOutput('example.png', { batchSize: 4 })
+            .repeat(2)
+        )
+        .withTask(comfyPage.createHistoryTask().withOutput('comfy.webp'))
+        .done()
+    })
+
+    test('can expand batched tasks', async () => {})
+
+    test('can collapse flat tasks', async () => {})
   })
 
   test.describe('Removing tasks', () => {
@@ -751,8 +770,8 @@ test.describe('Queue sidebar', () => {
 
     test('can clear all tasks', async () => {
       await queueTab.open()
-      await queueTab.clearResults()
-      expect(await queueTab.visibleResults.count()).toBe(0)
+      await queueTab.clearTasks()
+      expect(await queueTab.visibleTasks.count()).toBe(0)
     })
 
     test('can delete single task', async () => {
@@ -761,13 +780,13 @@ test.describe('Queue sidebar', () => {
 
     test('should display placeholder after clearing tasks', async () => {
       await queueTab.open()
-      await queueTab.clearResults()
+      await queueTab.clearTasks()
       expect(await queueTab.placeholder.isVisible()).toBe(true)
     })
 
     test('can load new tasks after clearing all', async ({ comfyPage }) => {
       await queueTab.open()
-      await queueTab.clearResults()
+      await queueTab.clearTasks()
       await queueTab.close()
       await comfyPage
         .createHistory()
@@ -775,7 +794,7 @@ test.describe('Queue sidebar', () => {
         .done()
       await queueTab.open()
       await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleResults.count()).toBe(1)
+      expect(await queueTab.visibleTasks.count()).toBe(1)
     })
   })
 
@@ -815,20 +834,20 @@ test.describe('Queue sidebar', () => {
         })
 
         test('only renders items in view', async () => {
-          const renderedCount = await queueTab.visibleResults.count()
+          const renderedCount = await queueTab.visibleTasks.count()
           expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
         })
 
         test('tears down items above after scrolling down', async () => {
-          await queueTab.scrollResultsDown()
-          const renderedCount = await queueTab.visibleResults.count()
+          await queueTab.scrollTasksDown()
+          const renderedCount = await queueTab.visibleTasks.count()
           expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
         })
 
         test('tears down items below and re-renders items above after scrolling down then up', async () => {
-          await queueTab.scrollResultsDown()
-          await queueTab.scrollResultsUp()
-          const renderedCount = await queueTab.visibleResults.count()
+          await queueTab.scrollTasksDown()
+          await queueTab.scrollTasksUp()
+          const renderedCount = await queueTab.visibleTasks.count()
           expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
         })
       })
