@@ -713,6 +713,29 @@ test.describe('Queue sidebar', () => {
     queueTab = comfyPage.menu.queueTab
   })
 
+  test.describe('Opening/closing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .createHistory()
+        .withTask(comfyPage.createHistoryTask().withOutput('example.png'))
+        .done()
+    })
+
+    test('can load results after opening', async () => {
+      await queueTab.open()
+      await queueTab.waitForImagesLoaded()
+      expect(await queueTab.visibleResults.count()).toBe(1)
+    })
+
+    test('can load results after closing then opening', async () => {
+      await queueTab.open()
+      await queueTab.close()
+      await queueTab.open()
+      await queueTab.waitForImagesLoaded()
+      expect(await queueTab.visibleResults.count()).toBe(1)
+    })
+  })
+
   test.describe('Virtual scrolling', () => {
     const buffer = 1 // number of pre-rendered rows
     const layouts = [
