@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark>
     <Stepper class="stepper" value="0" @update:value="setHighestStep">
       <StepList class="select-none">
         <Step value="0">
@@ -94,7 +92,7 @@
         </StepPanel>
       </StepPanels>
     </Stepper>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
@@ -104,7 +102,7 @@ import StepList from 'primevue/steplist'
 import StepPanels from 'primevue/steppanels'
 import Step from 'primevue/step'
 import StepPanel from 'primevue/steppanel'
-
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'

@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark>
     <div class="flex flex-col items-center justify-center gap-8 p-8">
       <!-- Header -->
       <h1 class="animated-gradient-text text-glow select-none">
@@ -19,12 +17,13 @@
         class="p-4 text-lg fade-in-up"
       />
     </div>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import { useRouter } from 'vue-router'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const router = useRouter()
 const navigateTo = (path: string) => {
