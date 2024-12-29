@@ -736,6 +736,49 @@ test.describe('Queue sidebar', () => {
     })
   })
 
+  test.describe('Removing tasks', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .createHistory()
+        .withTask(
+          comfyPage.createHistoryTask().withOutput('example.png').repeat(4)
+        )
+        .withTask(
+          comfyPage.createHistoryTask().withOutput('comfy.webp').repeat(2)
+        )
+        .done()
+    })
+
+    test('can clear all tasks', async () => {
+      await queueTab.open()
+      await queueTab.clearResults()
+      expect(await queueTab.visibleResults.count()).toBe(0)
+    })
+
+    test('can delete single task', async () => {
+      // TODO: right click -> delete a task then ensure there are 3 (original - 1)
+    })
+
+    test('should display placeholder after clearing tasks', async () => {
+      await queueTab.open()
+      await queueTab.clearResults()
+      expect(await queueTab.placeholder.isVisible()).toBe(true)
+    })
+
+    test('can load new tasks after clearing all', async ({ comfyPage }) => {
+      await queueTab.open()
+      await queueTab.clearResults()
+      await queueTab.close()
+      await comfyPage
+        .createHistory()
+        .withTask(comfyPage.createHistoryTask().withOutput('example.png'))
+        .done()
+      await queueTab.open()
+      await queueTab.waitForImagesLoaded()
+      expect(await queueTab.visibleResults.count()).toBe(1)
+    })
+  })
+
   test.describe('Virtual scrolling', () => {
     const buffer = 1 // number of pre-rendered rows
     const layouts = [
