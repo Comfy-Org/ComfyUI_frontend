@@ -115,12 +115,11 @@ const loadWorkflow = async (id: string) => {
     ).then((r) => r.json())
   }
   useDialogStore().closeDialog()
-  await app.loadGraphData(
-    json,
-    true,
-    true,
-    t(`templateWorkflows.template.${id}`, id)
-  )
+  const workflowName =
+    selectedTab.value.moduleName === 'default'
+      ? t(`templateWorkflows.template.${id}`, id)
+      : id
+  await app.loadGraphData(json, true, true, workflowName)
 
   return false
 }

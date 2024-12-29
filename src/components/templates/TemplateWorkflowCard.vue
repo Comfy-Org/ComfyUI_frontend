@@ -32,9 +32,20 @@
         </div>
       </div>
     </template>
-    <template #subtitle>{{
-      $t(`templateWorkflows.template.${props.workflowName}`, props.workflowName)
-    }}</template>
+    <template #subtitle>
+      <!--Default templates have translations-->
+      <template v-if="props.moduleName === 'default'">
+        {{
+          $t(
+            `templateWorkflows.template.${props.workflowName}`,
+            props.workflowName
+          )
+        }}
+      </template>
+      <template v-else>
+        {{ props.workflowName }}
+      </template>
+    </template>
   </Card>
 </template>
 
