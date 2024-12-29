@@ -28,6 +28,7 @@ function onChange(setting: SettingParams, value: any, oldValue: any) {
   if (setting?.onChange && value !== oldValue) {
     setting.onChange(value)
     // Backward compatibility with old settings dialog.
+    // Some extensions still listens event emitted by the old settings dialog.
     app.ui.settings.dispatchChange(setting.id, value, oldValue)
   }
 }
