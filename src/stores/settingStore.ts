@@ -1,10 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { Settings } from '@/types/apiTypes'
 import type { SettingParams } from '@/types/settingTypes'
 import type { TreeNode } from 'primevue/treenode'
 import { buildTree } from '@/utils/treeUtil'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
@@ -23,9 +24,27 @@ function tryMigrateDeprecatedValue(setting: SettingParams, value: any) {
   return setting?.migrateDeprecatedValue?.(value) ?? value
 }
 
+function onChange(setting: SettingParams, value: any, oldValue: any) {
+  if (setting?.onChange && value !== oldValue) {
+    setting.onChange(value)
+    // Backward compatibility with old settings dialog.
+    app.ui.settings.dispatchChange(setting.id, value, oldValue)
+  }
+}
+
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+
+  watch(
+    settingValues,
+    (newValues, oldValues) => {
+      Object.entries(newValues).forEach(([key, value]) => {
+        onChange(settingsById.value[key], value, oldValues[key])
+      })
+    },
+    { deep: true }
+  )
 
   const settingTree = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -79,16 +98,18 @@ export const useSettingStore = defineStore('setting', () => {
     }
 
     settingsById.value[setting.id] = setting
+
+    if (settingValues.value[setting.id] !== undefined) {
+      onChange(setting, settingValues.value[setting.id], undefined)
+    }
   }
 
   async function loadSettingValues() {
     const values = await api.getSettings()
     for (const [key, value] of Object.entries(values)) {
-      settingValues.value[key] = tryMigrateDeprecatedValue(
-        settingsById.value[key],
-        value
-      )
+      values[key] = tryMigrateDeprecatedValue(settingsById.value[key], value)
     }
+    settingValues.value = values
   }
 
   return {
