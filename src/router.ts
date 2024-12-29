@@ -84,6 +84,12 @@ const router = createRouter({
           name: 'DownloadGitView',
           component: () => import('@/views/DownloadGitView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'manual-configuration',
+          name: 'ManualConfigurationView',
+          component: () => import('@/views/ManualConfigurationView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
