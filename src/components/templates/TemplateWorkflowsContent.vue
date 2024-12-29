@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-96">
+  <div class="flex h-96" data-testid="template-workflows-content">
     <Listbox
       v-model="selectedTab"
       :options="tabs"
@@ -16,7 +16,7 @@
       :key="selectedTab.moduleName"
     >
       <template #item="slotProps">
-        <Card>
+        <Card :data-testid="`template-workflow-${slotProps.data}`">
           <template #header>
             <div class="flex items-center justify-center">
               <div
