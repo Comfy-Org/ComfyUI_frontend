@@ -3073,8 +3073,12 @@ export class LGraphCanvas {
     this.state.hoveringOver = underPointer
 
     if (this.state.shouldSetCursor) {
-      if (!underPointer) {
-        this.canvas.style.cursor = ""
+      if (this.state.draggingCanvas) {
+        this.canvas.style.cursor = "grabbing"
+      } else if (this.state.readOnly) {
+        this.canvas.style.cursor = "grab"
+      } else if (!underPointer) {
+        this.canvas.style.cursor = "default"
       } else if (underPointer & CanvasItem.ResizeSe) {
         this.canvas.style.cursor = "se-resize"
       } else if (underPointer & CanvasItem.Node) {
