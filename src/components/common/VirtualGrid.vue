@@ -1,14 +1,14 @@
 <template>
-  <div ref="container" class="virtual-grid-scroll-container">
-    <div :style="{ height: `${(visibleRange.start / cols) * itemSize}px` }" />
+  <div ref="container" class="scroll-container">
+    <div :style="{ height: `${(state.start / cols) * itemSize}px` }" />
     <div :style="gridStyle">
-      <div v-for="item in visibleItems" :key="item.key" data-virtual-grid-item>
-        <slot name="item" :item="item" />
+      <div v-for="item in renderedItems" :key="item.key" data-virtual-grid-item>
+        <slot name="item" :item="item"> </slot>
       </div>
     </div>
     <div
       :style="{
-        height: `${((props.items.length - visibleRange.end) / cols) * itemSize}px`
+        height: `${((props.items.length - state.end) / cols) * itemSize}px`
       }"
     />
   </div>
@@ -24,43 +24,47 @@ type GridItem<T = any> = T & { key: string }
 const props = defineProps<{
   items: GridItem[]
   gridStyle: Partial<CSSProperties>
-  buffer?: number
+  bufferRows?: number
+  scrollThrottle?: number
+  resizeDebounce?: number
   defaultItemSize?: number
 }>()
-const { buffer = 1, defaultItemSize = 200 } = props
+const {
+  bufferRows = 1,
+  scrollThrottle = 64,
+  resizeDebounce = 64,
+  defaultItemSize = 200
+} = props
 
 const itemSize = ref(defaultItemSize)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
-  throttle: 64,
+  throttle: scrollThrottle,
   eventListenerOptions: { passive: true }
 })
 
 const cols = computed(() => Math.floor(width.value / itemSize.value) || 1)
-const visibleRows = computed(() => Math.ceil(height.value / itemSize.value))
-const offset = computed(() => Math.floor(scrollY.value / itemSize.value))
+const viewRows = computed(() => Math.ceil(height.value / itemSize.value))
+const offsetRows = computed(() => Math.floor(scrollY.value / itemSize.value))
 const isValidGrid = computed(
   () => height.value && width.value && props.items?.length
 )
 
-const visibleRange = computed<{ start: number; end: number }>(() => {
-  const fromRow = offset.value - buffer
-  const toRow = offset.value + buffer + visibleRows.value
+const state = computed<{ start: number; end: number }>(() => {
+  const fromRow = offsetRows.value - bufferRows
+  const toRow = offsetRows.value + bufferRows + viewRows.value
 
   const fromCol = fromRow * cols.value
   const toCol = toRow * cols.value
 
   return {
-    start: clamp(fromCol, 0, props.items.length),
-    end: clamp(toCol, fromCol, props.items.length)
+    start: clamp(fromCol, 0, props.items?.length),
+    end: clamp(toCol, fromCol, props.items?.length)
   }
 })
-
-const visibleItems = computed<GridItem[]>(() =>
-  isValidGrid.value
-    ? props.items.slice(visibleRange.value.start, visibleRange.value.end)
-    : []
+const renderedItems = computed<GridItem[]>(() =>
+  isValidGrid.value ? props.items.slice(state.value.start, state.value.end) : []
 )
 
 const updateItemSize = () => {
@@ -69,24 +73,24 @@ const updateItemSize = () => {
     itemSize.value = firstItem?.clientHeight || defaultItemSize
   }
 }
-
-const onResize = debounce(updateItemSize, 64, { leading: true, trailing: true })
+const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 </script>
 
 <style scoped>
-.virtual-grid-scroll-container {
+.scroll-container {
   height: 100%;
   overflow-y: auto;
+
   /* Firefox */
   scrollbar-width: none;
-}
 
-.virtual-grid-scroll-container::-webkit-scrollbar {
-  width: 1px;
-}
+  &::-webkit-scrollbar {
+    width: 1px;
+  }
 
-.virtual-grid-scroll-container::-webkit-scrollbar-thumb {
-  background-color: transparent;
+  &::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
 }
 </style>

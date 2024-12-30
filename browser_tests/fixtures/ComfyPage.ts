@@ -14,11 +14,13 @@ import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
-  WorkflowsSidebarTab
+  WorkflowsSidebarTab,
+  QueueSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference } from './utils/litegraphUtils'
+import { HistoryBuilder } from './utils/taskHistory'
 
 dotenv.config()
 
@@ -43,6 +45,10 @@ class ComfyMenu {
 
   get workflowsTab() {
     return new WorkflowsSidebarTab(this.page)
+  }
+
+  get queueTab() {
+    return new QueueSidebarTab(this.page)
   }
 
   get topbar() {
@@ -231,6 +237,10 @@ export class ComfyPage {
     if (resp.status() !== 200) {
       throw new Error(`Failed to setup settings: ${await resp.text()}`)
     }
+  }
+
+  setupHistory(): HistoryBuilder {
+    return new HistoryBuilder(this.page)
   }
 
   async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {

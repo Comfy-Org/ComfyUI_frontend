@@ -706,151 +706,142 @@ test.describe('Menu', () => {
 })
 
 test.describe('Queue sidebar', () => {
-  let queueTab
-
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    queueTab = comfyPage.menu.queueTab
+  test('can display tasks', async ({ comfyPage }) => {
+    await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.waitForTasks()
+    expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
   })
 
-  test.describe('Opening/closing', () => {
+  test('can display tasks after closing then opening', async ({
+    comfyPage
+  }) => {
+    await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.close()
+    await comfyPage.menu.queueTab.open()
+    await comfyPage.menu.queueTab.waitForTasks()
+    expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
+  })
+
+  test.describe('Virtual scrolling', () => {
+    const layouts = [
+      { description: 'Five columns layout', width: 95, rows: 3, cols: 5 },
+      { description: 'Three columns layout', width: 55, rows: 3, cols: 3 },
+      { description: 'Two columns layout', width: 40, rows: 3, cols: 2 }
+    ]
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage
-        .createHistory()
-        .withTask(comfyPage.createHistoryTask().withOutput('example.png'))
-        .done()
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(50)
+        .setupRoutes()
     })
 
-    test('can load tasks after opening', async () => {
-      await queueTab.open()
-      await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleTasks.count()).toBe(1)
-    })
+    layouts.forEach(({ description, width, rows, cols }) => {
+      const preRenderedRows = 1
+      const preRenderedTasks = preRenderedRows * cols * 2
+      const visibleTasks = rows * cols
+      const expectRenderLimit = visibleTasks + preRenderedTasks
 
-    test('can load tasks after closing then opening', async () => {
-      await queueTab.open()
-      await queueTab.close()
-      await queueTab.open()
-      await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleTasks.count()).toBe(1)
+      test.describe(description, () => {
+        test.beforeEach(async ({ comfyPage }) => {
+          await comfyPage.menu.queueTab.setTabWidth(width)
+          await comfyPage.menu.queueTab.open()
+          await comfyPage.menu.queueTab.waitForTasks()
+        })
+
+        test('should not render items outside of view', async ({
+          comfyPage
+        }) => {
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('should teardown items above after scrolling away', async ({
+          comfyPage
+        }) => {
+          await comfyPage.menu.queueTab.scrollTasks('down')
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+
+        test('should re-render items after scrolling away then back', async ({
+          comfyPage
+        }) => {
+          await comfyPage.menu.queueTab.scrollTasks('down')
+          await comfyPage.menu.queueTab.scrollTasks('up')
+          const renderedCount =
+            await comfyPage.menu.queueTab.visibleTasks.count()
+          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
+        })
+      })
     })
   })
 
   test.describe('Flat outputs', () => {
     test.beforeEach(async ({ comfyPage }) => {
+      // 2 tasks with 2 outputs each = 2 additional items when expanded
       await comfyPage
-        .createHistory()
-        .withTask(
-          comfyPage
-            .createHistoryTask()
-            .withOutput('example.png', { batchSize: 4 })
-            .repeat(2)
-        )
-        .withTask(comfyPage.createHistoryTask().withOutput('comfy.webp'))
-        .done()
+        .setupHistory()
+        .withTask(['example.webp', 'example.webp'])
+        .repeat(2)
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
     })
 
-    test('can expand batched tasks', async () => {})
+    test('can expand tasks with multiple outputs', async ({ comfyPage }) => {
+      const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
+      await comfyPage.menu.queueTab.collapseTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
+        initialCount + 2
+      )
+    })
 
-    test('can collapse flat tasks', async () => {})
+    test('can collapse flat tasks', async ({ comfyPage }) => {
+      const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
+      await comfyPage.menu.queueTab.collapseTasks()
+      await comfyPage.menu.queueTab.expandTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
+        initialCount
+      )
+    })
   })
 
-  test.describe('Removing tasks', () => {
+  test.describe('Clearing tasks', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage
-        .createHistory()
-        .withTask(
-          comfyPage.createHistoryTask().withOutput('example.png').repeat(4)
-        )
-        .withTask(
-          comfyPage.createHistoryTask().withOutput('comfy.webp').repeat(2)
-        )
-        .done()
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(6)
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
     })
 
-    test('can clear all tasks', async () => {
-      await queueTab.open()
-      await queueTab.clearTasks()
-      expect(await queueTab.visibleTasks.count()).toBe(0)
+    test('can clear all tasks', async ({ comfyPage }) => {
+      await comfyPage.menu.queueTab.clearTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(0)
     })
 
-    test('can delete single task', async () => {
-      // TODO: right click -> delete a task then ensure there are 3 (original - 1)
-    })
-
-    test('should display placeholder after clearing tasks', async () => {
-      await queueTab.open()
-      await queueTab.clearTasks()
-      expect(await queueTab.placeholder.isVisible()).toBe(true)
+    test('should display placeholder after clearing tasks', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.queueTab.clearTasks()
+      expect(
+        await comfyPage.menu.queueTab.noResultsPlaceholder.isVisible()
+      ).toBe(true)
     })
 
     test('can load new tasks after clearing all', async ({ comfyPage }) => {
-      await queueTab.open()
-      await queueTab.clearTasks()
-      await queueTab.close()
-      await comfyPage
-        .createHistory()
-        .withTask(comfyPage.createHistoryTask().withOutput('example.png'))
-        .done()
-      await queueTab.open()
-      await queueTab.waitForImagesLoaded()
-      expect(await queueTab.visibleTasks.count()).toBe(1)
-    })
-  })
-
-  test.describe('Virtual scrolling', () => {
-    const buffer = 1 // number of pre-rendered rows
-    const layouts = [
-      { description: 'Five columns layout', width: 95, rows: 4, cols: 5 },
-      { description: 'Three columns layout', width: 55, rows: 4, cols: 3 },
-      { description: 'Two columns layout', width: 40, rows: 4, cols: 2 }
-    ]
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage
-        .createHistory()
-        .withTask(
-          comfyPage.createHistoryTask().withOutput('example.png').repeat(50)
-        )
-        .done()
-    })
-
-    layouts.forEach(({ description, width, rows, cols }) => {
-      const visibleTasks = rows * cols
-      const preRenderedTasks = buffer * cols * 2
-      const expectRenderLimit = visibleTasks + preRenderedTasks
-
-      test.describe(description, () => {
-        test.beforeEach(async () => {
-          await queueTab.setWidth(width)
-          await queueTab.open()
-          await queueTab.waitForImagesLoaded()
-        })
-
-        test.afterEach(async ({ comfyPage }) => {
-          await comfyPage.page.evaluate(() => {
-            localStorage.clear()
-            sessionStorage.clear()
-          })
-        })
-
-        test('only renders items in view', async () => {
-          const renderedCount = await queueTab.visibleTasks.count()
-          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
-        })
-
-        test('tears down items above after scrolling down', async () => {
-          await queueTab.scrollTasksDown()
-          const renderedCount = await queueTab.visibleTasks.count()
-          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
-        })
-
-        test('tears down items below and re-renders items above after scrolling down then up', async () => {
-          await queueTab.scrollTasksDown()
-          await queueTab.scrollTasksUp()
-          const renderedCount = await queueTab.visibleTasks.count()
-          expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
-        })
-      })
+      await comfyPage.menu.queueTab.clearTasks()
+      await comfyPage.menu.queueTab.close()
+      await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
+      await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
+      expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
     })
   })
 })

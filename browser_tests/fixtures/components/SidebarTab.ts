@@ -22,6 +22,12 @@ class SidebarTab {
     }
     await this.tabButton.click()
   }
+  async close() {
+    if (!this.tabButton.isVisible()) {
+      return
+    }
+    await this.tabButton.click()
+  }
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
@@ -157,88 +163,83 @@ export class QueueSidebarTab extends SidebarTab {
     return this.page.locator('.sidebar-content-container', { hasText: 'Queue' })
   }
 
+  get tasks() {
+    return this.root.locator('[data-virtual-grid-item]')
+  }
+
+  get visibleTasks() {
+    return this.tasks.locator('visible=true')
+  }
+
   get clearButton() {
     return this.root.locator('.clear-all-button')
   }
 
-  get scrollContainer() {
-    return this.root.locator('.scroll-container')
+  get collapseTasksButton() {
+    return this.getToggleExpandButton(true)
   }
 
-  get placeholder() {
+  get expandTasksButton() {
+    return this.getToggleExpandButton(false)
+  }
+
+  get noResultsPlaceholder() {
     return this.root.locator('.no-results-placeholder')
   }
 
-  get tasks() {
-    return this.scrollContainer.locator('[data-virtual-grid-item]')
-  }
-
-  get visibleTasks() {
-    return this.scrollContainer
-      .locator('[data-virtual-grid-item]')
-      .locator('visible=true')
+  private getToggleExpandButton(isExpanded: boolean) {
+    const iconSelector = isExpanded ? '.pi-image' : '.pi-images'
+    return this.root.locator(`.toggle-expanded-button ${iconSelector}`)
   }
 
   async open() {
     await super.open()
-    await this.root.waitFor({ state: 'visible' })
+    return this.root.waitFor({ state: 'visible' })
   }
 
   async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
-    await this.tabButton.click()
+    await super.close()
     await this.root.waitFor({ state: 'hidden' })
   }
 
-  async waitForMostRecentTask() {
-    return Promise.all([
-      this.tasks.first().waitFor({ state: 'visible' }),
-      this.tasks.first().waitFor({ state: 'attached' })
-    ])
+  async expandTasks() {
+    await this.expandTasksButton.click()
+    await this.collapseTasksButton.waitFor({ state: 'visible' })
   }
 
-  async waitForLeastRecentTask() {
-    return Promise.all([
-      this.tasks.last().waitFor({ state: 'visible' }),
-      this.tasks.last().waitFor({ state: 'attached' })
-    ])
+  async collapseTasks() {
+    await this.collapseTasksButton.click()
+    await this.expandTasksButton.waitFor({ state: 'visible' })
   }
 
   async waitForTasks() {
     return Promise.all([
-      this.waitForMostRecentTask(),
-      this.waitForLeastRecentTask()
+      this.tasks.first().waitFor({ state: 'visible' }),
+      this.tasks.last().waitFor({ state: 'visible' })
     ])
   }
 
-  async scrollTasksUp() {
-    await this.tasks.first().scrollIntoViewIfNeeded()
-    await this.waitForMostRecentTask()
-    await this.page.waitForTimeout(256)
-  }
-
-  async scrollTasksDown() {
-    await this.tasks.last().scrollIntoViewIfNeeded()
-    await this.waitForLeastRecentTask()
-    await this.page.waitForTimeout(256)
-  }
-
-  async setWidth(width: number) {
-    return this.page.evaluate((width) => {
-      localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
-    }, width)
+  async scrollTasks(direction: 'up' | 'down') {
+    const scrollToEl =
+      direction === 'up' ? this.tasks.last() : this.tasks.first()
+    await scrollToEl.scrollIntoViewIfNeeded()
+    await this.waitForTasks()
   }
 
   async clearTasks() {
-    // Allow delete-history requests
-    await this.page.unroute('**/api/history*')
-
     await this.clearButton.click()
     const confirmButton = this.page.getByLabel('Delete')
-    await confirmButton.waitFor({ state: 'visible' })
     await confirmButton.click()
-    await this.placeholder.waitFor({ state: 'visible' })
+    await this.noResultsPlaceholder.waitFor({ state: 'visible' })
+  }
+
+  /** Set the width of the tab (out of 100). Must call before opening the tab */
+  async setTabWidth(width: number) {
+    if (width < 0 || width > 100) {
+      throw new Error('Width must be between 0 and 100')
+    }
+    return this.page.evaluate((width) => {
+      localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
+    }, width)
   }
 }
