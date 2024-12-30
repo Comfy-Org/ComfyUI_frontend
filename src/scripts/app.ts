@@ -2060,12 +2060,6 @@ export class ComfyApp {
       ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
     ) as Vector2
   }
-
-  public goToNode(nodeId: NodeId) {
-    const graphNode = this.graph.getNodeById(nodeId)
-    if (!graphNode) return
-    this.canvas.animateToBounds(graphNode.boundingRect)
-  }
 }
 
 export const app = new ComfyApp()
