@@ -452,7 +452,7 @@ test.describe('Canvas Interaction', () => {
     expect(await getCursorStyle()).toBe('default')
     await comfyPage.page.mouse.down()
     expect(await getCursorStyle()).toBe('grabbing')
-    // Move mouse does not alter cursor style.
+    // Move mouse should not alter cursor style.
     await comfyPage.page.mouse.move(10, 20)
     expect(await getCursorStyle()).toBe('grabbing')
     await comfyPage.page.mouse.up()
