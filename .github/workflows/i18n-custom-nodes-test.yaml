@@ -1,23 +1,25 @@
 name: Update Locales for given custom node repository
+env:
+  owner: huchenlei
+  repository: ComfyUI-IC-Light-Native
+  fork_owner: comfy-pr-bot
 on:
   push:
   workflow_dispatch:
     inputs:
-      owner:
+      owner: huchenlei
         description: 'Owner of the repository to update locales for'
         required: true
         type: string
-        default: 'huchenlei'
-      repository:
+      repository: ComfyUI-IC-Light-Native
         description: 'Repository to update locales for'
         required: true
         type: string
-        default: 'ComfyUI-IC-Light-Native'
-      fork_owner:
+      fork_owner: comfy-pr-bot
         description: 'Owner of the forked repository'
         required: false
         type: string
-        default: 'comfy-pr-bot'
+        default: 'Comfy-Org'
 
 jobs:
   update-locales:
@@ -42,8 +44,8 @@ jobs:
     - name: Checkout custom node repository
       uses: actions/checkout@v4
       with:
-        repository: ${{ inputs.owner }}/${{ inputs.repository }}
-        path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
+        repository: ${{ env.owner }}/${{ env.repository }}
+        path: 'ComfyUI/custom_nodes/${{ env.repository }}'
     - uses: actions/setup-node@v3
       with:
         node-version: lts/*
@@ -64,7 +66,7 @@ jobs:
           pip install -r requirements.txt
         fi
       shell: bash
-      working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
+      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
     - name: Build & Install ComfyUI_frontend
       run: |
         npm ci
@@ -105,13 +107,13 @@ jobs:
       working-directory: ComfyUI_frontend
     - name: Update i18n in custom node repository
       run: |
-        LOCALE_DIR=ComfyUI/custom_nodes/${{ inputs.repository }}/locales/
+        LOCALE_DIR=ComfyUI/custom_nodes/${{ env.repository }}/locales/
         install -d "$LOCALE_DIR"
         cp -rf ComfyUI_frontend/temp/diff/* "$LOCALE_DIR"
     - name: Check and create fork of custom node repository
       run: |
         # Try to fork the repository
-        gh repo fork ${{ inputs.owner }}/${{ inputs.repository }} --clone=false || {
+        gh repo fork ${{ env.owner }}/${{ env.repository }} --clone=false || {
           echo "Fork failed - repository might already be forked"
           # Exit 0 to prevent the workflow from failing
           exit 0
@@ -121,7 +123,7 @@ jobs:
         gh api \
           --method PUT \
           -H "Accept: application/vnd.github+json" \
-          "/repos/${{ inputs.fork_owner }}/${{ inputs.repository }}/actions/permissions/workflow" \
+          "/repos/${{ env.fork_owner }}/${{ env.repository }}/actions/permissions/workflow" \
           -F can_approve_pull_request_reviews=true \
           -F default_workflow_permissions="write" \
           -F enabled=true
@@ -133,7 +135,7 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
         # Configure the remote with token
-        git remote set-url pr "https://$GH_TOKEN_PR@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
+        git remote set-url pr "https://${{ secrets.GH_TOKEN_PR }}@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
 
         # Create and switch to new branch
         git checkout -b update-locales
@@ -143,11 +145,11 @@ jobs:
         git commit -m "Update locales"
 
         # Force push to create the branch
-        echo "Pushing changes to ${{ inputs.fork_owner }}/${{ inputs.repository }}"
+        echo "Pushing changes to ${{ env.fork_owner }}/${{ env.repository }}"
         git push -f pr update-locales
 
         # Create PR using gh cli
-        gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
-      working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
+        gh pr create --title "Update locales for ${{ env.repository }}" --repo ${{ env.owner }}/${{ env.repository }} --head ${{ env.fork_owner }}:update-locales
+      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
       env:
         GH_TOKEN_PR: ${{ secrets.GH_TOKEN_PR }}
