@@ -66,9 +66,9 @@ import type {
 } from '@/types/treeExplorerTypes'
 import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
-import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
@@ -153,9 +153,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         if (node.leaf) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const node = app.addNodeOnGraph(provider.nodeDef, {
-              pos: app.getCanvasCenter()
-            })
+            const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
             const widget = node.widgets.find(
               (widget) => widget.name === provider.key
             )

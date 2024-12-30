@@ -37,8 +37,8 @@ import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
-import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
@@ -169,7 +169,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           e: MouseEvent
         ) => {
           if (node.leaf) {
-            app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+            useLitegraphService().addNodeOnGraph(node.data)
           } else {
             toggleNodeOnEvent(e, node)
           }
