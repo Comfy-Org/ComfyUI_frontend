@@ -226,6 +226,23 @@ export class LGraphCanvas {
     shouldSetCursor: true,
   }
 
+  #updateCursorStyle() {
+    if (this.state.shouldSetCursor) {
+      let cursor = "default"
+      if (this.state.draggingCanvas) {
+        cursor = "grabbing"
+      } else if (this.state.readOnly) {
+        cursor = "grab"
+      } else if (this.state.hoveringOver & CanvasItem.ResizeSe) {
+        cursor = "se-resize"
+      } else if (this.state.hoveringOver & CanvasItem.Node) {
+        cursor = "crosshair"
+      }
+
+      this.canvas.style.cursor = cursor
+    }
+  }
+
   // Whether the canvas was previously being dragged prior to pressing space key.
   // null if space key is not pressed.
   private _previously_dragging_canvas: boolean | null = null
@@ -238,6 +255,7 @@ export class LGraphCanvas {
 
   set read_only(value: boolean) {
     this.state.readOnly = value
+    this.#updateCursorStyle()
   }
 
   get isDragging(): boolean {
@@ -246,6 +264,16 @@ export class LGraphCanvas {
 
   set isDragging(value: boolean) {
     this.state.draggingItems = value
+    this.#updateCursorStyle()
+  }
+
+  get hoveringOver(): CanvasItem {
+    return this.state.hoveringOver
+  }
+
+  set hoveringOver(value: CanvasItem) {
+    this.state.hoveringOver = value
+    this.#updateCursorStyle()
   }
 
   /** @deprecated Replace all references with {@link pointer}.{@link CanvasPointer.isDown isDown}. */
@@ -3070,21 +3098,7 @@ export class LGraphCanvas {
       if (this.resizing_node) underPointer |= CanvasItem.ResizeSe
     }
 
-    this.state.hoveringOver = underPointer
-
-    if (this.state.shouldSetCursor) {
-      if (this.state.draggingCanvas) {
-        this.canvas.style.cursor = "grabbing"
-      } else if (this.state.readOnly) {
-        this.canvas.style.cursor = "grab"
-      } else if (!underPointer) {
-        this.canvas.style.cursor = "default"
-      } else if (underPointer & CanvasItem.ResizeSe) {
-        this.canvas.style.cursor = "se-resize"
-      } else if (underPointer & CanvasItem.Node) {
-        this.canvas.style.cursor = "crosshair"
-      }
-    }
+    this.hoveringOver = underPointer
 
     e.preventDefault()
     return
