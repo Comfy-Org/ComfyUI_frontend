@@ -46,12 +46,13 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingStore } from '@/stores/settingStore'
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
+
+import { useSettingStore } from '@/stores/settingStore'
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const settingStore = useSettingStore()
 const sidebarLocation = computed<'left' | 'right'>(() =>

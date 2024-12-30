@@ -24,11 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { ResultItemImpl } from '@/stores/queueStore'
-import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
+
+import ComfyImage from '@/components/common/ComfyImage.vue'
+import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
+
 import ResultVideo from './ResultVideo.vue'
 
 const props = defineProps<{

@@ -1,6 +1,8 @@
 import '@comfyorg/litegraph'
-import type { ComfyNodeDef } from '@/types/apiTypes'
 import type { LLink } from '@comfyorg/litegraph'
+
+import type { ComfyNodeDef } from '@/types/apiTypes'
+
 import type { NodeId } from './comfyWorkflow'
 
 /**

@@ -10,8 +10,9 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted } from 'vue'
+
 import { useSettingStore } from '@/stores/settingStore'
-import { onMounted, onBeforeUnmount } from 'vue'
 
 const settingStore = useSettingStore()
 

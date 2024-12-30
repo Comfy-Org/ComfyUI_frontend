@@ -70,14 +70,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import Dialog from 'primevue/dialog'
-import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
-import Divider from 'primevue/divider'
 import ColorPicker from 'primevue/colorpicker'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import Dialog from 'primevue/dialog'
+import Divider from 'primevue/divider'
+import SelectButton from 'primevue/selectbutton'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
 

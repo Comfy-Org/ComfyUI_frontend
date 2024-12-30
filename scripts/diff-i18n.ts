@@ -1,12 +1,12 @@
 import {
-  readFileSync,
-  writeFileSync,
-  readdirSync,
-  mkdirSync,
   existsSync,
-  rmSync
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
 } from 'fs'
-import { join, dirname } from 'path'
+import { dirname, join } from 'path'
 
 // Ensure directories exist
 function ensureDir(dir: string) {

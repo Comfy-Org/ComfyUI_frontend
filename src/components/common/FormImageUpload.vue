@@ -42,8 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import Button from 'primevue/button'
+import { ref } from 'vue'
 
 const props = defineProps<{
   modelValue: string

@@ -26,50 +26,51 @@
 </template>
 
 <script setup lang="ts">
-import TitleEditor from '@/components/graph/TitleEditor.vue'
-import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
-import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
-import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
-import NodeTooltip from '@/components/graph/NodeTooltip.vue'
-import NodeBadge from '@/components/graph/NodeBadge.vue'
-import { ref, computed, onMounted, watchEffect, watch } from 'vue'
-import { app as comfyApp } from '@/scripts/app'
-import { useSettingStore } from '@/stores/settingStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
-  LiteGraph,
-  LGraph,
-  LLink,
-  LGraphNode,
-  LGraphGroup,
-  DragAndScale,
-  LGraphCanvas,
+  CanvasPointer,
   ContextMenu,
+  DragAndScale,
+  LGraph,
   LGraphBadge,
-  CanvasPointer
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  LiteGraph
 } from '@comfyorg/litegraph'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
+
+import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
+import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
+import NodeBadge from '@/components/graph/NodeBadge.vue'
+import NodeTooltip from '@/components/graph/NodeTooltip.vue'
+import TitleEditor from '@/components/graph/TitleEditor.vue'
+import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
+import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import { CORE_SETTINGS } from '@/constants/coreSettings'
+import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { api } from '@/scripts/api'
+import { app as comfyApp } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { setStorageValue } from '@/scripts/utils'
+import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
+import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
 import { ComfyModelDef } from '@/stores/modelStore'
 import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
-import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
-import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import { setStorageValue } from '@/scripts/utils'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
-import { useWorkflowService } from '@/services/workflowService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { useColorPaletteService } from '@/services/colorPaletteService'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
-import { CORE_SETTINGS } from '@/constants/coreSettings'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)

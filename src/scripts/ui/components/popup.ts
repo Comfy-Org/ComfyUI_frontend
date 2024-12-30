@@ -1,7 +1,7 @@
 // @ts-strict-ignore
-import { prop } from '../../utils'
 import { $el } from '../../ui'
-import { applyClasses, ClassList } from '../utils'
+import { prop } from '../../utils'
+import { ClassList, applyClasses } from '../utils'
 
 export class ComfyPopup extends EventTarget {
   element = $el('div.comfyui-popup')

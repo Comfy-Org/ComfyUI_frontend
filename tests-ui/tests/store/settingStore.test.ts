@@ -1,6 +1,7 @@
-import { setActivePinia, createPinia } from 'pinia'
-import { useSettingStore } from '@/stores/settingStore'
+import { createPinia, setActivePinia } from 'pinia'
+
 import { api } from '@/scripts/api'
+import { useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api

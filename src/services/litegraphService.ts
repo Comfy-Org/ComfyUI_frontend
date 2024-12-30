@@ -1,23 +1,25 @@
 // @ts-strict-ignore
+import {
+  type IContextMenuValue,
+  type INodeInputSlot,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
+import { Vector2 } from '@comfyorg/litegraph'
+import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
+
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
-import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import {
-  LGraphNode,
-  LiteGraph,
-  LGraphEventMode,
-  type IContextMenuValue,
-  type INodeInputSlot
-} from '@comfyorg/litegraph'
-import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { useExtensionService } from './extensionService'
-import { ComfyApp, app, ANIM_PREVIEW_WIDGET } from '@/scripts/app'
+import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
-import { useToastStore } from '@/stores/toastStore'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
-import { Vector2 } from '@comfyorg/litegraph'
+import { useToastStore } from '@/stores/toastStore'
+import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
+import { useExtensionService } from './extensionService'
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.

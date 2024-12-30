@@ -1,7 +1,8 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
 import { useToastStore } from '@/stores/toastStore'
+
+import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
 
 const WEBCAM_READY = Symbol()
 

@@ -1,8 +1,10 @@
 // @ts-strict-ignore
-import { LiteGraph, LGraphCanvas } from '@comfyorg/litegraph'
+import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+import { LGraphNode } from '@comfyorg/litegraph'
+
 import { app } from '../../scripts/app'
 import { ComfyWidgets } from '../../scripts/widgets'
-import { LGraphNode } from '@comfyorg/litegraph'
+
 // Node that add notes to your project
 
 app.registerExtension({

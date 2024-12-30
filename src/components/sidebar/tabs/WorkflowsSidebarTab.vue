@@ -139,31 +139,32 @@
 </template>
 
 <script setup lang="ts">
-import SearchBox from '@/components/common/SearchBox.vue'
+import Button from 'primevue/button'
+import ConfirmDialog from 'primevue/confirmdialog'
+import type { TreeNode } from 'primevue/treenode'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
+import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import Button from 'primevue/button'
-import TextDivider from '@/components/common/TextDivider.vue'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
+import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
-import { useCommandStore } from '@/stores/commandStore'
-import type { TreeNode } from 'primevue/treenode'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { ComfyWorkflow } from '@/stores/workflowStore'
-import { useI18n } from 'vue-i18n'
-import { useTreeExpansion } from '@/hooks/treeHooks'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
-import ConfirmDialog from 'primevue/confirmdialog'
 
 const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>

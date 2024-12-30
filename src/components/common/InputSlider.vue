@@ -24,9 +24,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
 import InputNumber from 'primevue/inputnumber'
 import Slider from 'primevue/slider'
+import { ref, watch } from 'vue'
 
 const props = defineProps<{
   modelValue: number

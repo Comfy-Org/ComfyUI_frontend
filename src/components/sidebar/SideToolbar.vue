@@ -27,17 +27,19 @@
 </template>
 
 <script setup lang="ts">
-import SidebarIcon from './SidebarIcon.vue'
-import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
-import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
-import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
-import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { computed } from 'vue'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useSettingStore } from '@/stores/settingStore'
-import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useKeybindingStore } from '@/stores/keybindingStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useUserStore } from '@/stores/userStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+import SidebarIcon from './SidebarIcon.vue'
+import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
+import SidebarSettingsToggleIcon from './SidebarSettingsToggleIcon.vue'
+import SidebarThemeToggleIcon from './SidebarThemeToggleIcon.vue'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()

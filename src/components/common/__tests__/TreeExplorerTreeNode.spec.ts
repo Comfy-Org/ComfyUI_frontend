@@ -1,16 +1,17 @@
 // @ts-strict-ignore
-import { describe, it, expect, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import EditableText from '@/components/common/EditableText.vue'
 import Badge from 'primevue/badge'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { createTestingPinia } from '@pinia/testing'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { createI18n } from 'vue-i18n'
+import { describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import EditableText from '@/components/common/EditableText.vue'
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { useToastStore } from '@/stores/toastStore'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 // Create a mock i18n instance
 const i18n = createI18n({

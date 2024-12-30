@@ -1,12 +1,14 @@
 // @ts-strict-ignore
 import {
-  ComfyInputsSpec,
-  IntInputSpec,
-  StringInputSpec,
   BooleanInputSpec,
+  ComfyInputsSpec,
+  ComfyNodeDefImpl,
   FloatInputSpec,
-  ComfyNodeDefImpl
-} from '@/stores/nodeDefStore' // Adjust the import path as needed
+  IntInputSpec,
+  StringInputSpec
+} from '@/stores/nodeDefStore'
+
+// Adjust the import path as needed
 
 describe('ComfyInputsSpec', () => {
   it('should transform a plain object to ComfyInputsSpec instance', () => {

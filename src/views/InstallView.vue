@@ -97,23 +97,24 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Stepper from 'primevue/stepper'
-import StepList from 'primevue/steplist'
-import StepPanels from 'primevue/steppanels'
 import Step from 'primevue/step'
+import StepList from 'primevue/steplist'
 import StepPanel from 'primevue/steppanel'
-import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
+import StepPanels from 'primevue/steppanels'
+import Stepper from 'primevue/stepper'
+import { computed, onMounted, ref, toRaw } from 'vue'
+import { useRouter } from 'vue-router'
+
+import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
+import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
-import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'
 import {
-  electronAPI,
   type InstallOptions,
-  type TorchDeviceType
+  type TorchDeviceType,
+  electronAPI
 } from '@/utils/envUtil'
-import { ref, computed, toRaw, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import GpuPicker from '@/components/install/GpuPicker.vue'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const device = ref<TorchDeviceType>(null)
 

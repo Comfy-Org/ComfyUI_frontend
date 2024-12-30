@@ -41,9 +41,10 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
+import TabList from 'primevue/tablist'
+import Tabs from 'primevue/tabs'
+
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 

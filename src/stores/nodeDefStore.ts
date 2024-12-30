@@ -1,24 +1,25 @@
+import type { LGraphNode } from '@comfyorg/litegraph'
+import axios from 'axios'
+import { defineStore } from 'pinia'
+import type { TreeNode } from 'primevue/treenode'
+import { computed, ref } from 'vue'
+
 import {
   NodeSearchService,
   type SearchAuxScore
 } from '@/services/nodeSearchService'
 import {
-  type ComfyNodeDef,
   type ComfyInputsSpec as ComfyInputsSpecSchema,
+  type ComfyNodeDef,
   type ComfyOutputTypesSpec as ComfyOutputTypesSpecSchema,
   type InputSpec
 } from '@/types/apiTypes'
-import { defineStore } from 'pinia'
-import type { TreeNode } from 'primevue/treenode'
-import { buildTree } from '@/utils/treeUtil'
-import { computed, ref } from 'vue'
-import axios from 'axios'
 import {
   type NodeSource,
   NodeSourceType,
   getNodeSource
 } from '@/types/nodeSource'
-import type { LGraphNode } from '@comfyorg/litegraph'
+import { buildTree } from '@/utils/treeUtil'
 
 export interface BaseInputSpec<T = any> {
   name: string

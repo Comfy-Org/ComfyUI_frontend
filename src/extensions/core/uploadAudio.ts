@@ -1,10 +1,12 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
 import type { IWidget } from '@comfyorg/litegraph'
+
 import type { DOMWidget } from '@/scripts/domWidget'
-import { ComfyNodeDef } from '@/types/apiTypes'
 import { useToastStore } from '@/stores/toastStore'
+import { ComfyNodeDef } from '@/types/apiTypes'
+
+import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
 
 type FolderType = 'input' | 'output' | 'temp'
 

@@ -1,6 +1,7 @@
-import { defineConfig, Plugin } from 'vite'
+import { Plugin, defineConfig } from 'vite'
 import { mergeConfig } from 'vite'
 import type { UserConfig } from 'vitest/config'
+
 import baseConfig from './vite.config.mts'
 
 const mockElectronAPI: Plugin = {

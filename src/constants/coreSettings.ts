@@ -1,10 +1,11 @@
+import { LinkMarkerShape } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
+
 import type { ColorPalettes } from '@/types/colorPaletteTypes'
 import type { Keybinding } from '@/types/keyBindingTypes'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { SettingParams } from '@/types/settingTypes'
-import { LinkMarkerShape } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
 
 export const CORE_SETTINGS: SettingParams[] = [
   {

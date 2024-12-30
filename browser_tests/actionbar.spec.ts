@@ -1,6 +1,7 @@
 import type { Response } from '@playwright/test'
-import type { StatusWsMessage } from '../src/types/apiTypes.ts'
 import { expect, mergeTests } from '@playwright/test'
+
+import type { StatusWsMessage } from '../src/types/apiTypes.ts'
 import { comfyPageFixture } from './fixtures/ComfyPage'
 import { webSocketFixture } from './fixtures/ws.ts'
 

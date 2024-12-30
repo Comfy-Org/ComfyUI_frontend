@@ -114,28 +114,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect } from 'vue'
-import {
-  useKeybindingStore,
-  KeyComboImpl,
-  KeybindingImpl
-} from '@/stores/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
+import { FilterMatchMode } from '@primevue/core/api'
 import Button from 'primevue/button'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
+import { useToast } from 'primevue/usetoast'
+import { computed, ref, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import SearchBox from '@/components/common/SearchBox.vue'
+import { useKeybindingService } from '@/services/keybindingService'
+import { useCommandStore } from '@/stores/commandStore'
+import {
+  KeyComboImpl,
+  KeybindingImpl,
+  useKeybindingStore
+} from '@/stores/keybindingStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
 import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
-import { useToast } from 'primevue/usetoast'
-import { FilterMatchMode } from '@primevue/core/api'
-import { useI18n } from 'vue-i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useKeybindingService } from '@/services/keybindingService'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }

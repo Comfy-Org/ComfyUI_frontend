@@ -3,10 +3,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, Ref } from 'vue'
+import { IDisposable } from '@xterm/xterm'
+import { Ref, onMounted, onUnmounted } from 'vue'
+
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
-import { IDisposable } from '@xterm/xterm'
+
 import BaseTerminal from './BaseTerminal.vue'
 
 const terminalCreated = (

@@ -1,19 +1,20 @@
-import { api } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
-import type {
-  TaskItem,
-  TaskType,
-  TaskPrompt,
-  TaskStatus,
-  StatusWsMessageStatus,
-  TaskOutput,
-  ResultItem
-} from '@/types/apiTypes'
-import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { toRaw } from 'vue'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+
+import { api } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import type {
+  ResultItem,
+  StatusWsMessageStatus,
+  TaskItem,
+  TaskOutput,
+  TaskPrompt,
+  TaskStatus,
+  TaskType
+} from '@/types/apiTypes'
+import type { ComfyWorkflowJSON, NodeId } from '@/types/comfyWorkflow'
 
 // Task type used in the API.
 export type APITaskType = 'queue' | 'history'

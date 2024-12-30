@@ -1,8 +1,9 @@
 // @ts-strict-ignore
 import type { IContextMenuValue } from '@comfyorg/litegraph'
+import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
+
 import { app } from '../../scripts/app'
-import { mergeIfValid, getWidgetConfig, setWidgetConfig } from './widgetInputs'
-import { LiteGraph, LGraphCanvas, LGraphNode } from '@comfyorg/litegraph'
+import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
 
 // Node that allows you to redirect connections for cleaner graphs
 

@@ -3,5 +3,8 @@
   "tabWidth": 2,
   "semi": false,
   "trailingComma": "none",
-  "printWidth": 80
+  "printWidth": 80,
+  "importOrder": ["^@core/(.*)$", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
 }

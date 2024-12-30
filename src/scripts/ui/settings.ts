@@ -1,9 +1,10 @@
 import type { ComfyApp } from '@/scripts/app'
-import { ComfyDialog } from './dialog'
-import type { SettingParams } from '@/types/settingTypes'
-import type { Settings } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import type { Settings } from '@/types/apiTypes'
+import type { SettingParams } from '@/types/settingTypes'
+
+import { ComfyDialog } from './dialog'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
   app: ComfyApp

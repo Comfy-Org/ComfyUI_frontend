@@ -1,4 +1,4 @@
-import { LGraphNode, LGraphGroup, LGraphCanvas } from '@comfyorg/litegraph'
+import { LGraphCanvas, LGraphGroup, LGraphNode } from '@comfyorg/litegraph'
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 

@@ -11,9 +11,11 @@
 </template>
 
 <script setup lang="ts">
-import DownloadItem from './DownloadItem.vue'
-import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { storeToRefs } from 'pinia'
+
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+
+import DownloadItem from './DownloadItem.vue'
 
 const electronDownloadStore = useElectronDownloadStore()
 const { inProgressDownloads } = storeToRefs(electronDownloadStore)

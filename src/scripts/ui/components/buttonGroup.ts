@@ -1,7 +1,7 @@
 // @ts-strict-ignore
 import { $el } from '../../ui'
-import { ComfyButton } from './button'
 import { prop } from '../../utils'
+import { ComfyButton } from './button'
 
 export class ComfyButtonGroup {
   element = $el('div.comfyui-button-group')

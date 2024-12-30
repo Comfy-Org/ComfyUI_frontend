@@ -1,4 +1,5 @@
 import { Locator, Page } from '@playwright/test'
+
 export class ManageGroupNode {
   footer: Locator
   header: Locator

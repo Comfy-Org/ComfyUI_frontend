@@ -1,13 +1,14 @@
 // @ts-strict-ignore
 // Disabled because of https://github.com/Comfy-Org/ComfyUI_frontend/issues/1184
-
 import { mount } from '@vue/test-utils'
-import { expect, describe, it } from 'vitest'
-import ResultGallery from '../ResultGallery.vue'
-import Galleria from 'primevue/galleria'
-import ComfyImage from '@/components/common/ComfyImage.vue'
 import PrimeVue from 'primevue/config'
+import Galleria from 'primevue/galleria'
+import { describe, expect, it } from 'vitest'
+
+import ComfyImage from '@/components/common/ComfyImage.vue'
 import { ResultItemImpl } from '@/stores/queueStore'
+
+import ResultGallery from '../ResultGallery.vue'
 
 type ResultGalleryProps = typeof ResultGallery.__props
 

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { computed, Ref, ref, toRaw } from 'vue'
-import { Keybinding, KeyCombo } from '@/types/keyBindingTypes'
+import { Ref, computed, ref, toRaw } from 'vue'
+
+import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
 
 export class KeybindingImpl implements Keybinding {
   commandId: string

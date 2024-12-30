@@ -1,6 +1,7 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
 import { LGraphCanvas, LiteGraph } from '@comfyorg/litegraph'
+
+import { app } from '../../scripts/app'
 
 let touchZooming
 let touchCount = 0

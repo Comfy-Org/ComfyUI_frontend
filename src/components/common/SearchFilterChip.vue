@@ -8,8 +8,8 @@
 </template>
 
 <script setup lang="ts">
-import Chip from 'primevue/chip'
 import Badge from 'primevue/badge'
+import Chip from 'primevue/chip'
 
 export interface SearchFilter {
   text: string

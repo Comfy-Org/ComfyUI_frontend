@@ -66,21 +66,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
-import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
-import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import NodePreview from '@/components/node/NodePreview.vue'
+import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import { type FilterAndValue } from '@/services/nodeSearchService'
-import NodePreview from '@/components/node/NodePreview.vue'
 import {
   ComfyNodeDefImpl,
   useNodeDefStore,
   useNodeFrequencyStore
 } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useI18n } from 'vue-i18n'
+
 import SearchFilterChip from '../common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()

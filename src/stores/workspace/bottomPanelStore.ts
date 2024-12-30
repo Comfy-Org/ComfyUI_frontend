@@ -1,12 +1,13 @@
-import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useCommandStore } from '@/stores/commandStore'
+
 import {
-  useLogsTerminalTab,
-  useCommandTerminalTab
+  useCommandTerminalTab,
+  useLogsTerminalTab
 } from '@/hooks/bottomPanelTabs/terminalTabs'
+import { useCommandStore } from '@/stores/commandStore'
 import { ComfyExtension } from '@/types/comfy'
+import type { BottomPanelExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
 
 export const useBottomPanelStore = defineStore('bottomPanel', () => {

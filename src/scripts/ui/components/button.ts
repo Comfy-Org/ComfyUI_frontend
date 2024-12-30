@@ -1,11 +1,12 @@
 // @ts-strict-ignore
-import { $el } from '../../ui'
-import { applyClasses, ClassList, toggleElement } from '../utils'
-import { prop } from '../../utils'
-import type { ComfyPopup } from './popup'
-import type { ComfyComponent } from '.'
 import type { ComfyApp } from '@/scripts/app'
 import { Settings } from '@/types/apiTypes'
+
+import type { ComfyComponent } from '.'
+import { $el } from '../../ui'
+import { prop } from '../../utils'
+import { ClassList, applyClasses, toggleElement } from '../utils'
+import type { ComfyPopup } from './popup'
 
 type ComfyButtonProps = {
   icon?: string

@@ -1,8 +1,7 @@
 // We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
 // Currently we need to bridge between legacy app code and Vue app with a Pinia store.
-
 import { defineStore } from 'pinia'
-import { ref, type Component, markRaw } from 'vue'
+import { type Component, markRaw, ref } from 'vue'
 
 interface DialogComponentProps {
   maximizable?: boolean

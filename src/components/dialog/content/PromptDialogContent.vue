@@ -16,9 +16,10 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
 import FloatLabel from 'primevue/floatlabel'
+import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
+
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{

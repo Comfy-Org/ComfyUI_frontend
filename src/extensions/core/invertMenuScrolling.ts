@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import { LiteGraph } from '@comfyorg/litegraph'
+
 import { app } from '../../scripts/app'
 
 // Inverts the scrolling of context menus

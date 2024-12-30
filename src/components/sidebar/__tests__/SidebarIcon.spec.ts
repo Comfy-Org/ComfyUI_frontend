@@ -1,10 +1,11 @@
 import { mount } from '@vue/test-utils'
-import { expect, describe, it } from 'vitest'
-import SidebarIcon from '../SidebarIcon.vue'
-import OverlayBadge from 'primevue/overlaybadge'
 import Button from 'primevue/button'
-import Tooltip from 'primevue/tooltip'
 import PrimeVue from 'primevue/config'
+import OverlayBadge from 'primevue/overlaybadge'
+import Tooltip from 'primevue/tooltip'
+import { describe, expect, it } from 'vitest'
+
+import SidebarIcon from '../SidebarIcon.vue'
 
 type SidebarIconProps = {
   icon: string

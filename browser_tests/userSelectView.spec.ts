@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { userSelectPageFixture as test } from './fixtures/UserSelectPage'
 
 /**

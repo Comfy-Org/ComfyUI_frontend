@@ -1,6 +1,7 @@
-import { setActivePinia, createPinia } from 'pinia'
-import { useModelStore } from '@/stores/modelStore'
+import { createPinia, setActivePinia } from 'pinia'
+
 import { api } from '@/scripts/api'
+import { useModelStore } from '@/stores/modelStore'
 
 // Mock the api
 jest.mock('@/scripts/api', () => ({

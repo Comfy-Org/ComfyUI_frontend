@@ -13,10 +13,6 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, nextTick, onMounted, Ref, ref, watch } from 'vue'
-import Panel from 'primevue/panel'
-import ComfyQueueButton from './ComfyQueueButton.vue'
-import { useSettingStore } from '@/stores/settingStore'
 import {
   useDraggable,
   useElementBounding,
@@ -26,6 +22,12 @@ import {
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'lodash'
+import Panel from 'primevue/panel'
+import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+
+import { useSettingStore } from '@/stores/settingStore'
+
+import ComfyQueueButton from './ComfyQueueButton.vue'
 
 const settingsStore = useSettingStore()
 

@@ -33,17 +33,18 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
-import { ref, computed, provide } from 'vue'
-import Tree from 'primevue/tree'
 import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
+import Tree from 'primevue/tree'
+import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import { useErrorHandling } from '@/hooks/errorHooks'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
-import { useI18n } from 'vue-i18n'
-import { useErrorHandling } from '@/hooks/errorHooks'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys')
 provide('expandedKeys', expandedKeys)

@@ -1,7 +1,8 @@
 // @ts-strict-ignore
+import fs from 'fs'
+import path from 'path'
+
 import { ComfyNodeDef, validateComfyNodeDef } from '@/types/apiTypes'
-const fs = require('fs')
-const path = require('path')
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
   input: {
@@ -76,7 +77,10 @@ describe('validateNodeDef', () => {
   it('Should accept all built-in node definitions', async () => {
     const nodeDefs = Object.values(
       JSON.parse(
-        fs.readFileSync(path.resolve('./tests-ui/data/object_info.json'))
+        fs.readFileSync(
+          path.resolve('./tests-ui/data/object_info.json'),
+          'utf8'
+        )
       )
     )
 

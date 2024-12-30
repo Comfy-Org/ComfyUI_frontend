@@ -37,19 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
+import { useToast } from 'primevue/usetoast'
+import { onMounted, ref } from 'vue'
+
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import ReportIssueButton from '@/components/dialog/content/error/ReportIssueButton.vue'
-import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
+import { useCopyToClipboard } from '@/hooks/clipboardHooks'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
 import { isElectron } from '@/utils/envUtil'
-import { useCopyToClipboard } from '@/hooks/clipboardHooks'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage

@@ -1,5 +1,12 @@
-import { app } from '@/scripts/app'
+import {
+  LGraphEventMode,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
+
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
@@ -9,14 +16,8 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import {
-  LiteGraph,
-  LGraphEventMode,
-  LGraphNode,
-  LGraphGroup
-} from '@comfyorg/litegraph'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()

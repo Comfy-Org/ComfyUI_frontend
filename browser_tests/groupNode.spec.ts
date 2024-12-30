@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { ComfyPage, comfyPageFixture as test } from './fixtures/ComfyPage'
 import type { NodeReference } from './fixtures/utils/litegraphUtils'
 
