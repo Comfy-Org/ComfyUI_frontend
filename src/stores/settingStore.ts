@@ -10,7 +10,6 @@ import { app } from '@/scripts/app'
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
   return {
-    displayId: parts.join('.'),
     category: parts[0],
     subCategory: parts[1],
     name: parts.slice(2).join('.')
