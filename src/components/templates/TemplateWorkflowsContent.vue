@@ -1,81 +1,139 @@
 <template>
-  <div
-    class="flex flex-wrap content-around justify-around gap-4 mt-4"
-    data-testid="template-workflows-content"
-  >
-    <div
-      v-for="template in templates"
-      :key="template"
-      :data-testid="`template-workflow-${template}`"
-    >
-      <Card>
-        <template #header>
-          <div
-            class="relative overflow-hidden rounded-lg cursor-pointer"
-            @click="loadWorkflow(template)"
-          >
-            <img
-              :src="`templates/${template}.jpg`"
-              class="w-64 h-64 rounded-lg object-cover"
-            />
-            <a>
-              <div
-                class="absolute top-0 left-0 w-64 h-64 overflow-hidden opacity-0 transition duration-300 ease-in-out hover:opacity-100 bg-opacity-50 bg-black flex items-center justify-center"
-              >
-                <i class="pi pi-play-circle"></i>
-              </div>
-            </a>
-            <ProgressSpinner
-              v-if="loading === template"
-              class="absolute inset-0 z-1 w-3/12 h-full"
-            />
-          </div>
-        </template>
-        <template #subtitle>{{
-          $t(`templateWorkflows.template.${template}`)
-        }}</template>
-      </Card>
+  <div class="flex h-96" data-testid="template-workflows-content">
+    <div class="relative">
+      <ProgressSpinner
+        v-if="!workflowTemplatesStore.isLoaded"
+        class="absolute w-8 h-full inset-0"
+      />
+      <Listbox
+        :model-value="selectedTab"
+        @update:model-value="handleTabSelection"
+        :options="tabs"
+        optionLabel="title"
+        scroll-height="auto"
+        class="overflow-y-auto w-64 h-full"
+        listStyle="max-height:unset"
+      />
     </div>
+    <Carousel
+      class="carousel justify-center"
+      :value="selectedTab.templates"
+      :responsive-options="responsiveOptions"
+      :numVisible="4"
+      :numScroll="3"
+      :key="selectedTab.moduleName"
+    >
+      <template #item="slotProps">
+        <div @click="loadWorkflow(slotProps.data)">
+          <TemplateWorkflowCard
+            :moduleName="selectedTab.moduleName"
+            :workflowName="slotProps.data"
+            :loading="slotProps.data === workflowLoading"
+          />
+        </div>
+      </template>
+    </Carousel>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useDialogStore } from '@/stores/dialogStore'
-import Card from 'primevue/card'
+import Carousel from 'primevue/carousel'
+import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useDialogStore } from '@/stores/dialogStore'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { useI18n } from 'vue-i18n'
+import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
+import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
+
+interface WorkflowTemplatesTab {
+  moduleName: string
+  title: string
+  templates: string[]
+}
+
 const { t } = useI18n()
 
-const templates = ['default', 'image2image', 'upscale', 'flux_schnell']
-const loading = ref<string | null>(null)
+//These default templates are provided by the frontend
+const comfyUITemplates: WorkflowTemplatesTab = {
+  moduleName: 'default',
+  title: 'ComfyUI',
+  templates: ['default', 'image2image', 'upscale', 'flux_schnell']
+}
+
+const responsiveOptions = ref([
+  {
+    breakpoint: '1660px',
+    numVisible: 3,
+    numScroll: 2
+  },
+  {
+    breakpoint: '1360px',
+    numVisible: 2,
+    numScroll: 1
+  },
+  {
+    breakpoint: '960px',
+    numVisible: 1,
+    numScroll: 1
+  }
+])
+
+const workflowTemplatesStore = useWorkflowTemplatesStore()
+const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
+const workflowLoading = ref<string | null>(null)
+
+const tabs = computed<WorkflowTemplatesTab[]>(() => {
+  return [
+    comfyUITemplates,
+    ...Object.entries(workflowTemplatesStore.items).map(([key, value]) => ({
+      moduleName: key,
+      title: key,
+      templates: value
+    }))
+  ]
+})
+
+onMounted(async () => {
+  await workflowTemplatesStore.loadWorkflowTemplates()
+})
+
+const handleTabSelection = (selection: WorkflowTemplatesTab | null) => {
+  //Listbox allows deselecting so this special case is ignored here
+  if (selection !== selectedTab.value && selection !== null)
+    selectedTab.value = selection
+}
 
 const loadWorkflow = async (id: string) => {
-  loading.value = id
-  const json = await fetch(api.fileURL(`templates/${id}.json`)).then((r) =>
-    r.json()
-  )
+  workflowLoading.value = id
+  let json
+  if (selectedTab.value.moduleName === 'default') {
+    // Default templates provided by frontend are served on this separate endpoint
+    json = await fetch(api.fileURL(`templates/${id}.json`)).then((r) =>
+      r.json()
+    )
+  } else {
+    json = await fetch(
+      api.apiURL(
+        `/workflow_templates/${selectedTab.value.moduleName}/${id}.json`
+      )
+    ).then((r) => r.json())
+  }
   useDialogStore().closeDialog()
-  await app.loadGraphData(
-    json,
-    true,
-    true,
-    t(`templateWorkflows.template.${id}`)
-  )
+  const workflowName =
+    selectedTab.value.moduleName === 'default'
+      ? t(`templateWorkflows.template.${id}`, id)
+      : id
+  await app.loadGraphData(json, true, true, workflowName)
 
   return false
 }
 </script>
 
 <style lang="css" scoped>
-.p-card {
-  --p-card-body-padding: 10px 0 0 0;
-  overflow: hidden;
-}
-
-:deep(.p-card-subtitle) {
-  text-align: center;
+.carousel {
+  width: 66vw;
 }
 </style>

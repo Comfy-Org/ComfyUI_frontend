@@ -398,6 +398,17 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets the available workflow templates from custom nodes.
+   * @returns A map of custom_node names and associated template workflow names.
+   */
+  async getWorkflowTemplates(): Promise<{
+    [customNodesName: string]: string[]
+  }> {
+    const res = await this.fetchApi('/workflow_templates')
+    return await res.json()
+  }
+
+  /**
    * Gets a list of embedding names
    */
   async getEmbeddings(): Promise<EmbeddingsResponse> {
