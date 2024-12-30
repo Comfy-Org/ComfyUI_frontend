@@ -1,7 +1,7 @@
 export default {
   './**/*.js': (stagedFiles) => formatAndEslint(stagedFiles),
 
-  './**/*.{ts,tsx,vue}': (stagedFiles) => [
+  './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
     ...formatAndEslint(stagedFiles),
     'vue-tsc --noEmit',
     'tsc --noEmit',
