@@ -37,7 +37,6 @@ import type { TreeNode } from 'primevue/treenode'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
-import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 
