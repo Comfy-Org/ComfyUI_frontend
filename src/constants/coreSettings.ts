@@ -261,7 +261,6 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Locale',
-    category: ['Comfy', 'Locale', 'Language'],
     name: 'Language',
     type: 'combo',
     options: [

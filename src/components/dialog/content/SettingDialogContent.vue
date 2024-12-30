@@ -90,6 +90,7 @@ import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { useI18n } from 'vue-i18n'
+import { st } from '@/i18n'
 
 const props = defineProps<{
   defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'
@@ -232,29 +233,26 @@ const handleSearch = (query: string) => {
   const filteredSettings = allSettings.filter((setting) => {
     const idLower = setting.id.toLowerCase()
     const nameLower = setting.name.toLowerCase()
-    const translatedName = t(
-      `settings.${normalizeI18nKey(setting.id)}.name`
+    const translatedName = st(
+      `settings.${normalizeI18nKey(setting.id)}.name`,
+      setting.name
     ).toLocaleLowerCase()
-
-    let translatedCategories: string[] = []
-    if (Array.isArray(setting.category)) {
-      translatedCategories = setting.category.map((cat) =>
-        t(
-          `settingsCategories.${normalizeI18nKey(cat)}`,
-          cat
-        ).toLocaleLowerCase()
-      )
-    }
-
-    const hasCategoryMatch = translatedCategories.some((catText) =>
-      catText.includes(queryLower)
-    )
+    const info = getSettingInfo(setting)
+    const translatedCategory = st(
+      `settingsCategories.${normalizeI18nKey(info.category)}`,
+      info.category
+    ).toLocaleLowerCase()
+    const translatedSubCategory = st(
+      `settingsCategories.${normalizeI18nKey(info.subCategory)}`,
+      info.subCategory
+    ).toLocaleLowerCase()
 
     return (
       idLower.includes(queryLower) ||
       nameLower.includes(queryLower) ||
       translatedName.includes(queryLower) ||
-      hasCategoryMatch
+      translatedCategory.includes(queryLower) ||
+      translatedSubCategory.includes(queryLower)
     )
   })
 
