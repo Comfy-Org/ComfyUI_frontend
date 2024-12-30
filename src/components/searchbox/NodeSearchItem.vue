@@ -49,14 +49,15 @@
 </template>
 
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import Chip from 'primevue/chip'
-import { NodeSourceType } from '@/types/nodeSource'
-import { ComfyNodeDefImpl, useNodeFrequencyStore } from '@/stores/nodeDefStore'
-import { highlightQuery } from '@/utils/formatUtil'
+import Tag from 'primevue/tag'
 import { computed } from 'vue'
-import { useSettingStore } from '@/stores/settingStore'
+
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { ComfyNodeDefImpl, useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { NodeSourceType } from '@/types/nodeSource'
+import { highlightQuery } from '@/utils/formatUtil'
 import { formatNumberWithSuffix } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()

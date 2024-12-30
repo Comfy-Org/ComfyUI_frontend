@@ -25,16 +25,17 @@
 </template>
 
 <script setup lang="ts">
-import { FormItem } from '@/types/settingTypes'
-import { markRaw, type Component } from 'vue'
-import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
+import { type Component, markRaw } from 'vue'
+
 import CustomFormValue from '@/components/common/CustomFormValue.vue'
-import InputSlider from '@/components/common/InputSlider.vue'
-import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
+import FormImageUpload from '@/components/common/FormImageUpload.vue'
+import InputSlider from '@/components/common/InputSlider.vue'
+import { FormItem } from '@/types/settingTypes'
 
 const formValue = defineModel<any>('formValue')
 const props = defineProps<{

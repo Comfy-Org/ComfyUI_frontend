@@ -97,10 +97,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { ref } from 'vue'
 
 const showDialog = ref(false)
 const autoUpdate = defineModel('autoUpdate', { required: true })

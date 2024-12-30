@@ -10,15 +10,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, Ref, ref } from 'vue'
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
-import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
-import { api } from '@/scripts/api'
-import { useExecutionStore } from '@/stores/executionStore'
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import BaseTerminal from './BaseTerminal.vue'
 import ProgressSpinner from 'primevue/progressspinner'
+import { Ref, onMounted, onUnmounted, ref } from 'vue'
+
+import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { api } from '@/scripts/api'
+import { useExecutionStore } from '@/stores/executionStore'
+import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'
+
+import BaseTerminal from './BaseTerminal.vue'
 
 const errorMessage = ref('')
 const loading = ref(true)

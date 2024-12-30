@@ -6,9 +6,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { ResultItemImpl } from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { computed } from 'vue'
 
 const props = defineProps<{
   result: ResultItemImpl

@@ -18,11 +18,12 @@
 
 <script setup lang="ts">
 import Tag from 'primevue/tag'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import FormItem from '@/components/common/FormItem.vue'
 import { useSettingStore } from '@/stores/settingStore'
 import type { SettingOption, SettingParams } from '@/types/settingTypes'
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{

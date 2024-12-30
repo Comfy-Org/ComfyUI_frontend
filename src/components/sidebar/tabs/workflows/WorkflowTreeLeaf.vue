@@ -13,11 +13,12 @@
 </template>
 
 <script setup lang="ts">
-import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import Button from 'primevue/button'
+import { computed } from 'vue'
+
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { computed } from 'vue'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyWorkflow>

@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
+
 ;(async () => {
   if (!isElectron()) return
 

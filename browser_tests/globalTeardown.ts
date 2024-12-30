@@ -1,6 +1,7 @@
 import { FullConfig } from '@playwright/test'
-import { restorePath } from './utils/backupUtils'
 import dotenv from 'dotenv'
+
+import { restorePath } from './utils/backupUtils'
 
 dotenv.config()
 

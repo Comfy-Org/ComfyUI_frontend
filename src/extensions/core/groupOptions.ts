@@ -1,10 +1,12 @@
 // @ts-strict-ignore
 import { LGraphGroup } from '@comfyorg/litegraph'
-import { app } from '../../scripts/app'
 import { LGraphCanvas } from '@comfyorg/litegraph'
-import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
 import type { LGraphNode } from '@comfyorg/litegraph'
+import type { Positionable } from '@comfyorg/litegraph/dist/interfaces'
+
 import { useSettingStore } from '@/stores/settingStore'
+
+import { app } from '../../scripts/app'
 
 function setNodeMode(node: LGraphNode, mode: number) {
   node.mode = mode

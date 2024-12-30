@@ -1,11 +1,12 @@
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+
+import { api } from '@/scripts/api'
+import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import {
   LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/stores/workflowStore'
-import { api } from '@/scripts/api'
-import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 
 // Add mock for api at the top of the file
 jest.mock('@/scripts/api', () => ({

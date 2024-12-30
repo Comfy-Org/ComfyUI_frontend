@@ -1,5 +1,6 @@
-import type { ComfyCommand } from '@/stores/commandStore'
 import { Component } from 'vue'
+
+import type { ComfyCommand } from '@/stores/commandStore'
 
 export interface BaseSidebarTabExtension {
   id: string

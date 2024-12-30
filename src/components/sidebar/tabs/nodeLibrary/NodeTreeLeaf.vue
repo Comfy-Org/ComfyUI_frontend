@@ -36,20 +36,21 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import NodePreview from '@/components/node/NodePreview.vue'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import {
-  computed,
   CSSProperties,
+  computed,
   nextTick,
   onMounted,
   onUnmounted,
   ref
 } from 'vue'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+
+import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode<ComfyNodeDefImpl>

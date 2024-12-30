@@ -1,12 +1,14 @@
 // @ts-strict-ignore
-import { useSettingStore } from '@/stores/settingStore'
-import { app, ANIM_PREVIEW_WIDGET } from './app'
 import { LGraphCanvas, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type { Vector4 } from '@comfyorg/litegraph'
 import {
   ICustomWidget,
   IWidgetOptions
 } from '@comfyorg/litegraph/dist/types/widgets'
+
+import { useSettingStore } from '@/stores/settingStore'
+
+import { ANIM_PREVIEW_WIDGET, app } from './app'
 
 const SIZE = Symbol()
 

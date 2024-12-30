@@ -43,11 +43,12 @@
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 import Message from 'primevue/message'
-import { User, useUserStore } from '@/stores/userStore'
-import { useRouter } from 'vue-router'
+import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { User, useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()

@@ -24,8 +24,8 @@
 </template>
 
 <script setup lang="ts">
-import Toolbar from 'primevue/toolbar'
 import ScrollPanel from 'primevue/scrollpanel'
+import Toolbar from 'primevue/toolbar'
 
 const props = defineProps<{
   title: string

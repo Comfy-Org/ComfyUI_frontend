@@ -67,30 +67,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
-import Listbox from 'primevue/listbox'
-import Tabs from 'primevue/tabs'
-import TabPanels from 'primevue/tabpanels'
 import Divider from 'primevue/divider'
+import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
+import TabPanels from 'primevue/tabpanels'
+import Tabs from 'primevue/tabs'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import SearchBox from '@/components/common/SearchBox.vue'
+import { st } from '@/i18n'
 import {
-  getSettingInfo,
   SettingTreeNode,
+  getSettingInfo,
   useSettingStore
 } from '@/stores/settingStore'
 import { ISettingGroup, SettingParams } from '@/types/settingTypes'
-import SearchBox from '@/components/common/SearchBox.vue'
-import SettingsPanel from './setting/SettingsPanel.vue'
-import PanelTemplate from './setting/PanelTemplate.vue'
-import AboutPanel from './setting/AboutPanel.vue'
-import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
-import CurrentUserMessage from './setting/CurrentUserMessage.vue'
-import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
-import { flattenTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useI18n } from 'vue-i18n'
-import { st } from '@/i18n'
+import { flattenTree } from '@/utils/treeUtil'
+
+import AboutPanel from './setting/AboutPanel.vue'
+import ColorPaletteMessage from './setting/ColorPaletteMessage.vue'
+import CurrentUserMessage from './setting/CurrentUserMessage.vue'
+import FirstTimeUIMessage from './setting/FirstTimeUIMessage.vue'
+import PanelTemplate from './setting/PanelTemplate.vue'
+import SettingsPanel from './setting/SettingsPanel.vue'
 
 const props = defineProps<{
   defaultPanel?: 'about' | 'keybinding' | 'extension' | 'server-config'

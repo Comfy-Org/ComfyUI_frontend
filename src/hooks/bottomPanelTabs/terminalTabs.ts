@@ -1,8 +1,9 @@
-import { useI18n } from 'vue-i18n'
 import { markRaw } from 'vue'
-import { BottomPanelExtension } from '@/types/extensionTypes'
-import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
+import { useI18n } from 'vue-i18n'
+
 import CommandTerminal from '@/components/bottomPanel/tabs/terminal/CommandTerminal.vue'
+import LogsTerminal from '@/components/bottomPanel/tabs/terminal/LogsTerminal.vue'
+import { BottomPanelExtension } from '@/types/extensionTypes'
 
 export const useLogsTerminalTab = (): BottomPanelExtension => {
   const { t } = useI18n()

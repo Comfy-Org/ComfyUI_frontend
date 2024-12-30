@@ -11,9 +11,10 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingStore } from '@/stores/settingStore'
 import Message from 'primevue/message'
 import { computed } from 'vue'
+
+import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 const show = computed(() => !settingStore.exists('Comfy.UseNewMenu'))

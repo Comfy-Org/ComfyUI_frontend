@@ -1,6 +1,7 @@
 // @ts-strict-ignore
 import { app } from '../../scripts/app'
 import { applyTextReplacements } from '../../scripts/utils'
+
 // Use widget values and dates in output filenames
 
 app.registerExtension({

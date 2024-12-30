@@ -29,13 +29,14 @@
 </template>
 
 <script setup lang="ts">
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
 import Button from 'primevue/button'
 import { ref } from 'vue'
-import { useWorkflowService } from '@/services/workflowService'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
+
 import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useWorkflowService } from '@/services/workflowService'
+import { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface WorkflowOption {
   value: string

@@ -5,11 +5,12 @@
 </template>
 
 <script setup lang="ts">
+import { useTitle } from '@vueuse/core'
+import { computed } from 'vue'
+
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
-import { useTitle } from '@vueuse/core'
-import { computed } from 'vue'
 
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'

@@ -1,20 +1,22 @@
 // @ts-strict-ignore
-import { api } from './api'
-import './domWidget'
-import type { ComfyApp } from './app'
 import type { LGraphNode } from '@comfyorg/litegraph'
-import { InputSpec } from '@/types/apiTypes'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
 import type { IWidget } from '@comfyorg/litegraph'
 import { Editor as TiptapEditor } from '@tiptap/core'
-import TiptapStarterKit from '@tiptap/starter-kit'
-import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import TiptapLink from '@tiptap/extension-link'
 import TiptapTable from '@tiptap/extension-table'
 import TiptapTableCell from '@tiptap/extension-table-cell'
 import TiptapTableHeader from '@tiptap/extension-table-header'
 import TiptapTableRow from '@tiptap/extension-table-row'
+import TiptapStarterKit from '@tiptap/starter-kit'
+import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
+
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import { InputSpec } from '@/types/apiTypes'
+
+import { api } from './api'
+import type { ComfyApp } from './app'
+import './domWidget'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,

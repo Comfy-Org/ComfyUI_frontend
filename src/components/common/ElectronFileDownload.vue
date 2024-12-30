@@ -75,13 +75,14 @@
 </template>
 
 <script setup lang="ts">
-import { useDownload } from '@/hooks/downloadHooks'
 import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
-import { ref, computed } from 'vue'
-import { formatSize } from '@/utils/formatUtil'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useDownload } from '@/hooks/downloadHooks'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{
   url: string

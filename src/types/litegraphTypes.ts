@@ -1,11 +1,11 @@
 import type {
   ConnectingLink,
-  LGraphNode,
-  Vector2,
   INodeInputSlot,
   INodeOutputSlot,
   INodeSlot,
-  ISlotType
+  ISlotType,
+  LGraphNode,
+  Vector2
 } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { RerouteId } from '@comfyorg/litegraph/dist/Reroute'

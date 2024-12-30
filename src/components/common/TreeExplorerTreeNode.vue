@@ -34,16 +34,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, inject, Ref, computed } from 'vue'
 import Badge from 'primevue/badge'
+import { Ref, computed, inject, ref } from 'vue'
+
+import EditableText from '@/components/common/EditableText.vue'
+import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useErrorHandling } from '@/hooks/errorHooks'
 import type {
-  TreeExplorerDragAndDropData,
   RenderedTreeExplorerNode,
+  TreeExplorerDragAndDropData,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import EditableText from '@/components/common/EditableText.vue'
-import { useErrorHandling } from '@/hooks/errorHooks'
-import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
 
 const props = defineProps<{
   node: RenderedTreeExplorerNode

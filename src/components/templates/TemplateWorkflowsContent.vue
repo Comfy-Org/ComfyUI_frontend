@@ -41,11 +41,12 @@ import Carousel from 'primevue/carousel'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
-import { useDialogStore } from '@/stores/dialogStore'
-import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
 import { useI18n } from 'vue-i18n'
+
 import TemplateWorkflowCard from '@/components/templates/TemplateWorkflowCard.vue'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
 
 interface WorkflowTemplatesTab {

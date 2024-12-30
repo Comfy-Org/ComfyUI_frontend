@@ -69,14 +69,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import ResultItem from './ResultItem.vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+
+import { api } from '@/scripts/api'
+import { useLitegraphService } from '@/services/litegraphService'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
-import { useLitegraphService } from '@/services/litegraphService'
-import { api } from '@/scripts/api'
+
+import ResultItem from './ResultItem.vue'
 
 const props = defineProps<{
   task: TaskItemImpl

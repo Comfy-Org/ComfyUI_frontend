@@ -28,11 +28,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { usePrimeVue } from '@primevue/core'
-import { useDialogStore } from '@/stores/dialogStore'
 import Dialog from 'primevue/dialog'
+import { computed, onMounted } from 'vue'
+
+import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 

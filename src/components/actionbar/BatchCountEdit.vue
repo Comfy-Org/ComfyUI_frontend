@@ -30,11 +30,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useQueueSettingsStore } from '@/stores/queueStore'
-import { useSettingStore } from '@/stores/settingStore'
 import { storeToRefs } from 'pinia'
 import InputNumber from 'primevue/inputnumber'
 import { computed } from 'vue'
+
+import { useQueueSettingsStore } from '@/stores/queueStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 interface Props {
   class?: string

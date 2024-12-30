@@ -1,9 +1,11 @@
-import { AboutPageBadge } from '@/types/comfy'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
-import { useSystemStatsStore } from './systemStatsStore'
-import { useExtensionStore } from './extensionStore'
+
+import { AboutPageBadge } from '@/types/comfy'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+
+import { useExtensionStore } from './extensionStore'
+import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const frontendVersion = __COMFYUI_FRONTEND_VERSION__

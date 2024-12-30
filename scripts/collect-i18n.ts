@@ -1,12 +1,13 @@
 import * as fs from 'fs'
+
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
-import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
-import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
-import type { ComfyCommandImpl } from '../src/stores/commandStore'
-import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import type { ComfyApi } from '../src/scripts/api'
+import type { ComfyCommandImpl } from '../src/stores/commandStore'
+import { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import type { FormItem, SettingParams } from '../src/types/settingTypes'
+import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'

@@ -13,14 +13,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, CSSProperties, watch } from 'vue'
-import { app } from '@/scripts/app'
 import { LGraphGroup, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
-import EditableText from '@/components/common/EditableText.vue'
-import { useSettingStore } from '@/stores/settingStore'
 import type { LiteGraphCanvasEvent } from '@comfyorg/litegraph'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
 import { useEventListener } from '@vueuse/core'
+import { CSSProperties, ref, watch } from 'vue'
+
+import EditableText from '@/components/common/EditableText.vue'
+import { app } from '@/scripts/app'
+import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
+import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 

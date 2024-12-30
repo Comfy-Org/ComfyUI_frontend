@@ -1,7 +1,8 @@
 // @ts-strict-ignore
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import Fuse, { IFuseOptions, FuseSearchOptions } from 'fuse.js'
+import Fuse, { FuseSearchOptions, IFuseOptions } from 'fuse.js'
 import _ from 'lodash'
+
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 export type SearchAuxScore = number[]
 

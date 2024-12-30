@@ -61,14 +61,17 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import ProgressBar from 'primevue/progressbar'
 import Chip from 'primevue/chip'
+import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
+
 import {
   type ElectronDownload,
   useElectronDownloadStore
 } from '@/stores/electronDownloadStore'
+
+const { t } = useI18n()
+
 const electronDownloadStore = useElectronDownloadStore()
 
 const props = defineProps<{

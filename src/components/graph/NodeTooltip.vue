@@ -10,12 +10,13 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
 import { LiteGraph } from '@comfyorg/litegraph'
+import { useEventListener } from '@vueuse/core'
+import { nextTick, ref } from 'vue'
+
+import { st } from '@/i18n'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useEventListener } from '@vueuse/core'
-import { st } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number

@@ -1,14 +1,15 @@
 // @ts-strict-ignore
-import { api } from './api'
-import { ComfyDialog as _ComfyDialog } from './ui/dialog'
-import { toggleSwitch } from './ui/toggleSwitch'
-import { ComfySettingsDialog } from './ui/settings'
-import { ComfyApp, app } from './app'
-import { TaskItem, type StatusWsMessageStatus } from '@/types/apiTypes'
 import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { type StatusWsMessageStatus, TaskItem } from '@/types/apiTypes'
+
+import { api } from './api'
+import { ComfyApp, app } from './app'
+import { ComfyDialog as _ComfyDialog } from './ui/dialog'
+import { ComfySettingsDialog } from './ui/settings'
+import { toggleSwitch } from './ui/toggleSwitch'
 
 export const ComfyDialog = _ComfyDialog
 

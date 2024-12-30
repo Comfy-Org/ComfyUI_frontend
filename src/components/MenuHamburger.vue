@@ -15,10 +15,11 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { computed, CSSProperties, watchEffect } from 'vue'
+import { CSSProperties, computed, watchEffect } from 'vue'
+
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()

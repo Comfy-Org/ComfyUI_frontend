@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { api } from '@/scripts/api'
-import { buildTree } from '@/utils/treeUtil'
 import { computed, ref } from 'vue'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+
+import { api } from '@/scripts/api'
 import { UserDataFullInfo } from '@/types/apiTypes'
-import { syncEntities } from '@/utils/syncUtil'
+import { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
+import { buildTree } from '@/utils/treeUtil'
 
 /**
  * Represents a file in the user's data directory.

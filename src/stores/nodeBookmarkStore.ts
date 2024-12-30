@@ -1,12 +1,14 @@
+import _ from 'lodash'
 import { defineStore } from 'pinia'
+import type { TreeNode } from 'primevue/treenode'
 import { computed } from 'vue'
-import { useSettingStore } from './settingStore'
+
+import type { BookmarkCustomization } from '@/types/apiTypes'
+
 import { useNodeDefStore } from './nodeDefStore'
 import { ComfyNodeDefImpl, createDummyFolderNodeDef } from './nodeDefStore'
 import { buildNodeDefTree } from './nodeDefStore'
-import type { TreeNode } from 'primevue/treenode'
-import _ from 'lodash'
-import type { BookmarkCustomization } from '@/types/apiTypes'
+import { useSettingStore } from './settingStore'
 
 export const BOOKMARK_SETTING_ID = 'Comfy.NodeLibrary.Bookmarks.V2'
 

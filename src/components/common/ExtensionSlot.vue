@@ -15,8 +15,9 @@
 </template>
 
 <script setup lang="ts">
-import { CustomExtension, VueExtension } from '@/types/extensionTypes'
 import { onBeforeUnmount } from 'vue'
+
+import { CustomExtension, VueExtension } from '@/types/extensionTypes'
 
 const props = defineProps<{
   extension: VueExtension | CustomExtension
