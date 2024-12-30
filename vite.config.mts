@@ -1,11 +1,11 @@
-import { defineConfig, Plugin } from 'vite'
-import type { UserConfigExport } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
 import dotenv from 'dotenv'
-import Icons from 'unplugin-icons/vite'
+import path from 'path'
 import IconsResolver from 'unplugin-icons/resolver'
+import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
+import { Plugin, defineConfig } from 'vite'
+import type { UserConfigExport } from 'vitest/config'
 
 dotenv.config()
 
