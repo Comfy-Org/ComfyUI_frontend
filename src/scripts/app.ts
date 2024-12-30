@@ -29,11 +29,7 @@ import {
   LGraphEventMode
 } from '@comfyorg/litegraph'
 import { ExtensionManager } from '@/types/extensionTypes'
-import {
-  ComfyNodeDefImpl,
-  SYSTEM_NODE_DEFS,
-  useNodeDefStore
-} from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import { useDialogService } from '@/services/dialogService'
