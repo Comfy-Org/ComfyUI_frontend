@@ -122,7 +122,8 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
         # Configure the remote with token
-        git remote add pr "https://$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
+        git remote add pr "https://x-access-token:$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
+        git remote -v
 
         # Create and switch to new branch
         git checkout -b update-locales
@@ -133,7 +134,8 @@ jobs:
 
         # Force push to create the branch
         echo "Pushing changes to ${{ env.fork_owner }}/${{ env.repository }}"
-        git push -f pr update-locales
+        git push -f pr update-locales ||
+        git push -f https://x-access-token:$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales
 
         # Create PR using gh cli
         gh pr create --title "Update locales for ${{ env.repository }}" --repo ${{ env.owner }}/${{ env.repository }} --head ${{ env.fork_owner }}:update-locales
