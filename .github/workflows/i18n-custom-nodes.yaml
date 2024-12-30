@@ -130,7 +130,7 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
         # Configure the remote with token
-        git remote set-url origin "https://x-access-token:${{ secrets.GH_TOKEN_PR }}@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
+        git remote set-url origin "https://x-access-token:$GH_TOKEN_PR@github.com/${{ inputs.fork_owner }}/${{ inputs.repository }}.git"
 
         # Create and switch to new branch
         git checkout -b update-locales
@@ -147,4 +147,4 @@ jobs:
         gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
       env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN_PR }}
+        GH_TOKEN_PR: ${{ secrets.GH_TOKEN_PR }}
