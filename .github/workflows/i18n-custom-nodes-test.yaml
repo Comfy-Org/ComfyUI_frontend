@@ -11,6 +11,10 @@ env:
 jobs:
   update-locales:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # To push a branch 
+      pull-requests: write  # To create a PR from that branch
+      # - [git - Permission denied to github-actions[bot] despite having PAT - Stack Overflow]( https://stackoverflow.com/questions/74740868/permission-denied-to-github-actionsbot-despite-having-pat )
     steps:
     - name: Checkout ComfyUI
       uses: actions/checkout@v4
