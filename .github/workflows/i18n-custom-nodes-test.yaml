@@ -120,14 +120,11 @@ jobs:
           -F enabled=true
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-    - name: Commit and push changes
+    - name: Commit changes
+      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
-
-        # Configure the remote with token
-        git remote add pr "https://x-access-token:$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
-        git remote -v
 
         # Create and switch to new branch
         git checkout -b update-locales
@@ -135,14 +132,28 @@ jobs:
         # Stage and commit changes
         git add -A
         git commit -m "Update locales"
-
+    - uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app_id: ${{ vars.PR_APP_ID }}
+        private_key: ${{ secrets.PR_CLIENT_SECRET }}
+        repositories: ${{ env.fork_owner }}/${{ env.repository }}
+    # - uses: actions/checkout@v4
+    #   with:
+    #     token: ${{ steps.app-token.outputs.token }}
+    - name: Push changes
+      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
+      run: |
         # Force push to create the branch
         echo "Pushing changes to ${{ env.fork_owner }}/${{ env.repository }}"
-        git push -f pr update-locales ||
-        git push -f https://x-access-token:$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales
-
+        git push -f https://x-access-token:$PR_GH_TOKEN@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales || \
+        git push -f https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales
+      env:
+        PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+    - name: Create PR 
+      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
+      run: |
         # Create PR using gh cli
         gh pr create --title "Update locales for ${{ env.repository }}" --repo ${{ env.owner }}/${{ env.repository }} --head ${{ env.fork_owner }}:update-locales
-      working-directory: ComfyUI/custom_nodes/${{ env.repository }}
       env:
-        GH_TOKEN_PR: ${{ secrets.GH_TOKEN_PR }}
+        GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
