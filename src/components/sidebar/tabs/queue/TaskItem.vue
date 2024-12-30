@@ -110,6 +110,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (progressPreviewBlobUrl.value) {
+    URL.revokeObjectURL(progressPreviewBlobUrl.value)
+  }
   api.removeEventListener('b_preview', onProgressPreviewReceived)
 })
 
@@ -164,6 +167,9 @@ const formatTime = (time?: number) => {
 
 const onProgressPreviewReceived = async ({ detail }: CustomEvent) => {
   if (props.task.displayStatus === TaskItemDisplayStatus.Running) {
+    if (progressPreviewBlobUrl.value) {
+      URL.revokeObjectURL(progressPreviewBlobUrl.value)
+    }
     progressPreviewBlobUrl.value = URL.createObjectURL(detail)
   }
 }

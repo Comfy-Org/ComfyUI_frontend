@@ -4,21 +4,25 @@ import zh from './locales/zh/main.json'
 import ru from './locales/ru/main.json'
 import ja from './locales/ja/main.json'
 import ko from './locales/ko/main.json'
+import fr from './locales/fr/main.json'
 import enNodes from './locales/en/nodeDefs.json'
 import zhNodes from './locales/zh/nodeDefs.json'
 import ruNodes from './locales/ru/nodeDefs.json'
 import jaNodes from './locales/ja/nodeDefs.json'
 import koNodes from './locales/ko/nodeDefs.json'
+import frNodes from './locales/fr/nodeDefs.json'
 import enCommands from './locales/en/commands.json'
 import zhCommands from './locales/zh/commands.json'
 import ruCommands from './locales/ru/commands.json'
 import jaCommands from './locales/ja/commands.json'
 import koCommands from './locales/ko/commands.json'
+import frCommands from './locales/fr/commands.json'
 import enSettings from './locales/en/settings.json'
 import zhSettings from './locales/zh/settings.json'
 import ruSettings from './locales/ru/settings.json'
 import jaSettings from './locales/ja/settings.json'
 import koSettings from './locales/ko/settings.json'
+import frSettings from './locales/fr/settings.json'
 
 function buildLocale<M, N, C, S>(main: M, nodes: N, commands: C, settings: S) {
   return {
@@ -34,7 +38,8 @@ const messages = {
   zh: buildLocale(zh, zhNodes, zhCommands, zhSettings),
   ru: buildLocale(ru, ruNodes, ruCommands, ruSettings),
   ja: buildLocale(ja, jaNodes, jaCommands, jaSettings),
-  ko: buildLocale(ko, koNodes, koCommands, koSettings)
+  ko: buildLocale(ko, koNodes, koCommands, koSettings),
+  fr: buildLocale(fr, frNodes, frCommands, frSettings)
 }
 
 export const i18n = createI18n({
@@ -44,7 +49,7 @@ export const i18n = createI18n({
   fallbackLocale: 'en',
   messages,
   // Ignore warnings for locale options as each option is in its own language.
-  // e.g. "English", "中文", "Русский", "日本語", "한국어"
+  // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français"
   missingWarn: /^(?!settings\.Comfy_Locale\.options\.).+/,
   fallbackWarn: /^(?!settings\.Comfy_Locale\.options\.).+/
 })

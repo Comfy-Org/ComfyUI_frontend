@@ -312,6 +312,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "description": "Encodes text and sets the resolution conditioning for PixArt Alpha. Does not apply to PixArt Sigma.",
+    "inputs": {
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "text": {
+        "name": "text"
+      },
+      "clip": {
+        "name": "clip"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "CLIPTextEncodeSD3",
     "inputs": {
@@ -5299,6 +5317,14 @@
       },
       "overlap": {
         "name": "overlap"
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Only used for video VAEs: Amount of frames to decode at a time."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Only used for video VAEs: Amount of frames to overlap."
       }
     }
   },
@@ -5355,6 +5381,14 @@
       },
       "overlap": {
         "name": "overlap"
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Only used for video VAEs: Amount of frames to encode at a time."
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Only used for video VAEs: Amount of frames to overlap."
       }
     }
   },

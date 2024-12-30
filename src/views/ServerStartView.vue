@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="font-sans flex flex-col justify-center items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark class="flex-col">
     <h2 class="text-2xl font-bold">
       {{ t(`serverStart.process.${status}`) }}
       <span v-if="status === ProgressStatus.ERROR">
@@ -40,7 +38,7 @@
       />
     </div>
     <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
@@ -52,6 +50,7 @@ import { electronAPI } from '@/utils/envUtil'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { Terminal } from '@xterm/xterm'
 import { useI18n } from 'vue-i18n'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
 const { t } = useI18n()

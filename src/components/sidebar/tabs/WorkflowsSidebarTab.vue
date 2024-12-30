@@ -159,12 +159,10 @@ import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useI18n } from 'vue-i18n'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import { useSettingStore } from '@/stores/settingStore'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import ConfirmDialog from 'primevue/confirmdialog'
 
 const settingStore = useSettingStore()
@@ -195,6 +193,7 @@ const handleSearch = (query: string) => {
 
 const commandStore = useCommandStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const workspaceStore = useWorkspaceStore()
 const { t } = useI18n()
 const expandedKeys = ref<Record<string, boolean>>({})
@@ -233,9 +232,6 @@ const bookmarkedWorkflowsTree = computed(() =>
 const openWorkflowsTree = computed(() =>
   buildTree(workflowStore.openWorkflows, (workflow) => [workflow.key])
 )
-
-const confirm = useConfirm()
-const toast = useToast()
 
 const renderTreeNode = (
   node: TreeNode,

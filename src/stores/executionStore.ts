@@ -192,6 +192,8 @@ export const useExecutionStore = defineStore('execution', () => {
     executingNodeProgress,
     bindExecutionEvents,
     unbindExecutionEvents,
-    storePrompt
+    storePrompt,
+    // Raw executing progress data for backward compatibility in ComfyApp.
+    _executingNodeProgress
   }
 })

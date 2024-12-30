@@ -37,7 +37,7 @@
       </Column>
       <Column
         field="id"
-        header="Command ID"
+        :header="$t('g.command')"
         sortable
         class="max-w-64 2xl:max-w-full"
       >
@@ -50,7 +50,7 @@
           </div>
         </template>
       </Column>
-      <Column field="keybinding" header="Keybinding">
+      <Column field="keybinding" :header="$t('g.keybinding')">
         <template #body="slotProps">
           <KeyComboDisplay
             v-if="slotProps.data.keybinding"
@@ -135,12 +135,14 @@ import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import { useI18n } from 'vue-i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { useKeybindingService } from '@/services/keybindingService'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }
 })
 
 const keybindingStore = useKeybindingStore()
+const keybindingService = useKeybindingService()
 const commandStore = useCommandStore()
 const { t } = useI18n()
 
@@ -204,7 +206,7 @@ watchEffect(() => {
 function removeKeybinding(commandData: ICommandData) {
   if (commandData.keybinding) {
     keybindingStore.unsetKeybinding(commandData.keybinding)
-    keybindingStore.persistUserKeybindings()
+    keybindingService.persistUserKeybindings()
   }
 }
 
@@ -228,7 +230,7 @@ function saveKeybinding() {
       })
     )
     if (updated) {
-      keybindingStore.persistUserKeybindings()
+      keybindingService.persistUserKeybindings()
     }
   }
   cancelEdit()
@@ -237,7 +239,7 @@ function saveKeybinding() {
 const toast = useToast()
 async function resetKeybindings() {
   keybindingStore.resetKeybindings()
-  await keybindingStore.persistUserKeybindings()
+  await keybindingService.persistUserKeybindings()
   toast.add({
     severity: 'info',
     summary: 'Info',

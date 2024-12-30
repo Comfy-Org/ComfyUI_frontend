@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="flex flex-col select-none font-sans items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark>
     <!-- Installation Path Section -->
     <div
       class="comfy-installer grow flex flex-col gap-4 text-neutral-300 max-w-110"
@@ -49,13 +47,14 @@
         @click="restartApp('Manual configuration complete')"
       />
     </div>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import Panel from 'primevue/panel'
 import Tag from 'primevue/tag'
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 import { electronAPI } from '@/utils/envUtil'
 import { useI18n } from 'vue-i18n'
 import { onMounted, ref } from 'vue'

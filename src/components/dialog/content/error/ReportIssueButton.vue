@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, defineProps } from 'vue'
+import { computed, ref } from 'vue'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import { ExecutionErrorWsMessage } from '@/types/apiTypes'

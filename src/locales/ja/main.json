@@ -65,10 +65,12 @@
   "g": {
     "about": "情報",
     "add": "追加",
+    "back": "戻る",
     "cancel": "キャンセル",
     "close": "閉じる",
     "color": "色",
     "comingSoon": "近日公開",
+    "command": "コマンド",
     "confirm": "確認",
     "copyToClipboard": "クリップボードにコピー",
     "currentUser": "現在のユーザー",
@@ -77,8 +79,10 @@
     "delete": "削除",
     "deprecated": "非推奨",
     "devices": "デバイス",
+    "disableAll": "すべて無効にする",
     "download": "ダウンロード",
     "empty": "空",
+    "enableAll": "すべて有効にする",
     "error": "エラー",
     "experimental": "ベータ",
     "extensionName": "拡張機能名",
@@ -87,12 +91,16 @@
     "goToNode": "ノードに移動",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
+    "import": "インポート",
     "insert": "挿入",
+    "install": "インストール",
+    "keybinding": "キーバインディング",
     "loadAllFolders": "すべてのフォルダーを読み込む",
     "loadWorkflow": "ワークフローを読み込む",
     "loading": "読み込み中",
     "logs": "ログ",
     "newFolder": "新しいフォルダー",
+    "next": "次へ",
     "no": "いいえ",
     "noResultsFound": "結果が見つかりません",
     "noTasksFound": "タスクが見つかりません",
@@ -122,6 +130,7 @@
     "showReport": "レポートを表示",
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
+    "upload": "アップロード",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました"
   },
   "graphCanvasMenu": {
@@ -151,9 +160,10 @@
   "install": {
     "appDataLocationTooltip": "ComfyUIのアプリデータディレクトリ。保存内容:\n- ログ\n- サーバー設定",
     "appPathLocationTooltip": "ComfyUIのアプリ資産ディレクトリ。ComfyUIのコードとアセットを保存します",
+    "cannotWrite": "選択したパスに書き込むことができません",
     "chooseInstallationLocation": "インストール先を選択",
     "customNodes": "カスタムノード",
-    "customNodesDescription": "既存のComfyUIインストールからカスタムノードファイルを参照し、その依存関係をインストールします。",
+    "customNodesDescription": "既存のComfyUIインストールからカスタムノードを再インストールします。",
     "desktopAppSettings": "デスクトップアプリの設定",
     "desktopAppSettingsDescription": "ComfyUIのデスクトップでの動作を設定します。これらの設定は後で変更可能です。",
     "desktopSettings": "デスクトップ設定",
@@ -177,6 +187,7 @@
     "installLocation": "インストール先",
     "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
     "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
+    "insufficientFreeSpace": "空き容量が不足しています - 最低限の空き容量",
     "manualConfiguration": {
       "createVenv": "次のディレクトリに仮想環境を作成する必要があります",
       "requirements": "要件",
@@ -188,6 +199,8 @@
     "migration": "移行",
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
     "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルやモデルを新しいインストールにコピー/リンクできます。",
+    "parentMissing": "パスが存在しません - 最初に含まれるディレクトリを作成してください",
+    "pathExists": "ディレクトリはすでに存在します - すべてのデータをバックアップしたことを確認してください",
     "pathValidationFailed": "パスの検証に失敗しました",
     "selectItemsToMigrate": "移行する項目を選択",
     "settings": {
@@ -209,7 +222,8 @@
       },
       "learnMoreAboutData": "データ収集の詳細を見る"
     },
-    "systemLocations": "システムの場所"
+    "systemLocations": "システムの場所",
+    "unhandledError": "未知のエラー"
   },
   "menu": {
     "autoQueue": "自動キュー",
@@ -235,6 +249,7 @@
     "toggleBottomPanel": "下部パネルを切り替え"
   },
   "menuLabels": {
+    "About ComfyUI": "ComfyUIについて",
     "Browse Templates": "テンプレートを参照",
     "Bypass/Unbypass Selected Nodes": "選択したノードのバイパス/バイパス解除",
     "Canvas Toggle Link Visibility": "キャンバスのリンク表示を切り替え",
@@ -527,6 +542,7 @@
     "ColorPalette": "カラーパレット",
     "Comfy": "Comfy",
     "Comfy-Desktop": "Comfyデスクトップ",
+    "CustomColorPalettes": "カスタムカラーパレット",
     "DevMode": "開発モード",
     "EditTokenWeight": "トークンの重みを編集",
     "Extension": "拡張",

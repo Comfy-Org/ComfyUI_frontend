@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="font-sans w-screen h-screen mx-0 grid place-items-center justify-center items-center text-neutral-900 bg-neutral-300 pointer-events-auto"
-  >
+  <BaseViewTemplate>
     <div
       class="col-start-1 h-screen row-start-1 place-content-center mx-auto overflow-y-auto"
     >
@@ -44,10 +42,11 @@
         </div>
       </div>
     </div>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 import Button from 'primevue/button'
 import { useRouter } from 'vue-router'
 

@@ -7,6 +7,14 @@ import { InputSpec } from '@/types/apiTypes'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import type { IWidget } from '@comfyorg/litegraph'
+import { Editor as TiptapEditor } from '@tiptap/core'
+import TiptapStarterKit from '@tiptap/starter-kit'
+import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
+import TiptapLink from '@tiptap/extension-link'
+import TiptapTable from '@tiptap/extension-table'
+import TiptapTableCell from '@tiptap/extension-table-cell'
+import TiptapTableHeader from '@tiptap/extension-table-header'
+import TiptapTableRow from '@tiptap/extension-table-row'
 
 export type ComfyWidgetConstructor = (
   node: LGraphNode,
@@ -16,17 +24,20 @@ export type ComfyWidgetConstructor = (
   widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
 
-let controlValueRunBefore = false
+function controlValueRunBefore() {
+  return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+}
+
 export function updateControlWidgetLabel(widget) {
   let replacement = 'after'
   let find = 'before'
-  if (controlValueRunBefore) {
+  if (controlValueRunBefore()) {
     ;[find, replacement] = [replacement, find]
   }
   widget.label = (widget.label ?? widget.name).replace(find, replacement)
 }
 
-const IS_CONTROL_WIDGET = Symbol()
+export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 function getNumberDefaults(
@@ -244,7 +255,7 @@ export function addValueControlWidgets(
   }
 
   valueControl.beforeQueued = () => {
-    if (controlValueRunBefore) {
+    if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
@@ -254,7 +265,7 @@ export function addValueControlWidgets(
   }
 
   valueControl.afterQueued = () => {
-    if (!controlValueRunBefore) {
+    if (!controlValueRunBefore()) {
       applyWidgetControl()
     }
   }
@@ -362,42 +373,99 @@ function addMultilineWidget(node, name: string, opts, app: ComfyApp) {
   return { minWidth: 400, minHeight: 200, widget }
 }
 
+function addMarkdownWidget(node, name: string, opts, app: ComfyApp) {
+  TiptapMarkdown.configure({
+    html: false,
+    breaks: true,
+    transformPastedText: true
+  })
+  const editor = new TiptapEditor({
+    extensions: [
+      TiptapStarterKit,
+      TiptapMarkdown,
+      TiptapLink,
+      TiptapTable,
+      TiptapTableCell,
+      TiptapTableHeader,
+      TiptapTableRow
+    ],
+    content: opts.defaultVal,
+    editable: false
+  })
+
+  const inputEl = editor.options.element
+  inputEl.classList.add('comfy-markdown')
+  const textarea = document.createElement('textarea')
+  inputEl.append(textarea)
+
+  const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
+    getValue() {
+      return textarea.value
+    },
+    setValue(v) {
+      textarea.value = v
+      editor.commands.setContent(v)
+    }
+  })
+  widget.inputEl = inputEl
+
+  editor.options.element.addEventListener(
+    'pointerdown',
+    (event: PointerEvent) => {
+      if (event.button !== 0) {
+        app.canvas.processMouseDown(event)
+        return
+      }
+      if (event.target instanceof HTMLAnchorElement) {
+        return
+      }
+      inputEl.classList.add('editing')
+      setTimeout(() => {
+        textarea.focus()
+      }, 0)
+    }
+  )
+
+  textarea.addEventListener('blur', () => {
+    inputEl.classList.remove('editing')
+  })
+
+  textarea.addEventListener('change', () => {
+    editor.commands.setContent(textarea.value)
+    widget.callback?.(widget.value)
+  })
+
+  inputEl.addEventListener('keydown', (event: KeyboardEvent) => {
+    event.stopPropagation()
+  })
+
+  inputEl.addEventListener('pointerdown', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseDown(event)
+    }
+  })
+
+  inputEl.addEventListener('pointermove', (event: PointerEvent) => {
+    if ((event.buttons & 4) === 4) {
+      app.canvas.processMouseMove(event)
+    }
+  })
+
+  inputEl.addEventListener('pointerup', (event: PointerEvent) => {
+    if (event.button === 1) {
+      app.canvas.processMouseUp(event)
+    }
+  })
+
+  return { minWidth: 400, minHeight: 200, widget }
+}
+
 function isSlider(display, app) {
   if (app.ui.settings.getSettingValue('Comfy.DisableSliders')) {
     return 'number'
   }
 
   return display === 'slider' ? 'slider' : 'number'
-}
-
-export function initWidgets(app) {
-  app.ui.settings.addSetting({
-    id: 'Comfy.WidgetControlMode',
-    category: ['Comfy', 'Node Widget', 'WidgetControlMode'],
-    name: 'Widget control mode',
-    tooltip:
-      'Controls when widget values are updated (randomize/increment/decrement), either before the prompt is queued or after.',
-    type: 'combo',
-    defaultValue: 'after',
-    options: ['before', 'after'],
-    onChange(value) {
-      controlValueRunBefore = value === 'before'
-      for (const n of app.graph.nodes) {
-        if (!n.widgets) continue
-        for (const w of n.widgets) {
-          if (w[IS_CONTROL_WIDGET]) {
-            updateControlWidgetLabel(w)
-            if (w.linkedWidgets) {
-              for (const l of w.linkedWidgets) {
-                updateControlWidgetLabel(l)
-              }
-            }
-          }
-        }
-      }
-      app.graph.setDirtyCanvas(true)
-    }
-  })
 }
 
 export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
@@ -473,6 +541,18 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     if (inputData[1].dynamicPrompts != undefined)
       res.widget.dynamicPrompts = inputData[1].dynamicPrompts
 
+    return res
+  },
+  MARKDOWN(node, inputName, inputData: InputSpec, app) {
+    const defaultVal = inputData[1].default || ''
+
+    let res
+    res = addMarkdownWidget(
+      node,
+      inputName,
+      { defaultVal, ...inputData[1] },
+      app
+    )
     return res
   },
   COMBO(node, inputName, inputData: InputSpec) {

@@ -32,7 +32,6 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingStore } from '@/stores/keybindingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -42,6 +41,8 @@ import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { useEventListener } from '@vueuse/core'
+import { useKeybindingService } from '@/services/keybindingService'
 
 setupAutoQueueHandler()
 
@@ -92,7 +93,7 @@ watchEffect(() => {
 watchEffect(() => {
   const useNewMenu = settingStore.get('Comfy.UseNewMenu')
   if (useNewMenu === 'Disabled') {
-    app.ui.menuContainer.style.removeProperty('display')
+    app.ui.menuContainer.style.setProperty('display', 'block')
     app.ui.restoreMenuPosition()
   } else {
     app.ui.menuContainer.style.setProperty('display', 'none')
@@ -106,11 +107,10 @@ watchEffect(() => {
 })
 
 const init = () => {
-  settingStore.addSettings(app.ui.settings)
   const coreCommands = useCoreCommands()
   useCommandStore().registerCommands(coreCommands)
   useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingStore().loadCoreKeybindings()
+  useKeybindingService().registerCoreKeybindings()
   useSidebarTabStore().registerCoreSidebarTabs()
   useBottomPanelStore().registerCoreBottomPanelTabs()
   app.extensionManager = useWorkspaceStore()
@@ -160,12 +160,14 @@ onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
 })
 
+useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
+
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
-      useKeybindingStore().loadUserKeybindings()
+      useKeybindingService().registerUserKeybindings()
 
       // Load server config
       useServerConfigStore().loadServerConfig(

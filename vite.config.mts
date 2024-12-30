@@ -119,6 +119,10 @@ export default defineConfig({
         ws: true
       },
 
+      '/workflow_templates': {
+        target: DEV_SERVER_COMFYUI_URL
+      },
+
       '/testsubrouteindex': {
         target: 'http://localhost:5173',
         rewrite: (path) => path.substring('/testsubrouteindex'.length)

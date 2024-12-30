@@ -1,13 +1,22 @@
 import { ref, computed, markRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type { ComfyExtension } from '@/types/comfy'
-import { useKeybindingStore } from './keybindingStore'
-import { useCommandStore } from './commandStore'
-import { useSettingStore } from './settingStore'
-import { app } from '@/scripts/app'
-import { useMenuItemStore } from './menuItemStore'
-import { useBottomPanelStore } from './workspace/bottomPanelStore'
-import { useWidgetStore } from './widgetStore'
+
+/**
+ * These extensions are always active, even if they are disabled in the setting.
+ */
+export const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
+
+export const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
+  // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
+  // https://github.com/Comfy-Org/litegraph.js/pull/117
+  'pysssss.Locking',
+  // pysssss.SnapToGrid is replaced by Comfy.Graph.AlwaysSnapToGrid in ComfyUI core.
+  // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
+  // allowed since v1.3.12.
+  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
+  'pysssss.SnapToGrid'
+]
 
 export const useExtensionStore = defineStore('extension', () => {
   // For legacy reasons, the name uniquely identifies an extension
@@ -32,6 +41,13 @@ export const useExtensionStore = defineStore('extension', () => {
     return extensions.value.filter((ext) => isExtensionEnabled(ext.name))
   })
 
+  function isExtensionReadOnly(name: string) {
+    return (
+      ALWAYS_DISABLED_EXTENSIONS.includes(name) ||
+      ALWAYS_ENABLED_EXTENSIONS.includes(name)
+    )
+  }
+
   function registerExtension(extension: ComfyExtension) {
     if (!extension.name) {
       throw new Error("Extensions must have a 'name' property.")
@@ -46,56 +62,45 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
-    useKeybindingStore().loadExtensionKeybindings(extension)
-    useCommandStore().loadExtensionCommands(extension)
-    useMenuItemStore().loadExtensionMenuCommands(extension)
-    useSettingStore().loadExtensionSettings(extension)
-    useBottomPanelStore().registerExtensionBottomPanelTabs(extension)
-    if (extension.getCustomWidgets) {
-      // TODO(huchenlei): We should deprecate the async return value of
-      // getCustomWidgets.
-      ;(async () => {
-        if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
-          useWidgetStore().registerCustomWidgets(widgets)
-        }
-      })()
+  }
+
+  function loadDisabledExtensionNames(names: string[]) {
+    disabledExtensionNames.value = new Set(names)
+    for (const name of ALWAYS_DISABLED_EXTENSIONS) {
+      disabledExtensionNames.value.add(name)
     }
-    /*
-     * Extensions are currently stored in both extensionStore and app.extensions.
-     * Legacy jest tests still depend on app.extensions being populated.
-     */
-    app.extensions.push(extension)
+    for (const name of ALWAYS_ENABLED_EXTENSIONS) {
+      disabledExtensionNames.value.delete(name)
+    }
   }
 
-  function loadDisabledExtensionNames() {
-    disabledExtensionNames.value = new Set(
-      useSettingStore().get('Comfy.Extension.Disabled')
-    )
-    // pysssss.Locking is replaced by pin/unpin in ComfyUI core.
-    // https://github.com/Comfy-Org/litegraph.js/pull/117
-    disabledExtensionNames.value.add('pysssss.Locking')
-    // pysssss.SnapToGrid is replaced by Comfy.Graph.AlwaysSnapToGrid in ComfyUI core.
-    // pysssss.SnapToGrid tries to write global app.shiftDown state, which is no longer
-    // allowed since v1.3.12.
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/1176
-    disabledExtensionNames.value.add('pysssss.SnapToGrid')
+  /**
+   * Core extensions are extensions that are defined in the core package.
+   * See /extensions/core/index.ts for the list.
+   */
+  const coreExtensionNames = ref<string[]>([])
+  function captureCoreExtensions() {
+    coreExtensionNames.value = extensions.value.map((ext) => ext.name)
   }
 
-  // Some core extensions are registered before the store is initialized, e.g.
-  // colorPalette.
-  // Register them manually here so the state of app.extensions and
-  // extensionByName are in sync.
-  for (const ext of app.extensions) {
-    extensionByName.value[ext.name] = markRaw(ext)
+  function isCoreExtension(name: string) {
+    return coreExtensionNames.value.includes(name)
   }
+
+  const hasThirdPartyExtensions = computed(() => {
+    return extensions.value.some((ext) => !isCoreExtension(ext.name))
+  })
 
   return {
     extensions,
     enabledExtensions,
     inactiveDisabledExtensionNames,
     isExtensionEnabled,
+    isExtensionReadOnly,
     registerExtension,
-    loadDisabledExtensionNames
+    loadDisabledExtensionNames,
+    captureCoreExtensions,
+    isCoreExtension,
+    hasThirdPartyExtensions
   }
 })

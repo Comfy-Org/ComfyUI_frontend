@@ -51,7 +51,8 @@ const mockElectronAPI: Plugin = {
             onDownloadProgress: () => {}
           },
           getElectronVersion: () => Promise.resolve('1.0.0'),
-          getComfyUIVersion: () => '9.9.9'
+          getComfyUIVersion: () => '9.9.9',
+          getPlatform: () => 'win32'
         };`
       }
     ]

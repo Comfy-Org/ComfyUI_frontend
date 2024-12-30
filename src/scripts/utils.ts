@@ -110,11 +110,7 @@ export async function addStylesheet(
   })
 }
 
-/**
- * @param { string } filename
- * @param { Blob } blob
- */
-export function downloadBlob(filename, blob) {
+export function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
   const a = $el('a', {
     href: url,
@@ -127,6 +123,20 @@ export function downloadBlob(filename, blob) {
     a.remove()
     window.URL.revokeObjectURL(url)
   }, 0)
+}
+
+export function uploadFile(accept: string) {
+  return new Promise<File>((resolve, reject) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = accept
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return reject(new Error('No file selected'))
+      resolve(file)
+    }
+    input.click()
+  })
 }
 
 export function prop<T>(

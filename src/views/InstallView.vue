@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="font-sans flex flex-col items-center h-screen m-0 text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto"
-  >
+  <BaseViewTemplate dark>
     <Stepper class="stepper" value="0" @update:value="setHighestStep">
       <StepList class="select-none">
         <Step value="0">
@@ -22,7 +20,7 @@
           <GpuPicker v-model:device="device" />
           <div class="flex pt-6 justify-end">
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('1')"
@@ -37,13 +35,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('0')"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('2')"
@@ -58,13 +56,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('1')"
             />
             <Button
-              label="Next"
+              :label="$t('g.next')"
               icon="pi pi-arrow-right"
               iconPos="right"
               @click="activateCallback('3')"
@@ -78,13 +76,13 @@
           />
           <div class="flex pt-6 justify-between">
             <Button
-              label="Back"
+              :label="$t('g.back')"
               severity="secondary"
               icon="pi pi-arrow-left"
               @click="activateCallback('2')"
             />
             <Button
-              label="Install"
+              :label="$t('g.install')"
               icon="pi pi-check"
               iconPos="right"
               :disabled="hasError"
@@ -94,7 +92,7 @@
         </StepPanel>
       </StepPanels>
     </Stepper>
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
@@ -104,7 +102,7 @@ import StepList from 'primevue/steplist'
 import StepPanels from 'primevue/steppanels'
 import Step from 'primevue/step'
 import StepPanel from 'primevue/steppanel'
-
+import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsConfiguration.vue'

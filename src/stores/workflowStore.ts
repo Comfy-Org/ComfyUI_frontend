@@ -145,6 +145,7 @@ export interface WorkflowStore {
   modifiedWorkflows: ComfyWorkflow[]
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
   syncWorkflows: (dir?: string) => Promise<void>
+  reorderWorkflows: (from: number, to: number) => void
 }
 
 export const useWorkflowStore = defineStore('workflow', () => {
@@ -202,6 +203,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflows = computed(() =>
     openWorkflowPaths.value.map((path) => workflowLookup.value[path])
   )
+  const reorderWorkflows = (from: number, to: number) => {
+    const movedTab = openWorkflowPaths.value[from]
+    openWorkflowPaths.value.splice(from, 1)
+    openWorkflowPaths.value.splice(to, 0, movedTab)
+  }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
 
@@ -388,6 +394,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     renameWorkflow,
     deleteWorkflow,
     saveWorkflow,
+    reorderWorkflows,
 
     workflows,
     bookmarkedWorkflows,

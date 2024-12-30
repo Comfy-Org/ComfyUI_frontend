@@ -1,9 +1,5 @@
 // @ts-strict-ignore
-import {
-  type ComfyWidgetConstructor,
-  ComfyWidgets,
-  initWidgets
-} from './widgets'
+import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 import { ComfyUI, $el } from './ui'
 import { api, type ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -14,14 +10,13 @@ import {
   importA1111,
   getLatentMetadata
 } from './pnginfo'
-import { createImageHost, calculateImageGrid } from './ui/imagePreview'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
   validateComfyWorkflow
 } from '@/types/comfyWorkflow'
-import type { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
@@ -39,31 +34,25 @@ import {
   SYSTEM_NODE_DEFS,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { INodeInputSlot, Vector2 } from '@comfyorg/litegraph'
+import { Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
-import {
-  showExecutionErrorDialog,
-  showLoadWorkflowWarning,
-  showMissingModelsWarning
-} from '@/services/dialogService'
+import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useModelStore } from '@/stores/modelStore'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { IWidget } from '@comfyorg/litegraph'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { shallowReactive } from 'vue'
-import { type IBaseWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { deserialiseAndCreate } from '@/extensions/core/vintageClipboard'
+import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { st } from '@/i18n'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import { ISerialisedGraph } from '@comfyorg/litegraph'
+import { useExtensionService } from '@/services/extensionService'
+import { useLitegraphService } from '@/services/litegraphService'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -119,7 +108,6 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  extensions: ComfyExtension[]
   extensionManager: ExtensionManager
   _nodeOutputs: Record<string, any>
   nodePreviewImages: Record<string, string[]>
@@ -132,8 +120,6 @@ export class ComfyApp {
   lastNodeErrors: any[] | null
   /** @type {ExecutionErrorWsMessage} */
   lastExecutionError: { node_id?: NodeId } | null
-  /** @type {ProgressWsMessage} */
-  progress: { value?: number; max?: number } | null
   configuringGraph: boolean
   ctx: CanvasRenderingContext2D
   bodyTop: HTMLElement
@@ -185,6 +171,21 @@ export class ComfyApp {
     return false
   }
 
+  /**
+   * @deprecated Use useExtensionStore().extensions instead
+   */
+  get extensions(): ComfyExtension[] {
+    return useExtensionStore().extensions
+  }
+
+  /**
+   * The progress on the current executing node, if the node reports any.
+   * @deprecated Use useExecutionStore().executingNodeProgress instead
+   */
+  get progress() {
+    return useExecutionStore()._executingNodeProgress
+  }
+
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
@@ -198,12 +199,6 @@ export class ComfyApp {
     })
     this.menu = new ComfyAppMenu(this)
     this.bypassBgColor = '#FF00FF'
-
-    /**
-     * List of extensions that are registered with the app
-     * @type {ComfyExtension[]}
-     */
-    this.extensions = []
 
     /**
      * Stores the execution output data for each node
@@ -224,7 +219,8 @@ export class ComfyApp {
 
   set nodeOutputs(value) {
     this._nodeOutputs = value
-    this.#invokeExtensions('onNodeOutputsUpdated', value)
+    if (this.vueAppReady)
+      useExtensionService().invokeExtensions('onNodeOutputsUpdated', value)
   }
 
   getPreviewFormatParam() {
@@ -391,64 +387,6 @@ export class ComfyApp {
     }
   }
 
-  get enabledExtensions() {
-    if (!this.vueAppReady) {
-      return this.extensions
-    }
-    return useExtensionStore().enabledExtensions
-  }
-
-  /**
-   * Invoke an extension callback
-   * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
-   * @returns
-   */
-  #invokeExtensions(method, ...args) {
-    let results = []
-    for (const ext of this.enabledExtensions) {
-      if (method in ext) {
-        try {
-          results.push(ext[method](...args, this))
-        } catch (error) {
-          console.error(
-            `Error calling extension '${ext.name}' method '${method}'`,
-            { error },
-            { extension: ext },
-            { args }
-          )
-        }
-      }
-    }
-    return results
-  }
-
-  /**
-   * Invoke an async extension callback
-   * Each callback will be invoked concurrently
-   * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
-   * @returns
-   */
-  async #invokeExtensionsAsync(method, ...args) {
-    return await Promise.all(
-      this.enabledExtensions.map(async (ext) => {
-        if (method in ext) {
-          try {
-            return await ext[method](...args, this)
-          } catch (error) {
-            console.error(
-              `Error calling extension '${ext.name}' method '${method}'`,
-              { error },
-              { extension: ext },
-              { args }
-            )
-          }
-        }
-      })
-    )
-  }
-
   #addRestoreWorkflowView() {
     const serialize = LGraph.prototype.serialize
     const self = this
@@ -470,579 +408,6 @@ export class ComfyApp {
       }
 
       return workflow
-    }
-  }
-
-  /**
-   * Adds special context menu handling for nodes
-   * e.g. this adds Open Image functionality for nodes that show images
-   * @param {*} node The node to add the menu handler
-   */
-  #addNodeContextMenuHandler(node) {
-    function getCopyImageOption(img) {
-      if (typeof window.ClipboardItem === 'undefined') return []
-      return [
-        {
-          content: 'Copy Image',
-          callback: async () => {
-            const url = new URL(img.src)
-            url.searchParams.delete('preview')
-
-            const writeImage = async (blob) => {
-              await navigator.clipboard.write([
-                new ClipboardItem({
-                  [blob.type]: blob
-                })
-              ])
-            }
-
-            try {
-              const data = await fetch(url)
-              const blob = await data.blob()
-              try {
-                await writeImage(blob)
-              } catch (error) {
-                // Chrome seems to only support PNG on write, convert and try again
-                if (blob.type !== 'image/png') {
-                  const canvas = $el('canvas', {
-                    width: img.naturalWidth,
-                    height: img.naturalHeight
-                  }) as HTMLCanvasElement
-                  const ctx = canvas.getContext('2d')
-                  let image
-                  if (typeof window.createImageBitmap === 'undefined') {
-                    image = new Image()
-                    const p = new Promise((resolve, reject) => {
-                      image.onload = resolve
-                      image.onerror = reject
-                    }).finally(() => {
-                      URL.revokeObjectURL(image.src)
-                    })
-                    image.src = URL.createObjectURL(blob)
-                    await p
-                  } else {
-                    image = await createImageBitmap(blob)
-                  }
-                  try {
-                    ctx.drawImage(image, 0, 0)
-                    canvas.toBlob(writeImage, 'image/png')
-                  } finally {
-                    if (typeof image.close === 'function') {
-                      image.close()
-                    }
-                  }
-
-                  return
-                }
-                throw error
-              }
-            } catch (error) {
-              useToastStore().addAlert(
-                'Error copying image: ' + (error.message ?? error)
-              )
-            }
-          }
-        }
-      ]
-    }
-
-    node.prototype.getExtraMenuOptions = function (_, options) {
-      if (this.imgs) {
-        // If this node has images then we add an open in new tab item
-        let img
-        if (this.imageIndex != null) {
-          // An image is selected so select that
-          img = this.imgs[this.imageIndex]
-        } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
-          img = this.imgs[this.overIndex]
-        }
-        if (img) {
-          options.unshift(
-            {
-              content: 'Open Image',
-              callback: () => {
-                let url = new URL(img.src)
-                url.searchParams.delete('preview')
-                window.open(url, '_blank')
-              }
-            },
-            ...getCopyImageOption(img),
-            {
-              content: 'Save Image',
-              callback: () => {
-                const a = document.createElement('a')
-                let url = new URL(img.src)
-                url.searchParams.delete('preview')
-                a.href = url.toString()
-                a.setAttribute(
-                  'download',
-                  new URLSearchParams(url.search).get('filename')
-                )
-                document.body.append(a)
-                a.click()
-                requestAnimationFrame(() => a.remove())
-              }
-            }
-          )
-        }
-      }
-
-      options.push({
-        content: 'Bypass',
-        callback: (obj) => {
-          if (this.mode === LGraphEventMode.BYPASS)
-            this.mode = LGraphEventMode.ALWAYS
-          else this.mode = LGraphEventMode.BYPASS
-          this.graph.change()
-        }
-      })
-
-      // prevent conflict of clipspace content
-      if (!ComfyApp.clipspace_return_node) {
-        options.push({
-          content: 'Copy (Clipspace)',
-          callback: (obj) => {
-            ComfyApp.copyToClipspace(this)
-          }
-        })
-
-        if (ComfyApp.clipspace != null) {
-          options.push({
-            content: 'Paste (Clipspace)',
-            callback: () => {
-              ComfyApp.pasteFromClipspace(this)
-            }
-          })
-        }
-
-        if (ComfyApp.isImageNode(this)) {
-          options.push({
-            content: 'Open in MaskEditor',
-            callback: (obj) => {
-              ComfyApp.copyToClipspace(this)
-              ComfyApp.clipspace_return_node = this
-              ComfyApp.open_maskeditor()
-            }
-          })
-        }
-      }
-    }
-  }
-
-  #addNodeKeyHandler(node) {
-    const app = this
-    const origNodeOnKeyDown = node.prototype.onKeyDown
-
-    node.prototype.onKeyDown = function (e) {
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
-        return false
-      }
-
-      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
-        return
-      }
-
-      let handled = false
-
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        if (e.key === 'ArrowLeft') {
-          this.imageIndex -= 1
-        } else if (e.key === 'ArrowRight') {
-          this.imageIndex += 1
-        }
-        this.imageIndex %= this.imgs.length
-
-        if (this.imageIndex < 0) {
-          this.imageIndex = this.imgs.length + this.imageIndex
-        }
-        handled = true
-      } else if (e.key === 'Escape') {
-        this.imageIndex = null
-        handled = true
-      }
-
-      if (handled === true) {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        return false
-      }
-    }
-  }
-
-  /**
-   * Adds Custom drawing logic for nodes
-   * e.g. Draws images and handles thumbnail navigation on nodes that output images
-   * @param {*} node The node to add the draw handler
-   */
-  #addDrawBackgroundHandler(node: typeof LGraphNode) {
-    const app = this
-
-    function getImageTop(node: LGraphNode) {
-      let shiftY: number
-      if (node.imageOffset != null) {
-        return node.imageOffset
-      } else if (node.widgets?.length) {
-        const w = node.widgets[node.widgets.length - 1]
-        shiftY = w.last_y
-        if (w.computeSize) {
-          // @ts-expect-error
-          shiftY += w.computeSize()[1] + 4
-          // @ts-expect-error
-        } else if (w.computedHeight) {
-          // @ts-expect-error
-          shiftY += w.computedHeight
-        } else {
-          shiftY += LiteGraph.NODE_WIDGET_HEIGHT + 4
-        }
-      } else {
-        return node.computeSize()[1]
-      }
-      return shiftY
-    }
-
-    node.prototype.setSizeForImage = function (
-      this: LGraphNode,
-      force: boolean
-    ) {
-      if (!force && this.animatedImages) return
-
-      if (this.inputHeight || this.freeWidgetSpace > 210) {
-        this.setSize(this.size)
-        return
-      }
-      const minHeight = getImageTop(this) + 220
-      if (this.size[1] < minHeight) {
-        this.setSize([this.size[0], minHeight])
-      }
-    }
-
-    function unsafeDrawBackground(
-      this: LGraphNode,
-      ctx: CanvasRenderingContext2D
-    ) {
-      if (this.flags.collapsed) return
-
-      const imgURLs: (string[] | string)[] = []
-      let imagesChanged = false
-
-      const output: ExecutedWsMessage['output'] = app.nodeOutputs[this.id + '']
-      if (output?.images && this.images !== output.images) {
-        this.animatedImages = output?.animated?.find(Boolean)
-        this.images = output.images
-        imagesChanged = true
-        const preview = this.animatedImages ? '' : app.getPreviewFormatParam()
-
-        for (const params of output.images) {
-          const imgUrlPart = new URLSearchParams(params).toString()
-          const rand = app.getRandParam()
-          const imgUrl = api.apiURL(`/view?${imgUrlPart}${preview}${rand}`)
-          imgURLs.push(imgUrl)
-        }
-      }
-
-      const preview = app.nodePreviewImages[this.id + '']
-      if (this.preview !== preview) {
-        this.preview = preview
-        imagesChanged = true
-        if (preview != null) {
-          imgURLs.push(preview)
-        }
-      }
-
-      if (imagesChanged) {
-        this.imageIndex = null
-        if (imgURLs.length > 0) {
-          Promise.all(
-            imgURLs.map((src) => {
-              return new Promise<HTMLImageElement | null>((r) => {
-                const img = new Image()
-                img.onload = () => r(img)
-                img.onerror = () => r(null)
-                // @ts-expect-error
-                img.src = src
-              })
-            })
-          ).then((imgs) => {
-            if (
-              (!output || this.images === output.images) &&
-              (!preview || this.preview === preview)
-            ) {
-              this.imgs = imgs.filter(Boolean)
-              this.setSizeForImage?.()
-              app.graph.setDirtyCanvas(true)
-            }
-          })
-        } else {
-          this.imgs = null
-        }
-      }
-
-      const is_all_same_aspect_ratio = (imgs: HTMLImageElement[]) => {
-        // assume: imgs.length >= 2
-        const ratio = imgs[0].naturalWidth / imgs[0].naturalHeight
-
-        for (let i = 1; i < imgs.length; i++) {
-          const this_ratio = imgs[i].naturalWidth / imgs[i].naturalHeight
-          if (ratio != this_ratio) return false
-        }
-
-        return true
-      }
-
-      // Nothing to do
-      if (!this.imgs?.length) return
-
-      const widgetIdx = this.widgets?.findIndex(
-        (w) => w.name === ANIM_PREVIEW_WIDGET
-      )
-
-      if (this.animatedImages) {
-        // Instead of using the canvas we'll use a IMG
-        if (widgetIdx > -1) {
-          // Replace content
-          const widget = this.widgets[widgetIdx] as IWidget & {
-            options: { host: ReturnType<typeof createImageHost> }
-          }
-          widget.options.host.updateImages(this.imgs)
-        } else {
-          const host = createImageHost(this)
-          this.setSizeForImage(true)
-          const widget = this.addDOMWidget(
-            ANIM_PREVIEW_WIDGET,
-            'img',
-            host.el,
-            {
-              host,
-              getHeight: host.getHeight,
-              onDraw: host.onDraw,
-              hideOnZoom: false
-            }
-          )
-          widget.serializeValue = () => undefined
-          widget.options.host.updateImages(this.imgs)
-        }
-        return
-      }
-
-      if (widgetIdx > -1) {
-        this.widgets[widgetIdx].onRemove?.()
-        this.widgets.splice(widgetIdx, 1)
-      }
-
-      const canvas = app.graph.list_of_graphcanvas[0]
-      const mouse = canvas.graph_mouse
-      if (!canvas.pointer_is_down && this.pointerDown) {
-        if (
-          mouse[0] === this.pointerDown.pos[0] &&
-          mouse[1] === this.pointerDown.pos[1]
-        ) {
-          this.imageIndex = this.pointerDown.index
-        }
-        this.pointerDown = null
-      }
-
-      let { imageIndex } = this
-      const numImages = this.imgs.length
-      if (numImages === 1 && !imageIndex) {
-        // This skips the thumbnail render section below
-        this.imageIndex = imageIndex = 0
-      }
-
-      const shiftY = getImageTop(this)
-
-      const dw = this.size[0]
-      const dh = this.size[1] - shiftY
-
-      if (imageIndex == null) {
-        // No image selected; draw thumbnails of all
-        let cellWidth: number
-        let cellHeight: number
-        let shiftX: number
-        let cell_padding: number
-        let cols: number
-
-        const compact_mode = is_all_same_aspect_ratio(this.imgs)
-        if (!compact_mode) {
-          // use rectangle cell style and border line
-          cell_padding = 2
-          // Prevent infinite canvas2d scale-up
-          const largestDimension = this.imgs.reduce(
-            (acc, current) =>
-              Math.max(acc, current.naturalWidth, current.naturalHeight),
-            0
-          )
-          const fakeImgs = []
-          fakeImgs.length = this.imgs.length
-          fakeImgs[0] = {
-            naturalWidth: largestDimension,
-            naturalHeight: largestDimension
-          }
-          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-            fakeImgs,
-            dw,
-            dh
-          ))
-        } else {
-          cell_padding = 0
-          ;({ cellWidth, cellHeight, cols, shiftX } = calculateImageGrid(
-            this.imgs,
-            dw,
-            dh
-          ))
-        }
-
-        let anyHovered = false
-        this.imageRects = []
-        for (let i = 0; i < numImages; i++) {
-          const img = this.imgs[i]
-          const row = Math.floor(i / cols)
-          const col = i % cols
-          const x = col * cellWidth + shiftX
-          const y = row * cellHeight + shiftY
-          if (!anyHovered) {
-            anyHovered = LiteGraph.isInsideRectangle(
-              mouse[0],
-              mouse[1],
-              x + this.pos[0],
-              y + this.pos[1],
-              cellWidth,
-              cellHeight
-            )
-            if (anyHovered) {
-              this.overIndex = i
-              let value = 110
-              if (canvas.pointer_is_down) {
-                if (!this.pointerDown || this.pointerDown.index !== i) {
-                  this.pointerDown = { index: i, pos: [...mouse] }
-                }
-                value = 125
-              }
-              ctx.filter = `contrast(${value}%) brightness(${value}%)`
-              canvas.canvas.style.cursor = 'pointer'
-            }
-          }
-          this.imageRects.push([x, y, cellWidth, cellHeight])
-
-          const wratio = cellWidth / img.width
-          const hratio = cellHeight / img.height
-          const ratio = Math.min(wratio, hratio)
-
-          const imgHeight = ratio * img.height
-          const imgY = row * cellHeight + shiftY + (cellHeight - imgHeight) / 2
-          const imgWidth = ratio * img.width
-          const imgX = col * cellWidth + shiftX + (cellWidth - imgWidth) / 2
-
-          ctx.drawImage(
-            img,
-            imgX + cell_padding,
-            imgY + cell_padding,
-            imgWidth - cell_padding * 2,
-            imgHeight - cell_padding * 2
-          )
-          if (!compact_mode) {
-            // rectangle cell and border line style
-            ctx.strokeStyle = '#8F8F8F'
-            ctx.lineWidth = 1
-            ctx.strokeRect(
-              x + cell_padding,
-              y + cell_padding,
-              cellWidth - cell_padding * 2,
-              cellHeight - cell_padding * 2
-            )
-          }
-
-          ctx.filter = 'none'
-        }
-
-        if (!anyHovered) {
-          this.pointerDown = null
-          this.overIndex = null
-        }
-
-        return
-      }
-      // Draw individual
-      let w = this.imgs[imageIndex].naturalWidth
-      let h = this.imgs[imageIndex].naturalHeight
-
-      const scaleX = dw / w
-      const scaleY = dh / h
-      const scale = Math.min(scaleX, scaleY, 1)
-
-      w *= scale
-      h *= scale
-
-      const x = (dw - w) / 2
-      const y = (dh - h) / 2 + shiftY
-      ctx.drawImage(this.imgs[imageIndex], x, y, w, h)
-
-      const drawButton = (
-        x: number,
-        y: number,
-        sz: number,
-        text: string
-      ): boolean => {
-        const hovered = LiteGraph.isInsideRectangle(
-          mouse[0],
-          mouse[1],
-          x + this.pos[0],
-          y + this.pos[1],
-          sz,
-          sz
-        )
-        let fill = '#333'
-        let textFill = '#fff'
-        let isClicking = false
-        if (hovered) {
-          canvas.canvas.style.cursor = 'pointer'
-          if (canvas.pointer_is_down) {
-            fill = '#1e90ff'
-            isClicking = true
-          } else {
-            fill = '#eee'
-            textFill = '#000'
-          }
-        }
-
-        ctx.fillStyle = fill
-        ctx.beginPath()
-        ctx.roundRect(x, y, sz, sz, [4])
-        ctx.fill()
-        ctx.fillStyle = textFill
-        ctx.font = '12px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText(text, x + 15, y + 20)
-
-        return isClicking
-      }
-
-      if (!(numImages > 1)) return
-
-      const imageNum = this.imageIndex + 1
-      if (
-        drawButton(dw - 40, dh + shiftY - 40, 30, `${imageNum}/${numImages}`)
-      ) {
-        const i = imageNum >= numImages ? 0 : imageNum
-        // @ts-expect-error
-        if (!this.pointerDown || !this.pointerDown.index === i) {
-          this.pointerDown = { index: i, pos: [...mouse] }
-        }
-      }
-
-      if (drawButton(dw - 40, shiftY + 10, 30, `x`)) {
-        if (!this.pointerDown || !this.pointerDown.index === null) {
-          this.pointerDown = { index: null, pos: [...mouse] }
-        }
-      }
-    }
-
-    node.prototype.onDrawBackground = function (ctx) {
-      try {
-        unsafeDrawBackground.call(this, ctx)
-      } catch (error) {
-        console.error('Error drawing node background', error)
-      }
     }
   }
 
@@ -1541,13 +906,12 @@ export class ComfyApp {
     })
 
     api.addEventListener('progress', ({ detail }) => {
-      this.progress = detail
       this.graph.setDirtyCanvas(true, false)
     })
 
     api.addEventListener('executing', ({ detail }) => {
-      this.progress = null
       this.graph.setDirtyCanvas(true, false)
+      this.revokePreviews(this.runningNodeId)
       delete this.nodePreviewImages[this.runningNodeId]
     })
 
@@ -1580,7 +944,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       this.lastExecutionError = detail
-      showExecutionErrorDialog(detail)
+      useDialogService().showExecutionErrorDialog(detail)
       this.canvas.draw(true, true)
     })
 
@@ -1590,6 +954,8 @@ export class ComfyApp {
 
       const blob = detail
       const blobUrl = URL.createObjectURL(blob)
+      // Ensure clean up if `executing` event is missed.
+      this.revokePreviews(id)
       this.nodePreviewImages[id] = [blobUrl]
     })
 
@@ -1608,52 +974,6 @@ export class ComfyApp {
         app.configuringGraph = false
       }
     }
-  }
-
-  #addWidgetLinkHandling() {
-    app.canvas.getWidgetLinkType = function (widget, node) {
-      const nodeDefStore = useNodeDefStore()
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
-      const input = nodeDef.inputs.getInput(widget.name)
-      return input?.type
-    }
-
-    type ConnectingWidgetLink = {
-      subType: 'connectingWidgetLink'
-      widget: IWidget
-      node: LGraphNode
-      link: { node: LGraphNode; slot: number }
-    }
-
-    document.addEventListener(
-      'litegraph:canvas',
-      async (e: CustomEvent<ConnectingWidgetLink>) => {
-        if (e.detail.subType === 'connectingWidgetLink') {
-          const { convertToInput } = await import(
-            '@/extensions/core/widgetInputs'
-          )
-
-          const { node, link, widget } = e.detail
-          if (!node || !link || !widget) return
-
-          const nodeData = node.constructor.nodeData
-          if (!nodeData) return
-          const all = {
-            ...nodeData?.input?.required,
-            ...nodeData?.input?.optional
-          }
-          const inputSpec = all[widget.name]
-          if (!inputSpec) return
-
-          const input = convertToInput(node, widget, inputSpec)
-          if (!input) return
-
-          const originNode = link.node
-
-          originNode.connect(link.slot, node, node.inputs.lastIndexOf(input))
-        }
-      }
-    )
   }
 
   #addAfterConfigureHandler() {
@@ -1677,44 +997,14 @@ export class ComfyApp {
   }
 
   /**
-   * Loads all extensions from the API into the window in parallel
-   */
-  async #loadExtensions() {
-    useExtensionStore().loadDisabledExtensionNames()
-
-    const extensions = await api.getExtensions()
-
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
-    await Promise.all(
-      extensions
-        .filter((extension) => !extension.includes('extensions/core'))
-        .map(async (ext) => {
-          try {
-            await import(/* @vite-ignore */ api.fileURL(ext))
-          } catch (error) {
-            console.error('Error loading extension', ext, error)
-          }
-        })
-    )
-  }
-
-  /**
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
     this.canvasEl = canvasEl
-    // Show menu container for GraphView.
-    this.ui.menuContainer.style.display = 'block'
-
     this.resizeCanvas()
 
-    await Promise.all([
-      useWorkspaceStore().workflow.syncWorkflows(),
-      this.ui.settings.load()
-    ])
-    await this.#loadExtensions()
+    await useWorkspaceStore().workflow.syncWorkflows()
+    await useExtensionService().loadExtensions()
 
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
@@ -1746,9 +1036,8 @@ export class ComfyApp {
     ro.observe(this.bodyRight)
     ro.observe(this.bodyBottom)
 
-    await this.#invokeExtensionsAsync('init')
+    await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
-    initWidgets(this)
 
     // Load previous workflow
     let restored = false
@@ -1782,9 +1071,8 @@ export class ComfyApp {
     this.#addDropHandler()
     this.#addCopyHandler()
     this.#addPasteHandler()
-    this.#addWidgetLinkHandling()
 
-    await this.#invokeExtensionsAsync('setup')
+    await useExtensionService().invokeExtensionsAsync('setup')
   }
 
   resizeCanvas() {
@@ -1828,7 +1116,11 @@ export class ComfyApp {
 
     const nodeDefStore = useNodeDefStore()
     const nodeDefArray: ComfyNodeDef[] = Object.values(allNodeDefs)
-    this.#invokeExtensions('beforeRegisterVueAppNodeDefs', nodeDefArray, this)
+    useExtensionService().invokeExtensions(
+      'beforeRegisterVueAppNodeDefs',
+      nodeDefArray,
+      this
+    )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
 
@@ -1869,7 +1161,7 @@ export class ComfyApp {
     // Load node definitions from the backend
     const defs = await this.#getNodeDefs()
     await this.registerNodesFromDefs(defs)
-    await this.#invokeExtensionsAsync('registerCustomNodes')
+    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
@@ -1894,165 +1186,11 @@ export class ComfyApp {
   }
 
   async registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
-    const self = this
-    const node = class ComfyNode extends LGraphNode {
-      static comfyClass? = nodeData.name
-      // TODO: change to "title?" once litegraph.d.ts has been updated
-      static title = nodeData.display_name || nodeData.name
-      static nodeData? = nodeData
-      static category?: string
-
-      constructor(title?: string) {
-        super(title)
-        const requiredInputs = nodeData.input.required
-
-        var inputs = nodeData['input']['required']
-        if (nodeData['input']['optional'] != undefined) {
-          inputs = Object.assign(
-            {},
-            nodeData['input']['required'],
-            nodeData['input']['optional']
-          )
-        }
-        const config: {
-          minWidth: number
-          minHeight: number
-          widget?: IBaseWidget
-        } = { minWidth: 1, minHeight: 1 }
-        for (const inputName in inputs) {
-          const _inputData = inputs[inputName]
-          const type = _inputData[0]
-          const options = _inputData[1] ?? {}
-          const inputData = [type, options]
-          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.inputs.${normalizeI18nKey(inputName)}.name`
-
-          const inputIsRequired = requiredInputs && inputName in requiredInputs
-
-          let widgetCreated = true
-          const widgetType = self.getWidgetType(inputData, inputName)
-          if (widgetType) {
-            if (widgetType === 'COMBO') {
-              Object.assign(
-                config,
-                self.widgets.COMBO(this, inputName, inputData, app) || {}
-              )
-            } else {
-              Object.assign(
-                config,
-                self.widgets[widgetType](this, inputName, inputData, app) || {}
-              )
-            }
-            if (config.widget) {
-              config.widget.label = st(nameKey, inputName)
-            }
-          } else {
-            // Node connection inputs
-            const shapeOptions = inputIsRequired
-              ? {}
-              : { shape: LiteGraph.SlotShape.HollowCircle }
-            const inputOptions = {
-              ...shapeOptions,
-              localized_name: st(nameKey, inputName)
-            }
-            this.addInput(inputName, type, inputOptions)
-            widgetCreated = false
-          }
-
-          if (widgetCreated && config?.widget) {
-            config.widget.options ??= {}
-            if (!inputIsRequired) {
-              config.widget.options.inputIsOptional = true
-            }
-            if (inputData[1]?.forceInput) {
-              config.widget.options.forceInput = true
-            }
-            if (inputData[1]?.defaultInput) {
-              config.widget.options.defaultInput = true
-            }
-            if (inputData[1]?.advanced) {
-              config.widget.advanced = true
-            }
-            if (inputData[1]?.hidden) {
-              config.widget.hidden = true
-            }
-          }
-        }
-
-        for (const o in nodeData['output']) {
-          let output = nodeData['output'][o]
-          if (output instanceof Array) output = 'COMBO'
-          const outputName = nodeData['output_name'][o] || output
-          const outputIsList = nodeData['output_is_list'][o]
-          const shapeOptions = outputIsList
-            ? { shape: LiteGraph.GRID_SHAPE }
-            : {}
-          const nameKey = `nodeDefs.${normalizeI18nKey(nodeData.name)}.outputs.${o}.name`
-          const typeKey = `dataTypes.${normalizeI18nKey(output)}`
-          const outputOptions = {
-            ...shapeOptions,
-            // If the output name is different from the output type, use the output name.
-            // e.g.
-            // - type ("INT"); name ("Positive") => translate name
-            // - type ("FLOAT"); name ("FLOAT") => translate type
-            localized_name:
-              output !== outputName
-                ? st(nameKey, outputName)
-                : st(typeKey, outputName)
-          }
-          this.addOutput(outputName, output, outputOptions)
-        }
-
-        const s = this.computeSize()
-        s[0] = Math.max(config.minWidth, s[0] * 1.5)
-        s[1] = Math.max(config.minHeight, s[1])
-        this.size = s
-        this.serialize_widgets = true
-
-        app.#invokeExtensionsAsync('nodeCreated', this)
-      }
-
-      configure(data: any) {
-        // Keep 'name', 'type', 'shape', and 'localized_name' information from the original node definition.
-        const merge = (
-          current: Record<string, any>,
-          incoming: Record<string, any>
-        ) => {
-          const result = { ...incoming }
-          if (current.widget === undefined && incoming.widget !== undefined) {
-            // Field must be input as only inputs can be converted
-            this.inputs.push(current as INodeInputSlot)
-            return incoming
-          }
-          for (const key of ['name', 'type', 'shape', 'localized_name']) {
-            if (current[key] !== undefined) {
-              result[key] = current[key]
-            }
-          }
-          return result
-        }
-        for (const field of ['inputs', 'outputs']) {
-          const slots = data[field] ?? []
-          data[field] = slots.map((slot, i) =>
-            merge(this[field][i] ?? {}, slot)
-          )
-        }
-        super.configure(data)
-      }
-    }
-    node.prototype.comfyClass = nodeData.name
-
-    this.#addNodeContextMenuHandler(node)
-    this.#addDrawBackgroundHandler(node)
-    this.#addNodeKeyHandler(node)
-
-    await this.#invokeExtensionsAsync('beforeRegisterNodeDef', node, nodeData)
-    LiteGraph.registerNodeType(nodeId, node)
-    // Note: Do not move this to the class definition, it will be overwritten
-    node.category = nodeData.category
+    return await useLitegraphService().registerNodeDef(nodeId, nodeData)
   }
 
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDef>) {
-    await this.#invokeExtensionsAsync('addCustomNodeDefs', defs)
+    await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
     for (const nodeId in defs) {
@@ -2105,13 +1243,13 @@ export class ComfyApp {
 
   #showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingNodesWarning')) {
-      showLoadWorkflowWarning({ missingNodeTypes })
+      useDialogService().showLoadWorkflowWarning({ missingNodeTypes })
     }
   }
 
   #showMissingModelsError(missingModels, paths) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
-      showMissingModelsWarning({
+      useDialogService().showMissingModelsWarning({
         missingModels,
         paths
       })
@@ -2154,11 +1292,11 @@ export class ComfyApp {
       graphData = validatedGraphData ?? graphData
     }
 
-    workflowService.beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes: MissingNodeType[] = []
     const missingModels = []
-    await this.#invokeExtensionsAsync(
+    await useExtensionService().invokeExtensionsAsync(
       'beforeConfigureGraph',
       graphData,
       missingNodeTypes
@@ -2305,7 +1443,7 @@ export class ComfyApp {
         }
       }
 
-      this.#invokeExtensions('loadedGraphNode', node)
+      useExtensionService().invokeExtensions('loadedGraphNode', node)
     }
 
     // TODO: Properly handle if both nodes and models are missing (sequential dialogs?)
@@ -2316,9 +1454,15 @@ export class ComfyApp {
       const paths = await api.getFolderPaths()
       this.#showMissingModelsError(missingModels, paths)
     }
-    await this.#invokeExtensionsAsync('afterConfigureGraph', missingNodeTypes)
-    // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-    await workflowService.afterLoadNewGraph(workflow, this.graph.serialize())
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      missingNodeTypes
+    )
+    await useWorkflowService().afterLoadNewGraph(
+      workflow,
+      // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
+      this.graph.serialize()
+    )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
     })
@@ -2632,10 +1776,10 @@ export class ComfyApp {
       } else if (pngInfo?.parameters) {
         // Note: Not putting this in `importA1111` as it is mostly not used
         // by external callers, and `importA1111` has no access to `app`.
-        workflowService.beforeLoadNewGraph()
+        useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
         // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-        workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
+        useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
       } else {
         this.showErrorOnFileLoad(file)
       }
@@ -2719,7 +1863,7 @@ export class ComfyApp {
   }
 
   loadApiJson(apiData, fileName: string) {
-    workflowService.beforeLoadNewGraph()
+    useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes = Object.values(apiData).filter(
       // @ts-expect-error
@@ -2811,20 +1955,16 @@ export class ComfyApp {
     app.graph.arrange()
 
     // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
-    workflowService.afterLoadNewGraph(fileName, this.serializeGraph())
+    useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
   }
 
   /**
    * Registers a Comfy web extension with the app
    * @param {ComfyExtension} extension
+   * @deprecated Use useExtensionService().registerExtension instead
    */
   registerExtension(extension: ComfyExtension) {
-    if (this.vueAppReady) {
-      useExtensionStore().registerExtension(extension)
-    } else {
-      // For jest testing.
-      this.extensions.push(extension)
-    }
+    useExtensionService().registerExtension(extension)
   }
 
   /**
@@ -2863,7 +2003,10 @@ export class ComfyApp {
       }
     }
 
-    await this.#invokeExtensionsAsync('refreshComboInNodes', defs)
+    await useExtensionService().invokeExtensionsAsync(
+      'refreshComboInNodes',
+      defs
+    )
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
@@ -2884,10 +2027,23 @@ export class ComfyApp {
   }
 
   /**
+   * Frees memory allocated to image preview blobs for a specific node, by revoking the URLs associated with them.
+   * @param nodeId ID of the node to revoke all preview images of
+   */
+  revokePreviews(nodeId: NodeId) {
+    if (!this.nodePreviewImages[nodeId]?.[Symbol.iterator]) return
+    for (const url of this.nodePreviewImages[nodeId]) {
+      URL.revokeObjectURL(url)
+    }
+  }
+  /**
    * Clean current state
    */
   clean() {
     this.nodeOutputs = {}
+    for (const id of Object.keys(this.nodePreviewImages)) {
+      this.revokePreviews(id)
+    }
     this.nodePreviewImages = {}
     this.lastNodeErrors = null
     this.lastExecutionError = null

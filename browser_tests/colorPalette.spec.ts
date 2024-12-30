@@ -131,11 +131,8 @@ const customColorPalettes = {
 }
 
 test.describe('Color Palette', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
-  })
-
   test('Can show custom color palette', async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
     await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -144,6 +141,19 @@ test.describe('Color Palette', () => {
     await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
+  })
+
+  test('Can add custom color palette', async ({ comfyPage }) => {
+    await comfyPage.page.evaluate((p) => {
+      window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
+    }, customColorPalettes.obsidian_dark)
+    expect(await comfyPage.getToastErrorCount()).toBe(0)
+
+    await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'custom-color-palette-obsidian-dark.png'
+    )
   })
 })
 

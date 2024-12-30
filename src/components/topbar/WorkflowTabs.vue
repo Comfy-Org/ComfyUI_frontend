@@ -9,36 +9,11 @@
     dataKey="value"
   >
     <template #option="{ option }">
-      <div
-        class="flex p-2 gap-2"
+      <WorkflowTab
         @contextmenu="showContextMenu($event, option)"
         @click.middle="onCloseWorkflow(option)"
-      >
-        <span
-          class="workflow-label text-sm max-w-[150px] truncate inline-block"
-          v-tooltip.bottom="option.workflow.key"
-        >
-          {{ option.workflow.filename }}
-        </span>
-        <div class="relative">
-          <span
-            class="status-indicator"
-            v-if="
-              !workspaceStore.shiftDown &&
-              (option.workflow.isModified || !option.workflow.isPersisted)
-            "
-            >•</span
-          >
-          <Button
-            class="close-button p-0 w-auto"
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            size="small"
-            @click.stop="onCloseWorkflow(option)"
-          />
-        </div>
-      </div>
+        :workflow-option="option"
+      />
     </template>
   </SelectButton>
   <Button
@@ -52,13 +27,14 @@
 </template>
 
 <script setup lang="ts">
+import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useCommandStore } from '@/stores/commandStore'
 import SelectButton from 'primevue/selectbutton'
 import Button from 'primevue/button'
 import { computed, ref } from 'vue'
-import { workflowService } from '@/services/workflowService'
+import { useWorkflowService } from '@/services/workflowService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import ContextMenu from 'primevue/contextmenu'
 import { useI18n } from 'vue-i18n'
@@ -75,13 +51,9 @@ const props = defineProps<{
 const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
+const workflowService = useWorkflowService()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
-
-const showContextMenu = (event, option) => {
-  rightClickedTab.value = option
-  menu.value.show(event)
-}
 
 const workflowToOption = (workflow: ComfyWorkflow): WorkflowOption => ({
   value: workflow.path,
@@ -126,6 +98,10 @@ const onCloseWorkflow = (option: WorkflowOption) => {
   closeWorkflows([option])
 }
 
+const showContextMenu = (event, option) => {
+  rightClickedTab.value = option
+  menu.value.show(event)
+}
 const contextMenuItems = computed(() => {
   const tab = rightClickedTab.value as WorkflowOption
   if (!tab) return []
@@ -166,7 +142,6 @@ const contextMenuItems = computed(() => {
     }
   ]
 })
-
 const commandStore = useCommandStore()
 </script>
 
@@ -187,14 +162,6 @@ const commandStore = useCommandStore()
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
-}
-
-.status-indicator {
-  @apply absolute font-bold;
-  font-size: 1.5rem;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 
 :deep(.p-togglebutton:hover) .status-indicator {

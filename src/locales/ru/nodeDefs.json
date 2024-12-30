@@ -249,6 +249,24 @@
       }
     }
   },
+  "CLIPTextEncodePixArtAlpha": {
+    "description": "Кодирует текст и устанавливает условие разрешения для PixArt Alpha. Не применяется к PixArt Sigma.",
+    "display_name": "CLIPTextEncodePixArtAlpha",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "text": {
+        "name": "текст"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    }
+  },
   "CLIPTextEncodeSD3": {
     "display_name": "Кодирование текста CLIP SD3",
     "inputs": {
@@ -5269,6 +5287,14 @@
       "samples": {
         "name": "образцы"
       },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Используется только для видео VAE: количество кадров для перекрытия."
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Используется только для видео VAE: количество кадров для декодирования за раз."
+      },
       "tile_size": {
         "name": "размер_плитки"
       },
@@ -5324,6 +5350,14 @@
       },
       "pixels": {
         "name": "пиксели"
+      },
+      "temporal_overlap": {
+        "name": "temporal_overlap",
+        "tooltip": "Используется только для видео VAEs: количество кадров для перекрытия."
+      },
+      "temporal_size": {
+        "name": "temporal_size",
+        "tooltip": "Используется только для видео VAEs: количество кадров для кодирования за один раз."
       },
       "tile_size": {
         "name": "размер_плитки"

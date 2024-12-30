@@ -1,7 +1,7 @@
 import { ZodType, z } from 'zod'
 import { zComfyWorkflow, zNodeId } from './comfyWorkflow'
 import { fromZodError } from 'zod-validation-error'
-import { colorPalettesSchema } from './colorPalette'
+import { colorPalettesSchema } from './colorPaletteTypes'
 import { LinkReleaseTriggerAction } from './searchBoxTypes'
 import { NodeBadgeMode } from './nodeSource'
 import { zKeybinding } from './keyBindingTypes'

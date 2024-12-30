@@ -54,6 +54,7 @@
       <!-- FilterAndValue -->
       <template v-slot:chip="{ value }">
         <SearchFilterChip
+          :key="`${value[0].id}-${value[1]}`"
           @remove="onRemoveFilter($event, value)"
           :text="value[1]"
           :badge="value[0].invokeSequence.toUpperCase()"
@@ -65,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -124,11 +125,12 @@ const search = (query: string) => {
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
+let inputElement: HTMLInputElement | null = null
 const reFocusInput = () => {
-  const inputElement = document.getElementById(inputId) as HTMLInputElement
+  inputElement ??= document.getElementById(inputId) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
-    inputElement.focus()
+    nextTick(() => inputElement?.focus())
   }
 }
 
