@@ -1,25 +1,12 @@
 name: Update Locales for given custom node repository
+
+on:
+  push:
+
 env:
   owner: huchenlei
   repository: ComfyUI-IC-Light-Native
   fork_owner: comfy-pr-bot
-on:
-  push:
-  workflow_dispatch:
-    inputs:
-      owner: huchenlei
-        description: 'Owner of the repository to update locales for'
-        required: true
-        type: string
-      repository: ComfyUI-IC-Light-Native
-        description: 'Repository to update locales for'
-        required: true
-        type: string
-      fork_owner: comfy-pr-bot
-        description: 'Owner of the forked repository'
-        required: false
-        type: string
-        default: 'Comfy-Org'
 
 jobs:
   update-locales:
@@ -135,7 +122,7 @@ jobs:
         git config --global user.email 'github-actions@github.com'
 
         # Configure the remote with token
-        git remote set-url pr "https://${{ secrets.GH_TOKEN_PR }}@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
+        git remote add pr "https://$GH_TOKEN_PR@github.com/${{ env.fork_owner }}/${{ env.repository }}.git"
 
         # Create and switch to new branch
         git checkout -b update-locales
