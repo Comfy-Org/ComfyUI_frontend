@@ -219,22 +219,6 @@ watch(
   }
 )
 
-watchEffect(() => {
-  if (!canvasStore.canvas) return
-
-  if (canvasStore.canvas.state.draggingCanvas) {
-    canvasStore.canvas.canvas.style.cursor = 'grabbing'
-    return
-  }
-
-  if (canvasStore.canvas.state.readOnly) {
-    canvasStore.canvas.canvas.style.cursor = 'grab'
-    return
-  }
-
-  canvasStore.canvas.canvas.style.cursor = 'default'
-})
-
 const colorPaletteService = useColorPaletteService()
 watchEffect(() => {
   if (!canvasStore.canvas) return
