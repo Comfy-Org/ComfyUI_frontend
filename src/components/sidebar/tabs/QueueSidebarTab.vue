@@ -110,6 +110,7 @@ import { ComfyNode } from '@/types/comfyWorkflow'
 import { useSettingStore } from '@/stores/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()
@@ -255,7 +256,7 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.goToNode'),
     icon: 'pi pi-arrow-circle-right',
-    command: () => app.goToNode(menuTargetNode.value?.id),
+    command: () => useLitegraphService().goToNode(menuTargetNode.value?.id),
     visible: !!menuTargetNode.value
   }
 ])

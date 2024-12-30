@@ -17,6 +17,7 @@ import { $el } from '@/scripts/ui'
 import { useToastStore } from '@/stores/toastStore'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
 import { Vector2 } from '@comfyorg/litegraph'
+import type { NodeId } from '@/types/comfyWorkflow'
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -783,9 +784,16 @@ export const useLitegraphService = () => {
     return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
+  function goToNode(nodeId: NodeId) {
+    const graphNode = app.graph.getNodeById(nodeId)
+    if (!graphNode) return
+    app.canvas.animateToBounds(graphNode.boundingRect)
+  }
+
   return {
     registerNodeDef,
     addNodeOnGraph,
-    getCanvasCenter
+    getCanvasCenter,
+    goToNode
   }
 }

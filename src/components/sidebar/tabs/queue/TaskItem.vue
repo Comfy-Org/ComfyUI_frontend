@@ -42,7 +42,7 @@
             :label="`${node?.type} (#${node?.id})`"
             link
             size="small"
-            @click="app.goToNode(node?.id)"
+            @click="litegraphService.goToNode(node?.id)"
           />
         </Tag>
         <Tag :severity="taskTagSeverity(task.displayStatus)">
@@ -75,13 +75,15 @@ import Tag from 'primevue/tag'
 import ResultItem from './ResultItem.vue'
 import { TaskItemDisplayStatus, type TaskItemImpl } from '@/stores/queueStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
-import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import { api } from '@/scripts/api'
 
 const props = defineProps<{
   task: TaskItemImpl
   isFlatTask: boolean
 }>()
+
+const litegraphService = useLitegraphService()
 
 const flatOutputs = props.task.flatOutputs
 const coverResult = flatOutputs.length
