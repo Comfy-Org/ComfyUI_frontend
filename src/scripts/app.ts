@@ -2049,19 +2049,6 @@ export class ComfyApp {
     this.lastExecutionError = null
   }
 
-  addNodeOnGraph(
-    nodeDef: ComfyNodeDef | ComfyNodeDefImpl,
-    options: Record<string, any> = {}
-  ): LGraphNode {
-    const node = LiteGraph.createNode(
-      nodeDef.name,
-      nodeDef.display_name,
-      options
-    )
-    this.graph.add(node)
-    return node
-  }
-
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     const rect = this.canvasContainer.getBoundingClientRect()
     const containerOffsets = [rect.left, rect.top]
@@ -2076,12 +2063,6 @@ export class ComfyApp {
     return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
       ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
     ) as Vector2
-  }
-
-  getCanvasCenter(): Vector2 {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const [x, y, w, h] = app.canvas.ds.visible_area
-    return [x + w / dpi / 2, y + h / dpi / 2]
   }
 
   public goToNode(nodeId: NodeId) {

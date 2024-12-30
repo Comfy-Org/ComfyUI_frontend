@@ -33,7 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import { app } from '@/scripts/app'
 import { computed, ref, toRaw, watchEffect } from 'vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 import Dialog from 'primevue/dialog'
@@ -53,15 +52,17 @@ import type {
 import { useEventListener } from '@vueuse/core'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { storeToRefs } from 'pinia'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const settingStore = useSettingStore()
+const litegraphService = useLitegraphService()
 
 const { visible } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
 const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
 const getNewNodeLocation = (): Vector2 => {
   if (!triggerEvent.value) {
-    return app.getCanvasCenter()
+    return litegraphService.getCanvasCenter()
   }
 
   const originalEvent = (triggerEvent.value.detail as OriginalEvent)
@@ -85,7 +86,9 @@ const closeDialog = () => {
 }
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  const node = app.addNodeOnGraph(nodeDef, { pos: getNewNodeLocation() })
+  const node = litegraphService.addNodeOnGraph(nodeDef, {
+    pos: getNewNodeLocation()
+  })
 
   const eventDetail = triggerEvent.value?.detail
   if (eventDetail && eventDetail.subType === 'empty-release') {

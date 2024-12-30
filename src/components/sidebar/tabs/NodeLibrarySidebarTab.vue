@@ -77,7 +77,6 @@ import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import { app } from '@/scripts/app'
 import { sortedTree } from '@/utils/treeUtil'
 import { useTreeExpansion } from '@/hooks/treeHooks'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
@@ -88,6 +87,7 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
@@ -128,7 +128,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         e: MouseEvent
       ) => {
         if (node.leaf) {
-          app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+          useLitegraphService().addNodeOnGraph(node.data)
         } else {
           toggleNodeOnEvent(e, node)
         }

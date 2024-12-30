@@ -16,6 +16,7 @@ import { ComfyApp, app, ANIM_PREVIEW_WIDGET } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { useToastStore } from '@/stores/toastStore'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
+import { Vector2 } from '@comfyorg/litegraph'
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -760,7 +761,31 @@ export const useLitegraphService = () => {
     }
   }
 
+  function addNodeOnGraph(
+    nodeDef: ComfyNodeDef,
+    options: Record<string, any> = {}
+  ): LGraphNode {
+    options.pos ??= getCanvasCenter()
+
+    const node = LiteGraph.createNode(
+      nodeDef.name,
+      nodeDef.display_name,
+      options
+    )
+
+    app.graph.add(node)
+    return node
+  }
+
+  function getCanvasCenter(): Vector2 {
+    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
+    const [x, y, w, h] = app.canvas.ds.visible_area
+    return [x + w / dpi / 2, y + h / dpi / 2]
+  }
+
   return {
-    registerNodeDef
+    registerNodeDef,
+    addNodeOnGraph,
+    getCanvasCenter
   }
 }

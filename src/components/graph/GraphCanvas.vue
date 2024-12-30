@@ -69,9 +69,11 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const litegraphService = useLitegraphService()
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
@@ -262,7 +264,7 @@ usePragmaticDroppable(() => canvasRef.value, {
           loc.clientX - 20,
           loc.clientY
         ])
-        comfyApp.addNodeOnGraph(nodeDef, { pos })
+        litegraphService.addNodeOnGraph(nodeDef, { pos })
       } else if (node.data instanceof ComfyModelDef) {
         const model = node.data
         const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
@@ -283,9 +285,12 @@ usePragmaticDroppable(() => canvasRef.value, {
         if (!targetGraphNode) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            targetGraphNode = comfyApp.addNodeOnGraph(provider.nodeDef, {
-              pos
-            })
+            targetGraphNode = litegraphService.addNodeOnGraph(
+              provider.nodeDef,
+              {
+                pos
+              }
+            )
             targetProvider = provider
           }
         }
