@@ -157,6 +157,6 @@ jobs:
       working-directory: ComfyUI/custom_nodes/${{ inputs.repository }}
       run: |
         # Create PR using gh cli
-        gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales
+        gh pr create --title "Update locales for ${{ inputs.repository }}" --repo ${{ inputs.owner }}/${{ inputs.repository }} --head ${{ inputs.fork_owner }}:update-locales --body "Update locales for ${{ inputs.repository }}"
       env:
         GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
