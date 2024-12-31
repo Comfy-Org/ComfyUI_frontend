@@ -297,6 +297,7 @@ watch(activeCategory, (_, oldValue) => {
   .settings-container {
     flex-direction: column;
     height: auto;
+    width: 80vw;
   }
 
   .settings-sidebar {
