@@ -235,9 +235,7 @@ export class NodeReference {
   }
   async convertToGroupNode(groupNodeName: string = 'GroupNode') {
     await this.clickContextMenuOption('Convert to Group Node')
-    await this.comfyPage.promptDialogInput.fill(groupNodeName)
-    await this.comfyPage.page.keyboard.press('Enter')
-    await this.comfyPage.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.comfyPage.fillPromptDialog(groupNodeName)
     await this.comfyPage.nextFrame()
     const nodes = await this.comfyPage.getNodeRefsByType(
       `workflow>${groupNodeName}`

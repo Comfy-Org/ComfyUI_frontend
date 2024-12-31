@@ -22,7 +22,7 @@ export const useWorkflowService = () => {
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
-      let filename = await dialogService.showPromptDialog({
+      let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
         message: t('workflowService.enterFilename') + ':',
         defaultValue: defaultName
@@ -60,7 +60,7 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to save
    */
   const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
-    const newFilename = await dialogService.showPromptDialog({
+    const newFilename = await dialogService.prompt({
       title: t('workflowService.saveWorkflow'),
       message: t('workflowService.enterFilename') + ':',
       defaultValue: workflow.filename
@@ -72,7 +72,7 @@ export const useWorkflowService = () => {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = await dialogService.showConfirmationDialog({
+      const res = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
         type: 'overwrite',
         message: t('sideToolbar.workflowTab.confirmOverwrite'),
@@ -181,7 +181,7 @@ export const useWorkflowService = () => {
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
-      const confirmed = await dialogService.showConfirmationDialog({
+      const confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
@@ -225,7 +225,7 @@ export const useWorkflowService = () => {
     let confirmed: boolean | null = bypassConfirm || silent
 
     if (!confirmed) {
-      confirmed = await dialogService.showConfirmationDialog({
+      confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
         type: 'delete',
         message: t('sideToolbar.workflowTab.confirmDelete'),
