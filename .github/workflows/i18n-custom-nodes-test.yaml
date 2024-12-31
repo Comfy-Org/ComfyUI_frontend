@@ -132,12 +132,13 @@ jobs:
         # Stage and commit changes
         git add -A
         git commit -m "Update locales"
-    # - uses: actions/create-github-app-token@v1
-    #   id: app-token
-    #   with:
-    #     app_id: ${{ vars.PR_APP_ID }}
-    #     private_key: ${{ secrets.PR_APP_PRIVATE_KEY }}
-    #     repositories: ${{ env.fork_owner }}/${{ env.repository }}
+    - uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app_id: ${{ vars.PR_APP_ID }}
+        private_key: ${{ secrets.PR_APP_PRIVATE_KEY }}
+        owner: ${{ env.fork_owner }}
+        repositories: ${{ env.repository }}
     # - uses: actions/checkout@v4
     #   with:
     #     token: ${{ steps.app-token.outputs.token }}
@@ -150,19 +151,23 @@ jobs:
     #     git push -f https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales
     #   env:
     #     PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
-    - name: Install SSH key
-      uses: shimataro/ssh-key-action@v2
-      with:
-        # PR private key from action server
-        key: ${{ secrets.PR_SSH_PRIVATE_KEY }}
-        # github public key to confirm it's github server
-        known_hosts: github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
     - name: Push changes
       working-directory: ComfyUI/custom_nodes/${{ env.repository }}
-      run: |
-        # Force push to create the branch
-        echo "Pushing changes to ${{ env.fork_owner }}/${{ env.repository }}"
-        git push -f git@github.com:${{ env.fork_owner }}/${{ env.repository }}.git update-locales
+      run: git push -f https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ env.fork_owner }}/${{ env.repository }}.git update-locales
+
+    # - name: Install SSH key
+    #   uses: shimataro/ssh-key-action@v2
+    #   with:
+    #     # PR private key from action server
+    #     key: ${{ secrets.PR_SSH_PRIVATE_KEY }}
+    #     # github public key to confirm it's github server
+    #     known_hosts: github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+    # - name: Push changes
+    #   working-directory: ComfyUI/custom_nodes/${{ env.repository }}
+    #   run: |
+    #     # Force push to create the branch
+    #     echo "Pushing changes to ${{ env.fork_owner }}/${{ env.repository }}"
+    #     git push -f git@github.com:${{ env.fork_owner }}/${{ env.repository }}.git update-locales
     - name: Create PR 
       working-directory: ComfyUI/custom_nodes/${{ env.repository }}
       run: |
