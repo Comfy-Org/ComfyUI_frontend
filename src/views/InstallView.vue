@@ -169,8 +169,4 @@ onMounted(async () => {
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }
-
-.stepper {
-  margin-top: max(1rem, max(0px, calc((100vh - 42rem) * 0.5)));
-}
 </style>
