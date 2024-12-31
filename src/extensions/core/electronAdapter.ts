@@ -115,7 +115,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         label: 'Reinstall',
         icon: 'pi pi-refresh',
         async function() {
-          const proceed = await useDialogService().showConfirmationDialog({
+          const proceed = await useDialogService().confirm({
             message: t('desktopMenu.confirmReinstall'),
             title: t('desktopMenu.reinstall'),
             type: 'reinstall'

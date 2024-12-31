@@ -119,7 +119,7 @@ export const useDialogService = () => {
    * `false` if denied (e.g. no in yes/no/cancel), or
    * `null` if the dialog is cancelled or closed
    */
-  async function showConfirmationDialog({
+  async function confirm({
     title,
     type,
     message,
@@ -162,6 +162,6 @@ export const useDialogService = () => {
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
     prompt,
-    showConfirmationDialog
+    confirm
   }
 }

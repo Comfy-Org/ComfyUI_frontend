@@ -72,7 +72,7 @@ export const useWorkflowService = () => {
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
     if (existingWorkflow && !existingWorkflow.isTemporary) {
-      const res = await dialogService.showConfirmationDialog({
+      const res = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.confirmOverwriteTitle'),
         type: 'overwrite',
         message: t('sideToolbar.workflowTab.confirmOverwrite'),
@@ -181,7 +181,7 @@ export const useWorkflowService = () => {
     }
 
     if (workflow.isModified && options.warnIfUnsaved) {
-      const confirmed = await dialogService.showConfirmationDialog({
+      const confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.dirtyCloseTitle'),
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
@@ -225,7 +225,7 @@ export const useWorkflowService = () => {
     let confirmed: boolean | null = bypassConfirm || silent
 
     if (!confirmed) {
-      confirmed = await dialogService.showConfirmationDialog({
+      confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.confirmDeleteTitle'),
         type: 'delete',
         message: t('sideToolbar.workflowTab.confirmDelete'),
