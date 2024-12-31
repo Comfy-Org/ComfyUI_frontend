@@ -103,6 +103,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -114,7 +115,6 @@ import { ComfyNode } from '@/types/comfyWorkflow'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 import ResultGallery from './queue/ResultGallery.vue'
 import TaskItem from './queue/TaskItem.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()

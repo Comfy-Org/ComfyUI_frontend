@@ -15,9 +15,9 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { computed, onBeforeUnmount, ref, watch, type CSSProperties } from 'vue'
 import { useElementSize, useScroll } from '@vueuse/core'
 import { clamp, debounce } from 'lodash'
+import { type CSSProperties, computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
   items: (T & { key: string })[]

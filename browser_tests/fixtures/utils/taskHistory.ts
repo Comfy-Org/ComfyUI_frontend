@@ -1,14 +1,15 @@
 import fs from 'fs'
+import _ from 'lodash'
 import path from 'path'
+import type { Request, Route } from 'playwright'
 import { v4 as uuidv4 } from 'uuid'
+
 import type {
   HistoryTaskItem,
   TaskItem,
   TaskOutput
 } from '../../../src/types/apiTypes'
-import type { Request, Route } from 'playwright'
 import type { ComfyPage } from '../ComfyPage'
-import _ from 'lodash'
 
 /** keyof TaskOutput[string] */
 type OutputFileType = 'images' | 'audio' | 'animated'
