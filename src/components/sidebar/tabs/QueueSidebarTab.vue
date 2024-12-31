@@ -49,24 +49,26 @@
       </template>
     </template>
     <template #body>
-      <div
-        v-if="visibleTasks.length > 0"
-        ref="scrollContainer"
-        class="scroll-container"
+      <VirtualGrid
+        v-if="allTasks?.length"
+        :items="allTasks"
+        :gridStyle="{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          padding: '0.5rem',
+          gap: '0.5rem'
+        }"
       >
-        <div class="queue-grid">
+        <template #item="{ item }">
           <TaskItem
-            v-for="task in visibleTasks"
-            :key="task.key"
-            :task="task"
+            :task="item"
             :isFlatTask="isExpanded || isInFolderView"
             @contextmenu="handleContextMenu"
             @preview="handlePreview"
             @taskOutputLengthClicked="enterFolderView($event)"
           />
-        </div>
-        <div ref="loadMoreTrigger" style="height: 1px" />
-      </div>
+        </template>
+      </VirtualGrid>
       <div v-else-if="queueStore.isLoading">
         <ProgressSpinner
           style="width: 50px; left: 50%; transform: translateX(-50%)"
@@ -90,7 +92,6 @@
 </template>
 
 <script setup lang="ts">
-import { useInfiniteScroll, useResizeObserver } from '@vueuse/core'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
@@ -98,10 +99,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -124,17 +126,11 @@ const { t } = useI18n()
 
 // Expanded view: show all outputs in a flat list.
 const isExpanded = ref(false)
-const visibleTasks = ref<TaskItemImpl[]>([])
-const scrollContainer = ref<HTMLElement | null>(null)
-const loadMoreTrigger = ref<HTMLElement | null>(null)
 const galleryActiveIndex = ref(-1)
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
 const isInFolderView = computed(() => folderTask.value !== null)
 const imageFit = computed<string>(() => settingStore.get(IMAGE_FIT))
-
-const ITEMS_PER_PAGE = 8
-const SCROLL_THRESHOLD = 100 // pixels from bottom to trigger load
 
 const allTasks = computed(() =>
   isInFolderView.value
@@ -152,49 +148,8 @@ const allGalleryItems = computed(() =>
   })
 )
 
-const loadMoreItems = () => {
-  const currentLength = visibleTasks.value.length
-  const newTasks = allTasks.value.slice(
-    currentLength,
-    currentLength + ITEMS_PER_PAGE
-  )
-  visibleTasks.value.push(...newTasks)
-}
-
-const checkAndLoadMore = () => {
-  if (!scrollContainer.value) return
-
-  const { scrollHeight, scrollTop, clientHeight } = scrollContainer.value
-  if (scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD) {
-    loadMoreItems()
-  }
-}
-
-useInfiniteScroll(
-  scrollContainer,
-  () => {
-    if (visibleTasks.value.length < allTasks.value.length) {
-      loadMoreItems()
-    }
-  },
-  { distance: SCROLL_THRESHOLD }
-)
-
-// Use ResizeObserver to detect container size changes
-// This is necessary as the sidebar tab can change size when user drags the splitter.
-useResizeObserver(scrollContainer, () => {
-  nextTick(() => {
-    checkAndLoadMore()
-  })
-})
-
-const updateVisibleTasks = () => {
-  visibleTasks.value = allTasks.value.slice(0, ITEMS_PER_PAGE)
-}
-
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
-  updateVisibleTasks()
 }
 
 const removeTask = (task: TaskItemImpl) => {
@@ -236,7 +191,6 @@ const confirmRemoveAll = (event: Event) => {
 
 const onStatus = async () => {
   await queueStore.update()
-  updateVisibleTasks()
 }
 
 const menu = ref(null)
@@ -285,12 +239,10 @@ const handlePreview = (task: TaskItemImpl) => {
 
 const enterFolderView = (task: TaskItemImpl) => {
   folderTask.value = task
-  updateVisibleTasks()
 }
 
 const exitFolderView = () => {
   folderTask.value = null
-  updateVisibleTasks()
 }
 
 const toggleImageFit = () => {
@@ -305,44 +257,4 @@ onMounted(() => {
 onUnmounted(() => {
   api.removeEventListener('status', onStatus)
 })
-
-// Watch for changes in allTasks and reset visibleTasks if necessary
-watch(
-  allTasks,
-  (newTasks) => {
-    if (
-      visibleTasks.value.length === 0 ||
-      visibleTasks.value.length > newTasks.length
-    ) {
-      updateVisibleTasks()
-    }
-
-    nextTick(() => {
-      checkAndLoadMore()
-    })
-  },
-  { immediate: true }
-)
 </script>
-
-<style scoped>
-.scroll-container {
-  height: 100%;
-  overflow-y: auto;
-}
-
-.scroll-container::-webkit-scrollbar {
-  width: 1px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-  background-color: transparent;
-}
-
-.queue-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  padding: 0.5rem;
-  gap: 0.5rem;
-}
-</style>

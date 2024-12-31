@@ -22,6 +22,12 @@ class SidebarTab {
     }
     await this.tabButton.click()
   }
+  async close() {
+    if (!this.tabButton.isVisible()) {
+      return
+    }
+    await this.tabButton.click()
+  }
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
@@ -145,5 +151,95 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
     await this.page.waitForTimeout(300)
+  }
+}
+
+export class QueueSidebarTab extends SidebarTab {
+  constructor(public readonly page: Page) {
+    super(page, 'queue')
+  }
+
+  get root() {
+    return this.page.locator('.sidebar-content-container', { hasText: 'Queue' })
+  }
+
+  get tasks() {
+    return this.root.locator('[data-virtual-grid-item]')
+  }
+
+  get visibleTasks() {
+    return this.tasks.locator('visible=true')
+  }
+
+  get clearButton() {
+    return this.root.locator('.clear-all-button')
+  }
+
+  get collapseTasksButton() {
+    return this.getToggleExpandButton(false)
+  }
+
+  get expandTasksButton() {
+    return this.getToggleExpandButton(true)
+  }
+
+  get noResultsPlaceholder() {
+    return this.root.locator('.no-results-placeholder')
+  }
+
+  private getToggleExpandButton(isExpanded: boolean) {
+    const iconSelector = isExpanded ? '.pi-image' : '.pi-images'
+    return this.root.locator(`.toggle-expanded-button ${iconSelector}`)
+  }
+
+  async open() {
+    await super.open()
+    return this.root.waitFor({ state: 'visible' })
+  }
+
+  async close() {
+    await super.close()
+    await this.root.waitFor({ state: 'hidden' })
+  }
+
+  async expandTasks() {
+    await this.expandTasksButton.click()
+    await this.collapseTasksButton.waitFor({ state: 'visible' })
+  }
+
+  async collapseTasks() {
+    await this.collapseTasksButton.click()
+    await this.expandTasksButton.waitFor({ state: 'visible' })
+  }
+
+  async waitForTasks() {
+    return Promise.all([
+      this.tasks.first().waitFor({ state: 'visible' }),
+      this.tasks.last().waitFor({ state: 'visible' })
+    ])
+  }
+
+  async scrollTasks(direction: 'up' | 'down') {
+    const scrollToEl =
+      direction === 'up' ? this.tasks.last() : this.tasks.first()
+    await scrollToEl.scrollIntoViewIfNeeded()
+    await this.waitForTasks()
+  }
+
+  async clearTasks() {
+    await this.clearButton.click()
+    const confirmButton = this.page.getByLabel('Delete')
+    await confirmButton.click()
+    await this.noResultsPlaceholder.waitFor({ state: 'visible' })
+  }
+
+  /** Set the width of the tab (out of 100). Must call before opening the tab */
+  async setTabWidth(width: number) {
+    if (width < 0 || width > 100) {
+      throw new Error('Width must be between 0 and 100')
+    }
+    return this.page.evaluate((width) => {
+      localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
+    }, width)
   }
 }
