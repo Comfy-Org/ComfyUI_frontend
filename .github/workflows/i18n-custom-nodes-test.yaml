@@ -132,12 +132,12 @@ jobs:
         # Stage and commit changes
         git add -A
         git commit -m "Update locales"
-    - uses: actions/create-github-app-token@v1
-      id: app-token
-      with:
-        app_id: ${{ vars.PR_APP_ID }}
-        private_key: ${{ secrets.PR_APP_PRIVATE_KEY }}
-        repositories: ${{ env.fork_owner }}/${{ env.repository }}
+    # - uses: actions/create-github-app-token@v1
+    #   id: app-token
+    #   with:
+    #     app_id: ${{ vars.PR_APP_ID }}
+    #     private_key: ${{ secrets.PR_APP_PRIVATE_KEY }}
+    #     repositories: ${{ env.fork_owner }}/${{ env.repository }}
     # - uses: actions/checkout@v4
     #   with:
     #     token: ${{ steps.app-token.outputs.token }}
