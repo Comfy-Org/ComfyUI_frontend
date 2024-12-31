@@ -1,6 +1,13 @@
 <template>
   <BaseViewTemplate dark>
-    <Stepper class="stepper" value="0" @update:value="setHighestStep">
+    <!-- h-full to make sure the stepper does not layout shift between steps
+    as for each step the stepper height is different. Inherit the center element
+    placement from BaseViewTemplate would cause layout shift. -->
+    <Stepper
+      class="h-full p-8 2xl:p-16"
+      value="0"
+      @update:value="setHighestStep"
+    >
       <StepList class="select-none">
         <Step value="0">
           {{ $t('install.gpu') }}
