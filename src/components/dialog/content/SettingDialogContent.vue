@@ -237,16 +237,16 @@ const handleSearch = (query: string) => {
     const nameLower = setting.name.toLowerCase()
     const translatedName = st(
       `settings.${normalizeI18nKey(setting.id)}.name`,
-      setting.name
+      setting.name ?? ''
     ).toLocaleLowerCase()
     const info = getSettingInfo(setting)
     const translatedCategory = st(
       `settingsCategories.${normalizeI18nKey(info.category)}`,
-      info.category
+      info.category ?? ''
     ).toLocaleLowerCase()
     const translatedSubCategory = st(
       `settingsCategories.${normalizeI18nKey(info.subCategory)}`,
-      info.subCategory
+      info.subCategory ?? ''
     ).toLocaleLowerCase()
 
     return (
