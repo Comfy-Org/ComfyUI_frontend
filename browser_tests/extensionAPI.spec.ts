@@ -163,7 +163,7 @@ test.describe('Topbar commands', () => {
     test('Should allow showing a prompt dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
         window['app'].extensionManager.dialog
-          .showPromptDialog({
+          .prompt({
             title: 'Test Prompt',
             message: 'Test Prompt Message'
           })

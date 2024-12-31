@@ -22,7 +22,7 @@ export const useWorkflowService = () => {
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
-      let filename = await dialogService.showPromptDialog({
+      let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
         message: t('workflowService.enterFilename') + ':',
         defaultValue: defaultName
@@ -60,7 +60,7 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to save
    */
   const saveWorkflowAs = async (workflow: ComfyWorkflow) => {
-    const newFilename = await dialogService.showPromptDialog({
+    const newFilename = await dialogService.prompt({
       title: t('workflowService.saveWorkflow'),
       message: t('workflowService.enterFilename') + ':',
       defaultValue: workflow.filename

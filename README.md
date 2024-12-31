@@ -230,6 +230,26 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Developer APIs
 
 <details>
+  <summary>v1.6.13: Prompt dialog</summary>
+
+`window.prompt` is not available in ComfyUI desktop's electron environment. Please use the following API to show a prompt dialog.
+
+```js
+window['app'].extensionManager.dialog
+  .prompt({
+    title: 'Test Prompt',
+    message: 'Test Prompt Message'
+  })
+  .then((value: string) => {
+    // Do something with the value user entered
+  })
+```
+
+![image](https://github.com/user-attachments/assets/c73f74d0-9bb4-4555-8d56-83f1be4a1d7e)
+
+</details>
+
+<details>
   <summary>v1.3.34: Register about panel badges</summary>
 
 ```js

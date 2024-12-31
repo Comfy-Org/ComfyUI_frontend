@@ -353,7 +353,7 @@ app.registerExtension({
         content: `Save Selected as Template`,
         disabled: !Object.keys(app.canvas.selected_nodes || {}).length,
         callback: async () => {
-          const name = await useDialogService().showPromptDialog({
+          const name = await useDialogService().prompt({
             title: t('nodeTemplates.saveAsTemplate'),
             message: t('nodeTemplates.enterName'),
             defaultValue: ''

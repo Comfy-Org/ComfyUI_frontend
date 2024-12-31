@@ -79,7 +79,7 @@ class GroupNodeBuilder {
   }
 
   async getName() {
-    const name = await useDialogService().showPromptDialog({
+    const name = await useDialogService().prompt({
       title: t('groupNode.create'),
       message: t('groupNode.enterName'),
       defaultValue: ''

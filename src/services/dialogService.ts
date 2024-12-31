@@ -84,7 +84,7 @@ export const useDialogService = () => {
     })
   }
 
-  async function showPromptDialog({
+  async function prompt({
     title,
     message,
     defaultValue = ''
@@ -161,7 +161,7 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
-    showPromptDialog,
+    prompt,
     showConfirmationDialog
   }
 }
