@@ -113,6 +113,7 @@ export default class TaskHistory {
       }
     )
   }
+
   private createOutputs(
     filenames: string[],
     filetype: OutputFileType

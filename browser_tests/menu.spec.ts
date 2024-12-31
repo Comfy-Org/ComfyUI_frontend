@@ -706,6 +706,10 @@ test.describe('Menu', () => {
 })
 
 test.describe('Queue sidebar', () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+  })
+
   test('can display tasks', async ({ comfyPage }) => {
     await comfyPage.setupHistory().withTask(['example.webp']).setupRoutes()
     await comfyPage.menu.queueTab.open()
@@ -784,11 +788,11 @@ test.describe('Queue sidebar', () => {
 
   test.describe('Expand tasks', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // 2 tasks with 2 outputs each -> 2 additional items when expanded
+      // 2-item batch and 3-item batch -> 3 additional items when expanded
       await comfyPage
         .setupHistory()
+        .withTask(['example.webp', 'example.webp', 'example.webp'])
         .withTask(['example.webp', 'example.webp'])
-        .repeat(2)
         .setupRoutes()
       await comfyPage.menu.queueTab.open()
       await comfyPage.menu.queueTab.waitForTasks()
@@ -798,7 +802,7 @@ test.describe('Queue sidebar', () => {
       const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
       await comfyPage.menu.queueTab.expandTasks()
       expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
-        initialCount + 2
+        initialCount + 3
       )
     })
 
