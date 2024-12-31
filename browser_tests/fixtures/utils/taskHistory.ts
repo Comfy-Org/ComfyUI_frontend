@@ -142,11 +142,11 @@ export default class TaskHistory {
     outputFiletype: OutputFileType = 'images',
     overrides: Partial<HistoryTaskItem> = {}
   ): this {
-    const task = {
+    this.addTask({
       ...TaskHistory.defaultTask,
-      outputs: this.createOutputs(outputFilenames, outputFiletype)
-    }
-    this.addTask({ ...task, ...overrides })
+      outputs: this.createOutputs(outputFilenames, outputFiletype),
+      ...overrides
+    })
     return this
   }
 
