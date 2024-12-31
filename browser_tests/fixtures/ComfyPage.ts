@@ -530,6 +530,13 @@ export class ComfyPage {
     return this.page.locator('.p-dialog-content input[type="text"]')
   }
 
+  async fillPromptDialog(value: string) {
+    await this.promptDialogInput.fill(value)
+    await this.page.keyboard.press('Enter')
+    await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.nextFrame()
+  }
+
   async disconnectEdge() {
     await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
   }
@@ -797,9 +804,7 @@ export class ComfyPage {
     await this.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
     await node!.clickContextMenuOption('Convert to Group Node')
-    await this.promptDialogInput.fill(groupNodeName)
-    await this.page.keyboard.press('Enter')
-    await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.fillPromptDialog(groupNodeName)
     await this.nextFrame()
   }
 

@@ -158,4 +158,24 @@ test.describe('Topbar commands', () => {
       expect(await badge.textContent()).toContain('Test Badge')
     })
   })
+
+  test.describe('Dialog', () => {
+    test('Should allow showing a prompt dialog', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].extensionManager.dialog
+          .showPromptDialog({
+            title: 'Test Prompt',
+            message: 'Test Prompt Message'
+          })
+          .then((value: string) => {
+            window['value'] = value
+          })
+      })
+
+      await comfyPage.fillPromptDialog('Hello, world!')
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(
+        'Hello, world!'
+      )
+    })
+  })
 })
