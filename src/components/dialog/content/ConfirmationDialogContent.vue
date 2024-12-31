@@ -13,7 +13,14 @@
         autofocus
       />
       <Button
-        v-if="type === 'delete'"
+        v-if="type === 'default'"
+        :label="$t('g.confirm')"
+        severity="primary"
+        @click="onConfirm"
+        icon="pi pi-check"
+      />
+      <Button
+        v-else-if="type === 'delete'"
         :label="$t('g.delete')"
         severity="danger"
         @click="onConfirm"

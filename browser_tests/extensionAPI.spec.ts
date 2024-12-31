@@ -177,5 +177,23 @@ test.describe('Topbar commands', () => {
         'Hello, world!'
       )
     })
+
+    test('Should allow showing a confirmation dialog', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate(() => {
+        window['app'].extensionManager.dialog
+          .confirm({
+            title: 'Test Confirm',
+            message: 'Test Confirm Message'
+          })
+          .then((value: boolean) => {
+            window['value'] = value
+          })
+      })
+
+      await comfyPage.confirmDialog.click('confirm')
+      expect(await comfyPage.page.evaluate(() => window['value'])).toBe(true)
+    })
   })
 })

@@ -91,11 +91,13 @@ class ConfirmDialog {
   public readonly delete: Locator
   public readonly overwrite: Locator
   public readonly reject: Locator
+  public readonly confirm: Locator
 
   constructor(public readonly page: Page) {
     this.delete = page.locator('button.p-button[aria-label="Delete"]')
     this.overwrite = page.locator('button.p-button[aria-label="Overwrite"]')
     this.reject = page.locator('button.p-button[aria-label="Cancel"]')
+    this.confirm = page.locator('button.p-button[aria-label="Confirm"]')
   }
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {

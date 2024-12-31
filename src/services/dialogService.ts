@@ -12,6 +12,7 @@ import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import type { MissingNodeType } from '@/types/comfy'
 
 export type ConfirmationDialogType =
+  | 'default'
   | 'overwrite'
   | 'delete'
   | 'dirtyClose'
@@ -121,16 +122,16 @@ export const useDialogService = () => {
    */
   async function confirm({
     title,
-    type,
     message,
+    type = 'default',
     itemList = []
   }: {
     /** Dialog heading */
     title: string
-    /** Pre-configured dialog type */
-    type: ConfirmationDialogType
     /** The main message body */
     message: string
+    /** Pre-configured dialog type */
+    type?: ConfirmationDialogType
     /** Displayed as an unorderd list immediately below the message body */
     itemList?: string[]
   }): Promise<boolean | null> {
