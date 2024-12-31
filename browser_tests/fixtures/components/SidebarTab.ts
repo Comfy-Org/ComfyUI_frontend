@@ -176,11 +176,11 @@ export class QueueSidebarTab extends SidebarTab {
   }
 
   get collapseTasksButton() {
-    return this.getToggleExpandButton(true)
+    return this.getToggleExpandButton(false)
   }
 
   get expandTasksButton() {
-    return this.getToggleExpandButton(false)
+    return this.getToggleExpandButton(true)
   }
 
   get noResultsPlaceholder() {

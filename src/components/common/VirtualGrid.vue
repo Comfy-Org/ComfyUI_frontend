@@ -14,15 +14,13 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, ref, watch, type CSSProperties } from 'vue'
+<script setup lang="ts" generic="T">
+import { computed, onBeforeUnmount, ref, watch, type CSSProperties } from 'vue'
 import { useElementSize, useScroll } from '@vueuse/core'
 import { clamp, debounce } from 'lodash'
 
-type GridItem<T = any> = T & { key: string }
-
 const props = defineProps<{
-  items: GridItem[]
+  items: (T & { key: string })[]
   gridStyle: Partial<CSSProperties>
   bufferRows?: number
   scrollThrottle?: number
@@ -63,7 +61,7 @@ const state = computed<{ start: number; end: number }>(() => {
     end: clamp(toCol, fromCol, props.items?.length)
   }
 })
-const renderedItems = computed<GridItem[]>(() =>
+const renderedItems = computed(() =>
   isValidGrid.value ? props.items.slice(state.value.start, state.value.end) : []
 )
 
@@ -75,6 +73,9 @@ const updateItemSize = () => {
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
+onBeforeUnmount(() => {
+  onResize.cancel() // Clear pending debounced calls
+})
 </script>
 
 <style scoped>

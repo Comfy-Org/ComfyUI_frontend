@@ -760,7 +760,7 @@ test.describe('Queue sidebar', () => {
           expect(renderedCount).toBeLessThanOrEqual(expectRenderLimit)
         })
 
-        test('should teardown items above after scrolling away', async ({
+        test('should teardown items after scrolling away', async ({
           comfyPage
         }) => {
           await comfyPage.menu.queueTab.scrollTasks('down')
@@ -784,7 +784,7 @@ test.describe('Queue sidebar', () => {
 
   test.describe('Expand tasks', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // 2 tasks with 2 outputs each = 2 additional items when expanded
+      // 2 tasks with 2 outputs each -> 2 additional items when expanded
       await comfyPage
         .setupHistory()
         .withTask(['example.webp', 'example.webp'])
@@ -796,7 +796,7 @@ test.describe('Queue sidebar', () => {
 
     test('can expand tasks with multiple outputs', async ({ comfyPage }) => {
       const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
-      await comfyPage.menu.queueTab.collapseTasks()
+      await comfyPage.menu.queueTab.expandTasks()
       expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
         initialCount + 2
       )
@@ -804,8 +804,8 @@ test.describe('Queue sidebar', () => {
 
     test('can collapse flat tasks', async ({ comfyPage }) => {
       const initialCount = await comfyPage.menu.queueTab.visibleTasks.count()
-      await comfyPage.menu.queueTab.collapseTasks()
       await comfyPage.menu.queueTab.expandTasks()
+      await comfyPage.menu.queueTab.collapseTasks()
       expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(
         initialCount
       )
