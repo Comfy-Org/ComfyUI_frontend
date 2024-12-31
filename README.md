@@ -61,10 +61,10 @@ Stable releases are published bi-weekly in the ComfyUI main repository.
 <details>
   <summary>v1.5: Native translation (i18n)</summary>
 
-  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language 
-  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native 
+  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
+  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, or Korean. This native
   implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
-  
+
   More details available here: https://blog.comfy.org/p/native-localization-support-i18n
 </details>
 
@@ -230,11 +230,18 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 ### Developer APIs
 
 <details>
-  <summary>v1.6.13: Prompt dialog</summary>
+  <summary>v1.6.13: prompt/confirm/alert replacements for ComfyUI desktop</summary>
 
-`window.prompt` is not available in ComfyUI desktop's electron environment. Please use the following API to show a prompt dialog.
+Several browser-only APIs are not available in ComfyUI desktop's electron environment.
+
+- `window.prompt`
+- `window.confirm`
+- `window.alert`
+
+Please use the following APIs as replacements.
 
 ```js
+// window.prompt
 window['app'].extensionManager.dialog
   .prompt({
     title: 'Test Prompt',
@@ -246,6 +253,28 @@ window['app'].extensionManager.dialog
 ```
 
 ![image](https://github.com/user-attachments/assets/c73f74d0-9bb4-4555-8d56-83f1be4a1d7e)
+
+```js
+// window.confirm
+window['app'].extensionManager.dialog
+  .confirm({
+    title: 'Test Confirm',
+    message: 'Test Confirm Message'
+  })
+  .then((value: boolean) => {
+    // Do something with the value user entered
+  })
+```
+
+![image](https://github.com/user-attachments/assets/8dec7a42-7443-4245-85be-ceefb1116e96)
+
+```js
+// window.alert
+window['app'].extensionManager.toast
+  .addAlert("Test Alert")
+```
+
+![image](https://github.com/user-attachments/assets/9b18bdca-76ef-4432-95de-5cd2369684f2)
 
 </details>
 
