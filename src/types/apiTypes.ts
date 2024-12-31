@@ -198,11 +198,21 @@ const zPendingTaskItem = z.object({
 
 const zTaskOutput = z.record(zNodeId, zOutputs)
 
+const zNodeOutputsMeta = z.object({
+  node_id: zNodeId,
+  display_node: zNodeId,
+  prompt_id: zPromptId.optional(),
+  read_node_id: zNodeId.optional()
+})
+
+const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
+
 const zHistoryTaskItem = z.object({
   taskType: z.literal('History'),
   prompt: zTaskPrompt,
   status: zStatus.optional(),
-  outputs: zTaskOutput
+  outputs: zTaskOutput,
+  meta: zTaskMeta.optional()
 })
 
 const zTaskItem = z.union([
