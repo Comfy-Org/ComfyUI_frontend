@@ -14,13 +14,12 @@ import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
-  WorkflowsSidebarTab,
-  QueueSidebarTab
+  WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference } from './utils/litegraphUtils'
-import { HistoryBuilder } from './utils/taskHistory'
+import TaskHistory from './utils/taskHistory'
 
 dotenv.config()
 
@@ -239,8 +238,8 @@ export class ComfyPage {
     }
   }
 
-  setupHistory(): HistoryBuilder {
-    return new HistoryBuilder(this.page)
+  setupHistory(): TaskHistory {
+    return new TaskHistory(this)
   }
 
   async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {

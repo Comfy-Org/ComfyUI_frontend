@@ -1,15 +1,49 @@
 import fs from 'fs'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import type { HistoryTaskItem, TaskOutput } from '../../../src/types/apiTypes'
-import type { Page, Request } from 'playwright'
+import type {
+  HistoryTaskItem,
+  TaskItem,
+  TaskOutput
+} from '../../../src/types/apiTypes'
+import type { Request, Route } from 'playwright'
+import type { ComfyPage } from '../ComfyPage'
+import _ from 'lodash'
+
+/** keyof TaskOutput[string] */
+type OutputFileType = 'images' | 'audio' | 'animated'
 
 const DEFAULT_IMAGE = 'example.webp'
 
-export class HistoryBuilder {
+const getFilenameParam = (request: Request) => {
+  const url = new URL(request.url())
+  return url.searchParams.get('filename') || DEFAULT_IMAGE
+}
+
+const getContentType = (filename: string, fileType: OutputFileType) => {
+  const subtype = path.extname(filename).slice(1)
+  switch (fileType) {
+    case 'images':
+      return `image/${subtype}`
+    case 'audio':
+      return `audio/${subtype}`
+    case 'animated':
+      return `video/${subtype}`
+  }
+}
+
+const setQueueIndex = (task: TaskItem) => {
+  task.prompt[0] = TaskHistory.queueIndex++
+}
+
+const setPromptId = (task: TaskItem) => {
+  task.prompt[1] = uuidv4()
+}
+
+export default class TaskHistory {
   static queueIndex = 0
-  static readonly defaultTask: HistoryTaskItem = {
-    prompt: [0, 'prompt-id', {}, { client_id: 'placeholder-client-id' }, []],
+  static readonly defaultTask: Readonly<HistoryTaskItem> = {
+    prompt: [0, 'prompt-id', {}, { client_id: uuidv4() }, []],
     outputs: {},
     status: {
       status_str: 'success',
@@ -18,124 +52,108 @@ export class HistoryBuilder {
     },
     taskType: 'History'
   }
-  static readonly assetCache: Map<string, Buffer> = new Map()
-
   private tasks: HistoryTaskItem[] = []
-  private outputFiles: Set<string> = new Set()
+  private outputContentTypes: Map<string, string> = new Map()
 
-  constructor(private page: Page) {}
+  constructor(readonly comfyPage: ComfyPage) {}
 
-  private setQueueIndex(task: HistoryTaskItem) {
-    task.prompt[0] = HistoryBuilder.queueIndex++
-  }
-
-  private setPromptId(task: HistoryTaskItem) {
-    task.prompt[1] = uuidv4()
-  }
-
-  private getAssetPath(filename: string): string {
-    return `./browser_tests/assets/${filename}`
-  }
-
-  private getContentType(filename: string): string {
-    return `image/${path.extname(filename).slice(1)}`
-  }
-
-  private createOutputRecord(filename: string): TaskOutput[string] {
-    return {
-      images: [{ filename, subfolder: '', type: 'output' }]
+  private loadAsset: (filename: string) => Buffer = _.memoize(
+    (filename: string) => {
+      const filePath = this.comfyPage.assetPath(filename)
+      return fs.readFileSync(filePath)
     }
-  }
+  )
 
-  private getFilenameParam(request: Request): string {
-    const url = new URL(request.url())
-    return url.searchParams.get('filename') || DEFAULT_IMAGE
-  }
-
-  private addOutputsToTask(
-    task: HistoryTaskItem,
-    outputFilenames: string[]
-  ): void {
-    outputFilenames.forEach((filename, i) => {
-      const nodeId = `${i + 1}`
-      task.outputs[nodeId] = this.createOutputRecord(filename)
-      this.outputFiles.add(filename)
+  private async handleGetHistory(route: Route) {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(this.tasks)
     })
   }
 
-  private createNewTask(
-    template: HistoryTaskItem = HistoryBuilder.defaultTask
-  ): HistoryTaskItem {
-    const taskCopy = structuredClone(template)
-    this.setPromptId(taskCopy)
-    this.setQueueIndex(taskCopy)
-    return taskCopy
-  }
+  private async handleGetView(route: Route) {
+    const fileName = getFilenameParam(route.request())
+    if (!this.outputContentTypes.has(fileName)) route.continue()
 
-  private loadAsset(filename: string): Buffer {
-    const filePath = this.getAssetPath(filename)
-    if (HistoryBuilder.assetCache.has(filePath)) {
-      return HistoryBuilder.assetCache.get(filePath)!
-    }
-    const asset = fs.readFileSync(filePath)
-    HistoryBuilder.assetCache.set(filePath, asset)
-    return asset
-  }
-
-  private async setupViewRoute() {
-    return this.page.route('**/api/view*', async (route) => {
-      const request = route.request()
-      const fileName = this.getFilenameParam(request)
-      const asset = this.loadAsset(fileName)
-      await route.fulfill({
-        status: 200,
-        contentType: this.getContentType(fileName),
-        body: asset,
-        headers: {
-          'Cache-Control': 'public, max-age=31536000',
-          'Content-Length': asset.byteLength.toString()
-        }
-      })
-    })
-  }
-
-  private async setupHistoryRoute() {
-    await this.page.route('**/api/history*', async (route) => {
-      const method = route.request().method()
-
-      if (method === 'POST') {
-        if (route.request().postDataJSON()?.clear === true) this.tasks = []
-        return route.continue()
+    const asset = this.loadAsset(fileName)
+    return route.fulfill({
+      status: 200,
+      contentType: this.outputContentTypes.get(fileName),
+      body: asset,
+      headers: {
+        'Cache-Control': 'public, max-age=31536000',
+        'Content-Length': asset.byteLength.toString()
       }
-
-      // Return the current task history for GET requests
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(this.tasks)
-      })
     })
   }
 
   async setupRoutes() {
-    await Promise.all([this.setupViewRoute(), this.setupHistoryRoute()])
+    return this.comfyPage.page.route(
+      /.*\/api\/(view|history)(\?.*)?$/,
+      async (route) => {
+        const request = route.request()
+        const method = request.method()
+
+        const isViewReq = request.url().includes('view') && method === 'GET'
+        if (isViewReq) return this.handleGetView(route)
+
+        const isHistoryPath = request.url().includes('history')
+        const isGetHistoryReq = isHistoryPath && method === 'GET'
+        if (isGetHistoryReq) return this.handleGetHistory(route)
+
+        const isClearReq =
+          method === 'POST' &&
+          isHistoryPath &&
+          request.postDataJSON()?.clear === true
+        if (isClearReq) return this.clearTasks()
+
+        return route.continue()
+      }
+    )
+  }
+  private createOutputs(
+    filenames: string[],
+    filetype: OutputFileType
+  ): TaskOutput {
+    return filenames.reduce((outputs, filename, i) => {
+      const nodeId = `${i + 1}`
+      outputs[nodeId] = {
+        [filetype]: [{ filename, subfolder: '', type: 'output' }]
+      }
+      const contentType = getContentType(filename, filetype)
+      this.outputContentTypes.set(filename, contentType)
+      return outputs
+    }, {})
+  }
+
+  private addTask(task: HistoryTaskItem) {
+    setPromptId(task)
+    setQueueIndex(task)
+    this.tasks.push(task)
+  }
+
+  clearTasks() {
+    this.tasks = []
   }
 
   withTask(
     outputFilenames: string[],
+    outputFiletype: OutputFileType = 'images',
     overrides: Partial<HistoryTaskItem> = {}
   ): this {
-    const task = this.createNewTask()
-    this.addOutputsToTask(task, outputFilenames)
-    this.tasks.push({ ...task, ...overrides })
+    const task = {
+      ...TaskHistory.defaultTask,
+      outputs: this.createOutputs(outputFilenames, outputFiletype)
+    }
+    this.addTask({ ...task, ...overrides })
     return this
   }
 
+  /** Repeats the last task in the task history a specified number of times. */
   repeat(n: number): this {
-    for (let i = 0; i < n; i++) {
-      const lastTaskCopy = { ...this.tasks.at(-1) } as HistoryTaskItem
-      this.tasks.push(this.createNewTask(lastTaskCopy))
-    }
+    for (let i = 0; i < n; i++)
+      this.addTask(structuredClone(this.tasks.at(-1)) as HistoryTaskItem)
     return this
   }
 }

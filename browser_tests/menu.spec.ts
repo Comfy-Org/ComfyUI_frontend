@@ -724,7 +724,7 @@ test.describe('Queue sidebar', () => {
     expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
   })
 
-  test.describe('Virtual scrolling', () => {
+  test.describe('Virtual scroll', () => {
     const layouts = [
       { description: 'Five columns layout', width: 95, rows: 3, cols: 5 },
       { description: 'Three columns layout', width: 55, rows: 3, cols: 3 },
@@ -782,7 +782,7 @@ test.describe('Queue sidebar', () => {
     })
   })
 
-  test.describe('Flat outputs', () => {
+  test.describe('Expand tasks', () => {
     test.beforeEach(async ({ comfyPage }) => {
       // 2 tasks with 2 outputs each = 2 additional items when expanded
       await comfyPage
@@ -791,6 +791,7 @@ test.describe('Queue sidebar', () => {
         .repeat(2)
         .setupRoutes()
       await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
     })
 
     test('can expand tasks with multiple outputs', async ({ comfyPage }) => {
@@ -811,7 +812,7 @@ test.describe('Queue sidebar', () => {
     })
   })
 
-  test.describe('Clearing tasks', () => {
+  test.describe('Clear tasks', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage
         .setupHistory()
@@ -824,12 +825,6 @@ test.describe('Queue sidebar', () => {
     test('can clear all tasks', async ({ comfyPage }) => {
       await comfyPage.menu.queueTab.clearTasks()
       expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(0)
-    })
-
-    test('should display placeholder after clearing tasks', async ({
-      comfyPage
-    }) => {
-      await comfyPage.menu.queueTab.clearTasks()
       expect(
         await comfyPage.menu.queueTab.noResultsPlaceholder.isVisible()
       ).toBe(true)
