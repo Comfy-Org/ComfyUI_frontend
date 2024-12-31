@@ -64,14 +64,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { electronAPI } from '@/utils/envUtil'
-import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 

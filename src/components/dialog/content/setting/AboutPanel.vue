@@ -30,13 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import PanelTemplate from './PanelTemplate.vue'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useAboutPanelStore } from '@/stores/aboutPanelStore'
-import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
+import Tag from 'primevue/tag'
 import { onMounted } from 'vue'
+
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
+import { useAboutPanelStore } from '@/stores/aboutPanelStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
+import PanelTemplate from './PanelTemplate.vue'
 
 const systemStatsStore = useSystemStatsStore()
 const aboutPanelStore = useAboutPanelStore()

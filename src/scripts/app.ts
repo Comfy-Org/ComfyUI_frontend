@@ -1,58 +1,56 @@
 // @ts-strict-ignore
-import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
-import { ComfyUI, $el } from './ui'
-import { api, type ComfyApi } from './api'
-import { defaultGraph } from './defaultGraph'
 import {
-  getPngMetadata,
-  getWebpMetadata,
-  getFlacMetadata,
-  importA1111,
-  getLatentMetadata
-} from './pnginfo'
+  LGraph,
+  LGraphCanvas,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
+import { Vector2 } from '@comfyorg/litegraph'
+import _ from 'lodash'
+import type { ToastMessageOptions } from 'primevue/toast'
+import { shallowReactive } from 'vue'
+
+import { st } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
+import { useExtensionService } from '@/services/extensionService'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkflowService } from '@/services/workflowService'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { useModelStore } from '@/stores/modelStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { ComfyWorkflow } from '@/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { ComfyNodeDef } from '@/types/apiTypes'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
   validateComfyWorkflow
 } from '@/types/comfyWorkflow'
-import type { ComfyNodeDef } from '@/types/apiTypes'
-import { adjustColor, ColorAdjustOptions } from '@/utils/colorUtil'
+import { ExtensionManager } from '@/types/extensionTypes'
+import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+
+import { type ComfyApi, api } from './api'
+import { defaultGraph } from './defaultGraph'
+import {
+  getFlacMetadata,
+  getLatentMetadata,
+  getPngMetadata,
+  getWebpMetadata,
+  importA1111
+} from './pnginfo'
+import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { getStorageValue } from './utils'
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import {
-  LGraphCanvas,
-  LGraph,
-  LGraphNode,
-  LiteGraph,
-  LGraphEventMode
-} from '@comfyorg/litegraph'
-import { ExtensionManager } from '@/types/extensionTypes'
-import {
-  ComfyNodeDefImpl,
-  SYSTEM_NODE_DEFS,
-  useNodeDefStore
-} from '@/stores/nodeDefStore'
-import { Vector2 } from '@comfyorg/litegraph'
-import _ from 'lodash'
-import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
-import { useModelStore } from '@/stores/modelStore'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useExtensionStore } from '@/stores/extensionStore'
-import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { shallowReactive } from 'vue'
-import { useWorkflowService } from '@/services/workflowService'
-import { useWidgetStore } from '@/stores/widgetStore'
-import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import { st } from '@/i18n'
-import { useExtensionService } from '@/services/extensionService'
-import { useLitegraphService } from '@/services/litegraphService'
+import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -2049,19 +2047,6 @@ export class ComfyApp {
     this.lastExecutionError = null
   }
 
-  addNodeOnGraph(
-    nodeDef: ComfyNodeDef | ComfyNodeDefImpl,
-    options: Record<string, any> = {}
-  ): LGraphNode {
-    const node = LiteGraph.createNode(
-      nodeDef.name,
-      nodeDef.display_name,
-      options
-    )
-    this.graph.add(node)
-    return node
-  }
-
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     const rect = this.canvasContainer.getBoundingClientRect()
     const containerOffsets = [rect.left, rect.top]
@@ -2076,18 +2061,6 @@ export class ComfyApp {
     return _.zip(pos, this.canvas.ds.offset, containerOffsets).map(
       ([p, o1, o2]) => (p + o1) * this.canvas.ds.scale + o2
     ) as Vector2
-  }
-
-  getCanvasCenter(): Vector2 {
-    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
-    const [x, y, w, h] = app.canvas.ds.visible_area
-    return [x + w / dpi / 2, y + h / dpi / 2]
-  }
-
-  public goToNode(nodeId: NodeId) {
-    const graphNode = this.graph.getNodeById(nodeId)
-    if (!graphNode) return
-    this.canvas.animateToBounds(graphNode.boundingRect)
   }
 }
 

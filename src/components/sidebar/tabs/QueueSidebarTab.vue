@@ -90,26 +90,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useInfiniteScroll, useResizeObserver } from '@vueuse/core'
-import { useI18n } from 'vue-i18n'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import ConfirmPopup from 'primevue/confirmpopup'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
-import TaskItem from './queue/TaskItem.vue'
-import ResultGallery from './queue/ResultGallery.vue'
-import SidebarTabTemplate from './SidebarTabTemplate.vue'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { api } from '@/scripts/api'
-import { ComfyNode } from '@/types/comfyWorkflow'
-import { useSettingStore } from '@/stores/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
+import { useCommandStore } from '@/stores/commandStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { ComfyNode } from '@/types/comfyWorkflow'
+
+import SidebarTabTemplate from './SidebarTabTemplate.vue'
+import ResultGallery from './queue/ResultGallery.vue'
+import TaskItem from './queue/TaskItem.vue'
 
 const IMAGE_FIT = 'Comfy.Queue.ImageFit'
 const confirm = useConfirm()
@@ -255,7 +258,7 @@ const menuItems = computed<MenuItem[]>(() => [
   {
     label: t('g.goToNode'),
     icon: 'pi pi-arrow-circle-right',
-    command: () => app.goToNode(menuTargetNode.value?.id),
+    command: () => useLitegraphService().goToNode(menuTargetNode.value?.id),
     visible: !!menuTargetNode.value
   }
 ])

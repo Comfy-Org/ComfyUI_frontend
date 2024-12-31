@@ -1,6 +1,7 @@
-import { setActivePinia, createPinia } from 'pinia'
-import { UserFile, useUserFileStore } from '@/stores/userFileStore'
+import { createPinia, setActivePinia } from 'pinia'
+
 import { api } from '@/scripts/api'
+import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
 // Mock the api
 jest.mock('@/scripts/api', () => ({

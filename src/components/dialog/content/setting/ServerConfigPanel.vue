@@ -66,20 +66,22 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import Message from 'primevue/message'
-import Divider from 'primevue/divider'
-import FormItem from '@/components/common/FormItem.vue'
-import PanelTemplate from './PanelTemplate.vue'
-import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { storeToRefs } from 'pinia'
-import { electronAPI } from '@/utils/envUtil'
-import { useSettingStore } from '@/stores/settingStore'
+import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import Message from 'primevue/message'
 import { watch } from 'vue'
-import { useCopyToClipboard } from '@/hooks/clipboardHooks'
-import type { FormItem as FormItemType } from '@/types/settingTypes'
-import type { ServerConfig } from '@/constants/serverConfig'
 import { useI18n } from 'vue-i18n'
+
+import FormItem from '@/components/common/FormItem.vue'
+import type { ServerConfig } from '@/constants/serverConfig'
+import { useCopyToClipboard } from '@/hooks/clipboardHooks'
+import { useServerConfigStore } from '@/stores/serverConfigStore'
+import { useSettingStore } from '@/stores/settingStore'
+import type { FormItem as FormItemType } from '@/types/settingTypes'
+import { electronAPI } from '@/utils/envUtil'
+
+import PanelTemplate from './PanelTemplate.vue'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()

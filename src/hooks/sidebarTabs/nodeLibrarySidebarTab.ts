@@ -1,5 +1,6 @@
 import { markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarTab.vue'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 

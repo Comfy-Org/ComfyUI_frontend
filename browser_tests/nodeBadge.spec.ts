@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+
 import type { ComfyApp } from '../src/scripts/app'
 import { NodeBadgeMode } from '../src/types/nodeSource'
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {

@@ -22,11 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import { NodeFilter, type FilterAndValue } from '@/services/nodeSearchService'
 import Button from 'primevue/button'
-import SelectButton from 'primevue/selectbutton'
 import Select from 'primevue/select'
-import { ref, onMounted, computed } from 'vue'
+import SelectButton from 'primevue/selectbutton'
+import { computed, onMounted, ref } from 'vue'
+
+import { type FilterAndValue, NodeFilter } from '@/services/nodeSearchService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)

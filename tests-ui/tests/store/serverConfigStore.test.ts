@@ -1,6 +1,7 @@
-import { setActivePinia, createPinia } from 'pinia'
-import { useServerConfigStore } from '@/stores/serverConfigStore'
+import { createPinia, setActivePinia } from 'pinia'
+
 import { ServerConfig } from '@/constants/serverConfig'
+import { useServerConfigStore } from '@/stores/serverConfigStore'
 import type { FormItem } from '@/types/settingTypes'
 
 const dummyFormItem: FormItem = {

@@ -1,15 +1,17 @@
 // @ts-strict-ignore
+import {
+  type LGraphNode,
+  type LGraphNodeConstructor,
+  LiteGraph
+} from '@comfyorg/litegraph'
+
+import { useToastStore } from '@/stores/toastStore'
+
+import { type ComfyApp, app } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
 import { DraggableList } from '../../scripts/ui/draggableList'
 import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import './groupNodeManage.css'
-import { app, type ComfyApp } from '../../scripts/app'
-import {
-  LiteGraph,
-  type LGraphNode,
-  type LGraphNodeConstructor
-} from '@comfyorg/litegraph'
-import { useToastStore } from '@/stores/toastStore'
 
 const ORDER: symbol = Symbol()
 const PREFIX = 'workflow'

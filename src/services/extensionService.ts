@@ -1,5 +1,6 @@
-import { app } from '@/scripts/app'
+import { useErrorHandling } from '@/hooks/errorHooks'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
@@ -8,7 +9,6 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
-import { useErrorHandling } from '@/hooks/errorHooks'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()

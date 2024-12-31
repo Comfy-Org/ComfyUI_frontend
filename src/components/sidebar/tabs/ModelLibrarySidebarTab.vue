@@ -46,11 +46,16 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import type { TreeNode } from 'primevue/treenode'
+import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+
 import SearchBox from '@/components/common/SearchBox.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
 import ElectronDownloadItems from '@/components/sidebar/tabs/modelLibrary/ElectronDownloadItems.vue'
+import ModelTreeLeaf from '@/components/sidebar/tabs/modelLibrary/ModelTreeLeaf.vue'
+import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useLitegraphService } from '@/services/litegraphService'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -59,16 +64,12 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useTreeExpansion } from '@/hooks/treeHooks'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
-import type { TreeNode } from 'primevue/treenode'
-import { app } from '@/scripts/app'
-import { buildTree } from '@/utils/treeUtil'
 import { isElectron } from '@/utils/envUtil'
+import { buildTree } from '@/utils/treeUtil'
 
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
@@ -153,9 +154,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         if (node.leaf) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
-            const node = app.addNodeOnGraph(provider.nodeDef, {
-              pos: app.getCanvasCenter()
-            })
+            const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)
             const widget = node.widgets.find(
               (widget) => widget.name === provider.key
             )

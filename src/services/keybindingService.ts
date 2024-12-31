@@ -1,8 +1,8 @@
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useCommandStore } from '@/stores/commandStore'
 import {
-  KeybindingImpl,
   KeyComboImpl,
+  KeybindingImpl,
   useKeybindingStore
 } from '@/stores/keybindingStore'
 import { useSettingStore } from '@/stores/settingStore'

@@ -1,13 +1,15 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { api } from '../../scripts/api'
-import { ComfyDialog, $el } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 import { LGraphCanvas } from '@comfyorg/litegraph'
+
+import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/stores/toastStore'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import { useDialogService } from '@/services/dialogService'
-import { t } from '@/i18n'
+
+import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
+import { $el, ComfyDialog } from '../../scripts/ui'
+import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:

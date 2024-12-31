@@ -1,6 +1,6 @@
 // @ts-strict-ignore
-import { ComfyDialog } from '../dialog'
 import { $el } from '../../ui'
+import { ComfyDialog } from '../dialog'
 
 export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
   #resolve: (value: any) => void

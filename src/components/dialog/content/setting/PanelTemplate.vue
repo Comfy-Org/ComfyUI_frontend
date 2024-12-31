@@ -11,8 +11,8 @@
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
 import ScrollPanel from 'primevue/scrollpanel'
+import TabPanel from 'primevue/tabpanel'
 
 const props = defineProps<{
   value: string

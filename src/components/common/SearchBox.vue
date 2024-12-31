@@ -42,14 +42,15 @@
 </template>
 
 <script setup lang="ts" generic="TFilter extends SearchFilter">
-import type { SearchFilter } from './SearchFilterChip.vue'
 import { debounce } from 'lodash'
+import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import Button from 'primevue/button'
-import SearchFilterChip from './SearchFilterChip.vue'
 import { toRefs } from 'vue'
+
+import type { SearchFilter } from './SearchFilterChip.vue'
+import SearchFilterChip from './SearchFilterChip.vue'
 
 const props = withDefaults(
   defineProps<{

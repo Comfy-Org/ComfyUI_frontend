@@ -1,16 +1,17 @@
 // @ts-strict-ignore
-import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
-import { useToastStore } from '@/stores/toastStore'
+import { IWidget } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
-import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
+
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useToastStore } from '@/stores/toastStore'
 
 async function uploadFile(
   load3d: Load3d,

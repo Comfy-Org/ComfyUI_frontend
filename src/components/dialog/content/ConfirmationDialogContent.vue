@@ -56,8 +56,9 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
-import { useDialogStore } from '@/stores/dialogStore'
+
 import type { ConfirmationDialogType } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
   message: string

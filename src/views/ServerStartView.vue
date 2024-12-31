@@ -42,14 +42,15 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import { ref, onMounted, Ref } from 'vue'
-import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import { ProgressStatus } from '@comfyorg/comfyui-electron-types'
-import { electronAPI } from '@/utils/envUtil'
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { Terminal } from '@xterm/xterm'
+import Button from 'primevue/button'
+import { Ref, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
+import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()

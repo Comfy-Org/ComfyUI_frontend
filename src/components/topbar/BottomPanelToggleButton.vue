@@ -16,8 +16,9 @@
 </template>
 
 <script setup lang="ts">
-import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import Button from 'primevue/button'
+
+import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 const bottomPanelStore = useBottomPanelStore()
 </script>

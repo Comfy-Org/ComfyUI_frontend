@@ -33,9 +33,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import ListBox from 'primevue/listbox'
 import Button from 'primevue/button'
+import ListBox from 'primevue/listbox'
+import { computed } from 'vue'
+
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import type { MissingNodeType } from '@/types/comfy'
 

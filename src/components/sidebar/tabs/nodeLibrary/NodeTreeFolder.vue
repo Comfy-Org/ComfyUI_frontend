@@ -8,10 +8,11 @@
 </template>
 
 <script setup lang="ts">
+import { Ref, computed, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { computed, inject, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { BookmarkCustomization } from '@/types/apiTypes'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 

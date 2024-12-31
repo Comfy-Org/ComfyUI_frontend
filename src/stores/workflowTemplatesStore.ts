@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+
 import { api } from '@/scripts/api'
 
 export const useWorkflowTemplatesStore = defineStore(

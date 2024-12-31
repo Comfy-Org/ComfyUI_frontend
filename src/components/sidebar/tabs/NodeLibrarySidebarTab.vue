@@ -63,31 +63,33 @@
 
 <script setup lang="ts">
 import Button from 'primevue/button'
+import Divider from 'primevue/divider'
+import Popover from 'primevue/popover'
+import type { TreeNode } from 'primevue/treenode'
+import { Ref, computed, nextTick, ref } from 'vue'
+
+import SearchBox from '@/components/common/SearchBox.vue'
+import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
+import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
+import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useLitegraphService } from '@/services/litegraphService'
+import { FilterAndValue } from '@/services/nodeSearchService'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import {
-  buildNodeDefTree,
   ComfyNodeDefImpl,
+  buildNodeDefTree,
   useNodeDefStore
 } from '@/stores/nodeDefStore'
-import { computed, nextTick, ref, Ref } from 'vue'
-import type { TreeNode } from 'primevue/treenode'
-import Popover from 'primevue/popover'
-import Divider from 'primevue/divider'
-import SearchBox from '@/components/common/SearchBox.vue'
-import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
-import TreeExplorer from '@/components/common/TreeExplorer.vue'
-import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import { app } from '@/scripts/app'
-import { sortedTree } from '@/utils/treeUtil'
-import { useTreeExpansion } from '@/hooks/treeHooks'
-import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
-import { FilterAndValue } from '@/services/nodeSearchService'
-import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { sortedTree } from '@/utils/treeUtil'
+
+import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
@@ -128,7 +130,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         e: MouseEvent
       ) => {
         if (node.leaf) {
-          app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+          useLitegraphService().addNodeOnGraph(node.data)
         } else {
           toggleNodeOnEvent(e, node)
         }

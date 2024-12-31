@@ -2,8 +2,8 @@
 // instead of going through the store.
 // The store is useful when you need to call it from outside the Vue component context.
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import type { ToastMessageOptions } from 'primevue/toast'
+import { ref } from 'vue'
 
 export const useToastStore = defineStore('toast', () => {
   const messagesToAdd = ref<ToastMessageOptions[]>([])

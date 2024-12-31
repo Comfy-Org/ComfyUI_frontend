@@ -3,14 +3,15 @@
     Script to generate test API json from the ComfyUI_examples repo. 
     Requires the repo to be cloned to the tests-ui directory or specified via the EXAMPLE_REPO_PATH env var.
 */
-
 import chalk from 'chalk'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'node:url'
-import { getFromPngBuffer } from '@/scripts/metadata/png'
-import { getFromFlacBuffer } from '@/scripts/metadata/flac'
 import dotenv from 'dotenv'
+import fs from 'fs'
+import { fileURLToPath } from 'node:url'
+import path from 'path'
+
+import { getFromFlacBuffer } from '@/scripts/metadata/flac'
+import { getFromPngBuffer } from '@/scripts/metadata/png'
+
 dotenv.config()
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))

@@ -80,11 +80,12 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import _ from 'lodash'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { computed } from 'vue'
+
+import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const props = defineProps({
   nodeDef: {

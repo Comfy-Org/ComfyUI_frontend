@@ -68,14 +68,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect } from 'vue'
-import { electronAPI } from '@/utils/envUtil'
-import InputText from 'primevue/inputtext'
+import { MigrationItems } from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
+import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MigrationItems } from '@comfyorg/comfyui-electron-types'
+
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 

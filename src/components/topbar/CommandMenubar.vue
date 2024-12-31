@@ -29,13 +29,14 @@
 </template>
 
 <script setup lang="ts">
-import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import Menubar from 'primevue/menubar'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const settingStore = useSettingStore()
 const dropdownDirection = computed(() =>

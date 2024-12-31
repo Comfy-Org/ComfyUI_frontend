@@ -22,10 +22,16 @@
 </template>
 
 <script setup lang="ts">
-import TreeExplorer from '@/components/common/TreeExplorer.vue'
-import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
+import type { TreeNode } from 'primevue/treenode'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
+import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
+import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
+import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
@@ -33,11 +39,6 @@ import type {
   TreeExplorerDragAndDropData,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import type { TreeNode } from 'primevue/treenode'
-import { computed, nextTick, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useTreeExpansion } from '@/hooks/treeHooks'
-import { app } from '@/scripts/app'
 import { findNodeByKey } from '@/utils/treeUtil'
 
 const props = defineProps<{
@@ -169,7 +170,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           e: MouseEvent
         ) => {
           if (node.leaf) {
-            app.addNodeOnGraph(node.data, { pos: app.getCanvasCenter() })
+            useLitegraphService().addNodeOnGraph(node.data)
           } else {
             toggleNodeOnEvent(e, node)
           }

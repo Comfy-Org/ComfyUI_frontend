@@ -1,6 +1,6 @@
-import { resolve } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import http from 'http'
+import { resolve } from 'path'
 
 async function setup() {
   await new Promise<void>((res, rej) => {

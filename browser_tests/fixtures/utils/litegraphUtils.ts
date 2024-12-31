@@ -1,6 +1,7 @@
-import { ManageGroupNode } from '../../helpers/manageGroupNode'
-import type { NodeId } from '../../../src/types/comfyWorkflow'
 import type { Page } from '@playwright/test'
+
+import type { NodeId } from '../../../src/types/comfyWorkflow'
+import { ManageGroupNode } from '../../helpers/manageGroupNode'
 import type { ComfyPage } from '../ComfyPage'
 import type { Position, Size } from '../types'
 

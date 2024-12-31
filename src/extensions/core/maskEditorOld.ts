@@ -1,8 +1,8 @@
 // @ts-strict-ignore
-import { app } from '../../scripts/app'
-import { ComfyDialog, $el } from '../../scripts/ui'
-import { ComfyApp } from '../../scripts/app'
 import { api } from '../../scripts/api'
+import { app } from '../../scripts/app'
+import { ComfyApp } from '../../scripts/app'
+import { $el, ComfyDialog } from '../../scripts/ui'
 import { ClipspaceDialog } from './clipspace'
 
 // Helper function to convert a data URL to a Blob object

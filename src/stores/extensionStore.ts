@@ -1,5 +1,6 @@
-import { ref, computed, markRaw } from 'vue'
 import { defineStore } from 'pinia'
+import { computed, markRaw, ref } from 'vue'
+
 import type { ComfyExtension } from '@/types/comfy'
 
 /**

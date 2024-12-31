@@ -1,10 +1,11 @@
 // @ts-strict-ignore
 import { mount } from '@vue/test-utils'
-import { describe, it, expect, beforeAll } from 'vitest'
-import EditableText from '../EditableText.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
+
+import EditableText from '../EditableText.vue'
 
 describe('EditableText', () => {
   beforeAll(() => {

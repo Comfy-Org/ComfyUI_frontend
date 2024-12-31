@@ -1,6 +1,7 @@
-import { api } from '@/scripts/api'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
+
+import { api } from '@/scripts/api'
 import type { User as UserConfig } from '@/types/apiTypes'
 
 export interface User {

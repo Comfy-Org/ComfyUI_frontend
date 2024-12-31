@@ -1,5 +1,6 @@
-import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { TreeNode } from 'primevue/treenode'
+
+import { buildTree, sortedTree } from '@/utils/treeUtil'
 
 describe('buildTree', () => {
   it('should handle empty folder items correctly', () => {

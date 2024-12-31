@@ -33,35 +33,38 @@
 </template>
 
 <script setup lang="ts">
-import { app } from '@/scripts/app'
-import { computed, ref, toRaw, watchEffect } from 'vue'
-import NodeSearchBox from './NodeSearchBox.vue'
-import Dialog from 'primevue/dialog'
-import { FilterAndValue } from '@/services/nodeSearchService'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { ConnectingLinkImpl } from '@/types/litegraphTypes'
-import { useSettingStore } from '@/stores/settingStore'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import { useCanvasStore } from '@/stores/graphStore'
 import { LiteGraph } from '@comfyorg/litegraph'
-import type { OriginalEvent } from '@comfyorg/litegraph/dist/types/events'
 import type {
-  Vector2,
+  ConnectingLink,
   LiteGraphCanvasEvent,
-  ConnectingLink
+  Vector2
 } from '@comfyorg/litegraph'
+import type { OriginalEvent } from '@comfyorg/litegraph/dist/types/events'
 import { useEventListener } from '@vueuse/core'
-import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { storeToRefs } from 'pinia'
+import Dialog from 'primevue/dialog'
+import { computed, ref, toRaw, watchEffect } from 'vue'
+
+import { useLitegraphService } from '@/services/litegraphService'
+import { FilterAndValue } from '@/services/nodeSearchService'
+import { useCanvasStore } from '@/stores/graphStore'
+import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { ConnectingLinkImpl } from '@/types/litegraphTypes'
+import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+
+import NodeSearchBox from './NodeSearchBox.vue'
 
 const settingStore = useSettingStore()
+const litegraphService = useLitegraphService()
 
 const { visible } = storeToRefs(useSearchBoxStore())
 const dismissable = ref(true)
 const triggerEvent = ref<LiteGraphCanvasEvent | null>(null)
 const getNewNodeLocation = (): Vector2 => {
   if (!triggerEvent.value) {
-    return app.getCanvasCenter()
+    return litegraphService.getCanvasCenter()
   }
 
   const originalEvent = (triggerEvent.value.detail as OriginalEvent)
@@ -85,7 +88,9 @@ const closeDialog = () => {
 }
 
 const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  const node = app.addNodeOnGraph(nodeDef, { pos: getNewNodeLocation() })
+  const node = litegraphService.addNodeOnGraph(nodeDef, {
+    pos: getNewNodeLocation()
+  })
 
   const eventDetail = triggerEvent.value?.detail
   if (eventDetail && eventDetail.subType === 'empty-release') {

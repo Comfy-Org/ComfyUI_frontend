@@ -1,6 +1,8 @@
-import { ComfyWidgets, ComfyWidgetConstructor } from '@/scripts/widgets'
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
+
+import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
+
 import type { BaseInputSpec } from './nodeDefStore'
 
 export const useWidgetStore = defineStore('widget', () => {

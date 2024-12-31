@@ -1,15 +1,17 @@
 // @ts-strict-ignore
-import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
-import { app } from '../../scripts/app'
-import { applyTextReplacements } from '../../scripts/utils'
-import { LiteGraph, LGraphNode } from '@comfyorg/litegraph'
+import { LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import type {
   INodeInputSlot,
   IWidget,
   LiteGraphCanvasEvent
 } from '@comfyorg/litegraph'
-import type { InputSpec } from '@/types/apiTypes'
+
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { InputSpec } from '@/types/apiTypes'
+
+import { app } from '../../scripts/app'
+import { applyTextReplacements } from '../../scripts/utils'
+import { ComfyWidgets, addValueControlWidgets } from '../../scripts/widgets'
 
 const CONVERTED_TYPE = 'converted-widget'
 const VALID_TYPES = [

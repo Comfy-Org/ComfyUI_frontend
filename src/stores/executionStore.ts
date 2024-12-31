@@ -1,8 +1,7 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
 import { api } from '@/scripts/api'
-import { ComfyWorkflow } from './workflowStore'
-import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import type {
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -11,6 +10,9 @@ import type {
   ProgressWsMessage,
   StatusWsMessage
 } from '@/types/apiTypes'
+import type { ComfyNode, ComfyWorkflowJSON } from '@/types/comfyWorkflow'
+
+import { ComfyWorkflow } from './workflowStore'
 
 export interface QueuedPrompt {
   nodes: Record<string, boolean>

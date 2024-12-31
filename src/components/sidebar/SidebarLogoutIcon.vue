@@ -3,10 +3,12 @@
 </template>
 
 <script setup lang="ts">
-import SidebarIcon from './SidebarIcon.vue'
-import { useUserStore } from '@/stores/userStore'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { useUserStore } from '@/stores/userStore'
+
+import SidebarIcon from './SidebarIcon.vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()

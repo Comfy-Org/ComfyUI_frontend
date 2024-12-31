@@ -1,24 +1,26 @@
-import type { Page, Locator, APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { test as base } from '@playwright/test'
-import { ComfyActionbar } from '../helpers/actionbar'
 import dotenv from 'dotenv'
-dotenv.config()
 import * as fs from 'fs'
-import { NodeBadgeMode } from '../../src/types/nodeSource'
+
+import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import type { NodeId } from '../../src/types/comfyWorkflow'
 import type { KeyCombo } from '../../src/types/keyBindingTypes'
+import { NodeBadgeMode } from '../../src/types/nodeSource'
+import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
-import { NodeReference } from './utils/litegraphUtils'
 import type { Position, Size } from './types'
-import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
-import { SettingDialog } from './components/SettingDialog'
+import { NodeReference } from './utils/litegraphUtils'
+
+dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 

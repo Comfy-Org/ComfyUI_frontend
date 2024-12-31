@@ -130,11 +130,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { electronAPI, TorchDeviceType } from '@/utils/envUtil'
-import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { TorchDeviceType, electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 

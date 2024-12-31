@@ -1,14 +1,17 @@
 export default {
-  './**/*.js': (stagedFiles) => formatFiles(stagedFiles),
+  './**/*.js': (stagedFiles) => formatAndEslint(stagedFiles),
 
-  './**/*.{ts,tsx,vue}': (stagedFiles) => [
-    ...formatFiles(stagedFiles),
+  './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [
+    ...formatAndEslint(stagedFiles),
     'vue-tsc --noEmit',
     'tsc --noEmit',
     'tsc-strict'
   ]
 }
 
-function formatFiles(fileNames) {
-  return [`prettier --write ${fileNames.join(' ')}`]
+function formatAndEslint(fileNames) {
+  return [
+    `prettier --write ${fileNames.join(' ')} --plugin @trivago/prettier-plugin-sort-imports`,
+    `eslint --fix ${fileNames.join(' ')}`
+  ]
 }

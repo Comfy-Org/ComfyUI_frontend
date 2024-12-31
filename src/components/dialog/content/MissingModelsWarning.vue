@@ -25,10 +25,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import ListBox from 'primevue/listbox'
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { computed, ref } from 'vue'
+
 import FileDownload from '@/components/common/FileDownload.vue'
+import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import { isElectron } from '@/utils/envUtil'
 
 // TODO: Read this from server internal API rather than hardcoding here

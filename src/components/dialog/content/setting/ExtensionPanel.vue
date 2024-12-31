@@ -72,19 +72,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { FilterMatchMode } from '@primevue/core/api'
+import Button from 'primevue/button'
+import Column from 'primevue/column'
+import ContextMenu from 'primevue/contextmenu'
+import DataTable from 'primevue/datatable'
+import Message from 'primevue/message'
+import Tag from 'primevue/tag'
+import ToggleSwitch from 'primevue/toggleswitch'
+import { computed, onMounted, ref } from 'vue'
+
+import SearchBox from '@/components/common/SearchBox.vue'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useSettingStore } from '@/stores/settingStore'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import ToggleSwitch from 'primevue/toggleswitch'
-import Tag from 'primevue/tag'
-import Button from 'primevue/button'
-import ContextMenu from 'primevue/contextmenu'
-import Message from 'primevue/message'
-import { FilterMatchMode } from '@primevue/core/api'
+
 import PanelTemplate from './PanelTemplate.vue'
-import SearchBox from '@/components/common/SearchBox.vue'
 
 const filters = ref({
   global: { value: '', matchMode: FilterMatchMode.CONTAINS }

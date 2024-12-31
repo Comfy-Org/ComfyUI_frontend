@@ -1,6 +1,6 @@
 import {
-  comfyPageFixture as test,
-  comfyExpect as expect
+  comfyExpect as expect,
+  comfyPageFixture as test
 } from './fixtures/ComfyPage'
 
 test.describe('Node search box', () => {

@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
+
 import { api } from '@/scripts/api'
-import { UserFile } from './userFileStore'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 import { getPathDetails } from '@/utils/formatUtil'
-import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import { syncEntities } from '@/utils/syncUtil'
+
+import { UserFile } from './userFileStore'
 
 export class ComfyWorkflow extends UserFile {
   static readonly basePath = 'workflows/'

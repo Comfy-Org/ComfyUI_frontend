@@ -1,5 +1,6 @@
-import { setActivePinia, createPinia } from 'pinia'
-import { useKeybindingStore, KeybindingImpl } from '@/stores/keybindingStore'
+import { createPinia, setActivePinia } from 'pinia'
+
+import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
 
 describe('useKeybindingStore', () => {
   beforeEach(() => {

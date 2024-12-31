@@ -11,11 +11,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
-import { ExecutionErrorWsMessage } from '@/types/apiTypes'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { ExecutionErrorWsMessage } from '@/types/apiTypes'
 import { electronAPI } from '@/utils/envUtil'
 
 const { error } = defineProps<{

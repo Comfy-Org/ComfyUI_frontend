@@ -11,8 +11,9 @@
 
 <script setup lang="ts">
 import Tag from 'primevue/tag'
-import { KeyComboImpl } from '@/stores/keybindingStore'
 import { computed } from 'vue'
+
+import { KeyComboImpl } from '@/stores/keybindingStore'
 
 const props = withDefaults(
   defineProps<{

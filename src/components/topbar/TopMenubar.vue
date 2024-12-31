@@ -28,16 +28,17 @@
 </template>
 
 <script setup lang="ts">
+import { useEventBus } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
+import { computed, onMounted, provide, ref } from 'vue'
+
 import Actionbar from '@/components/actionbar/ComfyActionbar.vue'
 import BottomPanelToggleButton from '@/components/topbar/BottomPanelToggleButton.vue'
-import { computed, onMounted, provide, ref } from 'vue'
-import { useSettingStore } from '@/stores/settingStore'
+import CommandMenubar from '@/components/topbar/CommandMenubar.vue'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
-import { useEventBus } from '@vueuse/core'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { showNativeMenu } from '@/utils/envUtil'
 

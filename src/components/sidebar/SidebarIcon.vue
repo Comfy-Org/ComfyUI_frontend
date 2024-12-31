@@ -25,9 +25,11 @@
 </template>
 
 <script setup lang="ts">
-import OverlayBadge from 'primevue/overlaybadge'
 import Button from 'primevue/button'
-import { computed, PropType } from 'vue' // Add this line to import PropsType
+import OverlayBadge from 'primevue/overlaybadge'
+import { PropType, computed } from 'vue'
+
+// Add this line to import PropsType
 
 const props = defineProps({
   icon: String,

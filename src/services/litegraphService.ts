@@ -1,21 +1,25 @@
 // @ts-strict-ignore
+import {
+  type IContextMenuValue,
+  type INodeInputSlot,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@comfyorg/litegraph'
+import { Vector2 } from '@comfyorg/litegraph'
+import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
+
 import { st } from '@/i18n'
 import { api } from '@/scripts/api'
-import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
-import { normalizeI18nKey } from '@/utils/formatUtil'
-import {
-  LGraphNode,
-  LiteGraph,
-  LGraphEventMode,
-  type IContextMenuValue,
-  type INodeInputSlot
-} from '@comfyorg/litegraph'
-import { IBaseWidget, IWidget } from '@comfyorg/litegraph/dist/types/widgets'
-import { useExtensionService } from './extensionService'
-import { ComfyApp, app, ANIM_PREVIEW_WIDGET } from '@/scripts/app'
+import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
-import { useToastStore } from '@/stores/toastStore'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
+import { useToastStore } from '@/stores/toastStore'
+import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
+import type { NodeId } from '@/types/comfyWorkflow'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+
+import { useExtensionService } from './extensionService'
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -760,7 +764,38 @@ export const useLitegraphService = () => {
     }
   }
 
+  function addNodeOnGraph(
+    nodeDef: ComfyNodeDef,
+    options: Record<string, any> = {}
+  ): LGraphNode {
+    options.pos ??= getCanvasCenter()
+
+    const node = LiteGraph.createNode(
+      nodeDef.name,
+      nodeDef.display_name,
+      options
+    )
+
+    app.graph.add(node)
+    return node
+  }
+
+  function getCanvasCenter(): Vector2 {
+    const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
+    const [x, y, w, h] = app.canvas.ds.visible_area
+    return [x + w / dpi / 2, y + h / dpi / 2]
+  }
+
+  function goToNode(nodeId: NodeId) {
+    const graphNode = app.graph.getNodeById(nodeId)
+    if (!graphNode) return
+    app.canvas.animateToBounds(graphNode.boundingRect)
+  }
+
   return {
-    registerNodeDef
+    registerNodeDef,
+    addNodeOnGraph,
+    getCanvasCenter,
+    goToNode
   }
 }

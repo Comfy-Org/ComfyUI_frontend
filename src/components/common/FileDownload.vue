@@ -24,9 +24,10 @@
 </template>
 
 <script setup lang="ts">
-import { useDownload } from '@/hooks/downloadHooks'
 import Button from 'primevue/button'
 import { computed } from 'vue'
+
+import { useDownload } from '@/hooks/downloadHooks'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{

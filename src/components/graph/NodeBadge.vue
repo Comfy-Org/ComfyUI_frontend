@@ -5,16 +5,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useSettingStore } from '@/stores/settingStore'
-import { app } from '@/scripts/app'
 import type { LGraphNode } from '@comfyorg/litegraph'
 import { BadgePosition } from '@comfyorg/litegraph'
 import { LGraphBadge } from '@comfyorg/litegraph'
 import _ from 'lodash'
-import { NodeBadgeMode } from '@/types/nodeSource'
+import { computed, onMounted, watch } from 'vue'
+
+import { app } from '@/scripts/app'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()

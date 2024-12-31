@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 // If an input is optional by node definition, it should be shown as
