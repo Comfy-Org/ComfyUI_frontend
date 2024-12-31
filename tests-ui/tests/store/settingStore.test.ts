@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 
 import { api } from '@/scripts/api'
-import { useSettingStore } from '@/stores/settingStore'
+import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
 // Mock the api
@@ -137,6 +137,74 @@ describe('useSettingStore', () => {
       expect(store.get('test.setting')).toBe('newvalue')
       expect(onChangeMock).toHaveBeenCalledWith('newvalue')
       expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+    })
+  })
+})
+
+describe('getSettingInfo', () => {
+  const baseSetting: SettingParams = {
+    id: 'test.setting',
+    name: 'test.setting',
+    type: 'text',
+    defaultValue: 'default'
+  }
+
+  it('should handle settings with explicit category array', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'test.setting',
+      category: ['Main', 'Sub', 'Detail']
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'Main',
+      subCategory: 'Sub'
+    })
+  })
+
+  it('should handle settings with id-based categorization', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'main.sub.setting.name'
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'main',
+      subCategory: 'sub'
+    })
+  })
+
+  it('should use "Other" as default subCategory when missing', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'single.setting',
+      category: ['single']
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'single',
+      subCategory: 'Other'
+    })
+  })
+
+  it('should use "Other" as default category when missing', () => {
+    const setting: SettingParams = {
+      ...baseSetting,
+      id: 'single.setting',
+      category: []
+    }
+
+    const result = getSettingInfo(setting)
+
+    expect(result).toEqual({
+      category: 'Other',
+      subCategory: 'Other'
     })
   })
 })
