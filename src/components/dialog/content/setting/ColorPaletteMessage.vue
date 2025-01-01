@@ -44,8 +44,10 @@ import Message from 'primevue/message'
 import Select from 'primevue/select'
 
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
+const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
@@ -53,7 +55,7 @@ const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()
   if (palette) {
-    colorPaletteStore.activePaletteId = palette.id
+    settingStore.set('Comfy.ColorPalette', palette.id)
   }
 }
 </script>

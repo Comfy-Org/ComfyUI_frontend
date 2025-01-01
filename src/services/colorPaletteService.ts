@@ -179,7 +179,7 @@ export const useColorPaletteService = () => {
   return {
     addCustomColorPalette: wrapWithErrorHandling(addCustomColorPalette),
     deleteCustomColorPalette: wrapWithErrorHandling(deleteCustomColorPalette),
-    loadColorPalette: wrapWithErrorHandling(loadColorPalette),
+    loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
     exportColorPalette: wrapWithErrorHandling(exportColorPalette),
     importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
   }

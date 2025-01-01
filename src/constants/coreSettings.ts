@@ -672,7 +672,11 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'The active color palette id',
     type: 'hidden',
     defaultValue: 'dark',
-    versionModified: '1.6.7'
+    versionModified: '1.6.7',
+    migrateDeprecatedValue(value: string) {
+      // Legacy custom palettes were prefixed with 'custom_'
+      return value.startsWith('custom_') ? value.replace('custom_', '') : value
+    }
   },
   {
     id: 'Comfy.CustomColorPalettes',

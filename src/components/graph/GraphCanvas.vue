@@ -225,24 +225,17 @@ watch(
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 watch(
-  [() => canvasStore.canvas, () => colorPaletteStore.activePaletteId],
-  ([canvas, activePaletteId]) => {
+  [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
+  ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    colorPaletteService.loadColorPalette(activePaletteId)
+    colorPaletteService.loadColorPalette(currentPaletteId)
   }
 )
-// Sync the active palette id with the setting store
 watch(
   () => colorPaletteStore.activePaletteId,
   (newValue) => {
     settingStore.set('Comfy.ColorPalette', newValue)
-  }
-)
-watch(
-  () => settingStore.get('Comfy.ColorPalette'),
-  (newValue) => {
-    colorPaletteStore.activePaletteId = newValue
   }
 )
 

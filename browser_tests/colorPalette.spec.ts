@@ -134,8 +134,11 @@ const customColorPalettes = {
 test.describe('Color Palette', () => {
   test('Can show custom color palette', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
-    await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
-    await comfyPage.nextFrame()
+    // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
+    // doesn't update the store immediately.
+    await comfyPage.reload()
+
+    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
@@ -150,6 +153,12 @@ test.describe('Color Palette', () => {
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 
+    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'custom-color-palette-obsidian-dark.png'
+    )
+    // Legacy `custom_` prefix is still supported
     await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
