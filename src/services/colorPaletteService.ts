@@ -143,7 +143,6 @@ export const useColorPaletteService = () => {
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
-    settingStore.set('Comfy.ColorPalette', colorPaletteId)
   }
 
   /**

@@ -223,11 +223,28 @@ watch(
 )
 
 const colorPaletteService = useColorPaletteService()
-watchEffect(() => {
-  if (!canvasStore.canvas) return
+const colorPaletteStore = useColorPaletteStore()
+watch(
+  [() => canvasStore.canvas, () => colorPaletteStore.activePaletteId],
+  ([canvas, activePaletteId]) => {
+    if (!canvas) return
 
-  colorPaletteService.loadColorPalette(settingStore.get('Comfy.ColorPalette'))
-})
+    colorPaletteService.loadColorPalette(activePaletteId)
+  }
+)
+// Sync the active palette id with the setting store
+watch(
+  () => colorPaletteStore.activePaletteId,
+  (newValue) => {
+    settingStore.set('Comfy.ColorPalette', newValue)
+  }
+)
+watch(
+  () => settingStore.get('Comfy.ColorPalette'),
+  (newValue) => {
+    colorPaletteStore.activePaletteId = newValue
+  }
+)
 
 const workflowStore = useWorkflowStore()
 const persistCurrentWorkflow = () => {
@@ -343,7 +360,6 @@ onMounted(async () => {
   comfyAppReady.value = true
 
   // Load color palette
-  const colorPaletteStore = useColorPaletteStore()
   colorPaletteStore.customPalettes = settingStore.get(
     'Comfy.CustomColorPalettes'
   )
