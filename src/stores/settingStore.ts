@@ -11,9 +11,8 @@ import { buildTree } from '@/utils/treeUtil'
 export const getSettingInfo = (setting: SettingParams) => {
   const parts = setting.category || setting.id.split('.')
   return {
-    category: parts[0],
-    subCategory: parts[1],
-    name: parts.slice(2).join('.')
+    category: parts[0] ?? 'Other',
+    subCategory: parts[1] ?? 'Other'
   }
 }
 
