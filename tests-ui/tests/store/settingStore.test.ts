@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { getSettingInfo, useSettingStore } from '@/stores/settingStore'
 import type { SettingParams } from '@/types/settingTypes'
 
@@ -123,6 +124,7 @@ describe('useSettingStore', () => {
 
     it('should set value and trigger onChange', async () => {
       const onChangeMock = jest.fn()
+      const dispatchChangeMock = app.ui.settings.dispatchChange as jest.Mock
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
@@ -131,12 +133,32 @@ describe('useSettingStore', () => {
         onChange: onChangeMock
       }
       store.addSetting(setting)
+      // Adding the new setting should trigger onChange
+      expect(onChangeMock).toHaveBeenCalledTimes(1)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(1)
 
       await store.set('test.setting', 'newvalue')
 
       expect(store.get('test.setting')).toBe('newvalue')
-      expect(onChangeMock).toHaveBeenCalledWith('newvalue')
+      expect(onChangeMock).toHaveBeenCalledWith('newvalue', 'default')
+      expect(onChangeMock).toHaveBeenCalledTimes(2)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
       expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+
+      // Set the same value again, it should not trigger onChange
+      await store.set('test.setting', 'newvalue')
+      expect(onChangeMock).toHaveBeenCalledTimes(2)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
+
+      // Set a different value, it should trigger onChange
+      await store.set('test.setting', 'differentvalue')
+      expect(onChangeMock).toHaveBeenCalledWith('differentvalue', 'newvalue')
+      expect(onChangeMock).toHaveBeenCalledTimes(3)
+      expect(dispatchChangeMock).toHaveBeenCalledTimes(3)
+      expect(api.storeSetting).toHaveBeenCalledWith(
+        'test.setting',
+        'differentvalue'
+      )
     })
   })
 })
