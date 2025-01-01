@@ -135,3 +135,72 @@ export function getPathDetails(path: string) {
 export function normalizeI18nKey(key: string) {
   return key.replace(/\./g, '_')
 }
+
+/**
+ * Takes a dynamic prompt in the format {opt1|opt2|{optA|optB}|} and randomly replaces groups. Supports C style comments.
+ * @param input The dynamic prompt to process
+ * @returns
+ */
+export function processDynamicPrompt(input: string): string {
+  /*
+   * Strips C-style line and block comments from a string
+   */
+  function stripComments(str: string) {
+    return str.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
+  }
+
+  let i = 0
+  let result = ''
+  input = stripComments(input)
+
+  const handleEscape = () => {
+    const nextChar = input[i++]
+    return '\\' + nextChar
+  }
+
+  function parseChoiceBlock() {
+    // Parse the content inside {}
+    const options: string[] = []
+    let choice = ''
+    let depth = 0
+
+    while (i < input.length) {
+      const char = input[i++]
+
+      if (char === '\\') {
+        choice += handleEscape()
+        continue
+      } else if (char === '{') {
+        depth++
+      } else if (char === '}') {
+        if (!depth) break
+        depth--
+      } else if (char === '|') {
+        if (!depth) {
+          options.push(choice)
+          choice = ''
+          continue
+        }
+      }
+      choice += char
+    }
+
+    options.push(choice)
+
+    const chosenOption = options[Math.floor(Math.random() * options.length)]
+    return processDynamicPrompt(chosenOption)
+  }
+
+  while (i < input.length) {
+    const char = input[i++]
+    if (char === '\\') {
+      result += handleEscape()
+    } else if (char === '{') {
+      result += parseChoiceBlock()
+    } else {
+      result += char
+    }
+  }
+
+  return result.replace(/\\([{}|])/g, '$1')
+}

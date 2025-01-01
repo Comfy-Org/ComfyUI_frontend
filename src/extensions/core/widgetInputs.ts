@@ -633,7 +633,8 @@ export function mergeIfValid(
       k !== 'defaultInput' &&
       k !== 'control_after_generate' &&
       k !== 'multiline' &&
-      k !== 'tooltip'
+      k !== 'tooltip' &&
+      k !== 'dynamicPrompts'
     ) {
       let v1 = config1[1][k]
       let v2 = config2[1]?.[k]
