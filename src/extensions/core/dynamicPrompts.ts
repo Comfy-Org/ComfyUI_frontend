@@ -1,17 +1,10 @@
-// @ts-strict-ignore
-import { app } from '../../scripts/app'
+import { useExtensionService } from '@/services/extensionService'
+import { processDynamicPrompt } from '@/utils/formatUtil'
 
 // Allows for simple dynamic prompt replacement
 // Inputs in the format {a|b} will have a random value of a or b chosen when the prompt is queued.
 
-/*
- * Strips C-style line and block comments from a string
- */
-function stripComments(str) {
-  return str.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
-}
-
-app.registerExtension({
+useExtensionService().registerExtension({
   name: 'Comfy.DynamicPrompts',
   nodeCreated(node) {
     if (node.widgets) {
@@ -23,25 +16,9 @@ app.registerExtension({
         // Override the serialization of the value to resolve dynamic prompts for all widgets supporting it in this node
         // @ts-expect-error hacky override
         widget.serializeValue = (workflowNode, widgetIndex) => {
-          let prompt = stripComments(widget.value)
-          while (
-            prompt.replace('\\{', '').includes('{') &&
-            prompt.replace('\\}', '').includes('}')
-          ) {
-            const startIndex = prompt.replace('\\{', '00').indexOf('{')
-            const endIndex = prompt.replace('\\}', '00').indexOf('}')
+          if (typeof widget.value !== 'string') return widget.value
 
-            const optionsString = prompt.substring(startIndex + 1, endIndex)
-            const options = optionsString.split('|')
-
-            const randomIndex = Math.floor(Math.random() * options.length)
-            const randomOption = options[randomIndex]
-
-            prompt =
-              prompt.substring(0, startIndex) +
-              randomOption +
-              prompt.substring(endIndex + 1)
-          }
+          const prompt = processDynamicPrompt(widget.value)
 
           // Overwrite the value in the serialized workflow pnginfo
           if (workflowNode?.widgets_values)
