@@ -42,11 +42,12 @@ import { storeToRefs } from 'pinia'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
-import { watch } from 'vue'
 
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
+const settingStore = useSettingStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
@@ -54,11 +55,7 @@ const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()
   if (palette) {
-    colorPaletteService.loadColorPalette(palette.id)
+    settingStore.set('Comfy.ColorPalette', palette.id)
   }
 }
-
-watch(activePaletteId, () => {
-  colorPaletteService.loadColorPalette(activePaletteId.value)
-})
 </script>

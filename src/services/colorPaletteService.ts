@@ -143,7 +143,6 @@ export const useColorPaletteService = () => {
     app.canvas.setDirty(true, true)
 
     colorPaletteStore.activePaletteId = colorPaletteId
-    settingStore.set('Comfy.ColorPalette', colorPaletteId)
   }
 
   /**
@@ -180,7 +179,7 @@ export const useColorPaletteService = () => {
   return {
     addCustomColorPalette: wrapWithErrorHandling(addCustomColorPalette),
     deleteCustomColorPalette: wrapWithErrorHandling(deleteCustomColorPalette),
-    loadColorPalette: wrapWithErrorHandling(loadColorPalette),
+    loadColorPalette: wrapWithErrorHandlingAsync(loadColorPalette),
     exportColorPalette: wrapWithErrorHandling(exportColorPalette),
     importColorPalette: wrapWithErrorHandlingAsync(importColorPalette)
   }
