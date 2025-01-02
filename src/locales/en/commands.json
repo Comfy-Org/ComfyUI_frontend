@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Clear Workflow"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Duplicate Current Workflow"
+  },
   "Comfy_ExportWorkflow": {
     "label": "Export Workflow"
   },

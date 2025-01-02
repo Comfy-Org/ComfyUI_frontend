@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Effacer le flux de travail"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Dupliquer le flux de travail actuel"
+  },
   "Comfy_ExportWorkflow": {
     "label": "Exporter le flux de travail"
   },

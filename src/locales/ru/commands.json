@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "Очистить рабочий процесс"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Дублировать текущий рабочий процесс"
+  },
   "Comfy_ExportWorkflow": {
     "label": "Экспорт рабочего процесса"
   },
