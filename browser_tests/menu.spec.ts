@@ -396,6 +396,36 @@ test.describe('Menu', () => {
       )
     })
 
+    test('Can duplicate workflow', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await comfyPage.menu.topbar.saveWorkflow('workflow1.json')
+
+      expect(await tab.getTopLevelSavedWorkflowNames()).toEqual(
+        expect.arrayContaining(['workflow1.json'])
+      )
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json'
+      ])
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json',
+        '*workflow1 (Copy) (2).json'
+      ])
+
+      await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        'workflow1.json',
+        '*workflow1 (Copy).json',
+        '*workflow1 (Copy) (2).json',
+        '*workflow1 (Copy) (3).json'
+      ])
+    })
+
     test('Can rename nested workflow from opened workflow item', async ({
       comfyPage
     }) => {

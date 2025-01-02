@@ -21,8 +21,9 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
+  const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
-  const getTracker = () => useWorkflowStore()?.activeWorkflow?.changeTracker
+  const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
     const selectedNodes = app.canvas.selected_nodes
@@ -511,6 +512,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.6.4',
       function: () => {
         dialogService.showSettingsDialog('about')
+      }
+    },
+    {
+      id: 'Comfy.DuplicateWorkflow',
+      icon: 'pi pi-clone',
+      label: 'Duplicate Current Workflow',
+      versionAdded: '1.6.15',
+      function: () => {
+        workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       }
     }
   ]
