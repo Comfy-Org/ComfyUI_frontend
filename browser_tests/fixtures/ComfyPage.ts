@@ -108,6 +108,8 @@ class ConfirmDialog {
 }
 
 export class ComfyPage {
+  private _history: TaskHistory | null = null
+
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
@@ -242,7 +244,8 @@ export class ComfyPage {
   }
 
   setupHistory(): TaskHistory {
-    return new TaskHistory(this)
+    this._history ??= new TaskHistory(this)
+    return this._history
   }
 
   async setup({ clearStorage = true }: { clearStorage?: boolean } = {}) {
