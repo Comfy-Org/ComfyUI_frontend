@@ -24,6 +24,16 @@
   box-shadow: 0 0 10px black !important;
   background-color: #2e2e2e !important;
   z-index: 10;
+  max-height: -webkit-fill-available;
+  overflow-y: auto;
+}
+
+/* Enable scrolling overflow in Firefox */
+@supports not (max-height: -webkit-fill-available) {
+  .litegraph.litecontextmenu {
+    max-height: 80vh;
+    overflow-y: scroll;
+  }
 }
 
 .litegraph.litecontextmenu.dark {

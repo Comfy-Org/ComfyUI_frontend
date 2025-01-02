@@ -115,19 +115,6 @@ export class ContextMenu {
       true,
     )
 
-    function on_mouse_wheel(e: WheelEvent) {
-      const pos = parseInt(root.style.top)
-      root.style.top = (pos + e.deltaY * options.scroll_speed).toFixed() + "px"
-      e.preventDefault()
-      return true
-    }
-
-    if (!options.scroll_speed) {
-      options.scroll_speed = 0.1
-    }
-
-    root.addEventListener("wheel", on_mouse_wheel, true)
-
     this.root = root
 
     // title

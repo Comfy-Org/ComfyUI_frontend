@@ -269,6 +269,7 @@ export interface IContextMenuOptions extends IContextMenuBase {
   parentMenu?: ContextMenu
   event?: MouseEvent
   extra?: unknown
+  /** @deprecated Context menu scrolling is now controlled by the browser */
   scroll_speed?: number
   left?: number
   top?: number
