@@ -6,6 +6,7 @@
         v-model:modelValue="searchQuery"
         @search="handleSearch"
         :placeholder="$t('g.searchSettings') + '...'"
+        :debounce-time="128"
       />
       <Listbox
         v-model="activeCategory"
