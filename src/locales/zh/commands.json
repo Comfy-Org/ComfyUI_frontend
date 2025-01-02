@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "清除工作流"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "复制当前工作流"
+  },
   "Comfy_ExportWorkflow": {
     "label": "导出工作流"
   },

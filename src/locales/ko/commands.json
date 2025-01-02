@@ -74,6 +74,9 @@
   "Comfy_ClearWorkflow": {
     "label": "워크플로 지우기"
   },
+  "Comfy_DuplicateWorkflow": {
+    "label": "현재 워크플로우 복제"
+  },
   "Comfy_ExportWorkflow": {
     "label": "워크플로 내보내기"
   },

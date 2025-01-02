@@ -357,7 +357,11 @@ export const useWorkflowService = () => {
    */
   const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
     const state = JSON.parse(JSON.stringify(workflow.activeState))
-    await app.loadGraphData(state, true, true, workflow.filename)
+    const suffix = workflow.isPersisted ? ' (Copy)' : ''
+    // Remove the suffix `(2)` or similar
+    const filename = workflow.filename.replace(/\s*\(\d+\)$/, '') + suffix
+
+    await app.loadGraphData(state, true, true, filename)
   }
 
   return {
