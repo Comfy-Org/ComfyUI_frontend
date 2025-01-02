@@ -99,7 +99,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -108,7 +108,11 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  ResultItemImpl,
+  TaskItemImpl,
+  useQueueStore
+} from '@/stores/queueStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { ComfyNode } from '@/types/comfyWorkflow'
 
@@ -127,6 +131,7 @@ const { t } = useI18n()
 // Expanded view: show all outputs in a flat list.
 const isExpanded = ref(false)
 const galleryActiveIndex = ref(-1)
+const allGalleryItems = shallowRef<ResultItemImpl[]>([])
 // Folder view: only show outputs from a single selected task.
 const folderTask = ref<TaskItemImpl | null>(null)
 const isInFolderView = computed(() => folderTask.value !== null)
@@ -141,12 +146,12 @@ const allTasks = computed(() =>
       ? queueStore.flatTasks
       : queueStore.tasks
 )
-const allGalleryItems = computed(() =>
-  allTasks.value.flatMap((task: TaskItemImpl) => {
+const updateGalleryItems = () => {
+  allGalleryItems.value = allTasks.value.flatMap((task: TaskItemImpl) => {
     const previewOutput = task.previewOutput
     return previewOutput ? [previewOutput] : []
   })
-)
+}
 
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
@@ -232,6 +237,7 @@ const handleContextMenu = ({
 }
 
 const handlePreview = (task: TaskItemImpl) => {
+  updateGalleryItems()
   galleryActiveIndex.value = allGalleryItems.value.findIndex(
     (item) => item.url === task.previewOutput?.url
   )
@@ -248,6 +254,19 @@ const exitFolderView = () => {
 const toggleImageFit = () => {
   settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
 }
+
+watch(allTasks, () => {
+  const isGalleryOpen = galleryActiveIndex.value !== -1
+  if (!isGalleryOpen) return
+
+  const prevLength = allGalleryItems.value.length
+  updateGalleryItems()
+  const lengthChange = allGalleryItems.value.length - prevLength
+  if (!lengthChange) return
+
+  const newIndex = galleryActiveIndex.value + lengthChange
+  galleryActiveIndex.value = Math.max(0, newIndex)
+})
 
 onMounted(() => {
   api.addEventListener('status', onStatus)

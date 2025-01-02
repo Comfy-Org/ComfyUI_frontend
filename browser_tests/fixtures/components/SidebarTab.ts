@@ -242,4 +242,21 @@ export class QueueSidebarTab extends SidebarTab {
       localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
     }, width)
   }
+
+  getTaskPreviewButton(taskIndex: number) {
+    return this.tasks.nth(taskIndex).getByRole('button')
+  }
+
+  async openTaskPreview(taskIndex: number) {
+    const previewButton = this.getTaskPreviewButton(taskIndex)
+    await previewButton.hover()
+    await previewButton.click()
+    return this.getGalleryImage(taskIndex).waitFor({ state: 'visible' })
+  }
+
+  getGalleryImage(galleryItemIndex: number) {
+    // Aria labels of Galleria items are 1-based indices
+    const galleryLabel = `${galleryItemIndex + 1}`
+    return this.page.getByLabel(galleryLabel).locator('.galleria-image')
+  }
 }

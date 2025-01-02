@@ -1,6 +1,9 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from './fixtures/ComfyPage'
+import { comfyPageFixture } from './fixtures/ComfyPage'
+import { webSocketFixture } from './fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -871,6 +874,72 @@ test.describe('Queue sidebar', () => {
       await comfyPage.menu.queueTab.open()
       await comfyPage.menu.queueTab.waitForTasks()
       expect(await comfyPage.menu.queueTab.visibleTasks.count()).toBe(1)
+    })
+  })
+
+  test.describe('Gallery', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage
+        .setupHistory()
+        .withTask(['example.webp'])
+        .repeat(1)
+        .setupRoutes()
+      await comfyPage.menu.queueTab.open()
+      await comfyPage.menu.queueTab.waitForTasks()
+    })
+
+    test('displays gallery image after opening task preview', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.queueTab.openTaskPreview(0)
+      expect(comfyPage.menu.queueTab.getGalleryImage(0)).toBeVisible()
+    })
+
+    test('should maintain active gallery item when new tasks are added', async ({
+      comfyPage,
+      ws
+    }) => {
+      const initialIndex = 0
+      await comfyPage.menu.queueTab.openTaskPreview(initialIndex)
+
+      // Add a new task while the gallery is still open
+      comfyPage.setupHistory().withTask(['example.webp'])
+      await ws.trigger({
+        type: 'status',
+        data: {
+          status: { exec_info: { queue_remaining: 0 } }
+        }
+      })
+      await comfyPage.menu.queueTab.waitForTasks()
+
+      // The index of all tasks increments when a new task is prepended
+      const expectIndex = initialIndex + 1
+      expect(comfyPage.menu.queueTab.getGalleryImage(expectIndex)).toBeVisible()
+    })
+
+    test.describe('Gallery navigation', () => {
+      const paths: {
+        description: string
+        path: ('Right' | 'Left')[]
+        expectIndex: number
+      }[] = [
+        { description: 'Right', path: ['Right'], expectIndex: 1 },
+        { description: 'Left', path: ['Right', 'Left'], expectIndex: 0 },
+        { description: 'Right wrap', path: ['Right', 'Right'], expectIndex: 0 },
+        { description: 'Left wrap', path: ['Left'], expectIndex: 1 }
+      ]
+
+      paths.forEach(({ description, path, expectIndex }) => {
+        test(`can navigate gallery ${description}`, async ({ comfyPage }) => {
+          await comfyPage.menu.queueTab.openTaskPreview(0)
+          for (const direction of path)
+            await comfyPage.page.keyboard.press(`Arrow${direction}`)
+
+          expect(
+            comfyPage.menu.queueTab.getGalleryImage(expectIndex)
+          ).toBeVisible()
+        })
+      })
     })
   })
 })
