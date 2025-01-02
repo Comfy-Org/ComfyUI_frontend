@@ -858,6 +858,13 @@ test.describe('Queue sidebar', () => {
       await comfyPage.menu.queueTab.waitForTasks()
     })
 
+    test('displays gallery image after opening task preview', async ({
+      comfyPage
+    }) => {
+      await comfyPage.menu.queueTab.openTaskPreview(0)
+      expect(comfyPage.menu.queueTab.getGalleryImage(0)).toBeVisible()
+    })
+
     test('should maintain active gallery item when new tasks are added', async ({
       comfyPage,
       ws
