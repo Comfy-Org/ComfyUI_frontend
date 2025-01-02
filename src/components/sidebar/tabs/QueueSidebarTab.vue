@@ -99,7 +99,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -146,11 +146,12 @@ const allTasks = computed(() =>
       ? queueStore.flatTasks
       : queueStore.tasks
 )
-const updateGalleryItems = () =>
-  (allGalleryItems.value = allTasks.value.flatMap((task: TaskItemImpl) => {
+const updateGalleryItems = () => {
+  allGalleryItems.value = allTasks.value.flatMap((task: TaskItemImpl) => {
     const previewOutput = task.previewOutput
     return previewOutput ? [previewOutput] : []
-  }))
+  })
+}
 
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value
@@ -253,6 +254,19 @@ const exitFolderView = () => {
 const toggleImageFit = () => {
   settingStore.set(IMAGE_FIT, imageFit.value === 'cover' ? 'contain' : 'cover')
 }
+
+watch(allTasks, () => {
+  const isGalleryOpen = galleryActiveIndex.value !== -1
+  if (!isGalleryOpen) return
+
+  const prevLength = allGalleryItems.value.length
+  updateGalleryItems()
+  const lengthChange = allGalleryItems.value.length - prevLength
+  if (!lengthChange) return
+
+  const newIndex = galleryActiveIndex.value + lengthChange
+  galleryActiveIndex.value = Math.max(0, newIndex)
+})
 
 onMounted(() => {
   api.addEventListener('status', onStatus)
