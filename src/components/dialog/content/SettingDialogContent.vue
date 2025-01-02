@@ -15,7 +15,7 @@
         scrollHeight="100%"
         :optionDisabled="
           (option: SettingTreeNode) =>
-            inSearch && !searchResultsCategories.has(option.label)
+            !queryIsEmpty && !searchResultsCategories.has(option.label)
         "
         class="border-none w-full"
       />
@@ -264,9 +264,8 @@ const handleSearch = (query: string) => {
   activeCategory.value = null
 }
 
-const inSearch = computed(
-  () => searchQuery.value.length > 0 && !searchInProgress.value
-)
+const queryIsEmpty = computed(() => searchQuery.value.length === 0)
+const inSearch = computed(() => !queryIsEmpty.value && !searchInProgress.value)
 const tabValue = computed(() =>
   inSearch.value ? 'Search Results' : activeCategory.value?.label
 )
