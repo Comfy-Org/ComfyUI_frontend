@@ -6,6 +6,7 @@ import type { ConnectingLink, LinkReleaseContextExtended } from "../litegraph"
 import type { IWidget } from "./widgets"
 import type { LGraphNode } from "../LGraphNode"
 import type { LGraphGroup } from "../LGraphGroup"
+import type { LGraphCanvas } from "../LGraphCanvas"
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 export interface ICanvasPosition {
@@ -21,6 +22,20 @@ export interface IDeltaPosition {
   deltaY: number
 }
 
+/**
+ * Workaround for Firefox returning 0 on offsetX/Y props
+ * See https://github.com/Comfy-Org/litegraph.js/issues/403 for details
+ */
+export interface IOffsetWorkaround {
+  /** See {@link MouseEvent.offsetX}.  This workaround is required (2024-12-31) to support Firefox, which always returns 0 */
+  safeOffsetX: number
+  /** See {@link MouseEvent.offsetY}.  This workaround is required (2024-12-31) to support Firefox, which always returns 0 */
+  safeOffsetY: number
+}
+
+/** All properties added when converting a pointer event to a CanvasPointerEvent (via {@link LGraphCanvas.adjustMouseEvent}). */
+export type CanvasPointerExtensions = ICanvasPosition & IDeltaPosition & IOffsetWorkaround
+
 interface LegacyMouseEvent {
   /** @deprecated Part of DragAndScale mouse API - incomplete / not maintained */
   dragging?: boolean
@@ -33,15 +48,13 @@ export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent {}
 /** MouseEvent with canvasX/Y and deltaX/Y properties */
 export interface CanvasMouseEvent extends
   MouseEvent,
-  Readonly<ICanvasPosition>,
-  Readonly<IDeltaPosition>,
+  Readonly<CanvasPointerExtensions>,
   LegacyMouseEvent {}
 
 /** DragEvent with canvasX/Y and deltaX/Y properties */
 export interface CanvasDragEvent extends
   DragEvent,
-  ICanvasPosition,
-  IDeltaPosition {}
+  CanvasPointerExtensions {}
 
 export type CanvasEventDetail =
   | GenericEventDetail

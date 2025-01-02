@@ -28,8 +28,7 @@ import type {
   CanvasMouseEvent,
   CanvasEventDetail,
   CanvasPointerEvent,
-  ICanvasPosition,
-  IDeltaPosition,
+  CanvasPointerExtensions,
 } from "./types/events"
 import type { ClipboardItems } from "./types/serialisation"
 import { LLink, type LinkId } from "./LLink"
@@ -4122,7 +4121,7 @@ export class LGraphCanvas {
    * adds some useful properties to a mouse event, like the position in graph coordinates
    */
   adjustMouseEvent<T extends MouseEvent>(
-    e: T & Partial<ICanvasPosition & IDeltaPosition>,
+    e: T & Partial<CanvasPointerExtensions>,
   ): asserts e is T & CanvasMouseEvent {
     let clientX_rel = e.clientX
     let clientY_rel = e.clientY
@@ -4132,6 +4131,9 @@ export class LGraphCanvas {
       clientX_rel -= b.left
       clientY_rel -= b.top
     }
+
+    e.safeOffsetX = clientX_rel
+    e.safeOffsetY = clientY_rel
 
     // TODO: Find a less brittle way to do this
 
@@ -4447,9 +4449,9 @@ export class LGraphCanvas {
           const ratio = window.devicePixelRatio
           ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
 
-          const x = eDown.offsetX
-          const y = eDown.offsetY
-          ctx.strokeRect(x, y, eMove.offsetX - x, eMove.offsetY - y)
+          const x = eDown.safeOffsetX
+          const y = eDown.safeOffsetX
+          ctx.strokeRect(x, y, eMove.safeOffsetX - x, eMove.safeOffsetX - y)
 
           ctx.setTransform(transform)
         } else {
