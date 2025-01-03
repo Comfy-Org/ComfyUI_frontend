@@ -1,9 +1,6 @@
-import { expect, mergeTests } from '@playwright/test'
+import { expect } from '@playwright/test'
 
-import { comfyPageFixture } from './fixtures/ComfyPage'
-import { webSocketFixture } from './fixtures/ws'
-
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Menu', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -896,19 +893,19 @@ test.describe('Queue sidebar', () => {
     })
 
     test('should maintain active gallery item when new tasks are added', async ({
-      comfyPage,
-      ws
+      comfyPage
     }) => {
       const initialIndex = 0
       await comfyPage.menu.queueTab.openTaskPreview(initialIndex)
 
       // Add a new task while the gallery is still open
       comfyPage.setupHistory().withTask(['example.webp'])
-      await ws.trigger({
-        type: 'status',
-        data: {
+
+      // Trigger 'status' event listener to update tasks
+      await comfyPage.page.evaluate(() => {
+        window['app']['api'].dispatchCustomEvent('status', {
           status: { exec_info: { queue_remaining: 0 } }
-        }
+        })
       })
       await comfyPage.menu.queueTab.waitForTasks()
 
