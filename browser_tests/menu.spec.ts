@@ -875,66 +875,59 @@ test.describe('Queue sidebar', () => {
   })
 
   test.describe('Gallery', () => {
+    const firstImage = 'example.webp'
+    const secondImage = 'image32x32.webp'
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage
         .setupHistory()
-        .withTask(['example.webp'])
-        .repeat(1)
+        .withTask([secondImage])
+        .withTask([firstImage])
         .setupRoutes()
       await comfyPage.menu.queueTab.open()
       await comfyPage.menu.queueTab.waitForTasks()
+      await comfyPage.menu.queueTab.openTaskPreview(0)
     })
 
     test('displays gallery image after opening task preview', async ({
       comfyPage
     }) => {
-      await comfyPage.menu.queueTab.openTaskPreview(0)
-      expect(comfyPage.menu.queueTab.getGalleryImage(0)).toBeVisible()
+      expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
     })
 
-    test('should maintain active gallery item when new tasks are added', async ({
+    test('maintains active gallery item when new tasks are added', async ({
       comfyPage
     }) => {
-      const initialIndex = 0
-      await comfyPage.menu.queueTab.openTaskPreview(initialIndex)
-
       // Add a new task while the gallery is still open
-      comfyPage.setupHistory().withTask(['example.webp'])
+      const newImage = 'image64x64.webp'
+      comfyPage.setupHistory().withTask([newImage])
+      await comfyPage.menu.queueTab.triggerTasksUpdate()
+      const newTask = comfyPage.menu.queueTab.tasks.getByAltText(newImage)
+      await newTask.waitFor({ state: 'visible' })
 
-      // Trigger 'status' event listener to update tasks
-      await comfyPage.page.evaluate(() => {
-        window['app']['api'].dispatchCustomEvent('status', {
-          status: { exec_info: { queue_remaining: 0 } }
-        })
-      })
-      await comfyPage.menu.queueTab.waitForTasks()
-
-      // The index of all tasks increments when a new task is prepended
-      const expectIndex = initialIndex + 1
-      expect(comfyPage.menu.queueTab.getGalleryImage(expectIndex)).toBeVisible()
+      // The active gallery item should still be the initial image
+      expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
     })
 
     test.describe('Gallery navigation', () => {
       const paths: {
         description: string
         path: ('Right' | 'Left')[]
-        expectIndex: number
+        end: string
       }[] = [
-        { description: 'Right', path: ['Right'], expectIndex: 1 },
-        { description: 'Left', path: ['Right', 'Left'], expectIndex: 0 },
-        { description: 'Right wrap', path: ['Right', 'Right'], expectIndex: 0 },
-        { description: 'Left wrap', path: ['Left'], expectIndex: 1 }
+        { description: 'Right', path: ['Right'], end: secondImage },
+        { description: 'Left', path: ['Right', 'Left'], end: firstImage },
+        { description: 'Left wrap', path: ['Left'], end: secondImage },
+        { description: 'Right wrap', path: ['Right', 'Right'], end: firstImage }
       ]
 
-      paths.forEach(({ description, path, expectIndex }) => {
+      paths.forEach(({ description, path, end }) => {
         test(`can navigate gallery ${description}`, async ({ comfyPage }) => {
-          await comfyPage.menu.queueTab.openTaskPreview(0)
           for (const direction of path)
-            await comfyPage.page.keyboard.press(`Arrow${direction}`)
-
-          expect(
-            comfyPage.menu.queueTab.getGalleryImage(expectIndex)
-          ).toBeVisible()
+            await comfyPage.page.keyboard.press(`Arrow${direction}`, {
+              delay: 64
+            })
+          expect(comfyPage.menu.queueTab.getGalleryImage(end)).toBeVisible()
         })
       })
     })
