@@ -5,6 +5,7 @@
       :src="result.url"
       class="task-output-image"
       :contain="imageFit === 'contain'"
+      :alt="result.filename"
     />
     <ResultVideo v-else-if="result.isVideo" :result="result" />
     <div v-else class="task-result-preview">

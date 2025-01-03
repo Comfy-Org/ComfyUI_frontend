@@ -24,6 +24,7 @@
         :key="item.url"
         :src="item.url"
         :contain="false"
+        :alt="item.filename"
         class="galleria-image"
         v-if="item.isImage"
       />

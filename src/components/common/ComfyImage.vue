@@ -12,12 +12,14 @@
       :data-test="src"
       class="comfy-image-blur"
       :style="{ 'background-image': `url(${src})` }"
+      :alt="alt"
     />
     <img
       :src="src"
       @error="handleImageError"
       class="comfy-image-main"
       :class="[...classArray]"
+      :alt="alt"
     />
   </span>
   <div v-if="imageBroken" class="broken-image-placeholder">
@@ -34,9 +36,11 @@ const props = withDefaults(
     src: string
     class?: string | string[] | object
     contain: boolean
+    alt?: string
   }>(),
   {
-    contain: false
+    contain: false,
+    alt: 'Image content'
   }
 )
 
