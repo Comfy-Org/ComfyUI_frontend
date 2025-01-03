@@ -429,6 +429,26 @@ test.describe('Menu', () => {
       ])
     })
 
+    test('Can open workflow after insert', async ({ comfyPage }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        'workflow1.json': 'single_ksampler.json'
+      })
+      await comfyPage.setup()
+
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+      await comfyPage.executeCommand('Comfy.LoadDefaultWorkflow')
+      const originalNodeCount = (await comfyPage.getNodes()).length
+
+      await tab.insertWorkflow(tab.getPersistedItem('workflow1.json'))
+      await comfyPage.nextFrame()
+      expect((await comfyPage.getNodes()).length).toEqual(originalNodeCount + 1)
+
+      await tab.getPersistedItem('workflow1.json').click()
+      await comfyPage.nextFrame()
+      expect((await comfyPage.getNodes()).length).toEqual(1)
+    })
+
     test('Can rename nested workflow from opened workflow item', async ({
       comfyPage
     }) => {
