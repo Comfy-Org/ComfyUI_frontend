@@ -11,6 +11,14 @@ test.describe('Copy Paste', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('copied-node.png')
   })
 
+  test('Can copy and paste node with link', async ({ comfyPage }) => {
+    await comfyPage.clickEmptyLatentNode()
+    await comfyPage.page.mouse.move(10, 10)
+    await comfyPage.ctrlC()
+    await comfyPage.page.keyboard.press('Ctrl+Shift+V')
+    await expect(comfyPage.canvas).toHaveScreenshot('copied-node-with-link.png')
+  })
+
   test('Can copy and paste text', async ({ comfyPage }) => {
     const textBox = comfyPage.widgetTextBox
     await textBox.click()
