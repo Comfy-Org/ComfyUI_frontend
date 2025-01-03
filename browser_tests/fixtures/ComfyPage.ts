@@ -27,6 +27,11 @@ dotenv.config()
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 class ComfyMenu {
+  private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
+  private _workflowsTab: WorkflowsSidebarTab | null = null
+  private _queueTab: QueueSidebarTab | null = null
+  private _topbar: Topbar | null = null
+
   public readonly sideToolbar: Locator
   public readonly themeToggleButton: Locator
   public readonly saveButton: Locator
@@ -40,19 +45,23 @@ class ComfyMenu {
   }
 
   get nodeLibraryTab() {
-    return new NodeLibrarySidebarTab(this.page)
+    this._nodeLibraryTab ??= new NodeLibrarySidebarTab(this.page)
+    return this._nodeLibraryTab
   }
 
   get workflowsTab() {
-    return new WorkflowsSidebarTab(this.page)
+    this._workflowsTab ??= new WorkflowsSidebarTab(this.page)
+    return this._workflowsTab
   }
 
   get queueTab() {
-    return new QueueSidebarTab(this.page)
+    this._queueTab ??= new QueueSidebarTab(this.page)
+    return this._queueTab
   }
 
   get topbar() {
-    return new Topbar(this.page)
+    this._topbar ??= new Topbar(this.page)
+    return this._topbar
   }
 
   async toggleTheme() {
