@@ -60,9 +60,6 @@
   "Comfy_Group_DoubleClickTitleToEdit": {
     "name": "グループタイトルをダブルクリックして編集"
   },
-  "Comfy_InvertMenuScrolling": {
-    "name": "コンテキストメニューのスクロールを反転する"
-  },
   "Comfy_LinkRelease_Action": {
     "name": "リンクリリース時のアクション（修飾子なし）",
     "options": {

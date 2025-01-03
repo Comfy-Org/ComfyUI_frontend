@@ -60,9 +60,6 @@
   "Comfy_GroupSelectedNodes_Padding": {
     "name": "Group selected nodes padding"
   },
-  "Comfy_InvertMenuScrolling": {
-    "name": "Invert Context Menu Scrolling"
-  },
   "Comfy_LinkRelease_Action": {
     "name": "Action on link release (No modifier)",
     "options": {
