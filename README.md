@@ -626,10 +626,3 @@ You can switch languages by opening the ComfyUI Settings and selecting from the 
 
 - Option 1: Set `DEPLOY_COMFYUI_DIR` in `.env` and run `npm run deploy`.
 - Option 2: Copy everything under `dist/` to `ComfyUI/web/` in your ComfyUI checkout manually.
-
-## Publish release to ComfyUI main repo
-
-Run following command to publish a release to ComfyUI main repo. The script will create a new branch and do a commit to `web/` folder by checkout `dist.zip`
-from GitHub release.
-
-- `python scripts/main_repo_release.py <path_to_comfyui_main_repo> <version>`
