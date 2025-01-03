@@ -821,6 +821,11 @@ export class ComfyPage {
   async getNodeRefById(id: NodeId) {
     return new NodeReference(id, this)
   }
+  async getNodes() {
+    return await this.page.evaluate(() => {
+      return window['app'].graph.nodes
+    })
+  }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
     return Promise.all(
       (

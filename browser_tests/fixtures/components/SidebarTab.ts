@@ -152,6 +152,13 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page.keyboard.press('Enter')
     await this.page.waitForTimeout(300)
   }
+
+  async insertWorkflow(locator: Locator) {
+    await locator.click({ button: 'right' })
+    await this.page
+      .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
+      .click()
+  }
 }
 
 export class QueueSidebarTab extends SidebarTab {
