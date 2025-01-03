@@ -114,6 +114,7 @@ export class ComfyPage {
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
   public readonly widgetTextBox: Locator
+  public readonly contextMenu: Locator
 
   // Buttons
   public readonly resetViewButton: Locator
@@ -145,6 +146,7 @@ export class ComfyPage {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
+    this.contextMenu = page.locator('.litegraph.litecontextmenu')
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
@@ -184,6 +186,12 @@ export class ComfyPage {
           (node: any) => node.is_selected === true
         ).length || 0
       )
+    })
+  }
+
+  async getGraphSelectedItemsCount(): Promise<number | undefined> {
+    return await this.page.evaluate(() => {
+      return window['app']?.canvas?.selectedItems?.size
     })
   }
 
@@ -228,6 +236,39 @@ export class ComfyPage {
       throw new Error(`Failed to create user: ${await resp.text()}`)
 
     return await resp.json()
+  }
+
+  async clearNodeTemplates() {
+    const resp = await this.request.delete(
+      `${this.url}/api/userdata/comfy.templates.json`,
+      {
+        headers: { 'Comfy-User': this.id }
+      }
+    )
+
+    const status = resp.status()
+    if (status !== 204 && status !== 404)
+      throw new Error(`Failed to delete node templates: ${await resp.text()}`)
+  }
+
+  async setNodeTemplates(fileName: string) {
+    const path = this.assetPath(fileName)
+    const data = fs.readFileSync(path, 'utf-8')
+
+    const resp = await this.request.post(
+      `${this.url}/api/userdata/comfy.templates.json`,
+      {
+        headers: {
+          'Comfy-User': this.id,
+          overwrite: 'true',
+          full_info: 'true'
+        },
+        data
+      }
+    )
+
+    if (resp.status() !== 200)
+      throw new Error(`Failed to upload node templates: ${await resp.text()}`)
   }
 
   async setupSettings(settings: Record<string, any>) {
@@ -445,11 +486,17 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async dragAndDrop(source: Position, target: Position) {
+  async dragAndDrop(
+    source: Position,
+    target: Position,
+    modifierKey?: 'ControlOrMeta' | 'Control' | 'Alt' | 'Shift'
+  ) {
+    if (modifierKey) await this.page.keyboard.down(modifierKey)
     await this.page.mouse.move(source.x, source.y)
     await this.page.mouse.down()
     await this.page.mouse.move(target.x, target.y)
     await this.page.mouse.up()
+    if (modifierKey) await this.page.keyboard.up(modifierKey)
     await this.nextFrame()
   }
 
@@ -605,8 +652,11 @@ export class ComfyPage {
   }
 
   async rightClickCanvas() {
-    await this.page.mouse.click(10, 10, { button: 'right' })
-    await this.nextFrame()
+    await this.canvas.click({
+      position: { x: 10, y: 10 },
+      button: 'right'
+    })
+    await expect(this.contextMenu).toBeVisible()
   }
 
   async clickContextMenuItem(name: string): Promise<void> {
@@ -626,7 +676,7 @@ export class ComfyPage {
         y: 625
       }
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
   }
 
@@ -638,8 +688,12 @@ export class ComfyPage {
       },
       button: 'right'
     })
-    this.page.mouse.move(10, 10)
+    await this.page.mouse.move(10, 10)
     await this.nextFrame()
+  }
+
+  async clickContextMenuItem(name: string): Promise<void> {
+    await this.page.getByRole('menuitem', { name }).click()
   }
 
   async select2Nodes() {
