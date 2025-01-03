@@ -50,5 +50,35 @@ app.registerExtension({
     )
 
     NoteNode.category = 'utils'
+
+    /** Adds Markdown capabilities to the standard NoteNode */
+    class MarkdownNoteNode extends LGraphNode {
+      static category = 'utils'
+
+      color = LGraphCanvas.node_colors.yellow.color
+      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+      groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
+      isVirtualNode: boolean
+      collapsable: boolean
+      title_mode: number
+
+      constructor(title?: string) {
+        super(title)
+        if (!this.properties) {
+          this.properties = { text: '' }
+        }
+        ComfyWidgets.MARKDOWN(
+          this,
+          '',
+          ['', { default: this.properties.text }],
+          app
+        )
+
+        this.serialize_widgets = true
+        this.isVirtualNode = true
+      }
+    }
+
+    LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
   }
 })
