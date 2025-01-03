@@ -291,7 +291,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     description: 'Node that add notes to your project'
   },
   MarkdownNote: {
-    name: 'Markdown Note',
+    name: 'MarkdownNote',
     display_name: 'Markdown Note',
     category: 'utils',
     input: { required: {}, optional: {} },
