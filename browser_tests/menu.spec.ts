@@ -881,6 +881,7 @@ test.describe('Queue sidebar', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage
         .setupHistory()
+        .clearTasks()
         .withTask([secondImage])
         .withTask([firstImage])
         .setupRoutes()
@@ -902,8 +903,10 @@ test.describe('Queue sidebar', () => {
       const newImage = 'image64x64.webp'
       comfyPage.setupHistory().withTask([newImage])
       await comfyPage.menu.queueTab.triggerTasksUpdate()
+      await comfyPage.page.waitForTimeout(256)
       const newTask = comfyPage.menu.queueTab.tasks.getByAltText(newImage)
       await newTask.waitFor({ state: 'visible' })
+      await comfyPage.nextFrame()
 
       // The active gallery item should still be the initial image
       expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
@@ -925,8 +928,9 @@ test.describe('Queue sidebar', () => {
         test(`can navigate gallery ${description}`, async ({ comfyPage }) => {
           for (const direction of path)
             await comfyPage.page.keyboard.press(`Arrow${direction}`, {
-              delay: 64
+              delay: 256
             })
+          await comfyPage.nextFrame()
           expect(comfyPage.menu.queueTab.getGalleryImage(end)).toBeVisible()
         })
       })

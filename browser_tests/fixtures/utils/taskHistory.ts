@@ -135,8 +135,9 @@ export default class TaskHistory {
     this.tasks.unshift(task) // Tasks are added to the front of the queue
   }
 
-  clearTasks() {
+  clearTasks(): this {
     this.tasks = []
+    return this
   }
 
   withTask(

@@ -258,7 +258,7 @@ export class QueueSidebarTab extends SidebarTab {
   }
 
   getGalleryImage(imageFilename: string) {
-    return this.page.getByAltText(imageFilename).and(this.galleryImage)
+    return this.galleryImage.and(this.page.getByAltText(imageFilename))
   }
 
   getTaskImage(imageFilename: string) {
