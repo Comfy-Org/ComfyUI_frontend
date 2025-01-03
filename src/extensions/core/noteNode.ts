@@ -51,16 +51,13 @@ app.registerExtension({
 
     NoteNode.category = 'utils'
 
-    /** Adds Markdown capabilities to the standard NoteNode */
+    /** Markdown variant of NoteNode */
     class MarkdownNoteNode extends LGraphNode {
-      static category = 'utils'
+      static title = 'Markdown Note'
 
       color = LGraphCanvas.node_colors.yellow.color
       bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
-      isVirtualNode: boolean
-      collapsable: boolean
-      title_mode: number
 
       constructor(title?: string) {
         super(title)
@@ -80,5 +77,6 @@ app.registerExtension({
     }
 
     LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
+    MarkdownNoteNode.category = 'utils'
   }
 })
