@@ -2358,6 +2358,9 @@
       "camera_type": {
         "name": "カメラタイプ"
       },
+      "fov": {
+        "name": "fov"
+      },
       "height": {
         "name": "高さ"
       },
@@ -2409,6 +2412,9 @@
       },
       "camera_type": {
         "name": "カメラタイプ"
+      },
+      "fov": {
+        "name": "fov"
       },
       "height": {
         "name": "高さ"
@@ -4231,6 +4237,9 @@
       },
       "camera_type": {
         "name": "カメラタイプ"
+      },
+      "fov": {
+        "name": "fov"
       },
       "light_intensity": {
         "name": "光の強度"

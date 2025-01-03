@@ -60,9 +60,6 @@
   "Comfy_Group_DoubleClickTitleToEdit": {
     "name": "Дважды щелкните по заголовку группы, чтобы редактировать"
   },
-  "Comfy_InvertMenuScrolling": {
-    "name": "Инвертировать прокрутку контекстного меню"
-  },
   "Comfy_LinkRelease_Action": {
     "name": "Действие при отпускании ссылки (без модификатора)",
     "options": {

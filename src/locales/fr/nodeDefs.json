@@ -2358,6 +2358,9 @@
       "camera_type": {
         "name": "type_de_caméra"
       },
+      "fov": {
+        "name": "fov"
+      },
       "height": {
         "name": "hauteur"
       },
@@ -2409,6 +2412,9 @@
       },
       "camera_type": {
         "name": "type_de_caméra"
+      },
+      "fov": {
+        "name": "fov"
       },
       "height": {
         "name": "hauteur"
@@ -4231,6 +4237,9 @@
       },
       "camera_type": {
         "name": "type_de_camera"
+      },
+      "fov": {
+        "name": "fov"
       },
       "light_intensity": {
         "name": "intensité_de_lumière"

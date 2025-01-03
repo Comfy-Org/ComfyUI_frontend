@@ -2293,6 +2293,9 @@
       },
       "up_direction": {
         "name": "up_direction"
+      },
+      "fov": {
+        "name": "fov"
       }
     },
     "outputs": {
@@ -2345,6 +2348,9 @@
       },
       "animation_speed": {
         "name": "animation_speed"
+      },
+      "fov": {
+        "name": "fov"
       }
     },
     "outputs": {
@@ -4249,6 +4255,9 @@
       },
       "up_direction": {
         "name": "up_direction"
+      },
+      "fov": {
+        "name": "fov"
       }
     }
   },

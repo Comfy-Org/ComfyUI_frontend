@@ -60,9 +60,6 @@
   "Comfy_Group_DoubleClickTitleToEdit": {
     "name": "双击组标题以编辑"
   },
-  "Comfy_InvertMenuScrolling": {
-    "name": "反转上下文菜单滚动"
-  },
   "Comfy_LinkRelease_Action": {
     "name": "释放连线时的操作",
     "options": {

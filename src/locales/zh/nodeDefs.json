@@ -2358,6 +2358,9 @@
       "camera_type": {
         "name": "相机类型"
       },
+      "fov": {
+        "name": "视场"
+      },
       "height": {
         "name": "高度"
       },
@@ -2409,6 +2412,9 @@
       },
       "camera_type": {
         "name": "相机类型"
+      },
+      "fov": {
+        "name": "视场"
       },
       "height": {
         "name": "高度"
@@ -4231,6 +4237,9 @@
       },
       "camera_type": {
         "name": "相机类型"
+      },
+      "fov": {
+        "name": "视场"
       },
       "light_intensity": {
         "name": "光照强度"

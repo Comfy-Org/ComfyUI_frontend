@@ -60,9 +60,6 @@
   "Comfy_Group_DoubleClickTitleToEdit": {
     "name": "Double-cliquer sur le titre du groupe pour le modifier"
   },
-  "Comfy_InvertMenuScrolling": {
-    "name": "Inverser le défilement du menu contextuel"
-  },
   "Comfy_LinkRelease_Action": {
     "name": "Action lors du relâchement du lien (sans modificateur)",
     "options": {
