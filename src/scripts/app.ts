@@ -49,7 +49,7 @@ import {
 } from './pnginfo'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
-import { getStorageValue } from './utils'
+import { clone, getStorageValue } from './utils'
 import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -1271,11 +1271,7 @@ export class ComfyApp {
       reset_invalid_values = true
     }
 
-    if (typeof structuredClone === 'undefined') {
-      graphData = JSON.parse(JSON.stringify(graphData))
-    } else {
-      graphData = structuredClone(graphData)
-    }
+    graphData = clone(graphData)
 
     if (useSettingStore().get('Comfy.Validation.Workflows')) {
       // TODO: Show validation error in a dialog.
