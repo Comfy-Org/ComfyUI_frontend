@@ -300,7 +300,8 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
     output_is_list: [],
     output_node: false,
     python_module: 'nodes',
-    description: 'Node that add notes to your project. Reformats text as markdown.'
+    description:
+      'Node that add notes to your project. Reformats text as markdown.'
   }
 }
 
