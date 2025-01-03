@@ -4450,8 +4450,8 @@ export class LGraphCanvas {
           ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
 
           const x = eDown.safeOffsetX
-          const y = eDown.safeOffsetX
-          ctx.strokeRect(x, y, eMove.safeOffsetX - x, eMove.safeOffsetX - y)
+          const y = eDown.safeOffsetY
+          ctx.strokeRect(x, y, eMove.safeOffsetX - x, eMove.safeOffsetY - y)
 
           ctx.setTransform(transform)
         } else {
