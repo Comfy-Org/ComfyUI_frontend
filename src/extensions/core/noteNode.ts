@@ -25,11 +25,11 @@ app.registerExtension({
         if (!this.properties) {
           this.properties = { text: '' }
         }
-        ComfyWidgets.MARKDOWN(
+        ComfyWidgets.STRING(
           // Should we extends LGraphNode?  Yesss
           this,
           '',
-          ['', { default: this.properties.text }],
+          ['', { default: this.properties.text, multiline: true }],
           app
         )
 
@@ -50,5 +50,33 @@ app.registerExtension({
     )
 
     NoteNode.category = 'utils'
+
+    /** Markdown variant of NoteNode */
+    class MarkdownNoteNode extends LGraphNode {
+      static title = 'Markdown Note'
+
+      color = LGraphCanvas.node_colors.yellow.color
+      bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
+      groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
+
+      constructor(title?: string) {
+        super(title)
+        if (!this.properties) {
+          this.properties = { text: '' }
+        }
+        ComfyWidgets.MARKDOWN(
+          this,
+          '',
+          ['', { default: this.properties.text }],
+          app
+        )
+
+        this.serialize_widgets = true
+        this.isVirtualNode = true
+      }
+    }
+
+    LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
+    MarkdownNoteNode.category = 'utils'
   }
 })
