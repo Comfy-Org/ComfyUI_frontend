@@ -2242,7 +2242,7 @@
         "name": "길이"
       },
       "samples": {
-        "name": "샘플"
+        "name": "잠재 데이터"
       }
     }
   },
@@ -5262,7 +5262,7 @@
     "display_name": "VAE 디코드",
     "inputs": {
       "samples": {
-        "name": "샘플",
+        "name": "잠재 데이터",
         "tooltip": "디코딩할 잠재입니다."
       },
       "vae": {
