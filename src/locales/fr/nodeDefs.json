@@ -1100,6 +1100,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "description": "Un nœud avec une entrée de graine",
+    "display_name": "Nœud Avec Entrée de Graine",
+    "inputs": {
+      "seed": {
+        "name": "graine"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "description": "Un nœud avec une entrée de chaîne",
     "display_name": "Nœud avec entrée de chaîne",
@@ -1121,6 +1130,21 @@
       },
       "string_or_int_input": {
         "name": "string_or_int_input"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "description": "Un nœud qui applique un patch d'objet",
+    "display_name": "Nœud de Patch d'Objet",
+    "inputs": {
+      "dummy_float": {
+        "name": "flottant_factice"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "target_module": {
+        "name": "module_cible"
       }
     }
   },

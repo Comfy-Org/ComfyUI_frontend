@@ -1100,6 +1100,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "description": "시드 입력이 있는 노드",
+    "display_name": "시드 입력이 있는 노드",
+    "inputs": {
+      "seed": {
+        "name": "시드"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "description": "문자열 입력이 있는 노드",
     "display_name": "문자열 입력이 있는 노드",
@@ -1121,6 +1130,21 @@
       },
       "string_or_int_input": {
         "name": "문자열 또는 정수 입력"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "description": "오브젝트 패치를 적용하는 노드",
+    "display_name": "오브젝트 패치 노드",
+    "inputs": {
+      "dummy_float": {
+        "name": "더미 플로트"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "target_module": {
+        "name": "대상 모듈"
       }
     }
   },

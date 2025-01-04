@@ -1100,6 +1100,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "description": "一个带有种子输入的节点",
+    "display_name": "带种子输入的节点",
+    "inputs": {
+      "seed": {
+        "name": "种子"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "description": "一个具有字符串输入的节点",
     "display_name": "具有字符串输入的节点",
@@ -1121,6 +1130,21 @@
       },
       "string_or_int_input": {
         "name": "字符串或整数输入"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "description": "一个应用对象补丁的节点",
+    "display_name": "对象补丁节点",
+    "inputs": {
+      "dummy_float": {
+        "name": "虚拟浮点数"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "target_module": {
+        "name": "目标模块"
       }
     }
   },

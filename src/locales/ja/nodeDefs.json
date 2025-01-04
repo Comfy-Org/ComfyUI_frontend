@@ -1100,6 +1100,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "description": "シード入力付きのノード",
+    "display_name": "シード入力付きノード",
+    "inputs": {
+      "seed": {
+        "name": "シード"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "description": "文字列入力を持つノード",
     "display_name": "文字列入力ノード",
@@ -1121,6 +1130,21 @@
       },
       "string_or_int_input": {
         "name": "文字列または整数入力"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "description": "オブジェクトパッチを適用するノード",
+    "display_name": "オブジェクトパッチノード",
+    "inputs": {
+      "dummy_float": {
+        "name": "ダミーフロート"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "target_module": {
+        "name": "ターゲットモジュール"
       }
     }
   },

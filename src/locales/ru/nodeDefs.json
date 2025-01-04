@@ -1100,6 +1100,15 @@
       }
     }
   },
+  "DevToolsNodeWithSeedInput": {
+    "description": "Узел с входным сигналом seed",
+    "display_name": "Узел с входным сигналом Seed",
+    "inputs": {
+      "seed": {
+        "name": "seed"
+      }
+    }
+  },
   "DevToolsNodeWithStringInput": {
     "description": "Узел со строковым вводом",
     "display_name": "Узел со строковым вводом",
@@ -1121,6 +1130,21 @@
       },
       "string_or_int_input": {
         "name": "ввод_строки_или_int"
+      }
+    }
+  },
+  "DevToolsObjectPatchNode": {
+    "description": "Узел, применяющий объектный патч",
+    "display_name": "Узел объектного патча",
+    "inputs": {
+      "dummy_float": {
+        "name": "фиктивное число с плавающей точкой"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "target_module": {
+        "name": "целевой модуль"
       }
     }
   },
