@@ -3,7 +3,9 @@ import { computed, ref } from 'vue'
 
 import {
   CORE_COLOR_PALETTES,
-  DEFAULT_COLOR_PALETTE
+  DEFAULT_COLOR_PALETTE,
+  DEFAULT_DARK_COLOR_PALETTE,
+  DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
 import type {
   ColorPalettes,
@@ -63,20 +65,24 @@ export const useColorPaletteStore = defineStore('colorPalette', () => {
         palette.colors.comfy_base['comfy-menu-bg']
     }
 
+    const defaultPalette = palette.light_theme
+      ? DEFAULT_LIGHT_COLOR_PALETTE
+      : DEFAULT_DARK_COLOR_PALETTE
+
     return {
       ...palette,
       colors: {
         ...palette.colors,
         node_slot: {
-          ...DEFAULT_COLOR_PALETTE.colors.node_slot,
+          ...defaultPalette.colors.node_slot,
           ...palette.colors.node_slot
         },
         litegraph_base: {
-          ...DEFAULT_COLOR_PALETTE.colors.litegraph_base,
+          ...defaultPalette.colors.litegraph_base,
           ...palette.colors.litegraph_base
         },
         comfy_base: {
-          ...DEFAULT_COLOR_PALETTE.colors.comfy_base,
+          ...defaultPalette.colors.comfy_base,
           ...palette.colors.comfy_base
         }
       }

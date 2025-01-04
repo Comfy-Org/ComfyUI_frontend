@@ -11,14 +11,15 @@
 import { computed } from 'vue'
 
 import { useCommandStore } from '@/stores/commandStore'
-import { useSettingStore } from '@/stores/settingStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 
-const settingStore = useSettingStore()
-const currentTheme = computed(() => settingStore.get('Comfy.ColorPalette'))
+const colorPaletteStore = useColorPaletteStore()
 const icon = computed(() =>
-  currentTheme.value !== 'light' ? 'pi pi-moon' : 'pi pi-sun'
+  colorPaletteStore.completedActivePalette.light_theme
+    ? 'pi pi-sun'
+    : 'pi pi-moon'
 )
 
 const commandStore = useCommandStore()

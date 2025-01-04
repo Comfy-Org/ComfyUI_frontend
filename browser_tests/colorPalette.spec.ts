@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 
+import type { Palette } from '../src/types/colorPaletteTypes'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
-const customColorPalettes = {
+const customColorPalettes: Record<string, Palette> = {
   obsidian: {
     version: 102,
     id: 'obsidian',
@@ -128,6 +129,19 @@ const customColorPalettes = {
         'tr-odd-bg-color': 'rgba(19,19,19,.9)'
       }
     }
+  },
+  // A custom light theme with fg color red
+  light_red: {
+    id: 'light_red',
+    name: 'Light Red',
+    light_theme: true,
+    colors: {
+      node_slot: {},
+      litegraph_base: {},
+      comfy_base: {
+        'fg-color': '#ff0000'
+      }
+    }
   }
 }
 
@@ -142,6 +156,12 @@ test.describe('Color Palette', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
+    await comfyPage.setSetting('Comfy.ColorPalette', 'light_red')
+    await comfyPage.nextFrame()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'custom-color-palette-light-red.png'
+    )
+
     await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
