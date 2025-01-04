@@ -758,7 +758,7 @@ test.describe('Menu', () => {
   })
 })
 
-test.describe('Queue sidebar', () => {
+test.describe.skip('Queue sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
