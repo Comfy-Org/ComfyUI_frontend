@@ -131,7 +131,7 @@ const customColorPalettes: Record<string, Palette> = {
     }
   },
   // A custom light theme with fg color red
-  custom_light: {
+  light_red: {
     id: 'light_red',
     name: 'Light Red',
     light_theme: true,
