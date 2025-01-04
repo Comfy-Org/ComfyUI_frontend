@@ -892,6 +892,7 @@ test.describe('Queue sidebar', () => {
     test('displays gallery image after opening task preview', async ({
       comfyPage
     }) => {
+      await comfyPage.nextFrame()
       expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
     })
 
@@ -905,7 +906,6 @@ test.describe('Queue sidebar', () => {
       await comfyPage.page.waitForTimeout(500)
       const newTask = comfyPage.menu.queueTab.tasks.getByAltText(newImage)
       await newTask.waitFor({ state: 'visible' })
-      await comfyPage.page.waitForTimeout(500)
       // The active gallery item should still be the initial image
       expect(comfyPage.menu.queueTab.getGalleryImage(firstImage)).toBeVisible()
     })
@@ -924,11 +924,11 @@ test.describe('Queue sidebar', () => {
 
       paths.forEach(({ description, path, end }) => {
         test(`can navigate gallery ${description}`, async ({ comfyPage }) => {
-          for (const direction of path) {
-            await comfyPage.page.keyboard.press(`Arrow${direction}`)
-            await comfyPage.page.waitForTimeout(500)
-          }
-          await comfyPage.page.waitForTimeout(500)
+          for (const direction of path)
+            await comfyPage.page.keyboard.press(`Arrow${direction}`, {
+              delay: 256
+            })
+          await comfyPage.nextFrame()
           expect(comfyPage.menu.queueTab.getGalleryImage(end)).toBeVisible()
         })
       })
