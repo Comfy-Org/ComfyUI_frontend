@@ -1,6 +1,7 @@
 {
   "id": "light",
   "name": "Light",
+  "light_theme": true,
   "colors": {
     "node_slot": {
       "CLIP": "#FFA726",

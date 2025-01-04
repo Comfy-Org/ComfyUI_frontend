@@ -13,7 +13,7 @@
 import { useEventListener } from '@vueuse/core'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { computed, onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
+import { onBeforeUnmount, onMounted, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BrowserTabTitle from '@/components/BrowserTabTitle.vue'
@@ -41,6 +41,7 @@ import {
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
@@ -51,18 +52,16 @@ const { t } = useI18n()
 const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
-
-const theme = computed<string>(() => settingStore.get('Comfy.ColorPalette'))
+const colorPaletteStore = useColorPaletteStore()
 
 watch(
-  theme,
+  () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
-    const isDarkTheme = newTheme !== 'light'
-    if (isDarkTheme) {
-      document.body.classList.add(DARK_THEME_CLASS)
-    } else {
+    if (newTheme.light_theme) {
       document.body.classList.remove(DARK_THEME_CLASS)
+    } else {
+      document.body.classList.add(DARK_THEME_CLASS)
     }
   },
   { immediate: true }

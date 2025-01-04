@@ -7,6 +7,7 @@ import {
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
@@ -16,6 +17,7 @@ import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { type ComfyWorkflow, useWorkflowStore } from '@/stores/workflowStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -23,6 +25,8 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
+  const colorPaletteStore = useColorPaletteStore()
+  const colorPaletteService = useColorPaletteService()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -411,16 +415,16 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.12',
       function: (() => {
         let previousDarkTheme: string = 'dark'
+        let previousLightTheme: string = 'light'
 
-        // Official light theme is the only light theme supported now.
-        const isDarkMode = (themeId: string) => themeId !== 'light'
         return () => {
           const settingStore = useSettingStore()
-          const currentTheme = settingStore.get('Comfy.ColorPalette')
-          if (isDarkMode(currentTheme)) {
-            previousDarkTheme = currentTheme
-            settingStore.set('Comfy.ColorPalette', 'light')
+          const theme = colorPaletteStore.completedActivePalette
+          if (theme.light_theme) {
+            previousLightTheme = theme.id
+            settingStore.set('Comfy.ColorPalette', previousLightTheme)
           } else {
+            previousDarkTheme = theme.id
             settingStore.set('Comfy.ColorPalette', previousDarkTheme)
           }
         }

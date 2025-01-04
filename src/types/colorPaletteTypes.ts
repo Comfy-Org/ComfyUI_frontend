@@ -92,7 +92,8 @@ export const paletteSchema = z
   .object({
     id: z.string(),
     name: z.string(),
-    colors: partialColorsSchema
+    colors: partialColorsSchema,
+    light_theme: z.boolean().optional()
   })
   .passthrough()
 
