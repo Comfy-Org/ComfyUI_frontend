@@ -5,9 +5,12 @@ import {
   LiteGraph
 } from '@comfyorg/litegraph'
 
+import {
+  DEFAULT_DARK_COLOR_PALETTE,
+  DEFAULT_LIGHT_COLOR_PALETTE
+} from '@/constants/coreColorPalettes'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
@@ -26,7 +29,6 @@ export function useCoreCommands(): ComfyCommand[] {
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
-  const colorPaletteService = useColorPaletteService()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
 
   const getSelectedNodes = (): LGraphNode[] => {
@@ -414,18 +416,18 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Toggle Theme (Dark/Light)',
       versionAdded: '1.3.12',
       function: (() => {
-        let previousDarkTheme: string = 'dark'
-        let previousLightTheme: string = 'light'
+        let previousDarkTheme: string = DEFAULT_DARK_COLOR_PALETTE.id
+        let previousLightTheme: string = DEFAULT_LIGHT_COLOR_PALETTE.id
 
         return () => {
           const settingStore = useSettingStore()
           const theme = colorPaletteStore.completedActivePalette
           if (theme.light_theme) {
             previousLightTheme = theme.id
-            settingStore.set('Comfy.ColorPalette', previousLightTheme)
+            settingStore.set('Comfy.ColorPalette', previousDarkTheme)
           } else {
             previousDarkTheme = theme.id
-            settingStore.set('Comfy.ColorPalette', previousDarkTheme)
+            settingStore.set('Comfy.ColorPalette', previousLightTheme)
           }
         }
       })()
