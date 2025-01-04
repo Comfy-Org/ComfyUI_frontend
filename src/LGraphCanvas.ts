@@ -3501,7 +3501,7 @@ export class LGraphCanvas {
       if (e.keyCode == 32) {
         // space
         this.read_only = false
-        this.dragging_canvas = this._previously_dragging_canvas && this.pointer.isDown ?? false
+        this.dragging_canvas = (this._previously_dragging_canvas ?? false) && this.pointer.isDown
         this._previously_dragging_canvas = null
       }
 
