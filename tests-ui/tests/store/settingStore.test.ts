@@ -160,6 +160,95 @@ describe('useSettingStore', () => {
         'differentvalue'
       )
     })
+
+    describe('object mutation prevention', () => {
+      beforeEach(() => {
+        const setting: SettingParams = {
+          id: 'test.setting',
+          name: 'Test setting',
+          type: 'hidden',
+          defaultValue: {}
+        }
+        store.addSetting(setting)
+      })
+
+      it('should prevent mutations of objects after set', async () => {
+        const originalObject = { foo: 'bar', nested: { value: 123 } }
+
+        await store.set('test.setting', originalObject)
+
+        // Attempt to mutate the original object
+        originalObject.foo = 'changed'
+        originalObject.nested.value = 456
+
+        // Get the stored value
+        const storedValue = store.get('test.setting')
+
+        // Verify the stored value wasn't affected by the mutation
+        expect(storedValue).toEqual({ foo: 'bar', nested: { value: 123 } })
+      })
+
+      it('should prevent mutations of retrieved objects', () => {
+        const initialValue = { foo: 'bar', nested: { value: 123 } }
+
+        // Set initial value
+        store.set('test.setting', initialValue)
+
+        // Get the value and try to mutate it
+        const retrievedValue = store.get('test.setting')
+        retrievedValue.foo = 'changed'
+        if (retrievedValue.nested) {
+          retrievedValue.nested.value = 456
+        }
+
+        // Get the value again
+        const newRetrievedValue = store.get('test.setting')
+
+        // Verify the stored value wasn't affected by the mutation
+        expect(newRetrievedValue).toEqual({
+          foo: 'bar',
+          nested: { value: 123 }
+        })
+      })
+
+      it('should prevent mutations of arrays after set', async () => {
+        const originalArray = [1, 2, { value: 3 }]
+
+        await store.set('test.setting', originalArray)
+
+        // Attempt to mutate the original array
+        originalArray.push(4)
+        if (typeof originalArray[2] === 'object') {
+          originalArray[2].value = 999
+        }
+
+        // Get the stored value
+        const storedValue = store.get('test.setting')
+
+        // Verify the stored value wasn't affected by the mutation
+        expect(storedValue).toEqual([1, 2, { value: 3 }])
+      })
+
+      it('should prevent mutations of retrieved arrays', () => {
+        const initialArray = [1, 2, { value: 3 }]
+
+        // Set initial value
+        store.set('test.setting', initialArray)
+
+        // Get the value and try to mutate it
+        const retrievedArray = store.get('test.setting')
+        retrievedArray.push(4)
+        if (typeof retrievedArray[2] === 'object') {
+          retrievedArray[2].value = 999
+        }
+
+        // Get the value again
+        const newRetrievedValue = store.get('test.setting')
+
+        // Verify the stored value wasn't affected by the mutation
+        expect(newRetrievedValue).toEqual([1, 2, { value: 3 }])
+      })
+    })
   })
 })
 
