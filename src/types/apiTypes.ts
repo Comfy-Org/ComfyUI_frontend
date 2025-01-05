@@ -1,3 +1,4 @@
+import { LinkMarkerShape } from '@comfyorg/litegraph'
 import { ZodType, z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
@@ -486,6 +487,9 @@ const zSettings = z.record(z.any()).and(
       'Comfy.EnableWorkflowViewRestore': z.boolean(),
       'Comfy.FloatRoundingPrecision': z.number(),
       'Comfy.Graph.CanvasInfo': z.boolean(),
+      'Comfy.Graph.CanvasMenu': z.boolean(),
+      'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+      'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
       'Comfy.Graph.ZoomSpeed': z.number(),
       'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
       'Comfy.GroupSelectedNodes.Padding': z.number(),
@@ -501,13 +505,22 @@ const zSettings = z.record(z.any()).and(
       'Comfy.NodeInputConversionSubmenus': z.boolean(),
       'Comfy.LinkRelease.Action': zLinkReleaseTriggerAction,
       'Comfy.LinkRelease.ActionShift': zLinkReleaseTriggerAction,
+      'Comfy.ModelLibrary.AutoLoadAll': z.boolean(),
+      'Comfy.ModelLibrary.NameFormat': z.enum(['filename', 'title']),
       'Comfy.NodeSearchBoxImpl.NodePreview': z.boolean(),
       'Comfy.NodeSearchBoxImpl': z.enum(['default', 'simple']),
       'Comfy.NodeSearchBoxImpl.ShowCategory': z.boolean(),
       'Comfy.NodeSearchBoxImpl.ShowIdName': z.boolean(),
+      'Comfy.NodeSearchBoxImpl.ShowNodeFrequency': z.boolean(),
       'Comfy.NodeSuggestions.number': z.number(),
+      'Comfy.Node.BypassAllLinksOnDelete': z.boolean(),
+      'Comfy.Node.Opacity': z.number(),
+      'Comfy.Node.MiddleClickRerouteNode': z.boolean(),
       'Comfy.Node.ShowDeprecated': z.boolean(),
       'Comfy.Node.ShowExperimental': z.boolean(),
+      'Comfy.Pointer.ClickBufferTime': z.number(),
+      'Comfy.Pointer.ClickDrift': z.number(),
+      'Comfy.Pointer.DoubleClickTime': z.number(),
       'Comfy.PreviewFormat': z.string(),
       'Comfy.PromptFilename': z.boolean(),
       'Comfy.Sidebar.Location': z.enum(['left', 'right']),
@@ -519,15 +532,18 @@ const zSettings = z.record(z.any()).and(
       'Comfy.UseNewMenu': z.enum(['Disabled', 'Top', 'Bottom']),
       'Comfy.TreeExplorer.ItemPadding': z.number(),
       'Comfy.Validation.Workflows': z.boolean(),
+      'Comfy.Validation.NodeDefs': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
       'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
+      'Comfy.WidgetControlMode': z.enum(['before', 'after']),
       'Comfy.Window.UnloadConfirmation': z.boolean(),
       'Comfy.NodeBadge.NodeSourceBadgeMode': zNodeBadgeMode,
       'Comfy.NodeBadge.NodeIdBadgeMode': zNodeBadgeMode,
       'Comfy.NodeBadge.NodeLifeCycleBadgeMode': zNodeBadgeMode,
       'Comfy.QueueButton.BatchCountLimit': z.number(),
+      'Comfy.Queue.MaxHistoryItems': z.number(),
       'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
       'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
       'Comfy.Extension.Disabled': z.array(z.string()),
@@ -538,7 +554,8 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Server.ServerConfigValues': z.record(z.string(), z.any()),
       'Comfy.Server.LaunchArgs': z.record(z.string(), z.string()),
       'LiteGraph.Canvas.MaximumFps': z.number(),
-      'Comfy.Workflow.ConfirmDelete': z.boolean()
+      'Comfy.Workflow.ConfirmDelete': z.boolean(),
+      'Comfy.RerouteBeta': z.boolean()
     })
     .optional()
 )
