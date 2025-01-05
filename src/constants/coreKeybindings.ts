@@ -95,7 +95,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
@@ -104,7 +104,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       shift: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   // For number pad '+'
   {
@@ -113,7 +113,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomIn',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
@@ -121,21 +121,21 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ZoomOut',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
       key: '.'
     },
     commandId: 'Comfy.Canvas.FitView',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
       key: 'p'
     },
     commandId: 'Comfy.Canvas.ToggleSelected.Pin',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
@@ -143,7 +143,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
@@ -151,7 +151,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
@@ -159,7 +159,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
-    targetElementId: '#graph-canvas'
+    targetElementId: 'graph-canvas'
   },
   {
     combo: {
