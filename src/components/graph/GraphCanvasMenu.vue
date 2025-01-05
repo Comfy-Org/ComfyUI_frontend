@@ -6,6 +6,7 @@
       severity="secondary"
       icon="pi pi-plus"
       v-tooltip.left="t('graphCanvasMenu.zoomIn')"
+      :aria-label="$t('graphCanvasMenu.zoomIn')"
       @mousedown="repeat('Comfy.Canvas.ZoomIn')"
       @mouseup="stopRepeat"
     />
@@ -13,6 +14,7 @@
       severity="secondary"
       icon="pi pi-minus"
       v-tooltip.left="t('graphCanvasMenu.zoomOut')"
+      :aria-label="$t('graphCanvasMenu.zoomOut')"
       @mousedown="repeat('Comfy.Canvas.ZoomOut')"
       @mouseup="stopRepeat"
     />
@@ -20,6 +22,7 @@
       severity="secondary"
       icon="pi pi-expand"
       v-tooltip.left="t('graphCanvasMenu.fitView')"
+      :aria-label="$t('graphCanvasMenu.fitView')"
       @click="() => commandStore.execute('Comfy.Canvas.FitView')"
     />
     <Button
@@ -29,6 +32,12 @@
           'graphCanvasMenu.' +
             (canvasStore.canvas?.read_only ? 'panMode' : 'selectMode')
         ) + ' (Space)'
+      "
+      :aria-label="
+        t(
+          'graphCanvasMenu.' +
+            (canvasStore.canvas?.read_only ? 'panMode' : 'selectMode')
+        )
       "
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLock')"
     >
@@ -43,6 +52,7 @@
       severity="secondary"
       :icon="linkHidden ? 'pi pi-eye-slash' : 'pi pi-eye'"
       v-tooltip.left="t('graphCanvasMenu.toggleLinkVisibility')"
+      :aria-label="$t('graphCanvasMenu.toggleLinkVisibility')"
       @click="() => commandStore.execute('Comfy.Canvas.ToggleLinkVisibility')"
       data-testid="toggle-link-visibility-button"
     />

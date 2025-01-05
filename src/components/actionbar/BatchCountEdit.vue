@@ -3,6 +3,7 @@
     class="batch-count"
     :class="props.class"
     v-tooltip.bottom="$t('menu.batchCount')"
+    :aria-label="$t('menu.batchCount')"
   >
     <InputNumber
       class="w-14"

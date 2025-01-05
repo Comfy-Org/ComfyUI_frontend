@@ -20,6 +20,7 @@
         severity="secondary"
         text
         v-tooltip="{ value: $t('menu.hideMenu'), showDelay: 300 }"
+        :aria-label="$t('menu.hideMenu')"
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />

@@ -3,6 +3,7 @@
     v-show="bottomPanelStore.bottomPanelTabs.length > 0"
     severity="secondary"
     text
+    :aria-label="$t('menu.toggleBottomPanel')"
     @click="bottomPanelStore.toggleBottomPanel"
     v-tooltip="{ value: $t('menu.toggleBottomPanel'), showDelay: 300 }"
   >

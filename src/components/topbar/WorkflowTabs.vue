@@ -17,10 +17,12 @@
     </template>
   </SelectButton>
   <Button
+    v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
     class="new-blank-workflow-button"
     icon="pi pi-plus"
     text
     severity="secondary"
+    :aria-label="$t('sideToolbar.newBlankWorkflow')"
     @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
   />
   <ContextMenu ref="menu" :model="contextMenuItems" />

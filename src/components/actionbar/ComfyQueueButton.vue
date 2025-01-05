@@ -39,6 +39,7 @@
         :severity="executingPrompt ? 'danger' : 'secondary'"
         :disabled="!executingPrompt"
         text
+        :aria-label="$t('menu.interrupt')"
         @click="() => commandStore.execute('Comfy.Interrupt')"
       >
       </Button>
@@ -48,6 +49,7 @@
         :severity="hasPendingTasks ? 'danger' : 'secondary'"
         :disabled="!hasPendingTasks"
         text
+        :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
         @click="() => commandStore.execute('Comfy.ClearPendingTasks')"
       />
     </ButtonGroup>
