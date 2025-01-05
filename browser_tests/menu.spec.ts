@@ -293,7 +293,7 @@ test.describe('Menu', () => {
       })
     })
 
-    test('Custom color can be selected and saved after interacting with color options', async ({
+    test('Can customize bookmark color after interacting with color options', async ({
       comfyPage
     }) => {
       // Open customization dialog
