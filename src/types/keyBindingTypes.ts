@@ -13,11 +13,11 @@ export const zKeyCombo = z.object({
 export const zKeybinding = z.object({
   commandId: z.string(),
   combo: zKeyCombo,
-  // Optional target element CSS selector to limit keybinding to.
+  // Optional target element ID to limit keybinding to.
   // Note: Currently only used to distinguish between global keybindings
   // and litegraph canvas keybindings.
   // Do NOT use this field in extensions as it has no effect.
-  targetSelector: z.string().optional()
+  targetElementId: z.string().optional()
 })
 
 // Infer types from schemas
