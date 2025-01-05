@@ -26,6 +26,7 @@
             :options="colorOptions"
             optionLabel="name"
             dataKey="value"
+            :allow-empty="false"
           >
             <template #option="slotProps">
               <div
