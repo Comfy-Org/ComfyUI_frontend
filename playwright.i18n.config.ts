@@ -8,7 +8,7 @@ const config: PlaywrightTestConfig = {
   },
   reporter: 'list',
   timeout: 10000,
-  testMatch: /collect-i18n\.ts/
+  testMatch: /collect-i18n-.*\.ts/
 }
 
 export default config
