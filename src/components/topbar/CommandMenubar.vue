@@ -19,7 +19,7 @@
         <span class="p-menubar-item-label">{{ item.label }}</span>
         <span
           v-if="item?.comfyCommand?.keybinding"
-          class="ml-auto border border-surface rounded text-muted text-xs p-1 keybinding-tag"
+          class="ml-auto border border-surface rounded text-muted text-xs text-nowrap p-1 keybinding-tag"
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
