@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { defineStore } from 'pinia'
 import type { TreeNode } from 'primevue/treenode'
 import { computed, ref } from 'vue'
@@ -74,7 +75,12 @@ export const useSettingStore = defineStore('setting', () => {
    * @param value - The value to set.
    */
   async function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    const newValue = tryMigrateDeprecatedValue(settingsById.value[key], value)
+    // Clone the incoming value to prevent external mutations
+    const clonedValue = _.cloneDeep(value)
+    const newValue = tryMigrateDeprecatedValue(
+      settingsById.value[key],
+      clonedValue
+    )
     const oldValue = get(key)
     if (newValue === oldValue) return
 
@@ -89,7 +95,8 @@ export const useSettingStore = defineStore('setting', () => {
    * @returns The value of the setting.
    */
   function get<K extends keyof Settings>(key: K): Settings[K] {
-    return settingValues.value[key] ?? getDefaultValue(key)
+    // Clone the value when returning to prevent external mutations
+    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key))
   }
 
   /**
