@@ -119,6 +119,9 @@
       "clip_name": {
         "name": "clip名"
       },
+      "device": {
+        "name": "デバイス"
+      },
       "type": {
         "name": "タイプ"
       }
@@ -1218,6 +1221,9 @@
       },
       "clip_name2": {
         "name": "clip_name2"
+      },
+      "device": {
+        "name": "デバイス"
       },
       "type": {
         "name": "タイプ"

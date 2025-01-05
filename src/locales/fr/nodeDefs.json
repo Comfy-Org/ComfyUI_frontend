@@ -119,6 +119,9 @@
       "clip_name": {
         "name": "clip_name"
       },
+      "device": {
+        "name": "appareil"
+      },
       "type": {
         "name": "type"
       }
@@ -1218,6 +1221,9 @@
       },
       "clip_name2": {
         "name": "nom_clip2"
+      },
+      "device": {
+        "name": "appareil"
       },
       "type": {
         "name": "type"

@@ -119,6 +119,9 @@
       "clip_name": {
         "name": "CLIP 파일명"
       },
+      "device": {
+        "name": "장치"
+      },
       "type": {
         "name": "유형"
       }
@@ -1218,6 +1221,9 @@
       },
       "clip_name2": {
         "name": "CLIP 파일명2"
+      },
+      "device": {
+        "name": "장치"
       },
       "type": {
         "name": "유형"
