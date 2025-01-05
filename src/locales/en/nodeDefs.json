@@ -184,6 +184,9 @@
       },
       "type": {
         "name": "type"
+      },
+      "device": {
+        "name": "device"
       }
     }
   },
@@ -1221,6 +1224,9 @@
       },
       "type": {
         "name": "type"
+      },
+      "device": {
+        "name": "device"
       }
     }
   },

@@ -655,7 +655,7 @@ export class ComfyApp {
         const keyCombo = KeyComboImpl.fromEvent(e)
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
-        if (keybinding && keybinding.targetSelector === '#graph-canvas') {
+        if (keybinding && keybinding.targetElementId === 'graph-canvas') {
           useCommandStore().execute(keybinding.commandId)
           block_default = true
         }

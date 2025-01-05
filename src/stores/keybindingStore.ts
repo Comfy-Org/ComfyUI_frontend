@@ -6,12 +6,12 @@ import { KeyCombo, Keybinding } from '@/types/keyBindingTypes'
 export class KeybindingImpl implements Keybinding {
   commandId: string
   combo: KeyComboImpl
-  targetSelector?: string
+  targetElementId?: string
 
   constructor(obj: Keybinding) {
     this.commandId = obj.commandId
     this.combo = new KeyComboImpl(obj.combo)
-    this.targetSelector = obj.targetSelector
+    this.targetElementId = obj.targetElementId
   }
 
   equals(other: unknown): boolean {
@@ -20,7 +20,7 @@ export class KeybindingImpl implements Keybinding {
     return raw instanceof KeybindingImpl
       ? this.commandId === raw.commandId &&
           this.combo.equals(raw.combo) &&
-          this.targetSelector === raw.targetSelector
+          this.targetElementId === raw.targetElementId
       : false
   }
 }

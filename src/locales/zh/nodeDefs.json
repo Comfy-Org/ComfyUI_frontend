@@ -119,6 +119,9 @@
       "clip_name": {
         "name": "CLIP名称"
       },
+      "device": {
+        "name": "设备"
+      },
       "type": {
         "name": "类型"
       }
@@ -1218,6 +1221,9 @@
       },
       "clip_name2": {
         "name": "CLIP名称2"
+      },
+      "device": {
+        "name": "设备"
       },
       "type": {
         "name": "类型"

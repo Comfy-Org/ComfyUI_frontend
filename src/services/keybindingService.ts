@@ -31,7 +31,7 @@ export const useKeybindingService = () => {
     }
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
-    if (keybinding && keybinding.targetSelector !== '#graph-canvas') {
+    if (keybinding && keybinding.targetElementId !== 'graph-canvas') {
       // Prevent default browser behavior first, then execute the command
       event.preventDefault()
       await commandStore.execute(keybinding.commandId)
