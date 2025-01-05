@@ -292,6 +292,47 @@ test.describe('Menu', () => {
         }
       })
     })
+
+    test('Can customize bookmark color after interacting with color options', async ({
+      comfyPage
+    }) => {
+      // Open customization dialog
+      await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', ['foo/'])
+      const tab = comfyPage.menu.nodeLibraryTab
+      await tab.getFolder('foo').click({ button: 'right' })
+      await comfyPage.page.getByLabel('Customize').click()
+
+      // Click a color option multiple times
+      const customColorOption = comfyPage.page.locator(
+        '.p-togglebutton-content > .pi-palette'
+      )
+      await customColorOption.click()
+      await customColorOption.click()
+
+      // Use the color picker
+      await comfyPage.page
+        .getByLabel('Customize Folder')
+        .getByRole('textbox')
+        .click()
+      await comfyPage.page.locator('.p-colorpicker-color-background').click()
+
+      // Finalize the customization
+      await comfyPage.page
+        .locator('.icon-field .p-selectbutton > *:nth-child(2)')
+        .click()
+      await comfyPage.page.getByLabel('Confirm').click()
+      await comfyPage.nextFrame()
+
+      // Verify the color selection is saved
+      const setting = await comfyPage.getSetting(
+        'Comfy.NodeLibrary.BookmarksCustomization'
+      )
+      await expect(setting).toHaveProperty(['foo/', 'color'])
+      await expect(setting['foo/'].color).not.toBeNull()
+      await expect(setting['foo/'].color).not.toBeUndefined()
+      await expect(setting['foo/'].color).not.toBe('')
+    })
+
     test('Can rename customized bookmark folder', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.NodeLibrary.Bookmarks.V2', ['foo/'])
       await comfyPage.setSetting('Comfy.NodeLibrary.BookmarksCustomization', {
