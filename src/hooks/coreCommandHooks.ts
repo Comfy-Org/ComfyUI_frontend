@@ -533,7 +533,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Workspace.CloseWorkflow',
       icon: 'pi pi-times',
       label: 'Close Current Workflow',
-      versionAdded: '1.7.2',
+      versionAdded: '1.7.3',
       function: () => {
         if (workflowStore.activeWorkflow)
           workflowService.closeWorkflow(workflowStore.activeWorkflow)
