@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "Отменить"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "Закрыть текущий рабочий процесс"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "Следующий открытый рабочий процесс"
   },

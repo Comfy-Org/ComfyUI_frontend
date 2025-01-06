@@ -528,6 +528,16 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
       }
+    },
+    {
+      id: 'Workspace.CloseWorkflow',
+      icon: 'pi pi-times',
+      label: 'Close Current Workflow',
+      versionAdded: '1.7.3',
+      function: () => {
+        if (workflowStore.activeWorkflow)
+          workflowService.closeWorkflow(workflowStore.activeWorkflow)
+      }
     }
   ]
 }

@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "Annuler"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "Fermer le flux de travail actuel"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "Flux de travail ouvert suivant"
   },

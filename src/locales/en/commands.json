@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "Undo"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "Close Current Workflow"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "Next Opened Workflow"
   },

@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "元に戻す"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "現在のワークフローを閉じる"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "次の開いたワークフロー"
   },

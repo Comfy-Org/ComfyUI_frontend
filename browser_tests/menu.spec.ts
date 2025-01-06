@@ -665,6 +665,15 @@ test.describe('Menu', () => {
       ).toEqual(['*Unsaved Workflow.json'])
     })
 
+    test('Can close saved workflow with command', async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      await comfyPage.menu.topbar.saveWorkflow('workflow1.json')
+      await comfyPage.executeCommand('Workspace.CloseWorkflow')
+      expect(await tab.getOpenedWorkflowNames()).toEqual([
+        '*Unsaved Workflow.json'
+      ])
+    })
+
     test('Can delete workflows (confirm disabled)', async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
 
