@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "撤销"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "关闭当前工作流"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "下一个打开的工作流"
   },

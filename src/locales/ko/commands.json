@@ -152,6 +152,9 @@
   "Comfy_Undo": {
     "label": "실행 취소"
   },
+  "Workspace_CloseWorkflow": {
+    "label": "현재 워크플로우 닫기"
+  },
   "Workspace_NextOpenedWorkflow": {
     "label": "다음 열린 워크플로"
   },
