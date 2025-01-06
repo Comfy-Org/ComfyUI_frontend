@@ -84,11 +84,11 @@ export const useKeybindingService = () => {
     // Allow setting multiple values at once in settingStore
     await settingStore.set(
       'Comfy.Keybinding.NewBindings',
-      Object.values(keybindingStore.userKeybindings.value)
+      Object.values(keybindingStore.getUserKeybindings())
     )
     await settingStore.set(
       'Comfy.Keybinding.UnsetBindings',
-      Object.values(keybindingStore.userUnsetKeybindings.value)
+      Object.values(keybindingStore.getUserUnsetKeybindings())
     )
   }
 

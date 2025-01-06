@@ -105,6 +105,20 @@ export const useKeybindingStore = defineStore('keybinding', () => {
    */
   const userUnsetKeybindings = ref<Record<string, KeybindingImpl>>({})
 
+  /**
+   * Get user-defined keybindings.
+   */
+  function getUserKeybindings() {
+    return userKeybindings.value
+  }
+
+  /**
+   * Get user-defined keybindings that unset default keybindings.
+   */
+  function getUserUnsetKeybindings() {
+    return userUnsetKeybindings.value
+  }
+
   const keybindingByKeyCombo = computed<Record<string, KeybindingImpl>>(() => {
     const result: Record<string, KeybindingImpl> = {
       ...defaultKeybindings.value
@@ -262,8 +276,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   return {
     keybindings,
-    userKeybindings,
-    userUnsetKeybindings,
+    getUserKeybindings,
+    getUserUnsetKeybindings,
     getKeybinding,
     getKeybindingsByCommandId,
     getKeybindingByCommandId,
