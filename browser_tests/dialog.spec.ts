@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { Keybinding } from '../src/types/keyBindingTypes'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
 
 test.describe('Load workflow warning', () => {
@@ -102,5 +103,53 @@ test.describe('Settings', () => {
     await test.step('Setting should persist', async () => {
       expect(await comfyPage.getSetting('Comfy.Graph.ZoomSpeed')).toBe(maxSpeed)
     })
+  })
+
+  test('Should persist keybinding setting', async ({ comfyPage }) => {
+    // Open the settings dialog
+    await comfyPage.page.keyboard.press('Control+,')
+    await comfyPage.page.waitForSelector('.settings-container')
+
+    // Open the keybinding tab
+    await comfyPage.page.getByLabel('Keybinding').click()
+    await comfyPage.page.waitForSelector(
+      '[placeholder="Search Keybindings..."]'
+    )
+
+    // Focus the 'New Blank Workflow' row
+    const newBlankWorkflowRow = comfyPage.page.locator('tr', {
+      has: comfyPage.page.getByRole('cell', { name: 'New Blank Workflow' })
+    })
+    await newBlankWorkflowRow.click()
+
+    // Click edit button
+    const editKeybindingButton = newBlankWorkflowRow.locator('.pi-pencil')
+    await editKeybindingButton.click()
+
+    // Set new keybinding
+    const input = comfyPage.page.getByPlaceholder('Press keys for new binding')
+    await input.press('Alt+n')
+
+    const requestPromise = comfyPage.page.waitForRequest(
+      '**/api/settings/Comfy.Keybinding.NewBindings'
+    )
+
+    // Save keybinding
+    const saveButton = comfyPage.page
+      .getByLabel('Comfy.NewBlankWorkflow')
+      .getByLabel('Save')
+    await saveButton.click()
+
+    const request = await requestPromise
+    const expectedSetting: Keybinding = {
+      commandId: 'Comfy.NewBlankWorkflow',
+      combo: {
+        key: 'n',
+        ctrl: false,
+        alt: true,
+        shift: false
+      }
+    }
+    expect(request.postData()).toContain(JSON.stringify(expectedSetting))
   })
 })
