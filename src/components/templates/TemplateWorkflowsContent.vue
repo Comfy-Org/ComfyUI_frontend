@@ -112,7 +112,7 @@ const loadWorkflow = async (id: string) => {
   let json
   if (selectedTab.value.moduleName === 'default') {
     // Default templates provided by frontend are served on this separate endpoint
-    json = await fetch(api.fileURL(`templates/${id}.json`)).then((r) =>
+    json = await fetch(api.fileURL(`/templates/${id}.json`)).then((r) =>
       r.json()
     )
   } else {
