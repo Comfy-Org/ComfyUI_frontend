@@ -149,6 +149,24 @@ describe('useKeybindingStore', () => {
     expect(() => store.unsetKeybinding(keybinding)).not.toThrow()
   })
 
+  it('should not throw an error when unsetting unknown keybinding', () => {
+    const store = useKeybindingStore()
+    const keybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'I', ctrl: true }
+    })
+    store.addUserKeybinding(keybinding)
+
+    expect(() =>
+      store.unsetKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.foo',
+          combo: { key: 'I', ctrl: true }
+        })
+      )
+    ).not.toThrow()
+  })
+
   it('should remove unset keybinding when adding back a default keybinding', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
