@@ -178,8 +178,12 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b-2;
+  border-bottom-width: 1px;
   border-bottom-color: var(--p-button-text-primary-color);
+}
+
+:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
+  opacity: 0.75;
 }
 
 :deep(.p-togglebutton-checked) .close-button,

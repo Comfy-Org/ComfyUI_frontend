@@ -535,7 +535,11 @@ const zSettings = z.record(z.any()).and(
       'Comfy.Validation.NodeDefs': z.boolean(),
       'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
       'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
-      'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
+      'Comfy.Workflow.WorkflowTabsPosition': z.enum([
+        'Sidebar',
+        'Topbar',
+        'Topbar (2nd-row)'
+      ]),
       'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
       'Comfy.WidgetControlMode': z.enum(['before', 'after']),
       'Comfy.Window.UnloadConfirmation': z.boolean(),

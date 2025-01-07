@@ -13,6 +13,9 @@
         <BottomPanel />
       </template>
       <template #graph-canvas-panel>
+        <SecondRowWorkflowTabs
+          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
+        />
         <GraphCanvasMenu v-if="canvasMenuEnabled" />
       </template>
     </LiteGraphCanvasSplitterOverlay>
@@ -48,6 +51,7 @@ import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
+import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { api } from '@/scripts/api'
@@ -82,6 +86,9 @@ const canvasStore = useCanvasStore()
 const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
+const workflowTabsPosition = computed(() =>
+  settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
 const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
