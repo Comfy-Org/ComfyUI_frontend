@@ -4,11 +4,11 @@
     :class="props.class"
   >
     <div class="comfy-vue-side-bar-header">
-      <Toolbar
-        class="flex-shrink-0 border-x-0 border-t-0 rounded-none px-2 py-1 min-h-8"
-      >
+      <Toolbar class="border-x-0 border-t-0 rounded-none px-2 py-1 min-h-8">
         <template #start>
-          <span class="text-sm">{{ props.title.toUpperCase() }}</span>
+          <span class="text-xs 2xl:text-sm truncate" :title="props.title">
+            {{ props.title.toUpperCase() }}
+          </span>
         </template>
         <template #end>
           <slot name="tool-buttons"></slot>
@@ -36,5 +36,9 @@ const props = defineProps<{
 <style scoped>
 :deep(.p-toolbar-end) .p-button {
   @apply py-1 2xl:py-2;
+}
+
+:deep(.p-toolbar-start) {
+  @apply min-w-0 flex-1 overflow-hidden;
 }
 </style>
