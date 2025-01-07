@@ -24,6 +24,7 @@ import GlobalToast from '@/components/toast/GlobalToast.vue'
 import TopMenubar from '@/components/topbar/TopMenubar.vue'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { useCoreCommands } from '@/hooks/coreCommandHooks'
+import { useErrorHandling } from '@/hooks/errorHooks'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -162,29 +163,30 @@ onBeforeUnmount(() => {
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 
+const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 const onGraphReady = () => {
   requestIdleCallback(
     () => {
       // Setting values now available after comfyApp.setup.
       // Load keybindings.
-      useKeybindingService().registerUserKeybindings()
+      wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()
 
       // Load server config
-      useServerConfigStore().loadServerConfig(
+      wrapWithErrorHandling(useServerConfigStore().loadServerConfig)(
         SERVER_CONFIG_ITEMS,
         settingStore.get('Comfy.Server.ServerConfigValues')
       )
 
       // Load model folders
-      useModelStore().loadModelFolders()
+      wrapWithErrorHandlingAsync(useModelStore().loadModelFolders)()
+
+      // Non-blocking load of node frequencies
+      wrapWithErrorHandlingAsync(useNodeFrequencyStore().loadNodeFrequencies)()
 
       // Node defs now available after comfyApp.setup.
       // Explicitly initialize nodeSearchService to avoid indexing delay when
       // node search is triggered
       useNodeDefStore().nodeSearchService.endsWithFilterStartSequence('')
-
-      // Non-blocking load of node frequencies
-      useNodeFrequencyStore().loadNodeFrequencies()
     },
     { timeout: 1000 }
   )
