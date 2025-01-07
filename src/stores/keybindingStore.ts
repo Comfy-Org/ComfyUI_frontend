@@ -25,12 +25,20 @@ export class KeybindingImpl implements Keybinding {
       : false
   }
 
-  get id(): string {
-    return `${this.combo.serialize()}:${this.targetElementId ?? 'global'}`
+  get scope(): string {
+    return this.targetElementId ?? 'global'
   }
 
   get comboId(): string {
     return this.combo.serialize()
+  }
+
+  get id(): string {
+    return KeybindingImpl.calculateId(this.combo, this.scope)
+  }
+
+  static calculateId(combo: KeyComboImpl, scope: string) {
+    return `${combo.serialize()}-${scope}`
   }
 }
 
@@ -134,9 +142,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     }
 
     for (const keybinding of Object.values(userUnsetKeybindings.value)) {
-      const serializedCombo = keybinding.combo.serialize()
-      if (result[serializedCombo]?.equals(keybinding)) {
-        delete result[serializedCombo]
+      const id = keybinding.id
+      if (result[id]?.equals(keybinding)) {
+        delete result[id]
       }
     }
 
@@ -150,8 +158,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     Object.values(keybindingByKeyCombo.value)
   )
 
-  function getKeybinding(combo: KeyComboImpl) {
-    return keybindingByKeyCombo.value[combo.serialize()]
+  function getKeybinding(combo: KeyComboImpl, scope: string = 'global') {
+    return keybindingByKeyCombo.value[KeybindingImpl.calculateId(combo, scope)]
   }
 
   const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
@@ -179,14 +187,14 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     keybinding: KeybindingImpl,
     { existOk = false }: { existOk: boolean }
   ) {
-    if (!existOk && keybinding.combo.serialize() in target.value) {
+    if (!existOk && keybinding.id in target.value) {
       throw new Error(
-        `Keybinding on ${keybinding.combo} already exists on ${
-          target.value[keybinding.combo.serialize()].commandId
+        `Keybinding on ${keybinding.combo} (${keybinding.scope}) already exists on ${
+          target.value[keybinding.id].commandId
         }`
       )
     }
-    target.value[keybinding.combo.serialize()] = keybinding
+    target.value[keybinding.id] = keybinding
   }
 
   function addDefaultKeybinding(keybinding: KeybindingImpl) {
@@ -194,17 +202,15 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function addUserKeybinding(keybinding: KeybindingImpl) {
-    const defaultKeybinding =
-      defaultKeybindings.value[keybinding.combo.serialize()]
-    const userUnsetKeybinding =
-      userUnsetKeybindings.value[keybinding.combo.serialize()]
+    const defaultKeybinding = defaultKeybindings.value[keybinding.id]
+    const userUnsetKeybinding = userUnsetKeybindings.value[keybinding.id]
 
     // User is adding back a keybinding that was an unsetted default keybinding.
     if (
       keybinding.equals(defaultKeybinding) &&
       keybinding.equals(userUnsetKeybinding)
     ) {
-      delete userUnsetKeybindings.value[keybinding.combo.serialize()]
+      delete userUnsetKeybindings.value[keybinding.id]
       return
     }
 
@@ -217,20 +223,20 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   }
 
   function unsetKeybinding(keybinding: KeybindingImpl) {
-    const serializedCombo = keybinding.combo.serialize()
-    if (!(serializedCombo in keybindingByKeyCombo.value)) {
+    const id = keybinding.id
+    if (!(id in keybindingByKeyCombo.value)) {
       console.warn(
         `Trying to unset non-exist keybinding: ${JSON.stringify(keybinding)}`
       )
       return
     }
 
-    if (userKeybindings.value[serializedCombo]?.equals(keybinding)) {
-      delete userKeybindings.value[serializedCombo]
+    if (userKeybindings.value[id]?.equals(keybinding)) {
+      delete userKeybindings.value[id]
       return
     }
 
-    if (defaultKeybindings.value[serializedCombo]?.equals(keybinding)) {
+    if (defaultKeybindings.value[id]?.equals(keybinding)) {
       addKeybinding(userUnsetKeybindings, keybinding, { existOk: false })
       return
     }
