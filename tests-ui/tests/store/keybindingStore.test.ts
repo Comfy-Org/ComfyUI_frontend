@@ -33,6 +33,18 @@ describe('useKeybindingStore', () => {
     expect(store.getKeybinding(keybinding.combo)).toEqual(keybinding)
   })
 
+  it('should get keybindings by command id', () => {
+    const store = useKeybindingStore()
+    const keybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'C', ctrl: true }
+    })
+    store.addDefaultKeybinding(keybinding)
+    expect(store.getKeybindingsByCommandId('test.command')).toEqual([
+      keybinding
+    ])
+  })
+
   it('should override default keybindings with user keybindings', () => {
     const store = useKeybindingStore()
     const defaultKeybinding = new KeybindingImpl({
