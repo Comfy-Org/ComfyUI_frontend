@@ -293,7 +293,8 @@
     "name": "Opened workflows position",
     "options": {
       "Sidebar": "Sidebar",
-      "Topbar": "Topbar"
+      "Topbar": "Topbar",
+      "Topbar (2nd-row)": "Topbar (2nd-row)"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

@@ -293,7 +293,8 @@
     "name": "열린 워크플로 위치",
     "options": {
       "Sidebar": "사이드바",
-      "Topbar": "상단바"
+      "Topbar": "상단바",
+      "Topbar (2nd-row)": "상단바 (2번째 행)"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

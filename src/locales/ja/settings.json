@@ -293,7 +293,8 @@
     "name": "開いているワークフローの位置",
     "options": {
       "Sidebar": "サイドバー",
-      "Topbar": "トップバー"
+      "Topbar": "トップバー",
+      "Topbar (2nd-row)": "トップバー（2行目）"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

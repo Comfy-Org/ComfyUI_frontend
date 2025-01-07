@@ -293,7 +293,8 @@
     "name": "已打开工作流的位置",
     "options": {
       "Sidebar": "侧边栏",
-      "Topbar": "顶部栏"
+      "Topbar": "顶部栏",
+      "Topbar (2nd-row)": "顶部栏 (第二行)"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {

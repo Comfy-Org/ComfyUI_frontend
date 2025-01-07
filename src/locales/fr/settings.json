@@ -293,7 +293,8 @@
     "name": "Position des flux de travail ouverts",
     "options": {
       "Sidebar": "Barre latérale",
-      "Topbar": "Barre supérieure"
+      "Topbar": "Barre supérieure",
+      "Topbar (2nd-row)": "Barre supérieure (2ème rangée)"
     }
   },
   "LiteGraph_Canvas_MaximumFps": {
