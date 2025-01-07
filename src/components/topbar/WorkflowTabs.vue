@@ -1,6 +1,12 @@
 <template>
   <div class="workflow-tabs-container flex flex-row w-full">
-    <ScrollPanel pt:content="py-0" class="overflow-x-hidden">
+    <ScrollPanel
+      class="overflow-x-hidden"
+      :pt:content="{
+        class: 'p-0 w-full',
+        onwheel: handleWheel
+      }"
+    >
       <SelectButton
         class="workflow-tabs bg-transparent"
         :class="props.class"
@@ -151,6 +157,15 @@ const contextMenuItems = computed(() => {
   ]
 })
 const commandStore = useCommandStore()
+
+// Horizontal scroll on wheel
+const handleWheel = (event: WheelEvent) => {
+  const scrollElement = event.currentTarget as HTMLElement
+  const scrollAmount = event.deltaX || event.deltaY
+  scrollElement.scroll({
+    left: scrollElement.scrollLeft + scrollAmount
+  })
+}
 </script>
 
 <style scoped>
