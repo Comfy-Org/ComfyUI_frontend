@@ -423,7 +423,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Keybindings unset by the user',
     type: 'hidden',
     defaultValue: [] as Keybinding[],
-    versionAdded: '1.3.7'
+    versionAdded: '1.3.7',
+    versionModified: '1.7.3',
+    migrateDeprecatedValue: (value: any[]) => {
+      return value.map((keybinding) => {
+        if (keybinding['targetSelector'] === '#graph-canvas') {
+          keybinding['targetElementId'] = 'graph-canvas'
+        }
+        return keybinding
+      })
+    }
   },
   {
     id: 'Comfy.Keybinding.NewBindings',
