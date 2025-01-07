@@ -1,7 +1,7 @@
 <template>
   <div class="workflow-tabs-container flex flex-row w-full">
     <ScrollPanel
-      class="overflow-x-hidden"
+      class="overflow-hidden"
       :pt:content="{
         class: 'p-0 w-full',
         onwheel: handleWheel
