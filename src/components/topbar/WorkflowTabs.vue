@@ -178,7 +178,6 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b-2;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 
