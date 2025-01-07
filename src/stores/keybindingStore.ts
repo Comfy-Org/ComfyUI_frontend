@@ -24,6 +24,14 @@ export class KeybindingImpl implements Keybinding {
           this.targetElementId === raw.targetElementId
       : false
   }
+
+  get id(): string {
+    return `${this.combo.serialize()}:${this.targetElementId ?? 'global'}`
+  }
+
+  get comboId(): string {
+    return this.combo.serialize()
+  }
 }
 
 export class KeyComboImpl implements KeyCombo {
