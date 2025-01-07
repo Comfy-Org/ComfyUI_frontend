@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { Ref, computed, ref, toRaw } from 'vue'
 
@@ -145,20 +146,9 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     return keybindingByKeyCombo.value[combo.serialize()]
   }
 
-  function createKeybindingsByCommandId(keybindings: KeybindingImpl[]) {
-    const result: Record<string, KeybindingImpl[]> = {}
-    for (const keybinding of keybindings) {
-      if (!(keybinding.commandId in result)) {
-        result[keybinding.commandId] = []
-      }
-      result[keybinding.commandId].push(keybinding)
-    }
-    return result
-  }
-
   const keybindingsByCommandId = computed<Record<string, KeybindingImpl[]>>(
     () => {
-      return createKeybindingsByCommandId(keybindings.value)
+      return _.groupBy(keybindings.value, 'commandId')
     }
   )
 
@@ -169,7 +159,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   const defaultKeybindingsByCommandId = computed<
     Record<string, KeybindingImpl[]>
   >(() => {
-    return createKeybindingsByCommandId(Object.values(defaultKeybindings.value))
+    return _.groupBy(Object.values(defaultKeybindings.value), 'commandId')
   })
 
   function getKeybindingByCommandId(commandId: string) {
