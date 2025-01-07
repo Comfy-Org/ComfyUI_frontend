@@ -227,7 +227,7 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return
     }
 
-    throw new Error(`Unknown keybinding: ${JSON.stringify(keybinding)}`)
+    console.warn(`Unset unknown keybinding: ${JSON.stringify(keybinding)}`)
   }
 
   /**
