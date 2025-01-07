@@ -3,6 +3,13 @@ import { Locator, Page } from '@playwright/test'
 export class ComfyNodeSearchFilterSelectionPanel {
   constructor(public readonly page: Page) {}
 
+  get header() {
+    return this.page
+      .getByRole('dialog')
+      .locator('div')
+      .filter({ hasText: 'Add node filter condition' })
+  }
+
   async selectFilterType(filterType: string) {
     await this.page
       .locator(
