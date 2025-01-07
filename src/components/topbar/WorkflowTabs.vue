@@ -182,6 +182,10 @@ const handleWheel = (event: WheelEvent) => {
   border-bottom-color: var(--p-button-text-primary-color);
 }
 
+:deep(.p-togglebutton:not(.p-togglebutton-checked)) {
+  opacity: 0.75;
+}
+
 :deep(.p-togglebutton-checked) .close-button,
 :deep(.p-togglebutton:hover) .close-button {
   @apply visible;
