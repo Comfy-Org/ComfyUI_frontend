@@ -9,13 +9,14 @@
       <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
-      <div class="flex-grow">
+      <div class="flex-grow min-w-0">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
       <Actionbar />
-      <BottomPanelToggleButton />
+      <BottomPanelToggleButton class="flex-shrink-0" />
       <Button
+        class="flex-shrink-0"
         icon="pi pi-bars"
         severity="secondary"
         text
