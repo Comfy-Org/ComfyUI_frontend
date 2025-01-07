@@ -1125,7 +1125,7 @@ class MaskEditorDialog extends ComfyDialog {
       .then((response) => {
         if (!response.ok) {
           console.log('Failed to upload mask:', response)
-          this.uploadMask(filepath, formData, 2)
+          this.uploadMask(filepath, formData, retries - 1)
         }
       })
       .catch((error) => {
