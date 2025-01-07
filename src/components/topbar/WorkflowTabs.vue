@@ -1,36 +1,47 @@
 <template>
-  <SelectButton
-    class="workflow-tabs bg-transparent inline"
-    :class="props.class"
-    :modelValue="selectedWorkflow"
-    @update:modelValue="onWorkflowChange"
-    :options="options"
-    optionLabel="label"
-    dataKey="value"
-  >
-    <template #option="{ option }">
-      <WorkflowTab
-        @contextmenu="showContextMenu($event, option)"
-        @click.middle="onCloseWorkflow(option)"
-        :workflow-option="option"
-      />
-    </template>
-  </SelectButton>
-  <Button
-    v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-    class="new-blank-workflow-button"
-    icon="pi pi-plus"
-    text
-    severity="secondary"
-    :aria-label="$t('sideToolbar.newBlankWorkflow')"
-    @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
-  />
-  <ContextMenu ref="menu" :model="contextMenuItems" />
+  <div class="workflow-tabs-container flex flex-row w-full">
+    <ScrollPanel
+      class="overflow-x-hidden"
+      :pt:content="{
+        class: 'p-0 w-full',
+        onwheel: handleWheel
+      }"
+    >
+      <SelectButton
+        class="workflow-tabs bg-transparent"
+        :class="props.class"
+        :modelValue="selectedWorkflow"
+        @update:modelValue="onWorkflowChange"
+        :options="options"
+        optionLabel="label"
+        dataKey="value"
+      >
+        <template #option="{ option }">
+          <WorkflowTab
+            @contextmenu="showContextMenu($event, option)"
+            @click.middle="onCloseWorkflow(option)"
+            :workflow-option="option"
+          />
+        </template>
+      </SelectButton>
+    </ScrollPanel>
+    <Button
+      v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
+      class="new-blank-workflow-button flex-shrink-0"
+      icon="pi pi-plus"
+      text
+      severity="secondary"
+      :aria-label="$t('sideToolbar.newBlankWorkflow')"
+      @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
+    />
+    <ContextMenu ref="menu" :model="contextMenuItems" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
+import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -146,6 +157,15 @@ const contextMenuItems = computed(() => {
   ]
 })
 const commandStore = useCommandStore()
+
+// Horizontal scroll on wheel
+const handleWheel = (event: WheelEvent) => {
+  const scrollElement = event.currentTarget as HTMLElement
+  const scrollAmount = event.deltaX || event.deltaY
+  scrollElement.scroll({
+    left: scrollElement.scrollLeft + scrollAmount
+  })
+}
 </script>
 
 <style scoped>
