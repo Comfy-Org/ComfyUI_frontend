@@ -68,7 +68,8 @@
     "disableAll": "Disable All",
     "command": "Command",
     "keybinding": "Keybinding",
-    "upload": "Upload"
+    "upload": "Upload",
+    "export": "Export"
   },
   "color": {
     "default": "Default",
