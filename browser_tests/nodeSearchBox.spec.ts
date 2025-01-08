@@ -132,6 +132,22 @@ test.describe('Node search box', () => {
       await expectFilterChips(comfyPage, ['MODEL'])
     })
 
+    test('Outer click dismisses filter panel but keeps search box visible', async ({
+      comfyPage
+    }) => {
+      await comfyPage.searchBox.filterButton.click()
+      const panel = comfyPage.searchBox.filterSelectionPanel
+      await panel.header.waitFor({ state: 'visible' })
+      const panelBounds = await panel.header.boundingBox()
+      await comfyPage.page.mouse.click(panelBounds!.x - 10, panelBounds!.y - 10)
+
+      // Verify the filter selection panel is hidden
+      expect(panel.header).not.toBeVisible()
+
+      // Verify the node search dialog is still visible
+      expect(comfyPage.searchBox.input).toBeVisible()
+    })
+
     test('Can add multiple filters', async ({ comfyPage }) => {
       await comfyPage.searchBox.addFilter('MODEL', 'Input Type')
       await comfyPage.searchBox.addFilter('CLIP', 'Output Type')

@@ -19,7 +19,13 @@
       class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
     />
-    <Dialog v-model:visible="nodeSearchFilterVisible" class="min-w-96">
+    <Dialog
+      v-model:visible="nodeSearchFilterVisible"
+      class="min-w-96"
+      dismissable-mask
+      modal
+      @hide="reFocusInput"
+    >
       <template #header>
         <h3>Add node filter condition</h3>
       </template>
@@ -140,7 +146,6 @@ onMounted(reFocusInput)
 const onAddFilter = (filterAndValue: FilterAndValue) => {
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
-  reFocusInput()
 }
 const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   event.stopPropagation()
