@@ -13,13 +13,13 @@
           optionValue="id"
         />
         <Button
-          icon="pi pi-download"
+          icon="pi pi-upload"
           text
-          :title="$t('g.download')"
+          :title="$t('g.export')"
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
         />
         <Button
-          icon="pi pi-upload"
+          icon="pi pi-download"
           text
           :title="$t('g.import')"
           @click="importCustomPalette"
