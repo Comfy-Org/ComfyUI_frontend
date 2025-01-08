@@ -85,6 +85,7 @@
     "enableAll": "すべて有効にする",
     "error": "エラー",
     "experimental": "ベータ",
+    "export": "エクスポート",
     "extensionName": "拡張機能名",
     "findIssues": "問題を見つける",
     "firstTimeUIMessage": "新しいUIを初めて使用しています。「メニュー > 新しいメニューを使用 > 無効」を選択して古いUIに戻してください。",

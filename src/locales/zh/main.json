@@ -85,6 +85,7 @@
     "enableAll": "启用全部",
     "error": "错误",
     "experimental": "测试版",
+    "export": "导出",
     "extensionName": "扩展名称",
     "findIssues": "查找问题",
     "firstTimeUIMessage": "这是您第一次使用新界面。选择 \"菜单 > 使用新菜单 > 禁用\" 来恢复旧界面。",

@@ -85,6 +85,7 @@
     "enableAll": "Activer tout",
     "error": "Erreur",
     "experimental": "BETA",
+    "export": "Exportation",
     "extensionName": "Nom de l'extension",
     "findIssues": "Trouver des problèmes",
     "firstTimeUIMessage": "C'est la première fois que vous utilisez la nouvelle interface utilisateur. Choisissez \"Menu > Utiliser le nouveau menu > Désactivé\" pour restaurer l'ancienne interface utilisateur.",
