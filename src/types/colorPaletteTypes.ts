@@ -27,6 +27,7 @@ const litegraphBaseSchema = z.object({
   NODE_SELECTED_TITLE_COLOR: z.string(),
   NODE_TEXT_SIZE: z.number(),
   NODE_TEXT_COLOR: z.string(),
+  NODE_TEXT_HIGHLIGHT_COLOR: z.string(),
   NODE_SUBTEXT_SIZE: z.number(),
   NODE_DEFAULT_COLOR: z.string(),
   NODE_DEFAULT_BGCOLOR: z.string(),
