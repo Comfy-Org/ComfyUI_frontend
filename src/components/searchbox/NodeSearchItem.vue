@@ -17,7 +17,7 @@
       </div>
       <div
         v-if="showCategory"
-        class="option-category font-light text-sm text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap"
+        class="option-category font-light text-sm text-muted overflow-hidden text-ellipsis whitespace-nowrap"
       >
         {{ nodeDef.category.replaceAll('/', ' > ') }}
       </div>
