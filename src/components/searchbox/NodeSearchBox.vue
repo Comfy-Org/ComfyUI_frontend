@@ -146,7 +146,6 @@ onMounted(reFocusInput)
 const onAddFilter = (filterAndValue: FilterAndValue) => {
   nodeSearchFilterVisible.value = false
   emit('addFilter', filterAndValue)
-  reFocusInput()
 }
 const onRemoveFilter = (event: Event, filterAndValue: FilterAndValue) => {
   event.stopPropagation()
