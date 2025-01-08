@@ -1478,7 +1478,7 @@ export class ComfyApp {
    * @returns The workflow and node links
    */
   async graphToPrompt(graph = this.graph, clean = true) {
-    for (const outerNode of this.graph.computeExecutionOrder(false)) {
+    for (const outerNode of graph.computeExecutionOrder(false)) {
       if (outerNode.widgets) {
         for (const widget of outerNode.widgets) {
           // Allow widgets to run callbacks before a prompt has been queued
