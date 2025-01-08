@@ -85,6 +85,7 @@
     "enableAll": "모두 활성화",
     "error": "오류",
     "experimental": "베타",
+    "export": "내보내기",
     "extensionName": "확장 이름",
     "findIssues": "문제 찾기",
     "firstTimeUIMessage": "새 UI를 처음 사용합니다. \"메뉴 > 새 메뉴 사용 > 비활성화\"를 선택하여 이전 UI로 복원하세요.",
