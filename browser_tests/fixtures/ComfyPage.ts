@@ -369,11 +369,6 @@ export class ComfyPage {
     }, settingId)
   }
 
-  async reload({ clearStorage = true }: { clearStorage?: boolean } = {}) {
-    await this.page.reload({ timeout: 15000 })
-    await this.setup({ clearStorage })
-  }
-
   async goto() {
     await this.page.goto(this.url)
   }

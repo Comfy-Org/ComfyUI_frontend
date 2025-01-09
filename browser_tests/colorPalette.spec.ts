@@ -150,7 +150,7 @@ test.describe('Color Palette', () => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
-    await comfyPage.reload()
+    await comfyPage.setup()
 
     await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
