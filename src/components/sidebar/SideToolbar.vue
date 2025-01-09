@@ -71,11 +71,11 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 
 <style>
 :root {
-  --sidebar-width: 64px;
+  --sidebar-width: 4rem;
   --sidebar-icon-size: 1.5rem;
 }
 :root .small-sidebar {
-  --sidebar-width: 40px;
+  --sidebar-width: 2.5rem;
   --sidebar-icon-size: 1rem;
 }
 </style>
