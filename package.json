@@ -28,7 +28,8 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "locale": "lobe-i18n locale",
-    "collect-i18n": "playwright test --config=playwright.i18n.config.ts"
+    "collect-i18n": "playwright test --config=playwright.i18n.config.ts",
+    "json-schema": "tsx scripts/generate-json-schema.ts"
   },
   "devDependencies": {
     "@babel/core": "^7.24.7",

@@ -200,7 +200,7 @@ export const zComfyWorkflow = z
   .passthrough()
 
 /** Schema version 1 */
-const zComfyWorkflow1 = z
+export const zComfyWorkflow1 = z
   .object({
     version: z.literal(1),
     config: zConfig.optional().nullable(),
