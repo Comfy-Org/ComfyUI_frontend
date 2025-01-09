@@ -82,6 +82,7 @@ eventBus.on((event: string, payload: any) => {
 <style scoped>
 .comfyui-menu {
   width: 100vw;
+  height: var(--comfy-topbar-height);
   background: var(--comfy-menu-bg);
   color: var(--fg-color);
   box-shadow: var(--bar-shadow);
@@ -91,7 +92,6 @@ eventBus.on((event: string, payload: any) => {
   z-index: 1000;
   order: 0;
   grid-column: 1/-1;
-  max-height: 90vh;
 }
 
 .comfyui-menu.dropzone {
