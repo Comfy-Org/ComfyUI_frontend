@@ -6,11 +6,12 @@
       v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
-      <h1 class="comfyui-logo mx-2">ComfyUI</h1>
+      <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
       <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
-      <div class="flex-grow min-w-0">
+      <div class="flex flex-grow min-w-0 h-full">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+        <div class="app-drag flex-grow min-w-0 h-full" />
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
       <Actionbar />

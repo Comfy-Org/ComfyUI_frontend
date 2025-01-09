@@ -1,6 +1,6 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex items-center justify-center pointer-events-auto overflow-auto"
+    class="container font-sans w-screen h-screen flex items-center justify-center pointer-events-auto overflow-auto app-drag"
     :class="[
       props.dark
         ? 'text-neutral-300 bg-neutral-900 dark-theme'
@@ -21,3 +21,9 @@ const props = withDefaults(
   }
 )
 </script>
+
+<style scoped>
+.container > * {
+  app-region: no-drag;
+}
+</style>
