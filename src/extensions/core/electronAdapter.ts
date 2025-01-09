@@ -39,7 +39,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
-        tooltip: 'Custom option hides the system title bar',
+        tooltip: 'Choose custom option to hide the system title bar',
         type: 'combo',
         defaultValue: 'default',
         options: ['default', 'custom'],
