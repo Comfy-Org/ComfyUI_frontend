@@ -68,7 +68,7 @@ watch(
 
     if (isElectron()) {
       electronAPI().changeTheme({
-        color: newTheme.colors.comfy_base['comfy-menu-bg'],
+        color: 'rgba(0, 0, 0, 0)',
         symbolColor: newTheme.colors.comfy_base['input-text']
       })
     }

@@ -26,12 +26,12 @@ const props = withDefaults(
 )
 
 const darkTheme = {
-  color: '#171717',
+  color: 'rgba(0, 0, 0, 0)',
   symbolColor: '#d4d4d4'
 }
 
 const lightTheme = {
-  color: '#d4d4d4',
+  color: 'rgba(0, 0, 0, 0)',
   symbolColor: '#171717'
 }
 

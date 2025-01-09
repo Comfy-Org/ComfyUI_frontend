@@ -26,6 +26,7 @@
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />
+      <div class="desktop-titlebar-spacer" />
     </div>
   </teleport>
 </template>
@@ -111,5 +112,9 @@ eventBus.on((event: string, payload: any) => {
   font-size: 1.2em;
   user-select: none;
   cursor: default;
+}
+
+.desktop-titlebar-spacer {
+  width: calc(100% - env(titlebar-area-width, 100%));
 }
 </style>
