@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Send anonymous crash reports"
   },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "Window Style",
+    "tooltip": "Choose custom option to hide the system title bar",
+    "options": {
+      "default": "default",
+      "custom": "custom"
+    }
+  },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
   },

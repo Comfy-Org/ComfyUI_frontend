@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "匿名のクラッシュレポートを送信する"
   },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "ウィンドウスタイル",
+    "options": {
+      "custom": "カスタム",
+      "default": "デフォルト"
+    },
+    "tooltip": "システムタイトルバーを非表示にするにはカスタムオプションを選択してください"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },

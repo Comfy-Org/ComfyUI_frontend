@@ -34,6 +34,23 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         type: 'boolean',
         defaultValue: true,
         onChange: onChangeRestartApp
+      },
+      {
+        id: 'Comfy-Desktop.WindowStyle',
+        category: ['Comfy-Desktop', 'General', 'Window Style'],
+        name: 'Window Style',
+        tooltip: 'Choose custom option to hide the system title bar',
+        type: 'combo',
+        defaultValue: 'default',
+        options: ['default', 'custom'],
+        onChange: (
+          newValue: 'default' | 'custom',
+          oldValue: 'default' | 'custom'
+        ) => {
+          electronAPI.Config.setWindowStyle(newValue)
+
+          onChangeRestartApp(newValue, oldValue)
+        }
       }
     ],
 

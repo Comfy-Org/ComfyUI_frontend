@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "익명으로 충돌 보고서 전송"
   },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "창 스타일",
+    "options": {
+      "custom": "사용자 정의",
+      "default": "기본"
+    },
+    "tooltip": "시스템 제목 표시 줄을 숨기려면 사용자 정의 옵션을 선택하세요"
+  },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },
