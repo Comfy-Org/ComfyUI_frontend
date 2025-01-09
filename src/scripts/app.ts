@@ -7,9 +7,10 @@ import {
   LiteGraph
 } from '@comfyorg/litegraph'
 import { Vector2 } from '@comfyorg/litegraph'
+import { IWidget } from '@comfyorg/litegraph'
+import { LGraphCanvasState } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
-import { shallowReactive } from 'vue'
 
 import { st } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
@@ -28,7 +29,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyNodeDef } from '@/types/apiTypes'
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/types/comfy'
 import {
   type ComfyWorkflowJSON,
   type NodeId,
@@ -54,7 +55,7 @@ import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-function sanitizeNodeName(string) {
+function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',
@@ -78,21 +79,19 @@ type Clipspace = {
   img_paste_mode: string
 }
 
-/**
- * @typedef {import("types/comfy").ComfyExtension} ComfyExtension
- */
+type ComfyExtension = import('@/types/comfy').ComfyExtension
 
 export class ComfyApp {
   /**
    * List of entries to queue
    * @type {{number: number, batchCount: number}[]}
    */
-  #queueItems = []
+  #queueItems: { number: number; batchCount: number }[] = []
   /**
    * If the queue is currently being processed
    * @type {boolean}
    */
-  #processingQueue = false
+  #processingQueue: boolean = false
 
   /**
    * Content Clipboard
@@ -222,7 +221,7 @@ export class ComfyApp {
   }
 
   getPreviewFormatParam() {
-    let preview_format = this.ui.settings.getSettingValue('Comfy.PreviewFormat')
+    let preview_format = useSettingStore().get('Comfy.PreviewFormat')
     if (preview_format) return `&preview=${preview_format}`
     else return ''
   }
@@ -231,12 +230,12 @@ export class ComfyApp {
     return '&rand=' + Math.random()
   }
 
-  static isImageNode(node) {
+  static isImageNode(node: LGraphNode) {
     return (
       node.imgs ||
       (node &&
         node.widgets &&
-        node.widgets.findIndex((obj) => obj.name === 'image') >= 0)
+        node.widgets.findIndex((value: IWidget) => value.name === 'image') >= 0)
     )
   }
 
@@ -250,7 +249,7 @@ export class ComfyApp {
     ComfyApp.clipspace_return_node = null
   }
 
-  static copyToClipspace(node) {
+  static copyToClipspace(node: LGraphNode) {
     var widgets = null
     if (node.widgets) {
       widgets = node.widgets.map(({ type, name, value }) => ({
@@ -294,7 +293,7 @@ export class ComfyApp {
     }
   }
 
-  static pasteFromClipspace(node) {
+  static pasteFromClipspace(node: LGraphNode) {
     if (ComfyApp.clipspace) {
       // image paste
       if (ComfyApp.clipspace.imgs && node.imgs) {
@@ -334,11 +333,13 @@ export class ComfyApp {
         if (ComfyApp.clipspace.images) {
           const clip_image =
             ComfyApp.clipspace.images[ComfyApp.clipspace['selectedIndex']]
-          const index = node.widgets.findIndex((obj) => obj.name === 'image')
+          const index = node.widgets.findIndex(
+            (widget: IWidget) => widget.name === 'image'
+          )
           if (index >= 0) {
             if (
-              node.widgets[index].type != 'image' &&
-              typeof node.widgets[index].value == 'string' &&
+              node.widgets[index].type === 'string' &&
+              typeof node.widgets[index].value === 'string' &&
               clip_image.filename
             ) {
               node.widgets[index].value =
@@ -353,28 +354,17 @@ export class ComfyApp {
         if (ComfyApp.clipspace.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
             const prop = Object.values(node.widgets).find(
-              // @ts-expect-errorg
               (obj) => obj.type === type && obj.name === name
             )
-            // @ts-expect-error
-            if (prop && prop.type != 'button') {
-              if (
-                // @ts-expect-error
-                prop.type != 'image' &&
-                // @ts-expect-error
-                typeof prop.value == 'string' &&
-                value.filename
-              ) {
-                // @ts-expect-error
-                prop.value =
+            if (prop && prop.type !== 'button') {
+              if (typeof prop.value === 'string' && value.filename) {
+                prop.value = prop.value =
                   (value.subfolder ? value.subfolder + '/' : '') +
                   value.filename +
                   (value.type ? ` [${value.type}]` : '')
               } else {
-                // @ts-expect-error
-                prop.value = value
-                // @ts-expect-error
-                prop.callback(value)
+                prop.value = value as any
+                prop.callback(value as any)
               }
             }
           })
@@ -384,12 +374,11 @@ export class ComfyApp {
       app.graph.setDirtyCanvas(true)
     }
   }
-
   #addRestoreWorkflowView() {
-    const serialize = LGraph.prototype.serialize
+    const toJSON = (LGraph.prototype as any).toJSON
     const self = this
-    LGraph.prototype.serialize = function () {
-      const workflow = serialize.apply(this, arguments)
+    ;(LGraph.prototype as any).toJSON = function () {
+      const workflow = toJSON.apply(this, arguments)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
       if (useSettingStore().get('Comfy.EnableWorkflowViewRestore')) {
@@ -486,7 +475,7 @@ export class ComfyApp {
     document.addEventListener('paste', async (e: ClipboardEvent) => {
       // ctrl+shift+v is used to paste nodes with connections
       // this is handled by litegraph
-      if (this.shiftDown) return
+      if (useWorkspaceStore().shiftDown) return
 
       // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
       // Did you mean 'Clipboard'?ts(2551)
@@ -574,9 +563,8 @@ export class ComfyApp {
       const isTargetInGraph =
         e.target.classList.contains('litegraph') ||
         e.target.classList.contains('graph-canvas-container')
-
       // copy nodes and clear clipboard
-      if (isTargetInGraph && this.canvas.selected_nodes) {
+      if (isTargetInGraph && (this.canvas as any).selected_nodes_array.length) {
         this.canvas.copyToClipboard()
         e.clipboardData.setData('text', ' ') //clearData doesn't remove images from clipboard
         e.preventDefault()
@@ -651,7 +639,7 @@ export class ComfyApp {
         return
       }
 
-      if (e.type == 'keydown' && !e.repeat) {
+      if (e.type === 'keydown' && !e.repeat) {
         const keyCombo = KeyComboImpl.fromEvent(e)
         const keybindingStore = useKeybindingStore()
         const keybinding = keybindingStore.getKeybinding(keyCombo)
@@ -694,9 +682,8 @@ export class ComfyApp {
    * Draws group header bar
    */
   #addDrawGroupsHandler() {
-    const self = this
     const origDrawGroups = LGraphCanvas.prototype.drawGroups
-    LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
+    LGraphCanvas.prototype.drawGroups = function (_canvas, ctx) {
       if (!this.graph) {
         return
       }
@@ -743,8 +730,7 @@ export class ComfyApp {
       ctx,
       size,
       fgcolor,
-      bgcolor,
-      selected
+      bgcolor
     ) {
       const res = origDrawNodeShape.apply(this, arguments)
 
@@ -752,7 +738,7 @@ export class ComfyApp {
 
       let color = null
       let lineWidth = 1
-      if (node.id === +self.runningNodeId) {
+      if (node.id === +useExecutionStore().executingNodeId) {
         color = '#0f0'
       } else if (self.dragOverNode && node.id === self.dragOverNode.id) {
         color = 'dodgerblue'
@@ -813,12 +799,17 @@ export class ComfyApp {
         ctx.globalAlpha = 1
       }
 
-      if (self.progress && node.id === +self.runningNodeId) {
+      if (
+        useExecutionStore()._executingNodeProgress &&
+        node.id === +useExecutionStore().executingNodeId
+      ) {
         ctx.fillStyle = 'green'
         ctx.fillRect(
           0,
           0,
-          size[0] * (self.progress.value / self.progress.max),
+          size[0] *
+            (useExecutionStore()._executingNodeProgress.value /
+              useExecutionStore()._executingNodeProgress.max),
           6
         )
         ctx.fillStyle = bgcolor
@@ -852,7 +843,7 @@ export class ComfyApp {
     }
 
     const origDrawNode = LGraphCanvas.prototype.drawNode
-    LGraphCanvas.prototype.drawNode = function (node, ctx) {
+    LGraphCanvas.prototype.drawNode = function (node) {
       const editor_alpha = this.editor_alpha
       const old_color = node.color
       const old_bgcolor = node.bgcolor
@@ -903,14 +894,14 @@ export class ComfyApp {
       this.ui.setStatus(detail)
     })
 
-    api.addEventListener('progress', ({ detail }) => {
+    api.addEventListener('progress', () => {
       this.graph.setDirtyCanvas(true, false)
     })
 
-    api.addEventListener('executing', ({ detail }) => {
+    api.addEventListener('executing', () => {
       this.graph.setDirtyCanvas(true, false)
-      this.revokePreviews(this.runningNodeId)
-      delete this.nodePreviewImages[this.runningNodeId]
+      this.revokePreviews(useExecutionStore().executingNodeId)
+      delete this.nodePreviewImages[useExecutionStore().executingNodeId]
     })
 
     api.addEventListener('executed', ({ detail }) => {
@@ -933,7 +924,7 @@ export class ComfyApp {
       }
     })
 
-    api.addEventListener('execution_start', ({ detail }) => {
+    api.addEventListener('execution_start', () => {
       this.lastExecutionError = null
       this.graph.nodes.forEach((node) => {
         if (node.onExecutionStart) node.onExecutionStart()
@@ -947,7 +938,7 @@ export class ComfyApp {
     })
 
     api.addEventListener('b_preview', ({ detail }) => {
-      const id = this.runningNodeId
+      const id = useExecutionStore().executingNodeId
       if (id == null) return
 
       const blob = detail
@@ -1017,7 +1008,7 @@ export class ComfyApp {
     // Make LGraphCanvas.state shallow reactive so that any change on the root
     // object triggers reactivity.
     this.canvas = new LGraphCanvas(canvasEl, this.graph)
-    this.canvas.state = shallowReactive(this.canvas.state)
+    this.canvas.state = reactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')
 
@@ -1040,7 +1031,7 @@ export class ComfyApp {
     // Load previous workflow
     let restored = false
     try {
-      const loadWorkflow = async (json) => {
+      const loadWorkflow = async (json: string) => {
         if (json) {
           const workflow = JSON.parse(json)
           const workflowName = getStorageValue('Comfy.PreviousWorkflow')
@@ -1169,14 +1160,14 @@ export class ComfyApp {
    * Remove the impl after groupNode jest tests are removed.
    * @deprecated Use useWidgetStore().getWidgetType instead
    */
-  getWidgetType(inputData, inputName: string) {
+  getWidgetType(inputData: any[], inputName: string) {
     const type = inputData[0]
 
     if (Array.isArray(type)) {
       return 'COMBO'
-    } else if (`${type}:${inputName}` in this.widgets) {
+    } else if (`${type}:${inputName}` in useWidgetStore().widgets) {
       return `${type}:${inputName}`
-    } else if (type in this.widgets) {
+    } else if (type in useWidgetStore().widgets) {
       return type
     } else {
       return null
@@ -1196,14 +1187,14 @@ export class ComfyApp {
     }
   }
 
-  loadTemplateData(templateData) {
+  loadTemplateData(templateData: { templates: any }) {
     if (!templateData?.templates) {
       return
     }
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
 
-    var maxY, nodeBottom, node
+    var maxY: number | boolean, nodeBottom: number, node: LGraphNode
 
     for (const template of templateData.templates) {
       if (!template?.data) {
@@ -1223,8 +1214,8 @@ export class ComfyApp {
 
       maxY = false
 
-      for (const i in app.canvas.selected_nodes) {
-        node = app.canvas.selected_nodes[i]
+      for (const i in (app.canvas as any).selected_nodes_array) {
+        node = (app.canvas as any).selected_nodes_array[i]
 
         nodeBottom = node.pos[1] + node.size[1]
 
@@ -1233,7 +1224,9 @@ export class ComfyApp {
         }
       }
 
-      app.canvas.graph_mouse[1] = maxY + 50
+      if (typeof maxY === 'number') {
+        app.canvas.graph_mouse[1] = maxY + 50
+      }
     }
 
     localStorage.setItem('litegrapheditor_clipboard', old)
@@ -1245,7 +1238,7 @@ export class ComfyApp {
     }
   }
 
-  #showMissingModelsError(missingModels, paths) {
+  #showMissingModelsError(missingModels: any, paths: any) {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       useDialogService().showMissingModelsWarning({
         missingModels,
@@ -1455,7 +1448,7 @@ export class ComfyApp {
     await useWorkflowService().afterLoadNewGraph(
       workflow,
       // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-      this.graph.serialize()
+      this.graph.toJSON()
     )
     requestAnimationFrame(() => {
       this.graph.setDirtyCanvas(true, true)
@@ -1469,7 +1462,7 @@ export class ComfyApp {
    */
   serializeGraph(graph: LGraph = this.graph) {
     const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-    return graph.serialize({ sortNodes })
+    return (graph as any).toJSON({ sortNodes })
   }
 
   /**
@@ -1639,7 +1632,15 @@ export class ComfyApp {
     return { workflow, output }
   }
 
-  #formatPromptError(error) {
+  #formatPromptError(error: {
+    stack: any
+    message: any
+    toString: () => any
+    response: {
+      error: { message: any; details: string }
+      node_errors: { [s: string]: unknown } | ArrayLike<unknown>
+    }
+  }) {
     if (error == null) {
       return '(unknown error)'
     } else if (typeof error === 'string') {
@@ -1650,9 +1651,7 @@ export class ComfyApp {
       let message = error.response.error.message
       if (error.response.error.details)
         message += ': ' + error.response.error.details
-      for (const [nodeID, nodeError] of Object.entries(
-        error.response.node_errors
-      )) {
+      for (const [, nodeError] of Object.entries(error.response.node_errors)) {
         // @ts-expect-error
         message += '\n' + nodeError.class_type + ':'
         // @ts-expect-error
@@ -1666,7 +1665,7 @@ export class ComfyApp {
     return '(unknown error)'
   }
 
-  async queuePrompt(number, batchCount = 1) {
+  async queuePrompt(number: number, batchCount = 1) {
     this.#queueItems.push({ number, batchCount })
 
     // Only have one action process the items so each one gets a unique seed correctly
@@ -1685,7 +1684,6 @@ export class ComfyApp {
           const p = await this.graphToPrompt()
 
           try {
-            // @ts-expect-error Discrepancies between zod and litegraph - in progress
             const res = await api.queuePrompt(number, p)
             this.lastNodeErrors = res.node_errors
             if (this.lastNodeErrors.length > 0) {
@@ -1736,7 +1734,7 @@ export class ComfyApp {
     return !this.lastNodeErrors
   }
 
-  showErrorOnFileLoad(file) {
+  showErrorOnFileLoad(file: { name: any }) {
     this.ui.dialog.show(
       $el('div', [
         $el('p', { textContent: `Unable to find workflow in ${file.name}` })
@@ -1748,16 +1746,16 @@ export class ComfyApp {
    * Loads workflow data from the specified file
    * @param {File} file
    */
-  async handleFile(file) {
-    const removeExt = (f) => {
+  async handleFile(file: Blob) {
+    const removeExt = (f: string) => {
       if (!f) return f
       const p = f.lastIndexOf('.')
       if (p === -1) return f
       return f.substring(0, p)
     }
-    const fileName = removeExt(file.name)
+    const fileName = removeExt((file as File).name)
     if (file.type === 'image/png') {
-      const pngInfo = await getPngMetadata(file)
+      const pngInfo = await getPngMetadata(file as File)
       if (pngInfo?.workflow) {
         await this.loadGraphData(
           JSON.parse(pngInfo.workflow),
@@ -1772,10 +1770,9 @@ export class ComfyApp {
         // by external callers, and `importA1111` has no access to `app`.
         useWorkflowService().beforeLoadNewGraph()
         importA1111(this.graph, pngInfo.parameters)
-        // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
         useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
       } else {
-        this.showErrorOnFileLoad(file)
+        this.showErrorOnFileLoad({ name: (file as File).name })
       }
     } else if (file.type === 'image/webp') {
       const pngInfo = await getWebpMetadata(file)
@@ -1788,10 +1785,10 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.showErrorOnFileLoad({ name: (file as File).name })
       }
     } else if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
-      const pngInfo = await getFlacMetadata(file)
+      const pngInfo = await getFlacMetadata(file as File)
       const workflow = pngInfo?.workflow || pngInfo?.Workflow
       const prompt = pngInfo?.prompt || pngInfo?.Prompt
 
@@ -1800,11 +1797,11 @@ export class ComfyApp {
       } else if (prompt) {
         this.loadApiJson(JSON.parse(prompt), fileName)
       } else {
-        this.showErrorOnFileLoad(file)
+        this.showErrorOnFileLoad({ name: (file as File).name })
       }
     } else if (
       file.type === 'application/json' ||
-      file.name?.endsWith('.json')
+      (file as File).name?.endsWith('.json')
     ) {
       const reader = new FileReader()
       reader.onload = async () => {
@@ -1825,10 +1822,10 @@ export class ComfyApp {
       }
       reader.readAsText(file)
     } else if (
-      file.name?.endsWith('.latent') ||
-      file.name?.endsWith('.safetensors')
+      (file as File).name?.endsWith('.latent') ||
+      (file as File).name?.endsWith('.safetensors')
     ) {
-      const info = await getLatentMetadata(file)
+      const info = await getLatentMetadata(file as File)
       // TODO define schema to LatentMetadata
       // @ts-expect-error
       if (info.workflow) {
@@ -1844,19 +1841,22 @@ export class ComfyApp {
         // @ts-expect-error
         this.loadApiJson(JSON.parse(info.prompt))
       } else {
-        this.showErrorOnFileLoad(file)
+        this.showErrorOnFileLoad({ name: (file as File).name })
       }
     } else {
-      this.showErrorOnFileLoad(file)
+      this.showErrorOnFileLoad({ name: (file as File).name })
     }
   }
 
-  isApiJson(data) {
+  isApiJson(data: ArrayLike<unknown> | { [s: string]: unknown }) {
     // @ts-expect-error
     return Object.values(data).every((v) => v.class_type)
   }
 
-  loadApiJson(apiData, fileName: string) {
+  loadApiJson(
+    apiData: ArrayLike<unknown> | { [s: string]: unknown },
+    fileName: string
+  ) {
     useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes = Object.values(apiData).filter(
@@ -1948,7 +1948,6 @@ export class ComfyApp {
 
     app.graph.arrange()
 
-    // @ts-expect-error zod type issue on ComfyWorkflowJSON. Should be resolved after enabling ts-strict globally.
     useWorkflowService().afterLoadNewGraph(fileName, this.serializeGraph())
   }
 
@@ -2061,3 +2060,8 @@ export class ComfyApp {
 }
 
 export const app = new ComfyApp()
+function reactive(
+  _state: LGraphCanvasState
+): import('@comfyorg/litegraph').LGraphCanvasState {
+  throw new Error('Function not implemented.')
+}
