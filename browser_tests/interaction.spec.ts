@@ -593,7 +593,7 @@ test.describe('Load workflow', () => {
   }) => {
     await comfyPage.loadWorkflow('single_ksampler')
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
-    await comfyPage.reload({ clearStorage: false })
+    await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
   })
 
@@ -610,7 +610,7 @@ test.describe('Load workflow', () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    await comfyPage.reload({ clearStorage: false })
+    await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )

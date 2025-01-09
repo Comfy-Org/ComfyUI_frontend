@@ -21,7 +21,7 @@ test.describe('Menu', () => {
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     // Theme id should persist after reload.
-    await comfyPage.reload()
+    await comfyPage.setup()
     expect(await comfyPage.menu.getThemeId()).toBe('light')
 
     await comfyPage.menu.toggleTheme()
@@ -569,7 +569,7 @@ test.describe('Menu', () => {
       })
 
       await comfyPage.setSetting('Comfy.Locale', 'zh')
-      await comfyPage.reload()
+      await comfyPage.setup()
 
       const downloadedContentZh = await comfyPage.getExportedWorkflow({
         api: false
