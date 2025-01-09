@@ -42,3 +42,6 @@ browser_tests/*/*-win32.png
 dist.zip
 
 /temp/
+
+# Generated JSON Schemas
+/schemas/
