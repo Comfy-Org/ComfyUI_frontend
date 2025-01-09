@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "发送匿名崩溃报告"
   },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "窗口样式",
+    "options": {
+      "custom": "自定义",
+      "default": "默认"
+    },
+    "tooltip": "选择自定义选项以隐藏系统标题栏"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
   },

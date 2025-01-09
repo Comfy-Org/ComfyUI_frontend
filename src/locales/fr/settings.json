@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Envoyer des rapports de plantage anonymes"
   },
+  "Comfy-Desktop_WindowStyle": {
+    "name": "Style de fenêtre",
+    "options": {
+      "custom": "personnalisé",
+      "default": "défaut"
+    },
+    "tooltip": "Choisissez l'option personnalisée pour masquer la barre de titre du système"
+  },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
   },
