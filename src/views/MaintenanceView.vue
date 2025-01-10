@@ -78,6 +78,7 @@
     >
       <BaseTerminal @created="terminalCreated" />
     </Drawer>
+    <Toast />
   </div>
 </template>
 
@@ -97,11 +98,14 @@ import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import Drawer from 'primevue/drawer'
+import { useToast } from 'primevue/usetoast'
+import Toast from 'primevue/toast'
 
 /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
 const minRefreshTime = 250
 const electron = electronAPI()
 const terminalVisible = ref(false)
+const toast = useToast()
 
 /** True when waiting on tasks to complete. */
 const isRefreshing = minDurationRef(true, minRefreshTime)
@@ -187,7 +191,16 @@ function createTask({
 
 const installRequirements = async () => {
   terminalVisible.value = true
-  await electron.uv.installRequirements()
+  try {
+    await electron.uv.installRequirements()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to install requirements',
+      detail: error.message,
+      life: 10_000
+    })
+  }
   await completeValidation(false)
   if (tasks.value.find((x) => x.id === 'pythonPackages')?.state === 'OK') {
     terminalVisible.value = false
@@ -219,7 +232,7 @@ const electronTasks: MaintenanceTask[] = [
     id: 'basePath',
     onClick: async () => {
       await electron.setBasePath()
-      completeValidation()
+      completeValidation(false)
     },
     buttonIcon: PrimeIcons.QUESTION
   }),
@@ -295,6 +308,12 @@ const completeValidation = async (alertOnFail = true) => {
   isRefreshing.value = true
   const isValid = await electron.Validation.complete()
   if (alertOnFail && !isValid) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Unable to continue - errors remain',
+      life: 5_000
+    })
     isRefreshing.value = false
   }
 }
@@ -314,8 +333,9 @@ const terminalCreated = (
   })
 
   terminal.options.cursorBlink = false
+  terminal.options.cursorStyle = 'bar'
+  terminal.options.cursorInactiveStyle = 'bar'
   terminal.options.disableStdin = true
-  terminal.options.cursorInactiveStyle = 'block'
 }
 
 const toggleConsoleDrawer = () => {
