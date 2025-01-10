@@ -744,12 +744,14 @@
         "name": "uv cache",
         "description": "Remove the Astral uv cache of python packages.",
         "detail": "This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.",
+        "confirmText": "Delete uv cache of python packages?",
         "buttonText": "Clear cache"
       },
       "venvDirectory": {
         "name": "Reset virtual environment",
         "description": "Remove and recreate the .venv directory. This removes all python packages.",
         "detail": "The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.",
+        "confirmText": "Delete the .venv directory?",
         "buttonText": "Recreate"
       }
     }

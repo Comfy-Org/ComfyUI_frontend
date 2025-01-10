@@ -27,7 +27,6 @@
           <Button
             :icon="task.button?.icon"
             :label="task.button?.text"
-            :severity="task.severity"
             class="w-full"
             raised
             icon-pos="right"

@@ -25,6 +25,7 @@ export interface MaintenanceTask {
   loading?: MaybeRef<boolean>
   /** Whether to show a confirmation dialog before running the task. */
   requireConfirm?: boolean
+  confirmText?: string
   /** Function to run when the button is clicked (or when confirmed, if required). */
   onClick: (args?: unknown[]) => unknown | Promise<unknown>
   /** Show the button with `severity="danger"` */
