@@ -25,6 +25,7 @@
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />
+      <div class="window-actions-spacer flex-shrink-0" />
     </div>
   </teleport>
 
