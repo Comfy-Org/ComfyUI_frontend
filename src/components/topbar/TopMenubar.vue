@@ -42,7 +42,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { showNativeMenu } from '@/utils/envUtil'
+import { electronAPI, isElectron, showNativeMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -75,6 +75,14 @@ eventBus.on((event: string, payload: any) => {
   if (event === 'updateHighlight') {
     isDropZone.value = payload.isDragging
     isDroppable.value = payload.isOverlapping && payload.isDragging
+  }
+})
+
+onMounted(() => {
+  if (isElectron()) {
+    electronAPI().changeTheme({
+      height: topMenuRef.value.getBoundingClientRect().height
+    })
   }
 })
 </script>
