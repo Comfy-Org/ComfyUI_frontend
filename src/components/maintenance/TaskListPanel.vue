@@ -40,21 +40,21 @@
 </template>
 
 <script setup lang="ts">
+import { PrimeIcons } from '@primevue/core/api'
+import ConfirmPopup from 'primevue/confirmpopup'
+import Divider from 'primevue/divider'
+import { useConfirm } from 'primevue/useconfirm'
+
+import { t } from '@/i18n'
 import type {
   MaintenanceFilter,
   MaintenanceTask
 } from '@/types/maintenanceTypes'
-import Divider from 'primevue/divider'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
-import { PrimeIcons } from '@primevue/core/api'
-import { t } from '@/i18n'
+
 import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'
-import ConfirmPopup from 'primevue/confirmpopup'
 
 const confirm = useConfirm()
-const toast = useToast()
 
 // Properties
 const props = defineProps<{
@@ -85,11 +85,6 @@ const confirmButton = async (event: PointerEvent, task: MaintenanceTask) => {
     },
     // TODO: Not awaited.
     accept: async () => {
-      toast.add({
-        severity: 'info',
-        summary: 'Running task',
-        life: 3000
-      })
       await task.onClick()
     }
   })
