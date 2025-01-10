@@ -14,11 +14,14 @@ export function useTerminal(element: Ref<HTMLElement>) {
   terminal.loadAddon(fitAddon)
 
   terminal.attachCustomKeyEventHandler((event) => {
-    if (event.type === 'keydown' && (event.ctrlKey || event.metaKey)) {
-      if (event.key === 'c' || event.key === 'v') {
-        // Allow default browser copy/paste handling
-        return false
-      }
+    // Allow default browser copy/paste handling
+    if (
+      event.type === 'keydown' &&
+      (event.ctrlKey || event.metaKey) &&
+      ((event.key === 'c' && terminal.hasSelection()) || event.key === 'v')
+    ) {
+      // TODO: Deselect text after copy/paste; use IPC.
+      return false
     }
     return true
   })
