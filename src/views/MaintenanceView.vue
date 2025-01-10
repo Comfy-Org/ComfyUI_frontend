@@ -187,10 +187,30 @@ function createTask({
 const installRequirements = async () => {
   terminalVisible.value = true
   await electron.uv.installRequirements()
-  await completeValidation()
+  await completeValidation(false)
   if (tasks.value.find((x) => x.id === 'pythonPackages')?.state === 'OK') {
     terminalVisible.value = false
   }
+}
+
+const resetVenv = async () => {
+  terminalVisible.value = true
+  const success = await electron.uv.resetVenv()
+  if (!success) return
+
+  terminalVisible.value = false
+  await completeValidation(false)
+}
+
+const clearCache = async () => {
+  terminalVisible.value = true
+  const success = await electron.uv.clearCache()
+  if (!success) return
+
+  terminalVisible.value = false
+  await completeValidation(false)
+  const task = tasks.value.find((x) => x.id === 'uvCache')
+  if (task) task.state = 'OK'
 }
 
 const electronTasks: MaintenanceTask[] = [
@@ -209,6 +229,12 @@ const electronTasks: MaintenanceTask[] = [
     buttonIcon: PrimeIcons.EXTERNAL_LINK
   }),
   createTask({
+    id: 'vcRedist',
+    onClick: () =>
+      window.open('https://aka.ms/vs/17/release/vc_redist.x64.exe', '_blank'),
+    buttonIcon: PrimeIcons.EXTERNAL_LINK
+  }),
+  createTask({
     id: 'pythonInterpreter',
     requireConfirm: true,
     onClick: () => {},
@@ -216,15 +242,22 @@ const electronTasks: MaintenanceTask[] = [
   }),
   createTask({
     id: 'pythonPackages',
-    onClick: installRequirements,
     requireConfirm: true,
+    onClick: installRequirements,
     buttonIcon: PrimeIcons.DOWNLOAD
   }),
   createTask({
     id: 'uv',
-    onClick: () => {},
     requireConfirm: true,
+    onClick: () => {},
     buttonIcon: 'pi pi-asterisk'
+  }),
+  createTask({
+    id: 'uvCache',
+    severity: 'danger',
+    requireConfirm: true,
+    onClick: clearCache,
+    buttonIcon: PrimeIcons.TRASH
   }),
   createTask({
     id: 'venvDirectory',

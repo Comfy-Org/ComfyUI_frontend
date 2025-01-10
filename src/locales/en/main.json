@@ -705,26 +705,32 @@
     "confirmTitle": "Are you sure?",
     "tasks": {
       "basePath": {
-        "name": "Base Path",
+        "name": "Base path",
         "description": "Change the application base path.",
         "errorDescription": "Unable to open the base path.  Please select a new one.",
         "detail": "The base path is the default location where ComfyUI stores data. It is always the location fo the python environment, and can contain models, custom nodes, and other extensions.",
         "buttonText": "Select"
       },
       "git": {
-        "name": "Download Git",
+        "name": "Download git",
         "description": "Open the git download page.",
         "detail": "Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.",
         "buttonText": "Download"
       },
+      "vcRedist": {
+        "name": "Download VC++ Redist",
+        "description": "Download the latest VC++ Redistributable runtime.",
+        "detail": "The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.",
+        "buttonText": "Download"
+      },
       "pythonInterpreter": {
-        "name": "Python Interpreter",
+        "name": "Python interpreter",
         "description": "Reinstall the python interpreter using uv.",
         "detail": "Installs the python interpreter to your base path using uv venv.",
         "buttonText": "Install"
       },
       "pythonPackages": {
-        "name": "Install Python Packages",
+        "name": "Install python packages",
         "description": "Installs the base python packages required to run ComfyUI.",
         "buttonText": "Install"
       },
@@ -734,11 +740,17 @@
         "detail": "This will install Astral's uv tool from the ComfyUI desktop install files cached on your computer. uv is used to install python, and manage python packages.",
         "buttonText": "Fix uv"
       },
+      "uvCache": {
+        "name": "uv cache",
+        "description": "Remove the Astral uv cache of python packages.",
+        "detail": "This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.",
+        "buttonText": "Clear cache"
+      },
       "venvDirectory": {
-        "name": "Virtual environment directory",
-        "description": "Create the virtual environment directory.",
+        "name": "Reset virtual environment",
+        "description": "Remove and recreate the .venv directory. This removes all python packages.",
         "detail": "The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.",
-        "buttonText": "Create"
+        "buttonText": "Recreate"
       }
     }
   }
