@@ -1,5 +1,7 @@
 import type { MaybeRef } from 'vue'
 
+import type { VueSeverity } from './vueTypes'
+
 interface MaintenanceTaskButton {
   text?: string
   /** e.g. 'pi pi-external-link' */
@@ -25,6 +27,8 @@ export interface MaintenanceTask {
   requireConfirm?: boolean
   /** Function to run when the button is clicked (or when confirmed, if required). */
   onClick: (args?: unknown[]) => unknown | Promise<unknown>
+  /** Show the button with `severity="danger"` */
+  severity?: VueSeverity
 }
 
 export interface MaintenanceFilter {

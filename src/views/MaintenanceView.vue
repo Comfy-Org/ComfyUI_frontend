@@ -147,7 +147,7 @@ const processUpdate = (update: InstallValidation) => {
 /** Cherry-picked properties for {@link createTask} function. */
 type TaskProps = Pick<
   MaintenanceTask,
-  'id' | 'headerImg' | 'onClick' | 'requireConfirm'
+  'id' | 'headerImg' | 'onClick' | 'requireConfirm' | 'severity'
 > & {
   /** Icon to show on the button, e.g. `'pi pi-external-link'` */
   buttonIcon?: string
@@ -160,6 +160,7 @@ type TaskProps = Pick<
 function createTask({
   id,
   headerImg,
+  severity,
   requireConfirm,
   buttonIcon,
   onClick
@@ -172,6 +173,7 @@ function createTask({
     descriptionOk: st(`maintenance.tasks.${id}.descriptionOk`, undefined),
     errorDescription: st(`maintenance.tasks.${id}.errorDescription`, undefined),
     headerImg,
+    severity,
     requireConfirm,
     onClick,
     loading: minDurationRef(true, minRefreshTime),
@@ -226,8 +228,9 @@ const electronTasks: MaintenanceTask[] = [
   }),
   createTask({
     id: 'venvDirectory',
-    onClick: () => {},
+    severity: 'danger',
     requireConfirm: true,
+    onClick: resetVenv,
     buttonIcon: PrimeIcons.FOLDER
   })
 ]

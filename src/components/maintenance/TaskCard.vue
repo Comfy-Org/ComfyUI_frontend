@@ -27,6 +27,7 @@
           <Button
             :icon="task.button?.icon"
             :label="task.button?.text"
+            :severity="task.severity"
             class="w-full"
             raised
             icon-pos="right"
@@ -44,10 +45,11 @@
 </template>
 
 <script setup lang="ts">
-import type { MaintenanceTask } from '@/types/maintenanceTypes'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed } from 'vue'
+
+import type { MaintenanceTask } from '@/types/maintenanceTypes'
 
 // Properties
 const props = defineProps<{
