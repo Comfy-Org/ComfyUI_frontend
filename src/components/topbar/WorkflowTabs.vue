@@ -6,6 +6,7 @@
         class: 'p-0 w-full',
         onwheel: handleWheel
       }"
+      pt:barX="opacity-50"
     >
       <SelectButton
         class="workflow-tabs bg-transparent"
