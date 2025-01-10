@@ -3,10 +3,10 @@
     <div
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
-      v-show="betaMenuEnabled && !workspaceState.focusMode"
+      v-show="showTopMenu"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
-      <h1 class="comfyui-logo mx-2">ComfyUI</h1>
+      <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
       <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
       <div class="flex-grow min-w-0">
@@ -25,8 +25,18 @@
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />
+      <div
+        v-show="menuSetting !== 'Bottom'"
+        class="window-actions-spacer flex-shrink-0"
+      />
     </div>
   </teleport>
+
+  <!-- Virtual top menu for native window (drag handle) -->
+  <div
+    v-show="isNativeWindow && !showTopMenu"
+    class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
+  />
 </template>
 
 <script setup lang="ts">
@@ -49,13 +59,19 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
-const betaMenuEnabled = computed(
-  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
-)
+const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
+const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.UseNewMenu') === 'Top'
     ? '.comfyui-body-top'
     : '.comfyui-body-bottom'
+)
+const isNativeWindow = computed(
+  () =>
+    isElectron() && settingStore.get('Comfy-Desktop.WindowStyle') === 'custom'
+)
+const showTopMenu = computed(
+  () => betaMenuEnabled.value && !workspaceState.focusMode
 )
 
 const menuRight = ref<HTMLDivElement | null>(null)
