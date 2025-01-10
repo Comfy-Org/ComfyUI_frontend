@@ -1,18 +1,28 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex items-center justify-center pointer-events-auto overflow-auto"
+    class="font-sans w-screen h-screen flex flex-col pointer-events-auto"
     :class="[
       props.dark
         ? 'text-neutral-300 bg-neutral-900 dark-theme'
         : 'text-neutral-900 bg-neutral-300'
     ]"
   >
-    <slot></slot>
+    <!-- Virtual top menu for native window (drag handle) -->
+    <div
+      v-show="isNativeWindow"
+      ref="topMenuRef"
+      class="app-drag w-full h-[var(--comfy-topbar-height)]"
+    />
+    <div
+      class="flex-grow w-full flex items-center justify-center overflow-auto"
+    >
+      <slot></slot>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
@@ -35,9 +45,19 @@ const lightTheme = {
   symbolColor: '#171717'
 }
 
-onMounted(() => {
+const topMenuRef = ref<HTMLDivElement | null>(null)
+const isNativeWindow = ref(false)
+onMounted(async () => {
   if (isElectron()) {
-    electronAPI().changeTheme(props.dark ? darkTheme : lightTheme)
+    const windowStyle = await electronAPI().Config.getWindowStyle()
+    isNativeWindow.value = windowStyle === 'custom'
+
+    await nextTick()
+
+    electronAPI().changeTheme({
+      ...(props.dark ? darkTheme : lightTheme),
+      height: topMenuRef.value.getBoundingClientRect().height
+    })
   }
 })
 </script>
