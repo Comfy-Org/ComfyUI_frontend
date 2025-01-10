@@ -25,10 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import type { MaintenanceTask } from '@/types/maintenanceTypes'
 import Button from 'primevue/button'
-import TaskListStatusIcon from './TaskListStatusIcon.vue'
 import { computed } from 'vue'
+
+import type { MaintenanceTask } from '@/types/maintenanceTypes'
+import { VueSeverity } from '@/types/vueTypes'
+
+import TaskListStatusIcon from './TaskListStatusIcon.vue'
 
 // Properties
 const props = defineProps<{
@@ -41,7 +44,7 @@ defineEmits<{
 }>()
 
 // Binding
-const severity = computed(() =>
+const severity = computed<VueSeverity>(() =>
   props.task.state === 'error' || props.task.state === 'warning'
     ? 'primary'
     : 'secondary'

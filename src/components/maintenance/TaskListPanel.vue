@@ -80,7 +80,8 @@ const confirmButton = async (event: PointerEvent, task: MaintenanceTask) => {
       outlined: true
     },
     acceptProps: {
-      label: task.button?.text ?? t('g.save')
+      label: task.button?.text ?? t('g.save'),
+      severity: task.severity ?? 'primary'
     },
     // TODO: Not awaited.
     accept: async () => {
