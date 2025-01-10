@@ -1,8 +1,8 @@
 <template>
   <div
-    class="font-sans w-screen h-screen text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto overflow-y-auto"
+    class="font-sans w-screen h-screen flex justify-around text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto overflow-y-auto"
   >
-    <div class="max-w-screen-sm w-screen p-8 relative mx-auto">
+    <div class="max-w-screen-sm w-screen m-8 relative">
       <!-- Header -->
       <h1 class="backspan pi-wrench text-4xl font-bold">Maintenance</h1>
 
