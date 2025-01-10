@@ -16,8 +16,10 @@ app.registerExtension({
           : undefined
 
         const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        widget.serializeValue = () => {
-          return applyTextReplacements(app, widget.value)
+        if (widget) {
+          widget.serializeValue = () => {
+            return applyTextReplacements(app, widget.value)
+          }
         }
 
         return r
