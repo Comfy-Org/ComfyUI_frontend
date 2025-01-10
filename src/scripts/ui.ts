@@ -411,223 +411,231 @@ export class ComfyUI {
       }
     })
 
-    this.menuContainer = $el('div.comfy-menu', { parent: containerElement }, [
-      $el(
-        'div.drag-handle.comfy-menu-header',
-        {
-          style: {
-            overflow: 'hidden',
-            position: 'relative',
-            width: '100%',
-            cursor: 'default'
-          }
-        },
-        [
-          $el('span.drag-handle'),
-          $el('span.comfy-menu-queue-size', { $: (q) => (this.queueSize = q) }),
-          $el('div.comfy-menu-actions', [
-            $el('button.comfy-settings-btn', {
-              textContent: '⚙️',
-              onclick: () => {
-                useDialogService().showSettingsDialog()
-              }
+    this.menuContainer = $el(
+      'div.comfy-menu.no-drag',
+      { parent: containerElement },
+      [
+        $el(
+          'div.drag-handle.comfy-menu-header',
+          {
+            style: {
+              overflow: 'hidden',
+              position: 'relative',
+              width: '100%',
+              cursor: 'default'
+            }
+          },
+          [
+            $el('span.drag-handle'),
+            $el('span.comfy-menu-queue-size', {
+              $: (q) => (this.queueSize = q)
             }),
-            $el('button.comfy-close-menu-btn', {
-              textContent: '\u00d7',
-              onclick: () => {
-                useWorkspaceStore().focusMode = true
+            $el('div.comfy-menu-actions', [
+              $el('button.comfy-settings-btn', {
+                textContent: '⚙️',
+                onclick: () => {
+                  useDialogService().showSettingsDialog()
+                }
+              }),
+              $el('button.comfy-close-menu-btn', {
+                textContent: '\u00d7',
+                onclick: () => {
+                  useWorkspaceStore().focusMode = true
+                }
+              })
+            ])
+          ]
+        ),
+        $el('button.comfy-queue-btn', {
+          id: 'queue-button',
+          textContent: 'Queue Prompt',
+          onclick: () => app.queuePrompt(0, this.batchCount)
+        }),
+        $el('div', {}, [
+          $el('label', { innerHTML: 'Extra options' }, [
+            $el('input', {
+              type: 'checkbox',
+              onchange: (i) => {
+                document.getElementById('extraOptions').style.display = i
+                  .srcElement.checked
+                  ? 'block'
+                  : 'none'
+                this.batchCount = i.srcElement.checked
+                  ? Number.parseInt(
+                      (
+                        document.getElementById(
+                          'batchCountInputRange'
+                        ) as HTMLInputElement
+                      ).value
+                    )
+                  : 1
+                ;(
+                  document.getElementById(
+                    'autoQueueCheckbox'
+                  ) as HTMLInputElement
+                ).checked = false
+                this.autoQueueEnabled = false
               }
             })
           ])
-        ]
-      ),
-      $el('button.comfy-queue-btn', {
-        id: 'queue-button',
-        textContent: 'Queue Prompt',
-        onclick: () => app.queuePrompt(0, this.batchCount)
-      }),
-      $el('div', {}, [
-        $el('label', { innerHTML: 'Extra options' }, [
-          $el('input', {
-            type: 'checkbox',
-            onchange: (i) => {
-              document.getElementById('extraOptions').style.display = i
-                .srcElement.checked
-                ? 'block'
-                : 'none'
-              this.batchCount = i.srcElement.checked
-                ? Number.parseInt(
-                    (
-                      document.getElementById(
-                        'batchCountInputRange'
-                      ) as HTMLInputElement
-                    ).value
-                  )
-                : 1
-              ;(
-                document.getElementById('autoQueueCheckbox') as HTMLInputElement
-              ).checked = false
-              this.autoQueueEnabled = false
-            }
-          })
-        ])
-      ]),
-      $el(
-        'div',
-        { id: 'extraOptions', style: { width: '100%', display: 'none' } },
-        [
-          $el('div', [
-            $el('label', { innerHTML: 'Batch count' }),
-            $el('input', {
-              id: 'batchCountInputNumber',
-              type: 'number',
-              value: this.batchCount,
-              min: '1',
-              style: { width: '35%', marginLeft: '0.4em' },
-              oninput: (i) => {
-                this.batchCount = i.target.value
-                /* Even though an <input> element with a type of range logically represents a number (since
+        ]),
+        $el(
+          'div',
+          { id: 'extraOptions', style: { width: '100%', display: 'none' } },
+          [
+            $el('div', [
+              $el('label', { innerHTML: 'Batch count' }),
+              $el('input', {
+                id: 'batchCountInputNumber',
+                type: 'number',
+                value: this.batchCount,
+                min: '1',
+                style: { width: '35%', marginLeft: '0.4em' },
+                oninput: (i) => {
+                  this.batchCount = i.target.value
+                  /* Even though an <input> element with a type of range logically represents a number (since
               it's used for numeric input), the value it holds is still treated as a string in HTML and
               JavaScript. This behavior is consistent across all <input> elements regardless of their type
               (like text, number, or range), where the .value property is always a string. */
-                ;(
-                  document.getElementById(
-                    'batchCountInputRange'
-                  ) as HTMLInputElement
-                ).value = this.batchCount.toString()
-              }
-            }),
-            $el('input', {
-              id: 'batchCountInputRange',
-              type: 'range',
-              min: '1',
-              max: '100',
-              value: this.batchCount,
-              oninput: (i) => {
-                this.batchCount = i.srcElement.value
-                // Note
-                ;(
-                  document.getElementById(
-                    'batchCountInputNumber'
-                  ) as HTMLInputElement
-                ).value = i.srcElement.value
-              }
-            })
-          ]),
-          $el('div', [
-            $el('label', {
-              for: 'autoQueueCheckbox',
-              innerHTML: 'Auto Queue'
-            }),
-            $el('input', {
-              id: 'autoQueueCheckbox',
-              type: 'checkbox',
-              checked: false,
-              title: 'Automatically queue prompt when the queue size hits 0',
-              onchange: (e) => {
-                this.autoQueueEnabled = e.target.checked
-                autoQueueModeEl.style.display = this.autoQueueEnabled
-                  ? ''
-                  : 'none'
-              }
-            }),
-            autoQueueModeEl
-          ])
-        ]
-      ),
-      $el('div.comfy-menu-btns', [
+                  ;(
+                    document.getElementById(
+                      'batchCountInputRange'
+                    ) as HTMLInputElement
+                  ).value = this.batchCount.toString()
+                }
+              }),
+              $el('input', {
+                id: 'batchCountInputRange',
+                type: 'range',
+                min: '1',
+                max: '100',
+                value: this.batchCount,
+                oninput: (i) => {
+                  this.batchCount = i.srcElement.value
+                  // Note
+                  ;(
+                    document.getElementById(
+                      'batchCountInputNumber'
+                    ) as HTMLInputElement
+                  ).value = i.srcElement.value
+                }
+              })
+            ]),
+            $el('div', [
+              $el('label', {
+                for: 'autoQueueCheckbox',
+                innerHTML: 'Auto Queue'
+              }),
+              $el('input', {
+                id: 'autoQueueCheckbox',
+                type: 'checkbox',
+                checked: false,
+                title: 'Automatically queue prompt when the queue size hits 0',
+                onchange: (e) => {
+                  this.autoQueueEnabled = e.target.checked
+                  autoQueueModeEl.style.display = this.autoQueueEnabled
+                    ? ''
+                    : 'none'
+                }
+              }),
+              autoQueueModeEl
+            ])
+          ]
+        ),
+        $el('div.comfy-menu-btns', [
+          $el('button', {
+            id: 'queue-front-button',
+            textContent: 'Queue Front',
+            onclick: () => app.queuePrompt(-1, this.batchCount)
+          }),
+          $el('button', {
+            $: (b) => (this.queue.button = b as HTMLButtonElement),
+            id: 'comfy-view-queue-button',
+            textContent: 'View Queue',
+            onclick: () => {
+              this.history.hide()
+              this.queue.toggle()
+            }
+          }),
+          $el('button', {
+            $: (b) => (this.history.button = b as HTMLButtonElement),
+            id: 'comfy-view-history-button',
+            textContent: 'View History',
+            onclick: () => {
+              this.queue.hide()
+              this.history.toggle()
+            }
+          })
+        ]),
+        this.queue.element,
+        this.history.element,
         $el('button', {
-          id: 'queue-front-button',
-          textContent: 'Queue Front',
-          onclick: () => app.queuePrompt(-1, this.batchCount)
-        }),
-        $el('button', {
-          $: (b) => (this.queue.button = b as HTMLButtonElement),
-          id: 'comfy-view-queue-button',
-          textContent: 'View Queue',
+          id: 'comfy-save-button',
+          textContent: 'Save',
           onclick: () => {
-            this.history.hide()
-            this.queue.toggle()
+            useCommandStore().execute('Comfy.ExportWorkflow')
           }
         }),
         $el('button', {
-          $: (b) => (this.history.button = b as HTMLButtonElement),
-          id: 'comfy-view-history-button',
-          textContent: 'View History',
+          id: 'comfy-dev-save-api-button',
+          textContent: 'Save (API Format)',
+          style: { width: '100%', display: 'none' },
           onclick: () => {
-            this.queue.hide()
-            this.history.toggle()
+            useCommandStore().execute('Comfy.ExportWorkflowAPI')
+          }
+        }),
+        $el('button', {
+          id: 'comfy-load-button',
+          textContent: 'Load',
+          onclick: () => fileInput.click()
+        }),
+        $el('button', {
+          id: 'comfy-refresh-button',
+          textContent: 'Refresh',
+          onclick: () => app.refreshComboInNodes()
+        }),
+        $el('button', {
+          id: 'comfy-clipspace-button',
+          textContent: 'Clipspace',
+          onclick: () => app.openClipspace()
+        }),
+        $el('button', {
+          id: 'comfy-clear-button',
+          textContent: 'Clear',
+          onclick: () => {
+            if (
+              !useSettingStore().get('Comfy.ConfirmClear') ||
+              confirm('Clear workflow?')
+            ) {
+              app.clean()
+              app.graph.clear()
+              app.resetView()
+              api.dispatchCustomEvent('graphCleared')
+            }
+          }
+        }),
+        $el('button', {
+          id: 'comfy-load-default-button',
+          textContent: 'Load Default',
+          onclick: async () => {
+            if (
+              !useSettingStore().get('Comfy.ConfirmClear') ||
+              confirm('Load default workflow?')
+            ) {
+              app.resetView()
+              await app.loadGraphData()
+            }
+          }
+        }),
+        $el('button', {
+          id: 'comfy-reset-view-button',
+          textContent: 'Reset View',
+          onclick: async () => {
+            app.resetView()
           }
         })
-      ]),
-      this.queue.element,
-      this.history.element,
-      $el('button', {
-        id: 'comfy-save-button',
-        textContent: 'Save',
-        onclick: () => {
-          useCommandStore().execute('Comfy.ExportWorkflow')
-        }
-      }),
-      $el('button', {
-        id: 'comfy-dev-save-api-button',
-        textContent: 'Save (API Format)',
-        style: { width: '100%', display: 'none' },
-        onclick: () => {
-          useCommandStore().execute('Comfy.ExportWorkflowAPI')
-        }
-      }),
-      $el('button', {
-        id: 'comfy-load-button',
-        textContent: 'Load',
-        onclick: () => fileInput.click()
-      }),
-      $el('button', {
-        id: 'comfy-refresh-button',
-        textContent: 'Refresh',
-        onclick: () => app.refreshComboInNodes()
-      }),
-      $el('button', {
-        id: 'comfy-clipspace-button',
-        textContent: 'Clipspace',
-        onclick: () => app.openClipspace()
-      }),
-      $el('button', {
-        id: 'comfy-clear-button',
-        textContent: 'Clear',
-        onclick: () => {
-          if (
-            !useSettingStore().get('Comfy.ConfirmClear') ||
-            confirm('Clear workflow?')
-          ) {
-            app.clean()
-            app.graph.clear()
-            app.resetView()
-            api.dispatchCustomEvent('graphCleared')
-          }
-        }
-      }),
-      $el('button', {
-        id: 'comfy-load-default-button',
-        textContent: 'Load Default',
-        onclick: async () => {
-          if (
-            !useSettingStore().get('Comfy.ConfirmClear') ||
-            confirm('Load default workflow?')
-          ) {
-            app.resetView()
-            await app.loadGraphData()
-          }
-        }
-      }),
-      $el('button', {
-        id: 'comfy-reset-view-button',
-        textContent: 'Reset View',
-        onclick: async () => {
-          app.resetView()
-        }
-      })
-    ]) as HTMLDivElement
+      ]
+    ) as HTMLDivElement
     // Hide by default on construction so it does not interfere with other views.
     this.menuContainer.style.display = 'none'
 
