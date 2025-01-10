@@ -72,7 +72,7 @@ const confirmButton = async (event: PointerEvent, task: MaintenanceTask) => {
 
   confirm.require({
     target: event.currentTarget as HTMLElement,
-    message: t('maintenance.confirmTitle'),
+    message: task.confirmText ?? t('maintenance.confirmTitle'),
     icon: 'pi pi-exclamation-circle',
     rejectProps: {
       label: t('g.cancel'),
