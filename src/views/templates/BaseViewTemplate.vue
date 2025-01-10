@@ -12,6 +12,10 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
+import { electronAPI, isElectron } from '@/utils/envUtil'
+
 const props = withDefaults(
   defineProps<{
     dark: boolean
@@ -20,4 +24,20 @@ const props = withDefaults(
     dark: false
   }
 )
+
+const darkTheme = {
+  color: 'rgba(0, 0, 0, 0)',
+  symbolColor: '#d4d4d4'
+}
+
+const lightTheme = {
+  color: 'rgba(0, 0, 0, 0)',
+  symbolColor: '#171717'
+}
+
+onMounted(() => {
+  if (isElectron()) {
+    electronAPI().changeTheme(props.dark ? darkTheme : lightTheme)
+  }
+})
 </script>
