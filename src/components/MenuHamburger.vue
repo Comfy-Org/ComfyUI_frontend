@@ -15,7 +15,7 @@
       @click="exitFocusMode"
       @contextmenu="showNativeMenu"
     />
-    <div class="window-actions-spacer" />
+    <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
   </div>
 </template>
 

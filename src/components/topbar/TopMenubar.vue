@@ -25,7 +25,10 @@
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />
-      <div class="window-actions-spacer flex-shrink-0" />
+      <div
+        v-show="menuSetting !== 'Bottom'"
+        class="window-actions-spacer flex-shrink-0"
+      />
     </div>
   </teleport>
 
@@ -56,9 +59,8 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
-const betaMenuEnabled = computed(
-  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
-)
+const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
+const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.UseNewMenu') === 'Top'
     ? '.comfyui-body-top'
