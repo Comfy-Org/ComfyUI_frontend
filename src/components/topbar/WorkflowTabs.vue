@@ -6,6 +6,7 @@
         class: 'p-0 w-full',
         onwheel: handleWheel
       }"
+      pt:barX="h-1"
     >
       <SelectButton
         class="workflow-tabs bg-transparent"
@@ -197,5 +198,11 @@ const handleWheel = (event: WheelEvent) => {
 
 :deep(.p-togglebutton) .close-button {
   @apply invisible;
+}
+
+/* Scrollbar half opacity to avoid blocking the active tab bottom border */
+:deep(.p-scrollpanel:hover .p-scrollpanel-bar),
+:deep(.p-scrollpanel:active .p-scrollpanel-bar) {
+  opacity: 0.5;
 }
 </style>
