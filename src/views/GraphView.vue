@@ -46,7 +46,6 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
-import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 
@@ -64,13 +63,6 @@ watch(
       document.body.classList.remove(DARK_THEME_CLASS)
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
-    }
-
-    if (isElectron()) {
-      electronAPI().changeTheme({
-        color: 'rgba(0, 0, 0, 0)',
-        symbolColor: newTheme.colors.comfy_base['input-text']
-      })
     }
   },
   { immediate: true }
