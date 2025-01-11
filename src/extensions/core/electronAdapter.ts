@@ -41,15 +41,17 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
-        tooltip: 'Choose custom option to hide the system title bar',
+        tooltip: "Custom: Replace the system title bar with ComfyUI's Top menu",
         type: 'combo',
         experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
         onChange: (
           newValue: 'default' | 'custom',
-          oldValue: 'default' | 'custom'
+          oldValue?: 'default' | 'custom'
         ) => {
+          if (!oldValue) return
+
           electronAPI.Config.setWindowStyle(newValue)
 
           onChangeRestartApp(newValue, oldValue)
