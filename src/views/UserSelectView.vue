@@ -1,8 +1,8 @@
 <template>
-  <BaseViewTemplate dark>
+  <BaseViewTemplate dark class="app-drag">
     <main
       id="comfy-user-selection"
-      class="min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
+      class="no-drag min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">

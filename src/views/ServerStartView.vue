@@ -1,5 +1,5 @@
 <template>
-  <BaseViewTemplate dark class="flex-col">
+  <BaseViewTemplate dark class="app-drag flex-col">
     <h2 class="text-2xl font-bold">
       {{ t(`serverStart.process.${status}`) }}
       <span v-if="status === ProgressStatus.ERROR">
@@ -8,7 +8,7 @@
     </h2>
     <div
       v-if="status === ProgressStatus.ERROR"
-      class="flex flex-col items-center gap-4"
+      class="no-drag flex flex-col items-center gap-4"
     >
       <div class="flex items-center my-4 gap-2">
         <Button
@@ -37,7 +37,11 @@
         @click="terminalVisible = true"
       />
     </div>
-    <BaseTerminal v-show="terminalVisible" @created="terminalCreated" />
+    <BaseTerminal
+      v-show="terminalVisible"
+      class="no-drag"
+      @created="terminalCreated"
+    />
   </BaseViewTemplate>
 </template>
 

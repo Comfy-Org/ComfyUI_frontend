@@ -1,6 +1,6 @@
 <template>
-  <BaseViewTemplate dark>
-    <div class="flex flex-col items-center justify-center gap-8 p-8">
+  <BaseViewTemplate dark class="app-drag">
+    <div class="no-drag flex flex-col items-center justify-center gap-8 p-8">
       <!-- Header -->
       <h1 class="animated-gradient-text text-glow select-none">
         {{ $t('welcome.title') }}

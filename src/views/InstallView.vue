@@ -1,10 +1,10 @@
 <template>
-  <BaseViewTemplate dark>
+  <BaseViewTemplate dark class="app-drag">
     <!-- h-full to make sure the stepper does not layout shift between steps
     as for each step the stepper height is different. Inherit the center element
     placement from BaseViewTemplate would cause layout shift. -->
     <Stepper
-      class="h-full p-8 2xl:p-16"
+      class="no-drag h-full p-8 2xl:p-16"
       value="0"
       @update:value="setHighestStep"
     >

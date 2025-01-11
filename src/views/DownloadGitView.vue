@@ -1,7 +1,7 @@
 <template>
-  <BaseViewTemplate>
+  <BaseViewTemplate class="app-drag">
     <div
-      class="max-w-screen-sm flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-right-top bg-origin-padding"
+      class="no-drag max-w-screen-sm flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-right-top bg-origin-padding"
     >
       <!-- Header -->
       <h1 class="mt-24 text-4xl font-bold text-red-500">
