@@ -128,7 +128,7 @@ if (isElectron()) {
 }
 </style>
 
-<style>
+<style lang="postcss">
 /* Desktop: Custom window styling */
 :root[data-platform='electron'] {
   .comfyui-logo {
