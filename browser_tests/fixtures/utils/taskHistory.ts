@@ -132,11 +132,12 @@ export default class TaskHistory {
   private addTask(task: HistoryTaskItem) {
     setPromptId(task)
     setQueueIndex(task)
-    this.tasks.push(task)
+    this.tasks.unshift(task) // Tasks are added to the front of the queue
   }
 
-  clearTasks() {
+  clearTasks(): this {
     this.tasks = []
+    return this
   }
 
   withTask(
@@ -155,7 +156,7 @@ export default class TaskHistory {
   /** Repeats the last task in the task history a specified number of times. */
   repeat(n: number): this {
     for (let i = 0; i < n; i++)
-      this.addTask(structuredClone(this.tasks.at(-1)) as HistoryTaskItem)
+      this.addTask(structuredClone(this.tasks.at(0)) as HistoryTaskItem)
     return this
   }
 }
