@@ -69,7 +69,16 @@
     "command": "Command",
     "keybinding": "Keybinding",
     "upload": "Upload",
-    "export": "Export"
+    "export": "Export",
+    "helpUsFixThis": "Help us Fix This",
+    "submitErrorReport": "Submit Error Report (Optional)",
+    "provideEmail": "Give us your email (Optional)",
+    "provideAdditionalDetails": "Provide additional details (optional)",
+    "stackTrace": "Stack Trace",
+    "workflow": "Workflow",
+    "systemStats": "System Stats",
+    "contactForFollowUp": "Contact me for follow up",
+    "notifyOnResolution": "Notify me when resolved"
   },
   "color": {
     "default": "Default",

@@ -5,12 +5,20 @@
     :message="props.error.exception_message"
   />
   <div class="comfy-error-report">
-    <Button
-      v-show="!reportOpen"
-      :label="$t('g.showReport')"
-      @click="showReport"
-      text
-    />
+    <div class="flex items-center gap-2 justify-center">
+      <Button
+        v-show="!reportOpen"
+        :label="$t('g.showReport')"
+        @click="showReport"
+        text
+      />
+      <Button
+        v-show="!sendReportOpen"
+        :label="$t('g.helpUsFixThis')"
+        @click="showSendReport"
+        text
+      />
+    </div>
     <template v-if="reportOpen">
       <Divider />
       <ScrollPanel style="width: 100%; height: 400px; max-width: 80vw">
@@ -18,9 +26,9 @@
       </ScrollPanel>
       <Divider />
     </template>
+    <ReportIssuePanel v-if="sendReportOpen" :error="props.error" />
 
     <div class="action-container">
-      <ReportIssueButton v-if="showSendError" :error="props.error" />
       <FindIssueButton
         :errorMessage="props.error.exception_message"
         :repoOwner="repoOwner"
@@ -45,12 +53,12 @@ import { onMounted, ref } from 'vue'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import ReportIssueButton from '@/components/dialog/content/error/ReportIssueButton.vue'
 import { useCopyToClipboard } from '@/hooks/clipboardHooks'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
-import { isElectron } from '@/utils/envUtil'
+
+import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage
@@ -63,8 +71,10 @@ const reportOpen = ref(false)
 const showReport = () => {
   reportOpen.value = true
 }
-const showSendError = isElectron()
-
+const sendReportOpen = ref(false)
+const showSendReport = () => {
+  sendReportOpen.value = true
+}
 const toast = useToast()
 
 onMounted(async () => {
