@@ -265,7 +265,8 @@
       "Bottom": "底部",
       "Disabled": "禁用",
       "Top": "顶部"
-    }
+    },
+    "tooltip": "(仅限桌面，Windows): 使用自定义窗口样式时，只支持顶部"
   },
   "Comfy_Validation_NodeDefs": {
     "name": "校验节点定义（慢）",

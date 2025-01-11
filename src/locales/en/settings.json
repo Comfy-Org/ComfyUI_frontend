@@ -9,8 +9,8 @@
     "name": "Window Style",
     "tooltip": "Custom: Replace the system title bar with ComfyUI's Top menu",
     "options": {
-      "default": "Default",
-      "custom": "Custom"
+      "default": "default",
+      "custom": "custom"
     }
   },
   "Comfy_ConfirmClear": {
@@ -261,6 +261,7 @@
   },
   "Comfy_UseNewMenu": {
     "name": "Use new menu",
+    "tooltip": "(Desktop, Windows only): When using custom window style, only Top is supported",
     "options": {
       "Disabled": "Disabled",
       "Top": "Top",

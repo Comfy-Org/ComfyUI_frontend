@@ -265,7 +265,8 @@
       "Bottom": "Bas",
       "Disabled": "Désactivé",
       "Top": "Haut"
-    }
+    },
+    "tooltip": "(Bureau, uniquement Windows): Lors de l'utilisation d'un style de fenêtre personnalisé, seul Top est pris en charge"
   },
   "Comfy_Validation_NodeDefs": {
     "name": "Valider les définitions de nœuds (lent)",
