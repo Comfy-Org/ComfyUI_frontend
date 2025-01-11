@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventBus } from '@vueuse/core'
+import { useEventBus, useResizeObserver } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { computed, onMounted, provide, ref } from 'vue'
@@ -42,7 +42,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { showNativeMenu } from '@/utils/envUtil'
+import { showNativeMenu, electronAPI, isElectron } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -77,6 +77,21 @@ eventBus.on((event: string, payload: any) => {
     isDroppable.value = payload.isOverlapping && payload.isDragging
   }
 })
+
+/** Height of titlebar on desktop. */
+if (isElectron()) {
+  let desktopHeight = 0
+
+  useResizeObserver(topMenuRef, (entries) => {
+    if (settingStore.get('Comfy.UseNewMenu') !== 'Top') return
+
+    const { height } = entries[0].contentRect
+    if (desktopHeight === height) return
+
+    electronAPI().changeTheme({ height })
+    desktopHeight = height
+  })
+}
 </script>
 
 <style scoped>
@@ -110,5 +125,49 @@ eventBus.on((event: string, payload: any) => {
   font-size: 1.2em;
   user-select: none;
   cursor: default;
+}
+</style>
+
+<style>
+/* Custom window styling */
+:root[data-platform='electron'] {
+  .comfyui-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0.5rem;
+
+    &::before {
+      content: '';
+      width: 1.75rem;
+      height: 1.75rem;
+      background: url('/assets/images/Comfy_Logo_x256.png') no-repeat;
+      background-size: contain;
+    }
+  }
+
+  .comfyui-body-top {
+    .comfyui-menu {
+      app-region: drag;
+      padding-right: calc(100% - env(titlebar-area-width, 0));
+    }
+
+    .comfyui-menu::after {
+      content: '';
+      height: calc(100% - 0.75rem);
+      width: 2px;
+      background-color: var(--p-navigation-item-icon-color);
+      display: block;
+      margin-left: 1rem;
+      margin-right: 1rem;
+    }
+  }
+
+  button,
+  .p-menubar,
+  .comfyui-menu-right > *,
+  .actionbar {
+    app-region: no-drag;
+  }
 }
 </style>

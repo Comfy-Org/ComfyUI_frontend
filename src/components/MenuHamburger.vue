@@ -46,8 +46,8 @@ const positionCSS = computed<CSSProperties>(() =>
   // 'Bottom' menuSetting shows the hamburger button in the bottom right corner
   // 'Disabled', 'Top' menuSetting shows the hamburger button in the top right corner
   menuSetting.value === 'Bottom'
-    ? { bottom: '0px', right: '0px' }
-    : { top: '0px', right: '0px' }
+    ? { bottom: '0', right: '0' }
+    : { top: '0', right: 'calc(100% - env(titlebar-area-width, 100%))' }
 )
 </script>
 
