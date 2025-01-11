@@ -15,7 +15,7 @@
       <Button
         v-show="!sendReportOpen"
         text
-        :label="$t('g.helpUsFixThis')"
+        :label="$t('g.helpFix')"
         @click="showSendReport"
       />
     </div>
