@@ -5,6 +5,8 @@ on:
 
 jobs:
   update-locales:
+    # Don't run on fork PRs
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
     - uses: Comfy-Org/ComfyUI_frontend_setup_action@v2.1
