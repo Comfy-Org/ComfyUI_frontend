@@ -386,6 +386,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',
     name: 'Use new menu',
+    tooltip:
+      '(Desktop, Windows only): When using custom window style, only Top is supported',
     type: 'combo',
     options: ['Disabled', 'Top', 'Bottom'],
     migrateDeprecatedValue: (value: string) => {

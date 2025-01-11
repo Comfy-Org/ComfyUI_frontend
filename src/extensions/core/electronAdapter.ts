@@ -1,8 +1,8 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
-
 ;(async () => {
   if (!isElectron()) return
 
@@ -49,9 +49,12 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         ) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue)
+          // Custom window mode requires the Top menu.
+          if (newValue === 'custom' && oldValue !== newValue) {
+            useSettingStore().set('Comfy.UseNewMenu', 'Top')
+          }
 
-          onChangeRestartApp(newValue, oldValue)
+          electronAPI.Config.setWindowStyle(newValue)
         }
       }
     ],
@@ -190,4 +193,21 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       }
     ]
   })
+
+  // TODO: Replace monkey patch with API or replace UX.
+  // If the user changes frontend menu type, ensure custom window style is disabled.
+  const menuSetting = useSettingStore().settingsById['Comfy.UseNewMenu']
+  if (menuSetting) {
+    const { onChange } = menuSetting
+    menuSetting.onChange = (
+      newValue: 'Disabled' | 'Top' | 'Bottom',
+      oldValue?: 'Disabled' | 'Top' | 'Bottom'
+    ) => {
+      const style = useSettingStore().get('Comfy-Desktop.WindowStyle')
+      if (oldValue === 'Top' && newValue !== oldValue && style === 'custom') {
+        useSettingStore().set('Comfy-Desktop.WindowStyle', 'default')
+      }
+      return onChange?.(newValue, oldValue)
+    }
+  }
 })()
