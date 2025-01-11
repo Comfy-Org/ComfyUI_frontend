@@ -29,11 +29,10 @@ Sentry.init({
   app,
   dsn: 'https://e2d0c0bd392ffdce48e856c2a055f437@o4507954455314432.ingest.us.sentry.io/4508621568475136',
   integrations: [],
-  defaultIntegrations: false,
   autoSessionTracking: false,
-  normalizeDepth: 10,
+  defaultIntegrations: false,
+  normalizeDepth: 8,
   tracesSampleRate: 0
-  // TODO: filter all events except reports, or wrap entire app with error handler
 })
 app.directive('tooltip', Tooltip)
 app

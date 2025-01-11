@@ -9,38 +9,41 @@
       <div class="flex justify-end">
         <Button
           v-tooltip="$t('g.reportIssueTooltip')"
-          @click="reportIssue"
-          :label="$t('g.reportIssue')"
-          :severity="submitted ? 'secondary' : 'primary'"
+          :label="submitted ? $t('g.reportSent') : $t('g.reportIssue')"
+          :severity="isButtonDisabled ? 'secondary' : 'primary'"
           :icon="icon"
-          :disabled="submitted"
+          :disabled="isButtonDisabled"
+          @click="reportIssue"
         />
       </div>
     </template>
     <div class="p-4 mt-4 border border-round surface-border shadow-1">
       <CheckboxGroup
         v-model="selection"
-        :checkboxes="reportCheckboxes"
         class="gap-4 mb-4"
+        :checkboxes="reportCheckboxes"
       />
       <div class="mb-4">
         <InputText
           v-model="contactInfo"
-          :placeholder="$t('g.provideEmail')"
           class="w-full"
+          :placeholder="$t('g.provideEmail')"
+          :maxlength="CONTACT_MAX_LEN"
         />
         <CheckboxGroup
-          v-model="contactPreferences"
-          :checkboxes="contactCheckboxes"
+          v-model="contactPrefs"
           class="gap-3 mt-2"
+          :checkboxes="contactCheckboxes"
         />
       </div>
       <div class="mb-4">
         <Textarea
-          v-model="additionalDetails"
-          rows="4"
-          :placeholder="$t('g.provideAdditionalDetails')"
+          v-model="details"
           class="w-full"
+          rows="4"
+          :maxlength="DETAILS_MAX_LEN"
+          :placeholder="$t('g.provideAdditionalDetails')"
+          :aria-label="$t('g.additionalDetails')"
         />
       </div>
     </div>
@@ -48,9 +51,8 @@
 </template>
 
 <script setup lang="ts">
-import { SerialisableGraph } from '@comfyorg/litegraph'
 import type { CaptureContext, User } from '@sentry/core'
-import { captureMessage } from '@sentry/vue'
+import { captureMessage } from '@sentry/core'
 import cloneDeep from 'lodash/cloneDeep'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -63,83 +65,100 @@ import { useI18n } from 'vue-i18n'
 import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type {
-  ExecutionErrorWsMessage,
-  Settings,
-  SystemStats
-} from '@/types/apiTypes'
+import type { DefaultField, ReportField } from '@/types/issueReportTypes'
 
 const ISSUE_NAME = 'User reported issue'
+const DETAILS_MAX_LEN = 5_000
+const CONTACT_MAX_LEN = 320
 
-const { error } = defineProps<{
-  error: ExecutionErrorWsMessage
+const props = defineProps<{
+  errorType: string
+  defaultFields?: DefaultField[]
+  extraFields?: ReportField[]
 }>()
+const { defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'] } =
+  props
 
 const { t } = useI18n()
 const toast = useToast()
 
-const selection = ref<string[]>(['Stacktrace'])
-const contactPreferences = ref<string[]>([])
+const selection = ref<string[]>([])
+const contactPrefs = ref<string[]>([])
 const contactInfo = ref('')
-const additionalDetails = ref('')
+const details = ref('')
 const submitting = ref(false)
 const submitted = ref(false)
 
-const reportCheckboxes = [
-  { label: t('g.stackTrace'), value: 'Stacktrace' },
+const followUp = computed(() => contactPrefs.value.includes('FollowUp'))
+const notifyResolve = computed(() => contactPrefs.value.includes('Resolution'))
+
+const icon = computed(() => {
+  if (submitting.value) return 'pi pi-spin pi-spinner'
+  if (submitted.value) return 'pi pi-check'
+  return 'pi pi-send'
+})
+const isFormEmpty = computed(() => !selection.value.length && !details.value)
+const isButtonDisabled = computed(
+  () => submitted.value || submitting.value || isFormEmpty.value
+)
+
+const contactCheckboxes = [
+  { label: t('g.contactFollowUp'), value: 'FollowUp' },
+  { label: t('g.notifyResolve'), value: 'Resolution' }
+]
+const defaultReportCheckboxes = [
   { label: t('g.workflow'), value: 'Workflow' },
   { label: t('g.logs'), value: 'Logs' },
   { label: t('g.systemStats'), value: 'SystemStats' },
   { label: t('g.settings'), value: 'Settings' }
 ]
-const contactCheckboxes = [
-  {
-    label: t('g.contactForFollowUp'),
-    value: 'FollowUp'
-  },
-  {
-    label: t('g.notifyOnResolution'),
-    value: 'Resolution'
-  }
-]
-
-const followUp = computed(() => contactPreferences.value.includes('FollowUp'))
-const notifyOnResolution = computed(() =>
-  contactPreferences.value.includes('Resolution')
-)
-
-const icon = computed(
-  () => `pi ${submitting.value ? 'pi-spin pi-spinner' : 'pi-send'}`
-)
+const reportCheckboxes = computed(() => [
+  ...(props.extraFields?.map(({ label, value }) => ({ label, value })) ?? []),
+  ...defaultReportCheckboxes.filter(({ value }) =>
+    defaultFields.includes(value as DefaultField)
+  )
+])
 
 const getUserInfo = (): User => ({ email: contactInfo.value })
 
-const getLogs = async (): Promise<string | null> =>
+const getLogs = async () =>
   selection.value.includes('Logs') ? api.getLogs() : null
 
-const getSystemStats = async (): Promise<SystemStats | null> =>
+const getSystemStats = async () =>
   selection.value.includes('SystemStats') ? api.getSystemStats() : null
 
-const getSettings = async (): Promise<Settings | null> =>
+const getSettings = async () =>
   selection.value.includes('Settings') ? api.getSettings() : null
 
-const getWorkflow = (): SerialisableGraph | null =>
+const getWorkflow = () =>
   selection.value.includes('Workflow')
     ? cloneDeep(app.graph.asSerialisable())
     : null
 
-const createMessageDetails = async () => {
+const createDefaultFields = async () => {
+  const [settings, systemStats, logs, workflow] = await Promise.all([
+    getSettings(),
+    getSystemStats(),
+    getLogs(),
+    getWorkflow()
+  ])
+  return { settings, systemStats, logs, workflow }
+}
+
+const createExtraFields = (): Record<string, unknown> | undefined => {
+  if (!props.extraFields) return undefined
+
+  return props.extraFields
+    .filter((field) => !field.optIn || selection.value.includes(field.value))
+    .reduce((acc, field) => ({ ...acc, ...cloneDeep(field.data) }), {})
+}
+
+const createFeedback = () => {
   return {
-    nodeType: error.node_type,
-    stackTrace: error.traceback?.join('\n'),
-    details: additionalDetails.value.toString(),
-    settings: await getSettings(),
-    systemStats: await getSystemStats(),
-    logs: await getLogs(),
-    workflow: getWorkflow(),
+    details: details.value,
     contactPreferences: {
       followUp: followUp.value,
-      notifyOnResolution: notifyOnResolution.value
+      notifyOnResolution: notifyResolve.value
     }
   }
 }
@@ -149,14 +168,19 @@ const createCaptureContext = async (): Promise<CaptureContext> => {
     user: getUserInfo(),
     level: 'error',
     tags: {
-      comfyUIExecutionError: true
+      errorType: props.errorType
     },
-    extra: await createMessageDetails()
+    extra: {
+      ...createFeedback(),
+      ...(await createDefaultFields()),
+      ...createExtraFields()
+    }
   }
 }
 
 const reportIssue = async () => {
-  if (submitting.value) return
+  if (isButtonDisabled.value) return
+
   submitting.value = true
   try {
     captureMessage(ISSUE_NAME, await createCaptureContext())
