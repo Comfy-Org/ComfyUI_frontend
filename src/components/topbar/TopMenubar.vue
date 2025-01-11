@@ -151,16 +151,6 @@ if (isElectron()) {
       app-region: drag;
       padding-right: calc(100% - env(titlebar-area-width, 0));
     }
-
-    .comfyui-menu::after {
-      content: '';
-      height: calc(100% - 0.75rem);
-      width: 2px;
-      background-color: var(--p-navigation-item-icon-color);
-      display: block;
-      margin-left: 1rem;
-      margin-right: 1rem;
-    }
   }
 
   button,
