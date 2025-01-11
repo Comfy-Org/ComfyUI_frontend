@@ -50,7 +50,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
           if (!oldValue) return
 
           // Custom window mode requires the Top menu.
-          if (newValue === 'custom' && oldValue !== newValue) {
+          if (newValue === 'custom') {
             useSettingStore().set('Comfy.UseNewMenu', 'Top')
           }
 
@@ -204,7 +204,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       oldValue?: 'Disabled' | 'Top' | 'Bottom'
     ) => {
       const style = useSettingStore().get('Comfy-Desktop.WindowStyle')
-      if (oldValue === 'Top' && newValue !== oldValue && style === 'custom') {
+      if (oldValue === 'Top' && style === 'custom') {
         useSettingStore().set('Comfy-Desktop.WindowStyle', 'default')
       }
       return onChange?.(newValue, oldValue)
