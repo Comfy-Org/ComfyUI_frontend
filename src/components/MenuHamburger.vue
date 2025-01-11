@@ -1,22 +1,18 @@
 <template>
-  <div
+  <Button
     v-show="workspaceState.focusMode"
-    class="comfy-menu-hamburger no-drag"
+    class="comfy-menu-hamburger"
     :style="positionCSS"
-  >
-    <Button
-      icon="pi pi-bars"
-      severity="secondary"
-      text
-      size="large"
-      v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
-      :aria-label="$t('menu.showMenu')"
-      aria-live="assertive"
-      @click="exitFocusMode"
-      @contextmenu="showNativeMenu"
-    />
-    <div v-show="menuSetting !== 'Bottom'" class="window-actions-spacer" />
-  </div>
+    icon="pi pi-bars"
+    severity="secondary"
+    text
+    size="large"
+    v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"
+    :aria-label="$t('menu.showMenu')"
+    aria-live="assertive"
+    @click="exitFocusMode"
+    @contextmenu="showNativeMenu"
+  />
 </template>
 
 <script setup lang="ts">
@@ -50,13 +46,15 @@ const positionCSS = computed<CSSProperties>(() =>
   // 'Bottom' menuSetting shows the hamburger button in the bottom right corner
   // 'Disabled', 'Top' menuSetting shows the hamburger button in the top right corner
   menuSetting.value === 'Bottom'
-    ? { bottom: '0px', right: '0px' }
-    : { top: '0px', right: '0px' }
+    ? { bottom: '0', right: '0' }
+    : { top: '0', right: 'calc(100% - env(titlebar-area-width, 100%))' }
 )
 </script>
 
 <style scoped>
 .comfy-menu-hamburger {
-  @apply pointer-events-auto fixed z-[9999] flex flex-row;
+  pointer-events: auto;
+  position: fixed;
+  z-index: 9999;
 }
 </style>

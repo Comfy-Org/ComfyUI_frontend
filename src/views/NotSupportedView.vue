@@ -1,6 +1,6 @@
 <template>
-  <BaseViewTemplate>
-    <div class="sad-container">
+  <BaseViewTemplate class="app-drag">
+    <div class="no-drag sad-container">
       <!-- Right side image -->
       <img
         class="sad-girl"

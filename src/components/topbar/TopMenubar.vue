@@ -3,13 +3,13 @@
     <div
       ref="topMenuRef"
       class="comfyui-menu flex items-center"
-      v-show="showTopMenu"
+      v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
     >
-      <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
+      <h1 class="comfyui-logo mx-2">ComfyUI</h1>
       <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
-      <div class="flex-grow min-w-0 app-drag h-full">
+      <div class="flex-grow min-w-0">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
@@ -25,22 +25,12 @@
         @click="workspaceState.focusMode = true"
         @contextmenu="showNativeMenu"
       />
-      <div
-        v-show="menuSetting !== 'Bottom'"
-        class="window-actions-spacer flex-shrink-0"
-      />
     </div>
   </teleport>
-
-  <!-- Virtual top menu for native window (drag handle) -->
-  <div
-    v-show="isNativeWindow && !showTopMenu"
-    class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
-  />
 </template>
 
 <script setup lang="ts">
-import { useEventBus } from '@vueuse/core'
+import { useEventBus, useResizeObserver } from '@vueuse/core'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { computed, onMounted, provide, ref } from 'vue'
@@ -59,19 +49,13 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
-const menuSetting = computed(() => settingStore.get('Comfy.UseNewMenu'))
-const betaMenuEnabled = computed(() => menuSetting.value !== 'Disabled')
+const betaMenuEnabled = computed(
+  () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+)
 const teleportTarget = computed(() =>
   settingStore.get('Comfy.UseNewMenu') === 'Top'
     ? '.comfyui-body-top'
     : '.comfyui-body-bottom'
-)
-const isNativeWindow = computed(
-  () =>
-    isElectron() && settingStore.get('Comfy-Desktop.WindowStyle') === 'custom'
-)
-const showTopMenu = computed(
-  () => betaMenuEnabled.value && !workspaceState.focusMode
 )
 
 const menuRight = ref<HTMLDivElement | null>(null)
@@ -94,13 +78,20 @@ eventBus.on((event: string, payload: any) => {
   }
 })
 
-onMounted(() => {
-  if (isElectron()) {
-    electronAPI().changeTheme({
-      height: topMenuRef.value.getBoundingClientRect().height
-    })
-  }
-})
+/** Height of titlebar on desktop. */
+if (isElectron()) {
+  let desktopHeight = 0
+
+  useResizeObserver(topMenuRef, (entries) => {
+    if (settingStore.get('Comfy.UseNewMenu') !== 'Top') return
+
+    const { height } = entries[0].contentRect
+    if (desktopHeight === height) return
+
+    electronAPI().changeTheme({ height })
+    desktopHeight = height
+  })
+}
 </script>
 
 <style scoped>
@@ -134,5 +125,32 @@ onMounted(() => {
   font-size: 1.2em;
   user-select: none;
   cursor: default;
+}
+</style>
+
+<style lang="postcss">
+/* Desktop: Custom window styling */
+:root[data-platform='electron'] {
+  .comfyui-logo {
+    @apply flex items-center gap-2 my-1 mx-1.5;
+
+    &::before {
+      @apply w-7 h-7 bg-[url('/assets/images/Comfy_Logo_x256.png')] bg-no-repeat bg-contain content-[''];
+    }
+  }
+
+  .comfyui-body-top {
+    .comfyui-menu {
+      app-region: drag;
+      padding-right: calc(100% - env(titlebar-area-width, 0));
+    }
+  }
+
+  button,
+  .p-menubar,
+  .comfyui-menu-right > *,
+  .actionbar {
+    app-region: no-drag;
+  }
 }
 </style>

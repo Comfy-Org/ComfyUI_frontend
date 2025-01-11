@@ -1,8 +1,8 @@
 <template>
-  <BaseViewTemplate dark>
+  <BaseViewTemplate dark class="app-drag">
     <!-- Installation Path Section -->
     <div
-      class="comfy-installer grow flex flex-col gap-4 text-neutral-300 max-w-110"
+      class="no-drag comfy-installer grow flex flex-col gap-4 text-neutral-300 max-w-110"
     >
       <h2 class="text-2xl font-semibold text-neutral-100">
         {{ $t('install.manualConfiguration.title') }}

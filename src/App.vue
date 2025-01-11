@@ -45,6 +45,9 @@ onMounted(() => {
 
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
+
+    // Enable CSS selectors
+    document.documentElement.dataset['platform'] = 'electron'
   }
 })
 </script>

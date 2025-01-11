@@ -265,7 +265,8 @@
       "Bottom": "하단",
       "Disabled": "비활성화",
       "Top": "상단"
-    }
+    },
+    "tooltip": "(데스크톱, 윈도우 전용): 사용자 정의 창 스타일을 사용할 때는 Top만 지원됩니다"
   },
   "Comfy_Validation_NodeDefs": {
     "name": "노드 정의 유효성 검사 (느림)",

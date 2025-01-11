@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
 ;(async () => {
@@ -39,17 +40,22 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
-        tooltip: 'Choose custom option to hide the system title bar',
+        tooltip: "Custom: Replace the system title bar with ComfyUI's Top menu",
         type: 'combo',
         defaultValue: 'default',
         options: ['default', 'custom'],
         onChange: (
           newValue: 'default' | 'custom',
-          oldValue: 'default' | 'custom'
+          oldValue?: 'default' | 'custom'
         ) => {
-          electronAPI.Config.setWindowStyle(newValue)
+          if (!oldValue) return
 
-          onChangeRestartApp(newValue, oldValue)
+          // Custom window mode requires the Top menu.
+          if (newValue === 'custom') {
+            useSettingStore().set('Comfy.UseNewMenu', 'Top')
+          }
+
+          electronAPI.Config.setWindowStyle(newValue)
         }
       }
     ],
@@ -188,4 +194,21 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       }
     ]
   })
+
+  // TODO: Replace monkey patch with API or replace UX.
+  // If the user changes frontend menu type, ensure custom window style is disabled.
+  const menuSetting = useSettingStore().settingsById['Comfy.UseNewMenu']
+  if (menuSetting) {
+    const { onChange } = menuSetting
+    menuSetting.onChange = (
+      newValue: 'Disabled' | 'Top' | 'Bottom',
+      oldValue?: 'Disabled' | 'Top' | 'Bottom'
+    ) => {
+      const style = useSettingStore().get('Comfy-Desktop.WindowStyle')
+      if (oldValue === 'Top' && style === 'custom') {
+        useSettingStore().set('Comfy-Desktop.WindowStyle', 'default')
+      }
+      return onChange?.(newValue, oldValue)
+    }
+  }
 })()

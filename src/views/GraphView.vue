@@ -66,11 +66,23 @@ watch(
       document.body.classList.add(DARK_THEME_CLASS)
     }
 
+    // Native window control theme
     if (isElectron()) {
-      electronAPI().changeTheme({
-        color: 'rgba(0, 0, 0, 0)',
-        symbolColor: newTheme.colors.comfy_base['input-text']
-      })
+      const cssVars = newTheme.colors.comfy_base
+      // Allow OS to set matching hover colour
+      const color = setZeroAlpha(cssVars['comfy-menu-bg'])
+      const symbolColor = cssVars['input-text']
+      electronAPI().changeTheme({ color, symbolColor })
+    }
+
+    function setZeroAlpha(color: string) {
+      if (!color.startsWith('#')) return color
+
+      if (color.length === 4) {
+        const [_, r, g, b] = color
+        return `#${r}${r}${g}${g}${b}${b}00`
+      }
+      return `#${color.substring(1, 7)}00`
     }
   },
   { immediate: true }

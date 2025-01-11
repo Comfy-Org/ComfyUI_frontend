@@ -1,7 +1,7 @@
 <template>
-  <div class="workflow-tabs-container flex flex-row max-w-full">
+  <div class="workflow-tabs-container flex flex-row w-full">
     <ScrollPanel
-      class="overflow-hidden no-drag"
+      class="overflow-hidden"
       :pt:content="{
         class: 'p-0 w-full',
         onwheel: handleWheel
@@ -28,7 +28,7 @@
     </ScrollPanel>
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button flex-shrink-0 no-drag"
+      class="new-blank-workflow-button flex-shrink-0"
       icon="pi pi-plus"
       text
       severity="secondary"
