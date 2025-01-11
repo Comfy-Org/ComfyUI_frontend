@@ -129,20 +129,13 @@ if (isElectron()) {
 </style>
 
 <style>
-/* Custom window styling */
+/* Desktop: Custom window styling */
 :root[data-platform='electron'] {
   .comfyui-logo {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0.25rem 0.5rem;
+    @apply flex items-center gap-2 my-1 mx-1.5;
 
     &::before {
-      content: '';
-      width: 1.75rem;
-      height: 1.75rem;
-      background: url('/assets/images/Comfy_Logo_x256.png') no-repeat;
-      background-size: contain;
+      @apply w-7 h-7 bg-[url('/assets/images/Comfy_Logo_x256.png')] bg-no-repeat bg-contain content-[''];
     }
   }
 
