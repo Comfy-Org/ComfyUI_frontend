@@ -3,6 +3,7 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
+
 ;(async () => {
   if (!isElectron()) return
 

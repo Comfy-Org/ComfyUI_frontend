@@ -42,7 +42,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { showNativeMenu, electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI, isElectron, showNativeMenu } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
