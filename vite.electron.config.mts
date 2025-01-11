@@ -54,7 +54,11 @@ const mockElectronAPI: Plugin = {
           getElectronVersion: () => Promise.resolve('1.0.0'),
           getComfyUIVersion: () => '9.9.9',
           getPlatform: () => 'win32',
-          changeTheme: () => {}
+          changeTheme: () => {},
+          Config: {
+            setWindowStyle: () => {},
+            getWindowStyle: () => Promise.resolve('default')
+          }
         };`
       }
     ]
