@@ -765,7 +765,6 @@ audio.comfy-audio.empty-audio-widget {
   padding: var(--comfy-tree-explorer-item-padding) !important;
 }
 
-/* [Desktop] Electron window specific styles */
 .app-drag {
   app-region: drag;
 }
@@ -773,8 +772,3 @@ audio.comfy-audio.empty-audio-widget {
 .no-drag {
   app-region: no-drag;
 }
-
-.window-actions-spacer {
-  width: calc(100vw - env(titlebar-area-width, 100vw));
-}
-/* End of [Desktop] Electron window specific styles */
