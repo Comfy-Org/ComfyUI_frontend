@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
@@ -52,9 +53,12 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         ) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue)
+          // Custom window mode requires the Top menu.
+          if (newValue === 'custom' && oldValue !== newValue) {
+            useSettingStore().set('Comfy.UseNewMenu', 'Top')
+          }
 
-          onChangeRestartApp(newValue, oldValue)
+          electronAPI.Config.setWindowStyle(newValue)
         }
       }
     ],

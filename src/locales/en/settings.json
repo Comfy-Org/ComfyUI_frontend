@@ -7,10 +7,10 @@
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "Window Style",
-    "tooltip": "Choose custom option to hide the system title bar",
+    "tooltip": "Custom: Replace the system title bar with ComfyUI's Top menu",
     "options": {
-      "default": "default",
-      "custom": "custom"
+      "default": "Default",
+      "custom": "Custom"
     }
   },
   "Comfy_ConfirmClear": {
