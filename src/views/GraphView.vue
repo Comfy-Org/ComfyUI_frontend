@@ -46,6 +46,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
+import { electronAPI, isElectron } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 
@@ -63,6 +64,25 @@ watch(
       document.body.classList.remove(DARK_THEME_CLASS)
     } else {
       document.body.classList.add(DARK_THEME_CLASS)
+    }
+
+    // Native window control theme
+    if (isElectron()) {
+      const cssVars = newTheme.colors.comfy_base
+      // Allow OS to set matching hover colour
+      const color = setZeroAlpha(cssVars['comfy-menu-bg'])
+      const symbolColor = cssVars['input-text']
+      electronAPI().changeTheme({ color, symbolColor })
+    }
+
+    function setZeroAlpha(color: string) {
+      if (!color.startsWith('#')) return color
+
+      if (color.length === 4) {
+        const [_, r, g, b] = color
+        return `#${r}${r}${g}${g}${b}${b}00`
+      }
+      return `#${color.substring(1, 7)}00`
     }
   },
   { immediate: true }
