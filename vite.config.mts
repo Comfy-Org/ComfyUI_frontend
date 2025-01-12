@@ -180,11 +180,7 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __SENTRY_ENABLED__: JSON.stringify(
-      !(
-        process.env.CI === 'true' ||
-        process.env.NODE_ENV === 'development' ||
-        !process.env.SENTRY_DSN
-      )
+      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || '')
   },
