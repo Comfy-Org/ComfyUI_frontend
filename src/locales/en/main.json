@@ -181,21 +181,26 @@
     },
     "settings": {
       "autoUpdate": "Automatic Updates",
-      "allowMetrics": "Crash Reports",
-      "autoUpdateDescription": "Automatically download and install updates when they become available. You'll always be notified before updates are installed.",
-      "allowMetricsDescription": "Help improve ComfyUI by sending anonymous crash reports. No personal information or workflow content will be collected. This can be disabled at any time in the settings menu.",
+      "allowMetrics": "Usage Metrics",
+      "autoUpdateDescription": "Automatically download updates when they become available. You will be notified before updates are installed.",
+      "allowMetricsDescription": "Help improve ComfyUI by sending anonymous usage metrics. No personal information or workflow content will be collected.",
       "learnMoreAboutData": "Learn more about data collection",
       "dataCollectionDialog": {
         "title": "About Data Collection",
         "whatWeCollect": "What we collect:",
         "whatWeDoNotCollect": "What we don't collect:",
-        "errorReports": "Error message and stack trace",
-        "systemInfo": "Hardware, OS type, and app version",
-        "personalInformation": "Personal information",
-        "workflowContent": "Workflow content",
-        "fileSystemInformation": "File system information",
-        "workflowContents": "Workflow contents",
-        "customNodeConfigurations": "Custom node configurations"
+        "collect": {
+          "errorReports": "Error message and stack trace",
+          "systemInfo": "Hardware, OS type, and app version",
+          "userJourneyEvents": "User journey events",
+          "userJourneyTooltip": "User journey events are used to track the user's journey through the app installation process. The event collection ends on the first successful ComfyUI workflow run."
+        },
+        "doNotCollect": {
+          "personalInformation": "Personal information",
+          "fileSystemInformation": "File system information",
+          "workflowContents": "Workflow contents",
+          "customNodeConfigurations": "Custom node configurations"
+        }
       }
     },
     "customNodes": "Custom Nodes",

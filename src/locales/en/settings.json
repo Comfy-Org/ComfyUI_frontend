@@ -3,7 +3,7 @@
     "name": "Automatically check for updates"
   },
   "Comfy-Desktop_SendStatistics": {
-    "name": "Send anonymous crash reports"
+    "name": "Send anonymous usage metrics"
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "Window Style",
