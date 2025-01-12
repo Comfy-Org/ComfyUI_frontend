@@ -171,9 +171,8 @@ const handleWheel = (event: WheelEvent) => {
 
 <style scoped>
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none flex-shrink-0 relative;
-  border: 0px;
-  border-right: 1px solid var(--border-color);
+  @apply p-0 bg-transparent rounded-none flex-shrink-0 relative border-0 border-r border-solid;
+  border-right-color: var(--border-color);
 }
 
 :deep(.p-togglebutton::before) {
@@ -181,20 +180,21 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 :deep(.p-togglebutton:first-child) {
-  border-left: 1px solid var(--border-color);
+  @apply border-l border-solid;
+  border-left-color: var(--border-color);
 }
 
 :deep(.p-togglebutton:not(:first-child)) {
-  border-left: none;
+  @apply border-l-0;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  border-bottom: 1px solid var(--p-button-text-primary-color);
-  height: 100%;
+  @apply border-b border-solid h-full;
+  border-bottom-color: var(--p-button-text-primary-color);
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
-  opacity: 0.75;
+  @apply opacity-75;
 }
 
 :deep(.p-togglebutton-checked) .close-button,
@@ -211,17 +211,16 @@ const handleWheel = (event: WheelEvent) => {
 }
 
 :deep(.p-scrollpanel-content) {
-  height: 100%;
+  @apply h-full;
 }
 
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */
 :deep(.p-scrollpanel:hover .p-scrollpanel-bar),
 :deep(.p-scrollpanel:active .p-scrollpanel-bar) {
-  opacity: 0.5;
+  @apply opacity-50;
 }
 
 :deep(.p-selectbutton) {
-  border-radius: 0;
-  height: 100%;
+  @apply rounded-none h-full;
 }
 </style>

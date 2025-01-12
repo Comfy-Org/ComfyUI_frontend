@@ -8,7 +8,6 @@
     >
       <h1 class="comfyui-logo mx-2 app-drag">ComfyUI</h1>
       <CommandMenubar />
-      <!-- <Divider layout="vertical" class="mx-2" /> -->
       <div class="flex-grow min-w-0 app-drag h-full">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
       </div>
