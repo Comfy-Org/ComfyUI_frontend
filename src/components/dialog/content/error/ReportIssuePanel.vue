@@ -168,8 +168,7 @@ const createCaptureContext = async (): Promise<CaptureContext> => {
     user: getUserInfo(),
     level: 'error',
     tags: {
-      errorType: props.errorType,
-      frontendVersion: __COMFYUI_FRONTEND_VERSION__
+      errorType: props.errorType
     },
     extra: {
       ...createFeedback(),

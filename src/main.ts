@@ -27,7 +27,9 @@ const app = createApp(App)
 const pinia = createPinia()
 Sentry.init({
   app,
-  dsn: 'https://e2d0c0bd392ffdce48e856c2a055f437@o4507954455314432.ingest.us.sentry.io/4508621568475136',
+  dsn: __SENTRY_DSN__,
+  enabled: __SENTRY_ENABLED__,
+  release: __COMFYUI_FRONTEND_VERSION__,
   integrations: [],
   autoSessionTracking: false,
   defaultIntegrations: false,
