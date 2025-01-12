@@ -41,6 +41,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         name: 'Window Style',
         tooltip: 'Choose custom option to hide the system title bar',
         type: 'combo',
+        experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
         onChange: (
