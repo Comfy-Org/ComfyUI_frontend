@@ -59,10 +59,27 @@
         </h4>
         <ul class="list-disc pl-6 space-y-1">
           <li>
-            {{ $t('install.settings.dataCollectionDialog.errorReports') }}
+            {{
+              $t('install.settings.dataCollectionDialog.collect.errorReports')
+            }}
           </li>
           <li>
-            {{ $t('install.settings.dataCollectionDialog.systemInfo') }}
+            {{ $t('install.settings.dataCollectionDialog.collect.systemInfo') }}
+          </li>
+          <li>
+            {{
+              $t(
+                'install.settings.dataCollectionDialog.collect.userJourneyEvents'
+              )
+            }}
+            <span
+              class="pi pi-info-circle text-neutral-400"
+              v-tooltip="
+                $t(
+                  'install.settings.dataCollectionDialog.collect.userJourneyTooltip'
+                )
+              "
+            />
           </li>
         </ul>
 
@@ -72,21 +89,29 @@
         <ul class="list-disc pl-6 space-y-1">
           <li>
             {{
-              $t('install.settings.dataCollectionDialog.personalInformation')
-            }}
-          </li>
-          <li>
-            {{ $t('install.settings.dataCollectionDialog.workflowContents') }}
-          </li>
-          <li>
-            {{
-              $t('install.settings.dataCollectionDialog.fileSystemInformation')
+              $t(
+                'install.settings.dataCollectionDialog.doNotCollect.personalInformation'
+              )
             }}
           </li>
           <li>
             {{
               $t(
-                'install.settings.dataCollectionDialog.customNodeConfigurations'
+                'install.settings.dataCollectionDialog.doNotCollect.workflowContents'
+              )
+            }}
+          </li>
+          <li>
+            {{
+              $t(
+                'install.settings.dataCollectionDialog.doNotCollect.fileSystemInformation'
+              )
+            }}
+          </li>
+          <li>
+            {{
+              $t(
+                'install.settings.dataCollectionDialog.doNotCollect.customNodeConfigurations'
               )
             }}
           </li>
