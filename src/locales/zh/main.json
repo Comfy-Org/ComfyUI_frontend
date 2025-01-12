@@ -623,11 +623,13 @@
     "workflows": "工作流"
   },
   "tabMenu": {
+    "addToBookmarks": "添加到书签",
     "closeOtherTabs": "关闭其他标签",
     "closeTab": "关闭标签",
     "closeTabsToLeft": "关闭左侧标签",
     "closeTabsToRight": "关闭右侧标签",
-    "duplicateTab": "复制标签"
+    "duplicateTab": "复制标签",
+    "removeFromBookmarks": "从书签中移除"
   },
   "templateWorkflows": {
     "template": {

@@ -623,11 +623,13 @@
     "workflows": "Рабочие процессы"
   },
   "tabMenu": {
+    "addToBookmarks": "Добавить в закладки",
     "closeOtherTabs": "Закрыть другие вкладки",
     "closeTab": "Закрыть вкладку",
     "closeTabsToLeft": "Закрыть вкладки слева",
     "closeTabsToRight": "Закрыть вкладки справа",
-    "duplicateTab": "Дублировать вкладку"
+    "duplicateTab": "Дублировать вкладку",
+    "removeFromBookmarks": "Удалить из закладок"
   },
   "templateWorkflows": {
     "template": {

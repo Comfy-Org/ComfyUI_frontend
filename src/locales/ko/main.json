@@ -623,11 +623,13 @@
     "workflows": "워크플로"
   },
   "tabMenu": {
+    "addToBookmarks": "북마크에 추가",
     "closeOtherTabs": "다른 탭 닫기",
     "closeTab": "탭 닫기",
     "closeTabsToLeft": "왼쪽 탭 닫기",
     "closeTabsToRight": "오른쪽 탭 닫기",
-    "duplicateTab": "탭 복제"
+    "duplicateTab": "탭 복제",
+    "removeFromBookmarks": "북마크에서 제거"
   },
   "templateWorkflows": {
     "template": {
