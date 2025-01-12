@@ -15,7 +15,7 @@
       <Button
         v-show="!sendReportOpen"
         text
-        :label="$t('g.helpFix')"
+        :label="$t('issueReport.helpFix')"
         @click="showSendReport"
       />
     </div>
@@ -85,7 +85,7 @@ const { t } = useI18n()
 
 const stackTraceField = computed<ReportField>(() => {
   return {
-    label: t('g.stackTrace'),
+    label: t('issueReport.stackTrace'),
     value: 'StackTrace',
     optIn: true,
     data: {

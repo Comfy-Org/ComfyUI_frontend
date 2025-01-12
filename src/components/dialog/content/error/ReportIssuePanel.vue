@@ -2,7 +2,7 @@
   <Panel>
     <template #header>
       <div class="flex items-center gap-2">
-        <span class="font-bold">{{ $t('g.submitErrorReport') }}</span>
+        <span class="font-bold">{{ $t('issueReport.submitErrorReport') }}</span>
       </div>
     </template>
     <template #footer>
@@ -27,7 +27,7 @@
         <InputText
           v-model="contactInfo"
           class="w-full"
-          :placeholder="$t('g.provideEmail')"
+          :placeholder="$t('issueReport.provideEmail')"
           :maxlength="CONTACT_MAX_LEN"
         />
         <CheckboxGroup
@@ -42,8 +42,8 @@
           class="w-full"
           rows="4"
           :maxlength="DETAILS_MAX_LEN"
-          :placeholder="$t('g.provideAdditionalDetails')"
-          :aria-label="$t('g.additionalDetails')"
+          :placeholder="$t('issueReport.provideAdditionalDetails')"
+          :aria-label="$t('issueReport.provideAdditionalDetails')"
         />
       </div>
     </div>
@@ -103,13 +103,13 @@ const isButtonDisabled = computed(
 )
 
 const contactCheckboxes = [
-  { label: t('g.contactFollowUp'), value: 'FollowUp' },
-  { label: t('g.notifyResolve'), value: 'Resolution' }
+  { label: t('issueReport.contactFollowUp'), value: 'FollowUp' },
+  { label: t('issueReport.notifyResolve'), value: 'Resolution' }
 ]
 const defaultReportCheckboxes = [
   { label: t('g.workflow'), value: 'Workflow' },
   { label: t('g.logs'), value: 'Logs' },
-  { label: t('g.systemStats'), value: 'SystemStats' },
+  { label: t('issueReport.systemStats'), value: 'SystemStats' },
   { label: t('g.settings'), value: 'Settings' }
 ]
 const reportCheckboxes = computed(() => [
