@@ -206,21 +206,26 @@
     "pathValidationFailed": "パスの検証に失敗しました",
     "selectItemsToMigrate": "移行する項目を選択",
     "settings": {
-      
-      
+      "allowMetrics": "使用状況のメトリクス",
+      "allowMetricsDescription": "匿名の使用状況メトリクスを送信してComfyUIを改善します。個人情報やワークフローの内容は収集されません。",
       "autoUpdate": "自動更新",
       "autoUpdateDescription": "更新が利用可能になると、自動的にダウンロードおよびインストールを行います。インストール前に通知が表示されます。",
       "dataCollectionDialog": {
-        "customNodeConfigurations": "カスタムノード設定",
-        "errorReports": "エラーメッセージとスタックトレース",
-        "fileSystemInformation": "ファイルシステム情報",
-        "personalInformation": "個人情報",
-        "systemInfo": "ハードウェア、OSの種類、アプリのバージョン",
+        "collect": {
+          "errorReports": "エラーメッセージとスタックトレース",
+          "systemInfo": "ハードウェア、OSタイプ、アプリバージョン",
+          "userJourneyEvents": "ユーザージャーニーイベント",
+          "userJourneyTooltip": "ユーザージャーニーイベントは、アプリのインストールプロセスを通じてユーザーの旅を追跡するために使用されます。イベントの収集は、最初の成功したComfyUIワークフローの実行で終了します。"
+        },
+        "doNotCollect": {
+          "customNodeConfigurations": "カスタムノードの設定",
+          "fileSystemInformation": "ファイルシステム情報",
+          "personalInformation": "個人情報",
+          "workflowContents": "ワークフローの内容"
+        },
         "title": "データ収集について",
         "whatWeCollect": "収集内容:",
-        "whatWeDoNotCollect": "収集しない内容:",
-        "workflowContent": "ワークフロー内容",
-        "workflowContents": "ワークフロー内容"
+        "whatWeDoNotCollect": "収集しない内容:"
       },
       "learnMoreAboutData": "データ収集の詳細を見る"
     },

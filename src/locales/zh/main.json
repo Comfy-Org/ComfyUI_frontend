@@ -206,21 +206,26 @@
     "pathValidationFailed": "路径验证失败",
     "selectItemsToMigrate": "选择要迁移的项目",
     "settings": {
-      
-      
+      "allowMetrics": "使用情况指标",
+      "allowMetricsDescription": "通过发送匿名使用情况指标来帮助改进ComfyUI。不会收集任何个人信息或工作流内容。",
       "autoUpdate": "自动更新",
       "autoUpdateDescription": "更新可用时自动更新。您将在安装更新之前收到通知。",
       "dataCollectionDialog": {
-        "customNodeConfigurations": "自定义节点配置",
-        "errorReports": "错误信息和堆栈跟踪",
-        "fileSystemInformation": "文件系统信息",
-        "personalInformation": "个人信息",
-        "systemInfo": "硬件、操作系统类型和应用版本",
+        "collect": {
+          "errorReports": "错误报告和堆栈跟踪",
+          "systemInfo": "硬件，操作系统类型和应用版本",
+          "userJourneyEvents": "用户旅程事件",
+          "userJourneyTooltip": "用户旅程事件用于跟踪用户通过应用安装过程的旅程。事件收集在第一次成功运行ComfyUI工作流后结束。"
+        },
+        "doNotCollect": {
+          "customNodeConfigurations": "自定义节点配置",
+          "fileSystemInformation": "文件系统信息",
+          "personalInformation": "个人信息",
+          "workflowContents": "工作流内容"
+        },
         "title": "关于数据收集",
         "whatWeCollect": "我们收集的内容：",
-        "whatWeDoNotCollect": "我们不收集的内容：",
-        "workflowContent": "工作流内容",
-        "workflowContents": "工作流内容"
+        "whatWeDoNotCollect": "我们不收集的内容："
       },
       "learnMoreAboutData": "了解更多关于数据收集的信息"
     },

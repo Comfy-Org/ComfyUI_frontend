@@ -2,7 +2,9 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "自动检查更新"
   },
-
+  "Comfy-Desktop_SendStatistics": {
+    "name": "发送匿名使用情况统计"
+  },
   "Comfy-Desktop_WindowStyle": {
     "name": "窗口样式",
     "options": {
