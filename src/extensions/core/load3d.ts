@@ -2,6 +2,7 @@
 import { IWidget } from '@comfyorg/litegraph'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
@@ -115,8 +116,7 @@ class Load3d {
   stlLoader: STLLoader
   currentModel: THREE.Object3D | null = null
   originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null = null
-  node: any
-  private animationFrameId: number | null = null
+  animationFrameId: number | null = null
   gridHelper: THREE.GridHelper
   lights: THREE.Light[] = []
   clock: THREE.Clock
@@ -131,6 +131,10 @@ class Load3d {
   currentUpDirection: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z' =
     'original'
   originalRotation: THREE.Euler | null = null
+  viewHelper: ViewHelper
+  viewHelperContainer: HTMLDivElement
+  cameraSwitcherContainer: HTMLDivElement
+  gridSwitcherContainer: HTMLDivElement
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -157,6 +161,7 @@ class Load3d {
     this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
     this.renderer.setSize(300, 300)
     this.renderer.setClearColor(0x282828)
+    this.renderer.autoClear = false
 
     const rendererDomElement: HTMLCanvasElement = this.renderer.domElement
 
@@ -203,11 +208,141 @@ class Load3d {
 
     this.standardMaterial = this.createSTLMaterial()
 
-    this.animate()
+    this.createViewHelper(container)
+
+    this.createGridSwitcher(container)
+
+    this.createCameraSwitcher(container)
 
     this.handleResize()
 
     this.startAnimation()
+  }
+
+  createViewHelper(container: Element | HTMLElement) {
+    this.viewHelperContainer = document.createElement('div')
+
+    this.viewHelperContainer.style.position = 'absolute'
+    this.viewHelperContainer.style.bottom = '0'
+    this.viewHelperContainer.style.left = '0'
+    this.viewHelperContainer.style.width = '128px'
+    this.viewHelperContainer.style.height = '128px'
+    this.viewHelperContainer.addEventListener('pointerup', (event) => {
+      event.stopPropagation()
+
+      this.viewHelper.handleClick(event)
+    })
+
+    this.viewHelperContainer.addEventListener('pointerdown', (event) => {
+      event.stopPropagation()
+    })
+
+    container.appendChild(this.viewHelperContainer)
+
+    this.viewHelper = new ViewHelper(
+      this.activeCamera,
+      this.viewHelperContainer
+    )
+
+    this.viewHelper.center = this.controls.target
+  }
+
+  createGridSwitcher(container: Element | HTMLElement) {
+    this.gridSwitcherContainer = document.createElement('div')
+    this.gridSwitcherContainer.style.position = 'absolute'
+    this.gridSwitcherContainer.style.top = '28px' // 修改这里，让按钮在相机按钮下方
+    this.gridSwitcherContainer.style.left = '3px' // 与相机按钮左对齐
+    this.gridSwitcherContainer.style.width = '20px'
+    this.gridSwitcherContainer.style.height = '20px'
+    this.gridSwitcherContainer.style.cursor = 'pointer'
+    this.gridSwitcherContainer.style.alignItems = 'center'
+    this.gridSwitcherContainer.style.justifyContent = 'center'
+    this.gridSwitcherContainer.style.transition = 'background-color 0.2s'
+
+    const gridIcon = document.createElement('div')
+    gridIcon.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <path d="M3 3h18v18H3z"/>
+      <path d="M3 9h18"/>
+      <path d="M3 15h18"/>
+      <path d="M9 3v18"/>
+      <path d="M15 3v18"/>
+    </svg>
+  `
+
+    const updateButtonState = () => {
+      if (this.gridHelper.visible) {
+        this.gridSwitcherContainer.style.backgroundColor =
+          'rgba(255, 255, 255, 0.2)'
+      } else {
+        this.gridSwitcherContainer.style.backgroundColor = 'transparent'
+      }
+    }
+
+    updateButtonState()
+
+    this.gridSwitcherContainer.addEventListener('mouseenter', () => {
+      if (!this.gridHelper.visible) {
+        this.gridSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+      }
+    })
+
+    this.gridSwitcherContainer.addEventListener('mouseleave', () => {
+      if (!this.gridHelper.visible) {
+        this.gridSwitcherContainer.style.backgroundColor = 'transparent'
+      }
+    })
+
+    this.gridSwitcherContainer.title = 'Toggle Grid'
+
+    this.gridSwitcherContainer.addEventListener('click', (event) => {
+      event.stopPropagation()
+      this.toggleGrid(!this.gridHelper.visible)
+      updateButtonState()
+    })
+
+    this.gridSwitcherContainer.appendChild(gridIcon)
+    container.appendChild(this.gridSwitcherContainer)
+  }
+
+  createCameraSwitcher(container: Element | HTMLElement) {
+    this.cameraSwitcherContainer = document.createElement('div')
+    this.cameraSwitcherContainer.style.position = 'absolute'
+    this.cameraSwitcherContainer.style.top = '3px'
+    this.cameraSwitcherContainer.style.left = '3px'
+    this.cameraSwitcherContainer.style.width = '20px'
+    this.cameraSwitcherContainer.style.height = '20px'
+    this.cameraSwitcherContainer.style.cursor = 'pointer'
+    this.cameraSwitcherContainer.style.alignItems = 'center'
+    this.cameraSwitcherContainer.style.justifyContent = 'center'
+
+    const cameraIcon = document.createElement('div')
+    cameraIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z"/>
+        <path d="m12 12 4-2.4"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    `
+    this.cameraSwitcherContainer.addEventListener('mouseenter', () => {
+      this.cameraSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+    })
+
+    this.cameraSwitcherContainer.addEventListener('mouseleave', () => {
+      this.cameraSwitcherContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+    })
+
+    this.cameraSwitcherContainer.title =
+      'Switch Camera (Perspective/Orthographic)'
+
+    this.cameraSwitcherContainer.addEventListener('click', (event) => {
+      event.stopPropagation()
+      this.toggleCamera()
+    })
+
+    this.cameraSwitcherContainer.appendChild(cameraIcon)
+
+    container.appendChild(this.cameraSwitcherContainer)
   }
 
   setFOV(fov: number) {
@@ -465,6 +600,13 @@ class Load3d {
     this.controls.target.copy(target)
     this.controls.update()
 
+    this.viewHelper.dispose()
+    this.viewHelper = new ViewHelper(
+      this.activeCamera,
+      this.viewHelperContainer
+    )
+    this.viewHelper.center = this.controls.target
+
     this.handleResize()
   }
 
@@ -501,8 +643,16 @@ class Load3d {
   startAnimation() {
     const animate = () => {
       this.animationFrameId = requestAnimationFrame(animate)
+      const delta = this.clock.getDelta()
+
+      if (this.viewHelper.animating) {
+        this.viewHelper.update(delta)
+      }
+
+      this.renderer.clear()
       this.controls.update()
       this.renderer.render(this.scene, this.activeCamera)
+      this.viewHelper.render(this.renderer)
     }
     animate()
   }
@@ -588,6 +738,7 @@ class Load3d {
     }
 
     this.controls.dispose()
+    this.viewHelper.dispose()
     this.renderer.dispose()
     this.renderer.domElement.remove()
     this.scene.clear()
@@ -818,10 +969,12 @@ class Load3d {
           this.orthographicCamera.updateProjectionMatrix()
         }
 
+        this.renderer.clear()
         this.renderer.render(this.scene, this.activeCamera)
         const sceneData = this.renderer.domElement.toDataURL('image/png')
 
         this.renderer.setClearColor(0x000000, 0)
+        this.renderer.clear()
         this.renderer.render(this.scene, this.activeCamera)
         const maskData = this.renderer.domElement.toDataURL('image/png')
 
@@ -844,44 +997,6 @@ class Load3d {
       flatShading: false,
       side: THREE.DoubleSide
     })
-  }
-
-  setViewPosition(position: 'front' | 'top' | 'right' | 'isometric') {
-    if (!this.currentModel) {
-      return
-    }
-
-    const box = new THREE.Box3()
-    let center = new THREE.Vector3()
-    let size = new THREE.Vector3()
-
-    if (this.currentModel) {
-      box.setFromObject(this.currentModel)
-      box.getCenter(center)
-      box.getSize(size)
-    }
-
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const distance = maxDim * 2
-
-    switch (position) {
-      case 'front':
-        this.activeCamera.position.set(0, 0, distance)
-        break
-      case 'top':
-        this.activeCamera.position.set(0, distance, 0)
-        break
-      case 'right':
-        this.activeCamera.position.set(distance, 0, 0)
-        break
-      case 'isometric':
-        this.activeCamera.position.set(distance, distance, distance)
-        break
-    }
-
-    this.activeCamera.lookAt(center)
-    this.controls.target.copy(center)
-    this.controls.update()
   }
 
   setBackgroundColor(color: string) {
@@ -1020,16 +1135,28 @@ class Load3dAnimation extends Load3d {
     })
   }
 
-  animate = () => {
-    requestAnimationFrame(this.animate)
-
-    if (this.currentAnimation && this.isAnimationPlaying) {
+  startAnimation() {
+    const animate = () => {
+      this.animationFrameId = requestAnimationFrame(animate)
       const delta = this.clock.getDelta()
-      this.currentAnimation.update(delta)
-    }
 
-    this.controls.update()
-    this.renderer.render(this.scene, this.activeCamera)
+      if (this.currentAnimation && this.isAnimationPlaying) {
+        this.currentAnimation.update(delta)
+      }
+
+      this.controls.update()
+
+      this.renderer.clear()
+
+      this.renderer.render(this.scene, this.activeCamera)
+
+      if (this.viewHelper.animating) {
+        this.viewHelper.update(delta)
+      }
+
+      this.viewHelper.render(this.renderer)
+    }
+    animate()
   }
 }
 
@@ -1076,9 +1203,6 @@ function configureLoad3D(
   load3d: Load3d,
   loadFolder: 'input' | 'output',
   modelWidget: IWidget,
-  showGrid: IWidget,
-  cameraType: IWidget,
-  view: IWidget,
   material: IWidget,
   bgColor: IWidget,
   lightIntensity: IWidget,
@@ -1137,22 +1261,6 @@ function configureLoad3D(
   }
 
   modelWidget.callback = onModelWidgetUpdate
-
-  load3d.toggleGrid(showGrid.value as boolean)
-
-  showGrid.callback = (value: boolean) => {
-    load3d.toggleGrid(value)
-  }
-
-  load3d.toggleCamera(cameraType.value as 'perspective' | 'orthographic')
-
-  cameraType.callback = (value: 'perspective' | 'orthographic') => {
-    load3d.toggleCamera(value)
-  }
-
-  view.callback = (value: 'front' | 'top' | 'right' | 'isometric') => {
-    load3d.setViewPosition(value)
-  }
 
   material.callback = (value: 'original' | 'normal' | 'wireframe') => {
     load3d.setMaterialMode(value)
@@ -1312,14 +1420,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
-
-    const cameraType = node.widgets.find(
-      (w: IWidget) => w.name === 'camera_type'
-    )
-
-    const view = node.widgets.find((w: IWidget) => w.name === 'view')
-
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
@@ -1353,9 +1453,6 @@ app.registerExtension({
       load3d,
       'input',
       modelWidget,
-      showGrid,
-      cameraType,
-      view,
       material,
       bgColor,
       lightIntensity,
@@ -1569,14 +1666,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
-
-    const cameraType = node.widgets.find(
-      (w: IWidget) => w.name === 'camera_type'
-    )
-
-    const view = node.widgets.find((w: IWidget) => w.name === 'view')
-
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
@@ -1621,9 +1710,6 @@ app.registerExtension({
       load3d,
       'input',
       modelWidget,
-      showGrid,
-      cameraType,
-      view,
       material,
       bgColor,
       lightIntensity,
@@ -1651,6 +1737,8 @@ app.registerExtension({
     // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
       node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
+
+      load3d.toggleAnimation(false)
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
         w.value,
@@ -1758,14 +1846,6 @@ app.registerExtension({
       (w: IWidget) => w.name === 'model_file'
     )
 
-    const showGrid = node.widgets.find((w: IWidget) => w.name === 'show_grid')
-
-    const cameraType = node.widgets.find(
-      (w: IWidget) => w.name === 'camera_type'
-    )
-
-    const view = node.widgets.find((w: IWidget) => w.name === 'view')
-
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
     const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
@@ -1801,9 +1881,6 @@ app.registerExtension({
         load3d,
         'output',
         modelWidget,
-        showGrid,
-        cameraType,
-        view,
         material,
         bgColor,
         lightIntensity,
