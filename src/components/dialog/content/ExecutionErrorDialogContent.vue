@@ -5,7 +5,7 @@
     :message="props.error.exception_message"
   />
   <div class="comfy-error-report">
-    <div class="flex items-center gap-2 justify-center">
+    <div class="flex gap-2 justify-center">
       <Button
         v-show="!reportOpen"
         text
