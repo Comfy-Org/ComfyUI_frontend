@@ -186,7 +186,7 @@ export default defineConfig({
         !process.env.SENTRY_DSN
       )
     ),
-    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN)
+    __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || '')
   },
 
   resolve: {
