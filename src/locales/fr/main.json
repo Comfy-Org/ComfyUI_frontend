@@ -132,7 +132,8 @@
     "systemInfo": "Informations système",
     "terminal": "Terminal",
     "upload": "Téléverser",
-    "videoFailedToLoad": "Échec du chargement de la vidéo"
+    "videoFailedToLoad": "Échec du chargement de la vidéo",
+    "workflow": "Flux de travail"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
@@ -225,6 +226,16 @@
     },
     "systemLocations": "Emplacements système",
     "unhandledError": "Erreur inconnue"
+  },
+  "issueReport": {
+    "contactFollowUp": "Contactez-moi pour un suivi",
+    "helpFix": "Aidez à résoudre cela",
+    "notifyResolve": "Prévenez-moi lorsque résolu",
+    "provideAdditionalDetails": "Fournir des détails supplémentaires (facultatif)",
+    "provideEmail": "Donnez-nous votre email (Facultatif)",
+    "stackTrace": "Trace de la pile",
+    "submitErrorReport": "Soumettre un rapport d'erreur (Facultatif)",
+    "systemStats": "Statistiques du système"
   },
   "menu": {
     "autoQueue": "File d'attente automatique",

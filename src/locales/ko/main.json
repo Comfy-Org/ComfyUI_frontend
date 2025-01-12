@@ -132,7 +132,8 @@
     "systemInfo": "시스템 정보",
     "terminal": "터미널",
     "upload": "업로드",
-    "videoFailedToLoad": "비디오를 로드하지 못했습니다."
+    "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
+    "workflow": "워크플로우"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
@@ -225,6 +226,16 @@
     },
     "systemLocations": "시스템 위치",
     "unhandledError": "알 수 없는 오류"
+  },
+  "issueReport": {
+    "contactFollowUp": "추적 조사를 위해 연락해 주세요",
+    "helpFix": "이 문제 해결에 도움을 주세요",
+    "notifyResolve": "해결되었을 때 알려주세요",
+    "provideAdditionalDetails": "추가 세부 사항 제공 (선택 사항)",
+    "provideEmail": "이메일을 알려주세요 (선택 사항)",
+    "stackTrace": "스택 추적",
+    "submitErrorReport": "오류 보고서 제출 (선택 사항)",
+    "systemStats": "시스템 통계"
   },
   "menu": {
     "autoQueue": "자동 실행 큐",

@@ -132,7 +132,8 @@
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
     "upload": "アップロード",
-    "videoFailedToLoad": "ビデオの読み込みに失敗しました"
+    "videoFailedToLoad": "ビデオの読み込みに失敗しました",
+    "workflow": "ワークフロー"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -225,6 +226,16 @@
     },
     "systemLocations": "システムの場所",
     "unhandledError": "未知のエラー"
+  },
+  "issueReport": {
+    "contactFollowUp": "フォローアップのために私に連絡する",
+    "helpFix": "これを修正するのを助ける",
+    "notifyResolve": "解決したときに通知する",
+    "provideAdditionalDetails": "追加の詳細を提供する（オプション）",
+    "provideEmail": "あなたのメールアドレスを教えてください（オプション）",
+    "stackTrace": "スタックトレース",
+    "submitErrorReport": "エラーレポートを提出する（オプション）",
+    "systemStats": "システム統計"
   },
   "menu": {
     "autoQueue": "自動キュー",

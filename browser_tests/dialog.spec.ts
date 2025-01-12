@@ -44,6 +44,18 @@ test.describe('Execution error', () => {
     const executionError = comfyPage.page.locator('.comfy-error-report')
     await expect(executionError).toBeVisible()
   })
+
+  test('Can display Issue Report form', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('execution_error')
+    await comfyPage.queueButton.click()
+    await comfyPage.nextFrame()
+
+    await comfyPage.page.getByLabel('Help Fix This').click()
+    const issueReportForm = comfyPage.page.getByText(
+      'Submit Error Report (Optional)'
+    )
+    await expect(issueReportForm).toBeVisible()
+  })
 })
 
 test.describe('Missing models warning', () => {

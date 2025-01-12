@@ -132,7 +132,8 @@
     "systemInfo": "系统信息",
     "terminal": "终端",
     "upload": "上传",
-    "videoFailedToLoad": "视频加载失败"
+    "videoFailedToLoad": "视频加载失败",
+    "workflow": "工作流"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
@@ -225,6 +226,16 @@
     },
     "systemLocations": "系统位置",
     "unhandledError": "未知错误"
+  },
+  "issueReport": {
+    "contactFollowUp": "跟进联系我",
+    "helpFix": "帮助修复这个",
+    "notifyResolve": "解决时通知我",
+    "provideAdditionalDetails": "提供额外的详细信息（可选）",
+    "provideEmail": "提供您的电子邮件（可选）",
+    "stackTrace": "堆栈跟踪",
+    "submitErrorReport": "提交错误报告（可选）",
+    "systemStats": "系统状态"
   },
   "menu": {
     "autoQueue": "自动执行",

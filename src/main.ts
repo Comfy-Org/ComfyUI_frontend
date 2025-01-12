@@ -2,6 +2,7 @@
 import '@comfyorg/litegraph/style.css'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
+import * as Sentry from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
@@ -24,6 +25,17 @@ const ComfyUIPreset = definePreset(Aura, {
 
 const app = createApp(App)
 const pinia = createPinia()
+Sentry.init({
+  app,
+  dsn: __SENTRY_DSN__,
+  enabled: __SENTRY_ENABLED__,
+  release: __COMFYUI_FRONTEND_VERSION__,
+  integrations: [],
+  autoSessionTracking: false,
+  defaultIntegrations: false,
+  normalizeDepth: 8,
+  tracesSampleRate: 0
+})
 app.directive('tooltip', Tooltip)
 app
   .use(router)

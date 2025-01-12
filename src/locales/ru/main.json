@@ -132,7 +132,8 @@
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
     "upload": "Загрузить",
-    "videoFailedToLoad": "Не удалось загрузить видео"
+    "videoFailedToLoad": "Не удалось загрузить видео",
+    "workflow": "Рабочий процесс"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
@@ -225,6 +226,16 @@
     },
     "systemLocations": "Системные места",
     "unhandledError": "Неизвестная ошибка"
+  },
+  "issueReport": {
+    "contactFollowUp": "Свяжитесь со мной для уточнения",
+    "helpFix": "Помочь исправить это",
+    "notifyResolve": "Уведомить меня, когда проблема будет решена",
+    "provideAdditionalDetails": "Предоставьте дополнительные сведения (необязательно)",
+    "provideEmail": "Укажите вашу электронную почту (необязательно)",
+    "stackTrace": "Трассировка стека",
+    "submitErrorReport": "Отправить отчет об ошибке (необязательно)",
+    "systemStats": "Статистика системы"
   },
   "menu": {
     "autoQueue": "Автоочередь",

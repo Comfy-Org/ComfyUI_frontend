@@ -5,12 +5,20 @@
     :message="props.error.exception_message"
   />
   <div class="comfy-error-report">
-    <Button
-      v-show="!reportOpen"
-      :label="$t('g.showReport')"
-      @click="showReport"
-      text
-    />
+    <div class="flex gap-2 justify-center">
+      <Button
+        v-show="!reportOpen"
+        text
+        :label="$t('g.showReport')"
+        @click="showReport"
+      />
+      <Button
+        v-show="!sendReportOpen"
+        text
+        :label="$t('issueReport.helpFix')"
+        @click="showSendReport"
+      />
+    </div>
     <template v-if="reportOpen">
       <Divider />
       <ScrollPanel style="width: 100%; height: 400px; max-width: 80vw">
@@ -18,9 +26,12 @@
       </ScrollPanel>
       <Divider />
     </template>
-
+    <ReportIssuePanel
+      v-if="sendReportOpen"
+      error-type="graphExecutionError"
+      :extra-fields="[stackTraceField]"
+    />
     <div class="action-container">
-      <ReportIssueButton v-if="showSendError" :error="props.error" />
       <FindIssueButton
         :errorMessage="props.error.exception_message"
         :repoOwner="repoOwner"
@@ -41,16 +52,18 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import ReportIssueButton from '@/components/dialog/content/error/ReportIssueButton.vue'
 import { useCopyToClipboard } from '@/hooks/clipboardHooks'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'
-import { isElectron } from '@/utils/envUtil'
+import type { ReportField } from '@/types/issueReportTypes'
+
+import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const props = defineProps<{
   error: ExecutionErrorWsMessage
@@ -63,9 +76,24 @@ const reportOpen = ref(false)
 const showReport = () => {
   reportOpen.value = true
 }
-const showSendError = isElectron()
-
+const sendReportOpen = ref(false)
+const showSendReport = () => {
+  sendReportOpen.value = true
+}
 const toast = useToast()
+const { t } = useI18n()
+
+const stackTraceField = computed<ReportField>(() => {
+  return {
+    label: t('issueReport.stackTrace'),
+    value: 'StackTrace',
+    optIn: true,
+    data: {
+      nodeType: props.error.node_type,
+      stackTrace: props.error.traceback?.join('\n')
+    }
+  }
+})
 
 onMounted(async () => {
   try {
