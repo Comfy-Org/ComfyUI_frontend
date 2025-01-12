@@ -181,7 +181,7 @@
     },
     "settings": {
       "autoUpdate": "Automatic Updates",
-      "allowMetrics": "User Metrics",
+      "allowMetrics": "Usage Metrics",
       "autoUpdateDescription": "Automatically download updates when they become available. You will be notified before updates are installed.",
       "allowMetricsDescription": "Help improve ComfyUI by sending anonymous usage metrics. No personal information or workflow content will be collected.",
       "learnMoreAboutData": "Learn more about data collection",

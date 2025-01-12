@@ -30,7 +30,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       {
         id: 'Comfy-Desktop.SendStatistics',
         category: ['Comfy-Desktop', 'General', 'Send Statistics'],
-        name: 'Send anonymous user metrics',
+        name: 'Send anonymous usage metrics',
         type: 'boolean',
         defaultValue: true,
         onChange: onChangeRestartApp
