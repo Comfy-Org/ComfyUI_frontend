@@ -72,7 +72,7 @@
     "export": "Export",
     "workflow": "Workflow"
   },
-  "issueReport" : {
+  "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
     "provideEmail": "Give us your email (Optional)",
     "provideAdditionalDetails": "Provide additional details (optional)",
