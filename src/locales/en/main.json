@@ -279,7 +279,9 @@
     "closeTab": "Close Tab",
     "closeTabsToLeft": "Close Tabs to Left",
     "closeTabsToRight": "Close Tabs to Right",
-    "closeOtherTabs": "Close Other Tabs"
+    "closeOtherTabs": "Close Other Tabs",
+    "addToBookmarks": "Add to Bookmarks",
+    "removeFromBookmarks": "Remove from Bookmarks"
   },
   "templateWorkflows": {
     "title": "Get Started with a Template",
