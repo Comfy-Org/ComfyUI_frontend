@@ -2,9 +2,7 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "Автоматически проверять обновления"
   },
-  "Comfy-Desktop_SendStatistics": {
-    "name": "Отправлять анонимные отчеты о сбоях"
-  },
+
   "Comfy-Desktop_WindowStyle": {
     "name": "Стиль окна",
     "options": {

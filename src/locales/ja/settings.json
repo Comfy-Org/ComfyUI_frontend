@@ -2,9 +2,7 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "自動的に更新を確認する"
   },
-  "Comfy-Desktop_SendStatistics": {
-    "name": "匿名のクラッシュレポートを送信する"
-  },
+
   "Comfy-Desktop_WindowStyle": {
     "name": "ウィンドウスタイル",
     "options": {

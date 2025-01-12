@@ -2,9 +2,7 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "자동 업데이트 확인"
   },
-  "Comfy-Desktop_SendStatistics": {
-    "name": "익명으로 충돌 보고서 전송"
-  },
+
   "Comfy-Desktop_WindowStyle": {
     "name": "창 스타일",
     "options": {

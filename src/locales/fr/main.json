@@ -206,8 +206,8 @@
     "pathValidationFailed": "Échec de la validation du chemin",
     "selectItemsToMigrate": "Sélectionnez les éléments à migrer",
     "settings": {
-      "allowMetrics": "Rapports de plantage",
-      "allowMetricsDescription": "Aidez à améliorer ComfyUI en envoyant des rapports de plantage anonymes. Aucune information personnelle ou contenu de flux de travail ne sera collecté. Cela peut être désactivé à tout moment dans le menu des paramètres.",
+      
+      
       "autoUpdate": "Mises à jour automatiques",
       "autoUpdateDescription": "Téléchargez et installez automatiquement les mises à jour lorsqu'elles deviennent disponibles. Vous serez toujours informé avant l'installation des mises à jour.",
       "dataCollectionDialog": {

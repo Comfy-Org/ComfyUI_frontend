@@ -2,9 +2,7 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "Vérifier automatiquement les mises à jour"
   },
-  "Comfy-Desktop_SendStatistics": {
-    "name": "Envoyer des rapports de plantage anonymes"
-  },
+
   "Comfy-Desktop_WindowStyle": {
     "name": "Style de fenêtre",
     "options": {

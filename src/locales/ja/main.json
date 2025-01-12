@@ -206,8 +206,8 @@
     "pathValidationFailed": "パスの検証に失敗しました",
     "selectItemsToMigrate": "移行する項目を選択",
     "settings": {
-      "allowMetrics": "クラッシュレポート",
-      "allowMetricsDescription": "ComfyUIの改善に協力してください。匿名のクラッシュレポートを送信します。個人情報やワークフロー内容は収集されません。この設定はいつでも無効にできます。",
+      
+      
       "autoUpdate": "自動更新",
       "autoUpdateDescription": "更新が利用可能になると、自動的にダウンロードおよびインストールを行います。インストール前に通知が表示されます。",
       "dataCollectionDialog": {
