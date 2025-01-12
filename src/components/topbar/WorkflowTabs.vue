@@ -170,21 +170,17 @@ const handleWheel = (event: WheelEvent) => {
 </script>
 
 <style scoped>
-:deep(.p-togglebutton::before) {
-  @apply hidden;
-}
-
 :deep(.p-togglebutton) {
   @apply p-0 bg-transparent rounded-none flex-shrink-0 relative;
+}
+
+:deep(.p-togglebutton::before) {
+  @apply hidden;
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
   border: 0;
   border-bottom: 1px solid var(--p-button-text-primary-color);
-  height: 100%;
-}
-
-:deep(.p-scrollpanel-content) {
   height: 100%;
 }
 
@@ -203,6 +199,10 @@ const handleWheel = (event: WheelEvent) => {
 
 :deep(.p-togglebutton) .close-button {
   @apply invisible;
+}
+
+:deep(.p-scrollpanel-content) {
+  height: 100%;
 }
 
 /* Scrollbar half opacity to avoid blocking the active tab bottom border */
