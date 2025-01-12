@@ -205,4 +205,8 @@ const handleWheel = (event: WheelEvent) => {
 :deep(.p-scrollpanel:active .p-scrollpanel-bar) {
   opacity: 0.5;
 }
+
+:deep(.p-selectbutton) {
+  border-radius: 0;
+}
 </style>
