@@ -172,14 +172,23 @@ const handleWheel = (event: WheelEvent) => {
 <style scoped>
 :deep(.p-togglebutton) {
   @apply p-0 bg-transparent rounded-none flex-shrink-0 relative;
+  border: 0px;
+  border-right: 1px solid var(--border-color);
 }
 
 :deep(.p-togglebutton::before) {
   @apply hidden;
 }
 
+:deep(.p-togglebutton:first-child) {
+  border-left: 1px solid var(--border-color);
+}
+
+:deep(.p-togglebutton:not(:first-child)) {
+  border-left: none;
+}
+
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  border: 0;
   border-bottom: 1px solid var(--p-button-text-primary-color);
   height: 100%;
 }
