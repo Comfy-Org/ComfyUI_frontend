@@ -1,5 +1,5 @@
 <template>
-  <div class="workflow-tabs-container flex flex-row max-w-full">
+  <div class="workflow-tabs-container flex flex-row max-w-full h-full">
     <ScrollPanel
       class="overflow-hidden no-drag"
       :pt:content="{
@@ -181,6 +181,11 @@ const handleWheel = (event: WheelEvent) => {
 :deep(.p-togglebutton.p-togglebutton-checked) {
   border: 0;
   border-bottom: 1px solid var(--p-button-text-primary-color);
+  height: 100%;
+}
+
+:deep(.p-scrollpanel-content) {
+  height: 100%;
 }
 
 :deep(.p-togglebutton:not(.p-togglebutton-checked)) {
@@ -208,5 +213,6 @@ const handleWheel = (event: WheelEvent) => {
 
 :deep(.p-selectbutton) {
   border-radius: 0;
+  height: 100%;
 }
 </style>
