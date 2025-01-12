@@ -27,6 +27,8 @@ jobs:
       - name: Build project
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          CI: false
+          NODE_ENV: production
         run: |
           npm ci
           npm run build
