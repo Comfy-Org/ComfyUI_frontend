@@ -50,7 +50,7 @@ import { useI18n } from 'vue-i18n'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+import { ComfyWorkflow, useWorkflowBookmarkStore } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -67,6 +67,7 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
+const workflowBookmarkStore = useWorkflowBookmarkStore()
 const rightClickedTab = ref<WorkflowOption>(null)
 const menu = ref()
 
@@ -154,6 +155,13 @@ const contextMenuItems = computed(() => {
           ...options.value.slice(0, index)
         ]),
       disabled: options.value.length <= 1
+    },
+    {
+      label: workflowBookmarkStore.isBookmarked(tab.workflow.path)
+        ? t('tabMenu.removeFromBookmarks')
+        : t('tabMenu.addToBookmarks'),
+      command: () => workflowBookmarkStore.toggleBookmarked(tab.workflow.path),
+      disabled: tab.workflow.isTemporary
     }
   ]
 })
