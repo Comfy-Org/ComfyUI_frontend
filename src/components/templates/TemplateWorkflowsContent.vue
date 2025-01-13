@@ -48,21 +48,9 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWorkflowTemplatesStore } from '@/stores/workflowTemplatesStore'
-
-interface WorkflowTemplatesTab {
-  moduleName: string
-  title: string
-  templates: string[]
-}
+import type { WorkflowTemplates } from '@/types/workflowTemplateTypes'
 
 const { t } = useI18n()
-
-//These default templates are provided by the frontend
-const comfyUITemplates: WorkflowTemplatesTab = {
-  moduleName: 'default',
-  title: 'ComfyUI',
-  templates: ['default', 'image2image', 'upscale', 'flux_schnell']
-}
 
 const responsiveOptions = ref([
   {
@@ -83,25 +71,20 @@ const responsiveOptions = ref([
 ])
 
 const workflowTemplatesStore = useWorkflowTemplatesStore()
-const selectedTab = ref<WorkflowTemplatesTab>(comfyUITemplates)
+const selectedTab = ref<WorkflowTemplates | null>(
+  workflowTemplatesStore?.defaultTemplate
+)
 const workflowLoading = ref<string | null>(null)
 
-const tabs = computed<WorkflowTemplatesTab[]>(() => {
-  return [
-    comfyUITemplates,
-    ...Object.entries(workflowTemplatesStore.items).map(([key, value]) => ({
-      moduleName: key,
-      title: key,
-      templates: value
-    }))
-  ]
-})
+const tabs = computed<WorkflowTemplates[]>(
+  () => workflowTemplatesStore.templates
+)
 
 onMounted(async () => {
   await workflowTemplatesStore.loadWorkflowTemplates()
 })
 
-const handleTabSelection = (selection: WorkflowTemplatesTab | null) => {
+const handleTabSelection = (selection: WorkflowTemplates | null) => {
   //Listbox allows deselecting so this special case is ignored here
   if (selection !== selectedTab.value && selection !== null)
     selectedTab.value = selection
