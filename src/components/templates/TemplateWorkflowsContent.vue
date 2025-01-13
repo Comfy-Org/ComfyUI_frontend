@@ -13,6 +13,7 @@
         scroll-height="auto"
         class="overflow-y-auto w-64 h-full"
         listStyle="max-height:unset"
+        :disabled="!workflowTemplatesStore.isLoaded"
       />
     </div>
     <Carousel
@@ -24,7 +25,7 @@
       :key="selectedTab.moduleName"
     >
       <template #item="slotProps">
-        <div @click="loadWorkflow(slotProps.data)">
+        <div @click="loadWorkflow(slotProps.data)" class="p-2">
           <TemplateWorkflowCard
             :moduleName="selectedTab.moduleName"
             :workflowName="slotProps.data"
