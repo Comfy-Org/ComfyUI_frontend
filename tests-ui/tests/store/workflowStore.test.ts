@@ -161,6 +161,102 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('openWorkflowsInBackground', () => {
+    it('should open workflows in the background', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
+
+      const workflowA = store.getWorkflowByPath('workflows/a.json')!
+      const workflowB = store.getWorkflowByPath('workflows/b.json')!
+      const workflowC = store.getWorkflowByPath('workflows/c.json')!
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+      await store.openWorkflow(workflowA)
+
+      store.openWorkflowsInBackground({
+        left: [workflowB.path],
+        right: [workflowC.path]
+      })
+
+      expect(store.isOpen(workflowA)).toBe(true)
+      expect(store.isOpen(workflowB)).toBe(true)
+      expect(store.isOpen(workflowC)).toBe(true)
+    })
+
+    it('should open workflows without changing the active workflow', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
+
+      const workflowA = store.getWorkflowByPath('workflows/a.json')!
+      const workflowB = store.getWorkflowByPath('workflows/b.json')!
+      const workflowC = store.getWorkflowByPath('workflows/c.json')!
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+      await store.openWorkflow(workflowA)
+
+      store.openWorkflowsInBackground({
+        right: [workflowB.path]
+      })
+
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+      expect(store.isOpen(workflowA)).toBe(true)
+
+      store.openWorkflowsInBackground({
+        left: [workflowC.path]
+      })
+
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+      expect(store.isOpen(workflowA)).toBe(true)
+    })
+
+    it('should open workflows to the right of the active workflow', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+
+      const workflowA = store.getWorkflowByPath('workflows/a.json')!
+      const workflowB = store.getWorkflowByPath('workflows/b.json')!
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+      await store.openWorkflow(workflowA)
+
+      store.openWorkflowsInBackground({
+        right: [workflowB.path]
+      })
+
+      const openWorkflowPaths = store.openWorkflows.map((w) => w.path)
+      expect(openWorkflowPaths).toEqual([workflowA.path, workflowB.path])
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+      expect(store.isOpen(workflowA)).toBe(true)
+      expect(store.isOpen(workflowB)).toBe(true)
+    })
+
+    it('should open workflows to the left of the active workflow', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+
+      const workflowA = store.getWorkflowByPath('workflows/a.json')!
+      const workflowB = store.getWorkflowByPath('workflows/b.json')!
+
+      ;(api.getUserData as jest.Mock).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      })
+      await store.openWorkflow(workflowA)
+
+      store.openWorkflowsInBackground({
+        left: [workflowB.path]
+      })
+
+      const openWorkflowPaths = store.openWorkflows.map((w) => w.path)
+      expect(openWorkflowPaths).toEqual([workflowB.path, workflowA.path])
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+      expect(store.isOpen(workflowA)).toBe(true)
+      expect(store.isOpen(workflowB)).toBe(true)
+    })
+  })
+
   describe('renameWorkflow', () => {
     it('should rename workflow and update bookmarks', async () => {
       const workflow = store.createTemporary('dir/test.json')
