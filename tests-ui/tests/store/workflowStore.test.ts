@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { api } from '@/scripts/api'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import {
+  ComfyWorkflow,
   LoadedComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
@@ -162,98 +163,93 @@ describe('useWorkflowStore', () => {
   })
 
   describe('openWorkflowsInBackground', () => {
-    it('should open workflows in the background', async () => {
-      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
+    let workflowA: ComfyWorkflow
+    let workflowB: ComfyWorkflow
+    let workflowC: ComfyWorkflow
 
-      const workflowA = store.getWorkflowByPath('workflows/a.json')!
-      const workflowB = store.getWorkflowByPath('workflows/b.json')!
-      const workflowC = store.getWorkflowByPath('workflows/c.json')!
+    const openWorkflowPaths = () =>
+      store.openWorkflows.filter((w) => store.isOpen(w)).map((w) => w.path)
+
+    beforeEach(async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
+      workflowA = store.getWorkflowByPath('workflows/a.json')!
+      workflowB = store.getWorkflowByPath('workflows/b.json')!
+      workflowC = store.getWorkflowByPath('workflows/c.json')!
       ;(api.getUserData as jest.Mock).mockResolvedValue({
         status: 200,
         text: () => Promise.resolve(defaultGraphJSON)
       })
-      await store.openWorkflow(workflowA)
+    })
 
+    it('should open workflows adjacent to the active workflow', async () => {
+      await store.openWorkflow(workflowA)
       store.openWorkflowsInBackground({
         left: [workflowB.path],
         right: [workflowC.path]
       })
-
-      expect(store.isOpen(workflowA)).toBe(true)
-      expect(store.isOpen(workflowB)).toBe(true)
-      expect(store.isOpen(workflowC)).toBe(true)
+      expect(openWorkflowPaths()).toEqual([
+        workflowB.path,
+        workflowA.path,
+        workflowC.path
+      ])
     })
 
-    it('should open workflows without changing the active workflow', async () => {
-      await syncRemoteWorkflows(['a.json', 'b.json', 'c.json'])
-
-      const workflowA = store.getWorkflowByPath('workflows/a.json')!
-      const workflowB = store.getWorkflowByPath('workflows/b.json')!
-      const workflowC = store.getWorkflowByPath('workflows/c.json')!
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      })
+    it('should not change the active workflow', async () => {
       await store.openWorkflow(workflowA)
-
       store.openWorkflowsInBackground({
+        left: [workflowC.path],
         right: [workflowB.path]
       })
-
-      expect(store.activeWorkflow?.path).toBe(workflowA.path)
-      expect(store.isOpen(workflowA)).toBe(true)
-
-      store.openWorkflowsInBackground({
-        left: [workflowC.path]
-      })
-
-      expect(store.activeWorkflow?.path).toBe(workflowA.path)
-      expect(store.isOpen(workflowA)).toBe(true)
+      expect(store.activeWorkflow).not.toBeUndefined()
+      expect(store.activeWorkflow!.path).toBe(workflowA.path)
     })
 
-    it('should open workflows to the right of the active workflow', async () => {
-      await syncRemoteWorkflows(['a.json', 'b.json'])
-
-      const workflowA = store.getWorkflowByPath('workflows/a.json')!
-      const workflowB = store.getWorkflowByPath('workflows/b.json')!
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      })
-      await store.openWorkflow(workflowA)
-
+    it('should open workflows when none are active', async () => {
+      expect(store.openWorkflows.length).toBe(0)
       store.openWorkflowsInBackground({
+        left: [workflowA.path],
         right: [workflowB.path]
       })
-
-      const openWorkflowPaths = store.openWorkflows.map((w) => w.path)
-      expect(openWorkflowPaths).toEqual([workflowA.path, workflowB.path])
-      expect(store.activeWorkflow?.path).toBe(workflowA.path)
-      expect(store.isOpen(workflowA)).toBe(true)
-      expect(store.isOpen(workflowB)).toBe(true)
+      expect(openWorkflowPaths()).toEqual([workflowA.path, workflowB.path])
     })
 
-    it('should open workflows to the left of the active workflow', async () => {
-      await syncRemoteWorkflows(['a.json', 'b.json'])
-
-      const workflowA = store.getWorkflowByPath('workflows/a.json')!
-      const workflowB = store.getWorkflowByPath('workflows/b.json')!
-
-      ;(api.getUserData as jest.Mock).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
+    it('should not open duplicate workflows', async () => {
+      store.openWorkflowsInBackground({
+        left: [workflowA.path, workflowB.path, workflowA.path],
+        right: [workflowB.path, workflowA.path, workflowB.path]
       })
+      expect(openWorkflowPaths()).toEqual([workflowA.path, workflowB.path])
+    })
+
+    it('should not open workflow that is already open', async () => {
+      await store.openWorkflow(workflowA)
+      store.openWorkflowsInBackground({
+        left: [workflowA.path]
+      })
+      expect(openWorkflowPaths()).toEqual([workflowA.path])
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+    })
+
+    it('should ignore invalid or deleted workflow paths', async () => {
+      await store.openWorkflow(workflowA)
+      store.openWorkflowsInBackground({
+        left: ['workflows/invalid::$-path.json'],
+        right: ['workflows/deleted-since-last-session.json']
+      })
+      expect(openWorkflowPaths()).toEqual([workflowA.path])
+      expect(store.activeWorkflow?.path).toBe(workflowA.path)
+    })
+
+    it('should do nothing when given an empty argument', async () => {
       await store.openWorkflow(workflowA)
 
-      store.openWorkflowsInBackground({
-        left: [workflowB.path]
-      })
+      store.openWorkflowsInBackground({})
+      expect(openWorkflowPaths()).toEqual([workflowA.path])
 
-      const openWorkflowPaths = store.openWorkflows.map((w) => w.path)
-      expect(openWorkflowPaths).toEqual([workflowB.path, workflowA.path])
+      store.openWorkflowsInBackground({ left: [], right: [] })
+      expect(openWorkflowPaths()).toEqual([workflowA.path])
+
       expect(store.activeWorkflow?.path).toBe(workflowA.path)
-      expect(store.isOpen(workflowA)).toBe(true)
-      expect(store.isOpen(workflowB)).toBe(true)
     })
   })
 

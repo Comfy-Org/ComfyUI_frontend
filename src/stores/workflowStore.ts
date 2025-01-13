@@ -242,10 +242,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       typeof path === 'string' && path in workflowLookup.value
 
     openWorkflowPaths.value = _.union(
-      left.filter(isValidPath),
+      left,
       openWorkflowPaths.value,
-      right.filter(isValidPath)
-    )
+      right
+    ).filter(isValidPath)
   }
 
   /**

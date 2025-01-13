@@ -57,7 +57,7 @@ import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { setStorageValue } from '@/scripts/utils'
+import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -95,12 +95,12 @@ const canvasMenuEnabled = computed(() =>
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 
-const getStorageValue = (key: string) => {
-  const value = localStorage.getItem(key)
-  return value ? JSON.parse(value) : null
-}
-const storedWorkflows = getStorageValue('Comfy.OpenWorkflowsPaths')
-const storedActiveIndex = getStorageValue('Comfy.ActiveWorkflowIndex')
+const storedWorkflows = JSON.parse(
+  getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
+)
+const storedActiveIndex = JSON.parse(
+  getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
+)
 const restoreState = computed<{ paths: string[]; activeIndex: number }>(() => {
   const store = workspaceStore?.workflow
   if (!store) return { paths: [], activeIndex: -1 }
@@ -392,11 +392,8 @@ onMounted(async () => {
     })
 
   watch(restoreState, ({ paths, activeIndex }) => {
-    localStorage.setItem('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
-    localStorage.setItem(
-      'Comfy.ActiveWorkflowIndex',
-      JSON.stringify(activeIndex)
-    )
+    setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
+    setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
   })
 
   // Start watching for locale change after the initial value is loaded.
