@@ -225,13 +225,27 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @param paths - The workflows to open, specified as:
    *   - `left`: Workflows to be added to the left.
    *   - `right`: Workflows to be added to the right.
+   *
+   * Invalid paths (non-strings or paths not found in `workflowLookup.value`)
+   * will be ignored. Duplicate paths are automatically removed.
    */
   const openWorkflowsInBackground = (paths: {
     left?: string[]
     right?: string[]
   }) => {
     const { left = [], right = [] } = paths
-    openWorkflowPaths.value = _.union(left, openWorkflowPaths.value, right)
+    if (!left.length && !right.length) return
+
+    const isValidPath = (
+      path: unknown
+    ): path is keyof typeof workflowLookup.value =>
+      typeof path === 'string' && path in workflowLookup.value
+
+    openWorkflowPaths.value = _.union(
+      left.filter(isValidPath),
+      openWorkflowPaths.value,
+      right.filter(isValidPath)
+    )
   }
 
   /**
