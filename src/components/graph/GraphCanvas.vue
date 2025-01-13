@@ -101,15 +101,18 @@ const storedWorkflows = JSON.parse(
 const storedActiveIndex = JSON.parse(
   getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
 )
+const openWorkflows = computed(() => workspaceStore?.workflow?.openWorkflows)
+const activeWorkflow = computed(() => workspaceStore?.workflow?.activeWorkflow)
 const restoreState = computed<{ paths: string[]; activeIndex: number }>(() => {
-  const store = workspaceStore?.workflow
-  if (!store) return { paths: [], activeIndex: -1 }
+  if (!openWorkflows.value || !activeWorkflow.value) {
+    return { paths: [], activeIndex: -1 }
+  }
 
-  const paths = store.openWorkflows
+  const paths = openWorkflows.value
     .filter((workflow) => workflow?.isPersisted && !workflow.isModified)
     .map((workflow) => workflow.path)
-  const activeIndex = store.openWorkflows.findIndex(
-    (workflow) => workflow.path === store.activeWorkflow?.path
+  const activeIndex = openWorkflows.value.findIndex(
+    (workflow) => workflow.path === activeWorkflow.value?.path
   )
 
   return { paths, activeIndex }
