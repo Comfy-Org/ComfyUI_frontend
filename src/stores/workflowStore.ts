@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
 
@@ -130,6 +131,10 @@ export interface WorkflowStore {
   openWorkflows: LoadedComfyWorkflow[]
   openedWorkflowIndexShift: (shift: number) => LoadedComfyWorkflow | null
   openWorkflow: (workflow: ComfyWorkflow) => Promise<LoadedComfyWorkflow>
+  openWorkflowsInBackground: (paths: {
+    left?: string[]
+    right?: string[]
+  }) => void
   isOpen: (workflow: ComfyWorkflow) => boolean
   isBusy: boolean
   closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>
@@ -212,6 +217,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
+
+  /**
+   * Add paths to the list of open workflow paths without loading the files
+   * or changing the active workflow.
+   *
+   * @param paths - The workflows to open, specified as:
+   *   - `left`: Workflows to be added to the left.
+   *   - `right`: Workflows to be added to the right.
+   */
+  const openWorkflowsInBackground = (paths: {
+    left?: string[]
+    right?: string[]
+  }) => {
+    const { left = [], right = [] } = paths
+    openWorkflowPaths.value = _.union(left, openWorkflowPaths.value, right)
+  }
 
   /**
    * Set the workflow as the active workflow.
@@ -389,6 +410,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     openWorkflows,
     openedWorkflowIndexShift,
     openWorkflow,
+    openWorkflowsInBackground,
     isOpen,
     isBusy,
     closeWorkflow,

@@ -176,10 +176,6 @@ export const useWorkflowService = () => {
     workflow: ComfyWorkflow,
     options: { warnIfUnsaved: boolean } = { warnIfUnsaved: true }
   ): Promise<boolean> => {
-    if (!workflow.isLoaded) {
-      return true
-    }
-
     if (workflow.isModified && options.warnIfUnsaved) {
       const confirmed = await dialogService.confirm({
         title: t('sideToolbar.workflowTab.dirtyCloseTitle'),

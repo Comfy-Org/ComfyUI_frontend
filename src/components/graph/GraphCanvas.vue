@@ -95,6 +95,26 @@ const canvasMenuEnabled = computed(() =>
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 
+const getStorageValue = (key: string) => {
+  const value = localStorage.getItem(key)
+  return value ? JSON.parse(value) : null
+}
+const storedWorkflows = getStorageValue('Comfy.OpenWorkflowsPaths')
+const storedActiveIndex = getStorageValue('Comfy.ActiveWorkflowIndex')
+const restoreState = computed<{ paths: string[]; activeIndex: number }>(() => {
+  const store = workspaceStore?.workflow
+  if (!store) return { paths: [], activeIndex: -1 }
+
+  const paths = store.openWorkflows
+    .filter((workflow) => workflow?.isPersisted && !workflow.isModified)
+    .map((workflow) => workflow.path)
+  const activeIndex = store.openWorkflows.findIndex(
+    (workflow) => workflow.path === store.activeWorkflow?.path
+  )
+
+  return { paths, activeIndex }
+})
+
 watchEffect(() => {
   const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
   if (canvasStore.canvas) {
@@ -363,6 +383,21 @@ onMounted(async () => {
   colorPaletteStore.customPalettes = settingStore.get(
     'Comfy.CustomColorPalettes'
   )
+
+  const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
+  if (isRestorable)
+    workflowStore.openWorkflowsInBackground({
+      left: storedWorkflows.slice(0, storedActiveIndex),
+      right: storedWorkflows.slice(storedActiveIndex)
+    })
+
+  watch(restoreState, ({ paths, activeIndex }) => {
+    localStorage.setItem('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
+    localStorage.setItem(
+      'Comfy.ActiveWorkflowIndex',
+      JSON.stringify(activeIndex)
+    )
+  })
 
   // Start watching for locale change after the initial value is loaded.
   watch(
