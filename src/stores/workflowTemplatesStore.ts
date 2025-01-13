@@ -11,7 +11,7 @@ export const useWorkflowTemplatesStore = defineStore(
   () => {
     const customTemplates = ref<{ [moduleName: string]: string[] }>({})
     const isLoaded = ref(false)
-    const defaultTemplate = CORE_TEMPLATES[0]
+    const defaultTemplate: WorkflowTemplates = CORE_TEMPLATES[0]
 
     const templates = computed<WorkflowTemplates[]>(() => [
       ...CORE_TEMPLATES,

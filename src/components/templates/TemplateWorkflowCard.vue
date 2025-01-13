@@ -8,9 +8,11 @@
           <img
             v-if="!imageError"
             :src="
-              props.moduleName === 'default'
-                ? `templates/${props.workflowName}.jpg`
-                : `api/workflow_templates/${props.moduleName}/${props.workflowName}.jpg`
+              props.type === 'video'
+                ? `templates/${props.workflowName}.webp`
+                : props.moduleName === 'default'
+                  ? `templates/${props.workflowName}.jpg`
+                  : `api/workflow_templates/${props.moduleName}/${props.workflowName}.jpg`
             "
             @error="imageError = true"
             class="w-64 h-64 rounded-t-lg object-cover thumbnail"
@@ -58,7 +60,10 @@ const props = defineProps<{
   moduleName: string
   workflowName: string
   loading: boolean
+  type?: string
 }>()
+
+const { type = 'image' } = props
 
 const imageError = ref(false)
 </script>
