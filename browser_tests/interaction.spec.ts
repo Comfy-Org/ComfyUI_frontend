@@ -616,85 +616,64 @@ test.describe('Load workflow', () => {
     )
   })
 
-  test.describe('Restore inactive workflows on reload', () => {
-    const uniqueFilename = (extension?: string) =>
+  test.describe('Restore all open workflows on reload', () => {
+    let workflowA: string
+    let workflowB: string
+
+    const generateUniqueFilename = (extension = '') =>
       `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${extension}`
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+
+      workflowA = generateUniqueFilename()
+      await comfyPage.menu.topbar.saveWorkflow(workflowA)
+      workflowB = generateUniqueFilename()
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+      await comfyPage.menu.topbar.saveWorkflow(workflowB)
+
+      // Wait for localStorage to persist the workflow paths before reloading
+      await comfyPage.page.waitForFunction(
+        () => !!window.localStorage.getItem('Comfy.OpenWorkflowsPaths')
+      )
+      await comfyPage.setup({ clearStorage: false })
     })
 
-    test('Restores opened workflow topbar tabs on reload', async ({
+    test('Restores topbar workflow tabs after reload', async ({
       comfyPage
     }) => {
       await comfyPage.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
+      const tabs = await comfyPage.menu.topbar.getTabNames()
+      const activeWorkflowName = await comfyPage.menu.topbar.getActiveTabName()
 
-      const uniqueId1 = uniqueFilename()
-      await comfyPage.menu.topbar.saveWorkflow(uniqueId1)
-
-      const uniqueId2 = uniqueFilename()
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
-      await comfyPage.menu.topbar.saveWorkflow(uniqueId2)
-
-      await comfyPage.page.waitForFunction(
-        () => !!window.localStorage.getItem('Comfy.OpenWorkflowsPaths')
-      )
-      await comfyPage.setup({ clearStorage: false })
-      const tabNames = await comfyPage.menu.topbar.getTabNames()
-
-      // Verify restored workflows in topbar tabs
-      expect(tabNames).toEqual(expect.arrayContaining([uniqueId1, uniqueId2]))
-
-      // Verify order is restored
-      expect(tabNames.indexOf(uniqueId1)).toBeLessThan(
-        tabNames.indexOf(uniqueId2)
-      )
-
-      // Verify active tab focus is restored
-      const activeTabName = await comfyPage.menu.topbar.getActiveTabName()
-      expect(activeTabName).toEqual(uniqueId2)
+      expect(tabs).toEqual(expect.arrayContaining([workflowA, workflowB]))
+      expect(tabs.indexOf(workflowA)).toBeLessThan(tabs.indexOf(workflowB))
+      expect(activeWorkflowName).toEqual(workflowB)
     })
 
-    test('Restores opened workflows in sidebar on reload', async ({
-      comfyPage
-    }) => {
+    test('Restores sidebar workflows after reload', async ({ comfyPage }) => {
       await comfyPage.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Sidebar'
       )
-
-      const uniqueId1 = uniqueFilename('.json')
-      await comfyPage.menu.topbar.saveWorkflow(uniqueId1)
-
-      const uniqueId2 = uniqueFilename('.json')
-      await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
-      await comfyPage.menu.topbar.saveWorkflow(uniqueId2)
-
-      await comfyPage.page.waitForFunction(
-        () => !!window.localStorage.getItem('Comfy.OpenWorkflowsPaths')
-      )
-      await comfyPage.setup({ clearStorage: false })
       await comfyPage.menu.workflowsTab.open()
-      const openedWorkflowNames =
+      const openWorkflows =
         await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()
-
-      // Verify restored workflows in sidebar
-      expect(openedWorkflowNames).toEqual(
-        expect.arrayContaining([uniqueId1, uniqueId2])
-      )
-
-      // Verify oder is restored
-      expect(openedWorkflowNames.indexOf(uniqueId1)).toBeLessThan(
-        openedWorkflowNames.indexOf(uniqueId2)
-      )
-
-      // Verify active tab focus is restored
-      const activeTabName =
+      const activeWorkflowName =
         await comfyPage.menu.workflowsTab.getActiveWorkflowName()
-      expect(activeTabName).toEqual(uniqueId2)
+      const workflowPathA = `${workflowA}.json`
+      const workflowPathB = `${workflowB}.json`
+
+      expect(openWorkflows).toEqual(
+        expect.arrayContaining([workflowPathA, workflowPathB])
+      )
+      expect(openWorkflows.indexOf(workflowPathA)).toBeLessThan(
+        openWorkflows.indexOf(workflowPathB)
+      )
+      expect(activeWorkflowName).toEqual(workflowPathB)
     })
   })
 })

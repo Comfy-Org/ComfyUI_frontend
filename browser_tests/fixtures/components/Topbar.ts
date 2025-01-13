@@ -9,6 +9,12 @@ export class Topbar {
       .allInnerTexts()
   }
 
+  async getActiveTabName(): Promise<string> {
+    return this.page
+      .locator('.workflow-tabs .p-togglebutton-checked')
+      .innerText()
+  }
+
   async openSubmenuMobile() {
     await this.page.locator('.p-menubar-mobile .p-menubar-button').click()
   }
