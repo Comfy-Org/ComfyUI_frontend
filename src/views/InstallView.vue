@@ -103,6 +103,10 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  InstallOptions,
+  TorchDeviceType
+} from '@comfyorg/comfyui-electron-types'
 import Button from 'primevue/button'
 import Step from 'primevue/step'
 import StepList from 'primevue/steplist'
@@ -117,10 +121,6 @@ import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
 import { electronAPI } from '@/utils/envUtil'
-import type {
-  InstallOptions,
-  TorchDeviceType
-} from '@comfyorg/comfyui-electron-types'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const device = ref<TorchDeviceType>(null)
