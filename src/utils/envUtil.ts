@@ -4,11 +4,11 @@ import {
 } from '@comfyorg/comfyui-electron-types'
 
 export function isElectron() {
-  return 'electronAPI' in window && window.electronAPI !== undefined
+  return globalThis.electronAPI !== undefined
 }
 
 export function electronAPI() {
-  return (window as any).electronAPI as ElectronAPI
+  return globalThis.electronAPI as ElectronAPI
 }
 
 export function showNativeMenu(options?: ElectronContextMenuOptions) {
