@@ -24,7 +24,7 @@
       :key="selectedTab.moduleName"
     >
       <template #item="slotProps">
-        <div @click="loadWorkflow(slotProps.data)">
+        <div @click="loadWorkflow(slotProps.data)" class="p-2">
           <TemplateWorkflowCard
             :moduleName="selectedTab.moduleName"
             :workflowName="slotProps.data"

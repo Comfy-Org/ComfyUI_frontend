@@ -3,7 +3,7 @@
     <template #header>
       <div class="flex items-center justify-center">
         <div
-          class="relative overflow-hidden rounded-lg cursor-pointer w-64 h-64"
+          class="relative overflow-hidden rounded-t-lg cursor-pointer w-64 h-64"
         >
           <img
             v-if="!imageError"
@@ -13,7 +13,7 @@
                 : `api/workflow_templates/${props.moduleName}/${props.workflowName}.jpg`
             "
             @error="imageError = true"
-            class="w-64 h-64 rounded-lg object-cover thumbnail"
+            class="w-64 h-64 rounded-t-lg object-cover thumbnail"
           />
           <div v-else class="w-64 h-64 content-center text-center">
             <i class="pi pi-file" style="font-size: 4rem"></i>
