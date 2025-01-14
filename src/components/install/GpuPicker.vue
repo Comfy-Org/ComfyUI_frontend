@@ -130,12 +130,13 @@
 </template>
 
 <script setup lang="ts">
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { TorchDeviceType, electronAPI } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
 
 const { t } = useI18n()
 
