@@ -57,7 +57,7 @@ import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { setStorageValue } from '@/scripts/utils'
+import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -94,6 +94,29 @@ const canvasMenuEnabled = computed(() =>
   settingStore.get('Comfy.Graph.CanvasMenu')
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
+
+const storedWorkflows = JSON.parse(
+  getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
+)
+const storedActiveIndex = JSON.parse(
+  getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
+)
+const openWorkflows = computed(() => workspaceStore?.workflow?.openWorkflows)
+const activeWorkflow = computed(() => workspaceStore?.workflow?.activeWorkflow)
+const restoreState = computed<{ paths: string[]; activeIndex: number }>(() => {
+  if (!openWorkflows.value || !activeWorkflow.value) {
+    return { paths: [], activeIndex: -1 }
+  }
+
+  const paths = openWorkflows.value
+    .filter((workflow) => workflow?.isPersisted && !workflow.isModified)
+    .map((workflow) => workflow.path)
+  const activeIndex = openWorkflows.value.findIndex(
+    (workflow) => workflow.path === activeWorkflow.value?.path
+  )
+
+  return { paths, activeIndex }
+})
 
 watchEffect(() => {
   const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
@@ -363,6 +386,18 @@ onMounted(async () => {
   colorPaletteStore.customPalettes = settingStore.get(
     'Comfy.CustomColorPalettes'
   )
+
+  const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
+  if (isRestorable)
+    workflowStore.openWorkflowsInBackground({
+      left: storedWorkflows.slice(0, storedActiveIndex),
+      right: storedWorkflows.slice(storedActiveIndex)
+    })
+
+  watch(restoreState, ({ paths, activeIndex }) => {
+    setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
+    setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
+  })
 
   // Start watching for locale change after the initial value is loaded.
   watch(
