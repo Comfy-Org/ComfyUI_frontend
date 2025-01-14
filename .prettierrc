@@ -6,5 +6,13 @@
   "printWidth": 80,
   "importOrder": ["^@core/(.*)$", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]"],
   "importOrderSeparation": true,
-  "importOrderSortSpecifiers": true
+  "importOrderSortSpecifiers": true,
+  "overrides": [
+    {
+      "files": "*.{js,cjs,mjs,ts,cts,mts,tsx,vue}",
+      "options": {
+        "plugins": ["@trivago/prettier-plugin-sort-imports"]
+      }
+    }
+  ]
 }
