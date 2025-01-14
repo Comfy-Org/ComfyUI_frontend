@@ -116,11 +116,11 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
-import {
-  type InstallOptions,
-  type TorchDeviceType,
-  electronAPI
-} from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import type {
+  InstallOptions,
+  TorchDeviceType
+} from '@comfyorg/comfyui-electron-types'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const device = ref<TorchDeviceType>(null)

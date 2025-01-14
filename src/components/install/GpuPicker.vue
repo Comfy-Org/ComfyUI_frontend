@@ -135,7 +135,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { TorchDeviceType, electronAPI } from '@/utils/envUtil'
+import { electronAPI } from '@/utils/envUtil'
+import type { TorchDeviceType } from '@comfyorg/comfyui-electron-types'
 
 const { t } = useI18n()
 
