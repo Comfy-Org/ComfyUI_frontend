@@ -13,7 +13,6 @@
         scroll-height="auto"
         class="overflow-y-auto w-64 h-full"
         listStyle="max-height:unset"
-        :disabled="!workflowTemplatesStore.isLoaded"
       />
     </div>
     <Carousel
