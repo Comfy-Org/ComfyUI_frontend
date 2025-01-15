@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[Рецепты]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[Рецепты]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
     "display_name": "Загрузить CLIP",
     "inputs": {
       "clip_name": {
@@ -862,6 +862,32 @@
       }
     }
   },
+  "CosmosImageToVideoLatent": {
+    "display_name": "CosmosImageToVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "end_image": {
+        "name": "конечное_изображение"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "start_image": {
+        "name": "начальное_изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Создать ключевой кадр хука",
     "inputs": {
@@ -1227,6 +1253,23 @@
       },
       "type": {
         "name": "тип"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "EmptyCosmosLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "width": {
+        "name": "ширина"
       }
     }
   },
@@ -4822,6 +4865,17 @@
       },
       "schedule_clip": {
         "name": "расписание_клипа"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "SetFirstSigma",
+    "inputs": {
+      "sigma": {
+        "name": "сигма"
+      },
+      "sigmas": {
+        "name": "сигмы"
       }
     }
   },

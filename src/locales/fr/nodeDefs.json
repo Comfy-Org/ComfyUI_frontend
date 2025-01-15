@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[Recettes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[Recettes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
     "display_name": "Charger CLIP",
     "inputs": {
       "clip_name": {
@@ -862,6 +862,32 @@
       }
     }
   },
+  "CosmosImageToVideoLatent": {
+    "display_name": "CosmosImageVersVidéoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "end_image": {
+        "name": "image_de_fin"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Créer une image clé de crochet",
     "inputs": {
@@ -1227,6 +1253,23 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "VidéoLatenteCosmosVide",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "width": {
+        "name": "largeur"
       }
     }
   },
@@ -4822,6 +4865,17 @@
       },
       "schedule_clip": {
         "name": "programmer_clip"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "DéfinirPremierSigma",
+    "inputs": {
+      "sigma": {
+        "name": "sigma"
+      },
+      "sigmas": {
+        "name": "sigmas"
       }
     }
   },

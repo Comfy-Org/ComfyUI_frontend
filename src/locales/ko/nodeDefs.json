@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[조합법]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[조합법]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
@@ -862,6 +862,32 @@
       }
     }
   },
+  "CosmosImageToVideoLatent": {
+    "display_name": "CosmosImageToVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "end_image": {
+        "name": "끝 이미지"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "start_image": {
+        "name": "시작 이미지"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "너비"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "후크 키프레임 생성",
     "inputs": {
@@ -1227,6 +1253,23 @@
       },
       "type": {
         "name": "유형"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "EmptyCosmosLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기"
+      },
+      "height": {
+        "name": "높이"
+      },
+      "length": {
+        "name": "길이"
+      },
+      "width": {
+        "name": "너비"
       }
     }
   },
@@ -4822,6 +4865,17 @@
       },
       "schedule_clip": {
         "name": "스케줄_클립"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "SetFirstSigma",
+    "inputs": {
+      "sigma": {
+        "name": "시그마"
+      },
+      "sigmas": {
+        "name": "시그마들"
       }
     }
   },

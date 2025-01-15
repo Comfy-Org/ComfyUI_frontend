@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[配方]\n\nStable Diffusion：clip-l\nStable Cascade：clip-g\nSD3：t5 / clip-g / clip-l\nStable Audio：t5\nMochi：t5",
+    "description": "[配方]\n\nStable Diffusion：clip-l\nStable Cascade：clip-g\nSD3：t5 / clip-g / clip-l\nStable Audio：t5\nMochi：t5\ncosmos：old t5 xxl",
     "display_name": "加载CLIP",
     "inputs": {
       "clip_name": {
@@ -862,6 +862,32 @@
       }
     }
   },
+  "CosmosImageToVideoLatent": {
+    "display_name": "Cosmos图像到视频潜在",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "end_image": {
+        "name": "结束图像"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "start_image": {
+        "name": "开始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "创建约束关键帧",
     "inputs": {
@@ -1227,6 +1253,23 @@
       },
       "type": {
         "name": "类型"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "空的Cosmos潜在视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
       }
     }
   },
@@ -4822,6 +4865,17 @@
       },
       "schedule_clip": {
         "name": "安排clip"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "设置第一个Sigma",
+    "inputs": {
+      "sigma": {
+        "name": "sigma"
+      },
+      "sigmas": {
+        "name": "sigmas"
       }
     }
   },

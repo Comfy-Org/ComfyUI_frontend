@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[レシピ]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
     "display_name": "CLIPを読み込む",
     "inputs": {
       "clip_name": {
@@ -862,6 +862,32 @@
       }
     }
   },
+  "CosmosImageToVideoLatent": {
+    "display_name": "CosmosImageToVideoLatent",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "end_image": {
+        "name": "終了画像"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "フックキーフレームを作成",
     "inputs": {
@@ -1227,6 +1253,23 @@
       },
       "type": {
         "name": "タイプ"
+      }
+    }
+  },
+  "EmptyCosmosLatentVideo": {
+    "display_name": "EmptyCosmosLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
       }
     }
   },
@@ -4822,6 +4865,17 @@
       },
       "schedule_clip": {
         "name": "schedule_clip"
+      }
+    }
+  },
+  "SetFirstSigma": {
+    "display_name": "SetFirstSigma",
+    "inputs": {
+      "sigma": {
+        "name": "シグマ"
+      },
+      "sigmas": {
+        "name": "シグマ"
       }
     }
   },
