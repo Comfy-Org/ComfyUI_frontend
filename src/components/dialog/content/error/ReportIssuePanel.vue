@@ -75,9 +75,12 @@ const props = defineProps<{
   errorType: string
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
+  tags?: Record<string, string>
 }>()
-const { defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'] } =
-  props
+const {
+  defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'],
+  tags = {}
+} = props
 
 const { t } = useI18n()
 const toast = useToast()
@@ -168,7 +171,8 @@ const createCaptureContext = async (): Promise<CaptureContext> => {
     user: getUserInfo(),
     level: 'error',
     tags: {
-      errorType: props.errorType
+      errorType: props.errorType,
+      ...tags
     },
     extra: {
       ...createFeedback(),
