@@ -6,7 +6,7 @@
     <Stepper
       class="h-full p-8 2xl:p-16"
       value="0"
-      @update:value="setHighestStep"
+      @update:value="handleStepChange"
     >
       <StepList class="select-none">
         <Step value="0">
@@ -137,6 +137,14 @@ const allowMetrics = ref(true)
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
 
+const handleStepChange = (value: string | number) => {
+  setHighestStep(value)
+
+  electronAPI().Config.trackEvent('install_stepper_change', {
+    step: value
+  })
+}
+
 const setHighestStep = (value: string | number) => {
   const int = typeof value === 'number' ? value : parseInt(value, 10)
   if (!isNaN(int) && int > highestStep.value) highestStep.value = int
@@ -167,8 +175,14 @@ onMounted(async () => {
   if (!electron) return
 
   const detectedGpu = await electron.Config.getDetectedGpu()
-  if (detectedGpu === 'mps' || detectedGpu === 'nvidia')
+  if (detectedGpu === 'mps' || detectedGpu === 'nvidia') {
     device.value = detectedGpu
+  }
+
+  electronAPI().Config.trackEvent('install_stepper_change', {
+    step: '0',
+    gpu: detectedGpu
+  })
 })
 </script>
 
