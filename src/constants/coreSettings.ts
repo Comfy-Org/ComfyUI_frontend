@@ -230,7 +230,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Window.UnloadConfirmation',
     name: 'Show confirmation when closing window',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: true,
+    versionModified: '1.7.12'
   },
   {
     id: 'Comfy.TreeExplorer.ItemPadding',
