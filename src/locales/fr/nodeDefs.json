@@ -113,7 +113,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "[Recettes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5",
+    "description": "[Recettes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 / clip-g / clip-l\nstable_audio: t5\nmochi: t5\ncosmos: old t5 xxl",
     "display_name": "Charger CLIP",
     "inputs": {
       "clip_name": {
