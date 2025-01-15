@@ -45,3 +45,4 @@ jobs:
         branch: update-locales-node-defs-{{ github.event.inputs.trigger_type }}-{{ github.run_id }}
         base: main
         labels: dependencies
+        path: ComfyUI_frontend
