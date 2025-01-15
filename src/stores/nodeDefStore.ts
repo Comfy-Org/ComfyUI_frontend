@@ -305,9 +305,13 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDef> = {
   }
 }
 
-export function buildNodeDefTree(nodeDefs: ComfyNodeDefImpl[]): TreeNode {
-  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) =>
+export function buildNodeDefTree(
+  nodeDefs: ComfyNodeDefImpl[],
+  keyFunction: (nodeDef: ComfyNodeDefImpl) => string[] = (nodeDef) =>
     nodeDef.nodePath.split('/')
+): TreeNode {
+  return buildTree(nodeDefs, (nodeDef: ComfyNodeDefImpl) =>
+    keyFunction(nodeDef)
   )
 }
 
@@ -326,12 +330,16 @@ export function createDummyFolderNodeDef(folderPath: string): ComfyNodeDefImpl {
   } as ComfyNodeDef)
 }
 
+const getCategoryKeys = (nodeDef: ComfyNodeDefImpl) =>
+  nodeDef.nodePath.split('/')
+
 export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
 
+  const keyFunction = ref(getCategoryKeys)
   const nodeDefs = computed(() => Object.values(nodeDefsByName.value))
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
@@ -355,7 +363,13 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeSearchService = computed(
     () => new NodeSearchService(visibleNodeDefs.value)
   )
-  const nodeTree = computed(() => buildNodeDefTree(visibleNodeDefs.value))
+  const nodeTree = computed(() =>
+    buildNodeDefTree(visibleNodeDefs.value, keyFunction.value)
+  )
+
+  function setKeyFunction(callback: (nodeDef: ComfyNodeDefImpl) => string[]) {
+    keyFunction.value = callback ?? getCategoryKeys
+  }
 
   function updateNodeDefs(nodeDefs: ComfyNodeDef[]) {
     const newNodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
@@ -398,7 +412,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
     updateNodeDefs,
     addNodeDef,
-    fromLGraphNode
+    fromLGraphNode,
+    setKeyFunction
   }
 })
 

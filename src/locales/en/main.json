@@ -234,7 +234,8 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
-      "sortOrder": "Sort Order"
+      "sortOrder": "Sort Order",
+      "groupingType": "Grouping Type"
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",

@@ -20,6 +20,14 @@
         @click="alphabeticalSort = !alphabeticalSort"
         v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.sortOrder')"
       />
+      <Button
+        class="grouping-button"
+        :icon="groupBySource ? 'pi pi-list' : 'pi pi-list-check'"
+        text
+        severity="secondary"
+        @click="groupBySource = !groupBySource"
+        v-tooltip.bottom="$t('sideToolbar.nodeLibraryTab.groupingType')"
+      />
     </template>
     <template #header>
       <SearchBox
@@ -66,7 +74,7 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { TreeNode } from 'primevue/treenode'
-import { Ref, computed, nextTick, ref } from 'vue'
+import { Ref, computed, nextTick, ref, watch } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
@@ -101,6 +109,21 @@ const nodeBookmarkTreeExplorerRef = ref<InstanceType<
 > | null>(null)
 const searchFilter = ref(null)
 const alphabeticalSort = ref(false)
+const groupBySource = ref(false)
+
+const createSourceKey = (nodeDef: ComfyNodeDefImpl) => {
+  const sourcePath = nodeDef.python_module.split('.')
+  const pathWithoutCategory = nodeDef.nodePath.split('/').slice(1)
+  return [...sourcePath, ...pathWithoutCategory]
+}
+
+watch(groupBySource, (newValue) => {
+  if (newValue) {
+    nodeDefStore.setKeyFunction(createSourceKey)
+  } else {
+    nodeDefStore.setKeyFunction(null)
+  }
+})
 
 const searchQuery = ref<string>('')
 
@@ -194,4 +217,9 @@ const onRemoveFilter = (filterAndValue) => {
   }
   handleSearch(searchQuery.value)
 }
+
+// This can be added if the persistent state is not desirable:
+// onBeforeUnmount(() => {
+// nodeDefStore.setKeyFunction(null)
+// })
 </script>
