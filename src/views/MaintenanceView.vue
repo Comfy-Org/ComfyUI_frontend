@@ -131,7 +131,6 @@ const validationState = ref<InstallValidation>({
  * @param update Update details passed in by electron
  */
 const processUpdate = (update: InstallValidation) => {
-  // TODO: if (update.state === 'installed')
   validationState.value = update
 
   // Update each task state
@@ -354,9 +353,6 @@ onMounted(async () => {
 
   const update = await electron.Validation.getStatus()
   processUpdate(update)
-
-  // TODO: Run on load when loading manually
-  // refresh()
 })
 
 onUnmounted(() => electron.Validation.dispose())
