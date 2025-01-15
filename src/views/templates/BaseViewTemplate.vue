@@ -28,7 +28,7 @@ import { electronAPI, isElectron } from '@/utils/envUtil'
 
 const props = withDefaults(
   defineProps<{
-    dark: boolean
+    dark?: boolean
   }>(),
   {
     dark: false
