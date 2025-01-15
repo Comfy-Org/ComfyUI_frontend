@@ -1,6 +1,6 @@
 import type { MaybeRef } from 'vue'
 
-import type { VueSeverity } from './vueTypes'
+import type { VueSeverity } from '../primeVueTypes'
 
 interface MaintenanceTaskButton {
   text?: string

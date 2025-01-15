@@ -32,7 +32,7 @@
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 
-import { VueSeverity } from '@/types/vueTypes'
+import { VueSeverity } from '@/types/primeVueTypes'
 
 // Properties
 interface Props {

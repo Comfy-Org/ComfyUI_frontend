@@ -99,7 +99,10 @@ import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { st, t } from '@/i18n'
-import { MaintenanceFilter, MaintenanceTask } from '@/types/maintenanceTypes'
+import {
+  MaintenanceFilter,
+  MaintenanceTask
+} from '@/types/desktop/maintenanceTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { minDurationRef } from '@/utils/refUtil'
 

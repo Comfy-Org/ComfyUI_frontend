@@ -49,7 +49,7 @@ import { t } from '@/i18n'
 import type {
   MaintenanceFilter,
   MaintenanceTask
-} from '@/types/maintenanceTypes'
+} from '@/types/desktop/maintenanceTypes'
 
 import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'

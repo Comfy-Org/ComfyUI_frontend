@@ -48,7 +48,7 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed } from 'vue'
 
-import type { MaintenanceTask } from '@/types/maintenanceTypes'
+import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 
 // Properties
 const props = defineProps<{
