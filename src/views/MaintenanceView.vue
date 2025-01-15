@@ -231,6 +231,8 @@ const clearCache = async () => {
   if (task) task.state = 'OK'
 }
 
+const openUrl = (url: string) => window.open(url, '_blank')
+
 const electronTasks: MaintenanceTask[] = [
   createTask({
     id: 'basePath',
@@ -243,20 +245,20 @@ const electronTasks: MaintenanceTask[] = [
   createTask({
     id: 'git',
     headerImg: '/assets/images/Git-Logo-White.svg',
-    onClick: () => window.open('https://git-scm.com/downloads/', '_blank'),
+    onClick: () => openUrl('https://git-scm.com/downloads/'),
     buttonIcon: PrimeIcons.EXTERNAL_LINK
   }),
   createTask({
     id: 'vcRedist',
-    onClick: () =>
-      window.open('https://aka.ms/vs/17/release/vc_redist.x64.exe', '_blank'),
+    onClick: () => openUrl('https://aka.ms/vs/17/release/vc_redist.x64.exe'),
     buttonIcon: PrimeIcons.EXTERNAL_LINK
   }),
   createTask({
-    id: 'pythonInterpreter',
+    id: 'reinstall',
+    severity: 'danger',
     requireConfirm: true,
-    onClick: () => {},
-    buttonIcon: PrimeIcons.SPINNER
+    onClick: () => electron.reinstall(),
+    buttonIcon: PrimeIcons.EXCLAMATION_TRIANGLE
   }),
   createTask({
     id: 'pythonPackages',
@@ -266,8 +268,8 @@ const electronTasks: MaintenanceTask[] = [
   }),
   createTask({
     id: 'uv',
-    requireConfirm: true,
-    onClick: () => {},
+    onClick: () =>
+      openUrl('https://docs.astral.sh/uv/getting-started/installation/'),
     buttonIcon: 'pi pi-asterisk'
   }),
   createTask({

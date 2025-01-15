@@ -708,7 +708,7 @@
         "name": "Base path",
         "description": "Change the application base path.",
         "errorDescription": "Unable to open the base path.  Please select a new one.",
-        "detail": "The base path is the default location where ComfyUI stores data. It is always the location fo the python environment, and can contain models, custom nodes, and other extensions.",
+        "detail": "The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.",
         "buttonText": "Select"
       },
       "git": {
@@ -723,22 +723,24 @@
         "detail": "The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.",
         "buttonText": "Download"
       },
-      "pythonInterpreter": {
-        "name": "Python interpreter",
-        "description": "Reinstall the python interpreter using uv.",
-        "detail": "Installs the python interpreter to your base path using uv venv.",
-        "buttonText": "Install"
+      "reinstall": {
+        "name": "Reinstall ComfyUI",
+        "description": "Deletes the desktop app config and load the welcome screen.",
+        "detail": "Delete the desktop app config, restart the app, and load the installation screen.",
+        "confirmText": "Delete all saved config and reinstall?",
+        "buttonText": "Reinstall"
       },
       "pythonPackages": {
         "name": "Install python packages",
         "description": "Installs the base python packages required to run ComfyUI.",
+        "detail": "This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.",
         "buttonText": "Install"
       },
       "uv": {
         "name": "uv executable",
         "description": "uv installs and maintains the python environment.",
-        "detail": "This will install Astral's uv tool from the ComfyUI desktop install files cached on your computer. uv is used to install python, and manage python packages.",
-        "buttonText": "Fix uv"
+        "detail": "This will open the download page for Astral's uv tool. uv is used to install python and manage python packages.",
+        "buttonText": "Download"
       },
       "uvCache": {
         "name": "uv cache",
