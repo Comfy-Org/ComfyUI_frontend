@@ -30,6 +30,7 @@
       v-if="sendReportOpen"
       error-type="graphExecutionError"
       :extra-fields="[stackTraceField]"
+      :tags="{ exceptionMessage: props.error.exception_message }"
     />
     <div class="action-container">
       <FindIssueButton
