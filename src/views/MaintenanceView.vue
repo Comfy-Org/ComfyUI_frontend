@@ -180,6 +180,7 @@ function createTask({
     description: st(`maintenance.tasks.${id}.description`, undefined),
     descriptionOk: st(`maintenance.tasks.${id}.descriptionOk`, undefined),
     errorDescription: st(`maintenance.tasks.${id}.errorDescription`, undefined),
+    detail: st(`maintenance.tasks.${id}.detail`, undefined),
     confirmText: st(`maintenance.tasks.${id}.confirmText`, undefined),
     headerImg,
     severity,

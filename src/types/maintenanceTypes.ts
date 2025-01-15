@@ -16,6 +16,7 @@ export interface MaintenanceTask {
   description?: string
   descriptionOk?: string
   errorDescription?: string
+  detail?: string
   /** URL to the image to show in card mode. */
   headerImg?: string
   button?: MaintenanceTaskButton

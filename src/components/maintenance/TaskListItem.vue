@@ -9,8 +9,20 @@
     <td class="text-center w-16">
       <TaskListStatusIcon :state="task.state" :loading />
     </td>
-    <td class="">
-      <p>{{ task.name }}</p>
+    <td>
+      <p class="inline-block">{{ task.name }}</p>
+      <Button
+        class="inline-block mx-2"
+        type="button"
+        :icon="PrimeIcons.INFO_CIRCLE"
+        severity="secondary"
+        :text="true"
+        @click="toggle"
+      />
+
+      <Popover ref="infoPopover" class="block m-1 max-w-64 min-w-32">
+        <span class="whitespace-pre-line">{{ task.detail }}</span>
+      </Popover>
     </td>
     <td class="text-right px-4">
       <Button
@@ -25,8 +37,10 @@
 </template>
 
 <script setup lang="ts">
+import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
-import { computed } from 'vue'
+import Popover from 'primevue/popover'
+import { computed, ref } from 'vue'
 
 import type { MaintenanceTask } from '@/types/maintenanceTypes'
 import { VueSeverity } from '@/types/vueTypes'
@@ -51,4 +65,10 @@ const severity = computed<VueSeverity>(() =>
 )
 
 const loading = computed(() => props.task.loading)
+
+const infoPopover = ref()
+
+const toggle = (event: Event) => {
+  infoPopover.value.toggle(event)
+}
 </script>

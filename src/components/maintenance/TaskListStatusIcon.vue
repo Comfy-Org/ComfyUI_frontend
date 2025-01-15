@@ -6,10 +6,11 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed, MaybeRef } from 'vue'
 import { PrimeIcons } from '@primevue/core/api'
+import ProgressSpinner from 'primevue/progressspinner'
+import { MaybeRef, computed } from 'vue'
+
+import { t } from '@/i18n'
 
 // Properties
 const tooltip = computed(() => {
