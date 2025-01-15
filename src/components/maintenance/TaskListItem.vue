@@ -42,8 +42,8 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import type { MaintenanceTask } from '@/types/maintenanceTypes'
-import { VueSeverity } from '@/types/vueTypes'
+import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+import { VueSeverity } from '@/types/primeVueTypes'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
 
