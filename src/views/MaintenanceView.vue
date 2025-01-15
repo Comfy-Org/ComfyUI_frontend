@@ -1,84 +1,86 @@
 <template>
-  <div
-    class="font-sans w-screen h-screen flex justify-around text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto overflow-y-auto"
-  >
-    <div class="max-w-screen-sm w-screen m-8 relative">
-      <!-- Header -->
-      <h1 class="backspan pi-wrench text-4xl font-bold">Maintenance</h1>
+  <BaseViewTemplate dark>
+    <div
+      class="min-w-full min-h-full font-sans w-screen h-screen grid justify-around text-neutral-300 bg-neutral-900 dark-theme pointer-events-auto overflow-y-auto"
+    >
+      <div class="max-w-screen-sm w-screen m-8 relative">
+        <!-- Header -->
+        <h1 class="backspan pi-wrench text-4xl font-bold">Maintenance</h1>
 
-      <!-- Toolbar -->
-      <div class="w-full flex flex-wrap gap-4 items-center">
-        <span class="grow">
-          Status: <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
-        </span>
-        <div class="flex gap-4 items-center">
-          <SelectButton
-            v-model="displayAsList"
-            :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
-            :allow-empty="false"
-          >
-            <template #option="opts"><i :class="opts.option" /></template>
-          </SelectButton>
-          <SelectButton
-            v-model="filter"
-            :options="filterOptions"
-            :allow-empty="false"
-            optionLabel="value"
-            dataKey="value"
-            area-labelledby="custom"
-            @change="clearResolved"
-          >
-            <template #option="opts">
-              <i :class="opts.option.icon"></i>
-              <span class="max-sm:hidden">{{ opts.option.value }}</span>
-            </template>
-          </SelectButton>
-          <RefreshButton
-            v-model="isRefreshing"
+        <!-- Toolbar -->
+        <div class="w-full flex flex-wrap gap-4 items-center">
+          <span class="grow">
+            Status: <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
+          </span>
+          <div class="flex gap-4 items-center">
+            <SelectButton
+              v-model="displayAsList"
+              :options="[PrimeIcons.LIST, PrimeIcons.TH_LARGE]"
+              :allow-empty="false"
+            >
+              <template #option="opts"><i :class="opts.option" /></template>
+            </SelectButton>
+            <SelectButton
+              v-model="filter"
+              :options="filterOptions"
+              :allow-empty="false"
+              optionLabel="value"
+              dataKey="value"
+              area-labelledby="custom"
+              @change="clearResolved"
+            >
+              <template #option="opts">
+                <i :class="opts.option.icon"></i>
+                <span class="max-sm:hidden">{{ opts.option.value }}</span>
+              </template>
+            </SelectButton>
+            <RefreshButton
+              v-model="isRefreshing"
+              severity="secondary"
+              @refresh="refresh"
+            />
+          </div>
+        </div>
+
+        <!-- Tasks -->
+        <TaskListPanel
+          class="border-neutral-700 border-solid border-x-0 border-y"
+          :filter
+          :displayAsList
+          :isRefreshing
+        />
+
+        <!-- Actions -->
+        <div class="flex justify-between gap-4 flex-row">
+          <Button
+            label="Console Logs"
+            icon="pi pi-desktop"
+            icon-pos="left"
             severity="secondary"
-            @refresh="refresh"
+            @click="toggleConsoleDrawer"
+          />
+          <Button
+            label="Continue"
+            icon="pi pi-arrow-right"
+            icon-pos="left"
+            :severity="anyErrors ? 'secondary' : 'primary'"
+            @click="completeValidation"
+            :loading="isRefreshing"
           />
         </div>
       </div>
 
-      <!-- Tasks -->
-      <TaskListPanel
-        class="border-neutral-700 border-solid border-x-0 border-y"
-        :filter
-        :displayAsList
-        :isRefreshing
-      />
-
-      <!-- Actions -->
-      <div class="flex justify-between gap-4 flex-row">
-        <Button
-          label="Console Logs"
-          icon="pi pi-desktop"
-          icon-pos="left"
-          severity="secondary"
-          @click="toggleConsoleDrawer"
-        />
-        <Button
-          label="Continue"
-          icon="pi pi-arrow-right"
-          icon-pos="left"
-          :severity="anyErrors ? 'secondary' : 'primary'"
-          @click="completeValidation"
-          :loading="isRefreshing"
-        />
-      </div>
+      <Drawer
+        v-model:visible="terminalVisible"
+        header="Terminal"
+        position="bottom"
+        style="height: max(50vh, 34rem)"
+      >
+        <BaseTerminal @created="terminalCreated" />
+      </Drawer>
+      <Toast />
     </div>
-
-    <Drawer
-      v-model:visible="terminalVisible"
-      header="Terminal"
-      position="bottom"
-      style="height: max(50vh, 34rem)"
-    >
-      <BaseTerminal @created="terminalCreated" />
-    </Drawer>
-    <Toast />
-  </div>
+  </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
@@ -100,6 +102,8 @@ import { st, t } from '@/i18n'
 import { MaintenanceFilter, MaintenanceTask } from '@/types/maintenanceTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import { minDurationRef } from '@/utils/refUtil'
+
+import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
 const minRefreshTime = 250
