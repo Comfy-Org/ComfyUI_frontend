@@ -151,7 +151,7 @@
     "appDataLocationTooltip": "ComfyUI's app data directory. Stores:\n- Logs\n- Server configs",
     "appPathLocationTooltip": "ComfyUI's app asset directory. Stores the ComfyUI code and assets",
     "migrateFromExistingInstallation": "Migrate from Existing Installation",
-    "migrationSourcePathDescription": "If you have an existing ComfyUI installation, we can copy/link your existing user files and models to the new installation.",
+    "migrationSourcePathDescription": "If you have an existing ComfyUI installation, we can copy/link your existing user files and models to the new installation. Your existing ComfyUI installation will not be affected.",
     "selectItemsToMigrate": "Select Items to Migrate",
     "migrationOptional": "Migration is optional. If you don't have an existing installation, you can skip this step.",
     "desktopAppSettings": "Desktop App Settings",
