@@ -3,10 +3,11 @@
 </template>
 
 <script setup lang="ts">
-import { t } from '@/i18n'
+import { PrimeIcons, type PrimeIconsOptions } from '@primevue/core/api'
 import Tag, { TagProps } from 'primevue/tag'
 import { ref, watch } from 'vue'
-import { PrimeIcons, type PrimeIconsOptions } from '@primevue/core/api'
+
+import { t } from '@/i18n'
 
 // Properties
 const props = defineProps<{
