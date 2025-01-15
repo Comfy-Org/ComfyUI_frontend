@@ -57,7 +57,6 @@
           icon-pos="left"
           severity="secondary"
           @click="toggleConsoleDrawer"
-          :loading="isRefreshing"
         />
         <Button
           label="Continue"
@@ -83,23 +82,24 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import SelectButton from 'primevue/selectbutton'
-import { electronAPI, isElectron } from '@/utils/envUtil'
-import { computed, onMounted, onUnmounted, Ref, ref } from 'vue'
-import { st, t } from '@/i18n'
-import RefreshButton from '@/components/common/RefreshButton.vue'
-import { PrimeIcons } from '@primevue/core/api'
 import { InstallValidation } from '@comfyorg/comfyui-electron-types'
-import StatusTag from '@/components/maintenance/StatusTag.vue'
-import { minDurationRef } from '@/utils/refUtil'
-import { MaintenanceFilter, MaintenanceTask } from '@/types/maintenanceTypes'
-import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
-import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { PrimeIcons } from '@primevue/core/api'
+import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
-import { useToast } from 'primevue/usetoast'
+import SelectButton from 'primevue/selectbutton'
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
+import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+
+import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
+import RefreshButton from '@/components/common/RefreshButton.vue'
+import StatusTag from '@/components/maintenance/StatusTag.vue'
+import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
+import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { st, t } from '@/i18n'
+import { MaintenanceFilter, MaintenanceTask } from '@/types/maintenanceTypes'
+import { electronAPI, isElectron } from '@/utils/envUtil'
+import { minDurationRef } from '@/utils/refUtil'
 
 /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
 const minRefreshTime = 250
