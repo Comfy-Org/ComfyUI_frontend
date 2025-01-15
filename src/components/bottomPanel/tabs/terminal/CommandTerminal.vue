@@ -20,11 +20,16 @@ const terminalCreated = (
   let offData: IDisposable
   let offOutput: () => void
 
-  useAutoSize(root, true, true, () => {
-    // If we aren't visible, don't resize
-    if (!terminal.element?.offsetParent) return
+  useAutoSize({
+    root,
+    autoRows: true,
+    autoCols: true,
+    onResize: () => {
+      // If we aren't visible, don't resize
+      if (!terminal.element?.offsetParent) return
 
-    terminalApi.resize(terminal.cols, terminal.rows)
+      terminalApi.resize(terminal.cols, terminal.rows)
+    }
   })
 
   onMounted(async () => {

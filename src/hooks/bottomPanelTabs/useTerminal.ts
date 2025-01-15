@@ -36,12 +36,17 @@ export function useTerminal(element: Ref<HTMLElement>) {
 
   return {
     terminal,
-    useAutoSize(
-      root: Ref<HTMLElement>,
-      autoRows: boolean = true,
-      autoCols: boolean = true,
+    useAutoSize({
+      root,
+      autoRows = true,
+      autoCols = true,
+      onResize
+    }: {
+      root: Ref<HTMLElement>
+      autoRows?: boolean
+      autoCols?: boolean
       onResize?: () => void
-    ) {
+    }) {
       const ensureValidRows = (rows: number | undefined) => {
         if (rows == null || isNaN(rows)) {
           return root.value?.clientHeight / 20

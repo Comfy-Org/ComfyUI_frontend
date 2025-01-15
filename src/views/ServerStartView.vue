@@ -78,7 +78,7 @@ const terminalCreated = (
 ) => {
   xterm = terminal
 
-  useAutoSize(root, true, true)
+  useAutoSize({ root, autoRows: true, autoCols: true })
   electron.onLogMessage((message: string) => {
     terminal.write(message)
   })

@@ -29,7 +29,7 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
-  useAutoSize(root, true, false)
+  useAutoSize({ root, autoRows: true, autoCols: false })
 
   const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
     if (size) {
