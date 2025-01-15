@@ -29,7 +29,12 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
-  useAutoSize({ root, autoRows: true, autoCols: false })
+  // `autoCols` is false because we don't want the progress bar in the terminal
+  // to render incorrectly as the progress bar is rendered based on the
+  // server's terminal size.
+  // Apply a min cols of 80 for colab environments
+  // See https://github.com/comfyanonymous/ComfyUI/issues/6396
+  useAutoSize({ root, autoRows: true, autoCols: false, minCols: 80 })
 
   const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
     if (size) {
