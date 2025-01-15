@@ -200,7 +200,7 @@
     "migrateFromExistingInstallation": "从现有安装迁移",
     "migration": "迁移",
     "migrationOptional": "迁移是可选的。如果您之前没有安装过 ComfyUI，可以跳过此步骤。",
-    "migrationSourcePathDescription": "如果您有可用的 ComfyUI，我们可以将您的现有用户文件和模型复制/链接到新安装。",
+    "migrationSourcePathDescription": "如果您已有现有的ComfyUI安装，我们可以复制/链接您现有的用户文件和模型到新的安装。您现有的ComfyUI安装将不会受到影响。",
     "parentMissing": "路径不存在 - 请先创建包含该路径的目录",
     "pathExists": "目录已存在 - 请确保您已备份全部数据",
     "pathValidationFailed": "路径验证失败",

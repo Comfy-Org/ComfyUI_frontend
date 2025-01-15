@@ -200,7 +200,7 @@
     "migrateFromExistingInstallation": "既存のインストールから移行",
     "migration": "移行",
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
-    "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルやモデルを新しいインストールにコピー/リンクできます。",
+    "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルとモデルを新しいインストールにコピー/リンクすることができます。既存のComfyUIインストールは影響を受けません。",
     "parentMissing": "パスが存在しません - 最初に含まれるディレクトリを作成してください",
     "pathExists": "ディレクトリはすでに存在します - すべてのデータをバックアップしたことを確認してください",
     "pathValidationFailed": "パスの検証に失敗しました",
