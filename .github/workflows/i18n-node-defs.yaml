@@ -42,6 +42,7 @@ jobs:
           Automated PR to update locales for node definitions
 
           This PR was created automatically by the frontend update workflow.
-        branch: update-locales-node-defs-{{ github.event.inputs.trigger_type }}-{{ github.run_id }}
+        branch: update-locales-node-defs-${{ github.event.inputs.trigger_type }}-${{ github.run_id }}
         base: main
         labels: dependencies
+        path: ComfyUI_frontend
