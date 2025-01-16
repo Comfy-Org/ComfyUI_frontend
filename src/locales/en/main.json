@@ -70,7 +70,9 @@
     "keybinding": "Keybinding",
     "upload": "Upload",
     "export": "Export",
-    "workflow": "Workflow"
+    "workflow": "Workflow",
+    "success": "Success",
+    "ok": "OK"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -204,7 +206,14 @@
       }
     },
     "customNodes": "Custom Nodes",
-    "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations."
+    "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations.",
+    "helpImprove": "Please help us improve",
+    "moreInfo": "For more info, please read our",
+    "privacyPolicy": "privacy policy",
+    "metricsEnabled": "Metrics Enabled",
+    "metricsDisabled": "Metrics Disabled",
+    "metricsConsentUpdated": "Metrics consent updated",
+    "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
   "serverStart": {
     "reinstall": "Reinstall",

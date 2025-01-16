@@ -4,26 +4,20 @@
       <div
         class="bg-neutral-800 rounded-lg shadow-lg p-6 w-full max-w-[600px] flex flex-col gap-6"
       >
-        <h2 class="text-2xl font-semibold text-neutral-100">
-          {{ $t('metricsConsentTitle', 'Please help us improve') }}
+        <h2 class="text-3xl font-semibold text-neutral-100">
+          {{ $t('install.helpImprove') }}
         </h2>
         <p class="text-neutral-400">
-          {{
-            $t(
-              'metricsConsentDescription',
-              `You previously opted in to reporting crashes. We are now tracking event-based metrics
-              to help identify bugs and improve the app. No personal identifiable information is collected.`
-            )
-          }}
+          {{ $t('install.updateConsent') }}
         </p>
         <p class="text-neutral-400">
-          {{ $t('metricsPrivacyNotice', 'For more info, please read our') }}
+          {{ $t('install.moreInfo') }}
           <a
             href="https://comfy.org/privacy"
             target="_blank"
             class="text-blue-400 hover:text-blue-300 underline"
           >
-            {{ $t('metricsPrivacyPolicy', 'privacy policy') }} </a
+            {{ $t('install.privacyPolicy') }} </a
           >.
         </p>
         <div class="flex items-center gap-4">
@@ -31,14 +25,14 @@
           <span class="text-neutral-100">
             {{
               allowMetrics
-                ? $t('metricsEnabled', 'Metrics Enabled')
-                : $t('metricsDisabled', 'Metrics Disabled')
+                ? $t('install.metricsEnabled')
+                : $t('install.metricsDisabled')
             }}
           </span>
         </div>
         <div class="flex pt-6 justify-end">
           <Button
-            :label="$t('g.ok', 'OK')"
+            :label="$t('g.ok')"
             icon="pi pi-check"
             iconPos="right"
             @click="acknowledgeConsent"
