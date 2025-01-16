@@ -165,3 +165,20 @@ test.describe('Settings', () => {
     expect(request.postData()).toContain(JSON.stringify(expectedSetting))
   })
 })
+
+test.describe('Feedback dialog', () => {
+  test('Should open feedback dialog with feedback button', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settingDialog.open()
+    await comfyPage.settingDialog.goToAboutPanel()
+    const feedbackButton = comfyPage.page.getByRole('button', {
+      name: 'Feedback'
+    })
+    await feedbackButton.click()
+    const feedbackHeader = comfyPage.page.getByRole('heading', {
+      name: 'Feedback'
+    })
+    expect(await feedbackHeader.isVisible()).toBe(true)
+  })
+})
