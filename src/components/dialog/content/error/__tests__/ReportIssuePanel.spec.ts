@@ -18,9 +18,11 @@ import { DefaultField, ReportField } from '@/types/issueReportTypes'
 import ReportIssuePanel from '../ReportIssuePanel.vue'
 
 type ReportIssuePanelProps = {
+  title: string
   errorType: string
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
+  tags?: Record<string, string>
 }
 
 const i18n = createI18n({
@@ -76,7 +78,10 @@ describe('ReportIssuePanel', () => {
   }
 
   it('renders the panel with all required components', () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     expect(wrapper.find('.p-panel').exists()).toBe(true)
     expect(wrapper.findAllComponents(CheckboxGroup).length).toBe(2)
     expect(wrapper.findComponent(InputText).exists()).toBe(true)
@@ -85,35 +90,50 @@ describe('ReportIssuePanel', () => {
   })
 
   it('updates selection when checkboxes are selected', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
     await checkboxes?.setValue(['Workflow', 'Logs'])
     expect(wrapper.vm.selection).toEqual(['Workflow', 'Logs'])
   })
 
   it('updates contactInfo when input is changed', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const input = wrapper.findComponent(InputText)
     await input.setValue('test@example.com')
     expect(wrapper.vm.contactInfo).toBe('test@example.com')
   })
 
   it('updates additional details when textarea is changed', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const textarea = wrapper.findComponent(Textarea)
     await textarea.setValue('This is a test detail.')
     expect(wrapper.vm.details).toBe('This is a test detail.')
   })
 
   it('updates contactPrefs when preferences are selected', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const preferences = wrapper.findAllComponents(CheckboxGroup).at(1)
     await preferences?.setValue(['FollowUp'])
     expect(wrapper.vm.contactPrefs).toEqual(['FollowUp'])
   })
 
   it('does not allow submission if the form is empty', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     await wrapper.vm.reportIssue()
     expect(wrapper.vm.submitted).toBe(false)
   })
@@ -121,6 +141,7 @@ describe('ReportIssuePanel', () => {
   it('renders with overridden default fields', () => {
     const wrapper = mountComponent({
       errorType: 'Test Error',
+      title: 'Test Title',
       defaultFields: ['Settings']
     })
     const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
@@ -133,7 +154,10 @@ describe('ReportIssuePanel', () => {
     const extraFields = [
       { label: 'Custom Field', value: 'CustomField', optIn: true, data: {} }
     ]
-    const wrapper = mountComponent({ errorType: 'Test Error', extraFields })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
     expect(checkboxes?.props('checkboxes')).toContainEqual({
       label: 'Custom Field',
@@ -142,7 +166,10 @@ describe('ReportIssuePanel', () => {
   })
 
   it('does not submit unchecked fields', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
     const textarea = wrapper.findComponent(Textarea)
 
     await textarea.setValue('Report with only text but no fields selected')
@@ -179,7 +206,10 @@ describe('ReportIssuePanel', () => {
   ])(
     'submits (%s) when the (%s) checkbox is selected',
     async ({ checkbox, apiMethod, expectedKey, mockValue }) => {
-      const wrapper = mountComponent({ errorType: 'Test Error' })
+      const wrapper = mountComponent({
+        errorType: 'Test Error',
+        title: 'Test Title'
+      })
 
       const { api } = (await import('@/scripts/api')) as any
       vi.spyOn(api, apiMethod).mockResolvedValue(mockValue)
@@ -204,7 +234,10 @@ describe('ReportIssuePanel', () => {
   )
 
   it('submits workflow when the Workflow checkbox is selected', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      title: 'Test Title'
+    })
 
     const { app } = (await import('@/scripts/app')) as any
     const { captureMessage } = await import('@sentry/core')

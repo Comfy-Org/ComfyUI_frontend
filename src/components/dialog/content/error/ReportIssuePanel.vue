@@ -2,7 +2,7 @@
   <Panel>
     <template #header>
       <div class="flex items-center gap-2">
-        <span class="font-bold">{{ $t('issueReport.submitErrorReport') }}</span>
+        <span class="font-bold">{{ title }}</span>
       </div>
     </template>
     <template #footer>
@@ -19,6 +19,7 @@
     </template>
     <div class="p-4 mt-4 border border-round surface-border shadow-1">
       <CheckboxGroup
+        v-if="reportCheckboxes.length"
         v-model="selection"
         class="gap-4 mb-4"
         :checkboxes="reportCheckboxes"
@@ -73,6 +74,7 @@ const CONTACT_MAX_LEN = 320
 
 const props = defineProps<{
   errorType: string
+  title: string
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
   tags?: Record<string, string>
@@ -116,7 +118,9 @@ const defaultReportCheckboxes = [
   { label: t('g.settings'), value: 'Settings' }
 ]
 const reportCheckboxes = computed(() => [
-  ...(props.extraFields?.map(({ label, value }) => ({ label, value })) ?? []),
+  ...(props.extraFields
+    ?.filter(({ optIn }) => optIn)
+    .map(({ label, value }) => ({ label, value })) ?? []),
   ...defaultReportCheckboxes.filter(({ value }) =>
     defaultFields.includes(value as DefaultField)
   )

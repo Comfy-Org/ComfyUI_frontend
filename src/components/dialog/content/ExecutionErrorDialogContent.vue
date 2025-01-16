@@ -28,6 +28,7 @@
     </template>
     <ReportIssuePanel
       v-if="sendReportOpen"
+      :title="$t('issueReport.submitErrorReport')"
       error-type="graphExecutionError"
       :extra-fields="[stackTraceField]"
       :tags="{ exceptionMessage: props.error.exception_message }"
