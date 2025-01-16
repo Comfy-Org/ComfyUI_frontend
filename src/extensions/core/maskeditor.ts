@@ -262,15 +262,15 @@ var styles = `
   }
   #maskEditor_toolPanel {
     height: 100%;
-    width: var(--sidebar-width);
+    width: 4rem;
     z-index: 8888;
     background: var(--comfy-menu-bg);
     display: flex;
     flex-direction: column;
   }
   .maskEditor_toolPanelContainer {
-    width: var(--sidebar-width);
-    height: var(--sidebar-width);
+    width: 4rem;
+    height: 4rem;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -331,7 +331,7 @@ var styles = `
     margin-bottom: 5px;
   }
   #maskEditor_pointerZone {
-    width: calc(100% - var(--sidebar-width) - 220px);
+    width: calc(100% - 4rem - 220px);
     height: 100%;
   }
   #maskEditor_uiContainer {
@@ -703,8 +703,8 @@ var styles = `
   }
 
   .maskEditor_toolPanelZoomIndicator {
-    width: var(--sidebar-width);
-    height: var(--sidebar-width);
+    width: 4rem;
+    height: 4rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
