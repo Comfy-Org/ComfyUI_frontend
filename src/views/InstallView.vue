@@ -186,7 +186,7 @@ onMounted(async () => {
 })
 </script>
 
-<style lang="postcss" scoped>
+<style scoped>
 :deep(.p-steppanel) {
   @apply bg-transparent;
 }

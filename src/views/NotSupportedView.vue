@@ -78,7 +78,7 @@ const continueToInstall = () => {
 }
 </script>
 
-<style>
+<style scoped>
 .sad-container {
   @apply grid items-center justify-evenly;
   grid-template-columns: 25rem 1fr;
