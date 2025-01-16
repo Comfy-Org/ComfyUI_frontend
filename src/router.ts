@@ -92,6 +92,12 @@ const router = createRouter({
           name: 'ManualConfigurationView',
           component: () => import('@/views/ManualConfigurationView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: '/metrics-consent',
+          name: 'MetricsConsentView',
+          component: () => import('@/views/MetricsConsentView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }

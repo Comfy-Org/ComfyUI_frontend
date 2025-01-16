@@ -160,6 +160,7 @@ const install = () => {
     installPath: installPath.value,
     autoUpdate: autoUpdate.value,
     allowMetrics: allowMetrics.value,
+    hasSeenMetricsUpdate: false,
     migrationSourcePath: migrationSourcePath.value,
     migrationItemIds: toRaw(migrationItemIds.value),
     device: device.value
