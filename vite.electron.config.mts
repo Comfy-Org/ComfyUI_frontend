@@ -61,8 +61,12 @@ const mockElectronAPI: Plugin = {
             trackEvent: (event_name, event_data) => {
               console.log('trackEvent', event_name, event_data)
             },
-            getDetectedGpu: () => Promise.resolve('nvidia')
-          }
+            getDetectedGpu: () => Promise.resolve('nvidia'),
+            reportMetricsConsent: (consent) => {
+              console.log('reportMetricsConsent', consent);
+              return Promise.resolve(consent);
+            }
+          },
         };`
       }
     ]

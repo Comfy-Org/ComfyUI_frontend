@@ -27,10 +27,10 @@
           >.
         </p>
         <div class="flex items-center gap-4">
-          <ToggleSwitch v-model="allowEventMetrics" />
+          <ToggleSwitch v-model="allowMetrics" />
           <span class="text-neutral-100">
             {{
-              allowEventMetrics
+              allowMetrics
                 ? $t('metricsEnabled', 'Metrics Enabled')
                 : $t('metricsDisabled', 'Metrics Disabled')
             }}
@@ -55,20 +55,17 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI } from '@/utils/envUtil'
 
-const allowEventMetrics = ref(false)
+const allowMetrics = ref(false)
 const router = useRouter()
+const settingStore = useSettingStore()
 
 const acknowledgeConsent = () => {
-  // Send acknowledgment to the main process
-  electronAPI().acknowledgeMetricsConsent(allowEventMetrics.value)
-
-  // Navigate to the default post-installation route
-  router.push('/') // Adjust the redirect path as needed
+  settingStore.set('Comfy-Desktop.SendStatistics', allowMetrics.value)
+  settingStore.set('Comfy-Desktop.HasSeenMetricsUpdate', true)
+  electronAPI().Config.reportMetricsConsent(allowMetrics.value)
+  router.push('/')
 }
 </script>
-
-<style scoped>
-/* Add any necessary scoped styles here */
-</style>

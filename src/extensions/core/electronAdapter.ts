@@ -39,7 +39,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         id: 'Comfy-Desktop.HasSeenMetricsUpdate',
         category: ['Comfy-Desktop', 'General', 'Send Statistics'],
         name: 'Has seen update about new metrics',
-        type: 'boolean',
+        type: 'hidden',
         defaultValue: false,
         onChange: onChangeRestartApp
       },
