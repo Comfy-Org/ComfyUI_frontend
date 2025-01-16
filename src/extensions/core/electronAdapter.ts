@@ -36,14 +36,6 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         onChange: onChangeRestartApp
       },
       {
-        id: 'Comfy-Desktop.HasSeenMetricsUpdate',
-        category: ['Comfy-Desktop', 'General', 'Send Statistics'],
-        name: 'Has seen update about new metrics',
-        type: 'hidden',
-        defaultValue: false,
-        onChange: onChangeRestartApp
-      },
-      {
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
