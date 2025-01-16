@@ -62,7 +62,7 @@ const allowMetrics = ref(true)
 const router = useRouter()
 
 const updateConsent = () => {
-  electronAPI().Config.setMetricsConsent(allowMetrics.value)
+  electronAPI().setMetricsConsent(allowMetrics.value)
   router.push('/')
 }
 </script>
