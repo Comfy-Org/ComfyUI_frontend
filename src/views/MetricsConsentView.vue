@@ -19,7 +19,7 @@
         <p class="text-neutral-400">
           {{ $t('metricsPrivacyNotice', 'For more info, please read our') }}
           <a
-            href=""
+            href="https://comfy.org/privacy"
             target="_blank"
             class="text-blue-400 hover:text-blue-300 underline"
           >
