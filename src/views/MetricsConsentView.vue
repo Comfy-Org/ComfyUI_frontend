@@ -21,7 +21,14 @@
           >.
         </p>
         <div class="flex items-center gap-4">
-          <ToggleSwitch v-model="allowMetrics" />
+          <ToggleSwitch
+            v-model="allowMetrics"
+            :ariaLabel="
+              allowMetrics
+                ? $t('install.metricsEnabled')
+                : $t('install.metricsDisabled')
+            "
+          />
           <span class="text-neutral-100">
             {{
               allowMetrics
@@ -35,7 +42,7 @@
             :label="$t('g.ok')"
             icon="pi pi-check"
             iconPos="right"
-            @click="acknowledgeConsent"
+            @click="updateConsent"
           />
         </div>
       </div>
@@ -49,17 +56,13 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI } from '@/utils/envUtil'
 
-const allowMetrics = ref(false)
+const allowMetrics = ref(true)
 const router = useRouter()
-const settingStore = useSettingStore()
 
-const acknowledgeConsent = () => {
-  settingStore.set('Comfy-Desktop.SendStatistics', allowMetrics.value)
-  settingStore.set('Comfy-Desktop.HasSeenMetricsUpdate', true)
-  electronAPI().Config.reportMetricsConsent(allowMetrics.value)
+const updateConsent = () => {
+  electronAPI().Config.setMetricsConsent(allowMetrics.value)
   router.push('/')
 }
 </script>
