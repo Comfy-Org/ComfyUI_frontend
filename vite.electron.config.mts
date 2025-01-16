@@ -57,7 +57,11 @@ const mockElectronAPI: Plugin = {
           changeTheme: () => {},
           Config: {
             setWindowStyle: () => {},
-            getWindowStyle: () => Promise.resolve('default')
+            getWindowStyle: () => Promise.resolve('default'),
+            trackEvent: (event_name, event_data) => {
+              console.log('trackEvent', event_name, event_data)
+            },
+            getDetectedGpu: () => Promise.resolve('nvidia')
           }
         };`
       }
