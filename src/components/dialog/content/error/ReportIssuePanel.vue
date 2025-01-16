@@ -74,10 +74,10 @@ const CONTACT_MAX_LEN = 320
 
 const props = defineProps<{
   errorType: string
-  title: string
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
   tags?: Record<string, string>
+  title?: string
 }>()
 const {
   defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'],
