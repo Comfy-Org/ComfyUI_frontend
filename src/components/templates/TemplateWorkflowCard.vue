@@ -1,5 +1,5 @@
 <template>
-  <Card :data-testid="`template-workflow-${props.workflowName}`">
+  <Card :data-testid="`template-workflow-${workflowName}`">
     <template #header>
       <div class="flex items-center justify-center">
         <div
@@ -7,15 +7,10 @@
         >
           <img
             v-if="!imageError"
-            :src="
-              props.type === 'video'
-                ? `templates/${props.workflowName}.webp`
-                : props.moduleName === 'default'
-                  ? `templates/${props.workflowName}.jpg`
-                  : `api/workflow_templates/${props.moduleName}/${props.workflowName}.jpg`
-            "
-            @error="imageError = true"
+            :src="thumbnailSrc"
+            :alt="subtitle"
             class="w-64 h-64 rounded-t-lg object-cover thumbnail"
+            @error="imageError = true"
           />
           <div v-else class="w-64 h-64 content-center text-center">
             <i class="pi pi-file" style="font-size: 4rem"></i>
@@ -35,18 +30,7 @@
       </div>
     </template>
     <template #subtitle>
-      <!--Default templates have translations-->
-      <template v-if="props.moduleName === 'default'">
-        {{
-          $t(
-            `templateWorkflows.template.${props.workflowName}`,
-            props.workflowName
-          )
-        }}
-      </template>
-      <template v-else>
-        {{ props.workflowName }}
-      </template>
+      {{ subtitle }}
     </template>
   </Card>
 </template>
@@ -54,16 +38,58 @@
 <script setup lang="ts">
 import Card from 'primevue/card'
 import ProgressSpinner from 'primevue/progressspinner'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const props = defineProps<{
+const {
+  moduleName,
+  workflowName,
+  categoryName,
+  loading,
+  type = 'image'
+} = defineProps<{
   moduleName: string
   workflowName: string
+  categoryName: string
   loading: boolean
   type?: string
 }>()
 
-const { type = 'image' } = props
+const { t } = useI18n()
+
+const thumbnailSrc = computed(() => {
+  switch (moduleName) {
+    case 'default':
+      return `/templates/${workflowName}_1${thumbnailExt.value}`
+    default:
+      return `/api/workflow_templates/${moduleName}/${workflowName}${thumbnailExt.value}`
+  }
+})
+
+const thumbnailExt = computed(() => {
+  switch (type) {
+    case 'video':
+      return '.webp'
+    case 'audio':
+      return '.flac'
+    case 'image':
+    default:
+      return '.png'
+  }
+})
+
+const subtitle = computed(() => {
+  switch (moduleName) {
+    case 'default':
+      // Default templates have translations
+      return t(
+        `templateWorkflows.template.${categoryName}.${workflowName}`,
+        workflowName
+      )
+    default:
+      return workflowName ?? `${moduleName} workflow`
+  }
+})
 
 const imageError = ref(false)
 </script>

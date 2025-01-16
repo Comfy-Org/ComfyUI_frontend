@@ -19,9 +19,9 @@
       class="carousel justify-center"
       :value="selectedTab.templates"
       :responsive-options="responsiveOptions"
+      :num-visible="4"
+      :num-scroll="3"
       :key="`${selectedTab.moduleName}${selectedTab.title}`"
-      :num-visible="3"
-      :num-scroll="1"
     >
       <template #item="slotProps">
         <div @click="loadWorkflow(slotProps.data)" class="p-2">
@@ -29,6 +29,7 @@
             :moduleName="selectedTab.moduleName"
             :workflowName="slotProps.data"
             :loading="slotProps.data === workflowLoading"
+            :categoryName="selectedTab.title"
             :type="selectedTab.type"
           />
         </div>
