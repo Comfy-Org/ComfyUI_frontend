@@ -75,7 +75,7 @@ onMounted(async () => {
 })
 </script>
 
-<style>
+<style scoped>
 :root {
   --p-tag-gap: 0.5rem;
 }

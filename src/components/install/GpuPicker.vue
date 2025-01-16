@@ -159,7 +159,7 @@ const pickGpu = (value: typeof selected.value) => {
 }
 </script>
 
-<style lang="postcss">
+<style scoped>
 :root {
   --p-tag-gap: 0.5rem;
 }
