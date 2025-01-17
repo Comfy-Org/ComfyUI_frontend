@@ -92,6 +92,12 @@ const router = createRouter({
           name: 'ManualConfigurationView',
           component: () => import('@/views/ManualConfigurationView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'desktop-start',
+          name: 'DesktopStartView',
+          component: () => import('@/views/DesktopStartView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
