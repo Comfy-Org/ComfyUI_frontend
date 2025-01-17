@@ -77,6 +77,29 @@ watch(
   { immediate: true }
 )
 
+if (isElectron()) {
+  watch(
+    () => queueStore.tasks,
+    (newTasks, oldTasks) => {
+      // Report tasks that previously running but are now completed (i.e. in history)
+      const oldRunningTaskIds = new Set(
+        oldTasks.filter((task) => task.isRunning).map((task) => task.promptId)
+      )
+      newTasks
+        .filter(
+          (task) => oldRunningTaskIds.has(task.promptId) && task.isHistory
+        )
+        .forEach((task) => {
+          electronAPI().Events.incrementUserProperty(
+            `execution:${task.displayStatus.toLowerCase()}`,
+            1
+          )
+        })
+    },
+    { deep: true }
+  )
+}
+
 watchEffect(() => {
   const fontSize = settingStore.get('Comfy.TextareaWidget.FontSize')
   document.documentElement.style.setProperty(
