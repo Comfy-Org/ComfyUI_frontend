@@ -63,6 +63,9 @@ const mockElectronAPI: Plugin = {
           Events: {
             trackEvent: (event_name, event_data) => {
               console.log('trackEvent', event_name, event_data)
+            },
+            incrementUserProperty: (property, value) => {
+              console.log('incrementUserProperty', property, value)
             }
           }
         };`
