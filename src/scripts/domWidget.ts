@@ -417,6 +417,12 @@ LGraphNode.prototype.addDOMWidget = function <
     element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
   }
 
+  const { onConfigure } = this
+  this.onConfigure = function () {
+    onConfigure?.apply(this, arguments)
+    element.dataset.collapsed = this.flags?.collapsed ? 'true' : 'false'
+  }
+
   const onRemoved = this.onRemoved
   this.onRemoved = function () {
     element.remove()

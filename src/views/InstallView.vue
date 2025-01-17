@@ -140,7 +140,7 @@ const highestStep = ref(0)
 const handleStepChange = (value: string | number) => {
   setHighestStep(value)
 
-  electronAPI().Config.trackEvent('install_stepper_change', {
+  electronAPI().Events.trackEvent('install_stepper_change', {
     step: value
   })
 }
@@ -179,7 +179,7 @@ onMounted(async () => {
     device.value = detectedGpu
   }
 
-  electronAPI().Config.trackEvent('install_stepper_change', {
+  electronAPI().Events.trackEvent('install_stepper_change', {
     step: '0',
     gpu: detectedGpu
   })

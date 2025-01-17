@@ -55,6 +55,7 @@ const toast = useToast()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
+const queueStore = useQueueStore()
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -110,9 +111,7 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
-  useQueueStore().maxHistoryItems = settingStore.get(
-    'Comfy.Queue.MaxHistoryItems'
-  )
+  queueStore.maxHistoryItems = settingStore.get('Comfy.Queue.MaxHistoryItems')
 })
 
 const init = () => {
@@ -126,8 +125,9 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-const onStatus = (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
+  await queueStore.update()
 }
 
 const reconnectingMessage: ToastMessageOptions = {
