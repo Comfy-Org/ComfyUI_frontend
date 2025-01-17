@@ -23,13 +23,9 @@
         <div class="flex items-center gap-4">
           <ToggleSwitch
             v-model="allowMetrics"
-            :ariaLabel="
-              allowMetrics
-                ? $t('install.metricsEnabled')
-                : $t('install.metricsDisabled')
-            "
+            aria-describedby="metricsDescription"
           />
-          <span class="text-neutral-100">
+          <span id="metricsDescription" class="text-neutral-100">
             {{
               allowMetrics
                 ? $t('install.metricsEnabled')
@@ -41,6 +37,7 @@
           <Button
             :label="$t('g.ok')"
             icon="pi pi-check"
+            :loading="isUpdating"
             iconPos="right"
             @click="updateConsent"
           />
@@ -53,16 +50,34 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
+import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { electronAPI } from '@/utils/envUtil'
 
+const toast = useToast()
+const { t } = useI18n()
+
 const allowMetrics = ref(true)
 const router = useRouter()
+const isUpdating = ref(false)
 
-const updateConsent = () => {
-  electronAPI().setMetricsConsent(allowMetrics.value)
+const updateConsent = async () => {
+  isUpdating.value = true
+  try {
+    await electronAPI().setMetricsConsent(allowMetrics.value)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('install.errorUpdatingConsent'),
+      detail: t('install.errorUpdatingConsentDetail'),
+      life: 3000
+    })
+  } finally {
+    isUpdating.value = false
+  }
   router.push('/')
 }
 </script>
