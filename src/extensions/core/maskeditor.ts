@@ -782,6 +782,33 @@ export interface Brush {
   type: BrushShape
 }
 
+function saveBrushToCache(key: string, brush: Brush): void {
+  try {
+    const brushString = JSON.stringify(brush);
+    localStorage.setItem(key, brushString);
+  } catch (error) {
+    console.error("Failed to save brush to cache:", error);
+  }
+}
+
+function loadBrushFromCache(key: string): Brush | null {
+  try {
+    const brushString = localStorage.getItem(key);
+    if (brushString) {
+      const brush = JSON.parse(brushString) as Brush;
+      console.log("Loaded brush from cache:", brush);
+      return brush; // Return the parsed brush object
+    } else {
+      console.log("No brush found in cache.");
+      return null; // Return null if no brush is found
+    }
+  } catch (error) {
+    console.error("Failed to load brush from cache:", error);
+    return null; // Return null in case of an error
+  }
+}
+
+
 type Callback = (data?: any) => void
 
 class MaskEditorDialog extends ComfyDialog {
@@ -1952,12 +1979,17 @@ class BrushTool {
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
 
-    this.brushSettings = {
-      size: 10,
-      opacity: 100,
-      hardness: 1,
-      type: BrushShape.Arc
+    if (loadBrushFromCache("maskeditor_brush_settings")) {
+      this.brushSettings = loadBrushFromCache("maskeditor_brush_settings")
+    } else {
+      this.brushSettings = {
+        size: 10,
+        opacity: 100,
+        hardness: 1,
+        type: BrushShape.Arc
+      }
     }
+
     this.maskBlendMode = MaskBlendMode.Black
   }
 
@@ -2545,18 +2577,22 @@ class BrushTool {
 
   private setBrushSize(size: number) {
     this.brushSettings.size = size
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushOpacity(opacity: number) {
     this.brushSettings.opacity = opacity
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushHardness(hardness: number) {
     this.brushSettings.hardness = hardness
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushType(type: BrushShape) {
     this.brushSettings.type = type
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushSmoothingPrecision(precision: number) {
