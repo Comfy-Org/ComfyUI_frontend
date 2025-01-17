@@ -2961,7 +2961,7 @@ class UIManager {
     resetBrushSettingsButton.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
       this.messageBroker.publish('setBrushSize', 10)
-      this.messageBroker.publish('setBrushOpacity', 100)
+      this.messageBroker.publish('setBrushOpacity', 0.7)
       this.messageBroker.publish('setBrushHardness', 1)
       this.messageBroker.publish('setBrushSmoothingPrecision', 10)
 
@@ -2969,7 +2969,7 @@ class UIManager {
       square_shape.style.background = ''
 
       thicknesSliderObj.slider.value = '10'
-      opacitySliderObj.slider.value = '100'
+      opacitySliderObj.slider.value = '0.7'
       hardnessSliderObj.slider.value = '1'
       brushSmoothingPrecisionSliderObj.slider.value = '10'
 
