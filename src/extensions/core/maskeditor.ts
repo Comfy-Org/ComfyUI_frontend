@@ -1,7 +1,10 @@
+import { debounce } from 'lodash'
+
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
+import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { ClipspaceDialog } from './clipspace'
 import { MaskEditorDialogOld } from './maskEditorOld'
 
@@ -776,10 +779,37 @@ interface Offset {
 }
 
 export interface Brush {
+  type: BrushShape
   size: number
   opacity: number
   hardness: number
-  type: BrushShape
+  smoothingPrecision: number
+}
+
+const saveBrushToCache = debounce(function (key: string, brush: Brush): void {
+  try {
+    const brushString = JSON.stringify(brush)
+    setStorageValue(key, brushString)
+  } catch (error) {
+    console.error('Failed to save brush to cache:', error)
+  }
+}, 300)
+
+function loadBrushFromCache(key: string): Brush | null {
+  try {
+    const brushString = getStorageValue(key)
+    if (brushString) {
+      const brush = JSON.parse(brushString) as Brush
+      console.log('Loaded brush from cache:', brush)
+      return brush
+    } else {
+      console.log('No brush found in cache.')
+      return null
+    }
+  } catch (error) {
+    console.error('Failed to load brush from cache:', error)
+    return null
+  }
 }
 
 type Callback = (data?: any) => void
@@ -1952,12 +1982,19 @@ class BrushTool {
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
 
-    this.brushSettings = {
-      size: 10,
-      opacity: 100,
-      hardness: 1,
-      type: BrushShape.Arc
+    const cachedBrushSettings = loadBrushFromCache('maskeditor_brush_settings')
+    if (cachedBrushSettings) {
+      this.brushSettings = cachedBrushSettings
+    } else {
+      this.brushSettings = {
+        type: BrushShape.Arc,
+        size: 10,
+        opacity: 0.7,
+        hardness: 1,
+        smoothingPrecision: 10
+      }
     }
+
     this.maskBlendMode = MaskBlendMode.Black
   }
 
@@ -2015,6 +2052,10 @@ class BrushTool {
     this.messageBroker.createPullTopic(
       'brushType',
       async () => this.brushSettings.type
+    )
+    this.messageBroker.createPullTopic(
+      'brushSmoothingPrecision',
+      async () => this.brushSettings.smoothingPrecision
     )
     this.messageBroker.createPullTopic(
       'maskBlendMode',
@@ -2143,7 +2184,7 @@ class BrushTool {
     }
 
     const distanceBetweenPoints =
-      (this.brushSettings.size / this.smoothingPrecision) * 6
+      (this.brushSettings.size / this.brushSettings.smoothingPrecision) * 6
     const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
 
     let interpolatedPoints = points
@@ -2190,7 +2231,7 @@ class BrushTool {
     const brush_size = await this.messageBroker.pull('brushSize')
     const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
     const steps = Math.ceil(
-      distance / ((brush_size / this.smoothingPrecision) * 4)
+      distance / ((brush_size / this.brushSettings.smoothingPrecision) * 4)
     ) // Adjust for smoother lines
     const interpolatedOpacity =
       1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
@@ -2545,23 +2586,27 @@ class BrushTool {
 
   private setBrushSize(size: number) {
     this.brushSettings.size = size
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushOpacity(opacity: number) {
     this.brushSettings.opacity = opacity
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushHardness(hardness: number) {
     this.brushSettings.hardness = hardness
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushType(type: BrushShape) {
     this.brushSettings.type = type
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 
   private setBrushSmoothingPrecision(precision: number) {
-    //console.log('precision', precision)
-    this.smoothingPrecision = precision
+    this.brushSettings.smoothingPrecision = precision
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 }
 
@@ -2825,7 +2870,6 @@ class UIManager {
     const circle_shape = document.createElement('div')
     circle_shape.id = 'maskEditor_sidePanelBrushShapeCircle'
     circle_shape.classList.add(shapeColor)
-    circle_shape.style.background = 'var(--p-button-text-primary-color)'
     circle_shape.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
       this.setBrushBorderRadius()
@@ -2836,13 +2880,22 @@ class UIManager {
     const square_shape = document.createElement('div')
     square_shape.id = 'maskEditor_sidePanelBrushShapeSquare'
     square_shape.classList.add(shapeColor)
-    square_shape.style.background = ''
     square_shape.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Rect)
       this.setBrushBorderRadius()
       square_shape.style.background = 'var(--p-button-text-primary-color)'
       circle_shape.style.background = ''
     })
+
+    if (
+      (await this.messageBroker.pull('brushSettings')).type === BrushShape.Arc
+    ) {
+      circle_shape.style.background = 'var(--p-button-text-primary-color)'
+      square_shape.style.background = ''
+    } else {
+      circle_shape.style.background = ''
+      square_shape.style.background = 'var(--p-button-text-primary-color)'
+    }
 
     brush_shape_container.appendChild(circle_shape)
     brush_shape_container.appendChild(square_shape)
@@ -2855,7 +2908,7 @@ class UIManager {
       1,
       100,
       1,
-      10,
+      (await this.messageBroker.pull('brushSettings')).size,
       (event, value) => {
         this.messageBroker.publish('setBrushSize', parseInt(value))
         this.updateBrushPreview()
@@ -2868,7 +2921,7 @@ class UIManager {
       0,
       1,
       0.01,
-      0.7,
+      (await this.messageBroker.pull('brushSettings')).opacity,
       (event, value) => {
         this.messageBroker.publish('setBrushOpacity', parseFloat(value))
         this.updateBrushPreview()
@@ -2881,7 +2934,7 @@ class UIManager {
       0,
       1,
       0.01,
-      1,
+      (await this.messageBroker.pull('brushSettings')).hardness,
       (event, value) => {
         this.messageBroker.publish('setBrushHardness', parseFloat(value))
         this.updateBrushPreview()
@@ -2894,7 +2947,7 @@ class UIManager {
       1,
       100,
       1,
-      10,
+      (await this.messageBroker.pull('brushSettings')).smoothingPrecision,
       (event, value) => {
         this.messageBroker.publish(
           'setBrushSmoothingPrecision',
@@ -2903,7 +2956,31 @@ class UIManager {
       }
     )
 
+    const resetBrushSettingsButton = document.createElement('button')
+    resetBrushSettingsButton.id = 'resetBrushSettingsButton'
+    resetBrushSettingsButton.innerText = 'Reset to Default'
+
+    resetBrushSettingsButton.addEventListener('click', () => {
+      this.messageBroker.publish('setBrushShape', BrushShape.Arc)
+      this.messageBroker.publish('setBrushSize', 10)
+      this.messageBroker.publish('setBrushOpacity', 0.7)
+      this.messageBroker.publish('setBrushHardness', 1)
+      this.messageBroker.publish('setBrushSmoothingPrecision', 10)
+
+      circle_shape.style.background = 'var(--p-button-text-primary-color)'
+      square_shape.style.background = ''
+
+      thicknesSliderObj.slider.value = '10'
+      opacitySliderObj.slider.value = '0.7'
+      hardnessSliderObj.slider.value = '1'
+      brushSmoothingPrecisionSliderObj.slider.value = '10'
+
+      this.setBrushBorderRadius()
+      this.updateBrushPreview()
+    })
+
     brush_settings_container.appendChild(brush_settings_title)
+    brush_settings_container.appendChild(resetBrushSettingsButton)
     brush_settings_container.appendChild(brush_shape_outer_container)
     brush_settings_container.appendChild(thicknesSliderObj.container)
     brush_settings_container.appendChild(opacitySliderObj.container)
