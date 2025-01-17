@@ -172,8 +172,8 @@ test.describe('Feedback dialog', () => {
   }) => {
     await comfyPage.settingDialog.open()
     await comfyPage.settingDialog.goToAboutPanel()
-    const feedbackButton = comfyPage.page.getByRole('button', {
-      name: 'Feedback'
+    const feedbackButton = comfyPage.page.getByRole('link', {
+      name: /Feedback/
     })
     await feedbackButton.click()
     const feedbackHeader = comfyPage.page.getByRole('heading', {

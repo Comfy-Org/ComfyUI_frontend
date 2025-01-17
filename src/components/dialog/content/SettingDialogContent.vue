@@ -62,22 +62,12 @@
             <div>Loading server config panel...</div>
           </template>
         </Suspense>
-        <Button
-          v-if="tabValue === 'About'"
-          class="absolute top-3/4 right-0 w-min p-2 rounded-e-none z-30 feedback-button"
-          icon="pi pi-refresh"
-          severity="primary"
-          @click="useDialogService().showFeedbackDialog()"
-        >
-          <span class="vertical-text">{{ $t('menuLabels.Feedback') }}</span>
-        </Button>
       </TabPanels>
     </Tabs>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Listbox from 'primevue/listbox'
 import ScrollPanel from 'primevue/scrollpanel'
@@ -88,7 +78,6 @@ import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { st } from '@/i18n'
-import { useDialogService } from '@/services/dialogService'
 import {
   SettingTreeNode,
   getSettingInfo,
@@ -304,11 +293,6 @@ watch(activeCategory, (_, oldValue) => {
   overflow: hidden;
 }
 
-.vertical-text {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-
 @media (max-width: 768px) {
   .settings-container {
     flex-direction: column;
@@ -322,10 +306,6 @@ watch(activeCategory, (_, oldValue) => {
 
   .settings-content {
     height: 350px;
-  }
-
-  .feedback-button {
-    display: none;
   }
 }
 

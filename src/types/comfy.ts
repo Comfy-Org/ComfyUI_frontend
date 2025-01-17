@@ -11,11 +11,14 @@ import type { SettingParams } from '@/types/settingTypes'
 
 export type Widgets = Record<string, ComfyWidgetConstructor>
 
-export interface AboutPageBadge {
+export interface BaseAboutPageBadge {
   label: string
-  url: string
   icon: string
 }
+
+export type AboutPageBadge =
+  | (BaseAboutPageBadge & { type: 'url'; url: string })
+  | (BaseAboutPageBadge & { type: 'command'; command: string })
 
 export type MenuCommandGroup = {
   /**
