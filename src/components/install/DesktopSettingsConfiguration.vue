@@ -108,6 +108,16 @@
             }}
           </li>
         </ul>
+
+        <div class="mt-4">
+          <a
+            href="https://comfy.org/privacy"
+            target="_blank"
+            class="text-blue-400 hover:text-blue-300 underline"
+          >
+            {{ $t('install.settings.dataCollectionDialog.viewFullPolicy') }}
+          </a>
+        </div>
       </div>
     </Dialog>
   </div>

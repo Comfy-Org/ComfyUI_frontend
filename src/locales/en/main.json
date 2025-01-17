@@ -203,7 +203,8 @@
           "fileSystemInformation": "File system information",
           "workflowContents": "Workflow contents",
           "customNodeConfigurations": "Custom node configurations"
-        }
+        },
+        "viewFullPolicy": "View full policy"
       }
     },
     "customNodes": "Custom Nodes",
