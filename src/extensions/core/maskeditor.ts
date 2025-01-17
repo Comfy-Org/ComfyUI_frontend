@@ -2,6 +2,7 @@ import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
+import { getStorageValue, setStorageValue } from '../../scripts/utils'
 import { ClipspaceDialog } from './clipspace'
 import { MaskEditorDialogOld } from './maskEditorOld'
 
@@ -786,7 +787,7 @@ export interface Brush {
 function saveBrushToCache(key: string, brush: Brush): void {
   try {
     const brushString = JSON.stringify(brush)
-    localStorage.setItem(key, brushString)
+    setStorageValue(key, brushString)
   } catch (error) {
     console.error('Failed to save brush to cache:', error)
   }
@@ -794,18 +795,18 @@ function saveBrushToCache(key: string, brush: Brush): void {
 
 function loadBrushFromCache(key: string): Brush | null {
   try {
-    const brushString = localStorage.getItem(key)
+    const brushString = getStorageValue(key)
     if (brushString) {
       const brush = JSON.parse(brushString) as Brush
       console.log('Loaded brush from cache:', brush)
-      return brush // Return the parsed brush object
+      return brush
     } else {
       console.log('No brush found in cache.')
-      return null // Return null if no brush is found
+      return null
     }
   } catch (error) {
     console.error('Failed to load brush from cache:', error)
-    return null // Return null in case of an error
+    return null
   }
 }
 
