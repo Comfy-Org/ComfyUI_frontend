@@ -221,8 +221,7 @@
         "collect": {
           "errorReports": "エラーメッセージとスタックトレース",
           "systemInfo": "ハードウェア、OSタイプ、アプリバージョン",
-          "userJourneyEvents": "ユーザージャーニーイベント",
-          "userJourneyTooltip": "ユーザージャーニーイベントは、アプリのインストールプロセスを通じてユーザーの旅を追跡するために使用されます。イベントの収集は、最初の成功したComfyUIワークフローの実行で終了します。"
+          "userJourneyEvents": "ユーザージャーニーイベント"
         },
         "doNotCollect": {
           "customNodeConfigurations": "カスタムノードの設定",
@@ -231,6 +230,7 @@
           "workflowContents": "ワークフローの内容"
         },
         "title": "データ収集について",
+        "viewFullPolicy": "完全なポリシーを見る",
         "whatWeCollect": "収集内容:",
         "whatWeDoNotCollect": "収集しない内容:"
       },

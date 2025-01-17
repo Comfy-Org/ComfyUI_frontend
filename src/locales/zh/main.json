@@ -221,8 +221,7 @@
         "collect": {
           "errorReports": "错误报告和堆栈跟踪",
           "systemInfo": "硬件，操作系统类型和应用版本",
-          "userJourneyEvents": "用户旅程事件",
-          "userJourneyTooltip": "用户旅程事件用于跟踪用户通过应用安装过程的旅程。事件收集在第一次成功运行ComfyUI工作流后结束。"
+          "userJourneyEvents": "用户旅程事件"
         },
         "doNotCollect": {
           "customNodeConfigurations": "自定义节点配置",
@@ -231,6 +230,7 @@
           "workflowContents": "工作流内容"
         },
         "title": "关于数据收集",
+        "viewFullPolicy": "查看完整政策",
         "whatWeCollect": "我们收集的内容：",
         "whatWeDoNotCollect": "我们不收集的内容："
       },
