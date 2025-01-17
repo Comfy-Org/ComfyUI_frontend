@@ -2867,7 +2867,6 @@ class UIManager {
     const circle_shape = document.createElement('div')
     circle_shape.id = 'maskEditor_sidePanelBrushShapeCircle'
     circle_shape.classList.add(shapeColor)
-    circle_shape.style.background = 'var(--p-button-text-primary-color)'
     circle_shape.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
       this.setBrushBorderRadius()
@@ -2878,13 +2877,20 @@ class UIManager {
     const square_shape = document.createElement('div')
     square_shape.id = 'maskEditor_sidePanelBrushShapeSquare'
     square_shape.classList.add(shapeColor)
-    square_shape.style.background = ''
     square_shape.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Rect)
       this.setBrushBorderRadius()
       square_shape.style.background = 'var(--p-button-text-primary-color)'
       circle_shape.style.background = ''
     })
+
+    if ((await this.messageBroker.pull('brushSettings')).type === BrushShape.Arc) {
+      circle_shape.style.background = 'var(--p-button-text-primary-color)'
+      square_shape.style.background = ''
+    } else {
+      circle_shape.style.background = ''
+      square_shape.style.background = 'var(--p-button-text-primary-color)'
+    }
 
     brush_shape_container.appendChild(circle_shape)
     brush_shape_container.appendChild(square_shape)
