@@ -221,8 +221,7 @@
         "collect": {
           "errorReports": "오류 메시지 및 스택 추적",
           "systemInfo": "하드웨어, OS 유형, 앱 버전",
-          "userJourneyEvents": "사용자 여정 이벤트",
-          "userJourneyTooltip": "사용자 여정 이벤트는 앱 설치 과정을 통한 사용자의 여정을 추적하는 데 사용됩니다. 이벤트 수집은 첫 번째 성공적인 ComfyUI 워크플로우 실행에서 종료됩니다."
+          "userJourneyEvents": "사용자 여정 이벤트"
         },
         "doNotCollect": {
           "customNodeConfigurations": "사용자 정의 노드 구성",
@@ -231,6 +230,7 @@
           "workflowContents": "워크플로우 내용"
         },
         "title": "데이터 수집 안내",
+        "viewFullPolicy": "전체 정책 보기",
         "whatWeCollect": "수집하는 정보:",
         "whatWeDoNotCollect": "수집하지 않는 정보:"
       },

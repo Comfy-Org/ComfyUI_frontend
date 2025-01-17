@@ -221,8 +221,7 @@
         "collect": {
           "errorReports": "Message d'erreur et trace de la pile",
           "systemInfo": "Matériel, type de système d'exploitation et version de l'application",
-          "userJourneyEvents": "Événements du parcours utilisateur",
-          "userJourneyTooltip": "Les événements du parcours utilisateur sont utilisés pour suivre le parcours de l'utilisateur lors du processus d'installation de l'application. La collecte d'événements se termine lors de la première exécution réussie du flux de travail ComfyUI."
+          "userJourneyEvents": "Événements du parcours utilisateur"
         },
         "doNotCollect": {
           "customNodeConfigurations": "Configurations de nœud personnalisées",
@@ -231,6 +230,7 @@
           "workflowContents": "Contenus du flux de travail"
         },
         "title": "À propos de la collecte de données",
+        "viewFullPolicy": "Voir la politique complète",
         "whatWeCollect": "Ce que nous collectons :",
         "whatWeDoNotCollect": "Ce que nous ne collectons pas :"
       },
