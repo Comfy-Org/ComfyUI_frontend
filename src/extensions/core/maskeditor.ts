@@ -2891,7 +2891,7 @@ class UIManager {
       1,
       100,
       1,
-      10,
+      (await this.messageBroker.pull('brushSettings')).size,
       (event, value) => {
         this.messageBroker.publish('setBrushSize', parseInt(value))
         this.updateBrushPreview()
@@ -2904,7 +2904,7 @@ class UIManager {
       0,
       1,
       0.01,
-      0.7,
+      (await this.messageBroker.pull('brushSettings')).opacity,
       (event, value) => {
         this.messageBroker.publish('setBrushOpacity', parseFloat(value))
         this.updateBrushPreview()
@@ -2917,7 +2917,7 @@ class UIManager {
       0,
       1,
       0.01,
-      1,
+      (await this.messageBroker.pull('brushSettings')).hardness,
       (event, value) => {
         this.messageBroker.publish('setBrushHardness', parseFloat(value))
         this.updateBrushPreview()
