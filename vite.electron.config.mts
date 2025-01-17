@@ -67,7 +67,8 @@ const mockElectronAPI: Plugin = {
             incrementUserProperty: (property, value) => {
               console.log('incrementUserProperty', property, value)
             }
-          }
+          },
+          setMetricsConsent: (consent) => {}
         };`
       }
     ]

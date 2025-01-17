@@ -94,6 +94,12 @@ const router = createRouter({
           beforeEnter: guardElectronAccess
         },
         {
+          path: '/metrics-consent',
+          name: 'MetricsConsentView',
+          component: () => import('@/views/MetricsConsentView.vue'),
+          beforeEnter: guardElectronAccess
+        },
+        {
           path: 'desktop-start',
           name: 'DesktopStartView',
           component: () => import('@/views/DesktopStartView.vue'),

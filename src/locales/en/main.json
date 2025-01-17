@@ -70,7 +70,9 @@
     "keybinding": "Keybinding",
     "upload": "Upload",
     "export": "Export",
-    "workflow": "Workflow"
+    "workflow": "Workflow",
+    "success": "Success",
+    "ok": "OK"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -182,6 +184,8 @@
     "settings": {
       "autoUpdate": "Automatic Updates",
       "allowMetrics": "Usage Metrics",
+      "errorUpdatingConsent": "Error Updating Consent",
+      "errorUpdatingConsentDetail": "Failed to update metrics consent settings",
       "autoUpdateDescription": "Automatically download updates when they become available. You will be notified before updates are installed.",
       "allowMetricsDescription": "Help improve ComfyUI by sending anonymous usage metrics. No personal information or workflow content will be collected.",
       "learnMoreAboutData": "Learn more about data collection",
@@ -204,7 +208,13 @@
       }
     },
     "customNodes": "Custom Nodes",
-    "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations."
+    "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations.",
+    "helpImprove": "Please help improve ComfyUI",
+    "moreInfo": "For more info, please read our",
+    "privacyPolicy": "privacy policy",
+    "metricsEnabled": "Metrics Enabled",
+    "metricsDisabled": "Metrics Disabled",
+    "updateConsent": "You previously opted in to reporting crashes. We are now tracking event-based metrics to help identify bugs and improve the app. No personal identifiable information is collected."
   },
   "serverStart": {
     "reinstall": "Reinstall",

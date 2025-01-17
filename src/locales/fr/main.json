@@ -107,6 +107,7 @@
     "noTasksFound": "Aucune tâche trouvée",
     "noTasksFoundMessage": "Il n'y a pas de tâches dans la file d'attente.",
     "noWorkflowsFound": "Aucun flux de travail trouvé.",
+    "ok": "OK",
     "openNewIssue": "Ouvrir un nouveau problème",
     "overwrite": "Écraser",
     "reconnected": "Reconnecté",
@@ -129,6 +130,7 @@
     "searchWorkflows": "Rechercher des flux de travail",
     "settings": "Paramètres",
     "showReport": "Afficher le rapport",
+    "success": "Succès",
     "systemInfo": "Informations système",
     "terminal": "Terminal",
     "upload": "Téléverser",
@@ -186,6 +188,7 @@
       "selectGpu": "Sélectionnez le GPU",
       "selectGpuDescription": "Sélectionnez le type de GPU que vous avez"
     },
+    "helpImprove": "Veuillez aider à améliorer ComfyUI",
     "installLocation": "Emplacement d'installation",
     "installLocationDescription": "Sélectionnez le répertoire pour les données utilisateur de ComfyUI. Un environnement python sera installé à l'emplacement sélectionné. Veuillez vous assurer que le disque sélectionné a suffisamment d'espace (~15GB) restant.",
     "installLocationTooltip": "Répertoire des données utilisateur de ComfyUI. Stocke :\n- Environnement Python\n- Modèles\n- Nœuds personnalisés\n",
@@ -197,13 +200,17 @@
       "title": "Configuration manuelle",
       "virtualEnvironmentPath": "Chemin de l'environnement virtuel"
     },
+    "metricsDisabled": "Métriques désactivées",
+    "metricsEnabled": "Métriques activées",
     "migrateFromExistingInstallation": "Migrer à partir d'une installation existante",
     "migration": "Migration",
     "migrationOptional": "La migration est facultative. Si vous n'avez pas d'installation existante, vous pouvez sauter cette étape.",
     "migrationSourcePathDescription": "Si vous avez une installation existante de ComfyUI, nous pouvons copier/lier vos fichiers utilisateur et modèles existants à la nouvelle installation. Votre installation existante de ComfyUI ne sera pas affectée.",
+    "moreInfo": "Pour plus d'informations, veuillez lire notre",
     "parentMissing": "Le chemin n'existe pas - créez d'abord le répertoire contenant",
     "pathExists": "Le répertoire existe déjà - veuillez vous assurer que vous avez sauvegardé toutes les données",
     "pathValidationFailed": "Échec de la validation du chemin",
+    "privacyPolicy": "politique de confidentialité",
     "selectItemsToMigrate": "Sélectionnez les éléments à migrer",
     "settings": {
       "allowMetrics": "Métriques d'utilisation",
@@ -227,10 +234,13 @@
         "whatWeCollect": "Ce que nous collectons :",
         "whatWeDoNotCollect": "Ce que nous ne collectons pas :"
       },
+      "errorUpdatingConsent": "Erreur de mise à jour du consentement",
+      "errorUpdatingConsentDetail": "Échec de la mise à jour des paramètres de consentement aux métriques",
       "learnMoreAboutData": "En savoir plus sur la collecte de données"
     },
     "systemLocations": "Emplacements système",
-    "unhandledError": "Erreur inconnue"
+    "unhandledError": "Erreur inconnue",
+    "updateConsent": "Vous avez précédemment accepté de signaler les plantages. Nous suivons maintenant des métriques basées sur les événements pour aider à identifier les bugs et améliorer l'application. Aucune information personnelle identifiable n'est collectée."
   },
   "issueReport": {
     "contactFollowUp": "Contactez-moi pour un suivi",

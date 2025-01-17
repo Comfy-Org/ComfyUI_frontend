@@ -107,6 +107,7 @@
     "noTasksFound": "タスクが見つかりません",
     "noTasksFoundMessage": "キューにタスクがありません。",
     "noWorkflowsFound": "ワークフローが見つかりません。",
+    "ok": "OK",
     "openNewIssue": "新しい問題を開く",
     "overwrite": "上書き",
     "reconnected": "再接続されました",
@@ -129,6 +130,7 @@
     "searchWorkflows": "ワークフローを検索",
     "settings": "設定",
     "showReport": "レポートを表示",
+    "success": "成功",
     "systemInfo": "システム情報",
     "terminal": "ターミナル",
     "upload": "アップロード",
@@ -186,6 +188,7 @@
       "selectGpu": "GPUを選択",
       "selectGpuDescription": "所有しているGPUのタイプを選択してください"
     },
+    "helpImprove": "ComfyUIの改善にご協力ください",
     "installLocation": "インストール先",
     "installLocationDescription": "ComfyUIのユーザーデータを保存するディレクトリを選択してください。Python環境が選択した場所にインストールされます。選択したディスクに約15GBの空き容量が必要です。",
     "installLocationTooltip": "ComfyUIのユーザーデータディレクトリ。保存内容:\n- Python環境\n- モデル\n- カスタムノード\n",
@@ -197,13 +200,17 @@
       "title": "マニュアル設定",
       "virtualEnvironmentPath": "仮想環境のパス"
     },
+    "metricsDisabled": "メトリクス無効",
+    "metricsEnabled": "メトリクス有効",
     "migrateFromExistingInstallation": "既存のインストールから移行",
     "migration": "移行",
     "migrationOptional": "移行は任意です。既存のインストールがない場合、このステップをスキップできます。",
     "migrationSourcePathDescription": "既存のComfyUIインストールがある場合、既存のユーザーファイルとモデルを新しいインストールにコピー/リンクすることができます。既存のComfyUIインストールは影響を受けません。",
+    "moreInfo": "詳細は、私たちの",
     "parentMissing": "パスが存在しません - 最初に含まれるディレクトリを作成してください",
     "pathExists": "ディレクトリはすでに存在します - すべてのデータをバックアップしたことを確認してください",
     "pathValidationFailed": "パスの検証に失敗しました",
+    "privacyPolicy": "プライバシーポリシー",
     "selectItemsToMigrate": "移行する項目を選択",
     "settings": {
       "allowMetrics": "使用状況のメトリクス",
@@ -227,10 +234,13 @@
         "whatWeCollect": "収集内容:",
         "whatWeDoNotCollect": "収集しない内容:"
       },
+      "errorUpdatingConsent": "同意の更新エラー",
+      "errorUpdatingConsentDetail": "メトリクスの同意設定の更新に失敗しました",
       "learnMoreAboutData": "データ収集の詳細を見る"
     },
     "systemLocations": "システムの場所",
-    "unhandledError": "未知のエラー"
+    "unhandledError": "未知のエラー",
+    "updateConsent": "以前はクラッシュの報告に同意していました。現在、バグの特定とアプリの改善を助けるためにイベントベースのメトリクスを追跡しています。個人を特定できる情報は収集されません。"
   },
   "issueReport": {
     "contactFollowUp": "フォローアップのために私に連絡する",
