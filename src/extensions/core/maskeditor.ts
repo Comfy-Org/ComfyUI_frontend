@@ -1,3 +1,5 @@
+import _ from 'lodash'
+
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { ComfyApp } from '../../scripts/app'
@@ -784,14 +786,14 @@ export interface Brush {
   smoothingPrecision: number
 }
 
-function saveBrushToCache(key: string, brush: Brush): void {
+const saveBrushToCache = _.debounce(function (key: string, brush: Brush): void {
   try {
     const brushString = JSON.stringify(brush)
     setStorageValue(key, brushString)
   } catch (error) {
     console.error('Failed to save brush to cache:', error)
   }
-}
+}, 300)
 
 function loadBrushFromCache(key: string): Brush | null {
   try {
