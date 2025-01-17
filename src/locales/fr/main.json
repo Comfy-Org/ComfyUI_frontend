@@ -244,10 +244,12 @@
   },
   "issueReport": {
     "contactFollowUp": "Contactez-moi pour un suivi",
+    "feedbackTitle": "Aidez-nous à améliorer ComfyUI en fournissant des commentaires",
     "helpFix": "Aidez à résoudre cela",
     "notifyResolve": "Prévenez-moi lorsque résolu",
     "provideAdditionalDetails": "Fournir des détails supplémentaires (facultatif)",
     "provideEmail": "Donnez-nous votre email (Facultatif)",
+    "rating": "Évaluation",
     "stackTrace": "Trace de la pile",
     "submitErrorReport": "Soumettre un rapport d'erreur (Facultatif)",
     "systemStats": "Statistiques du système"

@@ -244,10 +244,12 @@
   },
   "issueReport": {
     "contactFollowUp": "跟进联系我",
+    "feedbackTitle": "通过提供反馈帮助我们改进ComfyUI",
     "helpFix": "帮助修复这个",
     "notifyResolve": "解决时通知我",
     "provideAdditionalDetails": "提供额外的详细信息（可选）",
     "provideEmail": "提供您的电子邮件（可选）",
+    "rating": "评分",
     "stackTrace": "堆栈跟踪",
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态"

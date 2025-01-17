@@ -83,6 +83,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "ワークフローをエクスポート（API形式）"
   },
+  "Comfy_Feedback": {
+    "label": "フィードバック"
+  },
   "Comfy_Graph_FitGroupToContents": {
     "label": "グループを内容に合わせて調整"
   },
