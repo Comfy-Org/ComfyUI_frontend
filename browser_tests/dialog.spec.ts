@@ -167,18 +167,69 @@ test.describe('Settings', () => {
 })
 
 test.describe('Feedback dialog', () => {
-  test('Should open feedback dialog with feedback button', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settingDialog.open()
-    await comfyPage.settingDialog.goToAboutPanel()
-    const feedbackButton = comfyPage.page.getByRole('link', {
-      name: /Feedback/
-    })
-    await feedbackButton.click()
+  test('Should open from about panel badgeand', async ({ comfyPage }) => {
+    // Go to about panel page in settings
+    const settings = comfyPage.settingDialog
+    await settings.open()
+    await settings.goToAboutPanel()
+
+    // Click feedback button
+    const feedbackButton = settings.root
+      .locator('a')
+      .filter({ hasText: 'Feedback' })
+    await feedbackButton.click({ force: true })
+
+    // Verify feedback dialog content is visible
     const feedbackHeader = comfyPage.page.getByRole('heading', {
       name: 'Feedback'
     })
-    expect(await feedbackHeader.isVisible()).toBe(true)
+    await expect(feedbackHeader).toBeVisible()
+  })
+
+  test('Should open from topmenu help command', async ({ comfyPage }) => {
+    // Open feedback dialog from top menu
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+
+    // Verify feedback dialog content is visible
+    const feedbackHeader = comfyPage.page.getByRole('heading', {
+      name: 'Feedback'
+    })
+    await expect(feedbackHeader).toBeVisible()
+  })
+
+  test('Should close when close button clicked', async ({ comfyPage }) => {
+    // Open feedback dialog
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+
+    const feedbackHeader = comfyPage.page.getByRole('heading', {
+      name: 'Feedback'
+    })
+
+    // Close feedback dialog
+    await comfyPage.page
+      .getByLabel('', { exact: true })
+      .getByLabel('Close')
+      .click()
+    await feedbackHeader.waitFor({ state: 'hidden' })
+
+    // Verify dialog is closed
+    await expect(feedbackHeader).not.toBeVisible()
+  })
+
+  test('Should update rating icons when selecting rating', async ({
+    comfyPage
+  }) => {
+    // Open feedback dialog
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+
+    // Test rating interaction
+    const stars = comfyPage.page.locator('.pi-star')
+    await stars.nth(3).click()
+    await expect(
+      comfyPage.page.getByLabel('Rating').locator('i').nth(3)
+    ).toHaveClass(/pi-star-fill/)
   })
 })
