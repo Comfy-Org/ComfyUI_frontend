@@ -776,10 +776,11 @@ interface Offset {
 }
 
 export interface Brush {
+  type: BrushShape
   size: number
   opacity: number
   hardness: number
-  type: BrushShape
+  smoothingPrecision: number
 }
 
 function saveBrushToCache(key: string, brush: Brush): void {
@@ -1983,10 +1984,11 @@ class BrushTool {
       this.brushSettings = loadBrushFromCache("maskeditor_brush_settings")
     } else {
       this.brushSettings = {
+        type: BrushShape.Arc,
         size: 10,
         opacity: 100,
         hardness: 1,
-        type: BrushShape.Arc
+        smoothingPrecision: 10
       }
     }
 
@@ -2047,6 +2049,10 @@ class BrushTool {
     this.messageBroker.createPullTopic(
       'brushType',
       async () => this.brushSettings.type
+    )
+    this.messageBroker.createPullTopic(
+      'brushSmoothingPrecision',
+      async () => this.brushSettings.smoothingPrecision
     )
     this.messageBroker.createPullTopic(
       'maskBlendMode',
@@ -2175,7 +2181,7 @@ class BrushTool {
     }
 
     const distanceBetweenPoints =
-      (this.brushSettings.size / this.smoothingPrecision) * 6
+      (this.brushSettings.size / this.brushSettings.smoothingPrecision) * 6
     const stepNr = Math.ceil(totalLength / distanceBetweenPoints)
 
     let interpolatedPoints = points
@@ -2222,7 +2228,7 @@ class BrushTool {
     const brush_size = await this.messageBroker.pull('brushSize')
     const distance = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
     const steps = Math.ceil(
-      distance / ((brush_size / this.smoothingPrecision) * 4)
+      distance / ((brush_size / this.brushSettings.smoothingPrecision) * 4)
     ) // Adjust for smoother lines
     const interpolatedOpacity =
       1 / (1 + Math.exp(-6 * (this.brushSettings.opacity - 0.5))) -
@@ -2596,8 +2602,8 @@ class BrushTool {
   }
 
   private setBrushSmoothingPrecision(precision: number) {
-    //console.log('precision', precision)
-    this.smoothingPrecision = precision
+    this.brushSettings.smoothingPrecision = precision
+    saveBrushToCache('maskeditor_brush_settings', this.brushSettings)
   }
 }
 
@@ -2930,7 +2936,7 @@ class UIManager {
       1,
       100,
       1,
-      10,
+      (await this.messageBroker.pull('brushSettings')).smoothingPrecision,
       (event, value) => {
         this.messageBroker.publish(
           'setBrushSmoothingPrecision',
