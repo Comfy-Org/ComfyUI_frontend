@@ -785,30 +785,29 @@ export interface Brush {
 
 function saveBrushToCache(key: string, brush: Brush): void {
   try {
-    const brushString = JSON.stringify(brush);
-    localStorage.setItem(key, brushString);
+    const brushString = JSON.stringify(brush)
+    localStorage.setItem(key, brushString)
   } catch (error) {
-    console.error("Failed to save brush to cache:", error);
+    console.error('Failed to save brush to cache:', error)
   }
 }
 
 function loadBrushFromCache(key: string): Brush | null {
   try {
-    const brushString = localStorage.getItem(key);
+    const brushString = localStorage.getItem(key)
     if (brushString) {
-      const brush = JSON.parse(brushString) as Brush;
-      console.log("Loaded brush from cache:", brush);
-      return brush; // Return the parsed brush object
+      const brush = JSON.parse(brushString) as Brush
+      console.log('Loaded brush from cache:', brush)
+      return brush // Return the parsed brush object
     } else {
-      console.log("No brush found in cache.");
-      return null; // Return null if no brush is found
+      console.log('No brush found in cache.')
+      return null // Return null if no brush is found
     }
   } catch (error) {
-    console.error("Failed to load brush from cache:", error);
-    return null; // Return null in case of an error
+    console.error('Failed to load brush from cache:', error)
+    return null // Return null in case of an error
   }
 }
-
 
 type Callback = (data?: any) => void
 
@@ -1980,8 +1979,8 @@ class BrushTool {
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
 
-    if (loadBrushFromCache("maskeditor_brush_settings")) {
-      this.brushSettings = loadBrushFromCache("maskeditor_brush_settings")
+    if (loadBrushFromCache('maskeditor_brush_settings')) {
+      this.brushSettings = loadBrushFromCache('maskeditor_brush_settings')
     } else {
       this.brushSettings = {
         type: BrushShape.Arc,
