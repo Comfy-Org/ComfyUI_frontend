@@ -167,7 +167,7 @@ test.describe('Settings', () => {
 })
 
 test.describe('Feedback dialog', () => {
-  test('Should open from about panel badgeand', async ({ comfyPage }) => {
+  test('Should open from about panel badge', async ({ comfyPage }) => {
     // Go to about panel page in settings
     const settings = comfyPage.settingDialog
     await settings.open()
