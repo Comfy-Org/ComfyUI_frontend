@@ -72,14 +72,6 @@
                 'install.settings.dataCollectionDialog.collect.userJourneyEvents'
               )
             }}
-            <span
-              class="pi pi-info-circle text-neutral-400"
-              v-tooltip="
-                $t(
-                  'install.settings.dataCollectionDialog.collect.userJourneyTooltip'
-                )
-              "
-            />
           </li>
         </ul>
 
