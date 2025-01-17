@@ -1979,9 +1979,9 @@ class BrushTool {
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
 
-    const cachedBrushSettings = loadBrushFromCache('maskeditor_brush_settings');
+    const cachedBrushSettings = loadBrushFromCache('maskeditor_brush_settings')
     if (cachedBrushSettings) {
-      this.brushSettings = cachedBrushSettings;
+      this.brushSettings = cachedBrushSettings
     } else {
       this.brushSettings = {
         type: BrushShape.Arc,
