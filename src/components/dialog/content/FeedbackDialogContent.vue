@@ -4,7 +4,11 @@
       <template #content>
         <div class="flex flex-col items-center">
           <h3 class="text-4xl">{{ $t('menuLabels.Feedback') }}</h3>
-          <Rating v-model="rating" class="flex justify-center">
+          <Rating
+            v-model="rating"
+            class="flex justify-center"
+            :aria-label="$t('issueReport.rating')"
+          >
             <template #onicon>
               <i class="pi pi-star-fill text-4xl"></i>
             </template>
@@ -19,7 +23,7 @@
   <div>
     <ReportIssuePanel
       error-type="Feedback"
-      title="We'd love to hear about your experience with ComfyUI"
+      :title="$t('issueReport.feedbackTitle')"
       :extra-fields="[ratingField]"
       :default-fields="['SystemStats', 'Settings']"
     />

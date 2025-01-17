@@ -82,7 +82,9 @@
     "systemStats": "System Stats",
     "contactFollowUp": "Contact me for follow up",
     "notifyResolve": "Notify me when resolved",
-    "helpFix": "Help Fix This"
+    "helpFix": "Help Fix This",
+    "rating": "Rating",
+    "feedbackTitle": "Help us improve ComfyUI by providing feedback"
   },
   "color": {
     "default": "Default",
