@@ -2884,7 +2884,9 @@ class UIManager {
       circle_shape.style.background = ''
     })
 
-    if ((await this.messageBroker.pull('brushSettings')).type === BrushShape.Arc) {
+    if (
+      (await this.messageBroker.pull('brushSettings')).type === BrushShape.Arc
+    ) {
       circle_shape.style.background = 'var(--p-button-text-primary-color)'
       square_shape.style.background = ''
     } else {
@@ -2950,32 +2952,29 @@ class UIManager {
         )
       }
     )
-    
-    const resetBrushSettingsButton = document.createElement('button');
-    resetBrushSettingsButton.id = 'resetBrushSettingsButton';
-    resetBrushSettingsButton.innerText = 'Reset to Default';
+
+    const resetBrushSettingsButton = document.createElement('button')
+    resetBrushSettingsButton.id = 'resetBrushSettingsButton'
+    resetBrushSettingsButton.innerText = 'Reset to Default'
 
     resetBrushSettingsButton.addEventListener('click', () => {
       this.messageBroker.publish('setBrushShape', BrushShape.Arc)
       this.messageBroker.publish('setBrushSize', 10)
       this.messageBroker.publish('setBrushOpacity', 100)
       this.messageBroker.publish('setBrushHardness', 1)
-      this.messageBroker.publish(
-        'setBrushSmoothingPrecision',
-        10
-      )
+      this.messageBroker.publish('setBrushSmoothingPrecision', 10)
 
       circle_shape.style.background = 'var(--p-button-text-primary-color)'
       square_shape.style.background = ''
 
-      thicknesSliderObj.slider.value = '10';
-      opacitySliderObj.slider.value = '100';
-      hardnessSliderObj.slider.value = '1';
-      brushSmoothingPrecisionSliderObj.slider.value = '10';
+      thicknesSliderObj.slider.value = '10'
+      opacitySliderObj.slider.value = '100'
+      hardnessSliderObj.slider.value = '1'
+      brushSmoothingPrecisionSliderObj.slider.value = '10'
 
       this.setBrushBorderRadius()
       this.updateBrushPreview()
-    });
+    })
 
     brush_settings_container.appendChild(brush_settings_title)
     brush_settings_container.appendChild(resetBrushSettingsButton)
