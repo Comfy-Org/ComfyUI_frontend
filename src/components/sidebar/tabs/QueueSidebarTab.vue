@@ -99,7 +99,7 @@ import type { MenuItem } from 'primevue/menuitem'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -194,10 +194,6 @@ const confirmRemoveAll = (event: Event) => {
   })
 }
 
-const onStatus = async () => {
-  await queueStore.update()
-}
-
 const menu = ref(null)
 const menuTargetTask = ref<TaskItemImpl | null>(null)
 const menuTargetNode = ref<ComfyNode | null>(null)
@@ -266,14 +262,5 @@ watch(allTasks, () => {
 
   const newIndex = galleryActiveIndex.value + lengthChange
   galleryActiveIndex.value = Math.max(0, newIndex)
-})
-
-onMounted(() => {
-  api.addEventListener('status', onStatus)
-  queueStore.update()
-})
-
-onUnmounted(() => {
-  api.removeEventListener('status', onStatus)
 })
 </script>
