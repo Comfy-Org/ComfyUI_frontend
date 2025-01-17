@@ -194,6 +194,10 @@ export class QueueSidebarTab extends SidebarTab {
     return this.root.locator('.no-results-placeholder')
   }
 
+  get galleryImage() {
+    return this.page.locator('.galleria-image')
+  }
+
   private getToggleExpandButton(isExpanded: boolean) {
     const iconSelector = isExpanded ? '.pi-image' : '.pi-images'
     return this.root.locator(`.toggle-expanded-button ${iconSelector}`)
@@ -256,14 +260,24 @@ export class QueueSidebarTab extends SidebarTab {
 
   async openTaskPreview(taskIndex: number) {
     const previewButton = this.getTaskPreviewButton(taskIndex)
-    await previewButton.hover()
     await previewButton.click()
-    return this.getGalleryImage(taskIndex).waitFor({ state: 'visible' })
+    return this.galleryImage.waitFor({ state: 'visible' })
   }
 
-  getGalleryImage(galleryItemIndex: number) {
-    // Aria labels of Galleria items are 1-based indices
-    const galleryLabel = `${galleryItemIndex + 1}`
-    return this.page.getByLabel(galleryLabel).locator('.galleria-image')
+  getGalleryImage(imageFilename: string) {
+    return this.galleryImage.and(this.page.getByAltText(imageFilename))
+  }
+
+  getTaskImage(imageFilename: string) {
+    return this.tasks.getByAltText(imageFilename)
+  }
+
+  /** Trigger the queue store and tasks to update */
+  async triggerTasksUpdate() {
+    await this.page.evaluate(() => {
+      window['app']['api'].dispatchCustomEvent('status', {
+        exec_info: { queue_remaining: 0 }
+      })
+    })
   }
 }
