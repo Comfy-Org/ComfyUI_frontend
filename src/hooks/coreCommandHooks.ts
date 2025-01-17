@@ -538,6 +538,15 @@ export function useCoreCommands(): ComfyCommand[] {
         if (workflowStore.activeWorkflow)
           workflowService.closeWorkflow(workflowStore.activeWorkflow)
       }
+    },
+    {
+      id: 'Comfy.Feedback',
+      icon: 'pi pi-comment',
+      label: 'Feedback',
+      versionAdded: '1.7.14',
+      function: () => {
+        dialogService.showFeedbackDialog()
+      }
     }
   ]
 }
