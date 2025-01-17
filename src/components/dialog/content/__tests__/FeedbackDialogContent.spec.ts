@@ -1,24 +1,15 @@
 // @ts-strict-ignore
 import { mount } from '@vue/test-utils'
-import Card from 'primevue/card'
 import PrimeVue from 'primevue/config'
-import Rating from 'primevue/rating'
+import Tooltip from 'primevue/tooltip'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import type { ReportField } from '@/types/issueReportTypes'
 
 import FeedbackDialogContent from '../FeedbackDialogContent.vue'
-import ReportIssuePanel from '../error/ReportIssuePanel.vue'
-
-vi.mock('@/components/error/ReportIssuePanel.vue', () => ({
-  default: {
-    name: 'ReportIssuePanel',
-    props: ['errorType', 'title', 'extraFields', 'defaultFields'],
-    template: '<div><slot /></div>'
-  }
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -28,33 +19,21 @@ const i18n = createI18n({
   }
 })
 
+vi.mock('@/components/error/ReportIssuePanel.vue', () => ({
+  default: {
+    name: 'ReportIssuePanel',
+    props: ['errorType', 'title', 'extraFields', 'defaultFields'],
+    template: '<div><slot /></div>'
+  }
+}))
+
 vi.mock('primevue/usetoast', () => ({
   useToast: vi.fn(() => ({
     add: vi.fn()
   }))
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getLogs: vi.fn().mockResolvedValue('mock logs'),
-    getSystemStats: vi.fn().mockResolvedValue('mock stats'),
-    getSettings: vi.fn().mockResolvedValue('mock settings')
-  }
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: {
-    graph: {
-      asSerialisable: vi.fn().mockReturnValue({})
-    }
-  }
-}))
-
-vi.mock('@sentry/core', () => ({
-  captureMessage: vi.fn()
-}))
-
-describe('FeedbackPanel', () => {
+describe('FeedbackDialogContent', () => {
   beforeAll(() => {
     const app = createApp({})
     app.use(PrimeVue)
@@ -65,70 +44,98 @@ describe('FeedbackPanel', () => {
     mount(FeedbackDialogContent, {
       global: {
         plugins: [PrimeVue, i18n],
-        components: { Card, Rating, ReportIssuePanel }
+        directives: { tooltip: Tooltip }
       }
     })
 
-  it('renders the Card with the correct header', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.findComponent(Card).exists()).toBe(true)
-    expect(wrapper.find('h3').text()).toBe(enMessages.menuLabels.Feedback)
-  })
-
-  it('renders the Rating component', () => {
-    const wrapper = mountComponent()
-    expect(wrapper.findComponent(Rating).exists()).toBe(true)
-  })
-
-  it('initializes the rating value to null', () => {
+  it('initializes rating to null', () => {
     const wrapper = mountComponent()
     expect(wrapper.vm.rating).toBeNull()
   })
 
-  it('updates the rating value when a rating is selected', async () => {
+  it('updates rating when a star is clicked', async () => {
     const wrapper = mountComponent()
-    const ratingComponent = wrapper.findComponent(Rating)
+    const ratingComponent = wrapper.findComponent({ name: 'Rating' })
 
-    await ratingComponent.vm.$emit('update:modelValue', 4)
+    // Click the 4th start (out of 5)
+    await ratingComponent.findAll('i').at(3)?.trigger('click')
+
+    // Verify the rating has been updated
     expect(wrapper.vm.rating).toBe(4)
   })
 
-  it('renders the ReportIssuePanel with the correct props', () => {
+  it('passes correct props to ReportIssuePanel', () => {
     const wrapper = mountComponent()
-    const reportIssuePanel = wrapper.findComponent(ReportIssuePanel)
+    const reportIssuePanel = wrapper.findComponent({ name: 'ReportIssuePanel' })
 
-    expect(reportIssuePanel.exists()).toBe(true)
     expect(reportIssuePanel.props()).toMatchObject({
       errorType: 'Feedback',
-      title: "We'd love to hear about your experience with ComfyUI",
-      defaultFields: ['SystemStats', 'Settings'],
-      extraFields: expect.arrayContaining([
-        expect.objectContaining({
-          label: 'rating',
-          value: 'Rating',
-          optIn: false,
-          data: { rating: null }
-        })
-      ])
+      title: enMessages['issueReport']['feedbackTitle'],
+      defaultFields: ['SystemStats', 'Settings']
     })
   })
 
-  it('updates the extraFields rating when the rating is changed', async () => {
+  it('includes rating in extraFields when updated', async () => {
     const wrapper = mountComponent()
-    const ratingComponent = wrapper.findComponent(Rating)
-    const reportIssuePanel = wrapper.findComponent(ReportIssuePanel)
+    const reportIssuePanel = wrapper.findComponent({ name: 'ReportIssuePanel' })
 
-    // Set a new rating value
-    await ratingComponent.vm.$emit('update:modelValue', 5)
+    // Click the 5th star (out of 5)
+    const ratingComponent = wrapper.findComponent({ name: 'Rating' })
+    await ratingComponent.findAll('i').at(4)?.trigger('click')
 
-    // Check that the extraFields prop on ReportIssuePanel updates
-    const extraFields = reportIssuePanel.props('extraFields')
+    const expectedExtraFields: ReportField[] = [
+      {
+        label: 'rating',
+        value: 'Rating',
+        optIn: false,
+        data: { rating: 5 }
+      }
+    ]
+    expect(reportIssuePanel.props('extraFields')).toEqual(expectedExtraFields)
+  })
+
+  it('includes rating in extraFields as null when no rating is selected', () => {
+    const wrapper = mountComponent()
+    const reportIssuePanel = wrapper.findComponent({ name: 'ReportIssuePanel' })
+
+    const expectedExtraFields: ReportField[] = [
+      {
+        label: 'rating',
+        value: 'Rating',
+        optIn: false,
+        data: { rating: null }
+      }
+    ]
+    expect(reportIssuePanel.props('extraFields')).toEqual(expectedExtraFields)
+  })
+
+  it('resets the rating to null on re-render', async () => {
+    const wrapper = mountComponent()
+
+    // Simulate rating selection
+    wrapper.vm.rating = 4
+    expect(wrapper.vm.rating).toBe(4)
+
+    // Re-mount the component
+    wrapper.unmount()
+    const newWrapper = mountComponent()
+
+    // Verify rating is reset
+    expect(newWrapper.vm.rating).toBeNull()
+  })
+
+  it('passes all expected extraFields to ReportIssuePanel', () => {
+    const wrapper = mountComponent()
+    const reportIssuePanel = wrapper.findComponent({ name: 'ReportIssuePanel' })
+
+    const extraFields = reportIssuePanel.props('extraFields') as ReportField[]
+
     expect(extraFields).toContainEqual(
       expect.objectContaining({
         label: 'rating',
         value: 'Rating',
         optIn: false,
-        data: { rating: 5 }
+        data: { rating: null }
       })
     )
   })
