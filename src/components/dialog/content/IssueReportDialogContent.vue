@@ -2,12 +2,10 @@
   <div class="p-8 h-full">
     <Card>
       <template #header>
-        <div class="flex flex-col items-center p-4 pb-0">
+        <header class="flex flex-col items-center p-4 pb-0">
           <h2 class="text-4xl">{{ props.title }}</h2>
-        </div>
-        <div class="flex flex-col items-center pb-4">
-          <span class="text-muted">{{ props.subtitle }}</span>
-        </div>
+          <span class="text-muted pb-4">{{ props.subtitle }}</span>
+        </header>
       </template>
       <template #content>
         <div>
