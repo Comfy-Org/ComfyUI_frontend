@@ -3,6 +3,8 @@ import {
   ElectronContextMenuOptions
 } from '@comfyorg/comfyui-electron-types'
 
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+
 export function isElectron() {
   return 'electronAPI' in window && window.electronAPI !== undefined
 }
@@ -19,7 +21,7 @@ const normalizeVersion = (version: string) => {
   return version
     .split('.')
     .map(Number)
-    .filter((v) => !Number.isNaN(v))
+    .filter((n): n is number => !Number.isNaN(n))
 }
 
 export function isVersionLessThan(versionA: string, versionB: string) {
@@ -37,4 +39,11 @@ export function isVersionLessThan(versionA: string, versionB: string) {
   }
 
   return false
+}
+
+export function getComfyVersion() {
+  if (isElectron()) return electronAPI().getComfyUIVersion()
+  const store = useSystemStatsStore()
+  store.fetchSystemStats()
+  return store.systemStats?.system?.comfyui_version ?? ''
 }

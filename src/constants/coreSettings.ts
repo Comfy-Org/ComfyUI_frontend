@@ -719,7 +719,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.LastChangelogVersion',
-    name: 'The version of ComfyUI on which the last changelog was shown',
+    name: 'Last shown changelog version',
     type: 'hidden',
     defaultValue: '0.0.0',
     versionAdded: '1.7.15'

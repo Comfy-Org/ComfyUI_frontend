@@ -73,12 +73,11 @@ import {
 } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { electronAPI, isElectron, isVersionLessThan } from '@/utils/envUtil'
+import { getComfyVersion, isVersionLessThan } from '@/utils/envUtil'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -282,28 +281,21 @@ const persistCurrentWorkflow = () => {
   }
 }
 
-const getComfyVersion = () => {
-  if (isElectron()) return electronAPI().getComfyUIVersion()
-  return useSystemStatsStore()?.systemStats?.system?.comfyui_version ?? ''
-}
-
 const stopWatchChangeLog = watch(
   () => workflowStore.activeWorkflow,
-  () => {
+  async () => {
     if (!comfyAppReady.value) return
-
-    const isDisabled = settingStore.get('Comfy.ShowChangeLog') === false
-    if (isDisabled || !changelog) {
+    if (!changelog || settingStore.get('Comfy.ShowChangeLog') === false) {
       stopWatchChangeLog()
       return
     }
 
     const workflow = workflowStore.activeWorkflow
     const activeState = workflow?.activeState
-    const comfyVersion = getComfyVersion()
+    const comfyVersion = getComfyVersion() // TODO: initialize/fetch somewhere else
     if (!workflow || !activeState || !comfyVersion) return
 
-    // Just checking if temporary is not enough bc doesn't account for duplicate feature
+    // Just checking if workflow temporary is not enough bc of Duplicate feature
     const isBlank = !workflow.isPersisted && activeState.nodes?.length === 0
     if (!isBlank) return
 
