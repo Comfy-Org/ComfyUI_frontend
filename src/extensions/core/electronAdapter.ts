@@ -149,6 +149,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         function() {
           electronAPI.restartApp()
         }
+      },
+      {
+        id: 'Comfy-Desktop.Quit',
+        label: 'Quit',
+        icon: 'pi pi-sign-out',
+        function() {
+          electronAPI.quit()
+        }
       }
     ],
 
