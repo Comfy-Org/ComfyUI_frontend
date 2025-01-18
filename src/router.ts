@@ -104,6 +104,12 @@ const router = createRouter({
           name: 'DesktopStartView',
           component: () => import('@/views/DesktopStartView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'issue-report',
+          name: 'IssueReportView',
+          component: () => import('@/views/IssueReportView.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }
