@@ -1,5 +1,3 @@
-import { PropType } from 'vue'
-
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
 import FeedbackDialogContent from '@/components/dialog/content/FeedbackDialogContent.vue'
@@ -98,7 +96,7 @@ export const useDialogService = () => {
   }
 
   function showIssueReportDialog(
-    props: PropType<typeof IssueReportDialogContent>
+    props: InstanceType<typeof IssueReportDialogContent>['$props']
   ) {
     dialogStore.showDialog({
       key: 'global-issue-report',
