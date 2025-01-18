@@ -11,7 +11,7 @@
       </template>
       <template #content>
         <div>
-          <ReportIssuePanel v-bind="props.contentProps" />
+          <ReportIssuePanel v-bind="props.panelProps" />
         </div>
       </template>
     </Card>
@@ -28,6 +28,6 @@ import ReportIssuePanel from './error/ReportIssuePanel.vue'
 const props = defineProps<{
   title: string
   subtitle?: string
-  contentProps: IssueReportPanelProps
+  panelProps: IssueReportPanelProps
 }>()
 </script>
