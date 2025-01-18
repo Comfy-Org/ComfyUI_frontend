@@ -541,8 +541,8 @@ export function useCoreCommands(): ComfyCommand[] {
     },
     {
       id: 'Comfy.Feedback',
-      icon: 'pi pi-comment',
-      label: 'Feedback',
+      icon: 'pi pi-megaphone',
+      label: 'Give Feedback',
       versionAdded: '1.7.14',
       function: () => {
         dialogService.showFeedbackDialog()

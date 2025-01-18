@@ -47,9 +47,9 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
       type: 'url'
     },
     {
-      label: 'Feedback',
+      label: 'Give Feedback',
       command: 'Comfy.Feedback',
-      icon: 'pi pi-comment',
+      icon: 'pi pi-megaphone',
       type: 'command'
     }
   ])
