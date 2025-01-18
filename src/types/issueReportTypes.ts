@@ -22,3 +22,11 @@ export interface ReportField {
    */
   optIn: boolean
 }
+
+export interface IssueReportPanelProps {
+  errorType: string
+  defaultFields?: DefaultField[]
+  extraFields?: ReportField[]
+  tags?: Record<string, string>
+  title?: string
+}
