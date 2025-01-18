@@ -43,6 +43,7 @@ import {
 } from '@comfyorg/litegraph'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
+import changelog from '@/assets/changelog.json'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
@@ -56,6 +57,7 @@ import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
@@ -71,10 +73,12 @@ import {
 } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { electronAPI, isElectron, isVersionLessThan } from '@/utils/envUtil'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -277,6 +281,42 @@ const persistCurrentWorkflow = () => {
     sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
   }
 }
+
+const getComfyVersion = () => {
+  if (isElectron()) return electronAPI().getComfyUIVersion()
+  return useSystemStatsStore()?.systemStats?.system?.comfyui_version ?? ''
+}
+
+const stopWatchChangeLog = watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    if (!comfyAppReady.value) return
+
+    const isDisabled = settingStore.get('Comfy.ShowChangeLog') === false
+    if (isDisabled || !changelog) {
+      stopWatchChangeLog()
+      return
+    }
+
+    const workflow = workflowStore.activeWorkflow
+    const activeState = workflow?.activeState
+    const comfyVersion = getComfyVersion()
+    if (!workflow || !activeState || !comfyVersion) return
+
+    // Just checking if temporary is not enough bc doesn't account for duplicate feature
+    const isBlank = !workflow.isPersisted && activeState.nodes?.length === 0
+    if (!isBlank) return
+
+    const lastShown = settingStore.get('Comfy.LastChangelogVersion')
+    const isSeen = lastShown && !isVersionLessThan(lastShown, comfyVersion)
+    if (!isSeen) {
+      app.loadGraphData(changelog)
+      settingStore.set('Comfy.LastChangelogVersion', comfyVersion)
+    }
+
+    stopWatchChangeLog()
+  }
+)
 
 watchEffect(() => {
   if (workflowStore.activeWorkflow) {
