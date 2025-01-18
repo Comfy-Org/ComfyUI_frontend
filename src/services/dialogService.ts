@@ -73,7 +73,7 @@ export const useDialogService = () => {
   }
 
   function showTemplateWorkflowsDialog(
-    props?: InstanceType<typeof TemplateWorkflowsContent>['$props']
+    props: InstanceType<typeof TemplateWorkflowsContent>['$props'] = {}
   ) {
     dialogStore.showDialog({
       key: 'global-template-workflows',
