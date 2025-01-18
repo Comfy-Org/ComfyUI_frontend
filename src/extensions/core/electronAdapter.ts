@@ -113,14 +113,6 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         }
       },
       {
-        id: 'Comfy-Desktop.OpenFeedbackPage',
-        label: 'Feedback',
-        icon: 'pi pi-envelope',
-        function() {
-          window.open('https://forum.comfy.org/c/v1-feedback/', '_blank')
-        }
-      },
-      {
         id: 'Comfy-Desktop.OpenUserGuide',
         label: 'Desktop User Guide',
         icon: 'pi pi-book',
@@ -155,10 +147,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
     menuCommands: [
       {
         path: ['Help'],
-        commands: [
-          'Comfy-Desktop.OpenUserGuide',
-          'Comfy-Desktop.OpenFeedbackPage'
-        ]
+        commands: ['Comfy-Desktop.OpenUserGuide']
       },
       {
         path: ['Help'],
