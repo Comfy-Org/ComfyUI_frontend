@@ -8,11 +8,11 @@
     >
       <template #header>
         <header class="flex flex-col items-center">
-          <h2 id="issue-report-title" class="text-4xl">{{ props.title }}</h2>
-          <span class="text-muted mt-2">{{ props.subtitle }}</span>
+          <h2 id="issue-report-title" class="text-4xl">{{ title }}</h2>
+          <span v-if="subtitle" class="text-muted mt-2">{{ subtitle }}</span>
         </header>
       </template>
-      <ReportIssuePanel v-bind="props.panelProps" />
+      <ReportIssuePanel v-bind="panelProps" />
     </Panel>
   </div>
 </template>
