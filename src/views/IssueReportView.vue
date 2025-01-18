@@ -17,19 +17,21 @@ onMounted(() => {
   dialogStore.showDialog({
     key: 'issue-report',
     component: ReportIssuePanel,
-    title: 'Report an issue',
     dialogComponentProps: {
       onClose: () => router.push('/')
     },
     props: {
       errorType: 'desktop',
+      defaultFields: ['SystemStats', 'Logs', 'Settings'],
       extraFields: [
         {
           label: 'Desktop Version',
           value: 'desktopVersion',
+          optIn: false,
           data: { desktopVersion: '1.4.2' } // electronAPI().getVersion()
         }
-      ]
+      ],
+      pt: { root: { class: 'border-none' } }
     }
   })
 })
