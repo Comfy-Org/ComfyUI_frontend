@@ -1,23 +1,24 @@
 <template>
-  <div class="p-8 h-full">
-    <Card>
+  <div class="p-8 h-full" aria-labelledby="issue-report-title">
+    <Panel
+      :pt="{
+        root: { class: 'border-none' },
+        content: { class: 'p-0' }
+      }"
+    >
       <template #header>
-        <header class="flex flex-col items-center p-4 pb-0">
-          <h2 class="text-4xl">{{ props.title }}</h2>
-          <span class="text-muted pb-4">{{ props.subtitle }}</span>
+        <header class="flex flex-col items-center">
+          <h2 id="issue-report-title" class="text-4xl">{{ props.title }}</h2>
+          <span class="text-muted mt-2">{{ props.subtitle }}</span>
         </header>
       </template>
-      <template #content>
-        <div>
-          <ReportIssuePanel v-bind="props.panelProps" />
-        </div>
-      </template>
-    </Card>
+      <ReportIssuePanel v-bind="props.panelProps" />
+    </Panel>
   </div>
 </template>
 
 <script setup lang="ts">
-import Card from 'primevue/card'
+import Panel from 'primevue/panel'
 
 import type { IssueReportPanelProps } from '@/types/issueReportTypes'
 
