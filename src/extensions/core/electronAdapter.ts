@@ -181,6 +181,16 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       }
     ],
 
+    keybindings: [
+      {
+        commandId: 'Workspace.CloseWorkflow',
+        combo: {
+          key: 'w',
+          ctrl: true
+        }
+      }
+    ],
+
     aboutPageBadges: [
       {
         label: 'ComfyUI_desktop v' + desktopAppVersion,
