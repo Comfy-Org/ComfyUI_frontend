@@ -16,6 +16,7 @@ dist-ssr
 .vscode/*
 *.code-workspace
 !.vscode/extensions.json
+!.vscode/tailwind.json
 .idea
 .DS_Store
 *.suo
