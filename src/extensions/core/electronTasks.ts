@@ -22,7 +22,6 @@ export const electronTasks: MaintenanceTask[] = [
     errorDescription: 'Unable to open the base path.  Please select a new one.',
     detail:
       'The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.',
-    loading: minDurationRef(true, minRefreshTime),
     isInstallationFix: true,
     button: {
       icon: PrimeIcons.QUESTION,
@@ -38,7 +37,6 @@ export const electronTasks: MaintenanceTask[] = [
     description: 'Open the git download page.',
     detail:
       'Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.',
-    loading: minDurationRef(true, minRefreshTime),
     button: {
       icon: PrimeIcons.EXTERNAL_LINK,
       text: 'Download'
@@ -52,7 +50,6 @@ export const electronTasks: MaintenanceTask[] = [
     description: 'Download the latest VC++ Redistributable runtime.',
     detail:
       'The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.',
-    loading: minDurationRef(true, minRefreshTime),
     button: {
       icon: PrimeIcons.EXTERNAL_LINK,
       text: 'Download'
@@ -72,7 +69,6 @@ export const electronTasks: MaintenanceTask[] = [
     detail:
       'Delete the desktop app config, restart the app, and load the installation screen.',
     confirmText: 'Delete all saved config and reinstall?',
-    loading: minDurationRef(true, minRefreshTime),
     button: {
       icon: PrimeIcons.EXCLAMATION_TRIANGLE,
       text: 'Reinstall'
@@ -96,7 +92,6 @@ export const electronTasks: MaintenanceTask[] = [
       'Python packages that are required to run ComfyUI are not installed.',
     detail:
       'This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.',
-    loading: minDurationRef(true, minRefreshTime),
     usesTerminal: true,
     isInstallationFix: true,
     button: {
@@ -113,7 +108,6 @@ export const electronTasks: MaintenanceTask[] = [
     description: 'uv installs and maintains the python environment.',
     detail:
       "This will open the download page for Astral's uv tool. uv is used to install python and manage python packages.",
-    loading: minDurationRef(true, minRefreshTime),
     button: {
       icon: 'pi pi-asterisk',
       text: 'Download'
@@ -130,7 +124,6 @@ export const electronTasks: MaintenanceTask[] = [
     detail:
       'This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.',
     confirmText: 'Delete uv cache of python packages?',
-    loading: minDurationRef(true, minRefreshTime),
     isInstallationFix: true,
     button: {
       icon: PrimeIcons.TRASH,
@@ -149,7 +142,6 @@ export const electronTasks: MaintenanceTask[] = [
     detail:
       'The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.',
     confirmText: 'Delete the .venv directory?',
-    loading: minDurationRef(true, minRefreshTime),
     usesTerminal: true,
     isInstallationFix: true,
     button: {
@@ -158,3 +150,7 @@ export const electronTasks: MaintenanceTask[] = [
     }
   }
 ]
+
+for (const task of electronTasks) {
+  task.loading = minDurationRef(true, minRefreshTime)
+}
