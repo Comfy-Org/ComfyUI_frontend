@@ -84,10 +84,13 @@ export const useDialogService = () => {
     })
   }
 
-  function showFeedbackDialog() {
+  function showFeedbackDialog(
+    props: InstanceType<typeof FeedbackDialogContent>['$props'] = {}
+  ) {
     dialogStore.showDialog({
       key: 'global-provide-feedback',
-      component: FeedbackDialogContent
+      component: FeedbackDialogContent,
+      props
     })
   }
 
