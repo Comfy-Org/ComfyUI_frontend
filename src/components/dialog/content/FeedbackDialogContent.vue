@@ -35,9 +35,8 @@ import Card from 'primevue/card'
 import Rating from 'primevue/rating'
 import { computed, ref } from 'vue'
 
+import ReportIssuePanel from '@/components/dialog/content/error/ReportIssuePanel.vue'
 import type { ReportField } from '@/types/issueReportTypes'
-
-import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
 const rating = ref(null)
 
