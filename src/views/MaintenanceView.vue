@@ -98,7 +98,6 @@ import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
-import { st, t } from '@/i18n'
 import {
   MaintenanceFilter,
   MaintenanceTask
@@ -150,48 +149,6 @@ const processUpdate = (update: InstallValidation) => {
     for (const task of tasks.value) {
       task.state = update[task.id] ?? 'skipped'
       task.loading = false
-    }
-  }
-}
-
-/** Cherry-picked properties for {@link createTask} function. */
-type TaskProps = Pick<
-  MaintenanceTask,
-  'id' | 'headerImg' | 'onClick' | 'requireConfirm' | 'severity'
-> & {
-  /** Icon to show on the button, e.g. `'pi pi-external-link'` */
-  buttonIcon?: string
-}
-
-/**
- * Helper function that creates a maintenance task to display.
- * @param properties Task properties that are not stored in i18n files
- */
-function createTask({
-  id,
-  headerImg,
-  severity,
-  requireConfirm,
-  buttonIcon,
-  onClick
-}: TaskProps): MaintenanceTask {
-  return {
-    id,
-    name: t(`maintenance.tasks.${id}.name`),
-    state: null,
-    description: st(`maintenance.tasks.${id}.description`, undefined),
-    descriptionOk: st(`maintenance.tasks.${id}.descriptionOk`, undefined),
-    errorDescription: st(`maintenance.tasks.${id}.errorDescription`, undefined),
-    detail: st(`maintenance.tasks.${id}.detail`, undefined),
-    confirmText: st(`maintenance.tasks.${id}.confirmText`, undefined),
-    headerImg,
-    severity,
-    requireConfirm,
-    onClick,
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      text: t(`maintenance.tasks.${id}.buttonText`),
-      icon: buttonIcon
     }
   }
 }
