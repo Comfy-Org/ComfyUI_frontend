@@ -30,6 +30,7 @@
           class="w-full"
           :placeholder="$t('issueReport.provideEmail')"
           :maxlength="CONTACT_MAX_LEN"
+          :invalid="isContactInfoInvalid"
         />
         <CheckboxGroup
           v-model="contactPrefs"
@@ -103,8 +104,17 @@ const icon = computed(() => {
   return 'pi pi-send'
 })
 const isFormEmpty = computed(() => !selection.value.length && !details.value)
+const isContactInfoInvalid = computed(() => {
+  if (!contactInfo.value) return false
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return !emailRegex.test(contactInfo.value)
+})
 const isButtonDisabled = computed(
-  () => submitted.value || submitting.value || isFormEmpty.value
+  () =>
+    submitted.value ||
+    submitting.value ||
+    isFormEmpty.value ||
+    isContactInfoInvalid.value
 )
 
 const contactCheckboxes = [
