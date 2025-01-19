@@ -72,7 +72,8 @@
     "export": "Export",
     "workflow": "Workflow",
     "success": "Success",
-    "ok": "OK"
+    "ok": "OK",
+    "feedback": "Feedback"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
