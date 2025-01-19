@@ -1,21 +1,21 @@
 {
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Открыть папку с пользовательскими узлами"
+    "label": "Открыть папку пользовательских нод"
   },
   "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Открыть папку с входными данными"
+    "label": "Открыть папку входных данных"
   },
   "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Открыть папку с логами"
+    "label": "Открыть папку логов"
   },
   "Comfy-Desktop_Folders_OpenModelConfig": {
     "label": "Открыть extra_model_paths.yaml"
   },
   "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Открыть папку с моделями"
+    "label": "Открыть папку моделей"
   },
   "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Открыть папку с результатами"
+    "label": "Открыть папку результатов"
   },
   "Comfy-Desktop_OpenDevTools": {
     "label": "Открыть инструменты разработчика"
@@ -36,7 +36,7 @@
     "label": "Просмотр шаблонов"
   },
   "Comfy_Canvas_FitView": {
-    "label": "Подогнать вид к выбранным узлам"
+    "label": "Подогнать вид к выбранным нодам"
   },
   "Comfy_Canvas_ResetView": {
     "label": "Сбросить вид"
@@ -48,19 +48,19 @@
     "label": "Переключить блокировку холста"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
-    "label": "Обход/Необход выбранных узлов"
+    "label": "Обход/Необход выбранных нод"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
-    "label": "Свернуть/Развернуть выбранные узлы"
+    "label": "Свернуть/Развернуть выбранные ноды"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
-    "label": "Отключить/Включить звук выбранных узлов"
+    "label": "Отключить/Включить звук выбранных нод"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Pin": {
-    "label": "Закрепить/Открепить выбранные узлы"
+    "label": "Закрепить/Открепить выбранные ноды"
   },
   "Comfy_Canvas_ToggleSelected_Pin": {
-    "label": "Закрепить/Открепить выбранные элементы"
+    "label": "Закрепить/Открепить выбранных нод"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Увеличить"
@@ -87,28 +87,28 @@
     "label": "Подогнать группу к содержимому"
   },
   "Comfy_Graph_GroupSelectedNodes": {
-    "label": "Группировать выбранные узлы"
+    "label": "Группировать выбранные ноды"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Преобразовать выбранные узлы в групповой узел"
+    "label": "Преобразовать выбранные ноды в групповую ноду"
   },
   "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Управление групповыми узлами"
+    "label": "Управление групповыми нодами"
   },
   "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Разгруппировать выбранные групповые узлы"
+    "label": "Разгруппировать выбранные групповые ноды"
   },
   "Comfy_Help_AboutComfyUI": {
-    "label": "Открыть о ComfyUI"
+    "label": "Открыть «О ComfyUI»"
   },
   "Comfy_Help_OpenComfyOrgDiscord": {
     "label": "Открыть Comfy-Org Discord"
   },
   "Comfy_Help_OpenComfyUIDocs": {
-    "label": "Открыть документы ComfyUI"
+    "label": "Открыть документацию ComfyUI"
   },
   "Comfy_Help_OpenComfyUIIssues": {
-    "label": "Открыть проблемы ComfyUI"
+    "label": "Открыть ComfyUI  Issues"
   },
   "Comfy_Interrupt": {
     "label": "Прервать"
@@ -135,7 +135,7 @@
     "label": "Повторить"
   },
   "Comfy_RefreshNodeDefinitions": {
-    "label": "Обновить определения узлов"
+    "label": "Обновить определения нод"
   },
   "Comfy_SaveWorkflow": {
     "label": "Сохранить рабочий процесс"
@@ -147,7 +147,7 @@
     "label": "Показать диалог настроек"
   },
   "Comfy_ToggleTheme": {
-    "label": "Переключить тему (Темная/Светлая)"
+    "label": "Переключить тему (Тёмная/Светлая)"
   },
   "Comfy_Undo": {
     "label": "Отменить"
@@ -171,7 +171,7 @@
     "label": "Переключить нижнюю панель терминала"
   },
   "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Переключить нижнюю панель журналов"
+    "label": "Переключить нижнюю панель логов"
   },
   "Workspace_ToggleFocusMode": {
     "label": "Переключить режим фокуса"
@@ -181,8 +181,8 @@
     "tooltip": "Библиотека моделей"
   },
   "Workspace_ToggleSidebarTab_node-library": {
-    "label": "Переключить боковую панель библиотеки узлов",
-    "tooltip": "Библиотека узлов"
+    "label": "Переключить боковую панель библиотеки нод",
+    "tooltip": "Библиотека нод"
   },
   "Workspace_ToggleSidebarTab_queue": {
     "label": "Переключить боковую панель очереди",
