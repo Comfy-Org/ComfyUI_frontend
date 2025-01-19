@@ -207,7 +207,7 @@ export function processDynamicPrompt(input: string): string {
 
 const EMAIL_PATTERN = new RegExp(
   [
-    "^((?:[A-Za-z0-9!#$%&'*+-/=?^_`{|}~]",
+    "^((?:[\\p{L}\\p{N}!#$%&'*+-/=?^_`{|}~]",
     '|(?<=^|\\.)"',
     '|"(?=$|\\.|@)',
     '|(?<="\\.*)[ .](?=.*")',
@@ -215,11 +215,12 @@ const EMAIL_PATTERN = new RegExp(
     '(@)',
     '((?:[A-Za-z0-9.-])*(?:[A-Za-z0-9])',
     '\\.(?:[A-Za-z0-9]){2,})$'
-  ].join('')
+  ].join(''),
+  'u'
 )
 
 /**
- * Validates an email address using the RFC 5322 standard.
+ * Validates an email address using the RFC 6531 standard.
  * @param email The email address to validate
  * @returns True if the email address is valid, false otherwise
  */

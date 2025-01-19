@@ -100,12 +100,17 @@ describe('ReportIssuePanel', () => {
   })
 
   const EMAIL_TEST_CASES = [
-    { email: 'invalid-email', disabled: true, desc: 'missing domain' },
+    { email: 'invalid-email@', disabled: true, desc: 'missing domain' },
     { email: '@.com', disabled: true, desc: 'missing local part' },
     { email: 'c@.com', disabled: true, desc: 'invalid domain' },
+    { email: 'u@みんな.com', disabled: true, desc: 'invalid IDN domain' },
     { email: 'name@domain.com', disabled: false, desc: 'valid email' },
-    { email: '1@qq.com', disabled: false, desc: 'valid short email' }
-  ] as const
+    { email: '1@qq.com', disabled: false, desc: 'valid short email' },
+    { email: '用户@qq.com', disabled: false, desc: 'valid Chinese username' },
+    { email: 'ユー@go.jp', disabled: false, desc: 'valid Japanese username' },
+    { email: 'пол@l.ru', disabled: false, desc: 'valid Russian username' },
+    { email: 'u@xn--tda.com', disabled: false, desc: 'valid Punycode domain' }
+  ]
 
   it.each(EMAIL_TEST_CASES)(
     'contact checkboxes are $disabled when email is $desc',
@@ -115,12 +120,14 @@ describe('ReportIssuePanel', () => {
 
       const checkboxGroup = wrapper.findAllComponents(CheckboxGroup).at(1)
       const checkboxes = checkboxGroup?.findAllComponents(Checkbox)
-      checkboxes?.forEach((checkbox) => {
-        checkbox.trigger('click')
-      })
-      checkboxes?.forEach((checkbox) => {
+      if (!checkboxes) throw new Error('No checkboxes found')
+
+      // Click each checkbox
+      for (const checkbox of checkboxes) await checkbox.trigger('click')
+
+      // Verify each checkbox's disabled state
+      for (const checkbox of checkboxes)
         expect(checkbox.props('disabled')).toBe(disabled)
-      })
     }
   )
 
