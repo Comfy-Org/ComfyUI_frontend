@@ -34,6 +34,7 @@
           v-model="contactPrefs"
           class="gap-3 mt-2"
           :checkboxes="contactCheckboxes"
+          :itemDisabled="() => !isContactValid"
         />
       </div>
       <div class="mb-4">
@@ -66,6 +67,7 @@ import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { DefaultField, ReportField } from '@/types/issueReportTypes'
+import { isValidEmail } from '@/utils/formatUtil'
 
 const ISSUE_NAME = 'User reported issue'
 const DETAILS_MAX_LEN = 5_000
@@ -92,8 +94,13 @@ const details = ref('')
 const submitting = ref(false)
 const submitted = ref(false)
 
-const followUp = computed(() => contactPrefs.value.includes('FollowUp'))
-const notifyResolve = computed(() => contactPrefs.value.includes('Resolution'))
+const isContactValid = computed(() => isValidEmail(contactInfo.value))
+const followUp = computed(
+  () => isContactValid.value && contactPrefs.value.includes('FollowUp')
+)
+const notifyResolve = computed(
+  () => isContactValid.value && contactPrefs.value.includes('Resolution')
+)
 
 const icon = computed(() => {
   if (submitting.value) return 'pi pi-spin pi-spinner'

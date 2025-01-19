@@ -2,6 +2,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Panel from 'primevue/panel'
@@ -97,6 +98,29 @@ describe('ReportIssuePanel', () => {
     await input.setValue('test@example.com')
     expect(wrapper.vm.contactInfo).toBe('test@example.com')
   })
+
+  it.each([
+    { email: 'invalid-email', disabled: true },
+    { email: '@.com', disabled: true },
+    { email: 'c@.com', disabled: true },
+    { email: 'name@domain.com', disabled: false },
+    { email: '1@qq.com', disabled: false }
+  ])(
+    'contact checkboxes disabled=$disabled when email is $email',
+    async ({ email, disabled }) => {
+      const wrapper = mountComponent({ errorType: 'Test Error' })
+      await wrapper.findComponent(InputText).setValue(email)
+
+      const checkboxGroup = wrapper.findAllComponents(CheckboxGroup).at(1)
+      const checkboxes = checkboxGroup?.findAllComponents(Checkbox)
+      checkboxes?.forEach((checkbox) => {
+        checkbox.trigger('click')
+      })
+      checkboxes?.forEach((checkbox) => {
+        expect(checkbox.props('disabled')).toBe(disabled)
+      })
+    }
+  )
 
   it('updates additional details when textarea is changed', async () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
