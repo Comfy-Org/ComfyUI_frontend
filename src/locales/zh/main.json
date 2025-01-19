@@ -43,7 +43,9 @@
     "WEBCAM": "摄像头"
   },
   "desktopMenu": {
+    "confirmQuit": "有未保存的工作流程开启；任何未保存的更改都将丢失。忽略此警告并退出？",
     "confirmReinstall": "这将清除您的 extra_models_config.yaml 文件，并重新开始安装。您确定吗？",
+    "quit": "退出",
     "reinstall": "重新安装"
   },
   "downloadGit": {
@@ -319,6 +321,7 @@
     "Previous Opened Workflow": "上一个打开的工作流",
     "Queue Prompt": "执行提示词",
     "Queue Prompt (Front)": "执行提示词 (优先执行)",
+    "Quit": "退出",
     "Redo": "重做",
     "Refresh Node Definitions": "刷新节点定义",
     "Reinstall": "重新安装",

@@ -26,6 +26,9 @@
   "Comfy-Desktop_OpenUserGuide": {
     "label": "데스크톱 사용자 가이드"
   },
+  "Comfy-Desktop_Quit": {
+    "label": "종료"
+  },
   "Comfy-Desktop_Reinstall": {
     "label": "재설치"
   },

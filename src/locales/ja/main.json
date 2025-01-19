@@ -43,7 +43,9 @@
     "WEBCAM": "ウェブカメラ"
   },
   "desktopMenu": {
+    "confirmQuit": "保存されていないワークフローが開いています。保存されていない変更はすべて失われます。これを無視して終了しますか？",
     "confirmReinstall": "これにより、extra_models_config.yamlファイルがクリアされ、再インストールが開始されます。本当によろしいですか？",
+    "quit": "終了",
     "reinstall": "再インストール"
   },
   "downloadGit": {
@@ -319,6 +321,7 @@
     "Previous Opened Workflow": "前に開いたワークフロー",
     "Queue Prompt": "キューのプロンプト",
     "Queue Prompt (Front)": "キューのプロンプト (前面)",
+    "Quit": "終了",
     "Redo": "やり直す",
     "Refresh Node Definitions": "ノード定義を更新",
     "Reinstall": "再インストール",
