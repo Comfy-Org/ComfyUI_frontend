@@ -43,7 +43,9 @@
     "WEBCAM": "WEBCAM"
   },
   "desktopMenu": {
+    "confirmQuit": "Il y a des flux de travail non enregistrés ouverts; toutes les modifications non enregistrées seront perdues. Ignorer cela et quitter?",
     "confirmReinstall": "Cela effacera votre fichier extra_models_config.yaml,\net commencera l'installation à nouveau.\n\nÊtes-vous sûr ?",
+    "quit": "Quitter",
     "reinstall": "Réinstaller"
   },
   "downloadGit": {
@@ -319,6 +321,7 @@
     "Previous Opened Workflow": "Flux de travail ouvert précédent",
     "Queue Prompt": "Invite de file d'attente",
     "Queue Prompt (Front)": "Invite de file d'attente (Front)",
+    "Quit": "Quitter",
     "Redo": "Refaire",
     "Refresh Node Definitions": "Actualiser les définitions de nœud",
     "Reinstall": "Réinstaller",

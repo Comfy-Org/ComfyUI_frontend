@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
 ;(async () => {
@@ -8,6 +9,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
   const electronAPI = getElectronAPI()
   const desktopAppVersion = await electronAPI.getElectronVersion()
+  const workflowStore = useWorkflowStore()
 
   const onChangeRestartApp = (newValue: string, oldValue: string) => {
     // Add a delay to allow changes to take effect before restarting.
@@ -148,6 +150,25 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         icon: 'pi pi-refresh',
         function() {
           electronAPI.restartApp()
+        }
+      },
+      {
+        id: 'Comfy-Desktop.Quit',
+        label: 'Quit',
+        icon: 'pi pi-sign-out',
+        async function() {
+          // Confirm if unsaved workflows are open
+          if (workflowStore.modifiedWorkflows.length > 0) {
+            const confirmed = await useDialogService().confirm({
+              message: t('desktopMenu.confirmQuit'),
+              title: t('desktopMenu.quit'),
+              type: 'default'
+            })
+
+            if (!confirmed) return
+          }
+
+          electronAPI.quit()
         }
       }
     ],
