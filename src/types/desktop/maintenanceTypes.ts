@@ -28,9 +28,15 @@ export interface MaintenanceTask {
   requireConfirm?: boolean
   confirmText?: string
   /** Function to run when the button is clicked (or when confirmed, if required). */
-  onClick: (args?: unknown[]) => unknown | Promise<unknown>
+  onClick?: (args?: unknown[]) => void | Promise<void>
+  /** Called by onClick to run the actual task. */
+  execute: (args?: unknown[]) => boolean | Promise<boolean>
   /** Show the button with `severity="danger"` */
   severity?: VueSeverity
+  /** Whether this task should display the terminal window when run. */
+  usesTerminal?: boolean
+  /** If `true`, successful completion of this task will refresh install validation and automatically continue if successful. */
+  isInstallationFix?: boolean
 }
 
 export interface MaintenanceFilter {
