@@ -204,3 +204,20 @@ export function processDynamicPrompt(input: string): string {
 
   return result.replace(/\\([{}|])/g, '$1')
 }
+
+const EMAIL_PATTERN = new RegExp(
+  [
+    "^((?:[A-Za-z0-9!#$%&'*+-/=?^_`{|}~]",
+    '|(?<=^|\\.)"',
+    '|"(?=$|\\.|@)',
+    '|(?<="\\.*)[ .](?=.*")',
+    '|(?<!.)\\.){1,64})',
+    '(@)',
+    '((?:[A-Za-z0-9.-])*(?:[A-Za-z0-9])',
+    '\\.(?:[A-Za-z0-9]){2,})$'
+  ].join('')
+)
+
+export function isValidEmail(email: string) {
+  return EMAIL_PATTERN.test(email)
+}
