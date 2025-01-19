@@ -438,7 +438,7 @@ onMounted(async () => {
 onUnmounted(() => electron.Validation.dispose())
 </script>
 
-<style lang="postcss">
+<style>
 :root {
   --p-tag-gap: 0.375rem;
   --p-card-background: var(--p-button-secondary-background);

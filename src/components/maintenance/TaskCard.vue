@@ -68,7 +68,7 @@ const description = computed(() =>
 )
 </script>
 
-<style lang="postcss">
+<style>
 .task-card-ok {
   @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
 
