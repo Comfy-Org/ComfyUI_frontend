@@ -308,6 +308,8 @@ const electronTasks: MaintenanceTask[] = [
     onClick: installRequirements,
     name: 'Install python packages',
     description: 'Installs the base python packages required to run ComfyUI.',
+    errorDescription:
+      'Python packages that are required to run ComfyUI are not installed.',
     detail:
       'This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.',
     loading: minDurationRef(true, minRefreshTime),
