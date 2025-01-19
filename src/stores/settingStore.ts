@@ -31,7 +31,9 @@ function onChange(setting: SettingParams, newValue: any, oldValue: any) {
   }
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
-  app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+  if (setting?.id) {
+    app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+  }
 }
 
 export const useSettingStore = defineStore('setting', () => {

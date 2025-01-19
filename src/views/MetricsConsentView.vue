@@ -53,19 +53,22 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
+import { useSettingStore } from '@/stores/settingStore'
 import { electronAPI } from '@/utils/envUtil'
 
 const toast = useToast()
 const { t } = useI18n()
 
 const allowMetrics = ref(true)
-const router = useRouter()
 const isUpdating = ref(false)
 
 const updateConsent = async () => {
   isUpdating.value = true
+  await useSettingStore().set(
+    'Comfy-Desktop.SendStatistics',
+    allowMetrics.value
+  )
   try {
     await electronAPI().setMetricsConsent(allowMetrics.value)
   } catch (error) {
@@ -78,6 +81,5 @@ const updateConsent = async () => {
   } finally {
     isUpdating.value = false
   }
-  router.push('/')
 }
 </script>
