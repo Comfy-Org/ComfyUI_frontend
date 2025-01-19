@@ -702,60 +702,6 @@
     "OK": "OK",
     "Skipped": "Skipped",
     "showManual": "Show maintenance tasks",
-    "confirmTitle": "Are you sure?",
-    "tasks": {
-      "basePath": {
-        "name": "Base path",
-        "description": "Change the application base path.",
-        "errorDescription": "Unable to open the base path.  Please select a new one.",
-        "detail": "The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.",
-        "buttonText": "Select"
-      },
-      "git": {
-        "name": "Download git",
-        "description": "Open the git download page.",
-        "detail": "Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.",
-        "buttonText": "Download"
-      },
-      "vcRedist": {
-        "name": "Download VC++ Redist",
-        "description": "Download the latest VC++ Redistributable runtime.",
-        "detail": "The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.",
-        "buttonText": "Download"
-      },
-      "reinstall": {
-        "name": "Reinstall ComfyUI",
-        "description": "Deletes the desktop app config and load the welcome screen.",
-        "detail": "Delete the desktop app config, restart the app, and load the installation screen.",
-        "confirmText": "Delete all saved config and reinstall?",
-        "buttonText": "Reinstall"
-      },
-      "pythonPackages": {
-        "name": "Install python packages",
-        "description": "Installs the base python packages required to run ComfyUI.",
-        "detail": "This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.",
-        "buttonText": "Install"
-      },
-      "uv": {
-        "name": "uv executable",
-        "description": "uv installs and maintains the python environment.",
-        "detail": "This will open the download page for Astral's uv tool. uv is used to install python and manage python packages.",
-        "buttonText": "Download"
-      },
-      "uvCache": {
-        "name": "uv cache",
-        "description": "Remove the Astral uv cache of python packages.",
-        "detail": "This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.",
-        "confirmText": "Delete uv cache of python packages?",
-        "buttonText": "Clear cache"
-      },
-      "venvDirectory": {
-        "name": "Reset virtual environment",
-        "description": "Remove and recreate the .venv directory. This removes all python packages.",
-        "detail": "The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.",
-        "confirmText": "Delete the .venv directory?",
-        "buttonText": "Recreate"
-      }
-    }
+    "confirmTitle": "Are you sure?"
   }
 }
