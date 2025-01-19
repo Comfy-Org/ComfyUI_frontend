@@ -7,7 +7,7 @@
     }"
   >
     <td class="text-center w-16">
-      <TaskListStatusIcon :state="task.state" :loading />
+      <TaskListStatusIcon :state="task.state" :loading="task.loading" />
     </td>
     <td>
       <p class="inline-block">{{ task.name }}</p>
@@ -63,8 +63,6 @@ const severity = computed<VueSeverity>(() =>
     ? 'primary'
     : 'secondary'
 )
-
-const loading = computed(() => props.task.loading)
 
 const infoPopover = ref()
 
