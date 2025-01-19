@@ -38,7 +38,7 @@ const cssClasses = computed(() => {
 
 // Model
 const props = defineProps<{
-  state: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped' | null | undefined
+  state: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped' | undefined
   loading?: MaybeRef<boolean>
 }>()
 </script>
