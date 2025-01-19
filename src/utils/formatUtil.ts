@@ -218,6 +218,11 @@ const EMAIL_PATTERN = new RegExp(
   ].join('')
 )
 
+/**
+ * Validates an email address using the RFC 5322 standard.
+ * @param email The email address to validate
+ * @returns True if the email address is valid, false otherwise
+ */
 export function isValidEmail(email: string) {
   return EMAIL_PATTERN.test(email)
 }

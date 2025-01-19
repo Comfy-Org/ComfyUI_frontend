@@ -25,13 +25,13 @@ interface CheckboxItem {
   value: string
 }
 
-interface CheckboxGroupProps {
+const props = defineProps<{
   checkboxes: CheckboxItem[]
+  /** Currently selected values */
   modelValue: string[]
+  /** Optional function to determine if a checkbox should be disabled */
   itemDisabled?: (item: CheckboxItem) => boolean
-}
-
-const props = defineProps<CheckboxGroupProps>()
+}>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string[]): void

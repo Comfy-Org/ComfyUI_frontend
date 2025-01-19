@@ -96,10 +96,10 @@ const submitted = ref(false)
 
 const isContactValid = computed(() => isValidEmail(contactInfo.value))
 const followUp = computed(
-  () => isContactValid.value && contactPrefs.value.includes('FollowUp')
+  () => isContactValid.value && contactPrefs.value?.includes('FollowUp')
 )
 const notifyResolve = computed(
-  () => isContactValid.value && contactPrefs.value.includes('Resolution')
+  () => isContactValid.value && contactPrefs.value?.includes('Resolution')
 )
 
 const icon = computed(() => {

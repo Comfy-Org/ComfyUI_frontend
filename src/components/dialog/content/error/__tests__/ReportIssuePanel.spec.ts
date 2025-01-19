@@ -99,14 +99,16 @@ describe('ReportIssuePanel', () => {
     expect(wrapper.vm.contactInfo).toBe('test@example.com')
   })
 
-  it.each([
-    { email: 'invalid-email', disabled: true },
-    { email: '@.com', disabled: true },
-    { email: 'c@.com', disabled: true },
-    { email: 'name@domain.com', disabled: false },
-    { email: '1@qq.com', disabled: false }
-  ])(
-    'contact checkboxes disabled=$disabled when email is $email',
+  const EMAIL_TEST_CASES = [
+    { email: 'invalid-email', disabled: true, desc: 'missing domain' },
+    { email: '@.com', disabled: true, desc: 'missing local part' },
+    { email: 'c@.com', disabled: true, desc: 'invalid domain' },
+    { email: 'name@domain.com', disabled: false, desc: 'valid email' },
+    { email: '1@qq.com', disabled: false, desc: 'valid short email' }
+  ] as const
+
+  it.each(EMAIL_TEST_CASES)(
+    'contact checkboxes are $disabled when email is $desc',
     async ({ email, disabled }) => {
       const wrapper = mountComponent({ errorType: 'Test Error' })
       await wrapper.findComponent(InputText).setValue(email)
