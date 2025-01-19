@@ -184,8 +184,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       {
         label: 'ComfyUI_desktop v' + desktopAppVersion,
         url: 'https://github.com/Comfy-Org/electron',
-        icon: 'pi pi-github',
-        type: 'url'
+        icon: 'pi pi-github'
       }
     ]
   })

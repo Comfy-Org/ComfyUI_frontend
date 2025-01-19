@@ -167,25 +167,6 @@ test.describe('Settings', () => {
 })
 
 test.describe('Feedback dialog', () => {
-  test('Should open from about panel badge', async ({ comfyPage }) => {
-    // Go to about panel page in settings
-    const settings = comfyPage.settingDialog
-    await settings.open()
-    await settings.goToAboutPanel()
-
-    // Click feedback button
-    const feedbackButton = settings.root
-      .locator('a')
-      .filter({ hasText: 'Feedback' })
-    await feedbackButton.click({ force: true })
-
-    // Verify feedback dialog content is visible
-    const feedbackHeader = comfyPage.page.getByRole('heading', {
-      name: 'Feedback'
-    })
-    await expect(feedbackHeader).toBeVisible()
-  })
-
   test('Should open from topmenu help command', async ({ comfyPage }) => {
     // Open feedback dialog from top menu
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')

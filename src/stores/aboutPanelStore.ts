@@ -25,33 +25,19 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
           : coreVersion.value
       }`,
       url: 'https://github.com/comfyanonymous/ComfyUI',
-      icon: 'pi pi-github',
-      type: 'url'
+      icon: 'pi pi-github'
     },
     {
       label: `ComfyUI_frontend v${frontendVersion}`,
       url: 'https://github.com/Comfy-Org/ComfyUI_frontend',
-      icon: 'pi pi-github',
-      type: 'url'
+      icon: 'pi pi-github'
     },
     {
       label: 'Discord',
       url: 'https://www.comfy.org/discord',
-      icon: 'pi pi-discord',
-      type: 'url'
+      icon: 'pi pi-discord'
     },
-    {
-      label: 'ComfyOrg',
-      url: 'https://www.comfy.org/',
-      icon: 'pi pi-globe',
-      type: 'url'
-    },
-    {
-      label: 'Give Feedback',
-      command: 'Comfy.Feedback',
-      icon: 'pi pi-megaphone',
-      type: 'command'
-    }
+    { label: 'ComfyOrg', url: 'https://www.comfy.org/', icon: 'pi pi-globe' }
   ])
 
   const allBadges = computed<AboutPageBadge[]>(() => [
