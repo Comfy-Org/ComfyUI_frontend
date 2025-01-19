@@ -97,6 +97,7 @@ import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vu
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
+import { electronTasks } from '@/extensions/core/electronTasks'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import {
   MaintenanceFilter,
@@ -152,180 +153,6 @@ const processUpdate = (update: InstallValidation) => {
     }
   }
 }
-
-const installRequirements = async () => {
-  terminalVisible.value = true
-  try {
-    await electron.uv.installRequirements()
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Failed to install requirements',
-      detail: error.message,
-      life: 10_000
-    })
-  }
-  await completeValidation(false)
-  if (tasks.value.find((x) => x.id === 'pythonPackages')?.state === 'OK') {
-    terminalVisible.value = false
-  }
-}
-
-const resetVenv = async () => {
-  terminalVisible.value = true
-  const success = await electron.uv.resetVenv()
-  if (!success) return
-
-  terminalVisible.value = false
-  await completeValidation(false)
-}
-
-const clearCache = async () => {
-  terminalVisible.value = true
-  const success = await electron.uv.clearCache()
-  if (!success) return
-
-  terminalVisible.value = false
-  await completeValidation(false)
-  const task = tasks.value.find((x) => x.id === 'uvCache')
-  if (task) task.state = 'OK'
-}
-
-const openUrl = (url: string) => window.open(url, '_blank')
-
-const electronTasks: MaintenanceTask[] = [
-  {
-    id: 'basePath',
-    state: null,
-    onClick: async () => {
-      await electron.setBasePath()
-      completeValidation(false)
-    },
-    name: 'Base path',
-    description: 'Change the application base path.',
-    errorDescription: 'Unable to open the base path.  Please select a new one.',
-    detail:
-      'The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.QUESTION,
-      text: 'Select'
-    }
-  },
-  {
-    id: 'git',
-    state: null,
-    headerImg: '/assets/images/Git-Logo-White.svg',
-    onClick: () => openUrl('https://git-scm.com/downloads/'),
-    name: 'Download git',
-    description: 'Open the git download page.',
-    detail:
-      'Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.EXTERNAL_LINK,
-      text: 'Download'
-    }
-  },
-  {
-    id: 'vcRedist',
-    state: null,
-    onClick: () => openUrl('https://aka.ms/vs/17/release/vc_redist.x64.exe'),
-    name: 'Download VC++ Redist',
-    description: 'Download the latest VC++ Redistributable runtime.',
-    detail:
-      'The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.EXTERNAL_LINK,
-      text: 'Download'
-    }
-  },
-  {
-    id: 'reinstall',
-    state: null,
-    severity: 'danger',
-    requireConfirm: true,
-    onClick: () => electron.reinstall(),
-    name: 'Reinstall ComfyUI',
-    description: 'Deletes the desktop app config and load the welcome screen.',
-    detail:
-      'Delete the desktop app config, restart the app, and load the installation screen.',
-    confirmText: 'Delete all saved config and reinstall?',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.EXCLAMATION_TRIANGLE,
-      text: 'Reinstall'
-    }
-  },
-  {
-    id: 'pythonPackages',
-    state: null,
-    requireConfirm: true,
-    onClick: installRequirements,
-    name: 'Install python packages',
-    description: 'Installs the base python packages required to run ComfyUI.',
-    errorDescription:
-      'Python packages that are required to run ComfyUI are not installed.',
-    detail:
-      'This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.DOWNLOAD,
-      text: 'Install'
-    }
-  },
-  {
-    id: 'uv',
-    state: null,
-    onClick: () =>
-      openUrl('https://docs.astral.sh/uv/getting-started/installation/'),
-    name: 'uv executable',
-    description: 'uv installs and maintains the python environment.',
-    detail:
-      "This will open the download page for Astral's uv tool. uv is used to install python and manage python packages.",
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: 'pi pi-asterisk',
-      text: 'Download'
-    }
-  },
-  {
-    id: 'uvCache',
-    state: null,
-    severity: 'danger',
-    requireConfirm: true,
-    onClick: clearCache,
-    name: 'uv cache',
-    description: 'Remove the Astral uv cache of python packages.',
-    detail:
-      'This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.',
-    confirmText: 'Delete uv cache of python packages?',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.TRASH,
-      text: 'Clear cache'
-    }
-  },
-  {
-    id: 'venvDirectory',
-    state: null,
-    severity: 'danger',
-    requireConfirm: true,
-    onClick: resetVenv,
-    name: 'Reset virtual environment',
-    description:
-      'Remove and recreate the .venv directory. This removes all python packages.',
-    detail:
-      'The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.',
-    confirmText: 'Delete the .venv directory?',
-    loading: minDurationRef(true, minRefreshTime),
-    button: {
-      icon: PrimeIcons.FOLDER,
-      text: 'Recreate'
-    }
-  }
-]
 
 const tasks = ref(isElectron() ? [...electronTasks] : [])
 
@@ -387,7 +214,31 @@ const toggleConsoleDrawer = () => {
   terminalVisible.value = !terminalVisible.value
 }
 
+const wrapTaskExecution = (task: MaintenanceTask) => async () => {
+  if (task.usesTerminal) terminalVisible.value = true
+  try {
+    const success = await task.execute()
+    if (!success) throw new Error('Task failed to run.')
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Task error',
+      detail:
+        error.message ?? 'An error occurred while running a maintenance task.',
+      life: 10_000
+    })
+  }
+
+  if (task.usesTerminal) terminalVisible.value = false
+  if (task.isInstallationFix) await completeValidation(false)
+}
+
 onMounted(async () => {
+  // Wrap task execution to show / hide terminal and complete validation if applicable
+  for (const task of tasks.value) {
+    task.onClick = wrapTaskExecution(task)
+  }
+
   electron.Validation.onUpdate(processUpdate)
 
   const update = await electron.Validation.getStatus()
