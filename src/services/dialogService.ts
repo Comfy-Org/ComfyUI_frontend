@@ -8,8 +8,6 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import TemplateWorkflowsContent from '@/components/templates/TemplateWorkflowsContent.vue'
 import { t } from '@/i18n'
 import { type ShowDialogOptions, useDialogStore } from '@/stores/dialogStore'
-import type { ExecutionErrorWsMessage } from '@/types/apiTypes'
-import type { MissingNodeType } from '@/types/comfy'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -20,10 +18,9 @@ export type ConfirmationDialogType =
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
-  function showLoadWorkflowWarning(props: {
-    missingNodeTypes: MissingNodeType[]
-    [key: string]: any
-  }) {
+  function showLoadWorkflowWarning(
+    props: InstanceType<typeof LoadWorkflowWarning>['$props']
+  ) {
     dialogStore.showDialog({
       key: 'global-load-workflow-warning',
       component: LoadWorkflowWarning,
@@ -31,11 +28,9 @@ export const useDialogService = () => {
     })
   }
 
-  function showMissingModelsWarning(props: {
-    missingModels: any[]
-    paths: Record<string, string[]>
-    [key: string]: any
-  }) {
+  function showMissingModelsWarning(
+    props: InstanceType<typeof MissingModelsWarning>['$props']
+  ) {
     dialogStore.showDialog({
       key: 'global-missing-models-warning',
       component: MissingModelsWarning,
@@ -67,21 +62,24 @@ export const useDialogService = () => {
     })
   }
 
-  function showExecutionErrorDialog(error: ExecutionErrorWsMessage) {
+  function showExecutionErrorDialog(
+    props: InstanceType<typeof ExecutionErrorDialogContent>['$props']
+  ) {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ExecutionErrorDialogContent,
-      props: {
-        error
-      }
+      props
     })
   }
 
-  function showTemplateWorkflowsDialog() {
+  function showTemplateWorkflowsDialog(
+    props: InstanceType<typeof TemplateWorkflowsContent>['$props'] = {}
+  ) {
     dialogStore.showDialog({
       key: 'global-template-workflows',
       title: t('templateWorkflows.title'),
-      component: TemplateWorkflowsContent
+      component: TemplateWorkflowsContent,
+      props
     })
   }
 

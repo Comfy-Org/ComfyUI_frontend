@@ -942,7 +942,7 @@ export class ComfyApp {
 
     api.addEventListener('execution_error', ({ detail }) => {
       this.lastExecutionError = detail
-      useDialogService().showExecutionErrorDialog(detail)
+      useDialogService().showExecutionErrorDialog({ error: detail })
       this.canvas.draw(true, true)
     })
 

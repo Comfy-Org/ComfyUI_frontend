@@ -3,10 +3,10 @@
     "blue": "Синий",
     "custom": "Пользовательский",
     "default": "По умолчанию",
-    "green": "Зеленый",
+    "green": "Зелёный",
     "pink": "Розовый",
     "red": "Красный",
-    "yellow": "Желтый"
+    "yellow": "Жёлтый"
   },
   "dataTypes": {
     "AUDIO": "АУДИО",
@@ -16,17 +16,17 @@
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COMBO": "КОМБО",
     "CONDITIONING": "КОНДИЦИОНИРОВАНИЕ",
-    "CONTROL_NET": "СЕТЬ УПРАВЛЕНИЯ",
+    "CONTROL_NET": "CONTROL_NET",
     "FLOAT": "ПЛАВАЮЩИЙ",
     "FLOATS": "ПЛАВАЮЩИЕ",
     "GLIGEN": "GLIGEN",
-    "GUIDER": "РУКОВОДИТЕЛЬ",
-    "HOOKS": "КРЮКИ",
-    "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ КАДРЫ КРЮКА",
+    "GUIDER": "ГИД",
+    "HOOKS": "ХУКИ",
+    "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "INT": "ЦЕЛОЕ",
     "LATENT": "ЛАТЕНТНЫЙ",
-    "LATENT_OPERATION": "ЛАТЕНТНАЯ ОПЕРАЦИЯ",
+    "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LOAD_3D_ANIMATION": "ЗАГРУЗИТЬ_3D_АНИМАЦИЮ",
     "MASK": "МАСКА",
@@ -36,25 +36,25 @@
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
     "STRING": "СТРОКА",
-    "STYLE_MODEL": "МОДЕЛЬ СТИЛЯ",
-    "TIMESTEPS_RANGE": "ДИАПАЗОН ВРЕМЕННЫХ ШАГОВ",
-    "UPSCALE_MODEL": "МОДЕЛЬ УВЕЛИЧЕНИЯ",
+    "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
+    "TIMESTEPS_RANGE": "ДИАПАЗОН_ВРЕМЕННЫХ_ШАГОВ",
+    "UPSCALE_MODEL": "МОДЕЛЬ_АПСКЕЙЛА",
     "VAE": "VAE",
     "WEBCAM": "ВЕБ-КАМЕРА"
   },
   "desktopMenu": {
     "confirmQuit": "Открыты несохраненные рабочие процессы; все несохраненные изменения будут потеряны. Проигнорировать это и выйти?",
-    "confirmReinstall": "Это очистит ваш файл extra_models_config.yaml и начнет установку заново. Вы уверены?",
     "quit": "Выйти",
+    "confirmReinstall": "Это очистит ваш файл extra_models_config.yaml и начнёт установку заново. Вы уверены?",
     "reinstall": "Переустановить"
   },
   "downloadGit": {
     "gitWebsite": "Скачать git",
-    "instructions": "Пожалуйста, скачайте и установите последнюю версию для вашей операционной системы. Кнопка 'Скачать git' ниже открывает страницу загрузок git-scm.com.",
+    "instructions": "Пожалуйста, скачайте и установите последнюю версию для вашей операционной системы. Кнопка «Скачать git» ниже открывает страницу загрузок git-scm.com.",
     "message": "Не удалось найти git. Рабочая копия git необходима для нормальной работы.",
     "skip": "Пропустить",
     "title": "Скачать git",
-    "warning": "Если вы уверены, что вам не нужно устанавливать git, или произошла ошибка, вы можете нажать 'Пропустить', чтобы обойти эту проверку. Попытка запустить ComfyUI без рабочей копии git в настоящее время не поддерживается."
+    "warning": "Если вы уверены, что вам не нужно устанавливать git, или произошла ошибка, вы можете нажать «Пропустить», чтобы обойти эту проверку. Попытка запустить ComfyUI без рабочей копии git в настоящее время не поддерживается."
   },
   "electronFileDownload": {
     "cancel": "Отменить загрузку",
@@ -79,7 +79,7 @@
     "customize": "Настроить",
     "customizeFolder": "Настроить папку",
     "delete": "Удалить",
-    "deprecated": "УСТАРЕЛО",
+    "deprecated": "Устарело",
     "devices": "Устройства",
     "disableAll": "Отключить все",
     "download": "Скачать",
@@ -88,10 +88,10 @@
     "error": "Ошибка",
     "experimental": "БЕТА",
     "export": "Экспорт",
-    "extensionName": "Имя расширения",
+    "extensionName": "Название расширения",
     "findIssues": "Найти проблемы",
     "firstTimeUIMessage": "Вы впервые используете новый интерфейс. Выберите \"Меню > Использовать новое меню > Отключено\", чтобы восстановить старый интерфейс.",
-    "goToNode": "Перейти к узлу",
+    "goToNode": "Перейти к ноде",
     "icon": "Иконка",
     "imageFailedToLoad": "Не удалось загрузить изображение",
     "import": "Импорт",
@@ -101,7 +101,7 @@
     "loadAllFolders": "Загрузить все папки",
     "loadWorkflow": "Загрузить рабочий процесс",
     "loading": "Загрузка",
-    "logs": "Журналы",
+    "logs": "Логи",
     "newFolder": "Новая папка",
     "next": "Далее",
     "no": "Нет",
@@ -117,21 +117,21 @@
     "refresh": "Обновить",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "rename": "Переименовать",
-    "reportIssue": "Отправить отчет",
-    "reportIssueTooltip": "Отправить отчет об ошибке в Comfy Org",
-    "reportSent": "Отчет отправлен",
+    "reportIssue": "Отправить отчёт",
+    "reportIssueTooltip": "Отправить отчёт об ошибке в Comfy Org",
+    "reportSent": "Отчёт отправлен",
     "reset": "Сбросить",
-    "resetKeybindingsTooltip": "Сбросить сочетания клавиш к умолчанию",
+    "resetKeybindingsTooltip": "Сбросить сочетания клавиш по умолчанию",
     "save": "Сохранить",
     "searchExtensions": "Поиск расширений",
     "searchFailedMessage": "Мы не смогли найти настройки, соответствующие вашему запросу. Попробуйте изменить поисковые термины.",
     "searchKeybindings": "Поиск сочетаний клавиш",
     "searchModels": "Поиск моделей",
-    "searchNodes": "Поиск узлов",
+    "searchNodes": "Поиск нод",
     "searchSettings": "Поиск настроек",
     "searchWorkflows": "Поиск рабочих процессов",
     "settings": "Настройки",
-    "showReport": "Показать отчет",
+    "showReport": "Показать отчёт",
     "success": "Успех",
     "systemInfo": "Информация о системе",
     "terminal": "Терминал",
@@ -149,8 +149,8 @@
     "zoomOut": "Уменьшить"
   },
   "groupNode": {
-    "create": "Создать узел группы",
-    "enterName": "Введите имя"
+    "create": "Создать ноду группы",
+    "enterName": "Введите название"
   },
   "icon": {
     "bookmark": "Закладка",
@@ -168,17 +168,17 @@
     "appPathLocationTooltip": "Директория активов приложения ComfyUI. Хранит код и активы ComfyUI",
     "cannotWrite": "Невозможно записать в выбранный путь",
     "chooseInstallationLocation": "Выберите место установки",
-    "customNodes": "Пользовательские узлы",
-    "customNodesDescription": "Переустановите пользовательские узлы из существующих установок ComfyUI.",
-    "desktopAppSettings": "Настройки настольного приложения",
-    "desktopAppSettingsDescription": "Настройте, как ComfyUI ведет себя на вашем рабочем столе. Вы можете изменить эти настройки позже.",
+    "customNodes": "Пользовательские ноды",
+    "customNodesDescription": "Переустановите пользовательские ноды из существующих установок ComfyUI.",
+    "desktopAppSettings": "Настройки десктопного приложения",
+    "desktopAppSettingsDescription": "Настройте, как ComfyUI ведёт себя на вашем рабочем столе. Вы можете изменить эти настройки позже.",
     "desktopSettings": "Настройки рабочего стола",
     "failedToSelectDirectory": "Не удалось выбрать директорию",
     "gpu": "GPU",
     "gpuSelection": {
       "cpuMode": "Режим CPU",
-      "cpuModeDescription": "Режим CPU предназначен только для разработчиков и редких крайних случаев.",
-      "cpuModeDescription2": "Если вы не абсолютно уверены, что вам это нужно, пожалуйста, проигнорируйте эту галочку и выберите ваш GPU выше.",
+      "cpuModeDescription": "Режим CPU предназначен только для разработчиков и крайне редких случаев.",
+      "cpuModeDescription2": "Если вы не полностью уверены, что вам это нужно, пожалуйста, проигнорируйте эту галочку и выберите ваш GPU выше.",
       "customComfyNeedsPython": "ComfyUI не будет работать, пока python не будет настроен",
       "customInstallRequirements": "Установите все требования и зависимости (например, custom torch)",
       "customManualVenv": "Вручную настроить python venv",
@@ -193,8 +193,8 @@
     "helpImprove": "Пожалуйста, помогите улучшить ComfyUI",
     "installLocation": "Место установки",
     "installLocationDescription": "Выберите директорию для пользовательских данных ComfyUI. В выбранном месте будет установлена среда Python. Пожалуйста, убедитесь, что на выбранном диске достаточно места (~15 ГБ).",
-    "installLocationTooltip": "Директория пользовательских данных ComfyUI. Хранит:\n- Среда Python\n- Модели\n- Пользовательские узлы\n",
-    "insufficientFreeSpace": "Недостаточно места - минимально необходимое свободное место",
+    "installLocationTooltip": "Директория пользовательских данных ComfyUI. Хранит:\n- Среда Python\n- Модели\n- Пользовательские ноды\n",
+    "insufficientFreeSpace": "Недостаточно места — минимально необходимое свободное место",
     "manualConfiguration": {
       "createVenv": "Вам потребуется создать виртуальное окружение в следующем каталоге",
       "requirements": "Требования",
@@ -207,10 +207,10 @@
     "migrateFromExistingInstallation": "Миграция из существующей установки",
     "migration": "Миграция",
     "migrationOptional": "Миграция является необязательной. Если у вас нет существующей установки, вы можете пропустить этот шаг.",
-    "migrationSourcePathDescription": "Если у вас уже есть установка ComfyUI, мы можем скопировать/связать ваши существующие пользовательские файлы и модели с новой установкой. Ваша существующая установка ComfyUI не будет затронута.",
+    "migrationSourcePathDescription": "Если у вас уже есть установленный ComfyUI, мы можем скопировать/связать ваши существующие пользовательские файлы и модели с новой установкой. Ваша существующая установка ComfyUI не будет затронута.",
     "moreInfo": "Для получения дополнительной информации, пожалуйста, прочтите нашу",
-    "parentMissing": "Путь не существует - сначала создайте родительский каталог",
-    "pathExists": "Директория уже существует - пожалуйста, убедитесь, что вы сделали резервное копирование всех данных",
+    "parentMissing": "Путь не существует — сначала создайте родительский каталог",
+    "pathExists": "Директория уже существует — пожалуйста, убедитесь, что вы сделали резервное копирование всех данных",
     "pathValidationFailed": "Не удалось проверить путь",
     "privacyPolicy": "политику конфиденциальности",
     "selectItemsToMigrate": "Выберите элементы для миграции",
@@ -226,7 +226,7 @@
           "userJourneyEvents": "События пользовательского пути"
         },
         "doNotCollect": {
-          "customNodeConfigurations": "Пользовательские конфигурации узлов",
+          "customNodeConfigurations": "Пользовательские конфигурации нод",
           "fileSystemInformation": "Информация о файловой системе",
           "personalInformation": "Личная информация",
           "workflowContents": "Содержание рабочего процесса"
@@ -242,7 +242,7 @@
     },
     "systemLocations": "Системные места",
     "unhandledError": "Неизвестная ошибка",
-    "updateConsent": "Вы ранее согласились на отчетность об ошибках. Теперь мы отслеживаем событийные метрики, чтобы помочь выявить ошибки и улучшить приложение. Личная идентифицируемая информация не собирается."
+    "updateConsent": "Вы ранее согласились на отчётность об ошибках. Теперь мы отслеживаем метрики событий, чтобы помочь выявить ошибки и улучшить приложение. Личная идентифицируемая информация не собирается."
   },
   "issueReport": {
     "contactFollowUp": "Свяжитесь со мной для уточнения",
@@ -251,7 +251,7 @@
     "provideAdditionalDetails": "Предоставьте дополнительные сведения (необязательно)",
     "provideEmail": "Укажите вашу электронную почту (необязательно)",
     "stackTrace": "Трассировка стека",
-    "submitErrorReport": "Отправить отчет об ошибке (необязательно)",
+    "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы"
   },
   "menu": {
@@ -272,7 +272,7 @@
     "queue": "Выполнить",
     "queueWorkflow": "Очередь рабочего процесса (Shift для вставки спереди)",
     "queueWorkflowFront": "Очередь рабочего процесса (Вставка спереди)",
-    "refresh": "Обновить определения узлов",
+    "refresh": "Обновить определения нод",
     "resetView": "Сбросить вид холста",
     "showMenu": "Показать меню",
     "toggleBottomPanel": "Переключить нижнюю панель"
@@ -280,18 +280,18 @@
   "menuLabels": {
     "About ComfyUI": "О ComfyUI",
     "Browse Templates": "Просмотреть шаблоны",
-    "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные узлы",
+    "Bypass/Unbypass Selected Nodes": "Обойти/восстановить выбранные ноды",
     "Canvas Toggle Link Visibility": "Переключение видимости ссылки на холст",
     "Canvas Toggle Lock": "Переключение блокировки холста",
     "Clear Pending Tasks": "Очистить ожидающие задачи",
     "Clear Workflow": "Очистить рабочий процесс",
     "Clipspace": "Клиппространство",
     "Close Current Workflow": "Закрыть текущий рабочий процесс",
-    "Collapse/Expand Selected Nodes": "Свернуть/развернуть выбранные узлы",
+    "Collapse/Expand Selected Nodes": "Свернуть/развернуть выбранные ноды",
     "Comfy-Org Discord": "Discord Comfy-Org",
     "ComfyUI Docs": "Документация ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
-    "Convert selected nodes to group node": "Преобразовать выбранные узлы в групповой узел",
+    "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Desktop User Guide": "Руководство пользователя для настольных ПК",
     "Duplicate Current Workflow": "Дублировать текущий рабочий процесс",
     "Edit": "Редактировать",
@@ -299,17 +299,17 @@
     "Export (API)": "Экспорт (API)",
     "Feedback": "Обратная связь",
     "Fit Group To Contents": "Подогнать группу под содержимое",
-    "Fit view to selected nodes": "Подогнать вид под выбранные узлы",
-    "Group Selected Nodes": "Сгруппировать выбранные узлы",
+    "Fit view to selected nodes": "Подогнать вид под выбранные ноды",
+    "Group Selected Nodes": "Сгруппировать выбранные ноды",
     "Help": "Помощь",
     "Interrupt": "Прервать",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
-    "Manage group nodes": "Управление групповыми узлами",
-    "Mute/Unmute Selected Nodes": "Отключить/включить звук для выбранных узлов",
+    "Manage group nodes": "Управление групповыми нодами",
+    "Mute/Unmute Selected Nodes": "Отключить/включить звук для выбранных нод",
     "New": "Новый",
     "Next Opened Workflow": "Следующий открытый рабочий процесс",
     "Open": "Открыть",
-    "Open Custom Nodes Folder": "Открыть папку пользовательских узлов",
+    "Open Custom Nodes Folder": "Открыть папку пользовательских нод",
     "Open DevTools": "Открыть инструменты разработчика",
     "Open Inputs Folder": "Открыть папку входных данных",
     "Open Logs Folder": "Открыть папку журналов",
@@ -317,13 +317,13 @@
     "Open Outputs Folder": "Открыть папку выходных данных",
     "Open extra_model_paths_yaml": "Открыть extra_model_paths.yaml",
     "Pin/Unpin Selected Items": "Закрепить/открепить выбранные элементы",
-    "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные узлы",
+    "Pin/Unpin Selected Nodes": "Закрепить/открепить выбранные ноды",
     "Previous Opened Workflow": "Предыдущий открытый рабочий процесс",
     "Queue Prompt": "Запрос в очереди",
     "Queue Prompt (Front)": "Запрос в очереди (спереди)",
     "Quit": "Выйти",
     "Redo": "Повторить",
-    "Refresh Node Definitions": "Обновить определения узлов",
+    "Refresh Node Definitions": "Обновить определения нод",
     "Reinstall": "Переустановить",
     "Reset View": "Сбросить вид",
     "Restart": "Перезапустить",
@@ -334,14 +334,14 @@
     "Toggle Focus Mode": "Переключить режим фокуса",
     "Toggle Logs Bottom Panel": "Переключение нижней панели журналов",
     "Toggle Model Library Sidebar": "Переключение боковой панели библиотеки моделей",
-    "Toggle Node Library Sidebar": "Переключение боковой панели библиотеки узлов",
+    "Toggle Node Library Sidebar": "Переключение боковой панели библиотеки нод",
     "Toggle Queue Sidebar": "Переключение боковой панели очереди",
     "Toggle Search Box": "Переключить поисковую панель",
     "Toggle Terminal Bottom Panel": "Переключение нижней панели терминала",
-    "Toggle Theme (Dark/Light)": "Переключение темы (Темная/Светлая)",
+    "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle Workflows Sidebar": "Переключение боковой панели рабочих процессов",
     "Undo": "Отменить",
-    "Ungroup selected group nodes": "Разгруппировать выбранные групповые узлы",
+    "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Workflow": "Рабочий процесс",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить"
@@ -357,24 +357,24 @@
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
     "batch": "пакет",
-    "clip": "клип",
+    "clip": "clip",
     "combine": "объединить",
-    "compositing": "композитинг",
+    "compositing": "композиционирование",
     "cond pair": "условие_пара",
     "cond single": "условие_одиночное",
     "conditioning": "условие",
-    "controlnet": "контрольная_сеть",
+    "controlnet": "controlnet",
     "create": "создать",
-    "custom_sampling": "пользовательская_выборка",
+    "custom_sampling": "пользовательский_семплинг",
     "deprecated": "устаревший",
     "flux": "flux",
-    "gligen": "глиген",
+    "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
     "hooks": "хуки",
     "image": "изображение",
     "inpaint": "восстановление",
-    "instructpix2pix": "инструктпикс2пикс",
+    "instructpix2pix": "instructpix2pix",
     "latent": "латентный",
     "loaders": "загрузчики",
     "ltxv": "ltxv",
@@ -390,26 +390,26 @@
     "preprocessors": "предобработчики",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "schedulers": "планировщики",
-    "scheduling": "планирование",
+    "schedulers": "schedulers",
+    "scheduling": "scheduling",
     "sd3": "sd3",
     "sigmas": "сигмы",
     "stable_cascade": "стабильная_каскадная",
     "style_model": "модель_стиля",
     "transform": "преобразование",
-    "unet": "унет",
-    "upscale_diffusion": "увеличение_диффузии",
-    "upscaling": "увеличение",
+    "unet": "unet",
+    "upscale_diffusion": "диффузии_апскейла",
+    "upscaling": "апскейл",
     "video": "видео",
     "video_models": "видеомодели"
   },
   "nodeTemplates": {
-    "enterName": "Введите имя",
+    "enterName": "Введите название",
     "saveAsTemplate": "Сохранить как шаблон"
   },
   "notSupported": {
     "continue": "Продолжить",
-    "continueTooltip": "Я уверен, что мое устройство поддерживается",
+    "continueTooltip": "Я уверен, что моё устройство поддерживается",
     "learnMore": "Узнать больше",
     "message": "Поддерживаются только следующие устройства:",
     "reportIssue": "Сообщить о проблеме",
@@ -440,14 +440,14 @@
       "name": "Использовать классическую систему кэширования"
     },
     "cache-lru": {
-      "name": "Использовать LRU кэширование с максимальным количеством N кэшированных результатов узлов.",
+      "name": "Использовать LRU кэширование с максимальным количеством N кэшированных результатов нод.",
       "tooltip": "Может использовать больше ОЗУ/ВРП."
     },
     "cpu-vae": {
       "name": "Запуск VAE на CPU"
     },
     "cross-attention-method": {
-      "name": "Метод перекрестного внимания"
+      "name": "Метод перекрёстного внимания"
     },
     "cuda-device": {
       "name": "Индекс устройства CUDA для использования"
@@ -466,7 +466,7 @@
       "name": "Индекс устройства DirectML"
     },
     "disable-all-custom-nodes": {
-      "name": "Отключить загрузку всех пользовательских узлов."
+      "name": "Отключить загрузку всех пользовательских нод."
     },
     "disable-ipex-optimize": {
       "name": "Отключить оптимизацию IPEX"
@@ -482,7 +482,7 @@
       "name": "Отключить оптимизацию xFormers"
     },
     "dont-print-server": {
-      "name": "Не выводить вывод сервера в консоль."
+      "name": "Не показывать вывод сервера в консоль."
     },
     "dont-upcast-attention": {
       "name": "Предотвратить повышение внимания"
@@ -529,7 +529,7 @@
     },
     "reserve-vram": {
       "name": "Резервируемая VRAM (ГБ)",
-      "tooltip": "Установите количество VRAM в ГБ, которое вы хотите зарезервировать для использования вашей ОС/другими программами. По умолчанию резервируется определенное количество в зависимости от вашей ОС."
+      "tooltip": "Установите количество VRAM в ГБ, которое вы хотите зарезервировать для использования вашей ОС/другими программами. По умолчанию резервируется определённое количество в зависимости от вашей ОС."
     },
     "text-encoder-precision": {
       "name": "Точность текстового кодировщика",
@@ -557,10 +557,10 @@
     "openLogs": "Открыть логи",
     "process": {
       "error": "Не удалось запустить ComfyUI Desktop",
-      "initial-state": "Загрузка...",
-      "python-setup": "Настройка окружения Python...",
-      "ready": "Завершение...",
-      "starting-server": "Запуск сервера ComfyUI..."
+      "initial-state": "Загрузка…",
+      "python-setup": "Настройка окружения Python…",
+      "ready": "Завершение…",
+      "starting-server": "Запуск сервера ComfyUI…"
     },
     "reinstall": "Переустановить",
     "reportIssue": "Сообщить о проблеме",
@@ -573,7 +573,7 @@
     "Canvas": "Холст",
     "ColorPalette": "Цветовая палитра",
     "Comfy": "Comfy",
-    "Comfy-Desktop": "Comfy рабочий стол",
+    "Comfy-Desktop": "Десктопный Comfy",
     "CustomColorPalettes": "Пользовательские цветовые палитры",
     "DevMode": "Режим разработчика",
     "EditTokenWeight": "Редактировать вес токена",
@@ -590,11 +590,11 @@
     "Menu": "Меню",
     "ModelLibrary": "Библиотека моделей",
     "NewEditor": "Новый редактор",
-    "Node": "Узел",
-    "Node Search Box": "Поисковая строка узлов",
-    "Node Widget": "Виджет узла",
-    "NodeInputConversionSubmenus": "Подменю преобразования ввода узла",
-    "NodeLibrary": "Библиотека узлов",
+    "Node": "Нода",
+    "Node Search Box": "Поисковая строка нод",
+    "Node Widget": "Виджет ноды",
+    "NodeInputConversionSubmenus": "Подменю преобразования ввода ноды",
+    "NodeLibrary": "Библиотека нод",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",
@@ -614,7 +614,7 @@
     "logout": "Выйти",
     "modelLibrary": "Библиотека моделей",
     "newBlankWorkflow": "Создайте новый пустой рабочий процесс",
-    "nodeLibrary": "Библиотека узлов",
+    "nodeLibrary": "Библиотека нод",
     "nodeLibraryTab": {
       "sortOrder": "Порядок сортировки"
     },
@@ -640,7 +640,7 @@
       "confirmOverwriteTitle": "Перезаписать существующий файл?",
       "deleteFailed": "Попытка удалить рабочий процесс не удалась.",
       "deleteFailedTitle": "Не удалось удалить",
-      "deleted": "Рабочий процесс удален",
+      "deleted": "Рабочий процесс удалён",
       "dirtyClose": "Файлы ниже были изменены. Вы хотите сохранить их перед закрытием?",
       "dirtyCloseTitle": "Сохранить изменения?",
       "workflowTreeType": {
@@ -662,12 +662,12 @@
   },
   "templateWorkflows": {
     "template": {
-      "default": "Image Generation",
+      "default": "Генерация изображений",
       "flux_schnell": "Flux Schnell",
-      "image2image": "Image to Image",
-      "upscale": "2 Pass Upscale"
+      "image2image": "Изображение в изображение",
+      "upscale": "2-этапный апскейл"
     },
-    "title": "Начните работу с шаблона"
+    "title": "Начните с шаблона"
   },
   "userSelect": {
     "enterUsername": "Введите имя пользователя",
@@ -681,7 +681,7 @@
     "title": "Добро пожаловать в ComfyUI"
   },
   "workflowService": {
-    "enterFilename": "Введите имя файла",
+    "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
   }
