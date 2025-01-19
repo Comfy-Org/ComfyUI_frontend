@@ -440,11 +440,9 @@ onMounted(async () => {
 onUnmounted(() => electron.Validation.dispose())
 </script>
 
-<style>
-:root {
+<style scoped>
+:deep(.p-tag) {
   --p-tag-gap: 0.375rem;
-  --p-card-background: var(--p-button-secondary-background);
-  --p-card-background: var(--p-button-secondary-background);
 }
 
 .backspan::before {

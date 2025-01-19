@@ -68,7 +68,7 @@ const description = computed(() =>
 )
 </script>
 
-<style>
+<style scoped>
 .task-card-ok {
   @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
 
@@ -80,6 +80,7 @@ const description = computed(() =>
 .p-card {
   @apply transition-opacity;
 
+  --p-card-background: var(--p-button-secondary-background);
   opacity: 0.9;
 
   &.opacity-65 {
@@ -89,16 +90,16 @@ const description = computed(() =>
   &:hover {
     opacity: 1;
   }
-}
 
-.p-card-header {
-  z-index: 0;
-}
+  .p-card-header {
+    z-index: 0;
+  }
 
-.p-card-body {
-  z-index: 1;
-  flex-grow: 1;
-  justify-content: space-between;
+  .p-card-body {
+    z-index: 1;
+    flex-grow: 1;
+    justify-content: space-between;
+  }
 }
 
 .task-div {
