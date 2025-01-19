@@ -9,6 +9,7 @@
         v-model="internalSelection"
         :inputId="checkbox.value"
         :value="checkbox.value"
+        :disabled="itemDisabled && itemDisabled(checkbox)"
       />
       <label :for="checkbox.value" class="ml-2">{{ checkbox.label }}</label>
     </div>
@@ -24,10 +25,13 @@ interface CheckboxItem {
   value: string
 }
 
-const props = defineProps<{
+interface CheckboxGroupProps {
   checkboxes: CheckboxItem[]
   modelValue: string[]
-}>()
+  itemDisabled?: (item: CheckboxItem) => boolean
+}
+
+const props = defineProps<CheckboxGroupProps>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string[]): void
