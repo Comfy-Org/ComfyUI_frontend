@@ -20,7 +20,7 @@ export interface MaintenanceTask {
   /** URL to the image to show in card mode. */
   headerImg?: string
   button?: MaintenanceTaskButton
-  state: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped' | null
+  state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
   /** `true` if the task has been resolved (was `error`, now `OK`). */
   resolved?: boolean
   loading?: MaybeRef<boolean>

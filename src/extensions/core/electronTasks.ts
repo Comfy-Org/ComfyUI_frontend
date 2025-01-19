@@ -15,7 +15,6 @@ const openUrl = (url: string) => {
 export const electronTasks: MaintenanceTask[] = [
   {
     id: 'basePath',
-    state: null,
     execute: async () => await electron.setBasePath(),
     name: 'Base path',
     description: 'Change the application base path.',
@@ -30,7 +29,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'git',
-    state: null,
     headerImg: '/assets/images/Git-Logo-White.svg',
     execute: () => openUrl('https://git-scm.com/downloads/'),
     name: 'Download git',
@@ -44,7 +42,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'vcRedist',
-    state: null,
     execute: () => openUrl('https://aka.ms/vs/17/release/vc_redist.x64.exe'),
     name: 'Download VC++ Redist',
     description: 'Download the latest VC++ Redistributable runtime.',
@@ -57,7 +54,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'reinstall',
-    state: null,
     severity: 'danger',
     requireConfirm: true,
     execute: async () => {
@@ -76,7 +72,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'pythonPackages',
-    state: null,
     requireConfirm: true,
     execute: async () => {
       try {
@@ -101,7 +96,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'uv',
-    state: null,
     execute: () =>
       openUrl('https://docs.astral.sh/uv/getting-started/installation/'),
     name: 'uv executable',
@@ -115,7 +109,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'uvCache',
-    state: null,
     severity: 'danger',
     requireConfirm: true,
     execute: async () => await electron.uv.clearCache(),
@@ -132,7 +125,6 @@ export const electronTasks: MaintenanceTask[] = [
   },
   {
     id: 'venvDirectory',
-    state: null,
     severity: 'danger',
     requireConfirm: true,
     execute: async () => await electron.uv.resetVenv(),
