@@ -90,16 +90,16 @@ const description = computed(() =>
   &:hover {
     opacity: 1;
   }
+}
 
-  .p-card-header {
-    z-index: 0;
-  }
+:deep(.p-card-header) {
+  z-index: 0;
+}
 
-  .p-card-body {
-    z-index: 1;
-    flex-grow: 1;
-    justify-content: space-between;
-  }
+:deep(.p-card-body) {
+  z-index: 1;
+  flex-grow: 1;
+  justify-content: space-between;
 }
 
 .task-div {
