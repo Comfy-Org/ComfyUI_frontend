@@ -111,8 +111,9 @@ import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
 const minRefreshTime = 250
 const electron = electronAPI()
-const terminalVisible = ref(false)
 const toast = useToast()
+
+const terminalVisible = ref(false)
 
 /** True when waiting on tasks to complete. */
 const isRefreshing = minDurationRef(true, minRefreshTime)
