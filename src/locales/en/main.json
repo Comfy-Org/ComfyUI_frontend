@@ -362,6 +362,7 @@
     "Open Outputs Folder": "Open Outputs Folder",
     "Open DevTools": "Open DevTools",
     "Desktop User Guide": "Desktop User Guide",
+    "Quit": "Quit",
     "Reinstall": "Reinstall",
     "Restart": "Restart",
     "Browse Templates": "Browse Templates",
@@ -420,7 +421,9 @@
   },
   "desktopMenu": {
     "reinstall": "Reinstall",
-    "confirmReinstall": "This will clear your extra_models_config.yaml file,\nand begin installation again.\n\nAre you sure?"
+    "confirmReinstall": "This will clear your extra_models_config.yaml file,\nand begin installation again.\n\nAre you sure?",
+    "quit": "Quit",
+    "confirmQuit": "There are unsaved workflows open; any unsaved changes will be lost.  Ignore this and quit?"
   },
   "settingsCategories": {
     "Comfy-Desktop": "Comfy-Desktop",
