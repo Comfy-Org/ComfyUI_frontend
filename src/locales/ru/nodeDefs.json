@@ -17,10 +17,10 @@
     }
   },
   "AlignYourStepsScheduler": {
-    "display_name": "Планировщик выравнивания шагов",
+    "display_name": "Scheduler выравнивания шагов",
     "inputs": {
       "denoise": {
-        "name": "денойз"
+        "name": "шумоподавление"
       },
       "model_type": {
         "name": "тип_модели"
@@ -42,16 +42,16 @@
     }
   },
   "BasicScheduler": {
-    "display_name": "Основной планировщик",
+    "display_name": "Основной scheduler",
     "inputs": {
       "denoise": {
-        "name": "денойз"
+        "name": "шумоподавление"
       },
       "model": {
         "name": "модель"
       },
       "scheduler": {
-        "name": "планировщик"
+        "name": "scheduler"
       },
       "steps": {
         "name": "шаги"
@@ -59,7 +59,7 @@
     }
   },
   "BetaSamplingScheduler": {
-    "display_name": "Планировщик выборки Бета",
+    "display_name": "Scheduler выборки Бета",
     "inputs": {
       "alpha": {
         "name": "альфа"
@@ -117,7 +117,7 @@
     "display_name": "Загрузить CLIP",
     "inputs": {
       "clip_name": {
-        "name": "имя_clip"
+        "name": "название_clip"
       },
       "device": {
         "name": "устройство"
@@ -173,7 +173,7 @@
         "name": "clip"
       },
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       }
     }
   },
@@ -360,12 +360,12 @@
     "display_name": "Загрузить видение CLIP",
     "inputs": {
       "clip_name": {
-        "name": "имя_clip"
+        "name": "название_clip"
       }
     }
   },
   "Canny": {
-    "display_name": "Канни",
+    "display_name": "Canny",
     "inputs": {
       "high_threshold": {
         "name": "верхний_порог"
@@ -379,28 +379,28 @@
     }
   },
   "CheckpointLoader": {
-    "display_name": "Загрузить контрольную точку с конфигурацией (УСТАРЕЛО)",
+    "display_name": "Загрузить сheckpoint с конфигурацией (УСТАРЕЛО)",
     "inputs": {
       "ckpt_name": {
-        "name": "имя_точки_проверки"
+        "name": "название_точки_проверки"
       },
       "config_name": {
-        "name": "имя_конфигурации"
+        "name": "название_конфигурации"
       }
     }
   },
   "CheckpointLoaderSimple": {
-    "description": "Загружает контрольную точку модели диффузии, модели диффузии используются для удаления шума из латентов.",
-    "display_name": "Загрузить контрольную точку",
+    "description": "Загружает сheckpoint-модели диффузии, модели диффузии используются для удаления шума из латентов.",
+    "display_name": "Загрузить сheckpoint",
     "inputs": {
       "ckpt_name": {
-        "name": "имя_точки_проверки",
-        "tooltip": "Имя контрольной точки (модели) для загрузки."
+        "name": "название_точки_проверки",
+        "tooltip": "Название сheckpoint (модели) для загрузки."
       }
     },
     "outputs": {
       "0": {
-        "tooltip": "Модель, используемая для денойзинга латентов."
+        "tooltip": "Модель, используемая для шумоподавления латентов."
       },
       "1": {
         "tooltip": "Модель CLIP, используемая для кодирования текстовых подсказок."
@@ -411,13 +411,13 @@
     }
   },
   "CheckpointSave": {
-    "display_name": "Сохранить контрольную точку",
+    "display_name": "Сохранить сheckpoint",
     "inputs": {
       "clip": {
         "name": "clip"
       },
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "model": {
         "name": "модель"
@@ -615,7 +615,7 @@
         "name": "новое_условие"
       },
       "hooks": {
-        "name": "hooks"
+        "name": "хуки"
       },
       "mask": {
         "name": "маска"
@@ -641,7 +641,7 @@
         "name": "новое_условие"
       },
       "hooks": {
-        "name": "hooks"
+        "name": "хуки"
       },
       "mask": {
         "name": "маска"
@@ -724,7 +724,7 @@
     }
   },
   "ControlNetApply": {
-    "display_name": "Применить ControlNet (СТАРОЕ)",
+    "display_name": "Применить ControlNet (УСТАРЕЛО)",
     "inputs": {
       "conditioning": {
         "name": "условие"
@@ -858,7 +858,7 @@
     "display_name": "Загрузить модель ControlNet",
     "inputs": {
       "control_net_name": {
-        "name": "имя_control_net"
+        "name": "название_control_net"
       }
     }
   },
@@ -970,7 +970,7 @@
     "display_name": "Создать хук LoRA",
     "inputs": {
       "lora_name": {
-        "name": "имя_lora"
+        "name": "название_lora"
       },
       "prev_hooks": {
         "name": "предыдущие_хуки"
@@ -987,7 +987,7 @@
     "display_name": "Создать хук LoRA (Только модель)",
     "inputs": {
       "lora_name": {
-        "name": "имя_lora"
+        "name": "название_lora"
       },
       "prev_hooks": {
         "name": "предыдущие_хуки"
@@ -1001,7 +1001,7 @@
     "display_name": "Создать хук модели как LoRA",
     "inputs": {
       "ckpt_name": {
-        "name": "имя_ckpt"
+        "name": "название_ckpt"
       },
       "prev_hooks": {
         "name": "предыдущие_хуки"
@@ -1018,7 +1018,7 @@
     "display_name": "Создать хук модели как LoRA (Только модель)",
     "inputs": {
       "ckpt_name": {
-        "name": "имя_ckpt"
+        "name": "название_ckpt"
       },
       "prev_hooks": {
         "name": "предыдущие_хуки"
@@ -1049,8 +1049,8 @@
     }
   },
   "DevToolsDeprecatedNode": {
-    "description": "Устаревший узел",
-    "display_name": "Устаревший узел"
+    "description": "Устаревшая нода",
+    "display_name": "Устаревшая нода"
   },
   "DevToolsErrorRaiseNode": {
     "description": "Выбросить ошибку для целей разработки",
@@ -1066,8 +1066,8 @@
     }
   },
   "DevToolsExperimentalNode": {
-    "description": "Экспериментальный узел",
-    "display_name": "Экспериментальный узел"
+    "description": "Экспериментальная нода",
+    "display_name": "Экспериментальная нода"
   },
   "DevToolsLongComboDropdown": {
     "description": "Длинный комбинированный выпадающий список",
@@ -1079,8 +1079,8 @@
     }
   },
   "DevToolsNodeWithForceInput": {
-    "description": "Узел с принудительным вводом",
-    "display_name": "Узел с принудительным вводом",
+    "description": "Нода с принудительным вводом",
+    "display_name": "Нода с принудительным вводом",
     "inputs": {
       "float_input": {
         "name": "ввод_float"
@@ -1094,8 +1094,8 @@
     }
   },
   "DevToolsNodeWithOnlyOptionalInput": {
-    "description": "Узел только с необязательным вводом",
-    "display_name": "Узел только с необязательным вводом",
+    "description": "Нода только с необязательным вводом",
+    "display_name": "Нода только с необязательным вводом",
     "inputs": {
       "clip": {
         "name": "клип"
@@ -1106,8 +1106,8 @@
     }
   },
   "DevToolsNodeWithOptionalInput": {
-    "description": "Узел с необязательным вводом",
-    "display_name": "Узел с необязательным вводом",
+    "description": "Нода с необязательным вводом",
+    "display_name": "Нода с необязательным вводом",
     "inputs": {
       "optional_input": {
         "name": "необязательный_ввод"
@@ -1118,8 +1118,8 @@
     }
   },
   "DevToolsNodeWithOutputList": {
-    "description": "Узел с выходным списком",
-    "display_name": "Узел с выходным списком",
+    "description": "Нода с выходным списком",
+    "display_name": "Нода с выходным списком",
     "outputs": {
       "0": {
         "name": "ЦЕЛОЧИСЛЬНЫЙ_ВЫХОД"
@@ -1130,17 +1130,17 @@
     }
   },
   "DevToolsNodeWithSeedInput": {
-    "description": "Узел с входным сигналом seed",
-    "display_name": "Узел с входным сигналом Seed",
+    "description": "Нода с входным сидом",
+    "display_name": "Нода с входным сидом",
     "inputs": {
       "seed": {
-        "name": "seed"
+        "name": "сид"
       }
     }
   },
   "DevToolsNodeWithStringInput": {
-    "description": "Узел со строковым вводом",
-    "display_name": "Узел со строковым вводом",
+    "description": "Нода со строковым вводом",
+    "display_name": "Нода со строковым вводом",
     "inputs": {
       "string_input": {
         "name": "ввод_строки"
@@ -1148,8 +1148,8 @@
     }
   },
   "DevToolsNodeWithUnionInput": {
-    "description": "Узел с объединённым вводом",
-    "display_name": "Узел с объединённым вводом",
+    "description": "Нода с объединённым вводом",
+    "display_name": "Нода с объединённым вводом",
     "inputs": {
       "int_input": {
         "name": "ввод_int"
@@ -1163,8 +1163,8 @@
     }
   },
   "DevToolsObjectPatchNode": {
-    "description": "Узел, применяющий объектный патч",
-    "display_name": "Узел объектного патча",
+    "description": "Нода, применяющая объектный патч",
+    "display_name": "Нода объектного патча",
     "inputs": {
       "dummy_float": {
         "name": "фиктивное число с плавающей точкой"
@@ -1189,7 +1189,7 @@
     "display_name": "Загрузить модель ControlNet (дифф)",
     "inputs": {
       "control_net_name": {
-        "name": "имя_сети_управления"
+        "name": "название_control_net"
       },
       "model": {
         "name": "модель"
@@ -1274,7 +1274,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "ПустойHunyuanLatentVideo",
+    "display_name": "Пустой HunyuanLatentVideo",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -1308,7 +1308,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "Пустое латентное видео LTXV",
+    "display_name": "Пустой LTXVLatentVideo",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -1325,7 +1325,7 @@
     }
   },
   "EmptyLatentAudio": {
-    "display_name": "Пустой латентный аудио",
+    "display_name": "Пустой LatentAudio",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета",
@@ -1337,7 +1337,7 @@
     }
   },
   "EmptyLatentImage": {
-    "description": "Создает новую партию пустых латентных изображений для удаления шума через выборку.",
+    "description": "Создаёт новую партию пустых латентных изображений для удаления шума через выборку.",
     "display_name": "Пустое латентное изображение",
     "inputs": {
       "batch_size": {
@@ -1360,7 +1360,7 @@
     }
   },
   "EmptyMochiLatentVideo": {
-    "display_name": "Пустое латентное видео Mochi",
+    "display_name": "Пустой MochiLatentVideo",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -1377,7 +1377,7 @@
     }
   },
   "EmptySD3LatentImage": {
-    "display_name": "Пустое латентное изображение SD3",
+    "display_name": "Пустой SD3LatentImage",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -1391,7 +1391,7 @@
     }
   },
   "ExponentialScheduler": {
-    "display_name": "Экспоненциальный планировщик",
+    "display_name": "Экспоненциальный scheduler",
     "inputs": {
       "sigma_max": {
         "name": "sigma_max"
@@ -1501,7 +1501,7 @@
     "display_name": "Загрузчик GLIGEN",
     "inputs": {
       "gligen_name": {
-        "name": "имя_gligen"
+        "name": "название_gligen"
       }
     }
   },
@@ -1509,7 +1509,7 @@
     "display_name": "Применить текстовое поле GLIGEN",
     "inputs": {
       "clip": {
-        "name": "клип"
+        "name": "clip"
       },
       "conditioning_to": {
         "name": "условие_для"
@@ -1569,10 +1569,10 @@
     }
   },
   "HypernetworkLoader": {
-    "display_name": "Загрузчик гиперсети",
+    "display_name": "Загрузчик hypernetwork",
     "inputs": {
       "hypernetwork_name": {
-        "name": "имя_гиперсети"
+        "name": "название_hypernetwork"
       },
       "model": {
         "name": "модель"
@@ -1701,21 +1701,21 @@
     }
   },
   "ImageOnlyCheckpointLoader": {
-    "display_name": "Загрузчик контрольной точки только для изображения (модель img2vid)",
+    "display_name": "Загрузчик checkpoint только для изображения (модель img2vid)",
     "inputs": {
       "ckpt_name": {
-        "name": "имя_ckpt"
+        "name": "название_ckpt"
       }
     }
   },
   "ImageOnlyCheckpointSave": {
-    "display_name": "Сохранить только контрольную точку изображения",
+    "display_name": "Сохранить только checkpoint изображения",
     "inputs": {
       "clip_vision": {
         "name": "clip_vision"
       },
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "model": {
         "name": "модель"
@@ -1792,7 +1792,7 @@
         "name": "увеличить_на"
       },
       "upscale_method": {
-        "name": "метод_увеличения"
+        "name": "метод_апскейла"
       }
     }
   },
@@ -1806,7 +1806,7 @@
         "name": "мегапиксели"
       },
       "upscale_method": {
-        "name": "метод_увеличения"
+        "name": "метод_апскейла"
       }
     }
   },
@@ -1839,13 +1839,13 @@
     }
   },
   "ImageUpscaleWithModel": {
-    "display_name": "Увеличить изображение (с использованием модели)",
+    "display_name": "Апскейл изображения (с использованием модели)",
     "inputs": {
       "image": {
         "name": "изображение"
       },
       "upscale_model": {
-        "name": "модель_увеличения"
+        "name": "модель_апскейла"
       }
     }
   },
@@ -1940,7 +1940,7 @@
         "tooltip": "Масштаб без классификатора балансирует креативность и соблюдение запроса. Более высокие значения приводят к изображениям, более точно соответствующим запросу, однако слишком высокие значения негативно скажутся на качестве."
       },
       "denoise": {
-        "name": "денойз",
+        "name": "шумоподавление",
         "tooltip": "Количество уменьшения шума, более низкие значения сохранят структуру начального изображения, позволяя выборку изображений."
       },
       "latent_image": {
@@ -1960,16 +1960,16 @@
         "tooltip": "Условие, описывающее атрибуты, которые вы хотите включить в изображение."
       },
       "sampler_name": {
-        "name": "имя_сэмплера",
+        "name": "название_сэмплера",
         "tooltip": "Алгоритм, используемый при выборке, это может повлиять на качество, скорость и стиль сгенерированного вывода."
       },
       "scheduler": {
-        "name": "планировщик",
-        "tooltip": "Планировщик контролирует, как шум постепенно удаляется для формирования изображения."
+        "name": "scheduler",
+        "tooltip": "Scheduler контролирует, как шум постепенно удаляется для формирования изображения."
       },
       "seed": {
-        "name": "семя",
-        "tooltip": "Случайное семя, используемое для создания шума."
+        "name": "сид",
+        "tooltip": "Случайный сид, используемый для создания шума."
       },
       "steps": {
         "name": "шаги",
@@ -1978,7 +1978,7 @@
     },
     "outputs": {
       "0": {
-        "tooltip": "Денойзенный латент."
+        "tooltip": "шумоподавленный латент."
       }
     }
   },
@@ -2004,7 +2004,7 @@
         "name": "отрицательный"
       },
       "noise_seed": {
-        "name": "семя_шума"
+        "name": "сид_шума"
       },
       "positive": {
         "name": "положительный"
@@ -2013,10 +2013,10 @@
         "name": "вернуться_с_оставшимся_шумом"
       },
       "sampler_name": {
-        "name": "имя_сэмплера"
+        "name": "название_сэмплера"
       },
       "scheduler": {
-        "name": "планировщик"
+        "name": "scheduler"
       },
       "start_at_step": {
         "name": "начать_с_шага"
@@ -2030,12 +2030,12 @@
     "display_name": "Выбор KSampler",
     "inputs": {
       "sampler_name": {
-        "name": "имя_сэмплера"
+        "name": "название_сэмплера"
       }
     }
   },
   "KarrasScheduler": {
-    "display_name": "Планировщик Карраса",
+    "display_name": "Scheduler Карраса",
     "inputs": {
       "rho": {
         "name": "ро"
@@ -2118,7 +2118,7 @@
     }
   },
   "LTXVScheduler": {
-    "display_name": "Планировщик LTXV",
+    "display_name": "Scheduler LTXV",
     "inputs": {
       "base_shift": {
         "name": "базовое_смещение"
@@ -2143,7 +2143,7 @@
     }
   },
   "LaplaceScheduler": {
-    "display_name": "Планировщик Лапласа",
+    "display_name": "Scheduler Лапласа",
     "inputs": {
       "beta": {
         "name": "бета"
@@ -2207,13 +2207,13 @@
     }
   },
   "LatentBatchSeedBehavior": {
-    "display_name": "Поведение семени партии латентов",
+    "display_name": "Поведение сида партии латентов",
     "inputs": {
       "samples": {
         "name": "образцы"
       },
       "seed_behavior": {
-        "name": "поведение_семени"
+        "name": "поведение_сида"
       }
     }
   },
@@ -2401,7 +2401,7 @@
         "name": "образцы"
       },
       "upscale_method": {
-        "name": "метод_масштабирования"
+        "name": "метод_апскейла"
       },
       "width": {
         "name": "ширина"
@@ -2418,7 +2418,7 @@
         "name": "масштабировать_по"
       },
       "upscale_method": {
-        "name": "метод_масштабирования"
+        "name": "метод_апскейла"
       }
     }
   },
@@ -2475,7 +2475,7 @@
     }
   },
   "Load3DAnimation": {
-    "display_name": "Загрузить 3D - Анимация",
+    "display_name": "Загрузить 3D — Анимация",
     "inputs": {
       "animation_speed": {
         "name": "скорость_анимации"
@@ -2565,7 +2565,7 @@
     }
   },
   "LoraLoader": {
-    "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько узлов LoRA могут быть связаны вместе.",
+    "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько нод LoRA могут быть связаны вместе.",
     "display_name": "Загрузить LoRA",
     "inputs": {
       "clip": {
@@ -2573,8 +2573,8 @@
         "tooltip": "Модель CLIP, к которой будет применена LoRA."
       },
       "lora_name": {
-        "name": "имя_lora",
-        "tooltip": "Имя LoRA."
+        "name": "название_lora",
+        "tooltip": "Название LoRA."
       },
       "model": {
         "name": "модель",
@@ -2599,11 +2599,11 @@
     }
   },
   "LoraLoaderModelOnly": {
-    "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько узлов LoRA могут быть связаны вместе.",
+    "description": "LoRA используются для изменения моделей диффузии и CLIP, изменяя способ, которым латенты удаляются от шума, например, применяя стили. Несколько нод LoRA могут быть связаны вместе.",
     "display_name": "Загрузчик LoRA (Только модель)",
     "inputs": {
       "lora_name": {
-        "name": "имя_lora"
+        "name": "название_lora"
       },
       "model": {
         "name": "модель"
@@ -2625,7 +2625,7 @@
         "name": "разница_смещения"
       },
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "lora_type": {
         "name": "тип_lora"
@@ -2644,7 +2644,7 @@
     }
   },
   "Mahiro": {
-    "description": "Измените руководство, чтобы оно больше масштабировалось в 'направлении' положительного подсказки, а не разницы между отрицательной подсказкой.",
+    "description": "Измените руководство, чтобы оно больше масштабировалось в «направлении» положительной подсказки, а не разницы между отрицательной подсказкой.",
     "display_name": "Mahiro настолько мила, что заслуживает лучшей функции руководства!! (。・ω・。)",
     "inputs": {
       "model": {
@@ -2686,7 +2686,7 @@
     }
   },
   "ModelMergeAdd": {
-    "display_name": "Сложение моделей",
+    "display_name": "Слияние моделей",
     "inputs": {
       "model1": {
         "name": "модель1"
@@ -3066,10 +3066,10 @@
         "name": "caption_projection."
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "patchify_proj_": {
         "name": "patchify_proj."
@@ -3317,10 +3317,10 @@
         "name": "final_layer."
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "pos_frequencies_": {
         "name": "pos_frequencies."
@@ -3388,10 +3388,10 @@
         "name": "middle_block.2."
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "out_": {
         "name": "out."
@@ -3489,10 +3489,10 @@
         "name": "middle_block.2."
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "out_": {
         "name": "out."
@@ -3662,10 +3662,10 @@
         "name": "joint_blocks.9."
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "pos_embed_": {
         "name": "pos_embed."
@@ -3825,10 +3825,10 @@
         "name": "middle_block.2"
       },
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "out_": {
         "name": "out."
@@ -3869,10 +3869,10 @@
     "display_name": "Простое слияние моделей",
     "inputs": {
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "ratio": {
         "name": "соотношение"
@@ -3883,10 +3883,10 @@
     "display_name": "Вычитание моделей",
     "inputs": {
       "model1": {
-        "name": "model1"
+        "name": "модель1"
       },
       "model2": {
-        "name": "model2"
+        "name": "модель2"
       },
       "multiplier": {
         "name": "множитель"
@@ -3897,7 +3897,7 @@
     "display_name": "Выборка модели AuraFlow",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "модель"
       },
       "shift": {
         "name": "сдвиг"
@@ -3908,7 +3908,7 @@
     "display_name": "Выборка модели Continuous EDM",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "модель"
       },
       "sampling": {
         "name": "выборка"
@@ -3925,7 +3925,7 @@
     "display_name": "Выборка модели Continuous V",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "модель"
       },
       "sampling": {
         "name": "выборка"
@@ -3942,7 +3942,7 @@
     "display_name": "Дискретная выборка модели",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "модель"
       },
       "sampling": {
         "name": "выборка"
@@ -4015,7 +4015,7 @@
     "display_name": "Сохранить модель",
     "inputs": {
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "model": {
         "name": "модель"
@@ -4193,7 +4193,7 @@
     }
   },
   "PerpNeg": {
-    "display_name": "Перп-Нег (УСТАРЕЛО из-за PerpNegGuider)",
+    "display_name": "PerpNeg (УСТАРЕЛО из-за PerpNegGuider)",
     "inputs": {
       "empty_conditioning": {
         "name": "пустое_условие"
@@ -4230,7 +4230,7 @@
     }
   },
   "PerturbedAttentionGuidance": {
-    "display_name": "Направление с учетом возмущений",
+    "display_name": "Направление с учётом возмущений",
     "inputs": {
       "model": {
         "name": "модель"
@@ -4261,12 +4261,12 @@
     "display_name": "Загрузчик PhotoMaker",
     "inputs": {
       "photomaker_model_name": {
-        "name": "имя_модели_photomaker"
+        "name": "название_модели_photomaker"
       }
     }
   },
   "PolyexponentialScheduler": {
-    "display_name": "Полиэкспоненциальный планировщик",
+    "display_name": "Полиэкспоненциальный scheduler",
     "inputs": {
       "rho": {
         "name": "ро"
@@ -4335,7 +4335,7 @@
     }
   },
   "PreviewAudio": {
-    "display_name": "Предварительный просмотр аудио",
+    "display_name": "Предварительное прослушивание аудио",
     "inputs": {
       "audio": {
         "name": "аудио"
@@ -4355,7 +4355,7 @@
     "display_name": "Случайный шум",
     "inputs": {
       "noise_seed": {
-        "name": "семя_шума"
+        "name": "сид_шума"
       }
     }
   },
@@ -4415,7 +4415,7 @@
     }
   },
   "SDTurboScheduler": {
-    "display_name": "Планировщик SDTurbo",
+    "display_name": "Scheduler SDTurbo",
     "inputs": {
       "denoise": {
         "name": "шумоподавление"
@@ -4558,7 +4558,7 @@
         "name": "отрицательный"
       },
       "noise_seed": {
-        "name": "семя_шума"
+        "name": "сид_шума"
       },
       "positive": {
         "name": "положительный"
@@ -4580,13 +4580,13 @@
     }
   },
   "SamplerCustomAdvanced": {
-    "display_name": "Пользовательский выборщик (Расширенный)",
+    "display_name": "Пользовательский сэмплер (Расширенный)",
     "inputs": {
       "guider": {
         "name": "гид"
       },
       "latent_image": {
-        "name": "латентное изображение"
+        "name": "латентное_изображение"
       },
       "noise": {
         "name": "шум"
@@ -4608,7 +4608,7 @@
     }
   },
   "SamplerDPMAdaptative": {
-    "display_name": "Адаптивный выборщик DPM",
+    "display_name": "Адаптивный сэмплер DPM",
     "inputs": {
       "accept_safety": {
         "name": "accept_safety"
@@ -4643,24 +4643,24 @@
     }
   },
   "SamplerDPMPP_2M_SDE": {
-    "display_name": "Выборщик DPMPP_2M_SDE",
+    "display_name": "Сэмплер DPMPP_2M_SDE",
     "inputs": {
       "eta": {
         "name": "eta"
       },
       "noise_device": {
-        "name": "устройство шума"
+        "name": "устройство_шума"
       },
       "s_noise": {
         "name": "s_noise"
       },
       "solver_type": {
-        "name": "тип решателя"
+        "name": "тип_решателя"
       }
     }
   },
   "SamplerDPMPP_2S_Ancestral": {
-    "display_name": "Выборщик DPMPP_2S_Ancestral",
+    "display_name": "Сэмплер DPMPP_2S_Ancestral",
     "inputs": {
       "eta": {
         "name": "eta"
@@ -4671,13 +4671,13 @@
     }
   },
   "SamplerDPMPP_3M_SDE": {
-    "display_name": "Выборщик DPMPP_3M_SDE",
+    "display_name": "Сэмплер DPMPP_3M_SDE",
     "inputs": {
       "eta": {
         "name": "eta"
       },
       "noise_device": {
-        "name": "устройство шума"
+        "name": "устройство_шума"
       },
       "s_noise": {
         "name": "s_noise"
@@ -4685,13 +4685,13 @@
     }
   },
   "SamplerDPMPP_SDE": {
-    "display_name": "Выборщик DPMPP_SDE",
+    "display_name": "Сэмплер DPMPP_SDE",
     "inputs": {
       "eta": {
         "name": "eta"
       },
       "noise_device": {
-        "name": "устройство шума"
+        "name": "устройство_шума"
       },
       "r": {
         "name": "r"
@@ -4702,7 +4702,7 @@
     }
   },
   "SamplerEulerAncestral": {
-    "display_name": "Выборщик Эйлера (Анастр.)",
+    "display_name": "Сэмплер Эйлера (Анастр.)",
     "inputs": {
       "eta": {
         "name": "eta"
@@ -4713,7 +4713,7 @@
     }
   },
   "SamplerEulerAncestralCFGPP": {
-    "display_name": "Выборщик Эйлера (Анастр.) CFG++",
+    "display_name": "Сэмплер Эйлера (Анастр.) CFG++",
     "inputs": {
       "eta": {
         "name": "eta"
@@ -4724,7 +4724,7 @@
     }
   },
   "SamplerEulerCFGpp": {
-    "display_name": "Выборщик Эйлера CFG++",
+    "display_name": "Сэмплер Эйлера CFG++",
     "inputs": {
       "version": {
         "name": "версия"
@@ -4732,21 +4732,21 @@
     }
   },
   "SamplerLCMUpscale": {
-    "display_name": "Выборщик LCM Upscale",
+    "display_name": "Сэмплер LCM Upscale",
     "inputs": {
       "scale_ratio": {
-        "name": "коэффициент масштабирования"
+        "name": "коэффициент_масштабирования"
       },
       "scale_steps": {
-        "name": "шаги масштабирования"
+        "name": "шаги_масштабирования"
       },
       "upscale_method": {
-        "name": "метод масштабирования"
+        "name": "метод_масштабирования"
       }
     }
   },
   "SamplerLMS": {
-    "display_name": "Выборщик LMS",
+    "display_name": "Сэмплер LMS",
     "inputs": {
       "order": {
         "name": "порядок"
@@ -4757,10 +4757,10 @@
     "display_name": "Сохранить анимированный PNG",
     "inputs": {
       "compress_level": {
-        "name": "уровень сжатия"
+        "name": "уровень_сжатия"
       },
       "filename_prefix": {
-        "name": "префикс имени файла"
+        "name": "префикс_названия_файла"
       },
       "fps": {
         "name": "fps"
@@ -4774,7 +4774,7 @@
     "display_name": "Сохранить анимированный WEBP",
     "inputs": {
       "filename_prefix": {
-        "name": "префикс имени файла"
+        "name": "префикс_названия_файла"
       },
       "fps": {
         "name": "fps"
@@ -4783,7 +4783,7 @@
         "name": "изображения"
       },
       "lossless": {
-        "name": "без потерь"
+        "name": "без_потерь"
       },
       "method": {
         "name": "метод"
@@ -4800,7 +4800,7 @@
         "name": "аудио"
       },
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       }
     }
   },
@@ -4809,12 +4809,12 @@
     "display_name": "Сохранить изображение",
     "inputs": {
       "filename_prefix": {
-        "name": "префикс_имени_файла",
-        "tooltip": "Префикс для файла, который нужно сохранить. Это может включать информацию о форматировании, такую как %date:yyyy-MM-dd% или %Empty Latent Image.width%, чтобы включить значения из узлов."
+        "name": "префикс_названия_файла",
+        "tooltip": "Префикс для файла, который нужно сохранить. Это может включать информацию о форматировании, такую как %date:yyyy-MM-dd% или %Empty Latent Image.width%, чтобы включить значения из нод."
       },
       "images": {
         "name": "изображения",
-        "tooltip": "Изображения для сохранения."
+        "tooltip": "Изображения_для_сохранения."
       }
     }
   },
@@ -4830,7 +4830,7 @@
     "display_name": "Сохранить латент",
     "inputs": {
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "samples": {
         "name": "образцы"
@@ -4864,7 +4864,7 @@
         "name": "хуки"
       },
       "schedule_clip": {
-        "name": "расписание_клипа"
+        "name": "schedule_clip"
       }
     }
   },
@@ -4905,7 +4905,7 @@
     "display_name": "Установить тип объединенного ControlNet",
     "inputs": {
       "control_net": {
-        "name": "сеть_управления"
+        "name": "control_net"
       },
       "type": {
         "name": "тип"
@@ -4913,7 +4913,7 @@
     }
   },
   "SkipLayerGuidanceDiT": {
-    "description": "Универсальная версия узла SkipLayerGuidance, которую можно использовать на любой модели DiT.",
+    "description": "Универсальная версия ноды SkipLayerGuidance, которую можно использовать на любой модели DiT.",
     "display_name": "Пропустить руководство по слоям DiT",
     "inputs": {
       "double_layers": {
@@ -4940,7 +4940,7 @@
     }
   },
   "SkipLayerGuidanceSD3": {
-    "description": "Универсальная версия узла SkipLayerGuidance, которую можно использовать на любой модели DiT.",
+    "description": "Универсальная версия ноды SkipLayerGuidance, которую можно использовать на любой модели DiT.",
     "display_name": "Пропустить руководство по слоям SD3",
     "inputs": {
       "end_percent": {
@@ -5005,7 +5005,7 @@
     "display_name": "Разделить сигмы для удаления шума",
     "inputs": {
       "denoise": {
-        "name": "денойз"
+        "name": "шумоподавление"
       },
       "sigmas": {
         "name": "сигмы"
@@ -5210,7 +5210,7 @@
     "display_name": "Загрузить модель стиля",
     "inputs": {
       "style_model_name": {
-        "name": "имя_модели_стиля"
+        "name": "название_модели_стиля"
       }
     }
   },
@@ -5266,7 +5266,7 @@
     "display_name": "Загрузить модель диффузии",
     "inputs": {
       "unet_name": {
-        "name": "unet_name"
+        "name": "название_unet"
       },
       "weight_dtype": {
         "name": "тип_данных_веса"
@@ -5274,7 +5274,7 @@
     }
   },
   "UNetCrossAttentionMultiply": {
-    "display_name": "Умножение перекрестного внимания UNet",
+    "display_name": "Умножение перекрёстного внимания UNet",
     "inputs": {
       "k": {
         "name": "k"
@@ -5334,10 +5334,10 @@
     }
   },
   "UpscaleModelLoader": {
-    "display_name": "Загрузить модель увеличения",
+    "display_name": "Загрузить модель апскейла",
     "inputs": {
       "model_name": {
-        "name": "имя_модели"
+        "name": "название_модели"
       }
     }
   },
@@ -5464,7 +5464,7 @@
     "display_name": "Загрузить VAE",
     "inputs": {
       "vae_name": {
-        "name": "имя_vae"
+        "name": "название_vae"
       }
     }
   },
@@ -5472,7 +5472,7 @@
     "display_name": "Сохранить VAE",
     "inputs": {
       "filename_prefix": {
-        "name": "префикс_имени_файла"
+        "name": "префикс_названия_файла"
       },
       "vae": {
         "name": "vae"
@@ -5480,7 +5480,7 @@
     }
   },
   "VPScheduler": {
-    "display_name": "Планировщик VP",
+    "display_name": "VPScheduler",
     "inputs": {
       "beta_d": {
         "name": "beta_d"
@@ -5539,7 +5539,7 @@
     "display_name": "Загрузчик контрольной точки unCLIP",
     "inputs": {
       "ckpt_name": {
-        "name": "ckpt_name"
+        "name": "название_ckpt"
       }
     }
   },
