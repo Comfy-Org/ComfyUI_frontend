@@ -65,18 +65,19 @@ const isUpdating = ref(false)
 
 const updateConsent = async () => {
   isUpdating.value = true
-  await useSettingStore().set(
-    'Comfy-Desktop.SendStatistics',
-    allowMetrics.value
-  )
   try {
+    await useSettingStore().set(
+      'Comfy-Desktop.SendStatistics',
+      allowMetrics.value
+    )
     await electronAPI().setMetricsConsent(allowMetrics.value)
   } catch (error) {
+    console.error('Failed to update metrics consent:', error)
     toast.add({
       severity: 'error',
       summary: t('install.errorUpdatingConsent'),
       detail: t('install.errorUpdatingConsentDetail'),
-      life: 3000
+      life: 5000
     })
   } finally {
     isUpdating.value = false
