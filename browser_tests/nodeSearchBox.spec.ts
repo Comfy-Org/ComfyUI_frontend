@@ -82,10 +82,14 @@ test.describe('Node search box', () => {
   test('Has correct aria-labels on search results', async ({ comfyPage }) => {
     const node = 'Load Checkpoint'
     await comfyPage.doubleClickCanvas()
-    await comfyPage.searchBox.fillAndSelectFirstNode(node)
-    const firstResult = comfyPage.page
-      .locator('li.p-autocomplete-option')
-      .first()
+    await comfyPage.searchBox.input.waitFor({ state: 'visible' })
+    await comfyPage.searchBox.input.fill(node)
+    await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
+    // Wait for some time for the auto complete list to update.
+    // The auto complete list is debounced and may take some time to update.
+    await comfyPage.page.waitForTimeout(500)
+
+    const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
     await expect(firstResult).toHaveAttribute('aria-label', node)
   })
 
