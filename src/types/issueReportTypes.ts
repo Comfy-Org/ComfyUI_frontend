@@ -22,3 +22,30 @@ export interface ReportField {
    */
   optIn: boolean
 }
+
+export interface IssueReportPanelProps {
+  /**
+   * The type of error being reported. This is used to categorize the error.
+   */
+  errorType: string
+
+  /**
+   * Which of the default fields to include in the report.
+   */
+  defaultFields?: DefaultField[]
+
+  /**
+   * Additional fields to include in the report.
+   */
+  extraFields?: ReportField[]
+
+  /**
+   * Tags that will be added to the report. Tags are used to further categorize the error.
+   */
+  tags?: Record<string, string>
+
+  /**
+   * The title displayed in the dialog.
+   */
+  title?: string
+}

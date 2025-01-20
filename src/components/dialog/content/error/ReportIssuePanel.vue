@@ -67,19 +67,17 @@ import { useI18n } from 'vue-i18n'
 import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { DefaultField, ReportField } from '@/types/issueReportTypes'
+import type {
+  DefaultField,
+  IssueReportPanelProps
+} from '@/types/issueReportTypes'
 
 const ISSUE_NAME = 'User reported issue'
 const DETAILS_MAX_LEN = 5_000
 const CONTACT_MAX_LEN = 320
 
-const props = defineProps<{
-  errorType: string
-  defaultFields?: DefaultField[]
-  extraFields?: ReportField[]
-  tags?: Record<string, string>
-  title?: string
-}>()
+const props = defineProps<IssueReportPanelProps>()
+
 const {
   defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'],
   tags = {}
