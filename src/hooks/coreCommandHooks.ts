@@ -559,8 +559,8 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.Help.OpenComfyUIForum',
       icon: 'pi pi-comments',
-      label: 'Open Comfy-Org Forum',
-      menubarLabel: 'Comfy-Org Forum',
+      label: 'Open ComfyUI Forum',
+      menubarLabel: 'ComfyUI Forum',
       versionAdded: '1.8.2',
       function: () => {
         window.open('https://forum.comfy.org/', '_blank')
