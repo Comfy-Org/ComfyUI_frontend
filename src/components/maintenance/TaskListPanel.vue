@@ -64,7 +64,7 @@ const props = defineProps<{
 }>()
 
 // Commands
-const confirmButton = async (event: PointerEvent, task: MaintenanceTask) => {
+const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
   if (!task.requireConfirm) {
     await task.onClick()
     return
