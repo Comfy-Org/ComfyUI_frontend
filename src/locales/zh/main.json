@@ -257,6 +257,17 @@
     "submitErrorReport": "提交错误报告（可选）",
     "systemStats": "系统状态"
   },
+  "maintenance": {
+    "None": "无",
+    "OK": "正常",
+    "Skipped": "已跳过",
+    "allOk": "未检测到任何问题。",
+    "confirmTitle": "你确定吗？",
+    "detected": "已检测",
+    "refreshing": "正在刷新",
+    "showManual": "显示维护任务",
+    "status": "状态"
+  },
   "menu": {
     "autoQueue": "自动执行",
     "batchCount": "批次数量",
@@ -292,8 +303,8 @@
     "Close Current Workflow": "关闭当前工作流",
     "Collapse/Expand Selected Nodes": "折叠/展开选定节点",
     "Comfy-Org Discord": "Comfy-Org Discord",
-    "Comfy-Org Forum": "Comfy-Org 论坛",
     "ComfyUI Docs": "ComfyUI 文档",
+    "ComfyUI Forum": "ComfyUI 论坛",
     "ComfyUI Issues": "ComfyUI 问题",
     "Convert selected nodes to group node": "将选中节点转换为组节点",
     "Desktop User Guide": "桌面端用户指南",
