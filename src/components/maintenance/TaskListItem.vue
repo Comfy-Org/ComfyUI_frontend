@@ -54,7 +54,7 @@ const props = defineProps<{
 
 // Events
 defineEmits<{
-  execute: [event: PointerEvent]
+  execute: [event: MouseEvent]
 }>()
 
 // Binding
