@@ -55,7 +55,7 @@
             size="small"
             variant="simple"
           >
-            {{ t('validation.maxLength') }}
+            {{ t('issueReport.validation.maxLength') }}
           </Message>
         </FormField>
         <FormField v-slot="$field" name="contactInfo">
@@ -70,7 +70,7 @@
             size="small"
             variant="simple"
           >
-            {{ t('validation.invalidEmail') }}
+            {{ t('issueReport.validation.invalidEmail') }}
           </Message>
         </FormField>
 
