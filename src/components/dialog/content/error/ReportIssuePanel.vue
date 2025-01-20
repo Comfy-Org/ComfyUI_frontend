@@ -149,25 +149,25 @@ const contactCheckboxes = [
 const defaultFieldsConfig: ReportField[] = [
   {
     label: t('issueReport.systemStats'),
-    value: 'systemStats',
+    value: 'SystemStats',
     getData: () => api.getSystemStats(),
     optIn: true
   },
   {
     label: t('g.workflow'),
-    value: 'workflow',
+    value: 'Workflow',
     getData: () => app.graph.asSerialisable(),
     optIn: true
   },
   {
     label: t('g.logs'),
-    value: 'logs',
+    value: 'Logs',
     getData: () => api.getLogs(),
     optIn: true
   },
   {
     label: t('g.settings'),
-    value: 'settings',
+    value: 'Settings',
     getData: () => api.getSettings(),
     optIn: true
   }
@@ -177,7 +177,7 @@ const fields = computed(() => [
   ...defaultFieldsConfig.filter(({ value }) =>
     defaultFields.includes(value as DefaultField)
   ),
-  ...props.extraFields
+  ...(props.extraFields ?? [])
 ])
 
 const createUser = (formData: IssueReportFormData): User => ({
@@ -206,8 +206,10 @@ const createCaptureContext = async (
     level: 'error',
     tags: {
       errorType: props.errorType,
-      followUp: formData.contactInfo && formData.followUp,
-      notifyOnResolution: formData.contactInfo && formData.notifyOnResolution,
+      followUp: formData.contactInfo ? formData.followUp : false,
+      notifyOnResolution: formData.contactInfo
+        ? formData.notifyOnResolution
+        : false,
       isElectron: isElectron(),
       ...props.tags
     },
