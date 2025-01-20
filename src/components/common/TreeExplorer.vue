@@ -9,8 +9,10 @@
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ context }) => ({
-        onClick: (e: MouseEvent) => onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
-        onContextmenu: (e: MouseEvent) => handleContextMenu(e, context.node as RenderedTreeExplorerNode)
+        onClick: (e: MouseEvent) =>
+          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+        onContextmenu: (e: MouseEvent) =>
+          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
       }),
       nodeToggleButton: () => ({
         onClick: (e: MouseEvent) => {
