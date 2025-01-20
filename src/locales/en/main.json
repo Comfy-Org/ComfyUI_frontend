@@ -85,7 +85,11 @@
     "notifyResolve": "Notify me when resolved",
     "helpFix": "Help Fix This",
     "rating": "Rating",
-    "feedbackTitle": "Help us improve ComfyUI by providing feedback"
+    "feedbackTitle": "Help us improve ComfyUI by providing feedback",
+    "validation": {
+      "maxLength": "Message too long",
+      "invalidEmail": "Please enter a valid email address"
+    }
   },
   "color": {
     "default": "Default",
@@ -687,8 +691,5 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "WEBCAM": "WEBCAM"
-  },
-  "validation": {
-    "invalidEmail": "Please enter a valid email address"
   }
 }
