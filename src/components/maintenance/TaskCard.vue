@@ -63,7 +63,7 @@ defineEmits<{
 // Bindings
 const description = computed(() =>
   props.task.state === 'OK'
-    ? props.task.descriptionOk ?? props.task.shortDescription
+    ? props.task.shortDescription
     : props.task.errorDescription ?? props.task.shortDescription
 )
 </script>
