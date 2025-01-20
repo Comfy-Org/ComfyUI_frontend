@@ -4,7 +4,7 @@ import { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
-export function useElectronTasks(): MaintenanceTask[] {
+export function useMaintenanceTasks(): MaintenanceTask[] {
   const electron = electronAPI()
 
   const openUrl = (url: string) => {
