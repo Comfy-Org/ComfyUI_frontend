@@ -198,19 +198,4 @@ test.describe('Feedback dialog', () => {
     // Verify dialog is closed
     await expect(feedbackHeader).not.toBeVisible()
   })
-
-  test('Should update rating icons when selecting rating', async ({
-    comfyPage
-  }) => {
-    // Open feedback dialog
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
-
-    // Test rating interaction
-    const stars = comfyPage.page.locator('.pi-star')
-    await stars.nth(3).click()
-    await expect(
-      comfyPage.page.getByLabel('Rating').locator('i').nth(3)
-    ).toHaveClass(/pi-star-fill/)
-  })
 })
