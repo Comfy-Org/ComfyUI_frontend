@@ -1,53 +1,27 @@
 <template>
   <div class="p-8 h-full min-w-96">
-    <Card>
-      <template #content>
-        <div class="flex flex-col items-center">
-          <h3 class="text-4xl">{{ $t('g.feedback') }}</h3>
-          <Rating
-            v-model="rating"
-            class="flex justify-center"
-            :aria-label="$t('issueReport.rating')"
-          >
-            <template #onicon>
-              <i class="pi pi-star-fill text-4xl"></i>
-            </template>
-            <template #officon>
-              <i class="pi pi-star text-4xl hover:text-highlight" />
-            </template>
-          </Rating>
-        </div>
-      </template>
-    </Card>
+    <div class="flex flex-col items-center">
+      <h3 class="text-4xl">{{ $t('g.feedback') }}</h3>
+    </div>
   </div>
+  <Divider />
   <div>
     <ReportIssuePanel
       error-type="Feedback"
       :title="$t('issueReport.feedbackTitle')"
-      :extra-fields="[ratingField]"
       :default-fields="['SystemStats', 'Settings']"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import Card from 'primevue/card'
-import Rating from 'primevue/rating'
-import { computed, ref } from 'vue'
+import Divider from 'primevue/divider'
 
 import ReportIssuePanel from '@/components/dialog/content/error/ReportIssuePanel.vue'
-import type { ReportField } from '@/types/issueReportTypes'
-
-const rating = ref(null)
-
-const ratingField = computed<ReportField>(() => {
-  return {
-    label: 'rating',
-    value: 'Rating',
-    optIn: false,
-    data: {
-      rating: rating.value
-    }
-  }
-})
 </script>
+
+<style scoped>
+:deep(.p-panel) {
+  @apply border-none;
+}
+</style>
