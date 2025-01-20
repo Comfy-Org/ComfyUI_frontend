@@ -11,7 +11,7 @@ export default {
 
 function formatAndEslint(fileNames) {
   return [
-    `prettier --write ${fileNames.join(' ')} --plugin @trivago/prettier-plugin-sort-imports`,
+    `prettier --write ${fileNames.join(' ')}`,
     `eslint --fix ${fileNames.join(' ')}`
   ]
 }
