@@ -66,6 +66,7 @@ import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { DefaultField, ReportField } from '@/types/issueReportTypes'
+import { isElectron } from '@/utils/envUtil'
 
 const ISSUE_NAME = 'User reported issue'
 const DETAILS_MAX_LEN = 5_000
@@ -172,6 +173,9 @@ const createCaptureContext = async (): Promise<CaptureContext> => {
     level: 'error',
     tags: {
       errorType: props.errorType,
+      isElectron: isElectron(),
+      followUp: followUp.value,
+      notifyResolve: notifyResolve.value,
       ...tags
     },
     extra: {
