@@ -1,9 +1,23 @@
 import '@comfyorg/litegraph'
 import type { LLink } from '@comfyorg/litegraph'
 
+import type { DOMWidget } from '@/scripts/domWidget'
 import type { ComfyNodeDef } from '@/types/apiTypes'
 
 import type { NodeId } from './comfyWorkflow'
+
+/** ComfyUI extensions of litegraph */
+declare module '@comfyorg/litegraph/dist/types/widgets' {
+  interface IWidgetOptions {
+    /** Currently used by DOM widgets only.  Declaring here reduces complexity. */
+    onHide?: (widget: DOMWidget) => void
+  }
+
+  interface IBaseWidget {
+    onRemove?: () => void
+    beforeQueued?: () => unknown
+  }
+}
 
 /**
  *  ComfyUI extensions of litegraph
