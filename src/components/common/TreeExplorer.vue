@@ -8,9 +8,11 @@
     selectionMode="single"
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
-      nodeContent: ({ props }) => ({
-        onClick: (e: MouseEvent) => onNodeContentClick(e, props.node),
-        onContextmenu: (e: MouseEvent) => handleContextMenu(props.node, e)
+      nodeContent: ({ context }) => ({
+        onClick: (e: MouseEvent) =>
+          onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
+        onContextmenu: (e: MouseEvent) =>
+          handleContextMenu(e, context.node as RenderedTreeExplorerNode)
       }),
       nodeToggleButton: () => ({
         onClick: (e: MouseEvent) => {
@@ -152,7 +154,7 @@ const menuItems = computed<MenuItem[]>(() =>
   }))
 )
 
-const handleContextMenu = (node: RenderedTreeExplorerNode, e: MouseEvent) => {
+const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
   if (menuItems.value.filter((item) => item.visible).length > 0) {

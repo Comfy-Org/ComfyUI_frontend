@@ -15,7 +15,7 @@
         :label="$t('g.download') + ' (' + fileSize + ')'"
         size="small"
         outlined
-        :disabled="props.error"
+        :disabled="!!props.error"
         :title="props.url"
         @click="download.triggerBrowserDownload"
       />

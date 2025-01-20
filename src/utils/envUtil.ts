@@ -11,6 +11,6 @@ export function electronAPI() {
   return (window as any).electronAPI as ElectronAPI
 }
 
-export function showNativeMenu(options?: ElectronContextMenuOptions) {
-  electronAPI()?.showContextMenu(options)
+export function showNativeMenu(event: MouseEvent) {
+  electronAPI()?.showContextMenu(event as ElectronContextMenuOptions)
 }

@@ -18,7 +18,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-import { isElectron, showNativeMenu } from './utils/envUtil'
+import { electronAPI, isElectron } from './utils/envUtil'
 
 const workspaceStore = useWorkspaceStore()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
@@ -34,7 +34,7 @@ const showContextMenu = (event: PointerEvent) => {
     case target instanceof HTMLTextAreaElement:
     case target instanceof HTMLInputElement && target.type === 'text':
       // TODO: Context input menu explicitly for text input
-      showNativeMenu({ type: 'text' })
+      electronAPI()?.showContextMenu({ type: 'text' })
       return
   }
 }

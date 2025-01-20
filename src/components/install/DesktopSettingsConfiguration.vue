@@ -130,8 +130,8 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { ref } from 'vue'
 
 const showDialog = ref(false)
-const autoUpdate = defineModel('autoUpdate', { required: true })
-const allowMetrics = defineModel('allowMetrics', { required: true })
+const autoUpdate = defineModel<boolean>('autoUpdate', { required: true })
+const allowMetrics = defineModel<boolean>('allowMetrics', { required: true })
 
 const showMetricsInfo = () => {
   showDialog.value = true
