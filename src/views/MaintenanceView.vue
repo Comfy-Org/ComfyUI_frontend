@@ -104,7 +104,7 @@ import {
   MaintenanceTask
 } from '@/types/desktop/maintenanceTypes'
 import { electronAPI, isElectron } from '@/utils/envUtil'
-import { minDurationRef } from '@/utils/refUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
@@ -115,8 +115,8 @@ const toast = useToast()
 
 const terminalVisible = ref(false)
 
-/** True when waiting on tasks to complete. */
-const isRefreshing = minDurationRef(true, minRefreshTime)
+/** `true` when waiting on tasks to complete. */
+const isRefreshing = useMinLoadingDurationRef(true, minRefreshTime)
 
 /** True if any tasks are in an error state. */
 const anyErrors = computed(() => tasks.value.some((x) => x.state === 'error'))

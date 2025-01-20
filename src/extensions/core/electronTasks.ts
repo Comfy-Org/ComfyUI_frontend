@@ -2,7 +2,7 @@ import { PrimeIcons } from '@primevue/core/api'
 
 import { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
-import { minDurationRef } from '@/utils/refUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 export function useElectronTasks(): MaintenanceTask[] {
   const electron = electronAPI()
@@ -147,7 +147,7 @@ export function useElectronTasks(): MaintenanceTask[] {
 
   // Use a minimum run time to ensure tasks "feel" like they have run
   for (const task of tasks) {
-    task.loading = minDurationRef(true, 250)
+    task.loading = useMinLoadingDurationRef(true, 250)
   }
 
   return tasks
