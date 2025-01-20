@@ -21,7 +21,7 @@
       />
 
       <Popover ref="infoPopover" class="block m-1 max-w-64 min-w-32">
-        <span class="whitespace-pre-line">{{ task.detail }}</span>
+        <span class="whitespace-pre-line">{{ task.description }}</span>
       </Popover>
     </td>
     <td class="text-right px-4">
