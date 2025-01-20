@@ -272,7 +272,7 @@ LGraphCanvas.prototype.computeVisibleNodes = function (): LGraphNode[] {
           w.element.hidden = actualHidden
           w.element.style.display = actualHidden ? 'none' : null
           if (actualHidden && !wasHidden) {
-            w.options.onHide?.(w)
+            w.options.onHide?.(w as DOMWidget<HTMLElement, object>)
           }
         }
       }
