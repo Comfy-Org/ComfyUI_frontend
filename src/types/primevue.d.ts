@@ -1,3 +1,4 @@
+// Workaround for issue https://github.com/primefaces/primevue/issues/6722
 declare module '@primevue/forms/resolvers/zod' {
   import type { Schema, ParseParams } from 'zod'
   import type { ResolverOptions, ResolverResult } from '@primevue/forms'
