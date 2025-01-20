@@ -17,12 +17,8 @@ export interface IWidgetOptions<TValue = unknown> extends Record<string, unknown
   // TODO: Confirm this
   property?: string
 
-  hasOwnProperty?(arg0: string): any
-  // values?(widget?: IWidget, node?: LGraphNode): any
   values?: TValue[]
   callback?: IWidget["callback"]
-
-  onHide?(widget: IWidget): void
 }
 
 /**
@@ -132,8 +128,6 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
     pos?: Point,
     e?: CanvasMouseEvent,
   ): void
-  onRemove?(): void
-  beforeQueued?(): void
 
   /**
    * Simple callback for pointer events, allowing custom widgets to events relevant to them.
@@ -150,7 +144,7 @@ export interface IBaseWidget<TElement extends HTMLElement = HTMLElement> {
     y: number,
     H: number,
   ): void
-  computeSize?(width: number): Size
+  computeSize?(width?: number): Size
 
   /**
    * Callback for pointerdown events, allowing custom widgets to register callbacks to occur
