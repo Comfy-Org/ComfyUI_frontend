@@ -12,7 +12,7 @@
         "name": "노이즈"
       },
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       }
     }
   },
@@ -1425,10 +1425,10 @@
     }
   },
   "FlipSigmas": {
-    "display_name": "시그마 뒤집기",
+    "display_name": "시그마 배열 뒤집기",
     "inputs": {
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       }
     }
   },
@@ -4567,7 +4567,7 @@
         "name": "샘플러"
       },
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       }
     },
     "outputs": {
@@ -4595,7 +4595,7 @@
         "name": "샘플러"
       },
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       }
     },
     "outputs": {
@@ -4875,7 +4875,7 @@
         "name": "시그마"
       },
       "sigmas": {
-        "name": "시그마들"
+        "name": "시그마 배열"
       }
     }
   },
@@ -4983,10 +4983,10 @@
     }
   },
   "SplitSigmas": {
-    "display_name": "시그마 분할 (스텝)",
+    "display_name": "시그마 배열 분할 (스텝)",
     "inputs": {
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       },
       "step": {
         "name": "분할 스텝"
@@ -4994,29 +4994,29 @@
     },
     "outputs": {
       "0": {
-        "name": "높은 시그마"
+        "name": "높은 시그마 배열"
       },
       "1": {
-        "name": "낮은 시그마"
+        "name": "낮은 시그마 배열"
       }
     }
   },
   "SplitSigmasDenoise": {
-    "display_name": "시그마 분할 (노이즈 제거양)",
+    "display_name": "시그마 배열 분할 (노이즈 제거양)",
     "inputs": {
       "denoise": {
         "name": "노이즈 제거양"
       },
       "sigmas": {
-        "name": "시그마"
+        "name": "시그마 배열"
       }
     },
     "outputs": {
       "0": {
-        "name": "높은 시그마"
+        "name": "높은 시그마 배열"
       },
       "1": {
-        "name": "낮은 시그마"
+        "name": "낮은 시그마 배열"
       }
     }
   },
