@@ -11,6 +11,10 @@ export function electronAPI() {
   return (window as any)['electronAPI'] as ElectronAPI
 }
 
+export function isEmbedded() {
+  return window.top !== window.self;
+}
+
 type NativeContextOptions = Parameters<ElectronAPI['showContextMenu']>[0]
 export function showNativeMenu(options?: NativeContextOptions) {
   electronAPI()?.showContextMenu(options)

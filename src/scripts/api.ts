@@ -181,6 +181,15 @@ export class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
+  getToken() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+    return localStorage.getItem('token');
+  }
+
   fetchApi(route: string, options?: RequestInit) {
     if (!options) {
       options = {}
@@ -190,6 +199,10 @@ export class ComfyApi extends EventTarget {
     }
     if (!options.cache) {
       options.cache = 'no-cache'
+    }
+    const token = this.getToken();
+    if (token) {
+      options.headers['Authorization'] = `${token}`;
     }
 
     if (Array.isArray(options.headers)) {
