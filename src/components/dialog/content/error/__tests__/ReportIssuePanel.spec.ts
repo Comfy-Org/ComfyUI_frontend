@@ -21,6 +21,8 @@ type ReportIssuePanelProps = {
   errorType: string
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
+  tags?: Record<string, string>
+  title?: string
 }
 
 const i18n = createI18n({

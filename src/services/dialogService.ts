@@ -1,5 +1,6 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
+import FeedbackDialogContent from '@/components/dialog/content/FeedbackDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
@@ -83,6 +84,16 @@ export const useDialogService = () => {
     })
   }
 
+  function showFeedbackDialog(
+    props: InstanceType<typeof FeedbackDialogContent>['$props'] = {}
+  ) {
+    dialogStore.showDialog({
+      key: 'global-provide-feedback',
+      component: FeedbackDialogContent,
+      props
+    })
+  }
+
   async function prompt({
     title,
     message,
@@ -160,6 +171,7 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
+    showFeedbackDialog,
     prompt,
     confirm
   }

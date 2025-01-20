@@ -20,9 +20,6 @@
   "Comfy-Desktop_OpenDevTools": {
     "label": "DevTools 열기"
   },
-  "Comfy-Desktop_OpenFeedbackPage": {
-    "label": "피드백"
-  },
   "Comfy-Desktop_OpenUserGuide": {
     "label": "데스크톱 사용자 가이드"
   },
@@ -85,6 +82,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "워크플로 내보내기 (API 형식)"
+  },
+  "Comfy_Feedback": {
+    "label": "피드백"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "그룹을 내용에 맞게 맞추기"

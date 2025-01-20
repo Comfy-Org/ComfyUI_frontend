@@ -72,7 +72,8 @@
     "export": "Export",
     "workflow": "Workflow",
     "success": "Success",
-    "ok": "OK"
+    "ok": "OK",
+    "feedback": "Feedback"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -82,7 +83,9 @@
     "systemStats": "System Stats",
     "contactFollowUp": "Contact me for follow up",
     "notifyResolve": "Notify me when resolved",
-    "helpFix": "Help Fix This"
+    "helpFix": "Help Fix This",
+    "rating": "Rating",
+    "feedbackTitle": "Help us improve ComfyUI by providing feedback"
   },
   "color": {
     "default": "Default",
@@ -359,7 +362,6 @@
     "Open Models Folder": "Open Models Folder",
     "Open Outputs Folder": "Open Outputs Folder",
     "Open DevTools": "Open DevTools",
-    "Feedback": "Feedback",
     "Desktop User Guide": "Desktop User Guide",
     "Quit": "Quit",
     "Reinstall": "Reinstall",
@@ -381,6 +383,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Give Feedback": "Give Feedback",
     "Fit Group To Contents": "Fit Group To Contents",
     "Group Selected Nodes": "Group Selected Nodes",
     "Convert selected nodes to group node": "Convert selected nodes to group node",

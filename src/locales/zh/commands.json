@@ -20,9 +20,6 @@
   "Comfy-Desktop_OpenDevTools": {
     "label": "打开开发者工具"
   },
-  "Comfy-Desktop_OpenFeedbackPage": {
-    "label": "反馈"
-  },
   "Comfy-Desktop_OpenUserGuide": {
     "label": "桌面用户指南"
   },
@@ -85,6 +82,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "导出工作流（API格式）"
+  },
+  "Comfy_Feedback": {
+    "label": "反馈"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "适应节点框到内容"

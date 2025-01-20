@@ -20,9 +20,6 @@
   "Comfy-Desktop_OpenDevTools": {
     "label": "Открыть инструменты разработчика"
   },
-  "Comfy-Desktop_OpenFeedbackPage": {
-    "label": "Обратная связь"
-  },
   "Comfy-Desktop_OpenUserGuide": {
     "label": "Руководство пользователя для рабочего стола"
   },
@@ -85,6 +82,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "Экспорт рабочего процесса (формат API)"
+  },
+  "Comfy_Feedback": {
+    "label": "Обратная связь"
   },
   "Comfy_Graph_FitGroupToContents": {
     "label": "Подогнать группу к содержимому"

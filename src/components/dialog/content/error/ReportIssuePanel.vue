@@ -2,7 +2,7 @@
   <Panel>
     <template #header>
       <div class="flex items-center gap-2">
-        <span class="font-bold">{{ $t('issueReport.submitErrorReport') }}</span>
+        <span class="font-bold">{{ title }}</span>
       </div>
     </template>
     <template #footer>
@@ -19,6 +19,7 @@
     </template>
     <div class="p-4 mt-4 border border-round surface-border shadow-1">
       <CheckboxGroup
+        v-if="reportCheckboxes.length"
         v-model="selection"
         class="gap-4 mb-4"
         :checkboxes="reportCheckboxes"
@@ -29,6 +30,7 @@
           class="w-full"
           :placeholder="$t('issueReport.provideEmail')"
           :maxlength="CONTACT_MAX_LEN"
+          :invalid="isContactInfoInvalid"
         />
         <CheckboxGroup
           v-model="contactPrefs"
@@ -76,6 +78,7 @@ const props = defineProps<{
   defaultFields?: DefaultField[]
   extraFields?: ReportField[]
   tags?: Record<string, string>
+  title?: string
 }>()
 const {
   defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'],
@@ -101,8 +104,17 @@ const icon = computed(() => {
   return 'pi pi-send'
 })
 const isFormEmpty = computed(() => !selection.value.length && !details.value)
+const isContactInfoInvalid = computed(() => {
+  if (!contactInfo.value) return false
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return !emailRegex.test(contactInfo.value)
+})
 const isButtonDisabled = computed(
-  () => submitted.value || submitting.value || isFormEmpty.value
+  () =>
+    submitted.value ||
+    submitting.value ||
+    isFormEmpty.value ||
+    isContactInfoInvalid.value
 )
 
 const contactCheckboxes = [
@@ -116,7 +128,9 @@ const defaultReportCheckboxes = [
   { label: t('g.settings'), value: 'Settings' }
 ]
 const reportCheckboxes = computed(() => [
-  ...(props.extraFields?.map(({ label, value }) => ({ label, value })) ?? []),
+  ...(props.extraFields
+    ?.filter(({ optIn }) => optIn)
+    .map(({ label, value }) => ({ label, value })) ?? []),
   ...defaultReportCheckboxes.filter(({ value }) =>
     defaultFields.includes(value as DefaultField)
   )

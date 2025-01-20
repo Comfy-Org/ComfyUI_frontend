@@ -165,3 +165,37 @@ test.describe('Settings', () => {
     expect(request.postData()).toContain(JSON.stringify(expectedSetting))
   })
 })
+
+test.describe('Feedback dialog', () => {
+  test('Should open from topmenu help command', async ({ comfyPage }) => {
+    // Open feedback dialog from top menu
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+
+    // Verify feedback dialog content is visible
+    const feedbackHeader = comfyPage.page.getByRole('heading', {
+      name: 'Feedback'
+    })
+    await expect(feedbackHeader).toBeVisible()
+  })
+
+  test('Should close when close button clicked', async ({ comfyPage }) => {
+    // Open feedback dialog
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Feedback'])
+
+    const feedbackHeader = comfyPage.page.getByRole('heading', {
+      name: 'Feedback'
+    })
+
+    // Close feedback dialog
+    await comfyPage.page
+      .getByLabel('', { exact: true })
+      .getByLabel('Close')
+      .click()
+    await feedbackHeader.waitFor({ state: 'hidden' })
+
+    // Verify dialog is closed
+    await expect(feedbackHeader).not.toBeVisible()
+  })
+})

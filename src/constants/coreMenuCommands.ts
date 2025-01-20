@@ -22,5 +22,5 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.Help.OpenComfyOrgDiscord'
     ]
   ],
-  [['Help'], ['Comfy.Help.AboutComfyUI']]
+  [['Help'], ['Comfy.Help.AboutComfyUI', 'Comfy.Feedback']]
 ]
