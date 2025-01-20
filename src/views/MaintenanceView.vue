@@ -64,7 +64,7 @@
             icon="pi pi-arrow-right"
             icon-pos="left"
             :severity="anyErrors ? 'secondary' : 'primary'"
-            @click="completeValidation"
+            @click="() => completeValidation()"
             :loading="isRefreshing"
           />
         </div>
