@@ -555,6 +555,16 @@ export function useCoreCommands(): ComfyCommand[] {
           }
         })
       }
+    },
+    {
+      id: 'Comfy.Help.OpenComfyUIForum',
+      icon: 'pi pi-comments',
+      label: 'Open ComfyUI Forum',
+      menubarLabel: 'ComfyUI Forum',
+      versionAdded: '1.8.2',
+      function: () => {
+        window.open('https://forum.comfy.org/', '_blank')
+      }
     }
   ]
 }

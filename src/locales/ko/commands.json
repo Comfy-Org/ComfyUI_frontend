@@ -110,6 +110,9 @@
   "Comfy_Help_OpenComfyUIDocs": {
     "label": "ComfyUI 문서 열기"
   },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Comfy-Org 포럼 열기"
+  },
   "Comfy_Help_OpenComfyUIIssues": {
     "label": "ComfyUI 문제 열기"
   },

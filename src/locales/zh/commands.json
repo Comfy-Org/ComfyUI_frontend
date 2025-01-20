@@ -110,6 +110,9 @@
   "Comfy_Help_OpenComfyUIDocs": {
     "label": "打开ComfyUI文档"
   },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "打开 Comfy-Org 论坛"
+  },
   "Comfy_Help_OpenComfyUIIssues": {
     "label": "打开ComfyUI问题"
   },
