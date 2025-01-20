@@ -53,11 +53,6 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         ) => {
           if (!oldValue) return
 
-          // Custom window mode requires the Top menu.
-          if (newValue === 'custom' && oldValue !== newValue) {
-            useSettingStore().set('Comfy.UseNewMenu', 'Top')
-          }
-
           electronAPI.Config.setWindowStyle(newValue)
         }
       }
