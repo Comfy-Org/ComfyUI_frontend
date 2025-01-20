@@ -1,7 +1,7 @@
 <template>
   <!-- Top menu bar needs to load before the GraphCanvas as it needs to host
   the menu buttons added by legacy extension scripts.-->
-  <TopMenubar v-if="!isEmbedded()" />
+  <TopMenubar />
   <GraphCanvas @ready="onGraphReady" />
   <GlobalToast />
   <UnloadWindowConfirmDialog />
@@ -46,7 +46,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { StatusWsMessageStatus } from '@/types/apiTypes'
-import { isEmbedded } from '@/utils/envUtil';
+import { isEmbedded } from '@/utils/envUtil'
 
 setupAutoQueueHandler()
 

@@ -2,6 +2,7 @@
   <teleport :to="teleportTarget">
     <div
       ref="topMenuRef"
+      v-if="!isEmbedded()"
       class="comfyui-menu flex items-center"
       v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
@@ -26,6 +27,12 @@
         @contextmenu="showNativeMenu"
       />
     </div>
+    <div v-else ref="topMenuRef"
+      class="comfyui-menu flex items-center"
+      v-show="betaMenuEnabled && !workspaceState.focusMode"
+      :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }">
+      <Actionbar />
+    </div>
   </teleport>
 </template>
 
@@ -42,7 +49,7 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { showNativeMenu } from '@/utils/envUtil'
+import { showNativeMenu, isEmbedded } from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
