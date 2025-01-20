@@ -1,9 +1,9 @@
 <template>
-  <div class="p-8 h-full" aria-labelledby="issue-report-title">
+  <div class="p-2 h-full" aria-labelledby="issue-report-title">
     <Panel
       :pt="{
-        root: { class: 'border-none' },
-        content: { class: 'p-0' }
+        root: 'border-none',
+        content: 'p-0'
       }"
     >
       <template #header>
@@ -12,7 +12,7 @@
           <span v-if="subtitle" class="text-muted mt-2">{{ subtitle }}</span>
         </header>
       </template>
-      <ReportIssuePanel v-bind="panelProps" />
+      <ReportIssuePanel v-bind="panelProps" :pt="{ root: 'border-none' }" />
     </Panel>
   </div>
 </template>
@@ -24,7 +24,7 @@ import type { IssueReportPanelProps } from '@/types/issueReportTypes'
 
 import ReportIssuePanel from './error/ReportIssuePanel.vue'
 
-const props = defineProps<{
+defineProps<{
   title: string
   subtitle?: string
   panelProps: IssueReportPanelProps

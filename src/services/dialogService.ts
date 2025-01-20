@@ -1,6 +1,5 @@
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ExecutionErrorDialogContent from '@/components/dialog/content/ExecutionErrorDialogContent.vue'
-import FeedbackDialogContent from '@/components/dialog/content/FeedbackDialogContent.vue'
 import IssueReportDialogContent from '@/components/dialog/content/IssueReportDialogContent.vue'
 import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
@@ -81,16 +80,6 @@ export const useDialogService = () => {
       key: 'global-template-workflows',
       title: t('templateWorkflows.title'),
       component: TemplateWorkflowsContent,
-      props
-    })
-  }
-
-  function showFeedbackDialog(
-    props: InstanceType<typeof FeedbackDialogContent>['$props'] = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-provide-feedback',
-      component: FeedbackDialogContent,
       props
     })
   }
@@ -182,7 +171,6 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showTemplateWorkflowsDialog,
-    showFeedbackDialog,
     showIssueReportDialog,
     prompt,
     confirm
