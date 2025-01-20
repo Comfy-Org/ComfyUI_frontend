@@ -110,6 +110,9 @@
   "Comfy_Help_OpenComfyUIDocs": {
     "label": "ComfyUIのドキュメントを開く"
   },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Comfy-Orgフォーラムを開く"
+  },
   "Comfy_Help_OpenComfyUIIssues": {
     "label": "ComfyUIの問題を開く"
   },
