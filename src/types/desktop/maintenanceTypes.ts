@@ -13,10 +13,10 @@ export interface MaintenanceTask {
   readonly id: string
   /** Short name for status, e.g. Git */
   readonly name: string
-  readonly description?: string
+  readonly shortDescription?: string
   readonly descriptionOk?: string
   readonly errorDescription?: string
-  readonly detail?: string
+  readonly description?: string
   /** URL to the image to show in card mode. */
   readonly headerImg?: string
   readonly button?: MaintenanceTaskButton

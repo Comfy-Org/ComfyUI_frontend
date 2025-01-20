@@ -17,10 +17,10 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       id: 'basePath',
       execute: async () => await electron.setBasePath(),
       name: 'Base path',
-      description: 'Change the application base path.',
+      shortDescription: 'Change the application base path.',
       errorDescription:
         'Unable to open the base path.  Please select a new one.',
-      detail:
+      description:
         'The base path is the default location where ComfyUI stores data. It is the location fo the python environment, and may also contain models, custom nodes, and other extensions.',
       isInstallationFix: true,
       button: {
@@ -33,8 +33,8 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       headerImg: '/assets/images/Git-Logo-White.svg',
       execute: () => openUrl('https://git-scm.com/downloads/'),
       name: 'Download git',
-      description: 'Open the git download page.',
-      detail:
+      shortDescription: 'Open the git download page.',
+      description:
         'Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.',
       button: {
         icon: PrimeIcons.EXTERNAL_LINK,
@@ -45,8 +45,8 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       id: 'vcRedist',
       execute: () => openUrl('https://aka.ms/vs/17/release/vc_redist.x64.exe'),
       name: 'Download VC++ Redist',
-      description: 'Download the latest VC++ Redistributable runtime.',
-      detail:
+      shortDescription: 'Download the latest VC++ Redistributable runtime.',
+      description:
         'The Visual C++ runtime libraries are required to run ComfyUI. You will need to download and install this file.',
       button: {
         icon: PrimeIcons.EXTERNAL_LINK,
@@ -62,9 +62,9 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
         return true
       },
       name: 'Reinstall ComfyUI',
-      description:
+      shortDescription:
         'Deletes the desktop app config and load the welcome screen.',
-      detail:
+      description:
         'Delete the desktop app config, restart the app, and load the installation screen.',
       confirmText: 'Delete all saved config and reinstall?',
       button: {
@@ -84,10 +84,11 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
         }
       },
       name: 'Install python packages',
-      description: 'Installs the base python packages required to run ComfyUI.',
+      shortDescription:
+        'Installs the base python packages required to run ComfyUI.',
       errorDescription:
         'Python packages that are required to run ComfyUI are not installed.',
-      detail:
+      description:
         'This will install the python packages required to run ComfyUI. This includes torch, torchvision, and other dependencies.',
       usesTerminal: true,
       isInstallationFix: true,
@@ -101,8 +102,8 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       execute: () =>
         openUrl('https://docs.astral.sh/uv/getting-started/installation/'),
       name: 'uv executable',
-      description: 'uv installs and maintains the python environment.',
-      detail:
+      shortDescription: 'uv installs and maintains the python environment.',
+      description:
         "This will open the download page for Astral's uv tool. uv is used to install python and manage python packages.",
       button: {
         icon: 'pi pi-asterisk',
@@ -115,8 +116,8 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       requireConfirm: true,
       execute: async () => await electron.uv.clearCache(),
       name: 'uv cache',
-      description: 'Remove the Astral uv cache of python packages.',
-      detail:
+      shortDescription: 'Remove the Astral uv cache of python packages.',
+      description:
         'This will remove the uv cache directory and its contents. All downloaded python packages will need to be downloaded again.',
       confirmText: 'Delete uv cache of python packages?',
       isInstallationFix: true,
@@ -131,9 +132,9 @@ export function useMaintenanceTasks(): MaintenanceTask[] {
       requireConfirm: true,
       execute: async () => await electron.uv.resetVenv(),
       name: 'Reset virtual environment',
-      description:
+      shortDescription:
         'Remove and recreate the .venv directory. This removes all python packages.',
-      detail:
+      description:
         'The python environment is where ComfyUI installs python and python packages. It is used to run the ComfyUI server.',
       confirmText: 'Delete the .venv directory?',
       usesTerminal: true,
