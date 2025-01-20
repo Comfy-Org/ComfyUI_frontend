@@ -18,7 +18,7 @@
           :label="$t('g.download') + ' (' + fileSize + ')'"
           size="small"
           outlined
-          :disabled="props.error"
+          :disabled="!!props.error"
           @click="triggerDownload"
           v-if="status === null || status === 'error'"
           icon="pi pi-download"
@@ -30,7 +30,7 @@
       v-if="status === 'in_progress' || status === 'paused'"
     >
       <!-- Temporary fix for issue when % only comes into view only if the progress bar is large enough
-           https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499     
+           https://comfy-organization.slack.com/archives/C07H3GLKDPF/p1731551013385499
       -->
       <ProgressBar
         class="flex-1"
@@ -42,7 +42,7 @@
         class="file-action-button"
         size="small"
         outlined
-        :disabled="props.error"
+        :disabled="!!props.error"
         @click="triggerPauseDownload"
         v-if="status === 'in_progress'"
         icon="pi pi-pause-circle"
@@ -53,7 +53,7 @@
         class="file-action-button"
         size="small"
         outlined
-        :disabled="props.error"
+        :disabled="!!props.error"
         @click="triggerResumeDownload"
         v-if="status === 'paused'"
         icon="pi pi-play-circle"
@@ -64,7 +64,7 @@
         class="file-action-button"
         size="small"
         outlined
-        :disabled="props.error"
+        :disabled="!!props.error"
         @click="triggerCancelDownload"
         icon="pi pi-times-circle"
         severity="danger"

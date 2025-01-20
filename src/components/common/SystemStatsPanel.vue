@@ -19,6 +19,7 @@
           v-for="device in props.stats.devices"
           :key="device.index"
           :header="device.name"
+          :value="device.index"
         >
           <DeviceInfo :device="device" />
         </TabPanel>
