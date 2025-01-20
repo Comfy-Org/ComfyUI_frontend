@@ -94,6 +94,9 @@ if (isElectron()) {
             `execution:${task.displayStatus.toLowerCase()}`,
             1
           )
+          electronAPI().Events.trackEvent('execution', {
+            status: task.displayStatus.toLowerCase()
+          })
         })
     },
     { deep: true }
