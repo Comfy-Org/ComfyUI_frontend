@@ -6,18 +6,55 @@ import { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 
-type MaintenanceTaskState = 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
+/** State of a maintenance task, managed by the maintenance task store. */
+type MaintenanceTaskState = 'warning' | 'error' | 'OK' | 'skipped'
+
+// Type not exported by API
+type ValidationState = InstallValidation['basePath']
+// Add index to API type
+type IndexedUpdate = InstallValidation & Record<string, ValidationState>
 
 /** State of a maintenance task, managed by the maintenance task store. */
 export class MaintenanceTaskRunner {
-  /** The current state of the task. */
-  state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
+  constructor(readonly task: MaintenanceTask) {}
+
+  private _state?: MaintenanceTaskState
+  /** The current state of the task. Setter also controls {@link resolved} as a side-effect. */
+  get state() {
+    return this._state
+  }
+
+  /** Updates the task state and {@link resolved} status. */
+  setState(value: MaintenanceTaskState) {
+    // Mark resolved
+    if (this._state === 'error' && value === 'OK') this.resolved = true
+    // Mark unresolved (if previously resolved)
+    if (value === 'error') this.resolved &&= false
+
+    this._state = value
+  }
+
+  /** `true` if the task has been resolved (was `error`, now `OK`). This is a side-effect of the {@link state} setter. */
+  resolved?: boolean
+
   /** Whether the task state is currently being refreshed. */
   refreshing?: boolean
   /** Whether the task is currently running. */
   executing?: boolean
   /** The error message that occurred when the task failed. */
   error?: string
+
+  update(update: IndexedUpdate) {
+    const state = update[this.task.id]
+
+    this.refreshing = state === undefined
+    if (state) this.setState(state)
+  }
+
+  finaliseUpdate(update: IndexedUpdate) {
+    this.refreshing = false
+    this.setState(update[this.task.id] ?? 'skipped')
+  }
 
   /** Wraps the execution of a maintenance task, updating state and rethrowing errors. */
   async execute(task: MaintenanceTask) {
@@ -65,7 +102,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
 
   const taskStates = ref(
     new Map<MaintenanceTask['id'], MaintenanceTaskRunner>(
-      DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, new MaintenanceTaskRunner()])
+      DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, new MaintenanceTaskRunner(x)])
     )
   )
 
@@ -86,25 +123,12 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
    * @param validationUpdate Update details passed in by electron
    */
   const processUpdate = (validationUpdate: InstallValidation) => {
-    // Type not exported by API
-    type ValidationState = InstallValidation['basePath']
-    // Add index to API type
-    type IndexedUpdate = InstallValidation & Record<string, ValidationState>
-
     const update = validationUpdate as IndexedUpdate
     isRefreshing.value = true
 
     // Update each task state
     for (const task of tasks.value) {
-      const runner = getRunner(task)
-
-      runner.refreshing = update[task.id] === undefined
-      // Mark resolved
-      if (runner.state === 'error' && update[task.id] === 'OK')
-        runner.state = 'resolved'
-      if (update[task.id] === 'OK' && runner.state === 'resolved') continue
-
-      if (update[task.id]) runner.state = update[task.id]
+      getRunner(task).update(update)
     }
 
     // Final update
@@ -112,11 +136,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
       isRefreshing.value = false
 
       for (const task of tasks.value) {
-        const runner = getRunner(task)
-        runner.refreshing = false
-        if (runner.state === 'resolved') continue
-
-        runner.state = update[task.id] ?? 'skipped'
+        getRunner(task).finaliseUpdate(update)
       }
     }
   }
@@ -124,8 +144,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   /** Clears the resolved status of tasks (when changing filters) */
   const clearResolved = () => {
     for (const task of tasks.value) {
-      const runner = getRunner(task)
-      if (runner?.state === 'resolved') runner.state = 'OK'
+      getRunner(task).resolved &&= false
     }
   }
 

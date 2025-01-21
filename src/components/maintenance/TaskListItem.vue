@@ -2,8 +2,8 @@
   <tr
     class="border-neutral-700 border-solid border-y"
     :class="{
-      'opacity-50': runner.state === 'resolved',
-      'opacity-75': isLoading && runner.state !== 'resolved'
+      'opacity-50': runner.resolved,
+      'opacity-75': isLoading && runner.resolved
     }"
   >
     <td class="text-center w-16">
