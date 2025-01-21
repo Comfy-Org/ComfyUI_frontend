@@ -50,21 +50,23 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     [...taskStates.value.values()].some((x) => x.state === 'error')
   )
 
+  /** Wraps the execution of a maintenance task, updating state and rethrowing errors. */
   const execute = async (task: MaintenanceTask) => {
     const state = getState(task)
-    console.log('executing', task.id, task)
-    state.executing = true
 
     try {
+      state.executing = true
       const success = await task.execute()
-      if (!success) throw new Error('Task failed to run.')
+      if (!success) return false
+
       state.error = undefined
+      return true
     } catch (error) {
-      state.error =
-        (error as Error)?.message ??
-        'An error occurred while running a maintenance task.'
+      state.error = (error as Error)?.message
+      throw error
+    } finally {
+      state.executing = false
     }
-    state.executing = false
   }
 
   const getState = (task: MaintenanceTask) => taskStates.value.get(task.id)!

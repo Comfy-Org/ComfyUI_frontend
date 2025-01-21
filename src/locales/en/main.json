@@ -702,6 +702,11 @@
     "OK": "OK",
     "Skipped": "Skipped",
     "showManual": "Show maintenance tasks",
-    "confirmTitle": "Are you sure?"
+    "confirmTitle": "Are you sure?",
+    "error": {
+      "toastTitle": "Task error",
+      "taskFailed": "Task failed to run.",
+      "defaultDescription": "An error occurred while running a maintenance task."
+    }
   }
 }

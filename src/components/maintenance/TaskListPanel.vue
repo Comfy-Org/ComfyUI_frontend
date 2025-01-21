@@ -67,15 +67,23 @@ const props = defineProps<{
 }>()
 
 const executeTask = async (task: MaintenanceTask) => {
-  await taskStore.execute(task)
-  if (taskStore.getState(task).error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Task error',
-      detail: taskStore.getState(task).error,
-      life: 10_000
-    })
+  let message: string | undefined
+
+  try {
+    // Success
+    if ((await taskStore.execute(task)) === true) return
+
+    message = t('maintenance.error.taskFailed')
+  } catch (error) {
+    message = (error as Error)?.message
   }
+
+  toast.add({
+    severity: 'error',
+    summary: t('maintenance.error.toastTitle'),
+    detail: message ?? t('maintenance.error.defaultDescription'),
+    life: 10_000
+  })
 }
 
 // Commands
