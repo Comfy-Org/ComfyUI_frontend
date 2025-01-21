@@ -257,6 +257,17 @@
     "submitErrorReport": "Отправить отчёт об ошибке (необязательно)",
     "systemStats": "Статистика системы"
   },
+  "maintenance": {
+    "None": "Нет",
+    "OK": "OK",
+    "Skipped": "Пропущено",
+    "allOk": "Проблем не обнаружено.",
+    "confirmTitle": "Вы уверены?",
+    "detected": "Обнаружено",
+    "refreshing": "Обновление",
+    "showManual": "Показать задачи по обслуживанию",
+    "status": "Статус"
+  },
   "menu": {
     "autoQueue": "Автоочередь",
     "batchCount": "Количество пакетов",
@@ -292,8 +303,8 @@
     "Close Current Workflow": "Закрыть текущий рабочий процесс",
     "Collapse/Expand Selected Nodes": "Свернуть/развернуть выбранные ноды",
     "Comfy-Org Discord": "Discord Comfy-Org",
-    "Comfy-Org Forum": "Форум Comfy-Org",
     "ComfyUI Docs": "Документация ComfyUI",
+    "ComfyUI Forum": "Форум ComfyUI",
     "ComfyUI Issues": "Проблемы ComfyUI",
     "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Desktop User Guide": "Руководство пользователя для настольных ПК",

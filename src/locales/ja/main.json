@@ -257,6 +257,17 @@
     "submitErrorReport": "エラーレポートを提出する（オプション）",
     "systemStats": "システム統計"
   },
+  "maintenance": {
+    "None": "なし",
+    "OK": "OK",
+    "Skipped": "スキップされました",
+    "allOk": "問題は検出されませんでした。",
+    "confirmTitle": "よろしいですか？",
+    "detected": "検出されました",
+    "refreshing": "更新中",
+    "showManual": "メンテナンスタスクを表示",
+    "status": "ステータス"
+  },
   "menu": {
     "autoQueue": "自動キュー",
     "batchCount": "バッチ数",
@@ -292,8 +303,8 @@
     "Close Current Workflow": "現在のワークフローを閉じる",
     "Collapse/Expand Selected Nodes": "選択したノードの折りたたみ/展開",
     "Comfy-Org Discord": "Comfy-Org Discord",
-    "Comfy-Org Forum": "Comfy-Org フォーラム",
     "ComfyUI Docs": "ComfyUIのドキュメント",
+    "ComfyUI Forum": "ComfyUIフォーラム",
     "ComfyUI Issues": "ComfyUIの問題",
     "Convert selected nodes to group node": "選択したノードをグループノードに変換",
     "Desktop User Guide": "デスクトップユーザーガイド",

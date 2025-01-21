@@ -396,7 +396,7 @@
     "About ComfyUI": "About ComfyUI",
     "Comfy-Org Discord": "Comfy-Org Discord",
     "ComfyUI Docs": "ComfyUI Docs",
-    "Comfy-Org Forum": "Comfy-Org Forum",
+    "ComfyUI Forum": "ComfyUI Forum",
     "ComfyUI Issues": "ComfyUI Issues",
     "Interrupt": "Interrupt",
     "Load Default Workflow": "Load Default Workflow",
@@ -692,5 +692,16 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "WEBCAM": "WEBCAM"
+  },
+  "maintenance": {
+    "allOk": "No issues were detected.",
+    "status": "Status",
+    "detected": "Detected",
+    "refreshing": "Refreshing",
+    "None": "None",
+    "OK": "OK",
+    "Skipped": "Skipped",
+    "showManual": "Show maintenance tasks",
+    "confirmTitle": "Are you sure?"
   }
 }
