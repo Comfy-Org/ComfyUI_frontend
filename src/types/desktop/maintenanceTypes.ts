@@ -1,4 +1,4 @@
-import type { MaybeRef } from 'vue'
+import type { Ref } from 'vue'
 
 import type { VueSeverity } from '../primeVueTypes'
 
@@ -9,6 +9,7 @@ interface MaintenanceTaskButton {
   readonly icon?: string
 }
 
+/** A maintenance task, used by the maintenance page. */
 export interface MaintenanceTask {
   /** ID string used as i18n key */
   readonly id: string
@@ -26,18 +27,10 @@ export interface MaintenanceTask {
   readonly headerImg?: string
   /** The button to display on the task card / list item. */
   readonly button?: MaintenanceTaskButton
-  /** The current state of the task. */
-  state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
-  /** `true` if the task has been resolved (was `error`, now `OK`). */
-  resolved?: boolean
-  /** Whether the task is currently running. */
-  loading?: MaybeRef<boolean>
   /** Whether to show a confirmation dialog before running the task. */
   readonly requireConfirm?: boolean
   /** The text to display in the confirmation dialog. */
   readonly confirmText?: string
-  /** Function to run when the button is clicked (or when confirmed, if required). */
-  onClick?: (args?: unknown[]) => void | Promise<void>
   /** Called by onClick to run the actual task. */
   readonly execute: (args?: unknown[]) => boolean | Promise<boolean>
   /** Show the button with `severity="danger"` */
@@ -48,11 +41,26 @@ export interface MaintenanceTask {
   readonly isInstallationFix?: boolean
 }
 
+/** State of a maintenance task, managed by the maintenance task store. */
+export interface MaintenanceTaskState {
+  /** The current state of the task. */
+  state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
+  /** `true` if the task has been resolved (was `error`, now `OK`). */
+  resolved?: boolean
+  /** Whether the task state is currently being refreshed. */
+  loading?: Ref<boolean>
+  /** Whether the task is currently running. */
+  executing?: Ref<boolean>
+  /** The error message that occurred when the task failed. */
+  error?: string
+}
+
+/** The filter options for the maintenance task list. */
 export interface MaintenanceFilter {
   /** CSS classes used for the filter button icon, e.g. 'pi pi-cross' */
   readonly icon: string
   /** The text to display on the filter button. */
   readonly value: string
   /** The tasks to display when this filter is selected. */
-  readonly tasks: MaintenanceTask[]
+  readonly tasks: ReadonlyArray<MaintenanceTask>
 }

@@ -2,12 +2,12 @@
   <tr
     class="border-neutral-700 border-solid border-y"
     :class="{
-      'opacity-50': task.resolved,
-      'opacity-75': task.loading && !task.resolved
+      'opacity-50': state.resolved,
+      'opacity-75': state.loading && !state.resolved
     }"
   >
     <td class="text-center w-16">
-      <TaskListStatusIcon :state="task.state" :loading="task.loading" />
+      <TaskListStatusIcon :state="state.state" :loading="state.loading" />
     </td>
     <td>
       <p class="inline-block">{{ task.name }}</p>
@@ -42,10 +42,14 @@ import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { VueSeverity } from '@/types/primeVueTypes'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
+
+const taskStore = useMaintenanceTaskStore()
+const state = computed(() => taskStore.getState(props.task))
 
 // Properties
 const props = defineProps<{
@@ -59,7 +63,7 @@ defineEmits<{
 
 // Binding
 const severity = computed<VueSeverity>(() =>
-  props.task.state === 'error' || props.task.state === 'warning'
+  state.value.state === 'error' || state.value.state === 'warning'
     ? 'primary'
     : 'secondary'
 )

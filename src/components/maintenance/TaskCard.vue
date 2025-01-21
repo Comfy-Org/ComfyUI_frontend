@@ -1,16 +1,16 @@
 <template>
   <div
     class="task-div max-w-48 min-h-52 grid relative"
-    :class="{ 'opacity-75': task.loading }"
+    :class="{ 'opacity-75': state.loading }"
   >
     <Card
       class="max-w-48 relative h-full overflow-hidden"
-      :class="{ 'opacity-65': task.state !== 'error' }"
+      :class="{ 'opacity-65': state.state !== 'error' }"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
       <template #header>
         <i
-          v-if="task.state === 'error'"
+          v-if="state.state === 'error'"
           class="pi pi-exclamation-triangle text-red-500 absolute m-2 top-0 -right-14 opacity-15"
           style="font-size: 10rem"
         />
@@ -31,13 +31,14 @@
             raised
             icon-pos="right"
             @click="(event) => $emit('execute', event)"
+            :loading="state.executing"
           />
         </div>
       </template>
     </Card>
 
     <i
-      v-if="!task.loading && task.state === 'OK'"
+      v-if="!state.loading && state.state === 'OK'"
       class="task-card-ok pi pi-check"
     />
   </div>
@@ -48,7 +49,11 @@ import Button from 'primevue/button'
 import Card from 'primevue/card'
 import { computed } from 'vue'
 
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+
+const taskStore = useMaintenanceTaskStore()
+const state = computed(() => taskStore.getState(props.task))
 
 // Properties
 const props = defineProps<{
@@ -62,7 +67,7 @@ defineEmits<{
 
 // Bindings
 const description = computed(() =>
-  props.task.state === 'error'
+  state.value.state === 'error'
     ? props.task.errorDescription ?? props.task.shortDescription
     : props.task.shortDescription
 )

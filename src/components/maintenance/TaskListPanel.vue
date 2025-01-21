@@ -46,6 +46,7 @@ import Divider from 'primevue/divider'
 import { useConfirm } from 'primevue/useconfirm'
 
 import { t } from '@/i18n'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type {
   MaintenanceFilter,
   MaintenanceTask
@@ -55,6 +56,7 @@ import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'
 
 const confirm = useConfirm()
+const taskStore = useMaintenanceTaskStore()
 
 // Properties
 const props = defineProps<{
@@ -66,7 +68,7 @@ const props = defineProps<{
 // Commands
 const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
   if (!task.requireConfirm) {
-    await task.onClick()
+    await taskStore.execute(task)
     return
   }
 
@@ -85,7 +87,7 @@ const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
     },
     // TODO: Not awaited.
     accept: async () => {
-      await task.onClick()
+      await taskStore.execute(task)
     }
   })
 }

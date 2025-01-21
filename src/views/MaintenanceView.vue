@@ -37,7 +37,7 @@
             <RefreshButton
               v-model="isRefreshing"
               severity="secondary"
-              @refresh="refresh"
+              @refresh="refreshDesktopTasks"
             />
           </div>
         </div>
@@ -84,7 +84,6 @@
 </template>
 
 <script setup lang="ts">
-import { InstallValidation } from '@comfyorg/comfyui-electron-types'
 import { PrimeIcons } from '@primevue/core/api'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
@@ -92,85 +91,52 @@ import SelectButton from 'primevue/selectbutton'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+import { watch } from 'vue'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
-import { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
-import {
-  MaintenanceFilter,
-  MaintenanceTask
-} from '@/types/desktop/maintenanceTypes'
-import { electronAPI, isElectron } from '@/utils/envUtil'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
+import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
+import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
+import { electronAPI } from '@/utils/envUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
-/** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
-const minRefreshTime = 250
 const electron = electronAPI()
 const toast = useToast()
+const taskStore = useMaintenanceTaskStore()
+const { clearResolved, processUpdate, refreshDesktopTasks } = taskStore
 
 const terminalVisible = ref(false)
 
 /** `true` when waiting on tasks to complete. */
-const isRefreshing = useMinLoadingDurationRef(true, minRefreshTime)
+const isRefreshing = computed(() => taskStore.isRefreshing)
 
 /** True if any tasks are in an error state. */
-const anyErrors = computed(() => tasks.value.some((x) => x.state === 'error'))
+const anyErrors = computed(() => taskStore.anyErrors)
 
 /** Whether to display tasks as a list or cards. */
 const displayAsList = ref(PrimeIcons.TH_LARGE)
 
-/**
- * Updates the task list with the latest validation state.
- * @param update Update details passed in by electron
- */
-const processUpdate = (update: InstallValidation) => {
-  // Update each task state
-  for (const task of tasks.value) {
-    task.loading = update[task.id] === undefined
-    // Mark resolved
-    if (task.state === 'error' && update[task.id] === 'OK') task.resolved = true
-    if (update[task.id]) task.state = update[task.id]
-  }
-
-  // Final update
-  if (!update.inProgress && isRefreshing.value) {
-    isRefreshing.value = false
-    for (const task of tasks.value) {
-      task.state = update[task.id] ?? 'skipped'
-      task.loading = false
-    }
-  }
-}
-
-const tasks = ref(isElectron() ? DESKTOP_MAINTENANCE_TASKS : [])
-
 const errorFilter = computed(() =>
-  tasks.value.filter(
-    (x) => x.state === 'error' || (x.state === 'OK' && x.resolved)
-  )
+  taskStore.tasks.filter((x) => {
+    const { state, resolved } = taskStore.getState(x)
+    return state === 'error' || (state === 'OK' && resolved)
+  })
 )
+
 const filterOptions = ref([
-  { icon: PrimeIcons.FILTER_FILL, value: 'All', tasks },
+  { icon: PrimeIcons.FILTER_FILL, value: 'All', tasks: taskStore.tasks },
   { icon: PrimeIcons.EXCLAMATION_TRIANGLE, value: 'Errors', tasks: errorFilter }
 ])
 
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
-/** @todo Refreshes Electron tasks only. */
-const refresh = async () => {
-  isRefreshing.value = true
-  await electron.Validation.validateInstallation(processUpdate)
-  isRefreshing.value = false
-}
-
+/** If valid, leave the validation window. */
 const completeValidation = async (alertOnFail = true) => {
-  isRefreshing.value = true
   const isValid = await electron.Validation.complete()
   if (alertOnFail && !isValid) {
     toast.add({
@@ -179,13 +145,7 @@ const completeValidation = async (alertOnFail = true) => {
       detail: 'Unable to continue - errors remain',
       life: 5_000
     })
-    isRefreshing.value = false
   }
-}
-
-/** Clears the resolved status of tasks (when changing filters) */
-const clearResolved = () => {
-  for (const task of tasks.value) task.resolved &&= false
 }
 
 const terminalCreated = (
@@ -207,31 +167,22 @@ const toggleConsoleDrawer = () => {
   terminalVisible.value = !terminalVisible.value
 }
 
-const wrapTaskExecution = (task: MaintenanceTask) => async () => {
-  if (task.usesTerminal) terminalVisible.value = true
-  try {
-    const success = await task.execute()
-    if (!success) throw new Error('Task failed to run.')
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Task error',
-      detail:
-        error.message ?? 'An error occurred while running a maintenance task.',
-      life: 10_000
-    })
+watch(
+  () => taskStore.isRunningTerminalCommand,
+  (value) => {
+    terminalVisible.value = value
   }
+)
 
-  if (task.usesTerminal) terminalVisible.value = false
-  if (task.isInstallationFix) await completeValidation(false)
-}
+// If we're running a fix that may resolve all issues, auto-recheck and continue if everything is OK
+watch(
+  () => taskStore.isRunningInstallationFix,
+  (value, oldValue) => {
+    if (!value && oldValue) completeValidation(false)
+  }
+)
 
 onMounted(async () => {
-  // Wrap task execution to show / hide terminal and complete validation if applicable
-  for (const task of tasks.value) {
-    task.onClick = wrapTaskExecution(task)
-  }
-
   electron.Validation.onUpdate(processUpdate)
 
   const update = await electron.Validation.getStatus()
