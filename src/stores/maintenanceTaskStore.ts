@@ -1,4 +1,3 @@
-// @ts-strict-ignore
 import type { InstallValidation } from '@comfyorg/comfyui-electron-types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
@@ -69,9 +68,15 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
 
   /**
    * Updates the task list with the latest validation state.
-   * @param update Update details passed in by electron
+   * @param validationUpdate Update details passed in by electron
    */
-  const processUpdate = (update: InstallValidation) => {
+  const processUpdate = (validationUpdate: InstallValidation) => {
+    // Type not exported by API
+    type ValidationState = InstallValidation['basePath']
+    // Add index to API type
+    type IndexedUpdate = InstallValidation & Record<string, ValidationState>
+
+    const update = validationUpdate as IndexedUpdate
     isRefreshing.value = true
 
     // Update each task state
