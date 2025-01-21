@@ -44,7 +44,7 @@ export interface MaintenanceTaskState {
   /** The current state of the task. */
   state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
   /** Whether the task state is currently being refreshed. */
-  loading?: boolean
+  refreshing?: boolean
   /** Whether the task is currently running. */
   executing?: boolean
   /** The error message that occurred when the task failed. */

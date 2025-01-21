@@ -71,7 +71,7 @@ const severity = computed<VueSeverity>(() =>
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => state.value.loading)
+const reactiveLoading = computed(() => state.value.refreshing)
 const reactiveExecuting = computed(() => state.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)

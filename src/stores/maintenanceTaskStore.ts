@@ -89,7 +89,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     for (const task of tasks.value) {
       const state = getState(task)
 
-      state.loading = update[task.id] === undefined
+      state.refreshing = update[task.id] === undefined
       // Mark resolved
       if (state.state === 'error' && update[task.id] === 'OK')
         state.state = 'resolved'
@@ -104,7 +104,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
 
       for (const task of tasks.value) {
         const state = getState(task)
-        state.loading = false
+        state.refreshing = false
         if (state.state === 'resolved') continue
 
         state.state = update[task.id] ?? 'skipped'
