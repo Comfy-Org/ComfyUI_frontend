@@ -255,7 +255,11 @@
     "rating": "평가",
     "stackTrace": "스택 추적",
     "submitErrorReport": "오류 보고서 제출 (선택 사항)",
-    "systemStats": "시스템 통계"
+    "systemStats": "시스템 통계",
+    "validation": {
+      "invalidEmail": "유효한 이메일 주소를 입력해 주세요",
+      "maxLength": "메시지가 너무 깁니다"
+    }
   },
   "menu": {
     "autoQueue": "자동 실행 큐",
