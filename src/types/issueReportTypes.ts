@@ -55,7 +55,7 @@ export interface IssueReportPanelProps {
 const checkboxField = z.boolean().optional()
 export const issueReportSchema = z
   .object({
-    contactInfo: z.string().email().max(320).optional(),
+    contactInfo: z.string().email().max(320).optional().or(z.literal('')),
     details: z.string().max(5_000).optional()
   })
   .catchall(checkboxField)
