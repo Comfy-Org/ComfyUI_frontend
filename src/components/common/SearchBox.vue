@@ -1,10 +1,10 @@
 <template>
-  <div :class="props.class">
+  <div>
     <IconField>
       <Button
-        v-if="props.filterIcon"
+        v-if="filterIcon"
         class="p-inputicon filter-button"
-        :icon="props.filterIcon"
+        :icon="filterIcon"
         text
         severity="contrast"
         @click="$emit('showFilter', $event)"
@@ -12,12 +12,12 @@
       <InputText
         class="search-box-input w-full"
         @input="handleInput"
-        :modelValue="props.modelValue"
-        :placeholder="props.placeholder"
+        :modelValue="modelValue"
+        :placeholder="placeholder"
       />
-      <InputIcon v-if="!props.modelValue" :class="props.icon" />
+      <InputIcon v-if="!modelValue" :class="icon" />
       <Button
-        v-if="props.modelValue"
+        v-if="modelValue"
         class="p-inputicon clear-button"
         icon="pi pi-times"
         text
@@ -47,40 +47,36 @@ import Button from 'primevue/button'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import { toRefs } from 'vue'
 
 import type { SearchFilter } from './SearchFilterChip.vue'
 import SearchFilterChip from './SearchFilterChip.vue'
 
-const props = withDefaults(
-  defineProps<{
-    class?: string
-    modelValue: string
-    placeholder?: string
-    icon?: string
-    debounceTime?: number
-    filterIcon?: string
-    filters?: TFilter[]
-  }>(),
-  {
-    placeholder: 'Search...',
-    icon: 'pi pi-search',
-    debounceTime: 300
-  }
-)
+const {
+  modelValue,
+  placeholder = 'Search...',
+  icon = 'pi pi-search',
+  debounceTime = 300,
+  filterIcon,
+  filters = []
+} = defineProps<{
+  modelValue: string
+  placeholder?: string
+  icon?: string
+  debounceTime?: number
+  filterIcon?: string
+  filters?: TFilter[]
+}>()
 
-const { filters } = toRefs(props)
-
-const emit = defineEmits([
-  'update:modelValue',
-  'search',
-  'showFilter',
-  'removeFilter'
-])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+  (e: 'search', value: string, filters: TFilter[]): void
+  (e: 'showFilter', event: Event): void
+  (e: 'removeFilter', filter: TFilter): void
+}>()
 
 const emitSearch = debounce((value: string) => {
-  emit('search', value, props.filters)
-}, props.debounceTime)
+  emit('search', value, filters)
+}, debounceTime)
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement
