@@ -76,6 +76,7 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isEmbedded } from '@/utils/envUtil';
+import { FlowConfig } from '@/constants/flowConfig'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -100,11 +101,10 @@ watchEffect((onCleanup) => {
   if (isEmbedded()) {
     const listener = (event: Event) => {
       const data = event.data;
-      console.log('event', event);
       if (!data || !data.type) return;
       if (data.type === 'init' && data.workflow) {
-        console.log('init', data.workflow);
         localStorage.setItem('workflow', data.workflow);
+        FlowConfig.flowId = data.flowId;
         comfyApp.initWorkflow();
       }
     }
@@ -272,6 +272,21 @@ const persistCurrentWorkflow = () => {
   if (api.clientId) {
     sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
   }
+  return workflow;
+}
+
+const onChangeWorkflow = async () => {
+  const workflow = persistCurrentWorkflow();
+  if (isEmbedded()) {
+    const p = await comfyApp.graphToPrompt()
+    const json = JSON.stringify(p['output'], null, 2)
+    window.parent.postMessage({
+      flowId: FlowConfig.flowId,
+      type: 'change',
+      workflow: workflow,
+      workflowApi: json,
+    }, '*');
+  }
 }
 
 watchEffect(() => {
@@ -284,7 +299,7 @@ watchEffect(() => {
   }
 })
 
-api.addEventListener('graphChanged', persistCurrentWorkflow)
+api.addEventListener('graphChanged', onChangeWorkflow)
 
 usePragmaticDroppable(() => canvasRef.value, {
   onDrop: (event) => {
