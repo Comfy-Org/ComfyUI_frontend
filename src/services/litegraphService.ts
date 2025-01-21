@@ -367,7 +367,6 @@ export const useLitegraphService = () => {
         const w = node.widgets[node.widgets.length - 1]
         shiftY = w.last_y
         if (w.computeSize) {
-          // @ts-expect-error requires 1 param
           shiftY += w.computeSize()[1] + 4
           // @ts-expect-error computedHeight only exists for DOMWidget
         } else if (w.computedHeight) {

@@ -110,6 +110,9 @@
   "Comfy_Help_OpenComfyUIDocs": {
     "label": "Открыть документацию ComfyUI"
   },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Открыть форум Comfy-Org"
+  },
   "Comfy_Help_OpenComfyUIIssues": {
     "label": "Открыть ComfyUI  Issues"
   },

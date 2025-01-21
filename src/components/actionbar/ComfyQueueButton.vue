@@ -22,7 +22,7 @@
       </template>
       <template #item="{ item }">
         <Button
-          :label="item.label"
+          :label="String(item.label)"
           :icon="item.icon"
           :severity="item.key === queueMode ? 'primary' : 'secondary'"
           size="small"

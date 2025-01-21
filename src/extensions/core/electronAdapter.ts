@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
@@ -41,18 +42,18 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         id: 'Comfy-Desktop.WindowStyle',
         category: ['Comfy-Desktop', 'General', 'Window Style'],
         name: 'Window Style',
-        tooltip: 'Choose custom option to hide the system title bar',
+        tooltip: "Custom: Replace the system title bar with ComfyUI's Top menu",
         type: 'combo',
         experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
         onChange: (
           newValue: 'default' | 'custom',
-          oldValue: 'default' | 'custom'
+          oldValue?: 'default' | 'custom'
         ) => {
-          electronAPI.Config.setWindowStyle(newValue)
+          if (!oldValue) return
 
-          onChangeRestartApp(newValue, oldValue)
+          electronAPI.Config.setWindowStyle(newValue)
         }
       }
     ],
