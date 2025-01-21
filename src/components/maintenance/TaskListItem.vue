@@ -2,8 +2,8 @@
   <tr
     class="border-neutral-700 border-solid border-y"
     :class="{
-      'opacity-50': state.resolved,
-      'opacity-75': isLoading && !state.resolved
+      'opacity-50': state.state === 'resolved',
+      'opacity-75': isLoading && state.state !== 'resolved'
     }"
   >
     <td class="text-center w-16">

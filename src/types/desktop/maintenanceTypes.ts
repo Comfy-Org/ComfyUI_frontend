@@ -45,8 +45,6 @@ export interface MaintenanceTask {
 export interface MaintenanceTaskState {
   /** The current state of the task. */
   state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
-  /** `true` if the task has been resolved (was `error`, now `OK`). */
-  resolved?: boolean
   /** Whether the task state is currently being refreshed. */
   loading?: Ref<boolean>
   /** Whether the task is currently running. */
