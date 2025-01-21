@@ -3,11 +3,11 @@
     class="border-neutral-700 border-solid border-y"
     :class="{
       'opacity-50': state.resolved,
-      'opacity-75': state.loading && !state.resolved
+      'opacity-75': isLoading && !state.resolved
     }"
   >
     <td class="text-center w-16">
-      <TaskListStatusIcon :state="state.state" :loading="state.loading" />
+      <TaskListStatusIcon :state="state.state" :loading="isLoading" />
     </td>
     <td>
       <p class="inline-block">{{ task.name }}</p>
@@ -71,9 +71,13 @@ const severity = computed<VueSeverity>(() =>
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveLoading = computed(() => state.value.loading)
 const reactiveExecuting = computed(() => state.value.executing)
+
+const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 
+// Popover
 const infoPopover = ref()
 
 const toggle = (event: Event) => {

@@ -1,7 +1,7 @@
 <template>
   <div
     class="task-div max-w-48 min-h-52 grid relative"
-    :class="{ 'opacity-75': state.loading }"
+    :class="{ 'opacity-75': isLoading }"
   >
     <Card
       class="max-w-48 relative h-full overflow-hidden"
@@ -38,7 +38,7 @@
     </Card>
 
     <i
-      v-if="!state.loading && state.state === 'OK'"
+      v-if="!isLoading && state.state === 'OK'"
       class="task-card-ok pi pi-check"
     />
   </div>
@@ -74,7 +74,10 @@ const description = computed(() =>
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveLoading = computed(() => state.value.loading)
 const reactiveExecuting = computed(() => state.value.executing)
+
+const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 </script>
 
