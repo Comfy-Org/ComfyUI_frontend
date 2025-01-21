@@ -38,10 +38,6 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     })
   }
 
-  const taskMap = new Map<string, MaintenanceTask>(
-    DESKTOP_MAINTENANCE_TASKS.map((task) => [task.id, task])
-  )
-
   const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
   const taskStates = ref(taskStateMap)
 
@@ -76,7 +72,6 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
    * @param update Update details passed in by electron
    */
   const processUpdate = (update: InstallValidation) => {
-    // console.log('processUpdate', update)
     isRefreshing.value = true
 
     // Update each task state
