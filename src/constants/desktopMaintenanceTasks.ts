@@ -3,7 +3,7 @@ import { PrimeIcons } from '@primevue/core'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 
-export const electron = electronAPI()
+const electron = electronAPI()
 
 const openUrl = (url: string) => {
   window.open(url, '_blank')
