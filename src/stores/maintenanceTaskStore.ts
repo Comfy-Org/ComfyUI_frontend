@@ -51,7 +51,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
 
   /** True if any tasks are in an error state. */
   const anyErrors = computed(() =>
-    [...taskStates.value.values()].some((x) => x.state === 'error')
+    tasks.value.some((task) => getState(task).state === 'error')
   )
 
   /** Wraps the execution of a maintenance task, updating state and rethrowing errors. */
