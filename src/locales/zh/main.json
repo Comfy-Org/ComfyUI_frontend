@@ -261,6 +261,22 @@
       "maxLength": "消息过长"
     }
   },
+  "maintenance": {
+    "None": "无",
+    "OK": "确定",
+    "Skipped": "跳过",
+    "allOk": "未检测到任何问题。",
+    "confirmTitle": "你确定吗？",
+    "detected": "检测到",
+    "error": {
+      "defaultDescription": "运行维护任务时发生错误。",
+      "taskFailed": "任务运行失败。",
+      "toastTitle": "任务错误"
+    },
+    "refreshing": "刷新中",
+    "showManual": "显示维护任务",
+    "status": "状态"
+  },
   "menu": {
     "autoQueue": "自动执行",
     "batchCount": "批次数量",

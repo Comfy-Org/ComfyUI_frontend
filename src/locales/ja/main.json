@@ -261,6 +261,22 @@
       "maxLength": "メッセージが長すぎます"
     }
   },
+  "maintenance": {
+    "None": "なし",
+    "OK": "OK",
+    "Skipped": "スキップされました",
+    "allOk": "問題は検出されませんでした。",
+    "confirmTitle": "よろしいですか？",
+    "detected": "検出されました",
+    "error": {
+      "defaultDescription": "メンテナンスタスクの実行中にエラーが発生しました。",
+      "taskFailed": "タスクの実行に失敗しました。",
+      "toastTitle": "タスクエラー"
+    },
+    "refreshing": "更新中",
+    "showManual": "メンテナンスタスクを表示",
+    "status": "ステータス"
+  },
   "menu": {
     "autoQueue": "自動キュー",
     "batchCount": "バッチ数",

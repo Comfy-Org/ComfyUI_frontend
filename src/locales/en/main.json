@@ -692,5 +692,21 @@
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "WEBCAM": "WEBCAM"
+  },
+  "maintenance": {
+    "allOk": "No issues were detected.",
+    "status": "Status",
+    "detected": "Detected",
+    "refreshing": "Refreshing",
+    "None": "None",
+    "OK": "OK",
+    "Skipped": "Skipped",
+    "showManual": "Show maintenance tasks",
+    "confirmTitle": "Are you sure?",
+    "error": {
+      "toastTitle": "Task error",
+      "taskFailed": "Task failed to run.",
+      "defaultDescription": "An error occurred while running a maintenance task."
+    }
   }
 }

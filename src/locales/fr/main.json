@@ -261,6 +261,22 @@
       "maxLength": "Message trop long"
     }
   },
+  "maintenance": {
+    "None": "Aucun",
+    "OK": "OK",
+    "Skipped": "Ignoré",
+    "allOk": "Aucun problème détecté.",
+    "confirmTitle": "Êtes-vous sûr ?",
+    "detected": "Détecté",
+    "error": {
+      "defaultDescription": "Une erreur s'est produite lors de l'exécution d'une tâche de maintenance.",
+      "taskFailed": "La tâche a échoué.",
+      "toastTitle": "Erreur de tâche"
+    },
+    "refreshing": "Actualisation",
+    "showManual": "Afficher les tâches de maintenance",
+    "status": "Statut"
+  },
   "menu": {
     "autoQueue": "File d'attente automatique",
     "batchCount": "Nombre de lots",
