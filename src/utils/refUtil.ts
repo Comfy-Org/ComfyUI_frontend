@@ -11,7 +11,10 @@ import { computed, ref } from 'vue'
 export function useMinLoadingDurationRef(value: boolean, minDuration = 250) {
   const current = ref(value)
 
-  const { ready, start } = useTimeout(minDuration, { controls: true })
+  const { ready, start } = useTimeout(minDuration, {
+    controls: true,
+    immediate: false
+  })
 
   return computed({
     get: () => current.value || !ready.value,
