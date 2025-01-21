@@ -101,6 +101,7 @@ import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
@@ -111,8 +112,10 @@ const { clearResolved, processUpdate, refreshDesktopTasks } = taskStore
 
 const terminalVisible = ref(false)
 
+// Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveIsRefreshing = computed(() => taskStore.isRefreshing)
 /** `true` when waiting on tasks to complete. */
-const isRefreshing = computed(() => taskStore.isRefreshing)
+const isRefreshing = useMinLoadingDurationRef(reactiveIsRefreshing, 250)
 
 /** True if any tasks are in an error state. */
 const anyErrors = computed(() => taskStore.anyErrors)
