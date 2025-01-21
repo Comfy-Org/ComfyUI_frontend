@@ -90,10 +90,10 @@ const stackTraceField = computed<ReportField>(() => {
     label: t('issueReport.stackTrace'),
     value: 'StackTrace',
     optIn: true,
-    data: {
+    getData: () => ({
       nodeType: props.error.node_type,
       stackTrace: props.error.traceback?.join('\n')
-    }
+    })
   }
 })
 

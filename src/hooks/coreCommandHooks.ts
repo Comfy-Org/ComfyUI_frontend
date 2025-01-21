@@ -548,9 +548,9 @@ export function useCoreCommands(): ComfyCommand[] {
       function: () => {
         dialogService.showIssueReportDialog({
           title: t('g.feedback'),
+          subtitle: t('issueReport.feedbackTitle'),
           panelProps: {
             errorType: 'Feedback',
-            title: t('issueReport.feedbackTitle'),
             defaultFields: ['SystemStats', 'Settings']
           }
         })

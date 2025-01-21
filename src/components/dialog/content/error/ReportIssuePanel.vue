@@ -1,213 +1,251 @@
 <template>
-  <Panel>
-    <template #header>
-      <div class="flex items-center gap-2">
-        <span class="font-bold">{{ title }}</span>
+  <Form
+    v-slot="$form"
+    @submit="submit"
+    :resolver="zodResolver(issueReportSchema)"
+  >
+    <Panel :pt="$attrs.pt">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <span class="font-bold">{{ title }}</span>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-4">
+          <Button
+            v-tooltip="!submitted ? $t('g.reportIssueTooltip') : undefined"
+            :label="submitted ? $t('g.reportSent') : $t('g.reportIssue')"
+            :severity="submitted ? 'secondary' : 'primary'"
+            :icon="submitted ? 'pi pi-check' : 'pi pi-send'"
+            :disabled="submitted"
+            type="submit"
+          />
+        </div>
+      </template>
+      <div class="p-4 mt-2 border border-round surface-border shadow-1">
+        <div class="flex flex-row gap-3 mb-2">
+          <div v-for="field in fields" :key="field.value">
+            <FormField
+              v-if="field.optIn"
+              v-slot="$field"
+              :name="field.value"
+              class="flex space-x-1"
+            >
+              <Checkbox
+                v-bind="$field"
+                :inputId="field.value"
+                :value="field.value"
+                v-model="selection"
+              />
+              <label :for="field.value">{{ field.label }}</label>
+            </FormField>
+          </div>
+        </div>
+        <FormField class="mb-4" v-slot="$field" name="details">
+          <Textarea
+            v-bind="$field"
+            class="w-full"
+            rows="5"
+            :placeholder="$t('issueReport.provideAdditionalDetails')"
+            :aria-label="$t('issueReport.provideAdditionalDetails')"
+          />
+          <Message
+            v-if="$field?.error && $field.touched"
+            severity="error"
+            size="small"
+            variant="simple"
+          >
+            {{ t('issueReport.validation.maxLength') }}
+          </Message>
+        </FormField>
+        <FormField v-slot="$field" name="contactInfo">
+          <InputText
+            v-bind="$field"
+            class="w-full"
+            :placeholder="$t('issueReport.provideEmail')"
+          />
+          <Message
+            v-if="$field?.error && $field.touched && $field.value !== ''"
+            severity="error"
+            size="small"
+            variant="simple"
+          >
+            {{ t('issueReport.validation.invalidEmail') }}
+          </Message>
+        </FormField>
+
+        <div class="flex flex-row gap-3 mt-2">
+          <div v-for="checkbox in contactCheckboxes" :key="checkbox.value">
+            <FormField
+              v-slot="$field"
+              :name="checkbox.value"
+              class="flex space-x-1"
+            >
+              <Checkbox
+                v-bind="$field"
+                :inputId="checkbox.value"
+                :value="checkbox.value"
+                v-model="contactPrefs"
+                :disabled="
+                  $form.contactInfo?.error || !$form.contactInfo?.value
+                "
+              />
+              <label :for="checkbox.value">{{ checkbox.label }}</label>
+            </FormField>
+          </div>
+        </div>
       </div>
-    </template>
-    <template #footer>
-      <div class="flex justify-end">
-        <Button
-          v-tooltip="$t('g.reportIssueTooltip')"
-          :label="submitted ? $t('g.reportSent') : $t('g.reportIssue')"
-          :severity="isButtonDisabled ? 'secondary' : 'primary'"
-          :icon="icon"
-          :disabled="isButtonDisabled"
-          @click="reportIssue"
-        />
-      </div>
-    </template>
-    <div class="p-4 mt-4 border border-round surface-border shadow-1">
-      <CheckboxGroup
-        v-if="reportCheckboxes.length"
-        v-model="selection"
-        class="gap-4 mb-4"
-        :checkboxes="reportCheckboxes"
-      />
-      <div class="mb-4">
-        <InputText
-          v-model="contactInfo"
-          class="w-full"
-          :placeholder="$t('issueReport.provideEmail')"
-          :maxlength="CONTACT_MAX_LEN"
-          :invalid="isContactInfoInvalid"
-        />
-        <CheckboxGroup
-          v-model="contactPrefs"
-          class="gap-3 mt-2"
-          :checkboxes="contactCheckboxes"
-        />
-      </div>
-      <div class="mb-4">
-        <Textarea
-          v-model="details"
-          class="w-full"
-          rows="4"
-          :maxlength="DETAILS_MAX_LEN"
-          :placeholder="$t('issueReport.provideAdditionalDetails')"
-          :aria-label="$t('issueReport.provideAdditionalDetails')"
-        />
-      </div>
-    </div>
-  </Panel>
+    </Panel>
+  </Form>
 </template>
 
 <script setup lang="ts">
+import { Form, FormField, type FormSubmitEvent } from '@primevue/forms'
+// @ts-expect-error https://github.com/primefaces/primevue/issues/6722
+import { zodResolver } from '@primevue/forms/resolvers/zod'
 import type { CaptureContext, User } from '@sentry/core'
 import { captureMessage } from '@sentry/core'
 import cloneDeep from 'lodash/cloneDeep'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
 import Panel from 'primevue/panel'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import {
+  type IssueReportFormData,
+  type ReportField,
+  issueReportSchema
+} from '@/types/issueReportTypes'
 import type {
   DefaultField,
   IssueReportPanelProps
 } from '@/types/issueReportTypes'
+import { isElectron } from '@/utils/envUtil'
 
 const ISSUE_NAME = 'User reported issue'
-const DETAILS_MAX_LEN = 5_000
-const CONTACT_MAX_LEN = 320
 
 const props = defineProps<IssueReportPanelProps>()
-
-const {
-  defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'],
-  tags = {}
-} = props
+const { defaultFields = ['Workflow', 'Logs', 'SystemStats', 'Settings'] } =
+  props
 
 const { t } = useI18n()
 const toast = useToast()
 
 const selection = ref<string[]>([])
 const contactPrefs = ref<string[]>([])
-const contactInfo = ref('')
-const details = ref('')
-const submitting = ref(false)
 const submitted = ref(false)
 
-const followUp = computed(() => contactPrefs.value.includes('FollowUp'))
-const notifyResolve = computed(() => contactPrefs.value.includes('Resolution'))
-
-const icon = computed(() => {
-  if (submitting.value) return 'pi pi-spin pi-spinner'
-  if (submitted.value) return 'pi pi-check'
-  return 'pi pi-send'
-})
-const isFormEmpty = computed(() => !selection.value.length && !details.value)
-const isContactInfoInvalid = computed(() => {
-  if (!contactInfo.value) return false
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return !emailRegex.test(contactInfo.value)
-})
-const isButtonDisabled = computed(
-  () =>
-    submitted.value ||
-    submitting.value ||
-    isFormEmpty.value ||
-    isContactInfoInvalid.value
-)
-
 const contactCheckboxes = [
-  { label: t('issueReport.contactFollowUp'), value: 'FollowUp' },
-  { label: t('issueReport.notifyResolve'), value: 'Resolution' }
+  { label: t('issueReport.contactFollowUp'), value: 'followUp' },
+  { label: t('issueReport.notifyResolve'), value: 'notifyOnResolution' }
 ]
-const defaultReportCheckboxes = [
-  { label: t('g.workflow'), value: 'Workflow' },
-  { label: t('g.logs'), value: 'Logs' },
-  { label: t('issueReport.systemStats'), value: 'SystemStats' },
-  { label: t('g.settings'), value: 'Settings' }
+
+const defaultFieldsConfig: ReportField[] = [
+  {
+    label: t('issueReport.systemStats'),
+    value: 'SystemStats',
+    getData: () => api.getSystemStats(),
+    optIn: true
+  },
+  {
+    label: t('g.workflow'),
+    value: 'Workflow',
+    getData: () => cloneDeep(app.graph.asSerialisable()),
+    optIn: true
+  },
+  {
+    label: t('g.logs'),
+    value: 'Logs',
+    getData: () => api.getLogs(),
+    optIn: true
+  },
+  {
+    label: t('g.settings'),
+    value: 'Settings',
+    getData: () => api.getSettings(),
+    optIn: true
+  }
 ]
-const reportCheckboxes = computed(() => [
-  ...(props.extraFields
-    ?.filter(({ optIn }) => optIn)
-    .map(({ label, value }) => ({ label, value })) ?? []),
-  ...defaultReportCheckboxes.filter(({ value }) =>
+
+const fields = computed(() => [
+  ...defaultFieldsConfig.filter(({ value }) =>
     defaultFields.includes(value as DefaultField)
-  )
+  ),
+  ...(props.extraFields ?? [])
 ])
 
-const getUserInfo = (): User => ({ email: contactInfo.value })
+const createUser = (formData: IssueReportFormData): User => ({
+  email: formData.contactInfo || undefined
+})
 
-const getLogs = async () =>
-  selection.value.includes('Logs') ? api.getLogs() : null
+const createExtraData = async (formData: IssueReportFormData) => {
+  const result = {}
+  const isChecked = (fieldValue: string) => formData[fieldValue]
 
-const getSystemStats = async () =>
-  selection.value.includes('SystemStats') ? api.getSystemStats() : null
+  await Promise.all(
+    fields.value
+      .filter((field) => !field.optIn || isChecked(field.value))
+      .map(async (field) => {
+        try {
+          result[field.value] = await field.getData()
+        } catch (error) {
+          console.error(`Failed to collect ${field.value}:`, error)
+          result[field.value] = { error: String(error) }
+        }
+      })
+  )
 
-const getSettings = async () =>
-  selection.value.includes('Settings') ? api.getSettings() : null
-
-const getWorkflow = () =>
-  selection.value.includes('Workflow')
-    ? cloneDeep(app.graph.asSerialisable())
-    : null
-
-const createDefaultFields = async () => {
-  const [settings, systemStats, logs, workflow] = await Promise.all([
-    getSettings(),
-    getSystemStats(),
-    getLogs(),
-    getWorkflow()
-  ])
-  return { settings, systemStats, logs, workflow }
+  return result
 }
 
-const createExtraFields = (): Record<string, unknown> | undefined => {
-  if (!props.extraFields) return undefined
-
-  return props.extraFields
-    .filter((field) => !field.optIn || selection.value.includes(field.value))
-    .reduce((acc, field) => ({ ...acc, ...cloneDeep(field.data) }), {})
-}
-
-const createFeedback = () => {
+const createCaptureContext = async (
+  formData: IssueReportFormData
+): Promise<CaptureContext> => {
   return {
-    details: details.value,
-    contactPreferences: {
-      followUp: followUp.value,
-      notifyOnResolution: notifyResolve.value
-    }
-  }
-}
-
-const createCaptureContext = async (): Promise<CaptureContext> => {
-  return {
-    user: getUserInfo(),
+    user: createUser(formData),
     level: 'error',
     tags: {
       errorType: props.errorType,
-      ...tags
+      followUp: formData.contactInfo ? formData.followUp : false,
+      notifyOnResolution: formData.contactInfo
+        ? formData.notifyOnResolution
+        : false,
+      isElectron: isElectron(),
+      ...props.tags
     },
     extra: {
-      ...createFeedback(),
-      ...(await createDefaultFields()),
-      ...createExtraFields()
+      details: formData.details,
+      ...(await createExtraData(formData))
     }
   }
 }
 
-const reportIssue = async () => {
-  if (isButtonDisabled.value) return
-
-  submitting.value = true
-  try {
-    captureMessage(ISSUE_NAME, await createCaptureContext())
-    submitted.value = true
-    toast.add({
-      severity: 'success',
-      summary: t('g.reportSent'),
-      life: 3000
-    })
-  } finally {
-    submitting.value = false
+const submit = async (event: FormSubmitEvent) => {
+  if (event.valid) {
+    try {
+      const captureContext = await createCaptureContext(event.values)
+      captureMessage(ISSUE_NAME, captureContext)
+      submitted.value = true
+      toast.add({
+        severity: 'success',
+        summary: t('g.reportSent'),
+        life: 3000
+      })
+    } catch (error) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: error.message,
+        life: 3000
+      })
+    }
   }
 }
 </script>

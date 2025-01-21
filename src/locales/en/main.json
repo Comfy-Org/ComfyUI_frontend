@@ -77,7 +77,7 @@
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
-    "provideEmail": "Give us your email (Optional)",
+    "provideEmail": "Give us your email (optional)",
     "provideAdditionalDetails": "Provide additional details (optional)",
     "stackTrace": "Stack Trace",
     "systemStats": "System Stats",
@@ -85,7 +85,11 @@
     "notifyResolve": "Notify me when resolved",
     "helpFix": "Help Fix This",
     "rating": "Rating",
-    "feedbackTitle": "Help us improve ComfyUI by providing feedback"
+    "feedbackTitle": "Help us improve ComfyUI by providing feedback",
+    "validation": {
+      "maxLength": "Message too long",
+      "invalidEmail": "Please enter a valid email address"
+    }
   },
   "color": {
     "default": "Default",

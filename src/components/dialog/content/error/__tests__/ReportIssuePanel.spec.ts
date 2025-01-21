@@ -1,28 +1,51 @@
 // @ts-strict-ignore
-import { createTestingPinia } from '@pinia/testing'
+import { Form } from '@primevue/forms'
 import { mount } from '@vue/test-utils'
-import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import Panel from 'primevue/panel'
 import Textarea from 'primevue/textarea'
 import Tooltip from 'primevue/tooltip'
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import CheckboxGroup from '@/components/common/CheckboxGroup.vue'
 import enMesages from '@/locales/en/main.json'
-import { DefaultField, ReportField } from '@/types/issueReportTypes'
+import { IssueReportPanelProps } from '@/types/issueReportTypes'
 
 import ReportIssuePanel from '../ReportIssuePanel.vue'
 
-type ReportIssuePanelProps = {
-  errorType: string
-  defaultFields?: DefaultField[]
-  extraFields?: ReportField[]
-  tags?: Record<string, string>
-  title?: string
+const DEFAULT_FIELDS = ['Workflow', 'Logs', 'Settings', 'SystemStats']
+const CUSTOM_FIELDS = [
+  {
+    label: 'Custom Field',
+    value: 'CustomField',
+    optIn: true,
+    getData: () => 'mock data'
+  }
+]
+
+async function getSubmittedContext() {
+  const { captureMessage } = (await import('@sentry/core')) as any
+  return captureMessage.mock.calls[0][1]
+}
+
+async function submitForm(wrapper: any) {
+  await wrapper.findComponent(Form).trigger('submit')
+  return getSubmittedContext()
+}
+
+async function findAndUpdateCheckbox(
+  wrapper: any,
+  value: string,
+  checked = true
+) {
+  const checkbox = wrapper
+    .findAllComponents(Checkbox)
+    .find((c: any) => c.props('value') === value)
+  if (!checkbox) throw new Error(`Checkbox with value "${value}" not found`)
+
+  await checkbox.vm.$emit('update:modelValue', checked)
+  return checkbox
 }
 
 const i18n = createI18n({
@@ -59,18 +82,64 @@ vi.mock('@sentry/core', () => ({
   captureMessage: vi.fn()
 }))
 
+vi.mock('@primevue/forms', () => ({
+  Form: {
+    name: 'Form',
+    template:
+      '<form @submit.prevent="onSubmit"><slot :values="formValues" /></form>',
+    props: ['resolver'],
+    data() {
+      return {
+        formValues: {}
+      }
+    },
+    methods: {
+      onSubmit() {
+        this.$emit('submit', {
+          valid: true,
+          values: this.formValues
+        })
+      },
+      updateFieldValue(name: string, value: any) {
+        this.formValues[name] = value
+      }
+    }
+  },
+  FormField: {
+    name: 'FormField',
+    template:
+      '<div><slot :modelValue="modelValue" @update:modelValue="updateValue" /></div>',
+    props: ['name'],
+    data() {
+      return {
+        modelValue: ''
+      }
+    },
+    methods: {
+      updateValue(value) {
+        this.modelValue = value
+        let parent = this.$parent
+        while (parent && parent.$options.name !== 'Form') {
+          parent = parent.$parent
+        }
+        if (parent) {
+          parent.updateFieldValue(this.name, value)
+        }
+      }
+    }
+  }
+}))
+
 describe('ReportIssuePanel', () => {
-  beforeAll(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  const mountComponent = (props: ReportIssuePanelProps, options = {}): any => {
+  const mountComponent = (props: IssueReportPanelProps, options = {}): any => {
     return mount(ReportIssuePanel, {
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
-        directives: { tooltip: Tooltip },
-        components: { InputText, Button, Panel, Textarea, CheckboxGroup }
+        plugins: [PrimeVue, i18n],
+        directives: { tooltip: Tooltip }
       },
       props,
       ...options
@@ -80,44 +149,66 @@ describe('ReportIssuePanel', () => {
   it('renders the panel with all required components', () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
     expect(wrapper.find('.p-panel').exists()).toBe(true)
-    expect(wrapper.findAllComponents(CheckboxGroup).length).toBe(2)
+    expect(wrapper.findAllComponents(Checkbox).length).toBe(6)
     expect(wrapper.findComponent(InputText).exists()).toBe(true)
     expect(wrapper.findComponent(Textarea).exists()).toBe(true)
-    expect(wrapper.findComponent(Button).exists()).toBe(true)
   })
 
   it('updates selection when checkboxes are selected', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
-    const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
-    await checkboxes?.setValue(['Workflow', 'Logs'])
-    expect(wrapper.vm.selection).toEqual(['Workflow', 'Logs'])
+    const wrapper = mountComponent({
+      errorType: 'Test Error'
+    })
+
+    const checkboxes = wrapper.findAllComponents(Checkbox)
+
+    for (const field of DEFAULT_FIELDS) {
+      const checkbox = checkboxes.find(
+        (checkbox) => checkbox.props('value') === field
+      )
+      expect(checkbox).toBeDefined()
+
+      await checkbox?.vm.$emit('update:modelValue', [field])
+      expect(wrapper.vm.selection).toContain(field)
+    }
   })
 
   it('updates contactInfo when input is changed', async () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
     const input = wrapper.findComponent(InputText)
-    await input.setValue('test@example.com')
-    expect(wrapper.vm.contactInfo).toBe('test@example.com')
+
+    await input.vm.$emit('update:modelValue', 'test@example.com')
+    const context = await submitForm(wrapper)
+    expect(context.user.email).toBe('test@example.com')
   })
 
   it('updates additional details when textarea is changed', async () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
     const textarea = wrapper.findComponent(Textarea)
-    await textarea.setValue('This is a test detail.')
-    expect(wrapper.vm.details).toBe('This is a test detail.')
+
+    await textarea.vm.$emit('update:modelValue', 'This is a test detail.')
+    const context = await submitForm(wrapper)
+    expect(context.extra.details).toBe('This is a test detail.')
   })
 
-  it('updates contactPrefs when preferences are selected', async () => {
+  it('set contact preferences back to false if email is removed', async () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
-    const preferences = wrapper.findAllComponents(CheckboxGroup).at(1)
-    await preferences?.setValue(['FollowUp'])
-    expect(wrapper.vm.contactPrefs).toEqual(['FollowUp'])
-  })
+    const input = wrapper.findComponent(InputText)
 
-  it('does not allow submission if the form is empty', async () => {
-    const wrapper = mountComponent({ errorType: 'Test Error' })
-    await wrapper.vm.reportIssue()
-    expect(wrapper.vm.submitted).toBe(false)
+    // Set a valid email, enabling the contact preferences to be changed
+    await input.vm.$emit('update:modelValue', 'name@example.com')
+
+    // Enable both contact preferences
+    for (const pref of ['followUp', 'notifyOnResolution']) {
+      await findAndUpdateCheckbox(wrapper, pref)
+    }
+
+    // Change the email back to empty
+    await input.vm.$emit('update:modelValue', '')
+    const context = await submitForm(wrapper)
+
+    // Check that the contact preferences are back to false automatically
+    expect(context.tags.followUp).toBe(false)
+    expect(context.tags.notifyOnResolution).toBe(false)
   })
 
   it('renders with overridden default fields', () => {
@@ -125,83 +216,87 @@ describe('ReportIssuePanel', () => {
       errorType: 'Test Error',
       defaultFields: ['Settings']
     })
-    const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
-    expect(checkboxes?.props('checkboxes')).toEqual([
-      { label: 'Settings', value: 'Settings' }
-    ])
+
+    // Filter out the contact preferences checkboxes
+    const fieldCheckboxes = wrapper
+      .findAllComponents(Checkbox)
+      .filter(
+        (checkbox) =>
+          !['followUp', 'notifyOnResolution'].includes(checkbox.props('value'))
+      )
+    expect(fieldCheckboxes.length).toBe(1)
+    expect(fieldCheckboxes.at(0)?.props('value')).toBe('Settings')
   })
 
   it('renders additional fields when extraFields prop is provided', () => {
-    const extraFields = [
-      { label: 'Custom Field', value: 'CustomField', optIn: true, data: {} }
-    ]
-    const wrapper = mountComponent({ errorType: 'Test Error', extraFields })
-    const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
-    expect(checkboxes?.props('checkboxes')).toContainEqual({
-      label: 'Custom Field',
-      value: 'CustomField'
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      extraFields: CUSTOM_FIELDS
     })
+    const customCheckbox = wrapper
+      .findAllComponents(Checkbox)
+      .find((checkbox) => checkbox.props('value') === 'CustomField')
+    expect(customCheckbox).toBeDefined()
+  })
+
+  it('allows custom fields to be selected', async () => {
+    const wrapper = mountComponent({
+      errorType: 'Test Error',
+      extraFields: CUSTOM_FIELDS
+    })
+
+    await findAndUpdateCheckbox(wrapper, 'CustomField')
+    const context = await submitForm(wrapper)
+    expect(context.extra.CustomField).toBe('mock data')
   })
 
   it('does not submit unchecked fields', async () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
     const textarea = wrapper.findComponent(Textarea)
 
-    await textarea.setValue('Report with only text but no fields selected')
-    await wrapper.vm.reportIssue()
+    // Set details but don't check any field checkboxes
+    await textarea.vm.$emit(
+      'update:modelValue',
+      'Report with only text but no fields selected'
+    )
+    const context = await submitForm(wrapper)
 
-    const { captureMessage } = (await import('@sentry/core')) as any
-    const captureContext = captureMessage.mock.calls[0][1]
-
-    expect(captureContext.extra.logs).toBeNull()
-    expect(captureContext.extra.systemStats).toBeNull()
-    expect(captureContext.extra.settings).toBeNull()
-    expect(captureContext.extra.workflow).toBeNull()
+    // Verify none of the optional fields were included
+    for (const field of DEFAULT_FIELDS) {
+      expect(context.extra[field]).toBeUndefined()
+    }
   })
 
   it.each([
     {
       checkbox: 'Logs',
       apiMethod: 'getLogs',
-      expectedKey: 'logs',
+      expectedKey: 'Logs',
       mockValue: 'mock logs'
     },
     {
       checkbox: 'SystemStats',
       apiMethod: 'getSystemStats',
-      expectedKey: 'systemStats',
+      expectedKey: 'SystemStats',
       mockValue: 'mock stats'
     },
     {
       checkbox: 'Settings',
       apiMethod: 'getSettings',
-      expectedKey: 'settings',
+      expectedKey: 'Settings',
       mockValue: 'mock settings'
     }
   ])(
-    'submits (%s) when the (%s) checkbox is selected',
+    'submits $checkbox data when checkbox is selected',
     async ({ checkbox, apiMethod, expectedKey, mockValue }) => {
       const wrapper = mountComponent({ errorType: 'Test Error' })
 
       const { api } = (await import('@/scripts/api')) as any
       vi.spyOn(api, apiMethod).mockResolvedValue(mockValue)
 
-      const { captureMessage } = await import('@sentry/core')
-
-      // Select the checkbox
-      const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
-      await checkboxes?.vm.$emit('update:modelValue', [checkbox])
-
-      await wrapper.vm.reportIssue()
-      expect(api[apiMethod]).toHaveBeenCalled()
-
-      // Verify the message includes the associated data
-      expect(captureMessage).toHaveBeenCalledWith(
-        'User reported issue',
-        expect.objectContaining({
-          extra: expect.objectContaining({ [expectedKey]: mockValue })
-        })
-      )
+      await findAndUpdateCheckbox(wrapper, checkbox)
+      const context = await submitForm(wrapper)
+      expect(context.extra[expectedKey]).toBe(mockValue)
     }
   )
 
@@ -209,24 +304,12 @@ describe('ReportIssuePanel', () => {
     const wrapper = mountComponent({ errorType: 'Test Error' })
 
     const { app } = (await import('@/scripts/app')) as any
-    const { captureMessage } = await import('@sentry/core')
-
     const mockWorkflow = { nodes: [], edges: [] }
     vi.spyOn(app.graph, 'asSerialisable').mockReturnValue(mockWorkflow)
 
-    // Select the "Workflow" checkbox
-    const checkboxes = wrapper.findAllComponents(CheckboxGroup).at(0)
-    await checkboxes?.vm.$emit('update:modelValue', ['Workflow'])
+    await findAndUpdateCheckbox(wrapper, 'Workflow')
+    const context = await submitForm(wrapper)
 
-    await wrapper.vm.reportIssue()
-    expect(app.graph.asSerialisable).toHaveBeenCalled()
-
-    // Verify the message includes the workflow
-    expect(captureMessage).toHaveBeenCalledWith(
-      'User reported issue',
-      expect.objectContaining({
-        extra: expect.objectContaining({ workflow: mockWorkflow })
-      })
-    )
+    expect(context.extra.Workflow).toEqual(mockWorkflow)
   })
 })
