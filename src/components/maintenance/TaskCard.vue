@@ -5,12 +5,12 @@
   >
     <Card
       class="max-w-48 relative h-full overflow-hidden"
-      :class="{ 'opacity-65': state.state !== 'error' }"
+      :class="{ 'opacity-65': runner.state !== 'error' }"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
       <template #header>
         <i
-          v-if="state.state === 'error'"
+          v-if="runner.state === 'error'"
           class="pi pi-exclamation-triangle text-red-500 absolute m-2 top-0 -right-14 opacity-15"
           style="font-size: 10rem"
         />
@@ -38,7 +38,7 @@
     </Card>
 
     <i
-      v-if="!isLoading && state.state === 'OK'"
+      v-if="!isLoading && runner.state === 'OK'"
       class="task-card-ok pi pi-check"
     />
   </div>
@@ -54,7 +54,7 @@ import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 const taskStore = useMaintenanceTaskStore()
-const state = computed(() => taskStore.getState(props.task))
+const runner = computed(() => taskStore.getRunner(props.task))
 
 // Properties
 const props = defineProps<{
@@ -68,14 +68,14 @@ defineEmits<{
 
 // Bindings
 const description = computed(() =>
-  state.value.state === 'error'
+  runner.value.state === 'error'
     ? props.task.errorDescription ?? props.task.shortDescription
     : props.task.shortDescription
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => state.value.refreshing)
-const reactiveExecuting = computed(() => state.value.executing)
+const reactiveLoading = computed(() => runner.value.refreshing)
+const reactiveExecuting = computed(() => runner.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
