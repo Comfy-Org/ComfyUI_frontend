@@ -7,7 +7,7 @@ import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
 
 /** State of a maintenance task, managed by the maintenance task store. */
-type MaintenanceTaskState = 'warning' | 'error' | 'OK' | 'skipped'
+export type MaintenanceTaskState = 'warning' | 'error' | 'OK' | 'skipped'
 
 // Type not exported by API
 type ValidationState = InstallValidation['basePath']

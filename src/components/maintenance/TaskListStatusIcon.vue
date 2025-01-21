@@ -11,6 +11,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { MaybeRef, computed } from 'vue'
 
 import { t } from '@/i18n'
+import { MaintenanceTaskState } from '@/stores/maintenanceTaskStore'
 
 // Properties
 const tooltip = computed(() => {
@@ -38,7 +39,7 @@ const cssClasses = computed(() => {
 
 // Model
 const props = defineProps<{
-  state: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped' | undefined
+  state?: MaintenanceTaskState
   loading?: MaybeRef<boolean>
 }>()
 </script>
