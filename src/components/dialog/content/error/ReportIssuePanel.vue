@@ -157,7 +157,7 @@ const defaultFieldsConfig: ReportField[] = [
   {
     label: t('g.workflow'),
     value: 'Workflow',
-    getData: () => app.graph.asSerialisable(),
+    getData: () => cloneDeep(app.graph.asSerialisable()),
     optIn: true
   },
   {
@@ -189,12 +189,18 @@ const createExtraData = async (formData: IssueReportFormData) => {
   const result = {}
   const isChecked = (fieldValue: string) => formData[fieldValue]
 
-  for (const field of fields.value) {
-    if (!field.optIn || isChecked(field.value)) {
-      const data = await field.getData()
-      result[field.value] = data instanceof Object ? cloneDeep(data) : data
-    }
-  }
+  await Promise.all(
+    fields.value
+      .filter((field) => !field.optIn || isChecked(field.value))
+      .map(async (field) => {
+        try {
+          result[field.value] = await field.getData()
+        } catch (error) {
+          console.error(`Failed to collect ${field.value}:`, error)
+          result[field.value] = { error: String(error) }
+        }
+      })
+  )
 
   return result
 }
