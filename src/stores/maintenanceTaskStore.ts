@@ -10,11 +10,18 @@ import type {
 import { electronAPI } from '@/utils/envUtil'
 import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
+/**
+ * User-initiated maintenance tasks.  Currently only used by the desktop app maintenance view.
+ *
+ * Includes running state, task list, and execution / refresh logic.
+ * @returns The maintenance task store
+ */
 export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
   const minRefreshTime = 250
   const electron = electronAPI()
 
+  // Reactive state
   const isRefreshing = useMinLoadingDurationRef(false, minRefreshTime)
   const isRunningTerminalCommand = computed(() =>
     tasks.value
@@ -27,18 +34,20 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
       .some((task) => getState(task)?.executing)
   )
 
-  const taskStateMap = new Map<string, MaintenanceTaskState>()
+  // Task list
+  const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
 
-  // Use a minimum run time to ensure tasks "feel" like they have run
+  // Assemble a task to state map
+  const rawTaskStateMap = new Map<MaintenanceTask['id'], MaintenanceTaskState>()
+
   for (const task of DESKTOP_MAINTENANCE_TASKS) {
-    taskStateMap.set(task.id, {
+    // Use a minimum run time to ensure tasks "feel" like they have run
+    rawTaskStateMap.set(task.id, {
       loading: useMinLoadingDurationRef(true, minRefreshTime),
       executing: useMinLoadingDurationRef(false, minRefreshTime)
     })
   }
-
-  const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
-  const taskStates = ref(taskStateMap)
+  const taskStates = ref(rawTaskStateMap)
 
   /** True if any tasks are in an error state. */
   const anyErrors = computed(() =>
@@ -64,6 +73,11 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     }
   }
 
+  /**
+   * Returns the matching state object for a task.
+   * @param task Task to get the matching state object for
+   * @returns The state object for this task
+   */
   const getState = (task: MaintenanceTask) => taskStates.value.get(task.id)!
 
   /**
