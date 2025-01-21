@@ -96,6 +96,25 @@ const canvasMenuEnabled = computed(() =>
 )
 const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 
+watchEffect((onCleanup) => {
+  if (isEmbedded()) {
+    const listener = (event: Event) => {
+      const data = event.data;
+      console.log('event', event);
+      if (!data || !data.type) return;
+      if (data.type === 'init' && data.workflow) {
+        console.log('init', data.workflow);
+        localStorage.setItem('workflow', data.workflow);
+        comfyApp.initWorkflow();
+      }
+    }
+    window.addEventListener('message', listener);
+    onCleanup(() => {
+      window.removeEventListener('message', listener);
+    });
+  }
+})
+
 watchEffect(() => {
   const canvasInfoEnabled = settingStore.get('Comfy.Graph.CanvasInfo')
   if (canvasStore.canvas) {
@@ -212,7 +231,6 @@ watch(
   () => settingStore.get('Comfy.WidgetControlMode'),
   () => {
     if (!canvasStore.canvas) return
-
     for (const n of comfyApp.graph.nodes) {
       if (!n.widgets) continue
       for (const w of n.widgets) {

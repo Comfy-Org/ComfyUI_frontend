@@ -51,6 +51,7 @@ import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone, getStorageValue } from './utils'
 import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
+import { isEmbedded } from '@/utils/envUtil'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -1000,8 +1001,9 @@ export class ComfyApp {
   async setup(canvasEl: HTMLCanvasElement) {
     this.canvasEl = canvasEl
     this.resizeCanvas()
-
-    await useWorkspaceStore().workflow.syncWorkflows()
+    if (!isEmbedded()) {
+      await useWorkspaceStore().workflow.syncWorkflows()
+    }
     await useExtensionService().loadExtensions()
 
     this.#addProcessMouseHandler()
@@ -1038,6 +1040,20 @@ export class ComfyApp {
     await this.registerNodes()
 
     // Load previous workflow
+    if (!isEmbedded()) {
+      await this.initWorkflow()
+    }
+
+    this.#addDrawNodeHandler()
+    this.#addDrawGroupsHandler()
+    this.#addDropHandler()
+    this.#addCopyHandler()
+    this.#addPasteHandler()
+
+    await useExtensionService().invokeExtensionsAsync('setup')
+  }
+
+  async initWorkflow() {
     let restored = false
     try {
       const loadWorkflow = async (json) => {
@@ -1063,14 +1079,6 @@ export class ComfyApp {
     if (!restored) {
       await this.loadGraphData()
     }
-
-    this.#addDrawNodeHandler()
-    this.#addDrawGroupsHandler()
-    this.#addDropHandler()
-    this.#addCopyHandler()
-    this.#addPasteHandler()
-
-    await useExtensionService().invokeExtensionsAsync('setup')
   }
 
   resizeCanvas() {
