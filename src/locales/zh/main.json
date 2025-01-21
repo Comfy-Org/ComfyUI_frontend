@@ -255,7 +255,11 @@
     "rating": "评分",
     "stackTrace": "堆栈跟踪",
     "submitErrorReport": "提交错误报告（可选）",
-    "systemStats": "系统状态"
+    "systemStats": "系统状态",
+    "validation": {
+      "invalidEmail": "请输入有效的电子邮件地址",
+      "maxLength": "消息过长"
+    }
   },
   "menu": {
     "autoQueue": "自动执行",

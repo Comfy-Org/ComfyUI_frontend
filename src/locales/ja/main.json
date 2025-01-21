@@ -255,7 +255,11 @@
     "rating": "評価",
     "stackTrace": "スタックトレース",
     "submitErrorReport": "エラーレポートを提出する（オプション）",
-    "systemStats": "システム統計"
+    "systemStats": "システム統計",
+    "validation": {
+      "invalidEmail": "有効なメールアドレスを入力してください",
+      "maxLength": "メッセージが長すぎます"
+    }
   },
   "menu": {
     "autoQueue": "自動キュー",
