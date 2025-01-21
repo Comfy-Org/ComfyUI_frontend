@@ -4,41 +4,41 @@ import type { VueSeverity } from '../primeVueTypes'
 
 interface MaintenanceTaskButton {
   /** The text to display on the button. */
-  readonly text?: string
+  text?: string
   /** CSS classes used for the button icon, e.g. 'pi pi-external-link' */
-  readonly icon?: string
+  icon?: string
 }
 
 /** A maintenance task, used by the maintenance page. */
 export interface MaintenanceTask {
   /** ID string used as i18n key */
-  readonly id: string
+  id: string
   /** The display name of the task, e.g. Git */
-  readonly name: string
+  name: string
   /** Short description of the task. */
-  readonly shortDescription?: string
+  shortDescription?: string
   /** Description of the task when it is in an error state. */
-  readonly errorDescription?: string
+  errorDescription?: string
   /** Description of the task when it is in a warning state. */
-  readonly warningDescription?: string
+  warningDescription?: string
   /** Full description of the task when it is in an OK state. */
-  readonly description?: string
+  description?: string
   /** URL to the image to show in card mode. */
-  readonly headerImg?: string
+  headerImg?: string
   /** The button to display on the task card / list item. */
-  readonly button?: MaintenanceTaskButton
+  button?: MaintenanceTaskButton
   /** Whether to show a confirmation dialog before running the task. */
-  readonly requireConfirm?: boolean
+  requireConfirm?: boolean
   /** The text to display in the confirmation dialog. */
-  readonly confirmText?: string
+  confirmText?: string
   /** Called by onClick to run the actual task. */
-  readonly execute: (args?: unknown[]) => boolean | Promise<boolean>
+  execute: (args?: unknown[]) => boolean | Promise<boolean>
   /** Show the button with `severity="danger"` */
-  readonly severity?: VueSeverity
+  severity?: VueSeverity
   /** Whether this task should display the terminal window when run. */
-  readonly usesTerminal?: boolean
+  usesTerminal?: boolean
   /** If `true`, successful completion of this task will refresh install validation and automatically continue if successful. */
-  readonly isInstallationFix?: boolean
+  isInstallationFix?: boolean
 }
 
 /** State of a maintenance task, managed by the maintenance task store. */
@@ -58,9 +58,9 @@ export interface MaintenanceTaskState {
 /** The filter options for the maintenance task list. */
 export interface MaintenanceFilter {
   /** CSS classes used for the filter button icon, e.g. 'pi pi-cross' */
-  readonly icon: string
+  icon: string
   /** The text to display on the filter button. */
-  readonly value: string
+  value: string
   /** The tasks to display when this filter is selected. */
-  readonly tasks: ReadonlyArray<MaintenanceTask>
+  tasks: ReadonlyArray<MaintenanceTask>
 }

@@ -10,7 +10,7 @@ const openUrl = (url: string) => {
   return true
 }
 
-export const DESKTOP_MAINTENANCE_TASKS: MaintenanceTask[] = [
+export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
   {
     id: 'basePath',
     execute: async () => await electron.setBasePath(),
@@ -141,4 +141,4 @@ export const DESKTOP_MAINTENANCE_TASKS: MaintenanceTask[] = [
       text: 'Recreate'
     }
   }
-]
+] as const

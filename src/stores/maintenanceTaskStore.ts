@@ -42,8 +42,8 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     DESKTOP_MAINTENANCE_TASKS.map((task) => [task.id, task])
   )
 
-  const tasks = ref<ReadonlyArray<MaintenanceTask>>(DESKTOP_MAINTENANCE_TASKS)
-  const taskStates = ref<Map<string, MaintenanceTaskState>>(taskStateMap)
+  const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
+  const taskStates = ref(taskStateMap)
 
   /** True if any tasks are in an error state. */
   const anyErrors = computed(() =>
