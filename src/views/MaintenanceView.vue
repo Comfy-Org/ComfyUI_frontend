@@ -167,6 +167,7 @@ const toggleConsoleDrawer = () => {
   terminalVisible.value = !terminalVisible.value
 }
 
+// Show terminal when in use
 watch(
   () => taskStore.isRunningTerminalCommand,
   (value) => {
