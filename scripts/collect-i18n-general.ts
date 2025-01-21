@@ -2,17 +2,14 @@ import * as fs from 'fs'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
-import { DESKTOP_MAINTENANCE_TASKS } from '../src/constants/desktopMaintenanceTasks'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
-import type { MaintenanceTask } from '../src/types/desktop/maintenanceTypes'
 import type { FormItem, SettingParams } from '../src/types/settingTypes'
 import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
 const settingsPath = './src/locales/en/settings.json'
-const maintenanceTasksPath = './src/locales/en/maintenanceTasks.json'
 
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
@@ -129,20 +126,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  const allMaintenanceTasksLocale = Object.fromEntries(
-    DESKTOP_MAINTENANCE_TASKS.map((task: MaintenanceTask) => [
-      normalizeI18nKey(task.id),
-      {
-        name: task.name,
-        description: task.description,
-        shortDescription: task.shortDescription,
-        errorDescription: task.errorDescription,
-        warningDescription: task.warningDescription,
-        ...(task.button?.text ? { button: { text: task.button.text } } : {})
-      }
-    ])
-  )
-
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -165,8 +148,4 @@ test('collect-i18n-general', async ({ comfyPage }) => {
 
   fs.writeFileSync(commandsPath, JSON.stringify(allCommandsLocale, null, 2))
   fs.writeFileSync(settingsPath, JSON.stringify(allSettingsLocale, null, 2))
-  fs.writeFileSync(
-    maintenanceTasksPath,
-    JSON.stringify(allMaintenanceTasksLocale, null, 2)
-  )
 })
