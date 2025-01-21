@@ -1,5 +1,3 @@
-import type { Ref } from 'vue'
-
 import type { VueSeverity } from '../primeVueTypes'
 
 interface MaintenanceTaskButton {
