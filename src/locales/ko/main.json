@@ -261,6 +261,17 @@
       "maxLength": "메시지가 너무 깁니다"
     }
   },
+  "maintenance": {
+    "None": "없음",
+    "OK": "확인",
+    "Skipped": "건너뜀",
+    "allOk": "문제가 발견되지 않았습니다.",
+    "confirmTitle": "확실합니까?",
+    "detected": "감지됨",
+    "refreshing": "새로 고침 중",
+    "showManual": "유지 보수 작업 보기",
+    "status": "상태"
+  },
   "menu": {
     "autoQueue": "자동 실행 큐",
     "batchCount": "배치 수",
