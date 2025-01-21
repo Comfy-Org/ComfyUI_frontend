@@ -121,7 +121,6 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     isRefreshing.value = true
     console.log('Refreshing desktop tasks')
     await electron.Validation.validateInstallation(processUpdate)
-    isRefreshing.value = false
   }
 
   return {
