@@ -97,7 +97,7 @@ import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vu
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
-import { useMaintenanceTasks } from '@/extensions/core/electronTasks'
+import { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import {
   MaintenanceFilter,
@@ -155,7 +155,7 @@ const processUpdate = (update: InstallValidation) => {
   }
 }
 
-const tasks = ref(isElectron() ? useMaintenanceTasks() : [])
+const tasks = ref(isElectron() ? DESKTOP_MAINTENANCE_TASKS : [])
 
 const errorFilter = computed(() =>
   tasks.value.filter(
