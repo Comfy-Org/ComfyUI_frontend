@@ -8,7 +8,6 @@ import type {
   MaintenanceTaskState
 } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 /**
  * User-initiated maintenance tasks.  Currently only used by the desktop app maintenance view.
@@ -18,11 +17,10 @@ import { useMinLoadingDurationRef } from '@/utils/refUtil'
  */
 export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   /** Refresh should run for at least this long, even if it completes much faster. Ensures refresh feels like it is doing something. */
-  const minRefreshTime = 250
   const electron = electronAPI()
 
   // Reactive state
-  const isRefreshing = useMinLoadingDurationRef(false, minRefreshTime)
+  const isRefreshing = ref(false)
   const isRunningTerminalCommand = computed(() =>
     tasks.value
       .filter((task) => task.usesTerminal)
@@ -37,17 +35,11 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   // Task list
   const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
 
-  // Assemble a task to state map
-  const rawTaskStateMap = new Map<MaintenanceTask['id'], MaintenanceTaskState>()
-
-  for (const task of DESKTOP_MAINTENANCE_TASKS) {
-    // Use a minimum run time to ensure tasks "feel" like they have run
-    rawTaskStateMap.set(task.id, {
-      loading: useMinLoadingDurationRef(true, minRefreshTime),
-      executing: useMinLoadingDurationRef(false, minRefreshTime)
-    })
-  }
-  const taskStates = ref(rawTaskStateMap)
+  const taskStates = ref(
+    new Map<MaintenanceTask['id'], MaintenanceTaskState>(
+      DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, {}])
+    )
+  )
 
   /** True if any tasks are in an error state. */
   const anyErrors = computed(() =>

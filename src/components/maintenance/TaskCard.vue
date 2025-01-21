@@ -31,7 +31,7 @@
             raised
             icon-pos="right"
             @click="(event) => $emit('execute', event)"
-            :loading="state.executing"
+            :loading="isExecuting"
           />
         </div>
       </template>
@@ -51,6 +51,7 @@ import { computed } from 'vue'
 
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 const taskStore = useMaintenanceTaskStore()
 const state = computed(() => taskStore.getState(props.task))
@@ -71,6 +72,10 @@ const description = computed(() =>
     ? props.task.errorDescription ?? props.task.shortDescription
     : props.task.shortDescription
 )
+
+// Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveExecuting = computed(() => state.value.executing)
+const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 </script>
 
 <style scoped>

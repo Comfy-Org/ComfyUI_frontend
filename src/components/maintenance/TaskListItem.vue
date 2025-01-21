@@ -31,6 +31,7 @@
         :severity
         icon-pos="right"
         @click="(event) => $emit('execute', event)"
+        :loading="isExecuting"
       />
     </td>
   </tr>
@@ -45,6 +46,7 @@ import { computed, ref } from 'vue'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { VueSeverity } from '@/types/primeVueTypes'
+import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
 
@@ -67,6 +69,10 @@ const severity = computed<VueSeverity>(() =>
     ? 'primary'
     : 'secondary'
 )
+
+// Use a minimum run time to ensure tasks "feel" like they have run
+const reactiveExecuting = computed(() => state.value.executing)
+const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 
 const infoPopover = ref()
 

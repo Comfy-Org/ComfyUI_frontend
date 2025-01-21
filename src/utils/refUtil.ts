@@ -1,5 +1,5 @@
 import { useTimeout } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { type Ref, computed, ref, watch } from 'vue'
 
 /**
  * Vue boolean ref (writable computed) with one difference: when set to `true` it stays that way for at least {@link minDuration}.
@@ -8,20 +8,22 @@ import { computed, ref } from 'vue'
  * @param minDuration The minimum time that this ref must be `true` for
  * @returns A custom boolean vue ref with a minimum activation time
  */
-export function useMinLoadingDurationRef(value: boolean, minDuration = 250) {
-  const current = ref(value)
+export function useMinLoadingDurationRef(
+  value: Ref<boolean>,
+  minDuration = 250
+) {
+  const current = ref(value.value)
 
   const { ready, start } = useTimeout(minDuration, {
     controls: true,
     immediate: false
   })
 
-  return computed({
-    get: () => current.value || !ready.value,
-    set: (newValue) => {
-      if (newValue && !current.value) start()
+  watch(value, (newValue) => {
+    if (newValue && !current.value) start()
 
-      current.value = newValue
-    }
+    current.value = newValue
   })
+
+  return computed(() => current.value || !ready.value)
 }
