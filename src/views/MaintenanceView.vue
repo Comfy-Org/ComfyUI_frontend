@@ -124,19 +124,11 @@ const anyErrors = computed(() => tasks.value.some((x) => x.state === 'error'))
 /** Whether to display tasks as a list or cards. */
 const displayAsList = ref(PrimeIcons.TH_LARGE)
 
-/** The most recent validation state update. */
-const validationState = ref<InstallValidation>({
-  inProgress: false,
-  installState: 'started'
-})
-
 /**
  * Updates the task list with the latest validation state.
  * @param update Update details passed in by electron
  */
 const processUpdate = (update: InstallValidation) => {
-  validationState.value = update
-
   // Update each task state
   for (const task of tasks.value) {
     task.loading = update[task.id] === undefined
