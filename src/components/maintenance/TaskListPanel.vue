@@ -41,9 +41,9 @@
 
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
+import { useConfirm, useToast } from 'primevue'
 import ConfirmPopup from 'primevue/confirmpopup'
 import Divider from 'primevue/divider'
-import { useConfirm } from 'primevue/useconfirm'
 
 import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
@@ -55,6 +55,7 @@ import type {
 import TaskCard from './TaskCard.vue'
 import TaskListItem from './TaskListItem.vue'
 
+const toast = useToast()
 const confirm = useConfirm()
 const taskStore = useMaintenanceTaskStore()
 
@@ -65,10 +66,22 @@ const props = defineProps<{
   isRefreshing: boolean
 }>()
 
+const executeTask = async (task: MaintenanceTask) => {
+  await taskStore.execute(task)
+  if (taskStore.getState(task).error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Task error',
+      detail: taskStore.getState(task).error,
+      life: 10_000
+    })
+  }
+}
+
 // Commands
 const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
   if (!task.requireConfirm) {
-    await taskStore.execute(task)
+    await executeTask(task)
     return
   }
 
@@ -87,7 +100,7 @@ const confirmButton = async (event: MouseEvent, task: MaintenanceTask) => {
     },
     // TODO: Not awaited.
     accept: async () => {
-      await taskStore.execute(task)
+      await executeTask(task)
     }
   })
 }
