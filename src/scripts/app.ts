@@ -36,6 +36,7 @@ import {
 } from '@/types/comfyWorkflow'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { isElectron } from '@/utils/envUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -1061,7 +1062,10 @@ export class ComfyApp {
 
     // We failed to restore a workflow so load the default
     if (!restored) {
-      await this.loadGraphData()
+      const isNewDesktopUser =
+        isElectron() && !useSettingStore().exists('Comfy.UseNewMenu')
+      if (isNewDesktopUser) await useWorkflowService().loadTutorialWorkflow()
+      else await this.loadGraphData()
     }
 
     this.#addDrawNodeHandler()

@@ -122,6 +122,25 @@ export const useWorkflowService = () => {
   }
 
   /**
+   * Load the tutorial workflow
+   */
+  const loadTutorialWorkflow = async () => {
+    const tutorialWorkflow = {
+      ...defaultGraph,
+      models: [
+        {
+          name: 'v1-5-pruned-emaonly.safetensors',
+          url: 'https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly.safetensors?download=true',
+          directory: 'checkpoints'
+        }
+      ]
+    }
+    await app.loadGraphData(tutorialWorkflow, false, false, 'tutorial', {
+      showMissingModelsDialog: true
+    })
+  }
+
+  /**
    * Load a blank workflow
    */
   const loadBlankWorkflow = async () => {
@@ -366,6 +385,7 @@ export const useWorkflowService = () => {
     saveWorkflow,
     loadDefaultWorkflow,
     loadBlankWorkflow,
+    loadTutorialWorkflow,
     reloadCurrentWorkflow,
     openWorkflow,
     closeWorkflow,
