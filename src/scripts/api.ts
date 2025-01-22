@@ -877,6 +877,15 @@ export class ComfyApi extends EventTarget {
   async getFolderPaths(): Promise<Record<string, string[]>> {
     return (await axios.get(this.internalURL('/folder_paths'))).data
   }
+
+  /**
+   * Gets the custom nodes i18n data from the server.
+   *
+   * @returns The custom nodes i18n data
+   */
+  async getCustomNodesI18n(): Promise<Record<string, any>> {
+    return (await axios.get(this.apiURL('/i18n'))).data
+  }
 }
 
 export const api = new ComfyApi()

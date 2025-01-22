@@ -54,6 +54,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -348,6 +349,17 @@ usePragmaticDroppable(() => canvasRef.value, {
   }
 })
 
+const loadCustomNodesI18n = async () => {
+  try {
+    const i18nData = await api.getCustomNodesI18n()
+    Object.entries(i18nData).forEach(([locale, message]) => {
+      i18n.global.mergeLocaleMessage(locale, message)
+    })
+  } catch (error) {
+    console.error('Failed to load custom nodes i18n', error)
+  }
+}
+
 const comfyAppReady = ref(false)
 onMounted(async () => {
   // Backward compatible
@@ -368,6 +380,7 @@ onMounted(async () => {
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
   ChangeTracker.init(comfyApp)
+  await loadCustomNodesI18n()
   await settingStore.loadSettingValues()
   CORE_SETTINGS.forEach((setting) => {
     settingStore.addSetting(setting)
