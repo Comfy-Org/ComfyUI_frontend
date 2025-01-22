@@ -39,18 +39,6 @@ export interface MaintenanceTask {
   isInstallationFix?: boolean
 }
 
-/** State of a maintenance task, managed by the maintenance task store. */
-export interface MaintenanceTaskState {
-  /** The current state of the task. */
-  state?: 'warning' | 'error' | 'resolved' | 'OK' | 'skipped'
-  /** Whether the task state is currently being refreshed. */
-  refreshing?: boolean
-  /** Whether the task is currently running. */
-  executing?: boolean
-  /** The error message that occurred when the task failed. */
-  error?: string
-}
-
 /** The filter options for the maintenance task list. */
 export interface MaintenanceFilter {
   /** CSS classes used for the filter button icon, e.g. 'pi pi-cross' */

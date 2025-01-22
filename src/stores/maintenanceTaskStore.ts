@@ -3,11 +3,76 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { DESKTOP_MAINTENANCE_TASKS } from '@/constants/desktopMaintenanceTasks'
-import type {
-  MaintenanceTask,
-  MaintenanceTaskState
-} from '@/types/desktop/maintenanceTypes'
+import type { MaintenanceTask } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
+
+/** State of a maintenance task, managed by the maintenance task store. */
+type MaintenanceTaskState = 'warning' | 'error' | 'OK' | 'skipped'
+
+// Type not exported by API
+type ValidationState = InstallValidation['basePath']
+// Add index to API type
+type IndexedUpdate = InstallValidation & Record<string, ValidationState>
+
+/** State of a maintenance task, managed by the maintenance task store. */
+export class MaintenanceTaskRunner {
+  constructor(readonly task: MaintenanceTask) {}
+
+  private _state?: MaintenanceTaskState
+  /** The current state of the task. Setter also controls {@link resolved} as a side-effect. */
+  get state() {
+    return this._state
+  }
+
+  /** Updates the task state and {@link resolved} status. */
+  setState(value: MaintenanceTaskState) {
+    // Mark resolved
+    if (this._state === 'error' && value === 'OK') this.resolved = true
+    // Mark unresolved (if previously resolved)
+    if (value === 'error') this.resolved &&= false
+
+    this._state = value
+  }
+
+  /** `true` if the task has been resolved (was `error`, now `OK`). This is a side-effect of the {@link state} setter. */
+  resolved?: boolean
+
+  /** Whether the task state is currently being refreshed. */
+  refreshing?: boolean
+  /** Whether the task is currently running. */
+  executing?: boolean
+  /** The error message that occurred when the task failed. */
+  error?: string
+
+  update(update: IndexedUpdate) {
+    const state = update[this.task.id]
+
+    this.refreshing = state === undefined
+    if (state) this.setState(state)
+  }
+
+  finaliseUpdate(update: IndexedUpdate) {
+    this.refreshing = false
+    this.setState(update[this.task.id] ?? 'skipped')
+  }
+
+  /** Wraps the execution of a maintenance task, updating state and rethrowing errors. */
+  async execute(task: MaintenanceTask) {
+    try {
+      this.executing = true
+      const success = await task.execute()
+      if (!success) return false
+
+      this.error = undefined
+      return true
+    } catch (error) {
+      this.error = (error as Error)?.message
+      throw error
+    } finally {
+      this.executing = false
+    }
+  }
+}
 
 /**
  * User-initiated maintenance tasks.  Currently only used by the desktop app maintenance view.
@@ -24,78 +89,46 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   const isRunningTerminalCommand = computed(() =>
     tasks.value
       .filter((task) => task.usesTerminal)
-      .some((task) => getState(task)?.executing)
+      .some((task) => getRunner(task)?.executing)
   )
   const isRunningInstallationFix = computed(() =>
     tasks.value
       .filter((task) => task.isInstallationFix)
-      .some((task) => getState(task)?.executing)
+      .some((task) => getRunner(task)?.executing)
   )
 
   // Task list
   const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
 
   const taskStates = ref(
-    new Map<MaintenanceTask['id'], MaintenanceTaskState>(
-      DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, {}])
+    new Map<MaintenanceTask['id'], MaintenanceTaskRunner>(
+      DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, new MaintenanceTaskRunner(x)])
     )
   )
 
   /** True if any tasks are in an error state. */
   const anyErrors = computed(() =>
-    tasks.value.some((task) => getState(task).state === 'error')
+    tasks.value.some((task) => getRunner(task).state === 'error')
   )
-
-  /** Wraps the execution of a maintenance task, updating state and rethrowing errors. */
-  const execute = async (task: MaintenanceTask) => {
-    const state = getState(task)
-
-    try {
-      state.executing = true
-      const success = await task.execute()
-      if (!success) return false
-
-      state.error = undefined
-      return true
-    } catch (error) {
-      state.error = (error as Error)?.message
-      throw error
-    } finally {
-      state.executing = false
-    }
-  }
 
   /**
    * Returns the matching state object for a task.
    * @param task Task to get the matching state object for
    * @returns The state object for this task
    */
-  const getState = (task: MaintenanceTask) => taskStates.value.get(task.id)!
+  const getRunner = (task: MaintenanceTask) => taskStates.value.get(task.id)!
 
   /**
    * Updates the task list with the latest validation state.
    * @param validationUpdate Update details passed in by electron
    */
   const processUpdate = (validationUpdate: InstallValidation) => {
-    // Type not exported by API
-    type ValidationState = InstallValidation['basePath']
-    // Add index to API type
-    type IndexedUpdate = InstallValidation & Record<string, ValidationState>
-
     const update = validationUpdate as IndexedUpdate
     isRefreshing.value = true
 
     // Update each task state
     for (const task of tasks.value) {
-      const state = getState(task)
-
-      state.refreshing = update[task.id] === undefined
-      // Mark resolved
-      if (state.state === 'error' && update[task.id] === 'OK')
-        state.state = 'resolved'
-      if (update[task.id] === 'OK' && state.state === 'resolved') continue
-
-      if (update[task.id]) state.state = update[task.id]
+      getRunner(task).update(update)
     }
 
     // Final update
@@ -103,11 +136,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
       isRefreshing.value = false
 
       for (const task of tasks.value) {
-        const state = getState(task)
-        state.refreshing = false
-        if (state.state === 'resolved') continue
-
-        state.state = update[task.id] ?? 'skipped'
+        getRunner(task).finaliseUpdate(update)
       }
     }
   }
@@ -115,8 +144,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   /** Clears the resolved status of tasks (when changing filters) */
   const clearResolved = () => {
     for (const task of tasks.value) {
-      const state = getState(task)
-      if (state?.state === 'resolved') state.state = 'OK'
+      getRunner(task).resolved &&= false
     }
   }
 
@@ -127,13 +155,17 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
     await electron.Validation.validateInstallation(processUpdate)
   }
 
+  const execute = async (task: MaintenanceTask) => {
+    return getRunner(task).execute(task)
+  }
+
   return {
     tasks,
     isRefreshing,
     isRunningTerminalCommand,
     isRunningInstallationFix,
     execute,
-    getState,
+    getRunner,
     processUpdate,
     clearResolved,
     /** True if any tasks are in an error state. */

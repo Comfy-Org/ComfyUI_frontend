@@ -125,8 +125,8 @@ const displayAsList = ref(PrimeIcons.TH_LARGE)
 
 const errorFilter = computed(() =>
   taskStore.tasks.filter((x) => {
-    const { state } = taskStore.getState(x)
-    return state === 'error' || state === 'resolved'
+    const { state, resolved } = taskStore.getRunner(x)
+    return state === 'error' || resolved
   })
 )
 

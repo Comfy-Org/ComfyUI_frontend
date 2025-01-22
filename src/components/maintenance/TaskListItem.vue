@@ -2,12 +2,12 @@
   <tr
     class="border-neutral-700 border-solid border-y"
     :class="{
-      'opacity-50': state.state === 'resolved',
-      'opacity-75': isLoading && state.state !== 'resolved'
+      'opacity-50': runner.resolved,
+      'opacity-75': isLoading && runner.resolved
     }"
   >
     <td class="text-center w-16">
-      <TaskListStatusIcon :state="state.state" :loading="isLoading" />
+      <TaskListStatusIcon :state="runner.state" :loading="isLoading" />
     </td>
     <td>
       <p class="inline-block">{{ task.name }}</p>
@@ -51,7 +51,7 @@ import { useMinLoadingDurationRef } from '@/utils/refUtil'
 import TaskListStatusIcon from './TaskListStatusIcon.vue'
 
 const taskStore = useMaintenanceTaskStore()
-const state = computed(() => taskStore.getState(props.task))
+const runner = computed(() => taskStore.getRunner(props.task))
 
 // Properties
 const props = defineProps<{
@@ -65,14 +65,14 @@ defineEmits<{
 
 // Binding
 const severity = computed<VueSeverity>(() =>
-  state.value.state === 'error' || state.value.state === 'warning'
+  runner.value.state === 'error' || runner.value.state === 'warning'
     ? 'primary'
     : 'secondary'
 )
 
 // Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveLoading = computed(() => state.value.refreshing)
-const reactiveExecuting = computed(() => state.value.executing)
+const reactiveLoading = computed(() => runner.value.refreshing)
+const reactiveExecuting = computed(() => runner.value.executing)
 
 const isLoading = useMinLoadingDurationRef(reactiveLoading, 250)
 const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
