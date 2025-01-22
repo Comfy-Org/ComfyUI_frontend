@@ -1061,10 +1061,9 @@ export class ComfyApp {
 
     // We failed to restore a workflow so load the default
     if (!restored) {
-      const isNewDesktopUser =
-        useSettingStore().get('Comfy.TutorialCompleted') === false
-      if (isNewDesktopUser) {
-        await useSettingStore().set('Comfy.TutorialCompleted', true)
+      const settingStore = useSettingStore()
+      if (settingStore.get('Comfy.TutorialCompleted') === false) {
+        await settingStore.set('Comfy.TutorialCompleted', true)
         await useWorkflowService().loadTutorialWorkflow()
       } else {
         await this.loadGraphData()
