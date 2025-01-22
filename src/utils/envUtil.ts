@@ -14,3 +14,7 @@ export function electronAPI() {
 export function showNativeMenu(event: MouseEvent) {
   electronAPI()?.showContextMenu(event as ElectronContextMenuOptions)
 }
+
+export function isNativeWindow() {
+  return isElectron() && !!window.navigator.windowControlsOverlay?.visible
+}

@@ -33,7 +33,7 @@
 
   <!-- Virtual top menu for native window (drag handle) -->
   <div
-    v-show="isNativeWindow && !showTopMenu"
+    v-show="isNativeWindow() && !showTopMenu"
     class="fixed top-0 left-0 app-drag w-full h-[var(--comfy-topbar-height)]"
   />
 </template>
@@ -50,7 +50,12 @@ import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { app } from '@/scripts/app'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { electronAPI, isElectron, showNativeMenu } from '@/utils/envUtil'
+import {
+  electronAPI,
+  isElectron,
+  isNativeWindow,
+  showNativeMenu
+} from '@/utils/envUtil'
 
 const workspaceState = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -63,10 +68,6 @@ const teleportTarget = computed(() =>
   settingStore.get('Comfy.UseNewMenu') === 'Top'
     ? '.comfyui-body-top'
     : '.comfyui-body-bottom'
-)
-const isNativeWindow = computed(
-  () =>
-    isElectron() && settingStore.get('Comfy-Desktop.WindowStyle') === 'custom'
 )
 const showTopMenu = computed(
   () => betaMenuEnabled.value && !workspaceState.focusMode
