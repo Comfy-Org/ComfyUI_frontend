@@ -4,7 +4,7 @@
   <TopMenubar />
   <GraphCanvas @ready="onGraphReady" />
   <GlobalToast />
-  <UnloadWindowConfirmDialog />
+  <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <BrowserTabTitle />
   <MenuHamburger />
 </template>
