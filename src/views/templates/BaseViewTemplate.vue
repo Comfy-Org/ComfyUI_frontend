@@ -47,8 +47,7 @@ const lightTheme = {
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
 const isNativeWindow = ref(
-  // @ts-expect-error API is guaranteed to exist in Electron
-  isElectron() && !!globalThis.navigator.windowControlsOverlay?.visible
+  isElectron() && !!window.navigator.windowControlsOverlay?.visible
 )
 onMounted(async () => {
   if (isElectron()) {
