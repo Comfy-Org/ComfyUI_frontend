@@ -46,12 +46,12 @@ const lightTheme = {
 }
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
-const isNativeWindow = ref(false)
+const isNativeWindow = ref(
+  // @ts-expect-error API is guaranteed to exist in Electron
+  isElectron() && !!globalThis.navigator.windowControlsOverlay?.visible
+)
 onMounted(async () => {
   if (isElectron()) {
-    const windowStyle = await electronAPI().Config.getWindowStyle()
-    isNativeWindow.value = windowStyle === 'custom'
-
     await nextTick()
 
     electronAPI().changeTheme({
