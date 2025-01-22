@@ -9,7 +9,7 @@
   >
     <!-- Virtual top menu for native window (drag handle) -->
     <div
-      v-show="isNativeWindow"
+      v-show="isNativeWindow()"
       ref="topMenuRef"
       class="app-drag w-full h-[var(--comfy-topbar-height)]"
     />
@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
 
-import { electronAPI, isElectron } from '@/utils/envUtil'
+import { electronAPI, isElectron, isNativeWindow } from '@/utils/envUtil'
 
 const props = withDefaults(
   defineProps<{
@@ -46,12 +46,8 @@ const lightTheme = {
 }
 
 const topMenuRef = ref<HTMLDivElement | null>(null)
-const isNativeWindow = ref(false)
 onMounted(async () => {
   if (isElectron()) {
-    const windowStyle = await electronAPI().Config.getWindowStyle()
-    isNativeWindow.value = windowStyle === 'custom'
-
     await nextTick()
 
     electronAPI().changeTheme({
