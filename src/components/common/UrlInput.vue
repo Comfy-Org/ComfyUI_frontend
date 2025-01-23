@@ -1,9 +1,9 @@
 <template>
   <IconField class="w-full">
     <InputText
+      v-bind="$attrs"
       :model-value="modelValue"
       class="w-full"
-      :placeholder="placeholder"
       :invalid="validationState === UrlValidationState.INVALID"
       @update:model-value="handleInput"
       @blur="validateUrl"
@@ -32,7 +32,6 @@ import { checkUrlReachable } from '@/utils/networkUtil'
 
 const props = defineProps<{
   modelValue: string
-  placeholder?: string
 }>()
 
 const emit = defineEmits<{
@@ -80,4 +79,9 @@ const validateUrl = async () => {
     validationState.value = UrlValidationState.INVALID
   }
 }
+
+// Add inheritAttrs option to prevent attrs from being applied to root element
+defineOptions({
+  inheritAttrs: false
+})
 </script>
