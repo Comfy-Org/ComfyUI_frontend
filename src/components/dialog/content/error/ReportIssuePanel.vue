@@ -50,7 +50,7 @@
             :aria-label="$t('issueReport.provideAdditionalDetails')"
           />
           <Message
-            v-if="$field?.error && $field.touched"
+            v-if="$field?.error && $field.touched && $field.value"
             severity="error"
             size="small"
             variant="simple"
