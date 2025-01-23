@@ -149,6 +149,10 @@ class Load3dAnimation extends Load3d {
 
       if (this.viewHelper.animating) {
         this.viewHelper.update(delta)
+
+        if (!this.viewHelper.animating) {
+          this.storeNodeProperty('Camera Info', this.getCameraState())
+        }
       }
 
       this.viewHelper.render(this.renderer)

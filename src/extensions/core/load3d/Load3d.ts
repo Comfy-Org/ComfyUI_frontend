@@ -580,6 +580,10 @@ class Load3d {
 
       if (this.viewHelper.animating) {
         this.viewHelper.update(delta)
+
+        if (!this.viewHelper.animating) {
+          this.storeNodeProperty('Camera Info', this.getCameraState())
+        }
       }
 
       this.renderer.clear()
