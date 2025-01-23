@@ -94,4 +94,16 @@ describe('UrlInput', () => {
 
     expect(wrapper.find('.pi-times').exists()).toBe(true)
   })
+
+  it('validates on mount', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'https://test.com',
+      validateUrlFn: () => Promise.resolve(true)
+    })
+
+    await nextTick()
+    await nextTick()
+
+    expect(wrapper.find('.pi-check').exists()).toBe(true)
+  })
 })
