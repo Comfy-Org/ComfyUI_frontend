@@ -2,11 +2,11 @@
   <IconField class="w-full">
     <InputText
       v-bind="$attrs"
-      :model-value="modelValue"
+      :model-value="internalValue"
       class="w-full"
       :invalid="validationState === UrlValidationState.INVALID"
       @update:model-value="handleInput"
-      @blur="validateUrl"
+      @blur="handleBlur"
     />
     <InputIcon
       :class="{
@@ -25,7 +25,7 @@
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
@@ -48,10 +48,28 @@ enum UrlValidationState {
 
 const validationState = ref<UrlValidationState>(UrlValidationState.IDLE)
 
+// Add internal value state
+const internalValue = ref(props.modelValue)
+
+// Watch for external modelValue changes
+watch(
+  () => props.modelValue,
+  async (newValue) => {
+    internalValue.value = newValue
+    await validateUrl()
+  }
+)
+
 const handleInput = (value: string) => {
-  emit('update:modelValue', value)
+  // Update internal value without emitting
+  internalValue.value = value
   // Reset validation state when user types
   validationState.value = UrlValidationState.IDLE
+}
+
+const handleBlur = async () => {
+  // Emit the update only on blur
+  emit('update:modelValue', internalValue.value)
 }
 
 // Default validation implementation
