@@ -8,6 +8,7 @@ export type SettingInputType =
   | 'text'
   | 'image'
   | 'color'
+  | 'url'
   | 'hidden'
 
 export type SettingCustomRenderer = (

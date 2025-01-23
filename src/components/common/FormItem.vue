@@ -35,6 +35,7 @@ import CustomFormValue from '@/components/common/CustomFormValue.vue'
 import FormColorPicker from '@/components/common/FormColorPicker.vue'
 import FormImageUpload from '@/components/common/FormImageUpload.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
+import UrlInput from '@/components/common/UrlInput.vue'
 import { FormItem } from '@/types/settingTypes'
 
 const formValue = defineModel<any>('formValue')
@@ -91,6 +92,8 @@ function getFormComponent(item: FormItem): Component {
       return FormImageUpload
     case 'color':
       return FormColorPicker
+    case 'url':
+      return UrlInput
     default:
       return InputText
   }
