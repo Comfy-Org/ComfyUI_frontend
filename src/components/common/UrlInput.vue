@@ -25,7 +25,7 @@
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
@@ -54,11 +54,15 @@ const internalValue = ref(props.modelValue)
 // Watch for external modelValue changes
 watch(
   () => props.modelValue,
-  async (newValue) => {
+  async (newValue: string) => {
     internalValue.value = newValue
-    await validateUrl()
+    await validateUrl(newValue)
   }
 )
+// Validate on mount
+onMounted(async () => {
+  await validateUrl(props.modelValue)
+})
 
 const handleInput = (value: string) => {
   // Update internal value without emitting
@@ -82,8 +86,8 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
   }
 }
 
-const validateUrl = async () => {
-  const url = props.modelValue.trim()
+const validateUrl = async (value: string) => {
+  const url = value.trim()
 
   // Reset state
   validationState.value = UrlValidationState.IDLE
