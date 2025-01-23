@@ -42,7 +42,7 @@
                 v-else
                 class="pi pi-palette"
                 :style="{ fontSize: '1.2rem' }"
-                v-tooltip="$t('g.customColor')"
+                v-tooltip="$t('color.custom')"
               ></i>
             </template>
           </SelectButton>
