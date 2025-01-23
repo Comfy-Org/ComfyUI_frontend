@@ -105,6 +105,7 @@ import { Form, FormField, type FormSubmitEvent } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
 import type { CaptureContext, User } from '@sentry/core'
 import { captureMessage } from '@sentry/core'
+import _ from 'lodash'
 import cloneDeep from 'lodash/cloneDeep'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
@@ -218,7 +219,7 @@ const createCaptureContext = async (
         ? formData.notifyOnResolution
         : false,
       isElectron: isElectron(),
-      ...props.tags
+      ..._.mapValues(props.tags, (tag) => _.trim(tag).replace(/[\n\r\t]/g, ' '))
     },
     extra: {
       details: formData.details,
