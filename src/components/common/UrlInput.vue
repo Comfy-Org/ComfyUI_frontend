@@ -32,6 +32,7 @@ import { checkUrlReachable } from '@/utils/networkUtil'
 
 const props = defineProps<{
   modelValue: string
+  validateUrlFn?: (url: string) => Promise<boolean>
 }>()
 
 const emit = defineEmits<{
@@ -53,6 +54,16 @@ const handleInput = (value: string) => {
   validationState.value = UrlValidationState.IDLE
 }
 
+// Default validation implementation
+const defaultValidateUrl = async (url: string): Promise<boolean> => {
+  if (!isValidUrl(url)) return false
+  try {
+    return await checkUrlReachable(url)
+  } catch {
+    return false
+  }
+}
+
 const validateUrl = async () => {
   const url = props.modelValue.trim()
 
@@ -62,17 +73,10 @@ const validateUrl = async () => {
   // Skip validation if empty
   if (!url) return
 
-  // First check if it's a valid URL format
-  if (!isValidUrl(url)) {
-    validationState.value = UrlValidationState.INVALID
-    return
-  }
-
-  // Then check if URL is reachable
   validationState.value = UrlValidationState.LOADING
   try {
-    const reachable = await checkUrlReachable(url)
-    validationState.value = reachable
+    const isValid = await (props.validateUrlFn ?? defaultValidateUrl)(url)
+    validationState.value = isValid
       ? UrlValidationState.VALID
       : UrlValidationState.INVALID
   } catch {
