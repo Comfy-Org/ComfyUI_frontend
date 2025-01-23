@@ -4,7 +4,7 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createApp } from 'vue'
+import { createApp, nextTick } from 'vue'
 
 import UrlInput from '../UrlInput.vue'
 
@@ -14,19 +14,86 @@ describe('UrlInput', () => {
     app.use(PrimeVue)
   })
 
-  it('passes through additional attributes to input element', () => {
-    const wrapper = mount(UrlInput, {
+  const mountComponent = (props: any, options = {}) => {
+    return mount(UrlInput, {
       global: {
         plugins: [PrimeVue],
         components: { IconField, InputIcon, InputText }
       },
-      props: {
-        modelValue: '',
-        placeholder: 'Enter URL',
-        disabled: true
-      }
+      props,
+      ...options
+    })
+  }
+
+  it('passes through additional attributes to input element', () => {
+    const wrapper = mountComponent({
+      modelValue: '',
+      placeholder: 'Enter URL',
+      disabled: true
     })
 
     expect(wrapper.find('input').attributes('disabled')).toBe('')
+  })
+
+  it('emits update:modelValue on input', async () => {
+    const wrapper = mountComponent({
+      modelValue: '',
+      placeholder: 'Enter URL'
+    })
+
+    const input = wrapper.find('input')
+    await input.setValue('https://test.com')
+
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([
+      'https://test.com'
+    ])
+  })
+
+  it('renders spinner when validation is loading', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'https://test.com',
+      placeholder: 'Enter URL',
+      validateUrlFn: () =>
+        new Promise(() => {
+          // Never resolves, simulating perpetual loading state
+        })
+    })
+
+    const input = wrapper.findComponent(InputText)
+    await input.trigger('blur')
+
+    await nextTick()
+
+    expect(wrapper.find('.pi-spinner').exists()).toBe(true)
+  })
+
+  it('renders check icon when validation is valid', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'https://test.com',
+      placeholder: 'Enter URL',
+      validateUrlFn: () => Promise.resolve(true)
+    })
+
+    const input = wrapper.findComponent(InputText)
+    await input.trigger('blur')
+
+    await nextTick()
+
+    expect(wrapper.find('.pi-check').exists()).toBe(true)
+  })
+
+  it('renders cross icon when validation is invalid', async () => {
+    const wrapper = mountComponent({
+      modelValue: 'https://test.com',
+      placeholder: 'Enter URL',
+      validateUrlFn: () => Promise.resolve(false)
+    })
+
+    const input = wrapper.findComponent(InputText)
+    await input.trigger('blur')
+
+    await nextTick()
+
+    expect(wrapper.find('.pi-times').exists()).toBe(true)
   })
 })
