@@ -31,8 +31,10 @@ export const DESKTOP_MAINTENANCE_TASKS: Readonly<MaintenanceTask>[] = [
     execute: () => openUrl('https://git-scm.com/downloads/'),
     name: 'Download git',
     shortDescription: 'Open the git download page.',
+    errorDescription:
+      'Git is missing. Please download and install git, then restart ComfyUI Desktop.',
     description:
-      'Git is required to download and manage custom nodes and other extensions. This fixer simply opens the download page in your browser. You must download and install git manually.',
+      'Git is required to download and manage custom nodes and other extensions. This task opens the download page in your default browser, where you can download the latest version of git. Once you have installed git, please restart ComfyUI Desktop.',
     button: {
       icon: PrimeIcons.EXTERNAL_LINK,
       text: 'Download'
