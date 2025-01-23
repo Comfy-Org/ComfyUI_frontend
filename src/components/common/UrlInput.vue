@@ -46,7 +46,6 @@ enum UrlValidationState {
   INVALID = 'INVALID'
 }
 
-// Replace the three refs with a single state ref
 const validationState = ref<UrlValidationState>(UrlValidationState.IDLE)
 
 const handleInput = (value: string) => {
