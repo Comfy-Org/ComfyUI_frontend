@@ -35,7 +35,7 @@ describe('UrlInput', () => {
     expect(wrapper.find('input').attributes('disabled')).toBe('')
   })
 
-  it('emits update:modelValue on input', async () => {
+  it('emits update:modelValue on blur', async () => {
     const wrapper = mountComponent({
       modelValue: '',
       placeholder: 'Enter URL'
@@ -43,6 +43,7 @@ describe('UrlInput', () => {
 
     const input = wrapper.find('input')
     await input.setValue('https://test.com')
+    await input.trigger('blur')
 
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([
       'https://test.com'
@@ -51,7 +52,7 @@ describe('UrlInput', () => {
 
   it('renders spinner when validation is loading', async () => {
     const wrapper = mountComponent({
-      modelValue: 'https://test.com',
+      modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () =>
         new Promise(() => {
@@ -59,9 +60,8 @@ describe('UrlInput', () => {
         })
     })
 
-    const input = wrapper.findComponent(InputText)
-    await input.trigger('blur')
-
+    wrapper.setProps({ modelValue: 'https://test.com' })
+    await nextTick()
     await nextTick()
 
     expect(wrapper.find('.pi-spinner').exists()).toBe(true)
@@ -69,14 +69,13 @@ describe('UrlInput', () => {
 
   it('renders check icon when validation is valid', async () => {
     const wrapper = mountComponent({
-      modelValue: 'https://test.com',
+      modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () => Promise.resolve(true)
     })
 
-    const input = wrapper.findComponent(InputText)
-    await input.trigger('blur')
-
+    wrapper.setProps({ modelValue: 'https://test.com' })
+    await nextTick()
     await nextTick()
 
     expect(wrapper.find('.pi-check').exists()).toBe(true)
@@ -84,14 +83,13 @@ describe('UrlInput', () => {
 
   it('renders cross icon when validation is invalid', async () => {
     const wrapper = mountComponent({
-      modelValue: 'https://test.com',
+      modelValue: '',
       placeholder: 'Enter URL',
       validateUrlFn: () => Promise.resolve(false)
     })
 
-    const input = wrapper.findComponent(InputText)
-    await input.trigger('blur')
-
+    wrapper.setProps({ modelValue: 'https://test.com' })
+    await nextTick()
     await nextTick()
 
     expect(wrapper.find('.pi-times').exists()).toBe(true)
