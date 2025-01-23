@@ -82,6 +82,10 @@ class Load3d {
     )
     this.controls.enableDamping = true
 
+    this.controls.addEventListener('end', () => {
+      this.storeNodeProperty('Camera Info', this.getCameraState())
+    })
+
     this.gltfLoader = new GLTFLoader()
     this.objLoader = new OBJLoader()
     this.mtlLoader = new MTLLoader()
@@ -576,6 +580,10 @@ class Load3d {
 
       if (this.viewHelper.animating) {
         this.viewHelper.update(delta)
+
+        if (!this.viewHelper.animating) {
+          this.storeNodeProperty('Camera Info', this.getCameraState())
+        }
       }
 
       this.renderer.clear()
