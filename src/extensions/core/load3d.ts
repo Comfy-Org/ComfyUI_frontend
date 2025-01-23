@@ -354,20 +354,7 @@ app.registerExtension({
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
-    let cameraState
-    try {
-      const cameraInfo = node.properties['Camera Info']
-      if (
-        cameraInfo &&
-        typeof cameraInfo === 'string' &&
-        cameraInfo.trim() !== ''
-      ) {
-        cameraState = JSON.parse(cameraInfo)
-      }
-    } catch (error) {
-      console.warn('Failed to parse camera state:', error)
-      cameraState = undefined
-    }
+    let cameraState = node.properties['Camera Info']
 
     configureLoad3D(
       load3d,
@@ -386,7 +373,7 @@ app.registerExtension({
 
     // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
-      node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
+      node.properties['Camera Info'] = load3d.getCameraState()
 
       const { scene: imageData, mask: maskData } = await load3d.captureScene(
         w.value,
@@ -598,20 +585,7 @@ app.registerExtension({
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
-    let cameraState
-    try {
-      const cameraInfo = node.properties['Camera Info']
-      if (
-        cameraInfo &&
-        typeof cameraInfo === 'string' &&
-        cameraInfo.trim() !== ''
-      ) {
-        cameraState = JSON.parse(cameraInfo)
-      }
-    } catch (error) {
-      console.warn('Failed to parse camera state:', error)
-      cameraState = undefined
-    }
+    let cameraState = node.properties['Camera Info']
 
     configureLoad3D(
       load3d,
@@ -643,7 +617,7 @@ app.registerExtension({
 
     // @ts-expect-error hacky override
     sceneWidget.serializeValue = async () => {
-      node.properties['Camera Info'] = JSON.stringify(load3d.getCameraState())
+      node.properties['Camera Info'] = load3d.getCameraState()
 
       load3d.toggleAnimation(false)
 
