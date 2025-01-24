@@ -220,6 +220,7 @@
       "allowMetricsDescription": "Aidez à améliorer ComfyUI en envoyant des métriques d'utilisation anonymes. Aucune information personnelle ou contenu de flux de travail ne sera collecté.",
       "autoUpdate": "Mises à jour automatiques",
       "autoUpdateDescription": "Téléchargez et installez automatiquement les mises à jour lorsqu'elles deviennent disponibles. Vous serez toujours informé avant l'installation des mises à jour.",
+      "checkingMirrors": "Vérification de l'accès réseau aux miroirs python...",
       "dataCollectionDialog": {
         "collect": {
           "errorReports": "Message d'erreur et trace de la pile",
@@ -240,6 +241,7 @@
       "errorUpdatingConsent": "Erreur de mise à jour du consentement",
       "errorUpdatingConsentDetail": "Échec de la mise à jour des paramètres de consentement aux métriques",
       "learnMoreAboutData": "En savoir plus sur la collecte de données",
+      "mirrorsReachable": "L'accès réseau aux miroirs python est bon",
       "pypiMirrorPlaceholder": "Entrez l'URL du miroir PyPI",
       "pythonMirrorPlaceholder": "Entrez l'URL du miroir Python"
     },

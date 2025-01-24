@@ -220,6 +220,7 @@
       "allowMetricsDescription": "Помогите улучшить ComfyUI, отправляя анонимные метрики использования. Личная информация или содержание рабочего процесса не будут собираться.",
       "autoUpdate": "Автоматические обновления",
       "autoUpdateDescription": "Автоматически загружать и устанавливать обновления, когда они становятся доступными. Вы всегда будете уведомлены перед установкой обновлений.",
+      "checkingMirrors": "Проверка доступа к зеркалам python по сети...",
       "dataCollectionDialog": {
         "collect": {
           "errorReports": "Сообщение об ошибке и трассировка стека",
@@ -240,6 +241,7 @@
       "errorUpdatingConsent": "Ошибка обновления согласия",
       "errorUpdatingConsentDetail": "Не удалось обновить настройки согласия на метрики",
       "learnMoreAboutData": "Узнать больше о сборе данных",
+      "mirrorsReachable": "Сетевой доступ к зеркалам python хороший",
       "pypiMirrorPlaceholder": "Введите URL-зеркало PyPI",
       "pythonMirrorPlaceholder": "Введите URL-зеркало Python"
     },
