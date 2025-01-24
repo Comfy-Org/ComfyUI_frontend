@@ -106,4 +106,53 @@ describe('UrlInput', () => {
 
     expect(wrapper.find('.pi-check').exists()).toBe(true)
   })
+
+  it('triggers validation when clicking the validation icon', async () => {
+    let validationCount = 0
+    const wrapper = mountComponent({
+      modelValue: 'https://test.com',
+      validateUrlFn: () => {
+        validationCount++
+        return Promise.resolve(true)
+      }
+    })
+
+    // Wait for initial validation
+    await nextTick()
+    await nextTick()
+
+    // Click the validation icon
+    await wrapper.find('.pi-check').trigger('click')
+    await nextTick()
+    await nextTick()
+
+    expect(validationCount).toBe(2) // Once on mount, once on click
+  })
+
+  it('prevents multiple simultaneous validations', async () => {
+    let validationCount = 0
+    const wrapper = mountComponent({
+      modelValue: '',
+      validateUrlFn: () => {
+        validationCount++
+        return new Promise(() => {
+          // Never resolves, simulating perpetual loading state
+        })
+      }
+    })
+
+    wrapper.setProps({ modelValue: 'https://test.com' })
+    await nextTick()
+    await nextTick()
+
+    // Trigger multiple validations in quick succession
+    wrapper.find('.pi-spinner').trigger('click')
+    wrapper.find('.pi-spinner').trigger('click')
+    wrapper.find('.pi-spinner').trigger('click')
+
+    await nextTick()
+    await nextTick()
+
+    expect(validationCount).toBe(1) // Only the initial validation should occur
+  })
 })

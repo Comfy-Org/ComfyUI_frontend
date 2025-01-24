@@ -12,11 +12,12 @@
       :class="{
         'pi pi-spin pi-spinner text-neutral-400':
           validationState === UrlValidationState.LOADING,
-        'pi pi-check text-green-500':
+        'pi pi-check text-green-500 cursor-pointer':
           validationState === UrlValidationState.VALID,
-        'pi pi-times text-red-500':
+        'pi pi-times text-red-500 cursor-pointer':
           validationState === UrlValidationState.INVALID
       }"
+      @click="validateUrl(props.modelValue)"
     />
   </IconField>
 </template>
@@ -87,6 +88,8 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
 }
 
 const validateUrl = async (value: string) => {
+  if (validationState.value === UrlValidationState.LOADING) return
+
   const url = value.trim()
 
   // Reset state
