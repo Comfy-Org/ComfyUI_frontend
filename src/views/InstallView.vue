@@ -80,6 +80,8 @@
           <DesktopSettingsConfiguration
             v-model:autoUpdate="autoUpdate"
             v-model:allowMetrics="allowMetrics"
+            v-model:pythonMirror="pythonMirror"
+            v-model:pypiMirror="pypiMirror"
           />
           <div class="flex pt-6 justify-between">
             <Button
@@ -133,6 +135,8 @@ const migrationItemIds = ref<string[]>([])
 
 const autoUpdate = ref(true)
 const allowMetrics = ref(true)
+const pythonMirror = ref('')
+const pypiMirror = ref('')
 
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
@@ -162,6 +166,8 @@ const install = () => {
     allowMetrics: allowMetrics.value,
     migrationSourcePath: migrationSourcePath.value,
     migrationItemIds: toRaw(migrationItemIds.value),
+    pythonMirror: pythonMirror.value,
+    pypiMirror: pypiMirror.value,
     device: device.value
   }
   electron.installComfyUI(options)
