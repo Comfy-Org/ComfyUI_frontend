@@ -714,6 +714,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Tutorial completed',
     type: 'hidden',
     defaultValue: true,
-    versionAdded: '1.8.5'
+    versionAdded: '1.8.6'
   }
 ]
