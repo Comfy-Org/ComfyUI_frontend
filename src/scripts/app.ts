@@ -1313,17 +1313,19 @@ export class ComfyApp {
       graphData.models &&
       useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')
     ) {
+      const modelStore = useModelStore()
       for (const m of graphData.models) {
-        const models_available = await useModelStore().getLoadedModelFolder(
-          m.directory
-        )
-        if (models_available === null) {
-          // @ts-expect-error
-          m.directory_invalid = true
-          missingModels.push(m)
-        } else if (!(m.name in models_available.models)) {
-          missingModels.push(m)
-        }
+        const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
+        // @ts-expect-error
+        if (!modelFolder) m.directory_invalid = true
+
+        const modelsAvailable = modelFolder?.models
+        const modelExists =
+          modelsAvailable &&
+          Object.values(modelsAvailable).some(
+            (model) => model.file_name === m.name
+          )
+        if (!modelExists) missingModels.push(m)
       }
     }
 
