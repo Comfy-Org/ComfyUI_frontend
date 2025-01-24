@@ -73,7 +73,17 @@
     "workflow": "Workflow",
     "success": "Success",
     "ok": "OK",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "audio": "Audio",
+    "folder": "Folder",
+    "image": "Image",
+    "itemsCount": "{0} Items",
+    "modifyTime": "Modify Time",
+    "name": "Name",
+    "searchIn": "Search in {0}",
+    "size": "Size",
+    "type": "Type",
+    "video": "Video"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -254,6 +264,7 @@
       "sortOrder": "Sort Order"
     },
     "modelLibrary": "Model Library",
+    "outputExplorer": "Output Explorer",
     "downloads": "Downloads",
     "queueTab": {
       "showFlatList": "Show Flat List",

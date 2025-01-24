@@ -56,6 +56,12 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'e'
+    },
+    commandId: 'Workspace.ToggleSidebarTab.output-explorer'
+  },
+  {
+    combo: {
       key: 's',
       ctrl: true
     },
