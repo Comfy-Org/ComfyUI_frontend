@@ -36,7 +36,6 @@ import {
 } from '@/types/comfyWorkflow'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
-import { electronAPI, isElectron } from '@/utils/envUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -1063,10 +1062,7 @@ export class ComfyApp {
     // We failed to restore a workflow so load the default
     if (!restored) {
       const settingStore = useSettingStore()
-
-      const isNewDesktopUser =
-        isElectron() && (await electronAPI().isFirstTimeSetup())
-      if (isNewDesktopUser && !settingStore.get('Comfy.TutorialCompleted')) {
+      if (settingStore.get('Comfy.TutorialCompleted') === false) {
         await settingStore.set('Comfy.TutorialCompleted', true)
         await useWorkflowService().loadTutorialWorkflow()
       } else {
