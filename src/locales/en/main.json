@@ -474,6 +474,7 @@
     "About": "About",
     "EditTokenWeight": "Edit Token Weight",
     "CustomColorPalettes": "Custom Color Palettes",
+    "UV": "UV",
     "ContextMenu": "Context Menu"
   },
   "serverConfigItems": {

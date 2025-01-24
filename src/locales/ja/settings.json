@@ -5,6 +5,14 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "匿名の使用統計を送信する"
   },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi Install Mirror",
+    "tooltip": "管理されたPyPyのインストールはpython.orgからダウンロードされます。この変数は、PyPyのインストールのための異なるソースを使用するためのミラーURLに設定することができます。提供されたURLは、例えば、https://downloads.python.org/pypy/pypy3.8-v7.3.7-osx64.tar.bz2の中でhttps://downloads.python.org/pypyを置き換えます。ディストリビューションは、file:// URLスキームを使用してローカルディレクトリから読み取ることができます。"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python Install Mirror",
+    "tooltip": "管理されたPythonのインストールは、Astral python-build-standaloneプロジェクトからダウンロードされます。この変数は、Pythonのインストールのための異なるソースを使用するためのミラーURLに設定することができます。提供されたURLは、例えば、https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gzの中でhttps://github.com/astral-sh/python-build-standalone/releases/downloadを置き換えます。ディストリビューションは、file:// URLスキームを使用してローカルディレクトリから読み取ることができます。"
+  },
   "Comfy-Desktop_WindowStyle": {
     "name": "ウィンドウスタイル",
     "options": {

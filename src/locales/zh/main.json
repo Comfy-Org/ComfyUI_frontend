@@ -239,7 +239,9 @@
       },
       "errorUpdatingConsent": "更新同意错误",
       "errorUpdatingConsentDetail": "无法更新度量同意设置",
-      "learnMoreAboutData": "了解更多关于数据收集的信息"
+      "learnMoreAboutData": "了解更多关于数据收集的信息",
+      "pypiMirrorPlaceholder": "输入PyPI镜像URL",
+      "pythonMirrorPlaceholder": "输入Python镜像URL"
     },
     "systemLocations": "系统位置",
     "unhandledError": "未知错误",
@@ -634,6 +636,7 @@
     "Settings": "设置",
     "Sidebar": "侧边栏",
     "Tree Explorer": "树形浏览器",
+    "UV": "UV",
     "Validation": "验证",
     "Window": "窗口",
     "Workflow": "工作流"

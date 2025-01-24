@@ -239,7 +239,9 @@
       },
       "errorUpdatingConsent": "Erreur de mise à jour du consentement",
       "errorUpdatingConsentDetail": "Échec de la mise à jour des paramètres de consentement aux métriques",
-      "learnMoreAboutData": "En savoir plus sur la collecte de données"
+      "learnMoreAboutData": "En savoir plus sur la collecte de données",
+      "pypiMirrorPlaceholder": "Entrez l'URL du miroir PyPI",
+      "pythonMirrorPlaceholder": "Entrez l'URL du miroir Python"
     },
     "systemLocations": "Emplacements système",
     "unhandledError": "Erreur inconnue",
@@ -634,6 +636,7 @@
     "Settings": "Paramètres",
     "Sidebar": "Barre Latérale",
     "Tree Explorer": "Explorateur d'Arbre",
+    "UV": "UV",
     "Validation": "Validation",
     "Window": "Fenêtre",
     "Workflow": "Flux de Travail"

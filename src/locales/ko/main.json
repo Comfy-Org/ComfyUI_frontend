@@ -239,7 +239,9 @@
       },
       "errorUpdatingConsent": "데이터 수집 동의 설정 업데이트 오류",
       "errorUpdatingConsentDetail": "데이터 수집 동의 설정 업데이트에 실패했습니다",
-      "learnMoreAboutData": "데이터 수집에 대해 더 알아보기"
+      "learnMoreAboutData": "데이터 수집에 대해 더 알아보기",
+      "pypiMirrorPlaceholder": "PyPI 미러 URL 입력",
+      "pythonMirrorPlaceholder": "Python 미러 URL 입력"
     },
     "systemLocations": "시스템 위치",
     "unhandledError": "알 수 없는 오류",
@@ -634,6 +636,7 @@
     "Settings": "설정",
     "Sidebar": "사이드바",
     "Tree Explorer": "트리 탐색기",
+    "UV": "UV",
     "Validation": "검증",
     "Window": "창",
     "Workflow": "워크플로"

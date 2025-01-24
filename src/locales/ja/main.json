@@ -239,7 +239,9 @@
       },
       "errorUpdatingConsent": "同意の更新エラー",
       "errorUpdatingConsentDetail": "メトリクスの同意設定の更新に失敗しました",
-      "learnMoreAboutData": "データ収集の詳細を見る"
+      "learnMoreAboutData": "データ収集の詳細を見る",
+      "pypiMirrorPlaceholder": "PyPIミラーURLを入力してください",
+      "pythonMirrorPlaceholder": "PythonミラーURLを入力してください"
     },
     "systemLocations": "システムの場所",
     "unhandledError": "未知のエラー",
@@ -634,6 +636,7 @@
     "Settings": "設定",
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
+    "UV": "UV",
     "Validation": "検証",
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"
