@@ -700,6 +700,19 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Gets a list of output folder items (eg ['output', 'output/images', 'output/videos', ...])
+   * @param {string} folder The folder to list items from, such as 'output'
+   * @returns The list of output folder items within the specified folder
+   */
+  async getOutputFolderItems(folder: string) {
+    const res = await this.fetchApi(`/output${folder}`)
+    if (res.status === 404) {
+      return []
+    }
+    return await res.json()
+  }
+
+  /**
    * Gets the metadata for a model
    * @param {string} folder The folder containing the model
    * @param {string} model The model to get metadata for
