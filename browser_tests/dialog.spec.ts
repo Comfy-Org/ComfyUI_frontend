@@ -66,9 +66,63 @@ test.describe('Missing models warning', () => {
     }, comfyPage.url)
   })
 
+  test('Should display a warning when missing models are found', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('missing_models')
+
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).toBeVisible()
+
+    const downloadButton = missingModelsWarning.getByLabel('Download')
+    await expect(downloadButton).toBeVisible()
+  })
+
+  test('Should not display a warning when no missing models are found', async ({
+    comfyPage
+  }) => {
+    const modelFoldersRes = {
+      status: 200,
+      body: JSON.stringify([
+        {
+          name: 'clip',
+          folders: ['ComfyUI/models/clip']
+        }
+      ])
+    }
+    comfyPage.page.route(
+      '**/api/experiment/models',
+      (route) => route.fulfill(modelFoldersRes),
+      { times: 1 }
+    )
+
+    // Reload page to trigger indexing of model folders
+    await comfyPage.setup()
+
+    const clipModelsRes = {
+      status: 200,
+      body: JSON.stringify([
+        {
+          name: 'fake_model.safetensors',
+          pathIndex: 0
+        }
+      ])
+    }
+    comfyPage.page.route(
+      '**/api/experiment/models/clip',
+      (route) => route.fulfill(clipModelsRes),
+      { times: 1 }
+    )
+
+    await comfyPage.loadWorkflow('missing_models')
+
+    const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
+    await expect(missingModelsWarning).not.toBeVisible()
+  })
+
   // Flaky test after parallelization
   // https://github.com/Comfy-Org/ComfyUI_frontend/pull/1400
-  test.skip('Should display a warning when missing models are found', async ({
+  test.skip('Should download missing model when clicking download button', async ({
     comfyPage
   }) => {
     // The fake_model.safetensors is served by
