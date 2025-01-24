@@ -54,10 +54,10 @@
         <div class="flex flex-col items-center gap-4">
           <div class="w-full">
             <h3 class="text-lg font-medium text-neutral-100">
-              {{ $t('settings.Comfy-Desktop_PythonInstallMirror.name') }}
+              {{ $t('settings.Comfy-Desktop_UV_PythonInstallMirror.name') }}
             </h3>
             <p class="text-sm text-neutral-400 mt-1">
-              {{ $t('settings.Comfy-Desktop_PythonInstallMirror.tooltip') }}
+              {{ $t('settings.Comfy-Desktop_UV_PythonInstallMirror.tooltip') }}
             </p>
           </div>
           <UrlInput
@@ -73,10 +73,10 @@
         <div class="flex flex-col items-center gap-4">
           <div class="w-full">
             <h3 class="text-lg font-medium text-neutral-100">
-              {{ $t('settings.Comfy-Desktop_PypiMirror.name') }}
+              {{ $t('settings.Comfy-Desktop_UV_PypiInstallMirror.name') }}
             </h3>
             <p class="text-sm text-neutral-400 mt-1">
-              {{ $t('settings.Comfy-Desktop_PypiMirror.tooltip') }}
+              {{ $t('settings.Comfy-Desktop_UV_PypiInstallMirror.tooltip') }}
             </p>
           </div>
           <UrlInput
