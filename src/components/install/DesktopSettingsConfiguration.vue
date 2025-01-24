@@ -46,10 +46,29 @@
         <ToggleSwitch v-model="allowMetrics" />
       </div>
 
+      <Divider />
+      <Message
+        v-if="checkingMirrors"
+        severity="info"
+        :closable="false"
+        icon="pi pi-spin pi-spinner"
+        class="w-full"
+      >
+        {{ $t('install.settings.checkingMirrors') }}
+      </Message>
+
+      <Message
+        v-if="!checkingMirrors && !showMirrorInputs"
+        severity="success"
+        :closable="false"
+        icon="pi pi-check"
+        class="w-full"
+      >
+        {{ $t('install.settings.mirrorsReachable') }}
+      </Message>
+
       <!-- Mirror Settings (Conditional) -->
       <template v-if="showMirrorInputs">
-        <Divider />
-
         <!-- Python Mirror Setting -->
         <div class="flex flex-col items-center gap-4">
           <div class="w-full">
@@ -167,6 +186,7 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import Divider from 'primevue/divider'
+import Message from 'primevue/message'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { onMounted, ref } from 'vue'
 
@@ -181,6 +201,7 @@ import { electronAPI } from '@/utils/envUtil'
 import { isValidUrl } from '@/utils/formatUtil'
 
 const showDialog = ref(false)
+const checkingMirrors = ref(true)
 const showMirrorInputs = ref(false)
 const autoUpdate = defineModel<boolean>('autoUpdate', { required: true })
 const allowMetrics = defineModel<boolean>('allowMetrics', { required: true })
@@ -206,12 +227,12 @@ const checkPypiMirrorReachable = async (mirror: string) => {
 }
 
 onMounted(async () => {
-  const isPythonMirrorReachable = await checkPythonMirrorReachable(
-    DEFAULT_UV_PYTHON_INSTALL_MIRROR
-  )
-  const isPypiMirrorReachable = await checkPypiMirrorReachable(
-    DEFAULT_UV_PYPY_INSTALL_MIRROR
-  )
+  const [isPythonMirrorReachable, isPypiMirrorReachable] = await Promise.all([
+    checkPythonMirrorReachable(DEFAULT_UV_PYTHON_INSTALL_MIRROR),
+    checkPypiMirrorReachable(DEFAULT_UV_PYPY_INSTALL_MIRROR)
+  ])
+  checkingMirrors.value = false
+
   showMirrorInputs.value = !isPythonMirrorReachable || !isPypiMirrorReachable
 
   if (showMirrorInputs.value) {
