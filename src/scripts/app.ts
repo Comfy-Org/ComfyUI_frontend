@@ -1037,44 +1037,6 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('init')
     await this.registerNodes()
 
-    // Load previous workflow
-    let restored = false
-    try {
-      const loadWorkflow = async (json) => {
-        if (json) {
-          const workflow = JSON.parse(json)
-          const workflowName = getStorageValue('Comfy.PreviousWorkflow')
-          await this.loadGraphData(workflow, true, true, workflowName)
-          return true
-        }
-      }
-      const clientId = api.initialClientId ?? api.clientId
-      restored =
-        (clientId &&
-          (await loadWorkflow(
-            sessionStorage.getItem(`workflow:${clientId}`)
-          ))) ||
-        (await loadWorkflow(localStorage.getItem('workflow')))
-    } catch (err) {
-      console.error('Error loading previous workflow', err)
-    }
-
-    // We failed to restore a workflow so load the default
-    if (!restored) {
-      const settingStore = useSettingStore()
-
-      // If tutorial is not completed, load the tutorial workflow
-      if (!settingStore.get('Comfy.TutorialCompleted')) {
-        await settingStore.set('Comfy.TutorialCompleted', true)
-        // Load model folders to ensure the missing models' corresponding folders
-        // can be correctly identified.
-        await useModelStore().loadModelFolders()
-        await useWorkflowService().loadTutorialWorkflow()
-      } else {
-        await this.loadGraphData()
-      }
-    }
-
     this.#addDrawNodeHandler()
     this.#addDrawGroupsHandler()
     this.#addDropHandler()
