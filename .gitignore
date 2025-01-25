@@ -18,6 +18,7 @@ dist-ssr
 !.vscode/extensions.json
 !.vscode/tailwind.json
 !.vscode/settings.json.default
+!.vscode/launch.json.default
 .idea
 .DS_Store
 *.suo
