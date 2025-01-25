@@ -65,7 +65,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { ComfyModelDef } from '@/stores/modelStore'
+import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 import {
   ModelNodeProvider,
   useModelToNodeStore
@@ -360,6 +360,54 @@ const loadCustomNodesI18n = async () => {
   }
 }
 
+const loadWorkflowFromStorage = async (json: string, workflowName: string) => {
+  if (!json) return false
+  const workflow = JSON.parse(json)
+  await comfyApp.loadGraphData(workflow, true, true, workflowName)
+  return true
+}
+
+const loadPreviousWorkflowFromStorage = async () => {
+  const workflowName = getStorageValue('Comfy.PreviousWorkflow')
+  const clientId = api.initialClientId ?? api.clientId
+
+  // Try loading from session storage first
+  if (clientId) {
+    const sessionWorkflow = sessionStorage.getItem(`workflow:${clientId}`)
+    if (await loadWorkflowFromStorage(sessionWorkflow, workflowName)) {
+      return true
+    }
+  }
+
+  // Fall back to local storage
+  const localWorkflow = localStorage.getItem('workflow')
+  return await loadWorkflowFromStorage(localWorkflow, workflowName)
+}
+
+const loadDefaultWorkflow = async () => {
+  const settingStore = useSettingStore()
+
+  if (!settingStore.get('Comfy.TutorialCompleted')) {
+    await settingStore.set('Comfy.TutorialCompleted', true)
+    await useModelStore().loadModelFolders()
+    await useWorkflowService().loadTutorialWorkflow()
+  } else {
+    await comfyApp.loadGraphData()
+  }
+}
+
+const restorePreviousWorkflow = async () => {
+  try {
+    const restored = await loadPreviousWorkflowFromStorage()
+    if (!restored) {
+      await loadDefaultWorkflow()
+    }
+  } catch (err) {
+    console.error('Error loading previous workflow', err)
+    await loadDefaultWorkflow()
+  }
+}
+
 const comfyAppReady = ref(false)
 onMounted(async () => {
   // Backward compatible
@@ -400,6 +448,8 @@ onMounted(async () => {
     'Comfy.CustomColorPalettes'
   )
 
+  // Restore workflow from storage
+  await restorePreviousWorkflow()
   const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
   if (isRestorable)
     workflowStore.openWorkflowsInBackground({
