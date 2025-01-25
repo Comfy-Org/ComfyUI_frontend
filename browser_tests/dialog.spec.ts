@@ -156,7 +156,7 @@ test.describe('Missing models warning', () => {
       closeButton = comfyPage.page.getByLabel('Close')
     })
 
-    test('Checking box should disable missing models dialog setting', async ({
+    test('Should disable warning dialog when checkbox is checked', async ({
       comfyPage
     }) => {
       await checkbox.click()
@@ -172,7 +172,7 @@ test.describe('Missing models warning', () => {
       expect(settingValue).toBe(false)
     })
 
-    test('Not checking box should not disable missing models dialog setting', async ({
+    test('Should keep warning dialog enabled when checkbox is unchecked', async ({
       comfyPage
     }) => {
       await closeButton.click()
