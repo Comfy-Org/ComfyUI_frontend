@@ -389,6 +389,8 @@ const loadDefaultWorkflow = async () => {
 
   if (!settingStore.get('Comfy.TutorialCompleted')) {
     await settingStore.set('Comfy.TutorialCompleted', true)
+    // Load model folders to ensure the missing models' corresponding folders
+    // can be correctly identified.
     await useModelStore().loadModelFolders()
     await useWorkflowService().loadTutorialWorkflow()
   } else {
