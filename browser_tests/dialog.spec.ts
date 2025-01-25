@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { Locator, expect } from '@playwright/test'
 
 import { Keybinding } from '../src/types/keyBindingTypes'
 import { comfyPageFixture as test } from './fixtures/ComfyPage'
@@ -139,6 +139,49 @@ test.describe('Missing models warning', () => {
 
     const download = await downloadPromise
     expect(download.suggestedFilename()).toBe('fake_model.safetensors')
+  })
+
+  test.describe('Do not show again checkbox', () => {
+    let checkbox: Locator
+    let closeButton: Locator
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting(
+        'Comfy.Workflow.ShowMissingModelsWarning',
+        true
+      )
+      await comfyPage.loadWorkflow('missing_models')
+
+      checkbox = comfyPage.page.getByLabel("Don't show this again")
+      closeButton = comfyPage.page.getByLabel('Close')
+    })
+
+    test('Checking box should disable missing models dialog setting', async ({
+      comfyPage
+    }) => {
+      await checkbox.click()
+      const changeSettingPromise = comfyPage.page.waitForRequest(
+        '**/api/settings/Comfy.Workflow.ShowMissingModelsWarning'
+      )
+      await closeButton.click()
+      await changeSettingPromise
+
+      const settingValue = await comfyPage.getSetting(
+        'Comfy.Workflow.ShowMissingModelsWarning'
+      )
+      expect(settingValue).toBe(false)
+    })
+
+    test('Not checking box should not disable missing models dialog setting', async ({
+      comfyPage
+    }) => {
+      await closeButton.click()
+
+      const settingValue = await comfyPage.getSetting(
+        'Comfy.Workflow.ShowMissingModelsWarning'
+      )
+      expect(settingValue).toBe(true)
+    })
   })
 })
 
