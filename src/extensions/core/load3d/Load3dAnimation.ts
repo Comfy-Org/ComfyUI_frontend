@@ -10,9 +10,116 @@ class Load3dAnimation extends Load3d {
   isAnimationPlaying: boolean = false
 
   animationSpeed: number = 1.0
+  playPauseContainer: HTMLDivElement = {} as HTMLDivElement
+  animationSelect: HTMLSelectElement = {} as HTMLSelectElement
 
   constructor(container: Element | HTMLElement) {
     super(container)
+    this.createPlayPauseButton(container)
+    this.createAnimationList(container)
+  }
+
+  createAnimationList(container: Element | HTMLElement) {
+    this.animationSelect = document.createElement('select')
+    Object.assign(this.animationSelect.style, {
+      position: 'absolute',
+      top: '3px',
+      left: '50%',
+      transform: 'translateX(15px)',
+      width: '90px',
+      height: '20px',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      fontSize: '12px',
+      padding: '0 8px',
+      cursor: 'pointer',
+      display: 'none',
+      outline: 'none'
+    })
+
+    this.animationSelect.addEventListener('mouseenter', () => {
+      this.animationSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+    })
+
+    this.animationSelect.addEventListener('mouseleave', () => {
+      this.animationSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+    })
+
+    this.animationSelect.addEventListener('change', (event) => {
+      const select = event.target as HTMLSelectElement
+      this.updateSelectedAnimation(select.selectedIndex)
+    })
+
+    container.appendChild(this.animationSelect)
+  }
+
+  updateAnimationList() {
+    this.animationSelect.innerHTML = ''
+    this.animationClips.forEach((clip, index) => {
+      const option = document.createElement('option')
+      option.value = index.toString()
+      option.text = clip.name || `Animation ${index + 1}`
+      option.selected = index === this.selectedAnimationIndex
+      this.animationSelect.appendChild(option)
+    })
+  }
+
+  createPlayPauseButton(container: Element | HTMLElement) {
+    this.playPauseContainer = document.createElement('div')
+    this.playPauseContainer.style.position = 'absolute'
+    this.playPauseContainer.style.top = '3px'
+    this.playPauseContainer.style.left = '50%'
+    this.playPauseContainer.style.transform = 'translateX(-50%)'
+    this.playPauseContainer.style.width = '20px'
+    this.playPauseContainer.style.height = '20px'
+    this.playPauseContainer.style.cursor = 'pointer'
+    this.playPauseContainer.style.alignItems = 'center'
+    this.playPauseContainer.style.justifyContent = 'center'
+
+    const updateButtonState = () => {
+      const icon = this.playPauseContainer.querySelector('svg')
+      if (icon) {
+        if (this.isAnimationPlaying) {
+          icon.innerHTML = `
+            <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+          `
+          this.playPauseContainer.title = 'Pause Animation'
+        } else {
+          icon.innerHTML = `
+            <path d="M8 5v14l11-7z"/>
+          `
+          this.playPauseContainer.title = 'Play Animation'
+        }
+      }
+    }
+
+    const playIcon = document.createElement('div')
+    playIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    `
+
+    this.playPauseContainer.addEventListener('mouseenter', () => {
+      this.playPauseContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+    })
+
+    this.playPauseContainer.addEventListener('mouseleave', () => {
+      this.playPauseContainer.style.backgroundColor = 'transparent'
+    })
+
+    this.playPauseContainer.addEventListener('click', (event) => {
+      event.stopPropagation()
+      this.toggleAnimation()
+      updateButtonState()
+    })
+
+    this.playPauseContainer.appendChild(playIcon)
+    container.appendChild(this.playPauseContainer)
+
+    this.playPauseContainer.style.display = 'none'
   }
 
   protected async setupModel(model: THREE.Object3D) {
@@ -43,6 +150,21 @@ class Load3dAnimation extends Load3d {
       if (this.animationClips.length > 0) {
         this.updateSelectedAnimation(0)
       }
+    }
+
+    if (this.animationClips.length > 0) {
+      this.playPauseContainer.style.display = 'block'
+    } else {
+      this.playPauseContainer.style.display = 'none'
+    }
+
+    if (this.animationClips.length > 0) {
+      this.playPauseContainer.style.display = 'block'
+      this.animationSelect.style.display = 'block'
+      this.updateAnimationList()
+    } else {
+      this.playPauseContainer.style.display = 'none'
+      this.animationSelect.style.display = 'none'
     }
   }
 
@@ -88,6 +210,8 @@ class Load3dAnimation extends Load3d {
     }
 
     this.animationActions = [action]
+
+    this.updateAnimationList()
   }
 
   clearModel() {
@@ -104,6 +228,11 @@ class Load3dAnimation extends Load3d {
     this.animationSpeed = 1.0
 
     super.clearModel()
+
+    if (this.animationSelect) {
+      this.animationSelect.style.display = 'none'
+      this.animationSelect.innerHTML = ''
+    }
   }
 
   getAnimationNames(): string[] {
@@ -119,6 +248,17 @@ class Load3dAnimation extends Load3d {
     }
 
     this.isAnimationPlaying = play ?? !this.isAnimationPlaying
+
+    const icon = this.playPauseContainer.querySelector('svg')
+    if (icon) {
+      if (this.isAnimationPlaying) {
+        icon.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>'
+        this.playPauseContainer.title = 'Pause Animation'
+      } else {
+        icon.innerHTML = '<path d="M8 5v14l11-7z"/>'
+        this.playPauseContainer.title = 'Play Animation'
+      }
+    }
 
     this.animationActions.forEach((action) => {
       if (this.isAnimationPlaying) {
