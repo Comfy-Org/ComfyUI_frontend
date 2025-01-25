@@ -1062,8 +1062,13 @@ export class ComfyApp {
     // We failed to restore a workflow so load the default
     if (!restored) {
       const settingStore = useSettingStore()
-      if (settingStore.get('Comfy.TutorialCompleted') === false) {
+
+      // If tutorial is not completed, load the tutorial workflow
+      if (!settingStore.get('Comfy.TutorialCompleted')) {
         await settingStore.set('Comfy.TutorialCompleted', true)
+        // Load model folders to ensure the missing models' corresponding folders
+        // can be correctly identified.
+        await useModelStore().loadModelFolders()
         await useWorkflowService().loadTutorialWorkflow()
       } else {
         await this.loadGraphData()

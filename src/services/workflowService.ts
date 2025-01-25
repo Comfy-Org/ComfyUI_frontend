@@ -2,6 +2,7 @@ import { LGraphCanvas } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { downloadBlob } from '@/scripts/utils'
@@ -125,16 +126,9 @@ export const useWorkflowService = () => {
    * Load the tutorial workflow
    */
   const loadTutorialWorkflow = async () => {
-    const tutorialWorkflow = {
-      ...defaultGraph,
-      models: [
-        {
-          name: 'v1-5-pruned-emaonly.safetensors',
-          url: 'https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly.safetensors?download=true',
-          directory: 'checkpoints'
-        }
-      ]
-    }
+    const tutorialWorkflow = await fetch(
+      api.fileURL('/templates/default.json')
+    ).then((r) => r.json())
     await app.loadGraphData(tutorialWorkflow, false, false, 'tutorial', {
       showMissingModelsDialog: true
     })

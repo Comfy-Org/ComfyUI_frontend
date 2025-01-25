@@ -192,7 +192,6 @@ export const useModelStore = defineStore('models', () => {
   const models = computed<ComfyModelDef[]>(() =>
     modelFolders.value.flatMap((folder) => Object.values(folder.models))
   )
-  const isLoaded = ref(false)
 
   /**
    * Loads the model folders from the server
@@ -204,13 +203,11 @@ export const useModelStore = defineStore('models', () => {
     for (const folderName of modelFolderNames.value) {
       modelFolderByName.value[folderName] = new ModelFolder(folderName)
     }
-    isLoaded.value = true
   }
 
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
-    if (!isLoaded.value) await loadModelFolders()
     const folder = modelFolderByName.value[folderName]
     return folder ? await folder.load() : null
   }
