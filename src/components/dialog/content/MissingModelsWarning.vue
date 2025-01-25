@@ -2,9 +2,15 @@
   <NoResultsPlaceholder
     class="pb-0"
     icon="pi pi-exclamation-circle"
-    title="Missing Models"
-    message="When loading the graph, the following models were not found"
+    :title="t('missingModelsDialog.missingModels')"
+    :message="t('missingModelsDialog.missingModelsMessage')"
   />
+  <div class="flex gap-1 mb-4">
+    <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
+    <label for="doNotAskAgain">{{
+      t('missingModelsDialog.doNotAskAgain')
+    }}</label>
+  </div>
   <ListBox :options="missingModels" class="comfy-missing-models">
     <template #option="{ option }">
       <Suspense v-if="isElectron()">
@@ -25,11 +31,14 @@
 </template>
 
 <script setup lang="ts">
+import Checkbox from 'primevue/checkbox'
 import ListBox from 'primevue/listbox'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import { useSettingStore } from '@/stores/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
 // TODO: Read this from server internal API rather than hardcoding here
@@ -57,6 +66,10 @@ const props = defineProps<{
   missingModels: ModelInfo[]
   paths: Record<string, string[]>
 }>()
+
+const { t } = useI18n()
+
+const doNotAskAgain = ref(false)
 
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
@@ -106,6 +119,12 @@ const missingModels = computed(() => {
       folderPath: downloadInfo.folder_path
     }
   })
+})
+
+onBeforeUnmount(() => {
+  if (doNotAskAgain.value) {
+    useSettingStore().set('Comfy.Workflow.ShowMissingModelsWarning', false)
+  }
 })
 </script>
 

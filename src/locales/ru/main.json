@@ -370,6 +370,11 @@
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить"
   },
+  "missingModelsDialog": {
+    "doNotAskAgain": "Больше не показывать это",
+    "missingModels": "Отсутствующие модели",
+    "missingModelsMessage": "При загрузке графа следующие модели не были найдены"
+  },
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3d_модели",

@@ -370,6 +370,11 @@
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière"
   },
+  "missingModelsDialog": {
+    "doNotAskAgain": "Ne plus afficher ce message",
+    "missingModels": "Modèles manquants",
+    "missingModelsMessage": "Lors du chargement du graphique, les modèles suivants n'ont pas été trouvés"
+  },
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "modèles_3d",
