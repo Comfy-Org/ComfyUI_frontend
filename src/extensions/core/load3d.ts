@@ -258,15 +258,6 @@ app.registerExtension({
             modelWidget.value = ''
           }
 
-          const animationSelect = node.widgets?.find(
-            (w: IWidget) => w.name === 'animation'
-          )
-
-          if (animationSelect) {
-            animationSelect.options.values = []
-            animationSelect.value = ''
-          }
-
           const speedSelect = node.widgets?.find(
             (w: IWidget) => w.name === 'animation_speed'
           )
@@ -275,44 +266,6 @@ app.registerExtension({
             speedSelect.value = '1'
           }
         })
-
-        node.addWidget(
-          'button',
-          'Play/Pause Animation',
-          'toggle_animation',
-          () => {
-            load3d.toggleAnimation()
-          }
-        )
-
-        const animationSelect = node.addWidget(
-          'combo',
-          'animation',
-          '',
-          () => '',
-          {
-            values: []
-          }
-        ) as IWidget
-
-        animationSelect.callback = (value: string) => {
-          const names = load3d.getAnimationNames()
-          const index = names.indexOf(value)
-
-          if (index !== -1) {
-            const wasPlaying = load3d.isAnimationPlaying
-
-            if (wasPlaying) {
-              load3d.toggleAnimation(false)
-            }
-
-            load3d.updateSelectedAnimation(index)
-
-            if (wasPlaying) {
-              load3d.toggleAnimation(true)
-            }
-          }
-        }
 
         return {
           widget: node.addDOMWidget(inputName, 'LOAD_3D_ANIMATION', container)
@@ -379,20 +332,7 @@ app.registerExtension({
       lightIntensity,
       upDirection,
       fov,
-      cameraState,
-      (load3d: Load3d) => {
-        const animationLoad3d = load3d as Load3dAnimation
-        const names = animationLoad3d.getAnimationNames()
-
-        const animationSelect = node.widgets.find(
-          (w: IWidget) => w.name === 'animation'
-        )
-
-        animationSelect.options.values = names
-        if (names.length) {
-          animationSelect.value = names[0]
-        }
-      }
+      cameraState
     )
 
     const w = node.widgets.find((w: IWidget) => w.name === 'width')
@@ -590,44 +530,6 @@ app.registerExtension({
 
         node.onDrawBackground = function () {
           load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
-        }
-
-        node.addWidget(
-          'button',
-          'Play/Pause Animation',
-          'toggle_animation',
-          () => {
-            load3d.toggleAnimation()
-          }
-        )
-
-        const animationSelect = node.addWidget(
-          'combo',
-          'animation',
-          '',
-          () => '',
-          {
-            values: []
-          }
-        ) as IWidget
-
-        animationSelect.callback = (value: string) => {
-          const names = load3d.getAnimationNames()
-          const index = names.indexOf(value)
-
-          if (index !== -1) {
-            const wasPlaying = load3d.isAnimationPlaying
-
-            if (wasPlaying) {
-              load3d.toggleAnimation(false)
-            }
-
-            load3d.updateSelectedAnimation(index)
-
-            if (wasPlaying) {
-              load3d.toggleAnimation(true)
-            }
-          }
         }
 
         return {
