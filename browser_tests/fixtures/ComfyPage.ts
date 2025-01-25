@@ -904,7 +904,9 @@ export const comfyPageFixture = base.extend<{ comfyPage: ComfyPage }>({
         'Comfy.NodeBadge.NodeSourceBadgeMode': NodeBadgeMode.None,
         // Disable tooltips by default to avoid flakiness.
         'Comfy.EnableTooltips': false,
-        'Comfy.userId': userId
+        'Comfy.userId': userId,
+        // Set tutorial completed to true to avoid loading the tutorial workflow.
+        'Comfy.TutorialCompleted': true
       })
     } catch (e) {
       console.error(e)

@@ -708,5 +708,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'after',
     options: ['before', 'after'],
     versionModified: '1.6.10'
+  },
+  {
+    id: 'Comfy.TutorialCompleted',
+    name: 'Tutorial completed',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.8.7'
   }
 ]
