@@ -2,233 +2,14 @@
 import { IWidget } from '@comfyorg/litegraph'
 import { nextTick } from 'vue'
 
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
-import { api } from '@/scripts/api'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/stores/toastStore'
 
-async function uploadTempImage(imageData, prefix) {
-  const blob = await fetch(imageData).then((r) => r.blob())
-  const name = `${prefix}_${Date.now()}.png`
-  const file = new File([blob], name)
-
-  const body = new FormData()
-  body.append('image', file)
-  body.append('subfolder', 'threed')
-  body.append('type', 'temp')
-
-  const resp = await api.fetchApi('/upload/image', {
-    method: 'POST',
-    body
-  })
-
-  if (resp.status !== 200) {
-    const err = `Error uploading temp image: ${resp.status} - ${resp.statusText}`
-    useToastStore().addAlert(err)
-    throw new Error(err)
-  }
-
-  return await resp.json()
-}
-
-async function uploadFile(
-  load3d: Load3d,
-  file: File,
-  fileInput?: HTMLInputElement
-) {
-  let uploadPath
-
-  try {
-    const body = new FormData()
-    body.append('image', file)
-    body.append('subfolder', '3d')
-
-    const resp = await api.fetchApi('/upload/image', {
-      method: 'POST',
-      body
-    })
-
-    if (resp.status === 200) {
-      const data = await resp.json()
-      let path = data.name
-
-      if (data.subfolder) path = data.subfolder + '/' + path
-
-      uploadPath = path
-
-      const modelUrl = api.apiURL(
-        getResourceURL(...splitFilePath(path), 'input')
-      )
-      await load3d.loadModel(modelUrl, file.name)
-
-      const fileExt = file.name.split('.').pop()?.toLowerCase()
-      if (fileExt === 'obj' && fileInput?.files) {
-        try {
-          const mtlFile = Array.from(fileInput.files).find((f) =>
-            f.name.toLowerCase().endsWith('.mtl')
-          )
-
-          if (mtlFile) {
-            const mtlFormData = new FormData()
-            mtlFormData.append('image', mtlFile)
-            mtlFormData.append('subfolder', '3d')
-
-            await api.fetchApi('/upload/image', {
-              method: 'POST',
-              body: mtlFormData
-            })
-          }
-        } catch (mtlError) {
-          console.warn('Failed to upload MTL file:', mtlError)
-        }
-      }
-    } else {
-      useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
-    }
-  } catch (error) {
-    console.error('Upload error:', error)
-    useToastStore().addAlert(
-      error instanceof Error ? error.message : 'Upload failed'
-    )
-  }
-
-  return uploadPath
-}
-
-function splitFilePath(path: string): [string, string] {
-  const folder_separator = path.lastIndexOf('/')
-  if (folder_separator === -1) {
-    return ['', path]
-  }
-  return [
-    path.substring(0, folder_separator),
-    path.substring(folder_separator + 1)
-  ]
-}
-
-function getResourceURL(
-  subfolder: string,
-  filename: string,
-  type: string = 'input'
-): string {
-  const params = [
-    'filename=' + encodeURIComponent(filename),
-    'type=' + type,
-    'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
-  ].join('&')
-
-  return `/view?${params}`
-}
-
 const containerToLoad3D = new Map()
-
-function configureLoad3D(
-  load3d: Load3d,
-  loadFolder: 'input' | 'output',
-  modelWidget: IWidget,
-  material: IWidget,
-  bgColor: IWidget,
-  lightIntensity: IWidget,
-  upDirection: IWidget,
-  fov: IWidget,
-  cameraState?: any,
-  postModelUpdateFunc?: (load3d: Load3d) => void
-) {
-  const createModelUpdateHandler = () => {
-    let isFirstLoad = true
-
-    return async (value: string | number | boolean | object) => {
-      if (!value) return
-
-      const filename = value as string
-      const modelUrl = api.apiURL(
-        getResourceURL(...splitFilePath(filename), loadFolder)
-      )
-
-      await load3d.loadModel(modelUrl, filename)
-
-      load3d.setMaterialMode(
-        material.value as 'original' | 'normal' | 'wireframe'
-      )
-
-      load3d.setUpDirection(
-        upDirection.value as
-          | 'original'
-          | '-x'
-          | '+x'
-          | '-y'
-          | '+y'
-          | '-z'
-          | '+z'
-      )
-
-      if (postModelUpdateFunc) {
-        postModelUpdateFunc(load3d)
-      }
-
-      if (isFirstLoad && cameraState && typeof cameraState === 'object') {
-        try {
-          load3d.setCameraState(cameraState)
-        } catch (error) {
-          console.warn('Failed to restore camera state:', error)
-        }
-        isFirstLoad = false
-      }
-    }
-  }
-
-  const onModelWidgetUpdate = createModelUpdateHandler()
-
-  if (modelWidget.value) {
-    onModelWidgetUpdate(modelWidget.value)
-  }
-
-  modelWidget.callback = onModelWidgetUpdate
-
-  material.callback = (value: 'original' | 'normal' | 'wireframe') => {
-    load3d.setMaterialMode(value)
-  }
-
-  load3d.setMaterialMode(material.value as 'original' | 'normal' | 'wireframe')
-
-  load3d.setBackgroundColor(bgColor.value as string)
-
-  bgColor.callback = (value: string) => {
-    load3d.setBackgroundColor(value)
-  }
-
-  load3d.setLightIntensity(lightIntensity.value as number)
-
-  lightIntensity.callback = (value: number) => {
-    load3d.setLightIntensity(value)
-  }
-
-  upDirection.callback = (
-    value: 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
-  ) => {
-    load3d.setUpDirection(value)
-  }
-
-  load3d.setUpDirection(
-    upDirection.value as 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
-  )
-
-  fov.callback = (value: number) => {
-    load3d.setFOV(value)
-  }
-
-  load3d.setFOV(fov.value as number)
-
-  const cameraType = load3d.loadNodeProperty('Camera Type', 'perspective')
-
-  load3d.toggleCamera(cameraType)
-
-  const showGrid = load3d.loadNodeProperty('Show Grid', true)
-
-  load3d.toggleGrid(showGrid)
-}
 
 app.registerExtension({
   name: 'Comfy.Load3D',
@@ -279,7 +60,7 @@ app.registerExtension({
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
             )
-            const uploadPath = await uploadFile(
+            const uploadPath = await Load3dUtils.uploadFile(
               load3d,
               fileInput.files[0],
               fileInput
@@ -356,8 +137,9 @@ app.registerExtension({
 
     let cameraState = node.properties['Camera Info']
 
-    configureLoad3D(
-      load3d,
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure(
       'input',
       modelWidget,
       material,
@@ -381,8 +163,8 @@ app.registerExtension({
       )
 
       const [data, dataMask] = await Promise.all([
-        uploadTempImage(imageData, 'scene'),
-        uploadTempImage(maskData, 'scene_mask')
+        Load3dUtils.uploadTempImage(imageData, 'scene'),
+        Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
 
       return {
@@ -444,7 +226,7 @@ app.registerExtension({
             const modelWidget = node.widgets?.find(
               (w: IWidget) => w.name === 'model_file'
             )
-            const uploadPath = await uploadFile(
+            const uploadPath = await Load3dUtils.uploadFile(
               load3d,
               fileInput.files[0],
               fileInput
@@ -587,8 +369,9 @@ app.registerExtension({
 
     let cameraState = node.properties['Camera Info']
 
-    configureLoad3D(
-      load3d,
+    const config = new Load3DConfiguration(load3d)
+
+    config.configure(
       'input',
       modelWidget,
       material,
@@ -627,8 +410,8 @@ app.registerExtension({
       )
 
       const [data, dataMask] = await Promise.all([
-        uploadTempImage(imageData, 'scene'),
-        uploadTempImage(maskData, 'scene_mask')
+        Load3dUtils.uploadTempImage(imageData, 'scene'),
+        Load3dUtils.uploadTempImage(maskData, 'scene_mask')
       ])
 
       return {
@@ -745,8 +528,185 @@ app.registerExtension({
 
       modelWidget.value = filePath.replaceAll('\\', '/')
 
-      configureLoad3D(
-        load3d,
+      const config = new Load3DConfiguration(load3d)
+
+      config.configure(
+        'output',
+        modelWidget,
+        material,
+        bgColor,
+        lightIntensity,
+        upDirection,
+        fov
+      )
+    }
+  }
+})
+
+app.registerExtension({
+  name: 'Comfy.Preview3DAnimation',
+
+  async beforeRegisterNodeDef(nodeType, nodeData) {
+    if (
+      // @ts-expect-error ComfyNode
+      ['Preview3DAnimation'].includes(nodeType.comfyClass)
+    ) {
+      nodeData.input.required.image = ['PREVIEW_3D_ANIMATION']
+    }
+  },
+
+  getCustomWidgets(app) {
+    return {
+      PREVIEW_3D_ANIMATION(node, inputName) {
+        let load3dNode = app.graph._nodes.filter(
+          (wi) => wi.type == 'Preview3DAnimation'
+        )
+
+        const container = document.createElement('div')
+        container.id = `comfy-preview-3d-animation-${load3dNode.length}`
+        container.classList.add('comfy-preview-3d-animation')
+
+        const load3d = new Load3dAnimation(container)
+
+        containerToLoad3D.set(container.id, load3d)
+
+        node.onResize = function () {
+          if (load3d) {
+            load3d.handleResize()
+          }
+        }
+
+        const origOnRemoved = node.onRemoved
+
+        node.onRemoved = function () {
+          if (load3d) {
+            load3d.remove()
+          }
+
+          containerToLoad3D.delete(container.id)
+
+          origOnRemoved?.apply(this, [])
+        }
+
+        node.onDrawBackground = function () {
+          load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
+        }
+
+        node.addWidget(
+          'button',
+          'Play/Pause Animation',
+          'toggle_animation',
+          () => {
+            load3d.toggleAnimation()
+          }
+        )
+
+        const animationSelect = node.addWidget(
+          'combo',
+          'animation',
+          '',
+          () => '',
+          {
+            values: []
+          }
+        ) as IWidget
+
+        animationSelect.callback = (value: string) => {
+          const names = load3d.getAnimationNames()
+          const index = names.indexOf(value)
+
+          if (index !== -1) {
+            const wasPlaying = load3d.isAnimationPlaying
+
+            if (wasPlaying) {
+              load3d.toggleAnimation(false)
+            }
+
+            load3d.updateSelectedAnimation(index)
+
+            if (wasPlaying) {
+              load3d.toggleAnimation(true)
+            }
+          }
+        }
+
+        return {
+          widget: node.addDOMWidget(
+            inputName,
+            'PREVIEW_3D_ANIMATION',
+            container
+          )
+        }
+      }
+    }
+  },
+
+  async nodeCreated(node) {
+    if (node.constructor.comfyClass !== 'Preview3DAnimation') return
+
+    const [oldWidth, oldHeight] = node.size
+
+    node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 550)])
+
+    await nextTick()
+
+    const sceneWidget = node.widgets.find((w: IWidget) => w.name === 'image')
+
+    const container = sceneWidget.element
+
+    const load3d = containerToLoad3D.get(container.id)
+
+    load3d.setNode(node)
+
+    const modelWidget = node.widgets.find(
+      (w: IWidget) => w.name === 'model_file'
+    )
+
+    const material = node.widgets.find((w: IWidget) => w.name === 'material')
+
+    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
+
+    const lightIntensity = node.widgets.find(
+      (w: IWidget) => w.name === 'light_intensity'
+    )
+
+    const upDirection = node.widgets.find(
+      (w: IWidget) => w.name === 'up_direction'
+    )
+
+    const speedSelect = node.widgets.find(
+      (w: IWidget) => w.name === 'animation_speed'
+    )
+
+    speedSelect.callback = (value: string) => {
+      const load3d = containerToLoad3D.get(container.id) as Load3dAnimation
+      if (load3d) {
+        load3d.setAnimationSpeed(parseFloat(value))
+      }
+    }
+
+    const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
+
+    const onExecuted = node.onExecuted
+
+    node.onExecuted = function (message: any) {
+      onExecuted?.apply(this, arguments)
+
+      let filePath = message.model_file[0]
+
+      if (!filePath) {
+        const msg = 'unable to get model file path.'
+
+        console.error(msg)
+
+        useToastStore().addAlert(msg)
+      }
+
+      modelWidget.value = filePath.replaceAll('\\', '/')
+
+      const config = new Load3DConfiguration(load3d)
+
+      config.configure(
         'output',
         modelWidget,
         material,
