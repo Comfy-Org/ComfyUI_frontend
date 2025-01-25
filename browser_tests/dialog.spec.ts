@@ -125,6 +125,7 @@ test.describe('Missing models warning', () => {
     await comfyPage.setup({ clearStorage: true })
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
+    expect(await comfyPage.getSetting('Comfy.TutorialCompleted')).toBe(true)
   })
 
   // Flaky test after parallelization
