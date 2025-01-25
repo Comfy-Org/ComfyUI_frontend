@@ -69,6 +69,8 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
+const doNotAskAgain = ref(false)
+
 const modelDownloads = ref<Record<string, ModelInfo>>({})
 const missingModels = computed(() => {
   return props.missingModels.map((model) => {
@@ -118,8 +120,6 @@ const missingModels = computed(() => {
     }
   })
 })
-
-const doNotAskAgain = ref(false)
 
 onBeforeUnmount(() => {
   if (doNotAskAgain.value) {
