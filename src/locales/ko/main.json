@@ -370,6 +370,11 @@
     "Zoom In": "확대",
     "Zoom Out": "축소"
   },
+  "missingModelsDialog": {
+    "doNotAskAgain": "다시 보지 않기",
+    "missingModels": "모델이 없습니다",
+    "missingModelsMessage": "그래프를 로드할 때 다음 모델을 찾을 수 없었습니다"
+  },
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3D 모델",

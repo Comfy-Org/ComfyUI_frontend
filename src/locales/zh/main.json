@@ -370,6 +370,11 @@
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面"
   },
+  "missingModelsDialog": {
+    "doNotAskAgain": "不再显示此消息",
+    "missingModels": "缺少模型",
+    "missingModelsMessage": "加载图表时，未找到以下模型"
+  },
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3D模型",

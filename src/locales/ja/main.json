@@ -370,6 +370,11 @@
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト"
   },
+  "missingModelsDialog": {
+    "doNotAskAgain": "再度表示しない",
+    "missingModels": "モデルが見つかりません",
+    "missingModelsMessage": "グラフを読み込む際に、次のモデルが見つかりませんでした"
+  },
   "nodeCategories": {
     "3d": "3d",
     "3d_models": "3Dモデル",
