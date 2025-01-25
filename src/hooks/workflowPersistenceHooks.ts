@@ -103,18 +103,19 @@ export function useWorkflowPersistence() {
     }
   )
 
+  // Get storage values before setting watchers
+  const storedWorkflows = JSON.parse(
+    getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
+  )
+  const storedActiveIndex = JSON.parse(
+    getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
+  )
   watch(restoreState, ({ paths, activeIndex }) => {
     setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
     setStorageValue('Comfy.ActiveWorkflowIndex', JSON.stringify(activeIndex))
   })
 
   const restoreWorkflowTabsState = () => {
-    const storedWorkflows = JSON.parse(
-      getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
-    )
-    const storedActiveIndex = JSON.parse(
-      getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
-    )
     const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
     if (isRestorable) {
       workflowStore.openWorkflowsInBackground({
