@@ -247,6 +247,8 @@ watch(
 )
 
 usePragmaticDroppable(() => canvasRef.value, {
+  getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
+    args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
   onDrop: (event) => {
     const loc = event.location.current.input
     const dndData = event.source.data
