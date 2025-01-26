@@ -3,9 +3,9 @@
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons, type PrimeIconsOptions } from '@primevue/core/api'
-import Tag, { TagProps } from 'primevue/tag'
-import { ref, watch } from 'vue'
+import { PrimeIcons } from '@primevue/core/api'
+import Tag from 'primevue/tag'
+import { computed } from 'vue'
 
 import { t } from '@/i18n'
 
@@ -16,25 +16,21 @@ const props = defineProps<{
 }>()
 
 // Bindings
-const icon = ref<string>(null)
-const severity = ref<TagProps['severity']>(null)
-const value = ref<PrimeIconsOptions[keyof PrimeIconsOptions]>(null)
+const icon = computed(() => {
+  if (props.refreshing) return PrimeIcons.QUESTION
+  if (props.error) return PrimeIcons.TIMES
+  return PrimeIcons.CHECK
+})
 
-const updateBindings = () => {
-  if (props.refreshing) {
-    icon.value = PrimeIcons.QUESTION
-    severity.value = 'info'
-    value.value = t('maintenance.refreshing')
-  } else if (props.error) {
-    icon.value = PrimeIcons.TIMES
-    severity.value = 'danger'
-    value.value = t('g.error')
-  } else {
-    icon.value = PrimeIcons.CHECK
-    severity.value = 'success'
-    value.value = t('maintenance.OK')
-  }
-}
+const severity = computed(() => {
+  if (props.refreshing) return 'info'
+  if (props.error) return 'danger'
+  return 'success'
+})
 
-watch(props, updateBindings, { deep: true })
+const value = computed(() => {
+  if (props.refreshing) return t('maintenance.refreshing')
+  if (props.error) return t('g.error')
+  return t('maintenance.OK')
+})
 </script>
