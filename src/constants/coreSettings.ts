@@ -290,7 +290,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Node ID badge mode',
     type: 'combo',
     options: [NodeBadgeMode.None, NodeBadgeMode.ShowAll],
-    defaultValue: NodeBadgeMode.ShowAll
+    defaultValue: NodeBadgeMode.None
   },
   {
     id: 'Comfy.NodeBadge.NodeLifeCycleBadgeMode',
