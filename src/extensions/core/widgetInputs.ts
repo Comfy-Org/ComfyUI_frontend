@@ -782,7 +782,27 @@ app.registerExtension({
         ? origGetExtraMenuOptions.apply(this, arguments)
         : undefined
 
+      const getPointerCanvasPos = () => {
+        const pos = this.graph?.list_of_graphcanvas?.at(0)?.graph_mouse
+        return pos ? { canvasX: pos[0], canvasY: pos[1] } : undefined
+      }
+
       if (this.widgets) {
+        const { canvasX, canvasY } = getPointerCanvasPos()
+        const widget = this.getWidgetOnPos(canvasX, canvasY)
+        // @ts-expect-error custom widget type
+        if (widget && widget.type !== CONVERTED_TYPE) {
+          const config = getConfig.call(this, widget.name) ?? [
+            widget.type,
+            widget.options || {}
+          ]
+          if (isConvertibleWidget(widget, config)) {
+            options.push({
+              content: `Convert ${widget.name} to input`,
+              callback: () => convertToInput(this, widget, config) && false
+            })
+          }
+        }
         let toInput = []
         let toWidget = []
         for (const w of this.widgets) {
