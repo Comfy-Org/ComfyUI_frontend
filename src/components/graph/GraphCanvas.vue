@@ -247,6 +247,7 @@ watch(
 )
 
 usePragmaticDroppable(() => canvasRef.value, {
+  getDropEffect: (): Exclude<DataTransfer['dropEffect'], 'none'> => 'copy',
   onDrop: (event) => {
     const loc = event.location.current.input
     const dndData = event.source.data
