@@ -246,6 +246,10 @@ watch(
   }
 )
 
+watchEffect(() => {
+  LiteGraph.context_menu_scaling = settingStore.get('LiteGraph.ContextMenu.Scaling')
+})
+
 usePragmaticDroppable(() => canvasRef.value, {
   getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
     args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
