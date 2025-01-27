@@ -406,15 +406,32 @@ export class GroupNodeConfig {
     let prefix = ''
 
     // Ensure seenInputs is initialized before checking 
-    seenInputs[key] = (seenInputs[key] ?? 1) + 1;
+    seenInputs[key] = (seenInputs[key] ?? 0) + 1;
 
     // Special handling for primitive to include the title if it is set rather than just "value"
     if ((node.type === 'PrimitiveNode' && node.title) || seenInputs[name] > 1) {
       prefix = `${node.title ?? node.type} `
       key = name = `${prefix}${inputName}`
-      if (name in seenInputs) {
-        name = `${prefix}${seenInputs[name]} ${inputName}`
+
+      // Ensure seenInputs is initialized before checking it
+      seenInputs[name] = seenInputs[name] ?? 0;
+
+      let finalName;
+      if (seenInputs[name] > 0) {
+        // If a duplicate is found, append an incremental number
+        prefix = `${node.title ?? node.type} `;
+        finalName = `${prefix} ${seenInputs[name] + 1} ${inputName}`;
+      } else {
+        // Use the original name if it's the first time
+        prefix = `${node.title ?? node.type} `;
+        finalName = `${prefix}${inputName}`;
       }
+      
+      // Store the incremented count for tracking duplicates
+      seenInputs[name]++;
+      
+      // Ensure the name is added to the definition list correctly
+      this.nodeDef.input.required[finalName] = config;
     }
 
     if (inputName === 'seed' || inputName === 'noise_seed') {
@@ -662,11 +679,12 @@ export class GroupNodeConfig {
       const prefix = `${node.title ?? node.type} `;
       name = `${prefix}${label}`;
 
-      if (name in seenOutputs) {
-        name = `${prefix}${node.index} ${label}`;
+      // Apply the same duplicate tracking logic as inputs
+      if (seenOutputs[name]) {
+        name = `${prefix} ${seenOutputs[name] + 1} ${label}`;
       }
 
-      seenOutputs[name] = 1
+      seenOutputs[name] = (seenOutputs[name] ?? 0) + 1;
 
       this.nodeDef.output_name.push(name)
     }
