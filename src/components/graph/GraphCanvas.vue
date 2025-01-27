@@ -247,7 +247,9 @@ watch(
 )
 
 watchEffect(() => {
-  LiteGraph.context_menu_scaling = settingStore.get('LiteGraph.ContextMenu.Scaling')
+  LiteGraph.context_menu_scaling = settingStore.get(
+    'LiteGraph.ContextMenu.Scaling'
+  )
 })
 
 usePragmaticDroppable(() => canvasRef.value, {
