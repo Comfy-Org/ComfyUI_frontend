@@ -254,14 +254,6 @@ app.registerExtension({
           if (modelWidget) {
             modelWidget.value = ''
           }
-
-          const speedSelect = node.widgets?.find(
-            (w: IWidget) => w.name === 'animation_speed'
-          )
-
-          if (speedSelect) {
-            speedSelect.value = '1'
-          }
         })
 
         return {
@@ -301,17 +293,6 @@ app.registerExtension({
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const speedSelect = node.widgets.find(
-      (w: IWidget) => w.name === 'animation_speed'
-    )
-
-    speedSelect.callback = (value: string) => {
-      const load3d = containerToLoad3D.get(container.id) as Load3dAnimation
-      if (load3d) {
-        load3d.setAnimationSpeed(parseFloat(value))
-      }
-    }
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
@@ -564,17 +545,6 @@ app.registerExtension({
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const speedSelect = node.widgets.find(
-      (w: IWidget) => w.name === 'animation_speed'
-    )
-
-    speedSelect.callback = (value: string) => {
-      const load3d = containerToLoad3D.get(container.id) as Load3dAnimation
-      if (load3d) {
-        load3d.setAnimationSpeed(parseFloat(value))
-      }
-    }
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
