@@ -11,7 +11,6 @@ class Load3DConfiguration {
     loadFolder: 'input' | 'output',
     modelWidget: IWidget,
     material: IWidget,
-    bgColor: IWidget,
     lightIntensity: IWidget,
     upDirection: IWidget,
     fov: IWidget,
@@ -25,7 +24,6 @@ class Load3DConfiguration {
       postModelUpdateFunc
     )
     this.setupMaterial(material)
-    this.setupBackground(bgColor)
     this.setupLighting(lightIntensity)
     this.setupDirection(upDirection)
     this.setupCamera(fov)
@@ -56,13 +54,6 @@ class Load3DConfiguration {
     this.load3d.setMaterialMode(
       material.value as 'original' | 'normal' | 'wireframe'
     )
-  }
-
-  private setupBackground(bgColor: IWidget) {
-    bgColor.callback = (value: string) => {
-      this.load3d.setBackgroundColor(value)
-    }
-    this.load3d.setBackgroundColor(bgColor.value as string)
   }
 
   private setupLighting(lightIntensity: IWidget) {
@@ -99,6 +90,10 @@ class Load3DConfiguration {
 
     const showGrid = this.load3d.loadNodeProperty('Show Grid', true)
     this.load3d.toggleGrid(showGrid)
+
+    const bgColor = this.load3d.loadNodeProperty('Background Color', '#282828')
+
+    this.load3d.setBackgroundColor(bgColor)
   }
 
   private createModelUpdateHandler(

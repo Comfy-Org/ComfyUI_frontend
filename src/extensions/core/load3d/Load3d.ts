@@ -44,6 +44,7 @@ class Load3d {
   cameraSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
   gridSwitcherContainer: HTMLDivElement = {} as HTMLDivElement
   node: LGraphNode = {} as LGraphNode
+  bgColorInput: HTMLInputElement = {} as HTMLInputElement
 
   constructor(container: Element | HTMLElement) {
     this.scene = new THREE.Scene()
@@ -127,6 +128,8 @@ class Load3d {
 
     this.createCameraSwitcher(container)
 
+    this.createColorPicker(container)
+
     this.handleResize()
 
     this.startAnimation()
@@ -143,7 +146,11 @@ class Load3d {
   }
 
   loadNodeProperty(name: string, defaultValue: any) {
-    if (!this.node || !(name in this.node.properties)) {
+    if (
+      !this.node ||
+      !this.node.properties ||
+      !(name in this.node.properties)
+    ) {
       return defaultValue
     }
     return this.node.properties[name]
@@ -273,6 +280,47 @@ class Load3d {
     this.cameraSwitcherContainer.appendChild(cameraIcon)
 
     container.appendChild(this.cameraSwitcherContainer)
+  }
+
+  createColorPicker(container: Element | HTMLElement) {
+    const colorPickerContainer = document.createElement('div')
+    colorPickerContainer.style.position = 'absolute'
+    colorPickerContainer.style.top = '53px'
+    colorPickerContainer.style.left = '3px'
+    colorPickerContainer.style.width = '20px'
+    colorPickerContainer.style.height = '20px'
+    colorPickerContainer.style.cursor = 'pointer'
+    colorPickerContainer.style.alignItems = 'center'
+    colorPickerContainer.style.justifyContent = 'center'
+    colorPickerContainer.title = 'Background Color'
+
+    const colorInput = document.createElement('input')
+    colorInput.type = 'color'
+    colorInput.style.opacity = '0'
+    colorInput.style.position = 'absolute'
+    colorInput.style.width = '100%'
+    colorInput.style.height = '100%'
+    colorInput.style.cursor = 'pointer'
+
+    const colorIcon = document.createElement('div')
+    colorIcon.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M12 3v18"/>
+        <path d="M3 12h18"/>
+      </svg>
+    `
+
+    colorInput.addEventListener('input', (event) => {
+      const color = (event.target as HTMLInputElement).value
+      this.setBackgroundColor(color)
+      this.storeNodeProperty('Background Color', color)
+    })
+
+    this.bgColorInput = colorInput
+    colorPickerContainer.appendChild(colorInput)
+    colorPickerContainer.appendChild(colorIcon)
+    container.appendChild(colorPickerContainer)
   }
 
   setFOV(fov: number) {
@@ -939,6 +987,10 @@ class Load3d {
   setBackgroundColor(color: string) {
     this.renderer.setClearColor(new THREE.Color(color))
     this.renderer.render(this.scene, this.activeCamera)
+
+    if (this.bgColorInput) {
+      this.bgColorInput.value = color
+    }
   }
 }
 

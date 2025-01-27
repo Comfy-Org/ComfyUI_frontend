@@ -123,8 +123,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -143,7 +141,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      bgColor,
       lightIntensity,
       upDirection,
       fov,
@@ -297,8 +294,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -328,7 +323,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      bgColor,
       lightIntensity,
       upDirection,
       fov,
@@ -439,8 +433,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -474,7 +466,6 @@ app.registerExtension({
         'output',
         modelWidget,
         material,
-        bgColor,
         lightIntensity,
         upDirection,
         fov
@@ -566,8 +557,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -612,7 +601,6 @@ app.registerExtension({
         'output',
         modelWidget,
         material,
-        bgColor,
         lightIntensity,
         upDirection,
         fov
