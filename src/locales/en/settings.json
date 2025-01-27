@@ -309,6 +309,9 @@
     "name": "Maxium FPS",
     "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"
   },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "Scale node combo widget menus (lists) when zoomed in"
+  },
   "pysssss_SnapToGrid": {
     "name": "Always snap to grid"
   }

@@ -471,7 +471,8 @@
     "Server-Config": "Server-Config",
     "About": "About",
     "EditTokenWeight": "Edit Token Weight",
-    "CustomColorPalettes": "Custom Color Palettes"
+    "CustomColorPalettes": "Custom Color Palettes",
+    "ContextMenu": "Context Menu"
   },
   "serverConfigItems": {
     "listen": {

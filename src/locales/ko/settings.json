@@ -309,6 +309,9 @@
     "name": "최대 FPS",
     "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드럽게 동작하도록 GPU 사용률을 제한 합니다. 0이면 화면 주사율로 작동 합니다. 기본값: 0"
   },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
+  },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
   }
