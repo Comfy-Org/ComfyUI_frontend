@@ -309,6 +309,9 @@
     "name": "最大FPS",
     "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"
   },
+  "LiteGraph_ContextMenu_Scaling": {
+    "name": "放大时缩放节点组合部件菜单（列表）"
+  },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
   }
