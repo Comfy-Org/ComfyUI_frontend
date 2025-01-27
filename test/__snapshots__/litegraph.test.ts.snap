@@ -142,6 +142,7 @@ LiteGraphGlobal {
   "auto_sort_node_types": false,
   "catch_exceptions": true,
   "click_do_break_link_to": false,
+  "context_menu_scaling": false,
   "ctrl_alt_click_do_break_link": true,
   "ctrl_shift_v_paste_connect_unselected_outputs": true,
   "debug": false,

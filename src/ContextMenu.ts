@@ -181,7 +181,9 @@ export class ContextMenu {
     root.style.left = left + "px"
     root.style.top = top + "px"
 
-    if (options.scale) root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
+    if (LiteGraph.context_menu_scaling && options.scale) {
+      root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
+    }
   }
 
   addItem(

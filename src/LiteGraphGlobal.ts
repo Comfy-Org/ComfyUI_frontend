@@ -257,6 +257,9 @@ export class LiteGraphGlobal {
   /** If `true`, the old "eye-melting-red" error indicator will be used for nodes */
   use_legacy_node_error_indicator = false
 
+  /** Whether to scale context with the graph when zooming in.  Zooming out never makes context menus smaller. */
+  context_menu_scaling = false
+
   // TODO: Remove legacy accessors
   LGraph = LGraph
   LLink = LLink

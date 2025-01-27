@@ -273,6 +273,7 @@ export interface IContextMenuOptions extends IContextMenuBase {
   scroll_speed?: number
   left?: number
   top?: number
+  /** @deprecated Context menus no longer scale using transform */
   scale?: number
   node?: LGraphNode
   autoopen?: boolean
