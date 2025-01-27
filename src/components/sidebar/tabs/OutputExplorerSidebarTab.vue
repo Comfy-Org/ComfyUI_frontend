@@ -59,13 +59,13 @@
         <img
           v-if="currentItem?.type === 'image'"
           class="h-full w-full object-contain"
-          :src="`/output/${folderPrefix}${currentItem?.name}`"
+          :src="`/api/output/${folderPrefix}${currentItem?.name}`"
           alt="preview"
         />
         <video
           v-if="currentItem?.type === 'video'"
           class="h-full w-full object-contain"
-          :src="`/output/${folderPrefix}${currentItem?.name}`"
+          :src="`/api/output/${folderPrefix}${currentItem?.name}`"
           controls
         ></video>
         <div
@@ -78,7 +78,7 @@
           >
             <div class="text-center mb-2">{{ currentItem?.name }}</div>
             <audio
-              :src="`/output/${folderPrefix}${currentItem?.name}`"
+              :src="`/api/output/${folderPrefix}${currentItem?.name}`"
               controls
             ></audio>
           </div>
