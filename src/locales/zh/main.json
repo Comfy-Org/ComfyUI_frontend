@@ -241,6 +241,7 @@
       "errorUpdatingConsent": "更新同意错误",
       "errorUpdatingConsentDetail": "无法更新度量同意设置",
       "learnMoreAboutData": "了解更多关于数据收集的信息",
+      "mirrorSettings": "镜像设置",
       "mirrorsReachable": "到Python镜像的网络访问良好",
       "pypiMirrorPlaceholder": "输入PyPI镜像URL",
       "pythonMirrorPlaceholder": "输入Python镜像URL"

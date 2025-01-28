@@ -241,6 +241,7 @@
       "errorUpdatingConsent": "Erreur de mise à jour du consentement",
       "errorUpdatingConsentDetail": "Échec de la mise à jour des paramètres de consentement aux métriques",
       "learnMoreAboutData": "En savoir plus sur la collecte de données",
+      "mirrorSettings": "Paramètres du Miroir",
       "mirrorsReachable": "L'accès réseau aux miroirs python est bon",
       "pypiMirrorPlaceholder": "Entrez l'URL du miroir PyPI",
       "pythonMirrorPlaceholder": "Entrez l'URL du miroir Python"

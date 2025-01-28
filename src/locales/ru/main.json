@@ -241,6 +241,7 @@
       "errorUpdatingConsent": "Ошибка обновления согласия",
       "errorUpdatingConsentDetail": "Не удалось обновить настройки согласия на метрики",
       "learnMoreAboutData": "Узнать больше о сборе данных",
+      "mirrorSettings": "Настройки зеркала",
       "mirrorsReachable": "Сетевой доступ к зеркалам python хороший",
       "pypiMirrorPlaceholder": "Введите URL-зеркало PyPI",
       "pythonMirrorPlaceholder": "Введите URL-зеркало Python"

@@ -241,6 +241,7 @@
       "errorUpdatingConsent": "同意の更新エラー",
       "errorUpdatingConsentDetail": "メトリクスの同意設定の更新に失敗しました",
       "learnMoreAboutData": "データ収集の詳細を見る",
+      "mirrorSettings": "ミラー設定",
       "mirrorsReachable": "Pythonミラーへのネットワークアクセスは良好です",
       "pypiMirrorPlaceholder": "PyPIミラーURLを入力してください",
       "pythonMirrorPlaceholder": "PythonミラーURLを入力してください"
