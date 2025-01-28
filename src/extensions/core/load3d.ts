@@ -123,8 +123,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -143,7 +141,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      bgColor,
       lightIntensity,
       upDirection,
       fov,
@@ -257,14 +254,6 @@ app.registerExtension({
           if (modelWidget) {
             modelWidget.value = ''
           }
-
-          const speedSelect = node.widgets?.find(
-            (w: IWidget) => w.name === 'animation_speed'
-          )
-
-          if (speedSelect) {
-            speedSelect.value = '1'
-          }
         })
 
         return {
@@ -297,8 +286,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -306,17 +293,6 @@ app.registerExtension({
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const speedSelect = node.widgets.find(
-      (w: IWidget) => w.name === 'animation_speed'
-    )
-
-    speedSelect.callback = (value: string) => {
-      const load3d = containerToLoad3D.get(container.id) as Load3dAnimation
-      if (load3d) {
-        load3d.setAnimationSpeed(parseFloat(value))
-      }
-    }
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
@@ -328,7 +304,6 @@ app.registerExtension({
       'input',
       modelWidget,
       material,
-      bgColor,
       lightIntensity,
       upDirection,
       fov,
@@ -439,8 +414,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -474,7 +447,6 @@ app.registerExtension({
         'output',
         modelWidget,
         material,
-        bgColor,
         lightIntensity,
         upDirection,
         fov
@@ -566,8 +538,6 @@ app.registerExtension({
 
     const material = node.widgets.find((w: IWidget) => w.name === 'material')
 
-    const bgColor = node.widgets.find((w: IWidget) => w.name === 'bg_color')
-
     const lightIntensity = node.widgets.find(
       (w: IWidget) => w.name === 'light_intensity'
     )
@@ -575,17 +545,6 @@ app.registerExtension({
     const upDirection = node.widgets.find(
       (w: IWidget) => w.name === 'up_direction'
     )
-
-    const speedSelect = node.widgets.find(
-      (w: IWidget) => w.name === 'animation_speed'
-    )
-
-    speedSelect.callback = (value: string) => {
-      const load3d = containerToLoad3D.get(container.id) as Load3dAnimation
-      if (load3d) {
-        load3d.setAnimationSpeed(parseFloat(value))
-      }
-    }
 
     const fov = node.widgets.find((w: IWidget) => w.name === 'fov')
 
@@ -612,7 +571,6 @@ app.registerExtension({
         'output',
         modelWidget,
         material,
-        bgColor,
         lightIntensity,
         upDirection,
         fov
