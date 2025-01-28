@@ -243,6 +243,7 @@
       "learnMoreAboutData": "Узнать больше о сборе данных",
       "mirrorSettings": "Настройки зеркала",
       "mirrorsReachable": "Сетевой доступ к зеркалам python хороший",
+      "mirrorsUnreachable": "Сетевой доступ к некоторым зеркалам python плохой",
       "pypiMirrorPlaceholder": "Введите URL-зеркало PyPI",
       "pythonMirrorPlaceholder": "Введите URL-зеркало Python"
     },

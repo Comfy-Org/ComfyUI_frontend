@@ -243,6 +243,7 @@
       "learnMoreAboutData": "데이터 수집에 대해 더 알아보기",
       "mirrorSettings": "미러 설정",
       "mirrorsReachable": "파이썬 미러에 대한 네트워크 액세스가 좋습니다",
+      "mirrorsUnreachable": "일부 파이썬 미러에 대한 네트워크 접근이 나쁩니다",
       "pypiMirrorPlaceholder": "PyPI 미러 URL 입력",
       "pythonMirrorPlaceholder": "Python 미러 URL 입력"
     },

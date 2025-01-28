@@ -243,6 +243,7 @@
       "learnMoreAboutData": "データ収集の詳細を見る",
       "mirrorSettings": "ミラー設定",
       "mirrorsReachable": "Pythonミラーへのネットワークアクセスは良好です",
+      "mirrorsUnreachable": "一部のpythonミラーへのネットワークアクセスが悪い",
       "pypiMirrorPlaceholder": "PyPIミラーURLを入力してください",
       "pythonMirrorPlaceholder": "PythonミラーURLを入力してください"
     },
