@@ -216,7 +216,8 @@
       "pythonMirrorPlaceholder": "Enter Python mirror URL",
       "pypiMirrorPlaceholder": "Enter PyPI mirror URL",
       "checkingMirrors": "Checking network access to python mirrors...",
-      "mirrorsReachable": "Network access to python mirrors is good"
+      "mirrorsReachable": "Network access to python mirrors is good",
+      "mirrorSettings": "Mirror Settings"
     },
     "customNodes": "Custom Nodes",
     "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations.",

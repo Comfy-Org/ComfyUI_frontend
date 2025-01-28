@@ -65,7 +65,14 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
       {
         id: 'Comfy-Desktop.UV.PypiInstallMirror',
         name: 'Pypi Install Mirror',
-        tooltip: `Managed PyPy installations are downloaded from python.org. This variable can be set to a mirror URL to use a different source for PyPy installations. The provided URL will replace https://downloads.python.org/pypy in, e.g., https://downloads.python.org/pypy/pypy3.8-v7.3.7-osx64.tar.bz2. Distributions can be read from a local directory by using the file:// URL scheme`,
+        tooltip: `Default pip install mirror`,
+        type: 'url',
+        defaultValue: ''
+      },
+      {
+        id: 'Comfy-Desktop.UV.TorchInstallMirror',
+        name: 'Torch Install Mirror',
+        tooltip: `Pip install mirror for pytorch`,
         type: 'url',
         defaultValue: ''
       }

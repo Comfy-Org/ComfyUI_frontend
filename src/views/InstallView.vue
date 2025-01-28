@@ -80,10 +80,14 @@
           <DesktopSettingsConfiguration
             v-model:autoUpdate="autoUpdate"
             v-model:allowMetrics="allowMetrics"
+          />
+          <MirrorsConfiguration
             v-model:pythonMirror="pythonMirror"
             v-model:pypiMirror="pypiMirror"
+            v-model:torchMirror="torchMirror"
+            class="mt-6"
           />
-          <div class="flex pt-6 justify-between">
+          <div class="flex mt-6 justify-between">
             <Button
               :label="$t('g.back')"
               severity="secondary"
@@ -122,6 +126,7 @@ import DesktopSettingsConfiguration from '@/components/install/DesktopSettingsCo
 import GpuPicker from '@/components/install/GpuPicker.vue'
 import InstallLocationPicker from '@/components/install/InstallLocationPicker.vue'
 import MigrationPicker from '@/components/install/MigrationPicker.vue'
+import MirrorsConfiguration from '@/components/install/MirrorsConfiguration.vue'
 import { electronAPI } from '@/utils/envUtil'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
@@ -137,6 +142,7 @@ const autoUpdate = ref(true)
 const allowMetrics = ref(true)
 const pythonMirror = ref('')
 const pypiMirror = ref('')
+const torchMirror = ref('')
 
 /** Forces each install step to be visited at least once. */
 const highestStep = ref(0)
@@ -168,6 +174,7 @@ const install = () => {
     migrationItemIds: toRaw(migrationItemIds.value),
     pythonMirror: pythonMirror.value,
     pypiMirror: pypiMirror.value,
+    torchMirror: torchMirror.value,
     device: device.value
   }
   electron.installComfyUI(options)
