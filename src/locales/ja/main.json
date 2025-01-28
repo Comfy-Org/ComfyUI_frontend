@@ -220,6 +220,7 @@
       "allowMetricsDescription": "匿名の使用状況メトリクスを送信してComfyUIを改善します。個人情報やワークフローの内容は収集されません。",
       "autoUpdate": "自動更新",
       "autoUpdateDescription": "更新が利用可能になると、自動的にダウンロードおよびインストールを行います。インストール前に通知が表示されます。",
+      "checkingMirrors": "Pythonミラーへのネットワークアクセスを確認中...",
       "dataCollectionDialog": {
         "collect": {
           "errorReports": "エラーメッセージとスタックトレース",
@@ -239,7 +240,12 @@
       },
       "errorUpdatingConsent": "同意の更新エラー",
       "errorUpdatingConsentDetail": "メトリクスの同意設定の更新に失敗しました",
-      "learnMoreAboutData": "データ収集の詳細を見る"
+      "learnMoreAboutData": "データ収集の詳細を見る",
+      "mirrorSettings": "ミラー設定",
+      "mirrorsReachable": "Pythonミラーへのネットワークアクセスは良好です",
+      "mirrorsUnreachable": "一部のpythonミラーへのネットワークアクセスが悪い",
+      "pypiMirrorPlaceholder": "PyPIミラーURLを入力してください",
+      "pythonMirrorPlaceholder": "PythonミラーURLを入力してください"
     },
     "systemLocations": "システムの場所",
     "unhandledError": "未知のエラー",
@@ -634,6 +640,7 @@
     "Settings": "設定",
     "Sidebar": "サイドバー",
     "Tree Explorer": "ツリーエクスプローラー",
+    "UV": "UV",
     "Validation": "検証",
     "Window": "ウィンドウ",
     "Workflow": "ワークフロー"

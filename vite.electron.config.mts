@@ -68,6 +68,13 @@ const mockElectronAPI: Plugin = {
               console.log('incrementUserProperty', property, value)
             }
           },
+          NetWork: {
+            canAccessUrl: (url) => {
+              const canAccess = url.includes('good')
+              console.log('canAccessUrl', url, canAccess)
+              return new Promise((resolve) => setTimeout(() => resolve(canAccess), 10000))
+            }
+          },
           setMetricsConsent: (consent) => {}
         };`
       }

@@ -5,6 +5,18 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "Envoyer des métriques d'utilisation anonymes"
   },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Miroir d'installation Pypi",
+    "tooltip": "Miroir d'installation pip par défaut"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Miroir d'installation Python",
+    "tooltip": "Les installations Python gérées sont téléchargées depuis le projet Astral python-build-standalone. Cette variable peut être définie sur une URL de miroir pour utiliser une source différente pour les installations Python. L'URL fournie remplacera https://github.com/astral-sh/python-build-standalone/releases/download dans, par exemple, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Les distributions peuvent être lues à partir d'un répertoire local en utilisant le schéma d'URL file://."
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Miroir d'installation Torch",
+    "tooltip": "Miroir d'installation Pip pour pytorch"
+  },
   "Comfy-Desktop_WindowStyle": {
     "name": "Style de fenêtre",
     "options": {

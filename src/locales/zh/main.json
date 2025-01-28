@@ -220,6 +220,7 @@
       "allowMetricsDescription": "通过发送匿名使用情况指标来帮助改进ComfyUI。不会收集任何个人信息或工作流内容。",
       "autoUpdate": "自动更新",
       "autoUpdateDescription": "更新可用时自动更新。您将在安装更新之前收到通知。",
+      "checkingMirrors": "正在检查到Python镜像的网络访问...",
       "dataCollectionDialog": {
         "collect": {
           "errorReports": "错误报告和堆栈跟踪",
@@ -239,7 +240,12 @@
       },
       "errorUpdatingConsent": "更新同意错误",
       "errorUpdatingConsentDetail": "无法更新度量同意设置",
-      "learnMoreAboutData": "了解更多关于数据收集的信息"
+      "learnMoreAboutData": "了解更多关于数据收集的信息",
+      "mirrorSettings": "镜像设置",
+      "mirrorsReachable": "到Python镜像的网络访问良好",
+      "mirrorsUnreachable": "对某些python镜像的网络访问不佳",
+      "pypiMirrorPlaceholder": "输入PyPI镜像URL",
+      "pythonMirrorPlaceholder": "输入Python镜像URL"
     },
     "systemLocations": "系统位置",
     "unhandledError": "未知错误",
@@ -634,6 +640,7 @@
     "Settings": "设置",
     "Sidebar": "侧边栏",
     "Tree Explorer": "树形浏览器",
+    "UV": "UV",
     "Validation": "验证",
     "Window": "窗口",
     "Workflow": "工作流"

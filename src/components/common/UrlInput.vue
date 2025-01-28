@@ -4,18 +4,18 @@
       v-bind="$attrs"
       :model-value="internalValue"
       class="w-full"
-      :invalid="validationState === UrlValidationState.INVALID"
+      :invalid="validationState === ValidationState.INVALID"
       @update:model-value="handleInput"
       @blur="handleBlur"
     />
     <InputIcon
       :class="{
         'pi pi-spin pi-spinner text-neutral-400':
-          validationState === UrlValidationState.LOADING,
+          validationState === ValidationState.LOADING,
         'pi pi-check text-green-500 cursor-pointer':
-          validationState === UrlValidationState.VALID,
+          validationState === ValidationState.VALID,
         'pi pi-times text-red-500 cursor-pointer':
-          validationState === UrlValidationState.INVALID
+          validationState === ValidationState.INVALID
       }"
       @click="validateUrl(props.modelValue)"
     />
@@ -30,6 +30,7 @@ import { onMounted, ref, watch } from 'vue'
 
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
+import { ValidationState } from '@/utils/validationUtil'
 
 const props = defineProps<{
   modelValue: string
@@ -38,16 +39,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'state-change': [state: ValidationState]
 }>()
 
-enum UrlValidationState {
-  IDLE = 'IDLE',
-  LOADING = 'LOADING',
-  VALID = 'VALID',
-  INVALID = 'INVALID'
-}
-
-const validationState = ref<UrlValidationState>(UrlValidationState.IDLE)
+const validationState = ref<ValidationState>(ValidationState.IDLE)
 
 // Add internal value state
 const internalValue = ref(props.modelValue)
@@ -60,6 +55,11 @@ watch(
     await validateUrl(newValue)
   }
 )
+
+watch(validationState, (newState) => {
+  emit('state-change', newState)
+})
+
 // Validate on mount
 onMounted(async () => {
   await validateUrl(props.modelValue)
@@ -69,7 +69,7 @@ const handleInput = (value: string) => {
   // Update internal value without emitting
   internalValue.value = value
   // Reset validation state when user types
-  validationState.value = UrlValidationState.IDLE
+  validationState.value = ValidationState.IDLE
 }
 
 const handleBlur = async () => {
@@ -88,24 +88,24 @@ const defaultValidateUrl = async (url: string): Promise<boolean> => {
 }
 
 const validateUrl = async (value: string) => {
-  if (validationState.value === UrlValidationState.LOADING) return
+  if (validationState.value === ValidationState.LOADING) return
 
   const url = value.trim()
 
   // Reset state
-  validationState.value = UrlValidationState.IDLE
+  validationState.value = ValidationState.IDLE
 
   // Skip validation if empty
   if (!url) return
 
-  validationState.value = UrlValidationState.LOADING
+  validationState.value = ValidationState.LOADING
   try {
     const isValid = await (props.validateUrlFn ?? defaultValidateUrl)(url)
     validationState.value = isValid
-      ? UrlValidationState.VALID
-      : UrlValidationState.INVALID
+      ? ValidationState.VALID
+      : ValidationState.INVALID
   } catch {
-    validationState.value = UrlValidationState.INVALID
+    validationState.value = ValidationState.INVALID
   }
 }
 

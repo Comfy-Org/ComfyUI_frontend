@@ -5,6 +5,18 @@
   "Comfy-Desktop_SendStatistics": {
     "name": "发送匿名使用情况统计"
   },
+  "Comfy-Desktop_UV_PypiInstallMirror": {
+    "name": "Pypi 安装镜像",
+    "tooltip": "默认 pip 安装镜像"
+  },
+  "Comfy-Desktop_UV_PythonInstallMirror": {
+    "name": "Python安装镜像",
+    "tooltip": "管理的Python安装包从Astral python-build-standalone项目下载。此变量可以设置为镜像URL，以使用不同的Python安装源。提供的URL将替换https://github.com/astral-sh/python-build-standalone/releases/download，例如，在https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz中。可以通过使用file:// URL方案从本地目录读取分发包。"
+  },
+  "Comfy-Desktop_UV_TorchInstallMirror": {
+    "name": "Torch安装镜像",
+    "tooltip": "用于pytorch的Pip安装镜像"
+  },
   "Comfy-Desktop_WindowStyle": {
     "name": "窗口样式",
     "options": {

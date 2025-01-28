@@ -212,7 +212,13 @@
           "customNodeConfigurations": "Custom node configurations"
         },
         "viewFullPolicy": "View full policy"
-      }
+      },
+      "pythonMirrorPlaceholder": "Enter Python mirror URL",
+      "pypiMirrorPlaceholder": "Enter PyPI mirror URL",
+      "checkingMirrors": "Checking network access to python mirrors...",
+      "mirrorsReachable": "Network access to python mirrors is good",
+      "mirrorsUnreachable": "Network access to some python mirrors is bad",
+      "mirrorSettings": "Mirror Settings"
     },
     "customNodes": "Custom Nodes",
     "customNodesDescription": "Reinstall custom nodes from existing ComfyUI installations.",
@@ -472,6 +478,7 @@
     "About": "About",
     "EditTokenWeight": "Edit Token Weight",
     "CustomColorPalettes": "Custom Color Palettes",
+    "UV": "UV",
     "ContextMenu": "Context Menu"
   },
   "serverConfigItems": {

@@ -1,7 +1,6 @@
 import { t } from '@/i18n'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
-import { useSettingStore } from '@/stores/settingStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
 import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
@@ -55,6 +54,27 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
 
           electronAPI.Config.setWindowStyle(newValue)
         }
+      },
+      {
+        id: 'Comfy-Desktop.UV.PythonInstallMirror',
+        name: 'Python Install Mirror',
+        tooltip: `Managed Python installations are downloaded from the Astral python-build-standalone project. This variable can be set to a mirror URL to use a different source for Python installations. The provided URL will replace https://github.com/astral-sh/python-build-standalone/releases/download in, e.g., https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz. Distributions can be read from a local directory by using the file:// URL scheme.`,
+        type: 'url',
+        defaultValue: ''
+      },
+      {
+        id: 'Comfy-Desktop.UV.PypiInstallMirror',
+        name: 'Pypi Install Mirror',
+        tooltip: `Default pip install mirror`,
+        type: 'url',
+        defaultValue: ''
+      },
+      {
+        id: 'Comfy-Desktop.UV.TorchInstallMirror',
+        name: 'Torch Install Mirror',
+        tooltip: `Pip install mirror for pytorch`,
+        type: 'url',
+        defaultValue: ''
       }
     ],
 
