@@ -43,6 +43,7 @@ jobs:
           draft: true
           prerelease: false
           make_latest: "true"
+          generate_release_notes: true
   publish_types:
     runs-on: ubuntu-latest
     if: >
