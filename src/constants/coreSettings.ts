@@ -715,5 +715,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: 'LiteGraph.ContextMenu.Scaling',
+    name: 'Scale node combo widget menus (lists) when zoomed in',
+    defaultValue: false,
+    type: 'boolean',
+    versionAdded: '1.8.8'
   }
 ]

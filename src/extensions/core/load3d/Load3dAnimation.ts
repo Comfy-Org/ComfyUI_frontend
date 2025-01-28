@@ -12,11 +12,13 @@ class Load3dAnimation extends Load3d {
   animationSpeed: number = 1.0
   playPauseContainer: HTMLDivElement = {} as HTMLDivElement
   animationSelect: HTMLSelectElement = {} as HTMLSelectElement
+  speedSelect: HTMLSelectElement = {} as HTMLSelectElement
 
   constructor(container: Element | HTMLElement) {
     super(container)
     this.createPlayPauseButton(container)
     this.createAnimationList(container)
+    this.createSpeedSelect(container)
   }
 
   createAnimationList(container: Element | HTMLElement) {
@@ -122,6 +124,52 @@ class Load3dAnimation extends Load3d {
     this.playPauseContainer.style.display = 'none'
   }
 
+  createSpeedSelect(container: Element | HTMLElement) {
+    this.speedSelect = document.createElement('select')
+    Object.assign(this.speedSelect.style, {
+      position: 'absolute',
+      top: '3px',
+      left: '50%',
+      transform: 'translateX(-75px)',
+      width: '60px',
+      height: '20px',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      fontSize: '12px',
+      padding: '0 8px',
+      cursor: 'pointer',
+      display: 'none',
+      outline: 'none'
+    })
+
+    const speeds = [0.1, 0.5, 1, 1.5, 2]
+    speeds.forEach((speed) => {
+      const option = document.createElement('option')
+      option.value = speed.toString()
+      option.text = `${speed}x`
+      option.selected = speed === 1
+      this.speedSelect.appendChild(option)
+    })
+
+    this.speedSelect.addEventListener('mouseenter', () => {
+      this.speedSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+    })
+
+    this.speedSelect.addEventListener('mouseleave', () => {
+      this.speedSelect.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+    })
+
+    this.speedSelect.addEventListener('change', (event) => {
+      const select = event.target as HTMLSelectElement
+      const newSpeed = parseFloat(select.value)
+      this.setAnimationSpeed(newSpeed)
+    })
+
+    container.appendChild(this.speedSelect)
+  }
+
   protected async setupModel(model: THREE.Object3D) {
     await super.setupModel(model)
 
@@ -161,10 +209,12 @@ class Load3dAnimation extends Load3d {
     if (this.animationClips.length > 0) {
       this.playPauseContainer.style.display = 'block'
       this.animationSelect.style.display = 'block'
+      this.speedSelect.style.display = 'block'
       this.updateAnimationList()
     } else {
       this.playPauseContainer.style.display = 'none'
       this.animationSelect.style.display = 'none'
+      this.speedSelect.style.display = 'none'
     }
   }
 
@@ -232,6 +282,11 @@ class Load3dAnimation extends Load3d {
     if (this.animationSelect) {
       this.animationSelect.style.display = 'none'
       this.animationSelect.innerHTML = ''
+    }
+
+    if (this.speedSelect) {
+      this.speedSelect.style.display = 'none'
+      this.speedSelect.value = '1'
     }
   }
 
