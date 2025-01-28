@@ -11,7 +11,11 @@
     >
       <Divider v-if="index > 0" />
 
-      <MirrorItem :item="item" v-model="modelValue.value" />
+      <MirrorItem
+        :item="item"
+        v-model="modelValue.value"
+        @state-change="validationStates[index] = $event"
+      />
     </template>
     <template #icons>
       <i
@@ -32,11 +36,11 @@
 import _ from 'lodash'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import { UV_MIRRORS } from '@/constants/uvMirrors'
-import { ValidationState } from '@/utils/validationUtil'
+import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
 const pythonMirror = defineModel<string>('pythonMirror', { required: true })
@@ -45,5 +49,10 @@ const torchMirror = defineModel<string>('torchMirror', { required: true })
 
 const mirrors = _.zip(UV_MIRRORS, [pythonMirror, pypiMirror, torchMirror])
 
-const validationState = ref<ValidationState>(ValidationState.IDLE)
+const validationStates = ref<ValidationState[]>(
+  mirrors.map(() => ValidationState.IDLE)
+)
+const validationState = computed(() => {
+  return mergeValidationStates(validationStates.value)
+})
 </script>
