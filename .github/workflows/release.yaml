@@ -40,7 +40,7 @@ jobs:
           files: |
             dist.zip
           tag_name: v${{ steps.current_version.outputs.version }}
-          draft: true
+          draft: false
           prerelease: false
           make_latest: "true"
           generate_release_notes: true
