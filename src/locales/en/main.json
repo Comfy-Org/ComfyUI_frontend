@@ -217,6 +217,7 @@
       "pypiMirrorPlaceholder": "Enter PyPI mirror URL",
       "checkingMirrors": "Checking network access to python mirrors...",
       "mirrorsReachable": "Network access to python mirrors is good",
+      "mirrorsUnreachable": "Network access to some python mirrors is bad",
       "mirrorSettings": "Mirror Settings"
     },
     "customNodes": "Custom Nodes",

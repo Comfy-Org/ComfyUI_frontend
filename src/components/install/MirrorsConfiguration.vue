@@ -27,6 +27,7 @@
           'pi pi-times text-red-500':
             validationState === ValidationState.INVALID
         }"
+        v-tooltip="validationStateTooltip"
       />
     </template>
   </Panel>
@@ -40,6 +41,7 @@ import { computed, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import { UV_MIRRORS } from '@/constants/uvMirrors'
+import { t } from '@/i18n'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
@@ -54,5 +56,15 @@ const validationStates = ref<ValidationState[]>(
 )
 const validationState = computed(() => {
   return mergeValidationStates(validationStates.value)
+})
+const validationStateTooltip = computed(() => {
+  switch (validationState.value) {
+    case ValidationState.INVALID:
+      return t('install.settings.mirrorsUnreachable')
+    case ValidationState.VALID:
+      return t('install.settings.mirrorsReachable')
+    default:
+      return t('install.settings.checkingMirrors')
+  }
 })
 </script>
