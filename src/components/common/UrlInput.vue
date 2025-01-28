@@ -39,6 +39,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'state-change': [state: ValidationState]
 }>()
 
 const validationState = ref<ValidationState>(ValidationState.IDLE)
@@ -54,6 +55,11 @@ watch(
     await validateUrl(newValue)
   }
 )
+
+watch(validationState, (newState) => {
+  emit('state-change', newState)
+})
+
 // Validate on mount
 onMounted(async () => {
   await validateUrl(props.modelValue)
