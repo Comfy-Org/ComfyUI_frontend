@@ -5,10 +5,7 @@
     :collapsed="!showMirrorInputs"
     pt:root="bg-neutral-800 border-none w-[600px]"
   >
-    <template
-      v-for="([item, modelValue], index) in mirrors"
-      :key="item.settingId"
-    >
+    <template v-for="([item, modelValue], index) in mirrors" :key="item.mirror">
       <Divider v-if="index > 0" />
 
       <MirrorItem
@@ -79,15 +76,14 @@ const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
   }
 }
 
-const torchMirrorItem = getTorchMirrorItem(device)
-const mirrors: [UVMirror, ModelRef<string>][] = [
+const mirrors = computed<[UVMirror, ModelRef<string>][]>(() => [
   [PYTHON_MIRROR, pythonMirror],
   [PYPI_MIRROR, pypiMirror],
-  [torchMirrorItem, torchMirror]
-]
+  [getTorchMirrorItem(device), torchMirror]
+])
 
 const validationStates = ref<ValidationState[]>(
-  mirrors.map(() => ValidationState.IDLE)
+  mirrors.value.map(() => ValidationState.IDLE)
 )
 const validationState = computed(() => {
   return mergeValidationStates(validationStates.value)
