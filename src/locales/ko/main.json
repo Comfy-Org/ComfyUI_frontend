@@ -180,11 +180,11 @@
       "cpuMode": "CPU 모드",
       "cpuModeDescription": "CPU 모드는 개발자와 드문 경우에만 사용됩니다.",
       "cpuModeDescription2": "이것이 필요한지 확실하지 않다면, 이 상자를 무시하고 위에서 GPU를 선택하세요.",
-      "customComfyNeedsPython": "파이썬이 설정되지 않으면 ComfyUI가 작동하지 않습니다",
+      "customComfyNeedsPython": "Python이 설정되지 않으면 ComfyUI가 작동하지 않습니다",
       "customInstallRequirements": "모든 요구 사항과 종속성 설치 (예: 사용자 정의 torch)",
-      "customManualVenv": "파이썬 venv를 수동으로 구성",
+      "customManualVenv": "Python venv를 수동으로 구성",
       "customMayNotWork": "이것은 전혀 지원되지 않으며, 작동하지 않을 수 있습니다",
-      "customSkipsPython": "이 옵션은 일반 파이썬 설정을 건너뜁니다.",
+      "customSkipsPython": "이 옵션은 일반 Python 설정을 건너뜁니다.",
       "enableCpuMode": "CPU 모드 활성화",
       "mpsDescription": "Apple Metal Performance Shaders는 pytorch nightly를 사용하여 지원됩니다.",
       "nvidiaDescription": "NVIDIA 장치는 pytorch CUDA 빌드를 사용하여 직접 지원됩니다.",
@@ -220,7 +220,7 @@
       "allowMetricsDescription": "익명의 사용 통계를 보내 ComfyUI를 개선하는 데 도움을 줍니다. 개인 정보나 워크플로 내용은 수집되지 않습니다.",
       "autoUpdate": "자동 업데이트",
       "autoUpdateDescription": "업데이트가 가능해지면 자동으로 다운로드하고 설치합니다. 업데이트가 설치되기 전에 항상 알림을 받습니다.",
-      "checkingMirrors": "파이썬 미러에 대한 네트워크 액세스 확인 중...",
+      "checkingMirrors": "Python 미러에 대한 네트워크 액세스 확인 중...",
       "dataCollectionDialog": {
         "collect": {
           "errorReports": "오류 메시지 및 스택 추적",
@@ -241,9 +241,9 @@
       "errorUpdatingConsent": "데이터 수집 동의 설정 업데이트 오류",
       "errorUpdatingConsentDetail": "데이터 수집 동의 설정 업데이트에 실패했습니다",
       "learnMoreAboutData": "데이터 수집에 대해 더 알아보기",
-      "mirrorSettings": "미러 설정",
-      "mirrorsReachable": "파이썬 미러에 대한 네트워크 액세스가 좋습니다",
-      "mirrorsUnreachable": "일부 파이썬 미러에 대한 네트워크 접근이 나쁩니다",
+      "mirrorSettings": "미러 URL 설정",
+      "mirrorsReachable": "Python 미러에 대한 네트워크 액세스가 좋습니다",
+      "mirrorsUnreachable": "일부 Python 미러에 대한 네트워크 접근이 나쁩니다",
       "pypiMirrorPlaceholder": "PyPI 미러 URL 입력",
       "pythonMirrorPlaceholder": "Python 미러 URL 입력"
     },
@@ -593,7 +593,7 @@
     "process": {
       "error": "ComfyUI Desktop을 시작할 수 없습니다",
       "initial-state": "로딩 중...",
-      "python-setup": "파이썬 환경 설정 중...",
+      "python-setup": "Python 환경 설정 중...",
       "ready": "마무리 중...",
       "starting-server": "ComfyUI 서버 시작 중..."
     },
