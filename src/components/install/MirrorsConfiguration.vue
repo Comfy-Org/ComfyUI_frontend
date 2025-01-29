@@ -34,22 +34,57 @@
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash'
+import {
+  CUDA_TORCH_URL,
+  NIGHTLY_CPU_TORCH_URL,
+  TorchDeviceType
+} from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
-import { computed, ref } from 'vue'
+import { ModelRef, computed, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
-import { UV_MIRRORS } from '@/constants/uvMirrors'
+import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
+const { device } = defineProps<{ device: TorchDeviceType }>()
 const pythonMirror = defineModel<string>('pythonMirror', { required: true })
 const pypiMirror = defineModel<string>('pypiMirror', { required: true })
 const torchMirror = defineModel<string>('torchMirror', { required: true })
 
-const mirrors = _.zip(UV_MIRRORS, [pythonMirror, pypiMirror, torchMirror])
+const getTorchMirrorItem = (device: TorchDeviceType): UVMirror => {
+  const settingId = 'Comfy-Desktop.UV.TorchInstallMirror'
+  switch (device) {
+    case 'mps':
+      return {
+        settingId,
+        mirror: NIGHTLY_CPU_TORCH_URL,
+        fallbackMirror: NIGHTLY_CPU_TORCH_URL
+      }
+    case 'nvidia':
+      return {
+        settingId,
+        mirror: CUDA_TORCH_URL,
+        fallbackMirror: CUDA_TORCH_URL
+      }
+    case 'cpu':
+    default:
+      return {
+        settingId,
+        mirror: PYPI_MIRROR.mirror,
+        fallbackMirror: PYPI_MIRROR.fallbackMirror
+      }
+  }
+}
+
+const torchMirrorItem = getTorchMirrorItem(device)
+const mirrors: [UVMirror, ModelRef<string>][] = [
+  [PYTHON_MIRROR, pythonMirror],
+  [PYPI_MIRROR, pypiMirror],
+  [torchMirrorItem, torchMirror]
+]
 
 const validationStates = ref<ValidationState[]>(
   mirrors.map(() => ValidationState.IDLE)
