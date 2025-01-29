@@ -10,7 +10,10 @@
     </div>
     <UrlInput
       v-model="modelValue"
-      :validate-url-fn="checkMirrorReachable"
+      :validate-url-fn="
+        (mirror: string) =>
+          checkMirrorReachable(mirror + (item.validationPathSuffix ?? ''))
+      "
       @state-change="validationState = $event"
     />
   </div>
@@ -20,8 +23,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { UVMirror } from '@/constants/uvMirrors'
-import { electronAPI } from '@/utils/envUtil'
-import { isValidUrl, normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
+import { checkMirrorReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
 const { item } = defineProps<{
@@ -38,15 +41,6 @@ const validationState = ref<ValidationState>(ValidationState.IDLE)
 const normalizedSettingId = computed(() => {
   return normalizeI18nKey(item.settingId)
 })
-
-const checkMirrorReachable = async (mirror: string) => {
-  return (
-    isValidUrl(mirror) &&
-    (await electronAPI().NetWork.canAccessUrl(
-      mirror + (item.validationPathSuffix ?? '')
-    ))
-  )
-}
 
 onMounted(() => {
   modelValue.value = item.mirror
