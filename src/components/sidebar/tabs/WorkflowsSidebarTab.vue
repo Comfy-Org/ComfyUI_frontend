@@ -7,6 +7,7 @@
       <Button
         class="browse-templates-button"
         icon="pi pi-th-large"
+        severity="secondary"
         v-tooltip.bottom="$t('sideToolbar.browseTemplates')"
         text
         @click="() => commandStore.execute('Comfy.BrowseTemplates')"
@@ -14,6 +15,7 @@
       <Button
         class="open-workflow-button"
         icon="pi pi-folder-open"
+        severity="secondary"
         v-tooltip.bottom="$t('sideToolbar.openWorkflow')"
         text
         @click="() => commandStore.execute('Comfy.OpenWorkflow')"
@@ -21,6 +23,7 @@
       <Button
         class="new-blank-workflow-button"
         icon="pi pi-plus"
+        severity="secondary"
         v-tooltip.bottom="$t('sideToolbar.newBlankWorkflow')"
         @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
         text
