@@ -6,16 +6,16 @@
     "name": "익명 사용 통계 보내기"
   },
   "Comfy-Desktop_UV_PypiInstallMirror": {
-    "name": "Pypi 설치 미러",
+    "name": "PyPI 설치 미러",
     "tooltip": "기본 pip 설치 미러"
   },
   "Comfy-Desktop_UV_PythonInstallMirror": {
     "name": "Python 설치 미러",
-    "tooltip": "관리되는 Python 설치파일은 Astral python-build-standalone 프로젝트에서 다운로드됩니다. 이 변수는 Python 설치파일의 다른 출처를 사용하기 위해 미러 URL로 설정할 수 있습니다. 제공된 URL은 예를 들어, https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz에서 https://github.com/astral-sh/python-build-standalone/releases/download를 대체합니다. 배포판은 file:// URL 스키마를 사용하여 로컬 디렉토리에서 읽을 수 있습니다."
+    "tooltip": "관리되는 Python 설치파일은 Astral python-build-standalone 프로젝트에서 다운로드됩니다. 이 변수는 Python 설치파일의 다른 출처를 사용하기 위해 미러 URL로 설정할 수 있습니다. 예를 들어, 제공된 URL은 https://github.com/astral-sh/python-build-standalone/releases/download/20240713/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz에서 https://github.com/astral-sh/python-build-standalone/releases/download 를 대체합니다. 배포판은 file:// URL 스키마를 사용하여 로컬 디렉토리에서 읽을 수 있습니다."
   },
   "Comfy-Desktop_UV_TorchInstallMirror": {
-    "name": "토치 설치 미러",
-    "tooltip": "pytorch를 위한 Pip 설치 미러"
+    "name": "torch 설치 미러",
+    "tooltip": "pytorch를 위한 pip 설치 미러"
   },
   "Comfy-Desktop_WindowStyle": {
     "name": "창 스타일",
