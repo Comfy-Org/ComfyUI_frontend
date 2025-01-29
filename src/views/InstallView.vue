@@ -82,6 +82,7 @@
             v-model:allowMetrics="allowMetrics"
           />
           <MirrorsConfiguration
+            :device="device"
             v-model:pythonMirror="pythonMirror"
             v-model:pypiMirror="pypiMirror"
             v-model:torchMirror="torchMirror"
