@@ -5,7 +5,10 @@
     :collapsed="!showMirrorInputs"
     pt:root="bg-neutral-800 border-none w-[600px]"
   >
-    <template v-for="([item, modelValue], index) in mirrors" :key="item.mirror">
+    <template
+      v-for="([item, modelValue], index) in mirrors"
+      :key="item.settingId + item.mirror"
+    >
       <Divider v-if="index > 0" />
 
       <MirrorItem
