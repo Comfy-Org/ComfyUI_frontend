@@ -24,7 +24,7 @@ export const PYTHON_MIRROR: UVMirror = {
   fallbackMirror:
     'https://ghfast.top/https://github.com/astral-sh/python-build-standalone/releases/download',
   validationPathSuffix:
-    '/cpython-3.12.4%2B20240713-aarch64-apple-darwin-install_only.tar.gz'
+    '/20250115/cpython-3.10.16+20250115-aarch64-apple-darwin-debug-full.tar.zst.sha256'
 }
 
 export const PYPI_MIRROR: UVMirror = {
