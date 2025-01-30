@@ -51,6 +51,20 @@ declare module '@comfyorg/litegraph' {
     applyToGraph?(extraLinks?: LLink[]): void
     updateLink?(link: LLink): LLink | null
     onExecutionStart?(): unknown
+    /**
+     * Callback invoked when the node is dragged over from an external source, i.e.
+     * a file or another HTML element.
+     * @param e The drag event
+     * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+     */
+    onDragOver?(e: DragEvent): boolean
+    /**
+     * Callback invoked when the node is dropped from an external source, i.e.
+     * a file or another HTML element.
+     * @param e The drag event
+     * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+     */
+    onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
     runningInternalNodeId?: NodeId
