@@ -1,4 +1,5 @@
 import { LGraphNode } from '@comfyorg/litegraph'
+import { LiteGraph } from '@comfyorg/litegraph'
 import { Ref } from 'vue'
 
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
@@ -28,8 +29,8 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
           // Add an offset on x to make sure after adding the node, the cursor
           // is on the node (top left corner)
           const pos = comfyApp.clientPosToCanvasPos([
-            loc.clientX - 20,
-            loc.clientY
+            loc.clientX,
+            loc.clientY + LiteGraph.NODE_TITLE_HEIGHT
           ])
           litegraphService.addNodeOnGraph(nodeDef, { pos })
         } else if (node.data instanceof ComfyModelDef) {

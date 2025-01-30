@@ -66,11 +66,12 @@ import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { TreeNode } from 'primevue/treenode'
-import { Ref, computed, nextTick, ref } from 'vue'
+import { Ref, computed, h, nextTick, ref, render } from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import { SearchFilter } from '@/components/common/SearchFilterChip.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
@@ -125,6 +126,13 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       },
       children,
       draggable: node.leaf,
+      renderDragPreview: (node, container) => {
+        const vnode = h(NodePreview, { nodeDef: node.data })
+        render(vnode, container)
+        return () => {
+          render(null, container)
+        }
+      },
       handleClick: (
         node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
         e: MouseEvent
