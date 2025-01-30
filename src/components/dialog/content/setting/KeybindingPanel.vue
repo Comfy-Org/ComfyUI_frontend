@@ -77,7 +77,7 @@
           ref="keybindingInput"
           :modelValue="newBindingKeyCombo?.toString() ?? ''"
           placeholder="Press keys for new binding"
-          @keydown.stop.prevent="captureKeybinding"
+          @keydown="captureKeybinding"
           autocomplete="off"
           fluid
           :invalid="!!existingKeybindingOnCombo"
@@ -213,6 +213,13 @@ function removeKeybinding(commandData: ICommandData) {
 }
 
 function captureKeybinding(event: KeyboardEvent) {
+  // Accessibility: Tab and shift-tab are standard keyboard navigation shortcuts
+  const pressingAltOrCtrl = event.altKey || event.ctrlKey || event.metaKey
+  if (!pressingAltOrCtrl && event.key === 'Tab') return
+
+  event.stopPropagation()
+  event.preventDefault()
+
   const keyCombo = KeyComboImpl.fromEvent(event)
   newBindingKeyCombo.value = keyCombo
 }
