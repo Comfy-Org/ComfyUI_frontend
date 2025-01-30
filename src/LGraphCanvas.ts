@@ -624,10 +624,6 @@ export class LGraphCanvas {
     this.onDrawLinkTooltip = null
     this.onNodeMoved = null
     this.onSelectionChange = null
-    // FIXME: Typo, does nothing
-    // called before any link changes
-    // @ts-expect-error
-    this.onConnectingChange = null
     this.onBeforeChange = null
     this.onAfterChange = null
 
