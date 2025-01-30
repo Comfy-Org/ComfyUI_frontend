@@ -27,7 +27,9 @@
         class="leaf-count-badge"
       />
     </div>
-    <div class="node-actions">
+    <div
+      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+    >
       <slot name="actions" :node="props.node"></slot>
     </div>
   </div>
