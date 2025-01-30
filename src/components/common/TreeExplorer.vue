@@ -9,6 +9,7 @@
     :pt="{
       nodeLabel: 'tree-explorer-node-label',
       nodeContent: ({ context }) => ({
+        class: 'group/tree-node',
         onClick: (e: MouseEvent) =>
           onNodeContentClick(e, context.node as RenderedTreeExplorerNode),
         onContextmenu: (e: MouseEvent) =>
