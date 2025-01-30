@@ -672,7 +672,7 @@
     }
   },
   "ConditioningStableAudio": {
-    "display_name": "ConditioningStableAudio",
+    "display_name": "Stable Audio 조건 설정",
     "inputs": {
       "negative": {
         "name": "부정 조건"
@@ -716,7 +716,7 @@
     }
   },
   "ConditioningZeroOut": {
-    "display_name": "조건 (제로 아웃)",
+    "display_name": "조건 (0으로 출력)",
     "inputs": {
       "conditioning": {
         "name": "조건"
@@ -908,7 +908,7 @@
     }
   },
   "CreateHookKeyframesFromFloats": {
-    "display_name": "부동 소수점으로 후크 키프레임 생성",
+    "display_name": "실수로 후크 키프레임 생성",
     "inputs": {
       "end_percent": {
         "name": "종료 퍼센트"
@@ -1163,11 +1163,11 @@
     }
   },
   "DevToolsObjectPatchNode": {
-    "description": "오브젝트 패치를 적용하는 노드",
-    "display_name": "오브젝트 패치 노드",
+    "description": "객체 패치를 적용하는 노드",
+    "display_name": "객체 패치 노드",
     "inputs": {
       "dummy_float": {
-        "name": "더미 플로트"
+        "name": "더미 실수"
       },
       "model": {
         "name": "모델"
@@ -1257,7 +1257,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "빈 잠재 비디오 (Cosmos)",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -1940,7 +1940,7 @@
         "tooltip": "Classifier-Free Guidance 스케일은 창의성과 프롬프트 준수를 균형 있게 조절합니다. 값이 높을수록 프롬프트와 더 밀접하게 일치하는 이미지가 생성되지만, 너무 높은 값은 품질에 부정적인 영향을 미칠 수 있습니다."
       },
       "denoise": {
-        "name": "노이즈_제거",
+        "name": "노이즈 제거양",
         "tooltip": "적용되는 노이즈 제거의 양으로, 낮은 값은 초기 이미지의 구조를 유지하여 이미지 간 샘플링을 가능하게 합니다."
       },
       "latent_image": {
@@ -2581,7 +2581,7 @@
         "tooltip": "LoRA가 적용될 확산 모델입니다."
       },
       "strength_clip": {
-        "name": "클립 강도",
+        "name": "clip 강도",
         "tooltip": "CLIP 모델을 적용하는 강도입니다. 이 값은 음수가 될 수 있습니다."
       },
       "strength_model": {
@@ -4404,7 +4404,7 @@
     }
   },
   "RescaleCFG": {
-    "display_name": "CFG 크기 재조정",
+    "display_name": "CFG 리스케일",
     "inputs": {
       "model": {
         "name": "모델"
@@ -4855,7 +4855,7 @@
     "display_name": "CLIP 후크 설정",
     "inputs": {
       "apply_to_conds": {
-        "name": "조건에_적용"
+        "name": "조건에 적용"
       },
       "clip": {
         "name": "clip"
@@ -4864,7 +4864,7 @@
         "name": "후크"
       },
       "schedule_clip": {
-        "name": "스케줄_클립"
+        "name": "clip 스케쥴 사용"
       }
     }
   },
@@ -4913,8 +4913,8 @@
     }
   },
   "SkipLayerGuidanceDiT": {
-    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
-    "display_name": "SkipLayerGuidanceDiT",
+    "description": "모든 DiT 모델에서 사용할 수 있는 '레이어 건너뛰기 가이던스' 노드의 범용 버전입니다.",
+    "display_name": "레이어 건너뛰기 가이던스 (DiT)",
     "inputs": {
       "double_layers": {
         "name": "double_layers"
@@ -4926,13 +4926,13 @@
         "name": "모델"
       },
       "rescaling_scale": {
-        "name": "크기 재조정 크기"
+        "name": "리스케일 크기"
       },
       "scale": {
         "name": "크기"
       },
       "single_layers": {
-        "name": "단일_레이어"
+        "name": "single_layers"
       },
       "start_percent": {
         "name": "시작 퍼센트"
@@ -4940,14 +4940,14 @@
     }
   },
   "SkipLayerGuidanceSD3": {
-    "description": "모든 DiT 모델에서 사용할 수 있는 SkipLayerGuidance 노드의 범용 버전입니다.",
-    "display_name": "SkipLayerGuidanceSD3",
+    "description": "SD3 용 레이어 건너뛰기 가이던스 노드입니다.",
+    "display_name": "레이어 건너뛰기 가이던스 (SD3)",
     "inputs": {
       "end_percent": {
         "name": "종료 퍼센트"
       },
       "layers": {
-        "name": "레이어"
+        "name": "layers"
       },
       "model": {
         "name": "모델"
