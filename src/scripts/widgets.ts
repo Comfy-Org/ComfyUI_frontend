@@ -707,8 +707,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     uploadWidget.serialize = false
 
     // Add handler to check if an image is being dragged over our node
-    // @ts-expect-error
-    node.onDragOver = function (e) {
+    node.onDragOver = function (e: DragEvent) {
       if (e.dataTransfer && e.dataTransfer.items) {
         const image = [...e.dataTransfer.items].find((f) => f.kind === 'file')
         return !!image
@@ -718,8 +717,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     }
 
     // On drop upload files
-    // @ts-expect-error
-    node.onDragDrop = function (e) {
+    node.onDragDrop = function (e: DragEvent) {
       console.log('onDragDrop called')
       let handled = false
       for (const file of e.dataTransfer.files) {

@@ -422,7 +422,6 @@ export class ComfyApp {
       this.dragOverNode = null
       // Node handles file drop, we dont use the built in onDropFile handler as its buggy
       // If you drag multiple files it will call it multiple times with the same file
-      // @ts-expect-error This is not a standard event. TODO fix it.
       if (n && n.onDragDrop && (await n.onDragDrop(event))) {
         return
       }
@@ -462,7 +461,6 @@ export class ComfyApp {
         this.canvas.adjustMouseEvent(e)
         const node = this.graph.getNodeOnPos(e.canvasX, e.canvasY)
         if (node) {
-          // @ts-expect-error This is not a standard event. TODO fix it.
           if (node.onDragOver && node.onDragOver(e)) {
             this.dragOverNode = node
 
