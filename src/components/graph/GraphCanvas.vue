@@ -29,18 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  CanvasPointer,
-  ContextMenu,
-  DragAndScale,
-  LGraph,
-  LGraphBadge,
-  LGraphCanvas,
-  LGraphGroup,
-  LGraphNode,
-  LLink,
-  LiteGraph
-} from '@comfyorg/litegraph'
+import { CanvasPointer, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
@@ -54,6 +43,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useGlobalLitegraph } from '@/hooks/litegraphHooks'
 import { useWorkflowPersistence } from '@/hooks/workflowPersistenceHooks'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
@@ -327,18 +317,7 @@ const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 
 onMounted(async () => {
-  // Backward compatible
-  // Assign all properties of lg to window
-  window['LiteGraph'] = LiteGraph
-  window['LGraph'] = LGraph
-  window['LLink'] = LLink
-  window['LGraphNode'] = LGraphNode
-  window['LGraphGroup'] = LGraphGroup
-  window['DragAndScale'] = DragAndScale
-  window['LGraphCanvas'] = LGraphCanvas
-  window['ContextMenu'] = ContextMenu
-  window['LGraphBadge'] = LGraphBadge
-
+  useGlobalLitegraph()
   comfyApp.vueAppReady = true
 
   workspaceStore.spinner = true
