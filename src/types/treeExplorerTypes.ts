@@ -25,6 +25,11 @@ export interface TreeExplorerNode<T = any> {
   ) => void | Promise<void>
   /** Whether the node is draggable */
   draggable?: boolean
+  /** Function to render a drag preview */
+  renderDragPreview?: (
+    node: TreeExplorerNode<T>,
+    container: HTMLElement
+  ) => void | (() => void)
   /** Whether the node is droppable */
   droppable?: boolean
   /** Function to handle dropping a node */
