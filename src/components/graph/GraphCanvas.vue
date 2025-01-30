@@ -42,7 +42,7 @@ import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vu
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
-import { usePragmaticDroppable } from '@/hooks/dndHooks'
+import { useCanvasDrop } from '@/hooks/canvasDropHooks'
 import { useGlobalLitegraph } from '@/hooks/litegraphHooks'
 import { useWorkflowPersistence } from '@/hooks/workflowPersistenceHooks'
 import { i18n } from '@/i18n'
@@ -51,29 +51,20 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/stores/graphStore'
-import { ComfyModelDef } from '@/stores/modelStore'
-import {
-  ModelNodeProvider,
-  useModelToNodeStore
-} from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 const emit = defineEmits(['ready'])
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const litegraphService = useLitegraphService()
 const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
-const modelToNodeStore = useModelToNodeStore()
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
 )
@@ -242,66 +233,6 @@ watchEffect(() => {
   )
 })
 
-usePragmaticDroppable(() => canvasRef.value, {
-  getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
-    args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
-  onDrop: (event) => {
-    const loc = event.location.current.input
-    const dndData = event.source.data
-
-    if (dndData.type === 'tree-explorer-node') {
-      const node = dndData.data as RenderedTreeExplorerNode
-      if (node.data instanceof ComfyNodeDefImpl) {
-        const nodeDef = node.data
-        // Add an offset on x to make sure after adding the node, the cursor
-        // is on the node (top left corner)
-        const pos = comfyApp.clientPosToCanvasPos([
-          loc.clientX - 20,
-          loc.clientY
-        ])
-        litegraphService.addNodeOnGraph(nodeDef, { pos })
-      } else if (node.data instanceof ComfyModelDef) {
-        const model = node.data
-        const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
-        const nodeAtPos = comfyApp.graph.getNodeOnPos(pos[0], pos[1])
-        let targetProvider: ModelNodeProvider | null = null
-        let targetGraphNode: LGraphNode | null = null
-        if (nodeAtPos) {
-          const providers = modelToNodeStore.getAllNodeProviders(
-            model.directory
-          )
-          for (const provider of providers) {
-            if (provider.nodeDef.name === nodeAtPos.comfyClass) {
-              targetGraphNode = nodeAtPos
-              targetProvider = provider
-            }
-          }
-        }
-        if (!targetGraphNode) {
-          const provider = modelToNodeStore.getNodeProvider(model.directory)
-          if (provider) {
-            targetGraphNode = litegraphService.addNodeOnGraph(
-              provider.nodeDef,
-              {
-                pos
-              }
-            )
-            targetProvider = provider
-          }
-        }
-        if (targetGraphNode) {
-          const widget = targetGraphNode.widgets.find(
-            (widget) => widget.name === targetProvider.key
-          )
-          if (widget) {
-            widget.value = model.file_name
-          }
-        }
-      }
-    }
-  }
-})
-
 const loadCustomNodesI18n = async () => {
   try {
     const i18nData = await api.getCustomNodesI18n()
@@ -315,6 +246,7 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+useCanvasDrop(canvasRef)
 
 onMounted(async () => {
   useGlobalLitegraph()
