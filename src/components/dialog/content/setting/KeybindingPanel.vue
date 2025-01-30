@@ -220,6 +220,17 @@ function captureKeybinding(event: KeyboardEvent) {
   event.stopPropagation()
   event.preventDefault()
 
+  // Allow the use of keyboard shortcuts when adding keyboard shortcuts
+  if (!event.shiftKey && !pressingAltOrCtrl) {
+    switch (event.key) {
+      case 'Escape':
+        cancelEdit()
+        return
+      case 'Enter':
+        saveKeybinding()
+        return
+    }
+  }
   const keyCombo = KeyComboImpl.fromEvent(event)
   newBindingKeyCombo.value = keyCombo
 }
