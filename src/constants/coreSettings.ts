@@ -654,7 +654,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'LiteGraph.Canvas.MaximumFps',
-    name: 'Maxium FPS',
+    name: 'Maximum FPS',
     tooltip:
       'The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0',
     type: 'slider',
