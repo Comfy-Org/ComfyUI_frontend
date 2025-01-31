@@ -213,6 +213,17 @@ function removeKeybinding(commandData: ICommandData) {
 }
 
 function captureKeybinding(event: KeyboardEvent) {
+  // Allow the use of keyboard shortcuts when adding keyboard shortcuts
+  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+    switch (event.key) {
+      case 'Escape':
+        cancelEdit()
+        return
+      case 'Enter':
+        saveKeybinding()
+        return
+    }
+  }
   const keyCombo = KeyComboImpl.fromEvent(event)
   newBindingKeyCombo.value = keyCombo
 }
