@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { useModelLibrarySidebarTab } from '@/hooks/sidebarTabs/modelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/hooks/sidebarTabs/nodeLibrarySidebarTab'
+import { useOutputExplorerSidebarTab } from '@/hooks/sidebarTabs/outputExplorerSidebarTab'
 import { useQueueSidebarTab } from '@/hooks/sidebarTabs/queueSidebarTab'
 import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
 import { useCommandStore } from '@/stores/commandStore'
@@ -58,6 +59,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
+    registerSidebarTab(useOutputExplorerSidebarTab())
   }
 
   return {
