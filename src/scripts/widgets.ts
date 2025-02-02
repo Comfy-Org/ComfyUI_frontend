@@ -12,6 +12,7 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { InputSpec } from '@/types/apiTypes'
 
 import { api } from './api'
@@ -23,7 +24,11 @@ export type ComfyWidgetConstructor = (
   inputName: string,
   inputData: InputSpec,
   app?: ComfyApp,
-  widgetName?: string
+  widgetName?: string,
+  options?: {
+    isLazy?: boolean
+    resolver?: () => Promise<(string | number | boolean | object)[]>
+  }
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
 
 function controlValueRunBefore() {
@@ -557,17 +562,51 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     )
     return res
   },
-  COMBO(node, inputName, inputData: InputSpec) {
+  COMBO(node, inputName, inputData: InputSpec, app, widgetName, options = {}) {
     const type = inputData[0]
     let defaultValue = type[0]
     if (inputData[1] && inputData[1].default) {
       defaultValue = inputData[1].default
+    } else if (options.isLazy) {
+      defaultValue = 'Loading...'
     }
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
         values: type
       })
     }
+
+    if (options.isLazy && options.resolver) {
+      const widgetStore = useWidgetStore()
+      const widgetKey = `${inputName}/${JSON.stringify(options)}`
+
+      // Register the resolver with the store
+      type ValueType = Awaited<ReturnType<typeof options.resolver>>[number]
+      widgetStore.registerResolver<ValueType>(widgetKey, options.resolver)
+
+      const origOptions = res.widget.options
+      res.widget.options = new Proxy(origOptions, {
+        get(target: Record<string | symbol, any>, prop: string | symbol) {
+          if (prop !== 'values') return target[prop]
+          const values = widgetStore.getValues<ValueType>(widgetKey)
+
+          // Set active value if not already set
+          if (values.length && !values.includes(res.widget.value)) {
+            res.widget.value = values[0]
+            node.graph.setDirtyCanvas(true)
+          }
+
+          return values
+        }
+      })
+
+      // Add method for external state management
+      ;(res.widget as any).setDirty = () => {
+        widgetStore.clearCache(widgetKey)
+        node.graph.setDirtyCanvas(true)
+      }
+    }
+
     if (inputData[1]?.control_after_generate) {
       // TODO make combo handle a widget node type?
       res.widget.linkedWidgets = addValueControlWidgets(
@@ -579,6 +618,27 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       )
     }
     return res
+  },
+  FILE_COMBO(node: LGraphNode, inputName: string, inputData: InputSpec) {
+    const {
+      folder_path,
+      filter_content_type,
+      filter_extension,
+      include_directories
+    } = inputData[1]
+    const resolver = async () => {
+      const res = await api.getFilepaths({
+        folder_path,
+        filter_content_type,
+        filter_extension,
+        include_directories
+      })
+      return res.files
+    }
+    return ComfyWidgets.COMBO(node, inputName, inputData, app, inputName, {
+      isLazy: true,
+      resolver
+    })
   },
   IMAGEUPLOAD(node: LGraphNode, inputName: string, inputData: InputSpec, app) {
     // TODO make image upload handle a custom node type?
