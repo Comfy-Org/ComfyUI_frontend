@@ -373,7 +373,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 50
     },
     defaultValue: 500,
-    versionAdded: '1.8.13'
+    versionAdded: '1.9.0'
   },
   {
     id: 'Comfy.EnableTooltips',
