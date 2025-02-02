@@ -74,6 +74,7 @@
     "comingSoon": "即将推出",
     "command": "指令",
     "confirm": "确认",
+    "continue": "继续",
     "copyToClipboard": "复制到剪贴板",
     "currentUser": "当前用户",
     "customize": "自定义",
@@ -273,15 +274,19 @@
     "Skipped": "跳过",
     "allOk": "未检测到任何问题。",
     "confirmTitle": "你确定吗？",
+    "consoleLogs": "控制台日志",
     "detected": "检测到",
     "error": {
+      "cannotContinue": "无法继续 - 仍有错误",
       "defaultDescription": "运行维护任务时发生错误。",
       "taskFailed": "任务运行失败。",
       "toastTitle": "任务错误"
     },
     "refreshing": "刷新中",
     "showManual": "显示维护任务",
-    "status": "状态"
+    "status": "状态",
+    "terminalDefaultMessage": "当你运行一个故障排除命令时，任何输出都会在这里显示。",
+    "title": "维护"
   },
   "menu": {
     "autoQueue": "自动执行",

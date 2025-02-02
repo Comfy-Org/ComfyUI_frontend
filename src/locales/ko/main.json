@@ -74,6 +74,7 @@
     "comingSoon": "곧 출시 예정",
     "command": "명령",
     "confirm": "확인",
+    "continue": "계속",
     "copyToClipboard": "클립보드에 복사",
     "currentUser": "현재 사용자",
     "customize": "사용자 정의",
@@ -273,15 +274,19 @@
     "Skipped": "건너뜀",
     "allOk": "문제가 발견되지 않았습니다.",
     "confirmTitle": "확실합니까?",
+    "consoleLogs": "콘솔 로그",
     "detected": "감지됨",
     "error": {
+      "cannotContinue": "계속할 수 없습니다 - 오류가 남아 있습니다",
       "defaultDescription": "유지 보수 작업을 실행하는 동안 오류가 발생했습니다.",
       "taskFailed": "작업 실행에 실패했습니다.",
       "toastTitle": "작업 오류"
     },
     "refreshing": "새로 고침 중",
     "showManual": "유지 보수 작업 보기",
-    "status": "상태"
+    "status": "상태",
+    "terminalDefaultMessage": "문제 해결 명령을 실행하면 출력이 여기에 표시됩니다.",
+    "title": "유지 보수"
   },
   "menu": {
     "autoQueue": "자동 실행 큐",
