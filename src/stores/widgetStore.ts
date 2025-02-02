@@ -69,12 +69,16 @@ export const useWidgetStore = defineStore('widget', () => {
     if (!values && !isLoading(key) && isLazy(key)) {
       const resolver = lazyState.value.resolvers[key] as () => Promise<T[]>
       lazyState.value.loading[key] = true
+      console.count(`[Lazy Widget] initialization count for ${key}`)
       resolver()
         .then((newValues) => {
           lazyState.value.values[key] = newValues
         })
         .catch((error) => {
-          console.error(`Error loading values for widget ${key}:`, error)
+          console.error(
+            `[Lazy Widget] Error loading values for widget ${key}:`,
+            error
+          )
           // Backoff to prevent repeating failed requests
           setTimeout(() => {
             lazyState.value.loading[key] = false

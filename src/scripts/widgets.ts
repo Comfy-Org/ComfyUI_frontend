@@ -578,7 +578,12 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 
     if (options.isLazy && options.resolver) {
       const widgetStore = useWidgetStore()
-      const widgetKey = `${inputName}/${JSON.stringify(options)}`
+      const widgetKey =
+        `${type}:${JSON.stringify(inputData[1].folder_path)}`.replace(
+          /[^\w\s]/g,
+          ''
+        )
+      // console.log('[Lazy Widget] registering resolver for', widgetKey)
 
       // Register the resolver with the store
       type ValueType = Awaited<ReturnType<typeof options.resolver>>[number]
@@ -600,7 +605,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
         }
       })
 
-      // Add method for external state management
+      // Add method to reset state, ensuring re-evaluation on next access
       ;(res.widget as any).setDirty = () => {
         widgetStore.clearCache(widgetKey)
         node.graph.setDirtyCanvas(true)

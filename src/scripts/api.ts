@@ -888,6 +888,7 @@ export class ComfyApi extends EventTarget {
       const params = new URLSearchParams({
         folder_path: options.folder_path
       })
+      console.count('[Lazy Widget] requests made by lazy widgets')
       if (options.include_directories)
         params.append('include_directories', 'true')
       if (options.filter_content_type)
