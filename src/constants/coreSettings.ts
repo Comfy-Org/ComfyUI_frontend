@@ -364,6 +364,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 0
   },
   {
+    id: 'LiteGraph.Node.TooltipDelay',
+    name: 'Tooltip Delay',
+    type: 'number',
+    attrs: {
+      min: 100,
+      max: 3000,
+      step: 50
+    },
+    defaultValue: 500,
+    versionAdded: '1.9.0'
+  },
+  {
     id: 'Comfy.EnableTooltips',
     category: ['LiteGraph', 'Node', 'EnableTooltips'],
     name: 'Enable Tooltips',

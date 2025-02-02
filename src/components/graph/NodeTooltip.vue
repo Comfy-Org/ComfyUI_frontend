@@ -17,10 +17,12 @@ import { nextTick, ref } from 'vue'
 import { st } from '@/i18n'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useSettingStore } from '@/stores/settingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 let idleTimeout: number
 const nodeDefStore = useNodeDefStore()
+const settingStore = useSettingStore()
 const tooltipRef = ref<HTMLDivElement>()
 const tooltipText = ref('')
 const left = ref<string>()
@@ -110,7 +112,10 @@ const onMouseMove = (e: MouseEvent) => {
   clearTimeout(idleTimeout)
 
   if ((e.target as Node).nodeName !== 'CANVAS') return
-  idleTimeout = window.setTimeout(onIdle, 500)
+  idleTimeout = window.setTimeout(
+    onIdle,
+    settingStore.get('LiteGraph.Node.TooltipDelay')
+  )
 }
 
 useEventListener(window, 'mousemove', onMouseMove)
