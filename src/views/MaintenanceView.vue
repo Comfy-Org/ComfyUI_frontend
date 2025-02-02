@@ -5,12 +5,15 @@
     >
       <div class="max-w-screen-sm w-screen m-8 relative">
         <!-- Header -->
-        <h1 class="backspan pi-wrench text-4xl font-bold">Maintenance</h1>
+        <h1 class="backspan pi-wrench text-4xl font-bold">
+          {{ t('maintenance.title') }}
+        </h1>
 
         <!-- Toolbar -->
         <div class="w-full flex flex-wrap gap-4 items-center">
           <span class="grow">
-            Status: <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
+            {{ t('maintenance.status') }}:
+            <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
           </span>
           <div class="flex gap-4 items-center">
             <SelectButton
@@ -53,14 +56,14 @@
         <!-- Actions -->
         <div class="flex justify-between gap-4 flex-row">
           <Button
-            label="Console Logs"
+            :label="t('maintenance.consoleLogs')"
             icon="pi pi-desktop"
             icon-pos="left"
             severity="secondary"
             @click="toggleConsoleDrawer"
           />
           <Button
-            label="Continue"
+            :label="t('g.continue')"
             icon="pi pi-arrow-right"
             icon-pos="left"
             :severity="anyErrors ? 'secondary' : 'primary'"
@@ -72,7 +75,7 @@
 
       <Drawer
         v-model:visible="terminalVisible"
-        header="Terminal"
+        :header="t('g.terminal')"
         position="bottom"
         style="height: max(50vh, 34rem)"
       >
@@ -103,6 +106,7 @@ import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { useTerminalBuffer } from '@/hooks/bottomPanelTabs/useTerminalBuffer'
+import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
@@ -153,8 +157,8 @@ const completeValidation = async (alertOnFail = true) => {
   if (alertOnFail && !isValid) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Unable to continue - errors remain',
+      summary: t('g.error'),
+      detail: t('maintenance.error.cannotContinue'),
       life: 5_000
     })
   }
@@ -167,9 +171,7 @@ const terminalCreated = (
 ) => {
   xterm = terminal
   useAutoSize({ root, autoRows: true, autoCols: true })
-  terminal.write(
-    'When you run a troubleshooting command, any output will be shown here.'
-  )
+  terminal.write(t('maintenance.terminalDefaultMessage'))
   buffer.copyTo(terminal)
 
   terminal.options.cursorBlink = false

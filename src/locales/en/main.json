@@ -73,7 +73,8 @@
     "workflow": "Workflow",
     "success": "Success",
     "ok": "OK",
-    "feedback": "Feedback"
+    "feedback": "Feedback",
+    "continue": "Continue"
   },
   "issueReport": {
     "submitErrorReport": "Submit Error Report (Optional)",
@@ -702,6 +703,7 @@
     "WEBCAM": "WEBCAM"
   },
   "maintenance": {
+    "title": "Maintenance",
     "allOk": "No issues were detected.",
     "status": "Status",
     "detected": "Detected",
@@ -711,9 +713,12 @@
     "Skipped": "Skipped",
     "showManual": "Show maintenance tasks",
     "confirmTitle": "Are you sure?",
+    "terminalDefaultMessage": "When you run a troubleshooting command, any output will be shown here.",
+    "consoleLogs": "Console Logs",
     "error": {
       "toastTitle": "Task error",
       "taskFailed": "Task failed to run.",
+      "cannotContinue": "Unable to continue - errors remain",
       "defaultDescription": "An error occurred while running a maintenance task."
     }
   },
