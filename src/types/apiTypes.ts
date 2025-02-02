@@ -341,7 +341,27 @@ const zComboInputSpec = inputSpec(
   /* allowUpcast=*/ false
 )
 
-const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
+const zFileComboInputSpec = inputSpec(
+  [
+    z.literal('FILE_COMBO'),
+    zBaseInputSpecValue.extend({
+      folder_path: z.string(),
+      filter_content_type: z.array(z.string()).optional(),
+      filter_extensions: z.array(z.string()).optional(),
+      include_directories: z.boolean().optional()
+    })
+  ],
+  /* allowUpcast=*/ false
+)
+
+const excludedLiterals = new Set([
+  'INT',
+  'FLOAT',
+  'BOOLEAN',
+  'STRING',
+  'COMBO',
+  'FILE_COMBO'
+])
 
 const zCustomInputSpec = inputSpec([
   z.string().refine((value) => !excludedLiterals.has(value)),
@@ -354,6 +374,7 @@ const zInputSpec = z.union([
   zBooleanInputSpec,
   zStringInputSpec,
   zComboInputSpec,
+  zFileComboInputSpec,
   zCustomInputSpec
 ])
 
