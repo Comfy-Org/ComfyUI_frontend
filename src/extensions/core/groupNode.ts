@@ -404,35 +404,15 @@ export class GroupNodeConfig {
       inputName
     let key = name
     let prefix = ''
-
-    // Ensure seenInputs is initialized before checking
-    seenInputs[key] = (seenInputs[key] ?? 0) + 1
-
     // Special handling for primitive to include the title if it is set rather than just "value"
-    if ((node.type === 'PrimitiveNode' && node.title) || seenInputs[name] > 1) {
+    if ((node.type === 'PrimitiveNode' && node.title) || name in seenInputs) {
       prefix = `${node.title ?? node.type} `
       key = name = `${prefix}${inputName}`
-
-      // Ensure seenInputs is initialized before checking it
-      seenInputs[name] = seenInputs[name] ?? 0
-
-      let finalName
-      if (seenInputs[name] > 0) {
-        // If a duplicate is found, append an incremental number
-        prefix = `${node.title ?? node.type} `
-        finalName = `${prefix} ${seenInputs[name] + 1} ${inputName}`
-      } else {
-        // Use the original name if it's the first time
-        prefix = `${node.title ?? node.type} `
-        finalName = `${prefix}${inputName}`
+      if (name in seenInputs) {
+        name = `${prefix}${seenInputs[name]} ${inputName}`
       }
-
-      // Store the incremented count for tracking duplicates
-      seenInputs[name]++
-
-      // Ensure the name is added to the definition list correctly
-      this.nodeDef.input.required[finalName] = config
     }
+    seenInputs[key] = (seenInputs[key] ?? 1) + 1
 
     if (inputName === 'seed' || inputName === 'noise_seed') {
       if (!extra) extra = {}
@@ -660,32 +640,24 @@ export class GroupNodeConfig {
       this.nodeDef.output.push(def.output[outputId])
       this.nodeDef.output_is_list.push(def.output_is_list[outputId])
 
-      // Try to get a custom name from the configuration if it exists
-      let label =
-        customConfig?.name ??
-        // If no custom name, check if the definition provides an output name
-        def.output_name?.[outputId] ??
-        // If neither exist, fallback to the raw output type (e.g., "FLOAT", "INT")
-        def.output[outputId]
-
-      // Check if label is missing and fallback
+      let label = customConfig?.name
       if (!label) {
-        const output = node.outputs.find((o) => o.name)
-        label = output?.label ?? 'UnnamedOutput'
+        label = def.output_name?.[outputId] ?? def.output[outputId]
+        const output = node.outputs.find((o) => o.name === label)
+        if (output?.label) {
+          label = output.label
+        }
       }
 
       let name = label
-
-      // Always prefix with node title or type
-      const prefix = `${node.title ?? node.type} `
-      name = `${prefix}${label}`
-
-      // Apply the same duplicate tracking logic as inputs
-      if (seenOutputs[name]) {
-        name = `${prefix} ${seenOutputs[name] + 1} ${label}`
+      if (name in seenOutputs) {
+        const prefix = `${node.title ?? node.type} `
+        name = `${prefix}${label}`
+        if (name in seenOutputs) {
+          name = `${prefix}${node.index} ${label}`
+        }
       }
-
-      seenOutputs[name] = (seenOutputs[name] ?? 0) + 1
+      seenOutputs[name] = 1
 
       this.nodeDef.output_name.push(name)
     }
