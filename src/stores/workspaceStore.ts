@@ -10,6 +10,7 @@ import { useQueueSettingsStore } from './queueStore'
 import { useSettingStore } from './settingStore'
 import { useToastStore } from './toastStore'
 import { useWorkflowStore } from './workflowStore'
+import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
@@ -36,6 +37,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()
   const dialog = useDialogService()
+  const bottomPanel = useBottomPanelStore()
 
   /**
    * Registers a sidebar tab.
@@ -79,6 +81,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     workflow,
     colorPalette,
     dialog,
+    bottomPanel,
 
     registerSidebarTab,
     unregisterSidebarTab,
