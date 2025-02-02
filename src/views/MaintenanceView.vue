@@ -5,12 +5,15 @@
     >
       <div class="max-w-screen-sm w-screen m-8 relative">
         <!-- Header -->
-        <h1 class="backspan pi-wrench text-4xl font-bold">Maintenance</h1>
+        <h1 class="backspan pi-wrench text-4xl font-bold">
+          {{ t('maintenance.title') }}
+        </h1>
 
         <!-- Toolbar -->
         <div class="w-full flex flex-wrap gap-4 items-center">
           <span class="grow">
-            Status: <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
+            {{ t('maintenance.status') }}:
+            <StatusTag :refreshing="isRefreshing" :error="anyErrors" />
           </span>
           <div class="flex gap-4 items-center">
             <SelectButton
@@ -53,14 +56,14 @@
         <!-- Actions -->
         <div class="flex justify-between gap-4 flex-row">
           <Button
-            label="Console Logs"
+            :label="t('maintenance.consoleLogs')"
             icon="pi pi-desktop"
             icon-pos="left"
             severity="secondary"
             @click="toggleConsoleDrawer"
           />
           <Button
-            label="Continue"
+            :label="t('g.continue')"
             icon="pi pi-arrow-right"
             icon-pos="left"
             :severity="anyErrors ? 'secondary' : 'primary'"
@@ -72,11 +75,14 @@
 
       <Drawer
         v-model:visible="terminalVisible"
-        header="Terminal"
+        :header="t('g.terminal')"
         position="bottom"
         style="height: max(50vh, 34rem)"
       >
-        <BaseTerminal @created="terminalCreated" />
+        <BaseTerminal
+          @created="terminalCreated"
+          @unmounted="terminalUnmounted"
+        />
       </Drawer>
       <Toast />
     </div>
@@ -85,6 +91,7 @@
 
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
+import { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import SelectButton from 'primevue/selectbutton'
@@ -98,6 +105,8 @@ import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { useTerminalBuffer } from '@/hooks/bottomPanelTabs/useTerminalBuffer'
+import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
@@ -138,32 +147,41 @@ const filterOptions = ref([
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
+/** The actual output of all terminal commands - not rendered */
+const buffer = useTerminalBuffer()
+let xterm: Terminal | null = null
+
 /** If valid, leave the validation window. */
 const completeValidation = async (alertOnFail = true) => {
   const isValid = await electron.Validation.complete()
   if (alertOnFail && !isValid) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'Unable to continue - errors remain',
+      summary: t('g.error'),
+      detail: t('maintenance.error.cannotContinue'),
       life: 5_000
     })
   }
 }
 
+// Created and destroyed with the Drawer - contents copied from hidden buffer
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
+  xterm = terminal
   useAutoSize({ root, autoRows: true, autoCols: true })
-  electron.onLogMessage((message: string) => {
-    terminal.write(message)
-  })
+  terminal.write(t('maintenance.terminalDefaultMessage'))
+  buffer.copyTo(terminal)
 
   terminal.options.cursorBlink = false
   terminal.options.cursorStyle = 'bar'
   terminal.options.cursorInactiveStyle = 'bar'
   terminal.options.disableStdin = true
+}
+
+const terminalUnmounted = () => {
+  xterm = null
 }
 
 const toggleConsoleDrawer = () => {
@@ -188,6 +206,11 @@ watch(
 
 onMounted(async () => {
   electron.Validation.onUpdate(processUpdate)
+
+  electron.onLogMessage((message: string) => {
+    buffer.write(message)
+    xterm?.write(message)
+  })
 
   const update = await electron.Validation.getStatus()
   processUpdate(update)

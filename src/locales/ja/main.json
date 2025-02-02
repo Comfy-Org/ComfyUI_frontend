@@ -74,6 +74,7 @@
     "comingSoon": "近日公開",
     "command": "コマンド",
     "confirm": "確認",
+    "continue": "続ける",
     "copyToClipboard": "クリップボードにコピー",
     "currentUser": "現在のユーザー",
     "customize": "カスタマイズ",
@@ -273,15 +274,19 @@
     "Skipped": "スキップされました",
     "allOk": "問題は検出されませんでした。",
     "confirmTitle": "よろしいですか？",
+    "consoleLogs": "コンソールログ",
     "detected": "検出されました",
     "error": {
+      "cannotContinue": "続行できません - エラーが残っています",
       "defaultDescription": "メンテナンスタスクの実行中にエラーが発生しました。",
       "taskFailed": "タスクの実行に失敗しました。",
       "toastTitle": "タスクエラー"
     },
     "refreshing": "更新中",
     "showManual": "メンテナンスタスクを表示",
-    "status": "ステータス"
+    "status": "ステータス",
+    "terminalDefaultMessage": "トラブルシューティングコマンドを実行すると、出力はここに表示されます。",
+    "title": "メンテナンス"
   },
   "menu": {
     "autoQueue": "自動キュー",

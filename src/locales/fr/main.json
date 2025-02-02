@@ -74,6 +74,7 @@
     "comingSoon": "Bientôt disponible",
     "command": "Commande",
     "confirm": "Confirmer",
+    "continue": "Continuer",
     "copyToClipboard": "Copier dans le presse-papiers",
     "currentUser": "Utilisateur actuel",
     "customize": "Personnaliser",
@@ -273,15 +274,19 @@
     "Skipped": "Ignoré",
     "allOk": "Aucun problème détecté.",
     "confirmTitle": "Êtes-vous sûr ?",
+    "consoleLogs": "Journaux de la console",
     "detected": "Détecté",
     "error": {
+      "cannotContinue": "Impossible de continuer - des erreurs subsistent",
       "defaultDescription": "Une erreur s'est produite lors de l'exécution d'une tâche de maintenance.",
       "taskFailed": "La tâche a échoué.",
       "toastTitle": "Erreur de tâche"
     },
     "refreshing": "Actualisation",
     "showManual": "Afficher les tâches de maintenance",
-    "status": "Statut"
+    "status": "Statut",
+    "terminalDefaultMessage": "Lorsque vous exécutez une commande de dépannage, toute sortie sera affichée ici.",
+    "title": "Maintenance"
   },
   "menu": {
     "autoQueue": "File d'attente automatique",

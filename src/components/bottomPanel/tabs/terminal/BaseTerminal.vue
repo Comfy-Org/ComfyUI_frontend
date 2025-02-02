@@ -7,16 +7,19 @@
 </template>
 
 <script setup lang="ts">
-import { Ref, ref } from 'vue'
+import { Ref, onUnmounted, ref } from 'vue'
 
 import { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 
 const emit = defineEmits<{
   created: [ReturnType<typeof useTerminal>, Ref<HTMLElement>]
+  unmounted: []
 }>()
 const terminalEl = ref<HTMLElement>()
 const rootEl = ref<HTMLElement>()
 emit('created', useTerminal(terminalEl), rootEl)
+
+onUnmounted(() => emit('unmounted'))
 </script>
 
 <style scoped>
