@@ -324,6 +324,9 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "ズームイン時にノードコンボウィジェットメニュー（リスト）をスケーリングする"
   },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "ツールチップ遅延"
+  },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
   }
