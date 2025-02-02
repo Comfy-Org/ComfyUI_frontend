@@ -76,7 +76,10 @@
         position="bottom"
         style="height: max(50vh, 34rem)"
       >
-        <BaseTerminal @created="terminalCreated" />
+        <BaseTerminal
+          @created="terminalCreated"
+          @unmounted="terminalUnmounted"
+        />
       </Drawer>
       <Toast />
     </div>
@@ -85,6 +88,7 @@
 
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
+import { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import SelectButton from 'primevue/selectbutton'
@@ -98,6 +102,7 @@ import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import { useTerminalBuffer } from '@/hooks/bottomPanelTabs/useTerminalBuffer'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
@@ -138,6 +143,10 @@ const filterOptions = ref([
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
+/** The actual output of all terminal commands - not rendered */
+const buffer = useTerminalBuffer()
+let xterm: Terminal | null = null
+
 /** If valid, leave the validation window. */
 const completeValidation = async (alertOnFail = true) => {
   const isValid = await electron.Validation.complete()
@@ -151,19 +160,26 @@ const completeValidation = async (alertOnFail = true) => {
   }
 }
 
+// Created and destroyed with the Drawer - contents copied from hidden buffer
 const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement>
 ) => {
+  xterm = terminal
   useAutoSize({ root, autoRows: true, autoCols: true })
-  electron.onLogMessage((message: string) => {
-    terminal.write(message)
-  })
+  terminal.write(
+    'When you run a troubleshooting command, any output will be shown here.'
+  )
+  buffer.copyTo(terminal)
 
   terminal.options.cursorBlink = false
   terminal.options.cursorStyle = 'bar'
   terminal.options.cursorInactiveStyle = 'bar'
   terminal.options.disableStdin = true
+}
+
+const terminalUnmounted = () => {
+  xterm = null
 }
 
 const toggleConsoleDrawer = () => {
@@ -188,6 +204,11 @@ watch(
 
 onMounted(async () => {
   electron.Validation.onUpdate(processUpdate)
+
+  electron.onLogMessage((message: string) => {
+    buffer.write(message)
+    xterm?.write(message)
+  })
 
   const update = await electron.Validation.getStatus()
   processUpdate(update)
