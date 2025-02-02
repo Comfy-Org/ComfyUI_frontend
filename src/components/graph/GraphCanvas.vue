@@ -103,6 +103,8 @@ watchEffect((onCleanup) => {
       const data = event.data;
       if (!data || !data.type) return;
       if (data.type === 'init' && data.workflow) {
+        console.log('init', data);
+        sessionStorage.clear();
         localStorage.setItem('workflow', data.workflow);
         FlowConfig.flowId = data.flowId;
         comfyApp.initWorkflow();
