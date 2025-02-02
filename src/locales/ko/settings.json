@@ -324,6 +324,9 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "확대시 노드 콤보 위젯 메뉴 (목록) 스케일링"
   },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "툴팁 지연"
+  },
   "pysssss_SnapToGrid": {
     "name": "항상 그리드에 스냅"
   }

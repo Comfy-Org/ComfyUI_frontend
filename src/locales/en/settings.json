@@ -324,6 +324,9 @@
   "LiteGraph_ContextMenu_Scaling": {
     "name": "Scale node combo widget menus (lists) when zoomed in"
   },
+  "LiteGraph_Node_TooltipDelay": {
+    "name": "Tooltip Delay"
+  },
   "pysssss_SnapToGrid": {
     "name": "Always snap to grid"
   }
