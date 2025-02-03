@@ -253,7 +253,7 @@ test.describe('Settings', () => {
 
     // Save keybinding
     const saveButton = comfyPage.page
-      .getByLabel('Comfy.NewBlankWorkflow')
+      .getByLabel('New Blank Workflow')
       .getByLabel('Save')
     await saveButton.click()
 
