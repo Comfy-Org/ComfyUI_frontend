@@ -12,13 +12,13 @@ app.registerExtension({
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
       static category: string
+      static collapsable: boolean
+      static title_mode: number
 
       color = LGraphCanvas.node_colors.yellow.color
       bgcolor = LGraphCanvas.node_colors.yellow.bgcolor
       groupcolor = LGraphCanvas.node_colors.yellow.groupcolor
       isVirtualNode: boolean
-      collapsable: boolean
-      title_mode: number
 
       constructor(title?: string) {
         super(title)
