@@ -2725,9 +2725,12 @@ export class LGraphNode implements Positionable, IPinnable {
       : this.size[0]
   }
 
+  /**
+   * Returns the height of the node, including the title bar.
+   */
   get height() {
-    // @ts-expect-error Not impl.
-    return this.collapsed ? LiteGraph.NODE_COLLAPSED_HEIGHT : this.size[1]
+    const bodyHeight = this.collapsed ? 0 : this.size[1]
+    return LiteGraph.NODE_TITLE_HEIGHT + bodyHeight
   }
 
   drawBadges(ctx: CanvasRenderingContext2D, { gap = 2 } = {}): void {
