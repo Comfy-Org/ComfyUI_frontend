@@ -5168,7 +5168,7 @@ export class LGraphCanvas {
 
     const { collapsed } = node.flags
     const shape = node._shape || node.constructor.shape || LiteGraph.NODE_DEFAULT_SHAPE
-    const { title_mode } = node.constructor
+    const title_mode = node.title_mode
 
     const render_title = title_mode == TitleMode.TRANSPARENT_TITLE || title_mode == TitleMode.NO_TITLE
       ? false

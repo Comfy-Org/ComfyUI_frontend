@@ -291,6 +291,10 @@ export class LGraphNode implements Positionable, IPinnable {
     this.selected = value
   }
 
+  public get title_mode(): TitleMode {
+    return this.constructor.title_mode ?? TitleMode.NORMAL_TITLE
+  }
+
   // Used in group node
   setInnerNodes?(this: LGraphNode, nodes: LGraphNode[]): void
 
@@ -1617,7 +1621,7 @@ export class LGraphNode implements Positionable, IPinnable {
    * @param pad Expands the area by this amount on each side.  Default: 0
    */
   measure(out: Rect, pad = 0): void {
-    const titleMode = this.constructor.title_mode
+    const titleMode = this.title_mode
     const renderTitle =
       titleMode != TitleMode.TRANSPARENT_TITLE &&
       titleMode != TitleMode.NO_TITLE
