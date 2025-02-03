@@ -145,13 +145,21 @@ export function drawSlot(
 }
 
 interface IDrawSelectionBoundingOptions {
+  /** The shape to render */
   shape?: RenderShape
+  /** The radius of the rounded corners for {@link RenderShape.ROUND} and {@link RenderShape.CARD} */
   round_radius?: number
+  /** Shape will extend above the Y-axis 0 by this amount */
   title_height?: number
+  /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   title_mode?: TitleMode
+  /** The colour that should be drawn */
   colour?: CanvasColour
+  /** The distance between the edge of the {@link area} and the middle of the line */
   padding?: number
+  /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
   collapsed?: boolean
+  /** Thickness of the line drawn (`lineWidth`) */
   thickness?: number
 }
 
@@ -164,25 +172,21 @@ interface IDrawSelectionBoundingOptions {
 export function strokeShape(
   ctx: CanvasRenderingContext2D,
   area: Rect,
-  {
-    /** The shape to render */
-    shape = RenderShape.BOX,
-    /** The radius of the rounded corners for {@link RenderShape.ROUND} and {@link RenderShape.CARD} */
-    round_radius = LiteGraph.ROUND_RADIUS,
-    /** Shape will extend above the Y-axis 0 by this amount */
-    title_height = LiteGraph.NODE_TITLE_HEIGHT,
-    /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
-    title_mode = TitleMode.NORMAL_TITLE,
-    /** The colour that should be drawn */
-    colour = LiteGraph.NODE_BOX_OUTLINE_COLOR,
-    /** The distance between the edge of the {@link area} and the middle of the line */
-    padding = 6,
-    /** @deprecated This is node-specific: it should be removed entirely, and behaviour defined by the caller more explicitly */
-    collapsed = false,
-    /** Thickness of the line drawn (`lineWidth`) */
-    thickness = 1,
-  }: IDrawSelectionBoundingOptions = {},
+  options: IDrawSelectionBoundingOptions = {},
 ): void {
+  // Don't deconstruct in function arguments. If deconstructed in the argument list, the defaults will be evaluated
+  // once when the function is defined, and will not be re-evaluated when the function is called.
+  const {
+    shape = RenderShape.BOX,
+    round_radius = LiteGraph.ROUND_RADIUS,
+    title_height = LiteGraph.NODE_TITLE_HEIGHT,
+    title_mode = TitleMode.NORMAL_TITLE,
+    colour = LiteGraph.NODE_BOX_OUTLINE_COLOR,
+    padding = 6,
+    collapsed = false,
+    thickness = 1,
+  } = options
+
   // Adjust area if title is transparent
   if (title_mode === TitleMode.TRANSPARENT_TITLE) {
     area[1] -= title_height
