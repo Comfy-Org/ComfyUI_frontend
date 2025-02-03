@@ -68,7 +68,7 @@
       class="min-w-96"
       v-model:visible="editDialogVisible"
       modal
-      :header="currentEditingCommand?.id"
+      :header="currentEditingCommand?.label"
       @hide="cancelEdit"
     >
       <div>
@@ -151,6 +151,7 @@ const { t } = useI18n()
 interface ICommandData {
   id: string
   keybinding: KeybindingImpl | null
+  label: string
 }
 
 const commandsData = computed<ICommandData[]>(() => {
