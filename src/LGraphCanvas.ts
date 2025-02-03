@@ -368,7 +368,6 @@ export class LGraphCanvas {
   render_connection_arrows: boolean
   render_collapsed_slots: boolean
   render_execution_order: boolean
-  render_title_colored: boolean
   render_link_tooltip: boolean
 
   /** Controls whether reroutes are rendered at all. */
@@ -606,7 +605,6 @@ export class LGraphCanvas {
     this.render_connection_arrows = false
     this.render_collapsed_slots = true
     this.render_execution_order = false
-    this.render_title_colored = true
     this.render_link_tooltip = true
 
     this.links_render_mode = LinkRenderType.SPLINE_LINK
@@ -5228,8 +5226,7 @@ export class LGraphCanvas {
       if (node.onDrawTitleBar) {
         node.onDrawTitleBar(ctx, title_height, size, this.ds.scale, fgcolor)
       } else if (
-        title_mode != TitleMode.TRANSPARENT_TITLE &&
-        (node.constructor.title_color || this.render_title_colored)
+        title_mode !== TitleMode.TRANSPARENT_TITLE
       ) {
         const title_color = node.constructor.title_color || fgcolor
 
