@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import type { CanvasPointerEvent } from "./types/events"
 import type { LGraphCanvas } from "./LGraphCanvas"
 import { dist2 } from "./measure"

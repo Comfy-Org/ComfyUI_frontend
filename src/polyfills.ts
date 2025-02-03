@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 // API *************************************************
 // like rect but rounded corners
 export function loadPolyfills() {

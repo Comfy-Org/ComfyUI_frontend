@@ -1,3 +1,4 @@
+// @ts-strict-ignore
 import { LGraph } from "./LGraph"
 import { LLink } from "./LLink"
 import { LGraphGroup } from "./LGraphGroup"

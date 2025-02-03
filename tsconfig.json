@@ -22,12 +22,17 @@
     "allowJs": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["src/*"]
     },
     // TODO: Remove workaround from initial vite impl: public/src
     "typeRoots": ["src/types", "node_modules/@types", "public/src"],
     "outDir": "./dist",
     "rootDir": "./",
+    "plugins": [
+      {
+        "name": "typescript-strict-plugin"
+      }
+    ]
   },
   "include": ["src/**/*"]
 }
