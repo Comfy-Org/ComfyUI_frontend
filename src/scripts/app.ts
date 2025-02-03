@@ -4,9 +4,10 @@ import {
   LGraphCanvas,
   LGraphEventMode,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  strokeShape
 } from '@comfyorg/litegraph'
-import { Vector2 } from '@comfyorg/litegraph'
+import type { Rect, Vector2 } from '@comfyorg/litegraph'
 import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { shallowReactive } from 'vue'
@@ -766,49 +767,19 @@ export class ComfyApp {
       }
 
       if (color) {
-        const shape =
-          node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE
-        ctx.lineWidth = lineWidth
-        ctx.globalAlpha = 0.8
-        ctx.beginPath()
-        if (shape == LiteGraph.BOX_SHAPE)
-          ctx.rect(
-            -6,
-            -6 - LiteGraph.NODE_TITLE_HEIGHT,
-            12 + size[0] + 1,
-            12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT
-          )
-        else if (
-          shape == LiteGraph.ROUND_SHAPE ||
-          (shape == LiteGraph.CARD_SHAPE && node.flags.collapsed)
-        )
-          ctx.roundRect(
-            -6,
-            -6 - LiteGraph.NODE_TITLE_HEIGHT,
-            12 + size[0] + 1,
-            12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT,
-            this.round_radius * 2
-          )
-        else if (shape == LiteGraph.CARD_SHAPE)
-          ctx.roundRect(
-            -6,
-            -6 - LiteGraph.NODE_TITLE_HEIGHT,
-            12 + size[0] + 1,
-            12 + size[1] + LiteGraph.NODE_TITLE_HEIGHT,
-            [this.round_radius * 2, this.round_radius * 2, 2, 2]
-          )
-        else if (shape == LiteGraph.CIRCLE_SHAPE)
-          ctx.arc(
-            size[0] * 0.5,
-            size[1] * 0.5,
-            size[0] * 0.5 + 6,
-            0,
-            Math.PI * 2
-          )
-        ctx.strokeStyle = color
-        ctx.stroke()
-        ctx.strokeStyle = fgcolor
-        ctx.globalAlpha = 1
+        const area: Rect = [
+          0,
+          -LiteGraph.NODE_TITLE_HEIGHT,
+          size[0],
+          size[1] + LiteGraph.NODE_TITLE_HEIGHT
+        ]
+        strokeShape(ctx, area, {
+          shape: node._shape || node.constructor.shape || LiteGraph.ROUND_SHAPE,
+          thickness: lineWidth,
+          colour: color,
+          title_height: LiteGraph.NODE_TITLE_HEIGHT,
+          collapsed: node.collapsed
+        })
       }
 
       if (self.progress && node.id === +self.runningNodeId) {
