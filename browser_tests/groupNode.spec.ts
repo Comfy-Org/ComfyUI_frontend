@@ -134,6 +134,37 @@ test.describe('Group Node', () => {
     expect(await manage2.getSelectedNodeType()).toBe('g2')
   })
 
+  test('Preserves hidden input configuration when containing duplicate node types', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('group_node_identical_nodes_hidden_inputs')
+    await comfyPage.nextFrame()
+
+    const groupNodeId = 19
+    const groupNodeName = 'two_VAE_decode'
+
+    const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
+      const {
+        extra: { groupNodes }
+      } = window['app'].graph
+      const { nodes } = groupNodes[nodeName]
+      return nodes.reduce((acc: number, node) => {
+        return acc + node.inputs.length
+      }, 0)
+    }, groupNodeName)
+
+    const visibleInputCount = await comfyPage.page.evaluate((id) => {
+      const node = window['app'].graph.getNodeById(id)
+      return node.inputs.length
+    }, groupNodeId)
+
+    // Verify there are 4 total inputs (2 VAE decode nodes with 2 inputs each)
+    expect(totalInputCount).toBe(4)
+
+    // Verify there are 2 visible inputs (2 have been hidden in config)
+    expect(visibleInputCount).toBe(2)
+  })
+
   test('Reconnects inputs after configuration changed via manage dialog save', async ({
     comfyPage
   }) => {
