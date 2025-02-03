@@ -454,49 +454,6 @@ export class LiteGraphGlobal {
   }
 
   /**
-   * Create a new nodetype by passing a function, it wraps it with a proper class and
-   * generates inputs according to the parameters of the function.
-   * Useful to wrap simple methods that do not require properties, and that only process some input to generate an output.
-   * @param name node name with namespace (p.e.: 'math/sum')
-   * @param func
-   * @param param_types [optional] an array containing the type of every parameter,
-   * otherwise parameters will accept any type
-   * @param return_type [optional] string with the return type, otherwise it will be generic
-   * @param properties [optional] properties to be configurable
-   */
-  wrapFunctionAsNode(
-    name: string,
-    func: (...args: any) => any,
-    param_types: string[],
-    return_type: string,
-    properties: unknown,
-  ) {
-    const params = Array(func.length)
-    let code = ""
-    const names = this.getParameterNames(func)
-    for (let i = 0; i < names.length; ++i) {
-      code += `this.addInput('${names[i]}',${param_types && param_types[i] ? `'${param_types[i]}'` : "0"});\n`
-    }
-    code += `this.addOutput('out',${return_type ? `'${return_type}'` : 0});\n`
-    if (properties) code += `this.properties = ${JSON.stringify(properties)};\n`
-
-    const classobj = Function(code)
-    // @ts-ignore
-    classobj.title = name.split("/").pop()
-    // @ts-ignore
-    classobj.desc = "Generated from " + func.name
-    classobj.prototype.onExecute = function onExecute() {
-      for (let i = 0; i < params.length; ++i) {
-        params[i] = this.getInputData(i)
-      }
-      const r = func.apply(this, params)
-      this.setOutputData(0, r)
-    }
-    // @ts-expect-error Required to make this kludge work
-    this.registerNodeType(name, classobj)
-  }
-
-  /**
    * Removes all previously registered node's types
    */
   clearRegisteredTypes(): void {
