@@ -88,6 +88,7 @@ LiteGraphGlobal {
   "ON_TRIGGER": 3,
   "OUTPUT": 2,
   "RIGHT": 4,
+  "ROUND_RADIUS": 8,
   "ROUND_SHAPE": 2,
   "Reroute": [Function],
   "SPLINE_LINK": 2,

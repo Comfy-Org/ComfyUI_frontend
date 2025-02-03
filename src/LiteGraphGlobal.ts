@@ -76,6 +76,7 @@ export class LiteGraphGlobal {
   DEFAULT_POSITION = [100, 100]
   /** ,"circle" */
   VALID_SHAPES = ["default", "box", "round", "card"]
+  ROUND_RADIUS = 8
 
   // shapes are used for nodes but also for slots
   BOX_SHAPE = RenderShape.BOX

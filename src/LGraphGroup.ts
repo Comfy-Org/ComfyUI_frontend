@@ -18,7 +18,7 @@ import {
   snapPoint,
 } from "./measure"
 import { LGraphNode } from "./LGraphNode"
-import { RenderShape, TitleMode } from "./types/globalEnums"
+import { strokeShape } from "./draw"
 
 export interface IGraphGroupFlags extends Record<string, unknown> {
   pinned?: true
@@ -183,7 +183,7 @@ export class LGraphGroup implements Positionable, IPinnable {
     ctx.fillText(this.title + (this.pinned ? "📌" : ""), x + padding, y + font_size)
 
     if (LiteGraph.highlight_selected_group && this.selected) {
-      graphCanvas.strokeShape(ctx, this._bounding, {
+      strokeShape(ctx, this._bounding, {
         title_height: this.titleHeight,
         padding,
       })
