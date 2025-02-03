@@ -169,9 +169,49 @@ export class LGraphNode implements Positionable, IPinnable {
   mode: LGraphEventMode
   last_serialization?: ISerialisedNode
   serialize_widgets?: boolean
-  color: string
-  bgcolor: string
-  boxcolor: string
+  /**
+   * The overridden fg color used to render the node.
+   * @see {@link renderingColor}
+   */
+  color?: string
+  /**
+   * The overridden bg color used to render the node.
+   * @see {@link renderingBgColor}
+   */
+  bgcolor?: string
+  /**
+   * The overridden box color used to render the node.
+   * @see {@link renderingBoxColor}
+   */
+  boxcolor?: string
+
+  /** The fg color used to render the node. */
+  get renderingColor(): string {
+    return this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+  }
+
+  /** The bg color used to render the node. */
+  get renderingBgColor(): string {
+    return this.bgcolor || this.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+  }
+
+  /** The box color used to render the node. */
+  get renderingBoxColor(): string {
+    let colState = LiteGraph.node_box_coloured_by_mode && LiteGraph.NODE_MODES_COLORS[this.mode]
+      ? LiteGraph.NODE_MODES_COLORS[this.mode]
+      : undefined
+
+    if (LiteGraph.node_box_coloured_when_on) {
+      colState = this.action_triggered
+        ? "#FFF"
+        : this.execute_triggered
+          ? "#AAA"
+          : colState
+    }
+
+    return this.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
+  }
+
   exec_version: number
   action_call?: string
   execute_triggered: number

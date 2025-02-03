@@ -4788,8 +4788,8 @@ export class LGraphCanvas {
   drawNode(node: LGraphNode, ctx: CanvasRenderingContext2D): void {
     this.current_node = node
 
-    const color = node.color || node.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
-    const bgcolor = node.bgcolor || node.constructor.bgcolor || LiteGraph.NODE_DEFAULT_BGCOLOR
+    const color = node.renderingColor
+    const bgcolor = node.renderingBgColor
 
     const low_quality = this.low_quality
     const editor_alpha = this.editor_alpha
@@ -5264,18 +5264,6 @@ export class LGraphCanvas {
         ctx.shadowColor = "transparent"
       }
 
-      let colState = LiteGraph.node_box_coloured_by_mode && LiteGraph.NODE_MODES_COLORS[node.mode]
-        ? LiteGraph.NODE_MODES_COLORS[node.mode]
-        : false
-
-      if (LiteGraph.node_box_coloured_when_on) {
-        colState = node.action_triggered
-          ? "#FFF"
-          : node.execute_triggered
-            ? "#AAA"
-            : colState
-      }
-
       // title box
       const box_size = 10
       if (node.onDrawTitleBox) {
@@ -5298,7 +5286,7 @@ export class LGraphCanvas {
           ctx.fill()
         }
 
-        ctx.fillStyle = node.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
+        ctx.fillStyle = node.renderingBoxColor
         if (low_quality)
           ctx.fillRect(
             title_height * 0.5 - box_size * 0.5,
@@ -5327,7 +5315,7 @@ export class LGraphCanvas {
             box_size + 2,
           )
         }
-        ctx.fillStyle = node.boxcolor || colState || LiteGraph.NODE_DEFAULT_BOXCOLOR
+        ctx.fillStyle = node.renderingBoxColor
         ctx.fillRect(
           (title_height - box_size) * 0.5,
           (title_height + box_size) * -0.5,
