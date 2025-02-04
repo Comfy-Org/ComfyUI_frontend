@@ -5175,36 +5175,10 @@ export class LGraphCanvas {
 
     // Title bar background (remember, it is rendered ABOVE the node)
     if (render_title || title_mode == TitleMode.TRANSPARENT_TITLE) {
-      if (node.onDrawTitleBar) {
-        node.onDrawTitleBar(ctx, title_height, size, this.ds.scale, fgcolor)
-      } else if (
-        title_mode !== TitleMode.TRANSPARENT_TITLE
-      ) {
-        const title_color = node.constructor.title_color || fgcolor
-
-        if (collapsed) {
-          ctx.shadowColor = LiteGraph.DEFAULT_SHADOW_COLOR
-        }
-
-        ctx.fillStyle = title_color
-        ctx.beginPath()
-
-        if (shape == RenderShape.BOX || low_quality) {
-          ctx.rect(0, -title_height, size[0], title_height)
-        } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
-          ctx.roundRect(
-            0,
-            -title_height,
-            size[0],
-            title_height,
-            collapsed
-              ? [LiteGraph.ROUND_RADIUS]
-              : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0],
-          )
-        }
-        ctx.fill()
-        ctx.shadowColor = "transparent"
-      }
+      node.drawTitleBarBackground(ctx, {
+        scale: this.ds.scale,
+        low_quality,
+      })
 
       // title box
       const box_size = 10

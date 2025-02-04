@@ -223,6 +223,10 @@ export class LGraphNode implements Positionable, IPinnable {
   badgePosition: BadgePosition = BadgePosition.TopLeft
   onOutputRemoved?(this: LGraphNode, slot: number): void
   onInputRemoved?(this: LGraphNode, slot: number, input: INodeInputSlot): void
+  /**
+   * The width of the node when collapsed.
+   * Updated by {@link LGraphCanvas.drawNode}
+   */
   _collapsed_width: number
   /** Called once at the start of every frame.  Caller may change the values in {@link out}, which will be reflected in {@link boundingRect}. */
   onBounding?(this: LGraphNode, out: Rect): void
@@ -293,6 +297,13 @@ export class LGraphNode implements Positionable, IPinnable {
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+  }
+
+  /**
+   * The size of the node used for rendering.
+   */
+  get renderingSize(): Size {
+    return this.flags.collapsed ? [this._collapsed_width, 0] : this._size
   }
 
   get shape(): RenderShape {
@@ -2796,6 +2807,57 @@ export class LGraphNode implements Positionable, IPinnable {
       badge.draw(ctx, currentX, y - badge.height)
       currentX += badge.getWidth(ctx) + gap
     }
+  }
+
+  /**
+   * Renders the node's title bar background
+   */
+  drawTitleBarBackground(ctx: CanvasRenderingContext2D, options: {
+    scale: number
+    title_height?: number
+    low_quality?: boolean
+  }): void {
+    const {
+      scale,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      low_quality = false,
+    } = options
+
+    const fgcolor = this.renderingColor
+    const shape = this.renderingShape
+    const size = this.renderingSize
+
+    if (this.onDrawTitleBar) {
+      this.onDrawTitleBar(ctx, title_height, size, scale, fgcolor)
+      return
+    }
+
+    if (this.title_mode === TitleMode.TRANSPARENT_TITLE) {
+      return
+    }
+
+    if (this.collapsed) {
+      ctx.shadowColor = LiteGraph.DEFAULT_SHADOW_COLOR
+    }
+
+    ctx.fillStyle = this.constructor.title_color || fgcolor
+    ctx.beginPath()
+
+    if (shape == RenderShape.BOX || low_quality) {
+      ctx.rect(0, -title_height, size[0], title_height)
+    } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+      ctx.roundRect(
+        0,
+        -title_height,
+        size[0],
+        title_height,
+        this.collapsed
+          ? [LiteGraph.ROUND_RADIUS]
+          : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0],
+      )
+    }
+    ctx.fill()
+    ctx.shadowColor = "transparent"
   }
 
   /**
