@@ -1515,32 +1515,6 @@ export class LGraphCanvas {
     canvas.setDirty(true, true)
   }
 
-  static onMenuNodeToSubgraph(
-    value: IContextMenuValue,
-    options: IContextMenuOptions,
-    e: MouseEvent,
-    menu: ContextMenu,
-    node: LGraphNode,
-  ): void {
-    const graph = node.graph
-    const canvas = LGraphCanvas.active_canvas
-    if (!canvas) return
-
-    let nodes_list = Object.values(canvas.selected_nodes || {})
-    if (!nodes_list.length) nodes_list = [node]
-
-    const subgraph_node = LiteGraph.createNode("graph/subgraph")
-    // @ts-expect-error Refactor this to use typed array.
-    subgraph_node.pos = node.pos.concat()
-    graph.add(subgraph_node)
-
-    // @ts-expect-error Doesn't exist anywhere...
-    subgraph_node.buildFromNodes(nodes_list)
-
-    canvas.deselectAll()
-    canvas.setDirty(true, true)
-  }
-
   static onMenuNodeClone(
     value: IContextMenuValue,
     options: IContextMenuOptions,
