@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
-import { ComboInputSpec, ComboInputSpecV2, InputSpec } from '@/types/apiTypes'
+import {
+  ComboInputSpecV2,
+  InputSpec,
+  isComboInputSpecV2
+} from '@/types/apiTypes'
+
+import type { BaseInputSpec } from './nodeDefStore'
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets
@@ -12,12 +18,11 @@ export const useWidgetStore = defineStore('widget', () => {
     ...coreWidgets
   }))
 
-  function getWidgetType(inputData: InputSpec) {
-    const [type, { name }] = inputData
-    if (type === 'COMBO' || Array.isArray(type)) {
+  function getWidgetType(type: string, inputName: string) {
+    if (type === 'COMBO') {
       return 'COMBO'
-    } else if (`${type}:${name}` in widgets.value) {
-      return `${type}:${name}`
+    } else if (`${type}:${inputName}` in widgets.value) {
+      return `${type}:${inputName}`
     } else if (type in widgets.value) {
       return type
     } else {
@@ -25,8 +30,8 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  function inputIsWidget(inputData: InputSpec) {
-    return getWidgetType(inputData) !== null
+  function inputIsWidget(spec: BaseInputSpec) {
+    return getWidgetType(spec.type, spec.name) !== null
   }
 
   function registerCustomWidgets(
@@ -39,8 +44,8 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function getDefaultValue(inputData: InputSpec) {
-    const widgetType = getWidgetType(inputData)
-    if (widgetType === 'COMBO' && !isComboInputV2(inputData))
+    const widgetType = getWidgetType(inputData[0], inputData[1]?.name)
+    if (widgetType === 'COMBO')
       return getDefaultValue(transformComboInput(inputData))
 
     const [_, props] = inputData
@@ -52,24 +57,16 @@ export const useWidgetStore = defineStore('widget', () => {
     return null
   }
 
-  function transformComboInput(
-    inputData: ComboInputSpec | ComboInputSpecV2
-  ): ComboInputSpecV2 {
-    if (isComboInputV2(inputData)) {
-      return inputData
-    }
-    return [
-      'COMBO',
-      // creating new references
-      {
-        options: inputData[0],
-        ...Object(inputData[1])
-      }
-    ]
-  }
-
-  function isComboInputV2(inputData: InputSpec): inputData is ComboInputSpecV2 {
-    return inputData[0] === 'COMBO'
+  const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
+    return isComboInputSpecV2(inputData)
+      ? inputData
+      : [
+          'COMBO',
+          {
+            options: inputData[0],
+            ...Object(inputData[1])
+          }
+        ]
   }
 
   return {
@@ -77,7 +74,6 @@ export const useWidgetStore = defineStore('widget', () => {
     getWidgetType,
     inputIsWidget,
     registerCustomWidgets,
-    getDefaultValue,
-    isComboInputV2
+    getDefaultValue
   }
 })

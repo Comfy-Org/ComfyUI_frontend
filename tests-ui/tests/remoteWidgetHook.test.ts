@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import { useRemoteWidget } from '@/hooks/remoteWidgetHook'
-import type { ComboInputSpec } from '@/types/apiTypes'
+import type { ComboInputSpecV2 } from '@/types/apiTypes'
 
 jest.mock('axios', () => ({
   get: jest.fn()
@@ -30,7 +30,7 @@ jest.mock('@/stores/widgetStore', () => ({
 
 const FIRST_BACKOFF = 1000 // backoff is 1s on first retry
 
-function createMockInputData(overrides = {}): ComboInputSpec {
+function createMockInputData(overrides = {}): ComboInputSpecV2 {
   return [
     'COMBO',
     {
@@ -65,7 +65,7 @@ async function setupHookWithResponse(data: unknown, inputOverrides = {}) {
 }
 
 describe('useRemoteWidget', () => {
-  let mockInputData: ComboInputSpec
+  let mockInputData: ComboInputSpecV2
 
   beforeEach(() => {
     jest.clearAllMocks()
