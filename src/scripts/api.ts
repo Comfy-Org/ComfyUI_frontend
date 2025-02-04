@@ -878,42 +878,6 @@ export class ComfyApi extends EventTarget {
     return (await axios.get(this.internalURL('/folder_paths'))).data
   }
 
-  async getFilepaths(options: {
-    folder_path: string
-    include_directories?: boolean
-    filter_content_type?: string[]
-    filter_extension?: string[]
-  }): Promise<{ files: string[] }> {
-    try {
-      const params = new URLSearchParams({
-        folder_path: options.folder_path
-      })
-      console.count('[Lazy Widget] requests made by lazy widgets')
-      if (options.include_directories)
-        params.append('include_directories', 'true')
-      if (options.filter_content_type)
-        params.append('content_type', options.filter_content_type.join(','))
-      if (options.filter_extension)
-        params.append('extension', options.filter_extension.join(','))
-
-      const { data } = await axios.get<{ files: string[] }>(
-        this.internalURL(`/files`),
-        {
-          params,
-          validateStatus: (status) => status === 200
-        }
-      )
-
-      return data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const message = `Error getting files for ${options.folder_path}: ${error.response?.status} ${error.response?.statusText}`
-        throw new Error(message)
-      }
-      throw error
-    }
-  }
-
   /**
    * Gets the custom nodes i18n data from the server.
    *
