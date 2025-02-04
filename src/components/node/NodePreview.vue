@@ -105,17 +105,15 @@ const nodeDef = props.nodeDef
 const allInputDefs = nodeDef.inputs.all
 const allOutputDefs = nodeDef.outputs.all
 const slotInputDefs = allInputDefs.filter(
-  (input) => !widgetStore.inputIsWidget(input)
+  (input) => !widgetStore.inputIsWidget([input])
 )
 const widgetInputDefs = allInputDefs.filter((input) =>
-  widgetStore.inputIsWidget(input)
+  widgetStore.inputIsWidget([input])
 )
 const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
   let stringValue: string
 
   if (typeof value === 'object' && value !== null) {
-    stringValue = JSON.stringify(value)
-  } else if (Array.isArray(value)) {
     stringValue = JSON.stringify(value)
   } else if (typeof value === 'string') {
     stringValue = value

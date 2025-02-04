@@ -2,14 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
-
-import type { BaseInputSpec } from './nodeDefStore'
-
-interface LazyWidgetState {
-  values: Record<string, unknown[]>
-  loading: Record<string, boolean>
-  resolvers: Record<string, () => Promise<unknown[]>>
-}
+import { ComboInputSpec, ComboInputSpecV2, InputSpec } from '@/types/apiTypes'
 
 export const useWidgetStore = defineStore('widget', () => {
   const coreWidgets = ComfyWidgets
@@ -19,13 +12,14 @@ export const useWidgetStore = defineStore('widget', () => {
     ...coreWidgets
   }))
 
-  function getWidgetType(type: string, inputName: string) {
-    if (type === 'COMBO') {
+  function getWidgetType(inputData: InputSpec) {
+    const [type, { name }] = inputData
+    if (type === 'COMBO' || Array.isArray(type)) {
       return 'COMBO'
     } else if (type === 'FILE_COMBO') {
       return 'FILE_COMBO'
-    } else if (`${type}:${inputName}` in widgets.value) {
-      return `${type}:${inputName}`
+    } else if (`${type}:${name}` in widgets.value) {
+      return `${type}:${name}`
     } else if (type in widgets.value) {
       return type
     } else {
@@ -33,8 +27,8 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  function inputIsWidget(spec: BaseInputSpec) {
-    return getWidgetType(spec.type, spec.name) !== null
+  function inputIsWidget(inputData: InputSpec) {
+    return getWidgetType(inputData) !== null
   }
 
   function registerCustomWidgets(
@@ -46,54 +40,38 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  const lazyState = ref<LazyWidgetState>({
-    values: {},
-    loading: {},
-    resolvers: {}
-  })
+  function getDefaultValue(inputData: InputSpec) {
+    const widgetType = getWidgetType(inputData)
+    if (widgetType === 'COMBO')
+      return getDefaultValue(transformComboInput(inputData))
 
-  function registerResolver<T>(key: string, resolver: () => Promise<T[]>) {
-    lazyState.value.resolvers[key] = resolver
+    const [_, props] = inputData
+
+    if (props.default) return props.default
+
+    if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
+    if (props.type === 'remote') return 'Loading...'
+    return null
   }
 
-  function isLoading(key: string) {
-    return lazyState.value.loading[key]
-  }
-
-  function isLazy(key: string) {
-    return lazyState.value.resolvers[key] !== undefined
-  }
-
-  function getValues<T>(key: string) {
-    const values = lazyState.value.values[key] as T[] | undefined
-    if (!values && !isLoading(key) && isLazy(key)) {
-      const resolver = lazyState.value.resolvers[key] as () => Promise<T[]>
-      lazyState.value.loading[key] = true
-      console.count(`[Lazy Widget] initialization count for ${key}`)
-      resolver()
-        .then((newValues) => {
-          lazyState.value.values[key] = newValues
-        })
-        .catch((error) => {
-          console.error(
-            `[Lazy Widget] Error loading values for widget ${key}:`,
-            error
-          )
-          // Backoff to prevent repeating failed requests
-          setTimeout(() => {
-            lazyState.value.loading[key] = false
-          }, 2048)
-          lazyState.value.values[key] = []
-        })
-        .finally(() => {
-          lazyState.value.loading[key] = false
-        })
+  function transformComboInput(
+    inputData: ComboInputSpec | ComboInputSpecV2
+  ): ComboInputSpecV2 {
+    if (isComboInputV2(inputData)) {
+      return inputData
     }
-    return values || []
+    return [
+      'COMBO',
+      // creating new references
+      {
+        options: inputData[0],
+        ...Object(inputData[1])
+      }
+    ]
   }
 
-  function clearCache(key: string) {
-    delete lazyState.value.values[key]
+  function isComboInputV2(inputData: InputSpec): inputData is ComboInputSpecV2 {
+    return inputData[0] === 'COMBO' && inputData[1]?.options
   }
 
   return {
@@ -101,9 +79,6 @@ export const useWidgetStore = defineStore('widget', () => {
     getWidgetType,
     inputIsWidget,
     registerCustomWidgets,
-
-    getValues,
-    clearCache,
-    registerResolver
+    getDefaultValue
   }
 })
