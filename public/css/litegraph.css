@@ -309,6 +309,7 @@
 .litegraph .dialog .dialog-footer {
   height: 50px;
   padding: 10px;
+  margin: 0;
   border-top: 1px solid #1a1a1a;
 }
 
