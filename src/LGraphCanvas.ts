@@ -286,6 +286,9 @@ export class LGraphCanvas {
   }
   // #endregion Legacy accessors
 
+  /**
+   * @deprecated Use {@link LGraphNode.titleFontStyle} instead.
+   */
   get title_text_font(): string {
     return `${LiteGraph.NODE_TEXT_SIZE}px Arial`
   }
@@ -5190,45 +5193,11 @@ export class LGraphCanvas {
       ctx.globalAlpha = old_alpha
 
       // title text
-      if (node.onDrawTitleText) {
-        node.onDrawTitleText(
-          ctx,
-          title_height,
-          size,
-          this.ds.scale,
-          this.title_text_font,
-          selected,
-        )
-      }
-      if (!low_quality) {
-        ctx.font = this.title_text_font
-        const rawTitle = node.getTitle() ?? `❌ ${node.type}`
-        const title = String(rawTitle) + (node.pinned ? "📌" : "")
-        if (title) {
-          if (selected) {
-            ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
-          } else {
-            ctx.fillStyle = node.constructor.title_text_color || this.node_title_color
-          }
-          if (collapsed) {
-            ctx.textAlign = "left"
-            // const measure = ctx.measureText(title)
-            ctx.fillText(
-              title.substr(0, 20), // avoid urls too long
-              title_height, // + measure.width * 0.5,
-              LiteGraph.NODE_TITLE_TEXT_Y - title_height,
-            )
-            ctx.textAlign = "left"
-          } else {
-            ctx.textAlign = "left"
-            ctx.fillText(
-              title,
-              title_height,
-              LiteGraph.NODE_TITLE_TEXT_Y - title_height,
-            )
-          }
-        }
-      }
+      node.drawTitleText(ctx, {
+        scale: this.ds.scale,
+        default_title_color: this.node_title_color,
+        low_quality,
+      })
 
       // custom title render
       node.onDrawTitle?.(ctx)

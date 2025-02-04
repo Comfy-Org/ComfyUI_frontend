@@ -149,7 +149,15 @@ export class LGraphNode implements Positionable, IPinnable {
   /** Default setting for {@link LGraphNode.connectInputToOutput}. @see {@link INodeFlags.keepAllLinksOnBypass} */
   static keepAllLinksOnBypass: boolean = false
 
+  /** The title text of the node. */
   title: string
+  /**
+   * The font style used to render the node's title text.
+   */
+  get titleFontStyle(): string {
+    return `${LiteGraph.NODE_TEXT_SIZE}px Arial`
+  }
+
   graph: LGraph | null = null
   id: NodeId
   type: string | null = null
@@ -2938,6 +2946,70 @@ export class LGraphNode implements Positionable, IPinnable {
         box_size,
         box_size,
       )
+    }
+  }
+
+  /**
+   * Renders the node's title text.
+   */
+  drawTitleText(ctx: CanvasRenderingContext2D, options: {
+    scale: number
+    default_title_color?: string
+    low_quality?: boolean
+    title_height?: number
+  }): void {
+    const {
+      scale,
+      default_title_color,
+      low_quality = false,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+    } = options
+
+    const size = this.renderingSize
+    const selected = this.selected
+
+    if (this.onDrawTitleText) {
+      this.onDrawTitleText(
+        ctx,
+        title_height,
+        size,
+        scale,
+        this.titleFontStyle,
+        selected,
+      )
+      return
+    }
+
+    // Don't render title text if low quality
+    if (low_quality) {
+      return
+    }
+
+    ctx.font = this.titleFontStyle
+    const rawTitle = this.getTitle() ?? `❌ ${this.type}`
+    const title = String(rawTitle) + (this.pinned ? "📌" : "")
+    if (title) {
+      if (selected) {
+        ctx.fillStyle = LiteGraph.NODE_SELECTED_TITLE_COLOR
+      } else {
+        ctx.fillStyle = this.constructor.title_text_color || default_title_color
+      }
+      if (this.collapsed) {
+        ctx.textAlign = "left"
+        ctx.fillText(
+          title.substr(0, 20), // avoid urls too long
+          title_height, // + measure.width * 0.5,
+          LiteGraph.NODE_TITLE_TEXT_Y - title_height,
+        )
+        ctx.textAlign = "left"
+      } else {
+        ctx.textAlign = "left"
+        ctx.fillText(
+          title,
+          title_height,
+          LiteGraph.NODE_TITLE_TEXT_Y - title_height,
+        )
+      }
     }
   }
 
