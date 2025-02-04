@@ -5340,38 +5340,6 @@ export class LGraphCanvas {
         }
       }
 
-      // subgraph box
-      if (
-        !collapsed &&
-        node.subgraph &&
-        !node.skip_subgraph_button
-      ) {
-        const w = LiteGraph.NODE_TITLE_HEIGHT
-        const x = node.size[0] - w
-        const over = LiteGraph.isInsideRectangle(
-          this.graph_mouse[0] - node.pos[0],
-          this.graph_mouse[1] - node.pos[1],
-          x + 2,
-          -w + 2,
-          w - 4,
-          w - 4,
-        )
-        ctx.fillStyle = over ? "#888" : "#555"
-        if (shape == RenderShape.BOX || low_quality) {
-          ctx.fillRect(x + 2, -w + 2, w - 4, w - 4)
-        } else {
-          ctx.beginPath()
-          ctx.roundRect(x + 2, -w + 2, w - 4, w - 4, [4])
-          ctx.fill()
-        }
-        ctx.fillStyle = "#333"
-        ctx.beginPath()
-        ctx.moveTo(x + w * 0.2, -w * 0.6)
-        ctx.lineTo(x + w * 0.8, -w * 0.6)
-        ctx.lineTo(x + w * 0.5, -w * 0.3)
-        ctx.fill()
-      }
-
       // custom title render
       node.onDrawTitle?.(ctx)
     }

@@ -230,8 +230,6 @@ export class LGraphNode implements Positionable, IPinnable {
   console?: string[]
   _level: number
   _shape?: RenderShape
-  subgraph?: LGraph
-  skip_subgraph_button?: boolean
   mouseOver?: IMouseOverData
   redraw_on_mouse?: boolean
   // Appears unused
