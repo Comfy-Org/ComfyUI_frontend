@@ -56,6 +56,10 @@ describe('useRemoteWidget', () => {
     ]
   })
 
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('initialization', () => {
     it('should create hook with default values', () => {
       const hook = useRemoteWidget(mockInputData)
