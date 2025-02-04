@@ -9,6 +9,7 @@ export interface CacheEntry<T> {
   loading: boolean
   error: Error | null
   fetchPromise?: Promise<T[]>
+  controller?: AbortController
   lastErrorTime: number
   retryCount: number
 }
@@ -30,11 +31,15 @@ const getBackoff = (retryCount: number) => {
   return Math.min(1000 * Math.pow(2, retryCount), 512)
 }
 
-async function fetchData<T>(inputData: InputSpec): Promise<T[]> {
+async function fetchData<T>(
+  inputData: InputSpec,
+  controller: AbortController
+): Promise<T[]> {
   console.count('[Remove Widget] total requests')
   const { route, response_key, query_params } = inputData[1]
   const res = await axios.get(route, {
     params: query_params,
+    signal: controller.signal,
     validateStatus: (status) => status === 200
   })
   return response_key ? res.data[response_key] : res.data
@@ -42,7 +47,7 @@ async function fetchData<T>(inputData: InputSpec): Promise<T[]> {
 
 export function useRemoteWidget<T>(inputData: InputSpec) {
   const { refresh = 0 } = inputData[1]
-  const isIdempotent = refresh <= 0
+  const isPermanent = refresh <= 0
   const cacheKey = getCacheKey(inputData)
   const defaultValue = useWidgetStore().getDefaultValue(inputData)
 
@@ -61,26 +66,36 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     entry.data ??= defaultValue
   }
 
+  const isInitialized = () => {
+    const entry = dataCache.get(cacheKey)
+    return entry?.data && entry.timestamp > 0
+  }
+
+  const isStale = () => {
+    const entry = dataCache.get(cacheKey)
+    return entry?.timestamp && Date.now() - entry.timestamp >= refresh
+  }
+
+  const isFetching = () => {
+    const entry = dataCache.get(cacheKey)
+    return entry?.fetchPromise
+  }
+
+  const isBackingOff = () => {
+    const entry = dataCache.get(cacheKey)
+    return (
+      entry?.error &&
+      entry.lastErrorTime &&
+      Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount)
+    )
+  }
+
   const fetchOptions = async () => {
     const entry = dataCache.get(cacheKey)
-    const now = Date.now()
 
-    if (entry?.error && entry.lastErrorTime) {
-      const isBackingOff =
-        now - entry.lastErrorTime < getBackoff(entry.retryCount)
-      if (isBackingOff) return entry.data
-    }
-
-    const isInitialized = entry?.data && entry.data !== defaultValue
-    if (isInitialized) {
-      if (isIdempotent) return entry.data
-
-      const isStale = now - entry.timestamp >= refresh
-      if (!isStale) return entry.data
-    }
-
-    const isFetching = entry?.fetchPromise
-    if (isFetching) return entry.fetchPromise
+    const isValid = isInitialized() && (isPermanent || !isStale())
+    if (isValid || isBackingOff()) return entry!.data
+    if (isFetching()) return entry!.fetchPromise
 
     const currentEntry: CacheEntry<T> = entry || {
       data: defaultValue,
@@ -88,6 +103,7 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
       loading: false,
       error: null,
       fetchPromise: undefined,
+      controller: undefined,
       retryCount: 0,
       lastErrorTime: 0
     }
@@ -96,27 +112,35 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     try {
       currentEntry.loading = true
       currentEntry.error = null
+      currentEntry.controller = new AbortController()
 
-      currentEntry.fetchPromise = fetchData<T>(inputData)
+      currentEntry.fetchPromise = fetchData<T>(
+        inputData,
+        currentEntry.controller
+      )
       const data = await currentEntry.fetchPromise
 
       setSuccess(currentEntry, data)
-      return data
+      return currentEntry.data
     } catch (err) {
       setError(currentEntry, err)
       return currentEntry.data
     } finally {
       currentEntry.loading = false
       currentEntry.fetchPromise = undefined
+      currentEntry.controller = undefined
     }
   }
 
   return {
     getCacheKey: () => cacheKey,
     getCacheEntry: () => dataCache.get(cacheKey),
-    clearCache: () => dataCache.delete(cacheKey),
+    forceUpdate: () => {
+      const entry = dataCache.get(cacheKey)
+      if (entry?.fetchPromise) entry.controller?.abort() // Abort in-flight request
+      dataCache.delete(cacheKey)
+    },
     fetchOptions,
-
     defaultValue
   }
 }
