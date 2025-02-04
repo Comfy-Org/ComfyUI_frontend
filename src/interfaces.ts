@@ -212,7 +212,6 @@ export interface INodeSlot {
   dir?: LinkDirection
   removable?: boolean
   shape?: RenderShape
-  not_subgraph_input?: boolean
   color_off?: CanvasColour
   color_on?: CanvasColour
   locked?: boolean
@@ -232,14 +231,12 @@ export interface INodeFlags {
 
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
-  not_subgraph_input?: boolean
 }
 
 export interface INodeOutputSlot extends INodeSlot {
   links: LinkId[] | null
   _data?: unknown
   slot_index?: number
-  not_subgraph_output?: boolean
 }
 
 /** Links */

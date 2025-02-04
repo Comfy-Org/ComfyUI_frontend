@@ -288,7 +288,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
     this.nodes_actioning = []
     this.nodes_executedAction = []
 
-    // subgraph_data
     this.inputs = {}
     this.outputs = {}
 
@@ -737,15 +736,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
 
     for (let j = 0, l = nodes.length; j < l; ++j) {
       const node = nodes[j]
-
-      // @ts-expect-error
-      if (node.constructor === LiteGraph.Subgraph && eventname != "onExecute") {
-        if (node.mode == mode) {
-          // @ts-expect-error Subgraph - not currently in use
-          node.sendEventToAllNodes(eventname, params, mode)
-        }
-        continue
-      }
 
       if (!node[eventname] || node.mode != mode) continue
       if (params === undefined) {

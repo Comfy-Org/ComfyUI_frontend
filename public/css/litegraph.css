@@ -445,63 +445,6 @@
   color: black;
 }
 
-.litegraph .subgraph_property {
-  padding: 4px;
-}
-
-.litegraph .subgraph_property:hover {
-  background-color: #333;
-}
-
-.litegraph .subgraph_property.extra {
-  margin-top: 8px;
-}
-
-.litegraph .subgraph_property span.name {
-  font-size: 1.3em;
-  padding-left: 4px;
-}
-
-.litegraph .subgraph_property span.type {
-  opacity: 0.5;
-  margin-right: 20px;
-  padding-left: 4px;
-}
-
-.litegraph .subgraph_property span.label {
-  display: inline-block;
-  width: 60px;
-  padding: 0px 10px;
-}
-
-.litegraph .subgraph_property input {
-  width: 140px;
-  color: #999;
-  background-color: #1a1a1a;
-  border-radius: 4px;
-  border: 0;
-  margin-right: 10px;
-  padding: 4px;
-  padding-left: 10px;
-}
-
-.litegraph .subgraph_property button {
-  background-color: #1c1c1c;
-  color: #aaa;
-  border: 0;
-  border-radius: 2px;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-
-.litegraph .subgraph_property.extra {
-  color: #ccc;
-}
-
-.litegraph .subgraph_property.extra input {
-  background-color: #111;
-}
-
 .litegraph .bullet_icon {
   margin-left: 10px;
   border-radius: 10px;
@@ -663,21 +606,6 @@
 }
 .litegraph .dialog .dialog-content {
   display: block;
-}
-.litegraph .dialog .dialog-content .subgraph_property {
-  padding: 5px;
-}
-.litegraph .dialog .dialog-footer {
-  margin: 0;
-}
-.litegraph .dialog .dialog-footer .subgraph_property {
-  margin-top: 0;
-  display: flex;
-  align-items: center;
-  padding: 5px;
-}
-.litegraph .dialog .dialog-footer .subgraph_property .name {
-  flex: 1;
 }
 .litegraph .graphdialog {
   display: flex;
