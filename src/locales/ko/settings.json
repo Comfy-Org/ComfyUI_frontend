@@ -317,6 +317,10 @@
       "Topbar (2nd-row)": "상단바 (2번째 행)"
     }
   },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "저품질 렌더링 줌 임계값",
+    "tooltip": "줌 아웃시 저품질 도형 렌더링"
+  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "최대 FPS",
     "tooltip": "캔버스가 렌더링할 수 있는 최대 프레임 수입니다. 부드럽게 동작하도록 GPU 사용률을 제한 합니다. 0이면 화면 주사율로 작동 합니다. 기본값: 0"

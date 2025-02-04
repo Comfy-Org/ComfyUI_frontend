@@ -317,6 +317,10 @@
       "Topbar (2nd-row)": "顶部栏 (第二行)"
     }
   },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "低质量渲染缩放阈值",
+    "tooltip": "在缩小时渲染低质量形状"
+  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "最大FPS",
     "tooltip": "画布允许渲染的最大帧数。限制GPU使用以换取流畅度。如果为0，则使用屏幕刷新率。默认值：0"

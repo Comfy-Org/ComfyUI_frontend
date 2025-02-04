@@ -317,6 +317,10 @@
       "Topbar (2nd-row)": "Barre supérieure (2ème rangée)"
     }
   },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "Seuil de zoom pour le rendu de faible qualité",
+    "tooltip": "Rendre des formes de faible qualité lorsqu'on est dézoomé"
+  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "FPS maximum",
     "tooltip": "Le nombre maximum d'images par seconde que le canevas est autorisé à rendre. Limite l'utilisation du GPU au détriment de la fluidité. Si 0, le taux de rafraîchissement de l'écran est utilisé. Par défaut : 0"
