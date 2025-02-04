@@ -360,16 +360,6 @@ export class LiteGraphGlobal {
         enumerable: true,
         configurable: true,
       })
-
-      // used to know which nodes to create when dragging files to the canvas
-      if (base_class.supported_extensions) {
-        for (const i in base_class.supported_extensions) {
-          const ext = base_class.supported_extensions[i]
-          if (ext && typeof ext === "string") {
-            this.node_types_by_file_extension[ext.toLowerCase()] = base_class
-          }
-        }
-      }
     }
 
     this.registered_node_types[type] = base_class

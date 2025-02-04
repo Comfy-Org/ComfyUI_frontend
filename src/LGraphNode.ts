@@ -143,7 +143,6 @@ export class LGraphNode implements Positionable, IPinnable {
   static MAX_CONSOLE?: number
   static type?: string
   static category?: string
-  static supported_extensions?: string[]
   static filter?: string
   static skip_list?: boolean
 
