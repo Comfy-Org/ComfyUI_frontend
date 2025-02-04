@@ -5,7 +5,7 @@ import { ComfyWidgetConstructor, ComfyWidgets } from '@/scripts/widgets'
 import {
   ComboInputSpecV2,
   InputSpec,
-  isComboInputSpecV2
+  isComboInputSpecV1
 } from '@/types/apiTypes'
 
 import type { BaseInputSpec } from './nodeDefStore'
@@ -44,12 +44,12 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function getDefaultValue(inputData: InputSpec) {
-    const widgetType = getWidgetType(inputData[0], inputData[1]?.name)
-    if (widgetType === 'COMBO')
+    if (Array.isArray(inputData[0]))
       return getDefaultValue(transformComboInput(inputData))
 
-    const [_, props] = inputData
+    const widgetType = getWidgetType(inputData[0], inputData[1].name)
 
+    const [_, props] = inputData
     if (props.default) return props.default
 
     if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
@@ -58,15 +58,15 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
-    return isComboInputSpecV2(inputData)
-      ? inputData
-      : [
+    return isComboInputSpecV1(inputData)
+      ? [
           'COMBO',
           {
             options: inputData[0],
             ...Object(inputData[1])
           }
         ]
+      : inputData
   }
 
   return {

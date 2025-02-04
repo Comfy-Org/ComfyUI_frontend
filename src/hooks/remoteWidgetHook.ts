@@ -35,7 +35,6 @@ async function fetchData<T>(
   inputData: InputSpec,
   controller: AbortController
 ): Promise<T[]> {
-  console.count('[Remove Widget] total requests')
   const { route, response_key, query_params } = inputData[1]
   const res = await axios.get(route, {
     params: query_params,

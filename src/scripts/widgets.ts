@@ -559,7 +559,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     )
     return res
   },
-  COMBO(node, inputName, inputData: InputSpec, app, widgetName) {
+  COMBO(node, inputName, inputData: InputSpec) {
     const widgetStore = useWidgetStore()
 
     const { type } = inputData[1]
