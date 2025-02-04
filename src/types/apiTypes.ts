@@ -334,11 +334,7 @@ const zComboInputProps = zBaseInputSpecValue.extend({
   image_upload: z.boolean().optional(),
   route: z.string().optional(),
   type: z.enum(['remote']).optional(),
-  refresh: z
-    .number()
-    .or(z.enum(['on_change']))
-    .optional(),
-  backoff: z.number().optional()
+  refresh: z.number().optional()
 })
 
 // Dropdown Selection.

@@ -3,7 +3,7 @@ import axios from 'axios'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { InputSpec } from '@/types/apiTypes'
 
-interface CacheEntry<T> {
+export interface CacheEntry<T> {
   data: T[]
   timestamp: number
   loading: boolean
@@ -49,25 +49,26 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
+    entry.data ??= defaultValue
   }
 
   const fetchOptions = async () => {
     const entry = dataCache.get(cacheKey)
     const now = Date.now()
 
-    const isInitialized = entry?.data.length
+    // Check if we're in backoff period
+    if (entry?.error && entry.lastErrorTime) {
+      const backoff = Math.min(1000 * Math.pow(2, entry.retryCount), 2048)
+      const isBackingOff = now - entry.lastErrorTime < backoff
+      if (isBackingOff) return entry.data
+    }
+
+    const isInitialized = entry?.data && entry.data !== defaultValue
     if (isInitialized) {
       if (isIdempotent) return entry.data
 
       const isStale = now - entry.timestamp > refresh
       if (!isStale) return entry.data
-
-      if (entry.error && entry.lastErrorTime) {
-        // Exponential backoff
-        const backoff = Math.min(1000 * Math.pow(2, entry.retryCount), 60000)
-        const isBackingOff = now - entry.lastErrorTime < backoff
-        if (!isBackingOff) return entry.data
-      }
     }
 
     const isFetching = entry?.fetchPromise
@@ -95,7 +96,7 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
       return data
     } catch (err) {
       setError(currentEntry, err)
-      throw currentEntry.error
+      return currentEntry.data
     } finally {
       currentEntry.loading = false
       currentEntry.fetchPromise = undefined
