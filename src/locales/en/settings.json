@@ -317,6 +317,10 @@
       "Topbar (2nd-row)": "Topbar (2nd-row)"
     }
   },
+  "LiteGraph_Canvas_LowQualityRenderingZoomThreshold": {
+    "name": "Low quality rendering zoom threshold",
+    "tooltip": "Render low quality shapes when zoomed out"
+  },
   "LiteGraph_Canvas_MaximumFps": {
     "name": "Maximum FPS",
     "tooltip": "The maximum frames per second that the canvas is allowed to render. Caps GPU usage at the cost of smoothness. If 0, the screen refresh rate is used. Default: 0"

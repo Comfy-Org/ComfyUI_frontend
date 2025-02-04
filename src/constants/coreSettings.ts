@@ -734,5 +734,18 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     type: 'boolean',
     versionAdded: '1.8.8'
+  },
+  {
+    id: 'LiteGraph.Canvas.LowQualityRenderingZoomThreshold',
+    name: 'Low quality rendering zoom threshold',
+    tooltip: 'Render low quality shapes when zoomed out',
+    type: 'slider',
+    attrs: {
+      min: 0.1,
+      max: 1,
+      step: 0.01
+    },
+    defaultValue: 0.6,
+    versionAdded: '1.9.1'
   }
 ]

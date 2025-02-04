@@ -143,6 +143,17 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const lowQualityRenderingZoomThreshold = settingStore.get(
+    'LiteGraph.Canvas.LowQualityRenderingZoomThreshold'
+  )
+  if (canvasStore.canvas) {
+    canvasStore.canvas.low_quality_zoom_threshold =
+      lowQualityRenderingZoomThreshold
+    canvasStore.canvas.setDirty(/* fg */ true, /* bg */ true)
+  }
+})
+
+watchEffect(() => {
   const linkMarkerShape = settingStore.get('Comfy.Graph.LinkMarkers')
   const { canvas } = canvasStore
   if (canvas) {
