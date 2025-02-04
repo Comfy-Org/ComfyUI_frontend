@@ -146,6 +146,8 @@
     "resetView": "重置视图",
     "selectMode": "选择模式",
     "toggleLinkVisibility": "切换连线可见性",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
     "Inputs": "输入",
     "Outputs": "输出",
     "Properties": "属性",
@@ -176,9 +178,7 @@
     "Convert ": "转换 ",
     " to input": " 为输入",
     " to widget": " 为控件",
-    "Search": "搜索",
-    "zoomIn": "放大",
-    "zoomOut": "缩小"
+    "Search": "搜索"
   },
   "groupNode": {
     "create": "创建组节点",
