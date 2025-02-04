@@ -2,7 +2,6 @@
   <teleport :to="teleportTarget">
     <div
       ref="topMenuRef"
-      v-if="!isEmbedded()"
       class="comfyui-menu flex items-center"
       v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }"
@@ -11,7 +10,7 @@
       <CommandMenubar />
       <Divider layout="vertical" class="mx-2" />
       <div class="flex-grow min-w-0">
-        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
+        <WorkflowTabs v-if="workflowTabsPosition === 'Topbar' && !isEmbedded()" />
       </div>
       <div class="comfyui-menu-right" ref="menuRight"></div>
       <Actionbar />
@@ -27,12 +26,12 @@
         @contextmenu="showNativeMenu"
       />
     </div>
-    <div v-else ref="topMenuRef"
+    <!-- <div v-else ref="topMenuRef"
       class="comfyui-menu flex items-center"
       v-show="betaMenuEnabled && !workspaceState.focusMode"
       :class="{ dropzone: isDropZone, 'dropzone-active': isDroppable }">
       <Actionbar />
-    </div>
+    </div> -->
   </teleport>
 </template>
 

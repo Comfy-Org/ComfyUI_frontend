@@ -107,7 +107,8 @@ watchEffect((onCleanup) => {
         sessionStorage.clear();
         localStorage.setItem('workflow', data.workflow);
         FlowConfig.flowId = data.flowId;
-        comfyApp.initWorkflow();
+        // comfyApp.initWorkflow();
+        window.location.reload();
       }
     }
     window.addEventListener('message', listener);
