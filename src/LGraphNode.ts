@@ -2801,6 +2801,57 @@ export class LGraphNode implements Positionable, IPinnable {
   }
 
   /**
+   * Renders the node's title bar background
+   */
+  drawTitleBarBackground(ctx: CanvasRenderingContext2D, options: {
+    scale: number
+    title_height?: number
+    low_quality?: boolean
+  }): void {
+    const {
+      scale,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      low_quality = false,
+    } = options
+
+    const fgcolor = this.renderingColor
+    const shape = this.renderingShape
+    const size = this.size
+
+    if (this.onDrawTitleBar) {
+      this.onDrawTitleBar(ctx, title_height, size, scale, fgcolor)
+      return
+    }
+
+    if (this.title_mode === TitleMode.TRANSPARENT_TITLE) {
+      return
+    }
+
+    if (this.collapsed) {
+      ctx.shadowColor = LiteGraph.DEFAULT_SHADOW_COLOR
+    }
+
+    ctx.fillStyle = this.constructor.title_color || fgcolor
+    ctx.beginPath()
+
+    if (shape == RenderShape.BOX || low_quality) {
+      ctx.rect(0, -title_height, size[0], title_height)
+    } else if (shape == RenderShape.ROUND || shape == RenderShape.CARD) {
+      ctx.roundRect(
+        0,
+        -title_height,
+        size[0],
+        title_height,
+        this.collapsed
+          ? [LiteGraph.ROUND_RADIUS]
+          : [LiteGraph.ROUND_RADIUS, LiteGraph.ROUND_RADIUS, 0, 0],
+      )
+    }
+    ctx.fill()
+    ctx.shadowColor = "transparent"
+  }
+
+  /**
    * Attempts to gracefully bypass this node in all of its connections by reconnecting all links.
    *
    * Each input is checked against each output.  This is done on a matching index basis, i.e. input 3 -> output 3.
