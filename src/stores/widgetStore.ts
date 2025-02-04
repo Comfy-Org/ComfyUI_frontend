@@ -54,7 +54,7 @@ export const useWidgetStore = defineStore('widget', () => {
 
     if (widgetType === 'COMBO' && props.options?.length) return props.options[0]
     if (props.type === 'remote') return 'Loading...'
-    return null
+    return undefined
   }
 
   const transformComboInput = (inputData: InputSpec): ComboInputSpecV2 => {
