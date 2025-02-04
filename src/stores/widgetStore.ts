@@ -40,7 +40,7 @@ export const useWidgetStore = defineStore('widget', () => {
 
   function getDefaultValue(inputData: InputSpec) {
     const widgetType = getWidgetType(inputData)
-    if (widgetType === 'COMBO')
+    if (widgetType === 'COMBO' && !isComboInputV2(inputData))
       return getDefaultValue(transformComboInput(inputData))
 
     const [_, props] = inputData
@@ -69,7 +69,7 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function isComboInputV2(inputData: InputSpec): inputData is ComboInputSpecV2 {
-    return inputData[0] === 'COMBO' && inputData[1]?.options
+    return inputData[0] === 'COMBO'
   }
 
   return {

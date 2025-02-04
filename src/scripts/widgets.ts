@@ -567,9 +567,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
 
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        values: widgetStore.isComboInputV2(inputData)
-          ? inputData[1].options
-          : inputData[0]
+        values: inputData[1].options ?? inputData[0]
       })
     }
 
@@ -583,7 +581,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
           get(target, prop: string | symbol) {
             if (prop !== 'values') return target[prop]
 
-            // Start non-blocking fetch
             remoteWidget.fetchOptions().then((options) => {
               if (!options || !options.length) return
 
