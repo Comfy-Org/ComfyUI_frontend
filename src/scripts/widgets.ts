@@ -577,7 +577,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     if (type === 'remote') {
       const remoteWidget = useRemoteWidget(inputData)
 
-      // Replace widget's options with proxied version
       const origOptions = res.widget.options
       res.widget.options = new Proxy(
         origOptions as Record<string | symbol, any>,
@@ -589,8 +588,8 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
             remoteWidget.fetchOptions().then((data) => {
               if (!data || !data.length) return
 
-              // If active value is placeholder or null, set it to the first value.
               if (res.widget.value === remoteWidget.defaultValue) {
+                // Need better way to check if first initialization or not, as default value could be a valid value that is not at index 0
                 res.widget.value = data[0]
                 res.widget.callback?.(data[0])
                 node.graph?.setDirtyCanvas(true)
@@ -602,12 +601,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
           }
         }
       )
-
-      // Add method to reset state, ensuring re-evaluation on next access
-      ;(res.widget as any).setDirty = () => {
-        remoteWidget.clearCache()
-        node.graph?.setDirtyCanvas(true)
-      }
     }
 
     if (inputData[1]?.control_after_generate) {
