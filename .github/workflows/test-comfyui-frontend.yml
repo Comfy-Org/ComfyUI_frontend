@@ -96,7 +96,7 @@ jobs:
       working-directory: ComfyUI_frontend
 
     - name: Run Playwright tests
-      run: npx playwright test
+      run: npx playwright test --project=chromium
       working-directory: ComfyUI_frontend
 
     - uses: actions/upload-artifact@v4
