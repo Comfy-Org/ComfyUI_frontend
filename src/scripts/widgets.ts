@@ -585,13 +585,15 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
             if (prop !== 'values') return target[prop]
 
             // Start non-blocking fetch
-            remoteWidget.fetchOptions().then((data) => {
-              if (!data || !data.length) return
+            remoteWidget.fetchOptions().then((options) => {
+              if (!options || !options.length) return
 
-              if (res.widget.value === remoteWidget.defaultValue) {
-                // Need better way to check if first initialization or not, as default value could be a valid value that is not at index 0
-                res.widget.value = data[0]
-                res.widget.callback?.(data[0])
+              const isUninitialized =
+                res.widget.value === remoteWidget.defaultValue &&
+                !res.widget.options.values?.includes(remoteWidget.defaultValue)
+              if (isUninitialized) {
+                res.widget.value = options[0]
+                res.widget.callback?.(options[0])
                 node.graph?.setDirtyCanvas(true)
               }
             })

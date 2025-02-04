@@ -3,33 +3,27 @@ import axios from 'axios'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { InputSpec } from '@/types/apiTypes'
 
-interface RemoteWidgetOptions {
-  route: string
-  refresh: number
-  backoff: number
-  response_key?: string
-  query_params?: Record<string, string>
-}
-
 interface CacheEntry<T> {
   data: T[]
   timestamp: number
   loading: boolean
   error: Error | null
   fetchPromise?: Promise<T[]>
-  lastErrorTime?: number
+  lastErrorTime: number
+  retryCount: number
 }
 
 // Global cache for memoizing fetches
 const dataCache = new Map<string, CacheEntry<any>>()
 
-function getCacheKey(options: RemoteWidgetOptions): string {
-  return JSON.stringify({ route: options.route, params: options.query_params })
+function getCacheKey(inputData: InputSpec): string {
+  const { route, query_params } = inputData[1]
+  return JSON.stringify({ route, query_params })
 }
 
-async function fetchData<T>(options: RemoteWidgetOptions): Promise<T[]> {
+async function fetchData<T>(inputData: InputSpec): Promise<T[]> {
   console.count('[Remove Widget] total requests')
-  const { route, response_key, query_params } = options
+  const { route, response_key, query_params } = inputData[1]
   const res = await axios.get(route, {
     params: query_params,
     validateStatus: (status) => status === 200
@@ -38,16 +32,24 @@ async function fetchData<T>(options: RemoteWidgetOptions): Promise<T[]> {
 }
 
 export function useRemoteWidget<T>(inputData: InputSpec) {
-  const widgetOptions: RemoteWidgetOptions = {
-    route: inputData[1].route,
-    refresh: inputData[1].refresh ?? 0,
-    backoff: inputData[1].backoff ?? 2048,
-    response_key: inputData[1].response_key,
-    query_params: inputData[1].query_params
+  const { refresh = 0 } = inputData[1]
+  const isIdempotent = refresh <= 0
+  const cacheKey = getCacheKey(inputData)
+  const defaultValue = useWidgetStore().getDefaultValue(inputData)
+
+  const setSuccess = (entry: CacheEntry<T>, data: T[]) => {
+    entry.retryCount = 0
+    entry.lastErrorTime = 0
+    entry.error = null
+    entry.timestamp = Date.now()
+    entry.data = data
   }
 
-  const cacheKey = getCacheKey(widgetOptions)
-  const defaultValue = useWidgetStore().getDefaultValue(inputData)
+  const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
+    entry.retryCount = (entry.retryCount || 0) + 1
+    entry.lastErrorTime = Date.now()
+    entry.error = error instanceof Error ? error : new Error(String(error))
+  }
 
   const fetchOptions = async () => {
     const entry = dataCache.get(cacheKey)
@@ -55,27 +57,30 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
 
     const isInitialized = entry?.data.length
     if (isInitialized) {
-      const isIdempotent = widgetOptions.refresh <= 0
       if (isIdempotent) return entry.data
 
-      const isStale = now - entry.timestamp > widgetOptions.refresh
+      const isStale = now - entry.timestamp > refresh
       if (!isStale) return entry.data
 
-      const isBackingOff =
-        entry.error &&
-        entry.lastErrorTime &&
-        now - entry.lastErrorTime > widgetOptions.backoff
-      if (isBackingOff) return entry.data
+      if (entry.error && entry.lastErrorTime) {
+        // Exponential backoff
+        const backoff = Math.min(1000 * Math.pow(2, entry.retryCount), 60000)
+        const isBackingOff = now - entry.lastErrorTime < backoff
+        if (!isBackingOff) return entry.data
+      }
     }
 
     const isFetching = entry?.fetchPromise
     if (isFetching) return entry.fetchPromise
 
-    const currentEntry = entry || {
-      data: [],
+    const currentEntry: CacheEntry<T> = entry || {
+      data: defaultValue,
       timestamp: 0,
       loading: false,
-      error: null
+      error: null,
+      fetchPromise: undefined,
+      retryCount: 0,
+      lastErrorTime: 0
     }
     dataCache.set(cacheKey, currentEntry)
 
@@ -83,17 +88,13 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
       currentEntry.loading = true
       currentEntry.error = null
 
-      currentEntry.fetchPromise = fetchData<T>(widgetOptions)
+      currentEntry.fetchPromise = fetchData<T>(inputData)
       const data = await currentEntry.fetchPromise
 
-      currentEntry.data = data
-      currentEntry.timestamp = now
-      currentEntry.lastErrorTime = undefined
-
+      setSuccess(currentEntry, data)
       return data
     } catch (err) {
-      currentEntry.error = err instanceof Error ? err : new Error(String(err))
-      currentEntry.lastErrorTime = now
+      setError(currentEntry, err)
       throw currentEntry.error
     } finally {
       currentEntry.loading = false

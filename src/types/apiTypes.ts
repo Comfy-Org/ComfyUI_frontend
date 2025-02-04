@@ -352,14 +352,7 @@ const zComboInputSpecV2 = inputSpec(
   /* allowUpcast=*/ false
 )
 
-const excludedLiterals = new Set([
-  'INT',
-  'FLOAT',
-  'BOOLEAN',
-  'STRING',
-  'COMBO',
-  'FILE_COMBO'
-])
+const excludedLiterals = new Set(['INT', 'FLOAT', 'BOOLEAN', 'STRING', 'COMBO'])
 
 const zCustomInputSpec = inputSpec([
   z.string().refine((value) => !excludedLiterals.has(value)),
