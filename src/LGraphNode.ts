@@ -411,9 +411,6 @@ export class LGraphNode implements Positionable, IPinnable {
   onDrawBackground?(
     this: LGraphNode,
     ctx: CanvasRenderingContext2D,
-    canvas: LGraphCanvas,
-    canvasElement: HTMLCanvasElement,
-    mousePosition: Point,
   ): void
   onNodeCreated?(this: LGraphNode): void
   /**

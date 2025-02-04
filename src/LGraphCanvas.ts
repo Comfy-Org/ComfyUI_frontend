@@ -5174,7 +5174,7 @@ export class LGraphCanvas {
     }
     ctx.shadowColor = "transparent"
 
-    node.onDrawBackground?.(ctx, this, this.canvas, this.graph_mouse)
+    node.onDrawBackground?.(ctx)
 
     // Title bar background (remember, it is rendered ABOVE the node)
     if (render_title || title_mode == TitleMode.TRANSPARENT_TITLE) {
