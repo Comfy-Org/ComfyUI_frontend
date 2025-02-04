@@ -10,6 +10,7 @@ import TiptapTableRow from '@tiptap/extension-table-row'
 import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
+import { useRemoteWidget } from '@/hooks/remoteWidgetHook'
 import { useSettingStore } from '@/stores/settingStore'
 import { useToastStore } from '@/stores/toastStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -24,11 +25,7 @@ export type ComfyWidgetConstructor = (
   inputName: string,
   inputData: InputSpec,
   app?: ComfyApp,
-  widgetName?: string,
-  options?: {
-    isLazy?: boolean
-    resolver?: () => Promise<(string | number | boolean | object)[]>
-  }
+  widgetName?: string
 ) => { widget: IWidget; minWidth?: number; minHeight?: number }
 
 function controlValueRunBefore() {
@@ -562,53 +559,52 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     )
     return res
   },
-  COMBO(node, inputName, inputData: InputSpec, app, widgetName, options = {}) {
-    const type = inputData[0]
-    let defaultValue = type[0]
-    if (inputData[1] && inputData[1].default) {
-      defaultValue = inputData[1].default
-    } else if (options.isLazy) {
-      defaultValue = 'Loading...'
-    }
+  COMBO(node, inputName, inputData: InputSpec, app, widgetName) {
+    const { type } = inputData[1]
+    const inputType = inputData[0]
+
+    const widgetStore = useWidgetStore()
+    const defaultValue = widgetStore.getDefaultValue(inputData)
+
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
-        values: type
+        values: inputType
       })
     }
 
-    if (options.isLazy && options.resolver) {
-      const widgetStore = useWidgetStore()
-      const widgetKey =
-        `${type}:${JSON.stringify(inputData[1].folder_path)}`.replace(
-          /[^\w\s]/g,
-          ''
-        )
-      // console.log('[Lazy Widget] registering resolver for', widgetKey)
+    if (type === 'remote') {
+      const remoteWidget = useRemoteWidget(inputData)
 
-      // Register the resolver with the store
-      type ValueType = Awaited<ReturnType<typeof options.resolver>>[number]
-      widgetStore.registerResolver<ValueType>(widgetKey, options.resolver)
-
+      // Replace widget's options with proxied version
       const origOptions = res.widget.options
-      res.widget.options = new Proxy(origOptions, {
-        get(target: Record<string | symbol, any>, prop: string | symbol) {
-          if (prop !== 'values') return target[prop]
-          const values = widgetStore.getValues<ValueType>(widgetKey)
+      res.widget.options = new Proxy(
+        origOptions as Record<string | symbol, any>,
+        {
+          get(target, prop: string | symbol) {
+            if (prop !== 'values') return target[prop]
 
-          // Set active value if not already set
-          if (values.length && !values.includes(res.widget.value)) {
-            res.widget.value = values[0]
-            node.graph.setDirtyCanvas(true)
+            // Start non-blocking fetch
+            remoteWidget.fetchOptions().then((data) => {
+              if (!data || !data.length) return
+
+              // If active value is placeholder or null, set it to the first value.
+              if (res.widget.value === remoteWidget.defaultValue) {
+                res.widget.value = data[0]
+                res.widget.callback?.(data[0])
+                node.graph?.setDirtyCanvas(true)
+              }
+            })
+
+            const current = remoteWidget.getCacheEntry()
+            return current?.data || widgetStore.getDefaultValue(inputData)
           }
-
-          return values
         }
-      })
+      )
 
       // Add method to reset state, ensuring re-evaluation on next access
       ;(res.widget as any).setDirty = () => {
-        widgetStore.clearCache(widgetKey)
-        node.graph.setDirtyCanvas(true)
+        remoteWidget.clearCache()
+        node.graph?.setDirtyCanvas(true)
       }
     }
 
@@ -623,27 +619,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       )
     }
     return res
-  },
-  FILE_COMBO(node: LGraphNode, inputName: string, inputData: InputSpec) {
-    const {
-      folder_path,
-      filter_content_type,
-      filter_extension,
-      include_directories
-    } = inputData[1]
-    const resolver = async () => {
-      const res = await api.getFilepaths({
-        folder_path,
-        filter_content_type,
-        filter_extension,
-        include_directories
-      })
-      return res.files
-    }
-    return ComfyWidgets.COMBO(node, inputName, inputData, app, inputName, {
-      isLazy: true,
-      resolver
-    })
   },
   IMAGEUPLOAD(node: LGraphNode, inputName: string, inputData: InputSpec, app) {
     // TODO make image upload handle a custom node type?
