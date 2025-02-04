@@ -332,9 +332,9 @@ const zStringInputSpec = inputSpec([
 const zComboInputProps = zBaseInputSpecValue.extend({
   control_after_generate: z.boolean().optional(),
   image_upload: z.boolean().optional(),
-  route: z.string().optional(),
   type: z.enum(['remote']).optional(),
-  refresh: z.number().optional()
+  route: z.string().url().or(z.string().startsWith('/')).optional(),
+  refresh: z.number().gte(128).safe().or(z.number().lte(0).safe()).optional()
 })
 
 // Dropdown Selection.
@@ -342,7 +342,6 @@ const zComboInputSpec = inputSpec(
   [z.array(z.any()), zComboInputProps],
   /* allowUpcast=*/ false
 )
-
 const zComboInputSpecV2 = inputSpec(
   [z.literal('COMBO'), zComboInputProps],
   /* allowUpcast=*/ false
