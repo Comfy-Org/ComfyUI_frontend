@@ -36,6 +36,7 @@ import {
 } from '@/types/comfyWorkflow'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -50,7 +51,6 @@ import {
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone, getStorageValue } from './utils'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { type ComfyWidgetConstructor, ComfyWidgets } from './widgets'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
@@ -590,83 +590,78 @@ export class ComfyApp {
    */
   #addContextMenuTranslator() {
     // 右键上下文菜单
-    const f = LGraphCanvas.prototype.getCanvasMenuOptions;
+    const f = LGraphCanvas.prototype.getCanvasMenuOptions
     LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-      var res = f.apply(this, arguments);
+      const res = f.apply(this, arguments)
       for (let item of res) {
-        if (item == null || !item.hasOwnProperty("content")) continue;
-        item.content = st(`graphCanvasMenu.${item.content}`, item.content);
+        if (item == null || !item.hasOwnProperty('content')) continue
+        item.content = st(`graphCanvasMenu.${item.content}`, item.content)
       }
-      return res;
-    };
+      return res
+    }
 
-    function translateMenus(values, options)
-    {
-      if (!values) return;
-      // Convert {w.name} to input
-      // Convert {w.name} to widget
-      var reInput = /Convert (.*) to input/;
-      var reWidget = /Convert (.*) to widget/;
-      var cvt = st("graphCanvasMenu.Convert ", "Convert ");
-      var tinp = st("graphCanvasMenu. to input", " to input");
-      var twgt = st("graphCanvasMenu. to widget", " to widget");
+    function translateMenus(values, options) {
+      if (!values) return
+      const reInput = /Convert (.*) to input/
+      const reWidget = /Convert (.*) to widget/
+      const cvt = st('graphCanvasMenu.Convert ', 'Convert ')
+      const tinp = st('graphCanvasMenu. to input', ' to input')
+      const twgt = st('graphCanvasMenu. to widget', ' to widget')
       for (var i = 0; i < values.length; i++) {
-        var value = values[i];
-        // 这里对应 从 slot 拖拽弹出的菜单, 但翻译后 菜单不能正常工作
-        // if (typeof value === 'string') {
-        //   values[i] = st(`graphCanvasMenu.${value}`, value);
-        //   continue;
-        // }
-        translateMenus(value?.submenu?.options, options);
-        if (value == null || !value.hasOwnProperty("content")) continue;
-        if (te(`graphCanvasMenu.${value.content}`)){
-          value.content = st(`graphCanvasMenu.${value.content}`, value.content);
-          continue;
+        const value = values[i]
+        translateMenus(value?.submenu?.options, options)
+        if (value == null || !value.hasOwnProperty('content')) continue
+        if (te(`graphCanvasMenu.${value.content}`)) {
+          value.content = st(`graphCanvasMenu.${value.content}`, value.content)
+          continue
         }
 
         // for capture translation text of input and widget
-        var extra_info = options.extra || options.parentMenu?.options?.extra;
+        const extraInfo = options.extra || options.parentMenu?.options?.extra
         // widgets and inputs
-        var matchInput = value.content?.match(reInput);
+        const matchInput = value.content?.match(reInput)
         if (matchInput) {
-          var match = matchInput[1];
-          extra_info?.inputs?.find((i) => {
-            if (i.name != match) return false;
-            match = i.label ? i.label : i.name;
-          });
-          extra_info?.widgets?.find((i) => {
-            if (i.name != match) return false;
-            match = i.label ? i.label : i.name;
-          });
-          value.content = cvt + match + tinp;
-          continue;
+          var match = matchInput[1]
+          extraInfo?.inputs?.find((i) => {
+            if (i.name != match) return false
+            match = i.label ? i.label : i.name
+          })
+          extraInfo?.widgets?.find((i) => {
+            if (i.name != match) return false
+            match = i.label ? i.label : i.name
+          })
+          value.content = cvt + match + tinp
+          continue
         }
-        var matchWidget = value.content?.match(reWidget);
+        const matchWidget = value.content?.match(reWidget)
         if (matchWidget) {
-          var match = matchWidget[1];
-          extra_info?.inputs?.find((i) => {
-            if (i.name != match) return false;
-            match = i.label ? i.label : i.name;
-          });
-          extra_info?.widgets?.find((i) => {
-            if (i.name != match) return false;
-            match = i.label ? i.label : i.name;
-          });
-          value.content = cvt + match + twgt;
-          continue;
+          var match = matchWidget[1]
+          extraInfo?.inputs?.find((i) => {
+            if (i.name != match) return false
+            match = i.label ? i.label : i.name
+          })
+          extraInfo?.widgets?.find((i) => {
+            if (i.name != match) return false
+            match = i.label ? i.label : i.name
+          })
+          value.content = cvt + match + twgt
+          continue
         }
       }
     }
 
-    const OriginalContextMenu = LiteGraph.ContextMenu;
+    const OriginalContextMenu = LiteGraph.ContextMenu
     LiteGraph.ContextMenu = function (values, options) {
-      if (options.hasOwnProperty("title")) {
-        options.title = st(`nodeDefs.${normalizeI18nKey(options.title)}.display_name`, options.title);
+      if (options.hasOwnProperty('title')) {
+        options.title = st(
+          `nodeDefs.${normalizeI18nKey(options.title)}.display_name`,
+          options.title
+        )
       }
-      translateMenus(values, options);
-      const ctx = new OriginalContextMenu(values, options);
-      return ctx;
-    } as unknown as typeof LiteGraph.ContextMenu;
+      translateMenus(values, options)
+      const ctx = new OriginalContextMenu(values, options)
+      return ctx
+    } as unknown as typeof LiteGraph.ContextMenu
   }
 
   /**
