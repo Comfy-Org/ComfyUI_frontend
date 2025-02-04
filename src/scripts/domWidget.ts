@@ -342,7 +342,7 @@ LGraphNode.prototype.addDOMWidget = function <
       const { offset, scale } = app.canvas.ds
 
       const hidden =
-        (!!options.hideOnZoom && scale < 0.5) ||
+        (!!options.hideOnZoom && app.canvas.low_quality) ||
         widget.computedHeight <= 0 ||
         // @ts-expect-error Used by widgetInputs.ts
         widget.type === 'converted-widget' ||
