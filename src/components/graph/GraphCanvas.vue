@@ -99,6 +99,14 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 
 watchEffect((onCleanup) => {
   if (isEmbedded()) {
+    const init = ()=> {
+      try {
+        comfyApp.initWorkflow();
+      } catch (e) {
+        console.error(e);
+        setTimeout(init, 3000);
+      }
+    }
     const listener = (event: Event) => {
       const data = event.data;
       if (!data || !data.type) return;
@@ -107,8 +115,7 @@ watchEffect((onCleanup) => {
         sessionStorage.clear();
         localStorage.setItem('workflow', data.workflow);
         FlowConfig.flowId = data.flowId;
-        // comfyApp.initWorkflow();
-        window.location.reload();
+        init();
       }
     }
     window.addEventListener('message', listener);
