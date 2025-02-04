@@ -13,12 +13,15 @@ export interface CacheEntry<T> {
   retryCount: number
 }
 
-// Global cache for memoizing fetches
 const dataCache = new Map<string, CacheEntry<any>>()
 
-function getCacheKey(inputData: InputSpec): string {
+const getCacheKey = (inputData: InputSpec): string => {
   const { route, query_params } = inputData[1]
   return JSON.stringify({ route, query_params })
+}
+
+const getBackoff = (retryCount: number) => {
+  return Math.min(1000 * Math.pow(2, retryCount), 512)
 }
 
 async function fetchData<T>(inputData: InputSpec): Promise<T[]> {
@@ -42,7 +45,7 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     entry.lastErrorTime = 0
     entry.error = null
     entry.timestamp = Date.now()
-    entry.data = data
+    entry.data = data ?? defaultValue
   }
 
   const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
@@ -56,10 +59,9 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     const entry = dataCache.get(cacheKey)
     const now = Date.now()
 
-    // Check if we're in backoff period
     if (entry?.error && entry.lastErrorTime) {
-      const backoff = Math.min(1000 * Math.pow(2, entry.retryCount), 2048)
-      const isBackingOff = now - entry.lastErrorTime < backoff
+      const isBackingOff =
+        now - entry.lastErrorTime < getBackoff(entry.retryCount)
       if (isBackingOff) return entry.data
     }
 
@@ -67,7 +69,7 @@ export function useRemoteWidget<T>(inputData: InputSpec) {
     if (isInitialized) {
       if (isIdempotent) return entry.data
 
-      const isStale = now - entry.timestamp > refresh
+      const isStale = now - entry.timestamp >= refresh
       if (!isStale) return entry.data
     }
 
