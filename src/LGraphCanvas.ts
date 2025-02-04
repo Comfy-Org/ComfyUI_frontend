@@ -5181,64 +5181,12 @@ export class LGraphCanvas {
       })
 
       // title box
-      const box_size = 10
-      if (node.onDrawTitleBox) {
-        node.onDrawTitleBox(ctx, title_height, size, this.ds.scale)
-      } else if (
-        shape == RenderShape.ROUND ||
-        shape == RenderShape.CIRCLE ||
-        shape == RenderShape.CARD
-      ) {
-        if (low_quality) {
-          ctx.fillStyle = "black"
-          ctx.beginPath()
-          ctx.arc(
-            title_height * 0.5,
-            title_height * -0.5,
-            box_size * 0.5 + 1,
-            0,
-            Math.PI * 2,
-          )
-          ctx.fill()
-        }
+      node.drawTitleBox(ctx, {
+        scale: this.ds.scale,
+        low_quality,
+        box_size: 10,
+      })
 
-        ctx.fillStyle = node.renderingBoxColor
-        if (low_quality)
-          ctx.fillRect(
-            title_height * 0.5 - box_size * 0.5,
-            title_height * -0.5 - box_size * 0.5,
-            box_size,
-            box_size,
-          )
-        else {
-          ctx.beginPath()
-          ctx.arc(
-            title_height * 0.5,
-            title_height * -0.5,
-            box_size * 0.5,
-            0,
-            Math.PI * 2,
-          )
-          ctx.fill()
-        }
-      } else {
-        if (low_quality) {
-          ctx.fillStyle = "black"
-          ctx.fillRect(
-            (title_height - box_size) * 0.5 - 1,
-            (title_height + box_size) * -0.5 - 1,
-            box_size + 2,
-            box_size + 2,
-          )
-        }
-        ctx.fillStyle = node.renderingBoxColor
-        ctx.fillRect(
-          (title_height - box_size) * 0.5,
-          (title_height + box_size) * -0.5,
-          box_size,
-          box_size,
-        )
-      }
       ctx.globalAlpha = old_alpha
 
       // title text

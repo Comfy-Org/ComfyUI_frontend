@@ -2861,6 +2861,87 @@ export class LGraphNode implements Positionable, IPinnable {
   }
 
   /**
+   * Renders the node's title box, i.e. the dot in front of the title text that
+   * when clicked toggles the node's collapsed state. The term `title box` comes
+   * from the original LiteGraph implementation.
+   */
+  drawTitleBox(ctx: CanvasRenderingContext2D, options: {
+    scale: number
+    low_quality?: boolean
+    title_height?: number
+    box_size?: number
+  }): void {
+    const {
+      scale,
+      low_quality = false,
+      title_height = LiteGraph.NODE_TITLE_HEIGHT,
+      box_size = 10,
+    } = options
+
+    const size = this.renderingSize
+    const shape = this.renderingShape
+
+    if (this.onDrawTitleBox) {
+      this.onDrawTitleBox(ctx, title_height, size, scale)
+      return
+    }
+
+    if (
+      [RenderShape.ROUND, RenderShape.CIRCLE, RenderShape.CARD].includes(shape)
+    ) {
+      if (low_quality) {
+        ctx.fillStyle = "black"
+        ctx.beginPath()
+        ctx.arc(
+          title_height * 0.5,
+          title_height * -0.5,
+          box_size * 0.5 + 1,
+          0,
+          Math.PI * 2,
+        )
+        ctx.fill()
+      }
+
+      ctx.fillStyle = this.renderingBoxColor
+      if (low_quality)
+        ctx.fillRect(
+          title_height * 0.5 - box_size * 0.5,
+          title_height * -0.5 - box_size * 0.5,
+          box_size,
+          box_size,
+        )
+      else {
+        ctx.beginPath()
+        ctx.arc(
+          title_height * 0.5,
+          title_height * -0.5,
+          box_size * 0.5,
+          0,
+          Math.PI * 2,
+        )
+        ctx.fill()
+      }
+    } else {
+      if (low_quality) {
+        ctx.fillStyle = "black"
+        ctx.fillRect(
+          (title_height - box_size) * 0.5 - 1,
+          (title_height + box_size) * -0.5 - 1,
+          box_size + 2,
+          box_size + 2,
+        )
+      }
+      ctx.fillStyle = this.renderingBoxColor
+      ctx.fillRect(
+        (title_height - box_size) * 0.5,
+        (title_height + box_size) * -0.5,
+        box_size,
+        box_size,
+      )
+    }
+  }
+
+  /**
    * Attempts to gracefully bypass this node in all of its connections by reconnecting all links.
    *
    * Each input is checked against each output.  This is done on a matching index basis, i.e. input 3 -> output 3.
