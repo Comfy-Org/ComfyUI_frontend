@@ -560,17 +560,16 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
     return res
   },
   COMBO(node, inputName, inputData: InputSpec, app, widgetName) {
-    const { type } = inputData[1]
-    const inputType = inputData[0]
-
     const widgetStore = useWidgetStore()
+
+    const { type } = inputData[1]
     const defaultValue = widgetStore.getDefaultValue(inputData)
 
     const res = {
       widget: node.addWidget('combo', inputName, defaultValue, () => {}, {
         values: widgetStore.isComboInputV2(inputData)
           ? inputData[1].options
-          : inputType
+          : inputData[0]
       })
     }
 
