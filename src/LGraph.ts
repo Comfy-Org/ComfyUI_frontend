@@ -105,7 +105,6 @@ export class LGraph implements LinkNetwork, Serialisable<SerialisableGraph> {
   execution_time: number
   _last_trigger_time?: number
   filter?: string
-  _subgraph_node?: LGraphNode
   /** Must contain serialisable values, e.g. primitive types */
   config: LGraphConfig
   vars: Dictionary<unknown>
