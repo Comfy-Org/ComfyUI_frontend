@@ -16,8 +16,6 @@ export const useWidgetStore = defineStore('widget', () => {
     const [type, { name }] = inputData
     if (type === 'COMBO' || Array.isArray(type)) {
       return 'COMBO'
-    } else if (type === 'FILE_COMBO') {
-      return 'FILE_COMBO'
     } else if (`${type}:${name}` in widgets.value) {
       return `${type}:${name}`
     } else if (type in widgets.value) {
