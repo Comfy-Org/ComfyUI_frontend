@@ -27,3 +27,16 @@ test.describe('Combo text widget', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('resized-to-original.png')
   })
 })
+
+test.describe('Boolean widget', () => {
+  test('Can toggle', async ({ comfyPage }) => {
+    await comfyPage.loadWorkflow('widgets/boolean_widget')
+    await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
+    const node = (await comfyPage.getFirstNodeRef())!
+    const widget = await node.getWidget(0)
+    await widget.click()
+    await expect(comfyPage.canvas).toHaveScreenshot(
+      'boolean_widget_toggled.png'
+    )
+  })
+})

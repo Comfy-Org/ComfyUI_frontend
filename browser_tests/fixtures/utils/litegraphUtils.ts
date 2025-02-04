@@ -83,6 +83,12 @@ export class NodeWidgetReference {
       y: pos[1]
     }
   }
+
+  async click() {
+    await this.node.comfyPage.canvas.click({
+      position: await this.getPosition()
+    })
+  }
 }
 
 export class NodeReference {
