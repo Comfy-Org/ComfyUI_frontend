@@ -450,7 +450,6 @@ export class LGraphCanvas {
   last_mouse: ReadOnlyPoint = [0, 0]
   last_mouseclick: number = 0
   graph!: LGraph
-  _graph_stack: LGraph[] | null = null
   canvas: HTMLCanvasElement
   bgcanvas: HTMLCanvasElement
   ctx?: CanvasRenderingContext2D
@@ -1638,19 +1637,7 @@ export class LGraphCanvas {
 
     graph.attachCanvas(this)
 
-    // remove the graph stack in case a subgraph was open
-    this._graph_stack &&= null
-
     this.setDirty(true, true)
-  }
-
-  /**
-   * @returns the top level graph (in case there are subgraphs open on the canvas)
-   */
-  getTopGraph(): LGraph {
-    return this._graph_stack.length
-      ? this._graph_stack[0]
-      : this.graph
   }
 
   /**
@@ -4645,25 +4632,6 @@ export class LGraphCanvas {
     // clear
     if (this.clear_background) {
       ctx.clearRect(viewport[0], viewport[1], viewport[2], viewport[3])
-    }
-
-    // show subgraph stack header
-    if (this._graph_stack?.length) {
-      ctx.save()
-      const subgraph_node = this.graph._subgraph_node
-      ctx.strokeStyle = subgraph_node.bgcolor
-      ctx.lineWidth = 10
-      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2)
-      ctx.lineWidth = 1
-      ctx.font = "40px Arial"
-      ctx.textAlign = "center"
-      ctx.fillStyle = subgraph_node.bgcolor || "#AAA"
-      let title = ""
-      for (let i = 1; i < this._graph_stack.length; ++i) {
-        title += this._graph_stack[i]._subgraph_node.getTitle() + " >> "
-      }
-      ctx.fillText(title + subgraph_node.getTitle(), canvas.width * 0.5, 40)
-      ctx.restore()
     }
 
     const bg_already_painted = this.onRenderBackground
