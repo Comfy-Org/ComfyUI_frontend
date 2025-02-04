@@ -331,36 +331,6 @@ export class LiteGraphGlobal {
     if (prev) {
       console.log("replacing node type: " + type)
     }
-    if (!Object.prototype.hasOwnProperty.call(base_class.prototype, "shape")) {
-      Object.defineProperty(base_class.prototype, "shape", {
-        set(this: LGraphNode, v: RenderShape | "default" | "box" | "round" | "circle" | "card") {
-          switch (v) {
-          case "default":
-            delete this._shape
-            break
-          case "box":
-            this._shape = RenderShape.BOX
-            break
-          case "round":
-            this._shape = RenderShape.ROUND
-            break
-          case "circle":
-            this._shape = RenderShape.CIRCLE
-            break
-          case "card":
-            this._shape = RenderShape.CARD
-            break
-          default:
-            this._shape = v
-          }
-        },
-        get() {
-          return this._shape
-        },
-        enumerable: true,
-        configurable: true,
-      })
-    }
 
     this.registered_node_types[type] = base_class
     if (base_class.constructor.name) this.Nodes[classname] = base_class
