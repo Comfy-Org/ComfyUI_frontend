@@ -16,8 +16,14 @@ export interface CacheEntry<T> {
 const dataCache = new Map<string, CacheEntry<any>>()
 
 const getCacheKey = (inputData: InputSpec): string => {
-  const { route, query_params } = inputData[1]
-  return JSON.stringify({ route, query_params })
+  const { route, query_params = {}, refresh = 0 } = inputData[1]
+
+  const paramsKey = Object.entries(query_params)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join('&')
+
+  return [route, `r=${refresh}`, paramsKey].join(';')
 }
 
 const getBackoff = (retryCount: number) => {
