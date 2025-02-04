@@ -323,6 +323,13 @@ export class LGraphNode implements Positionable, IPinnable {
     }
   }
 
+  /**
+   * The shape of the node used for rendering. @see {@link RenderShape}
+   */
+  get renderingShape(): RenderShape {
+    return this._shape || this.constructor.shape || LiteGraph.NODE_DEFAULT_SHAPE
+  }
+
   public get is_selected(): boolean {
     return this.selected
   }
