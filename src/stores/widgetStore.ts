@@ -79,6 +79,7 @@ export const useWidgetStore = defineStore('widget', () => {
     getWidgetType,
     inputIsWidget,
     registerCustomWidgets,
-    getDefaultValue
+    getDefaultValue,
+    isComboInputV2
   }
 })
