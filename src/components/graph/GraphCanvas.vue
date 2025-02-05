@@ -44,6 +44,7 @@ import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { useCanvasDrop } from '@/hooks/canvasDropHooks'
 import { useGlobalLitegraph } from '@/hooks/litegraphHooks'
+import { useContextMenuTranslation } from '@/hooks/translationHooks'
 import { useWorkflowPersistence } from '@/hooks/workflowPersistenceHooks'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
@@ -261,6 +262,8 @@ useCanvasDrop(canvasRef)
 
 onMounted(async () => {
   useGlobalLitegraph()
+  useContextMenuTranslation()
+
   comfyApp.vueAppReady = true
 
   workspaceStore.spinner = true
