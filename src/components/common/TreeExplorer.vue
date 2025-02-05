@@ -70,7 +70,7 @@ const renderedRoots = computed<RenderedTreeExplorerNode[]>(() => {
 })
 const getTreeNodeIcon = (node: TreeExplorerNode) => {
   if (node.getIcon) {
-    const icon = node.getIcon(node)
+    const icon = node.getIcon()
     if (icon) {
       return icon
     }
@@ -95,7 +95,7 @@ const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
     children,
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
-    badgeText: node.getBadgeText ? node.getBadgeText(node) : null
+    badgeText: node.getBadgeText ? node.getBadgeText() : null
   }
 }
 const onNodeContentClick = async (
@@ -106,7 +106,7 @@ const onNodeContentClick = async (
     selectionKeys.value = {}
   }
   if (node.handleClick) {
-    await node.handleClick(node, e)
+    await node.handleClick(e)
   }
   emit('nodeClick', node, e)
 }
@@ -128,7 +128,7 @@ const renameCommand = (node: RenderedTreeExplorerNode) => {
   renameEditingNode.value = node
 }
 const deleteCommand = async (node: RenderedTreeExplorerNode) => {
-  await node.handleDelete?.(node)
+  await node.handleDelete?.()
   emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() =>

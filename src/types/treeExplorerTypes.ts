@@ -8,42 +8,42 @@ export interface TreeExplorerNode<T = any> {
   children?: TreeExplorerNode<T>[]
   icon?: string
   /** Function to override what icon to use for the node */
-  getIcon?: (node: TreeExplorerNode<T>) => string
+  getIcon?: (this: TreeExplorerNode<T>) => string
   /** Function to override what text to use for the leaf-count badge on a folder node */
-  getBadgeText?: (node: TreeExplorerNode<T>) => string
+  getBadgeText?: (this: TreeExplorerNode<T>) => string
   /** Function to handle renaming the node */
   handleRename?: (
-    node: TreeExplorerNode<T>,
+    this: TreeExplorerNode<T>,
     newName: string
   ) => void | Promise<void>
   /** Function to handle deleting the node */
-  handleDelete?: (node: TreeExplorerNode<T>) => void | Promise<void>
+  handleDelete?: (this: TreeExplorerNode<T>) => void | Promise<void>
   /** Function to handle adding a child node */
   handleAddChild?: (
-    node: TreeExplorerNode<T>,
+    this: TreeExplorerNode<T>,
     child: TreeExplorerNode<T>
   ) => void | Promise<void>
   /** Whether the node is draggable */
   draggable?: boolean
   /** Function to render a drag preview */
   renderDragPreview?: (
-    node: TreeExplorerNode<T>,
+    this: TreeExplorerNode<T>,
     container: HTMLElement
   ) => void | (() => void)
   /** Whether the node is droppable */
   droppable?: boolean
   /** Function to handle dropping a node */
   handleDrop?: (
-    node: TreeExplorerNode<T>,
+    this: TreeExplorerNode<T>,
     data: TreeExplorerDragAndDropData
   ) => void | Promise<void>
   /** Function to handle clicking a node */
   handleClick?: (
-    node: TreeExplorerNode<T>,
+    this: TreeExplorerNode<T>,
     event: MouseEvent
   ) => void | Promise<void>
   /** Function to handle errors */
-  handleError?: (error: Error) => void
+  handleError?: (this: TreeExplorerNode<T>, error: Error) => void
   /** Extra context menu items */
   contextMenuItems?:
     | MenuItem[]
