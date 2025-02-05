@@ -587,85 +587,6 @@ export class ComfyApp {
   }
 
   /**
-   * Adds a translator on right click that translates the context menu
-   */
-  #addContextMenuTranslator() {
-    // 右键上下文菜单
-    const f = LGraphCanvas.prototype.getCanvasMenuOptions
-    LGraphCanvas.prototype.getCanvasMenuOptions = function () {
-      const res = f.apply(this, arguments)
-      for (let item of res) {
-        if (item == null || !item.hasOwnProperty('content')) continue
-        item.content = st(`contextMenu.${item.content}`, item.content)
-      }
-      return res
-    }
-
-    function translateMenus(values, options) {
-      if (!values) return
-      const reInput = /Convert (.*) to input/
-      const reWidget = /Convert (.*) to widget/
-      const cvt = st('contextMenu.Convert ', 'Convert ')
-      const tinp = st('contextMenu. to input', ' to input')
-      const twgt = st('contextMenu. to widget', ' to widget')
-      for (var i = 0; i < values.length; i++) {
-        const value = values[i]
-        translateMenus(value?.submenu?.options, options)
-        if (value == null || !value.hasOwnProperty('content')) continue
-        if (te(`contextMenu.${value.content}`)) {
-          value.content = st(`contextMenu.${value.content}`, value.content)
-          continue
-        }
-
-        // for capture translation text of input and widget
-        const extraInfo = options.extra || options.parentMenu?.options?.extra
-        // widgets and inputs
-        const matchInput = value.content?.match(reInput)
-        if (matchInput) {
-          var match = matchInput[1]
-          extraInfo?.inputs?.find((i) => {
-            if (i.name != match) return false
-            match = i.label ? i.label : i.name
-          })
-          extraInfo?.widgets?.find((i) => {
-            if (i.name != match) return false
-            match = i.label ? i.label : i.name
-          })
-          value.content = cvt + match + tinp
-          continue
-        }
-        const matchWidget = value.content?.match(reWidget)
-        if (matchWidget) {
-          var match = matchWidget[1]
-          extraInfo?.inputs?.find((i) => {
-            if (i.name != match) return false
-            match = i.label ? i.label : i.name
-          })
-          extraInfo?.widgets?.find((i) => {
-            if (i.name != match) return false
-            match = i.label ? i.label : i.name
-          })
-          value.content = cvt + match + twgt
-          continue
-        }
-      }
-    }
-
-    const OriginalContextMenu = LiteGraph.ContextMenu
-    LiteGraph.ContextMenu = function (values, options) {
-      if (options.hasOwnProperty('title')) {
-        options.title = st(
-          `nodeDefs.${normalizeI18nKey(options.title)}.display_name`,
-          options.title
-        )
-      }
-      translateMenus(values, options)
-      const ctx = new OriginalContextMenu(values, options)
-      return ctx
-    } as unknown as typeof LiteGraph.ContextMenu
-  }
-
-  /**
    * Handle mouse
    *
    * Move group by header
@@ -1053,7 +974,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     await useExtensionService().loadExtensions()
 
-    this.#addContextMenuTranslator()
     this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
