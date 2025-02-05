@@ -64,10 +64,7 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type {
-  RenderedTreeExplorerNode,
-  TreeExplorerNode
-} from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'
 import { buildTree } from '@/utils/treeUtil'
 
@@ -126,7 +123,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         : node.label,
       leaf: node.leaf,
       data: node.data,
-      getIcon: () => {
+      getIcon() {
         if (model) {
           return model.image ? 'pi pi-image' : 'pi pi-file'
         }
@@ -137,7 +134,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
         }
         return 'pi pi-folder'
       },
-      getBadgeText: () => {
+      getBadgeText() {
         // Return null to apply default badge text
         // Return empty string to hide badge
         if (!folder) {
@@ -147,11 +144,8 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       },
       children,
       draggable: node.leaf,
-      handleClick: (
-        node: RenderedTreeExplorerNode<ModelOrFolder>,
-        e: MouseEvent
-      ) => {
-        if (node.leaf) {
+      handleClick(e: MouseEvent) {
+        if (this.leaf) {
           const provider = modelToNodeStore.getNodeProvider(model.directory)
           if (provider) {
             const node = useLitegraphService().addNodeOnGraph(provider.nodeDef)

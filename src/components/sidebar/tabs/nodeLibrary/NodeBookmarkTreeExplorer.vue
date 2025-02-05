@@ -139,8 +139,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         label: node.leaf ? node.data.display_name : node.label,
         leaf: node.leaf,
         data: node.data,
-        getIcon: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
-          if (node.leaf) {
+        getIcon() {
+          if (this.leaf) {
             return 'pi pi-circle-fill'
           }
           const customization =
@@ -152,10 +152,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         children: sortedChildren,
         draggable: node.leaf,
         droppable: !node.leaf,
-        handleDrop: (
-          node: TreeExplorerNode<ComfyNodeDefImpl>,
-          data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>
-        ) => {
+        handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
           // Remove bookmark if the source is the top level bookmarked node.
           if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
@@ -165,12 +162,9 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           nodeBookmarkStore.addBookmark(nodePath)
         },
-        handleClick: (
-          node: RenderedTreeExplorerNode<ComfyNodeDefImpl>,
-          e: MouseEvent
-        ) => {
-          if (node.leaf) {
-            useLitegraphService().addNodeOnGraph(node.data)
+        handleClick(e: MouseEvent) {
+          if (this.leaf) {
+            useLitegraphService().addNodeOnGraph(this.data)
           } else {
             toggleNodeOnEvent(e, node)
           }
@@ -179,9 +173,13 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         ...(node.leaf
           ? {}
           : {
-              handleRename,
-              handleDelete: (node: TreeExplorerNode<ComfyNodeDefImpl>) => {
-                nodeBookmarkStore.deleteBookmarkFolder(node.data)
+              handleRename(newName: string) {
+                if (this.data && this.data.isDummyFolder) {
+                  nodeBookmarkStore.renameBookmarkFolder(this.data, newName)
+                }
+              },
+              handleDelete() {
+                nodeBookmarkStore.deleteBookmarkFolder(this.data)
               }
             })
       }
@@ -211,12 +209,6 @@ const addNewBookmarkFolder = (
 defineExpose({
   addNewBookmarkFolder
 })
-
-const handleRename = (node: TreeNode, newName: string) => {
-  if (node.data && node.data.isDummyFolder) {
-    nodeBookmarkStore.renameBookmarkFolder(node.data, newName)
-  }
-}
 
 const showCustomizationDialog = ref(false)
 const initialIcon = ref(nodeBookmarkStore.defaultBookmarkIcon)

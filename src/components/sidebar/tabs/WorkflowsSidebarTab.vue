@@ -245,24 +245,18 @@ const renderTreeNode = (
 
   const workflow: ComfyWorkflow = node.data
 
-  const handleClick = (
-    node: TreeExplorerNode<ComfyWorkflow>,
-    e: MouseEvent
-  ) => {
-    if (node.leaf) {
+  function handleClick(this: TreeExplorerNode<ComfyWorkflow>, e: MouseEvent) {
+    if (this.leaf) {
       workflowService.openWorkflow(workflow)
     } else {
-      toggleNodeOnEvent(e, node)
+      toggleNodeOnEvent(e, this)
     }
   }
 
   const actions = node.leaf
     ? {
         handleClick,
-        handleRename: async (
-          node: TreeExplorerNode<ComfyWorkflow>,
-          newName: string
-        ) => {
+        async handleRename(newName: string) {
           const newPath =
             type === WorkflowTreeType.Browse
               ? workflow.directory + '/' + appendJsonExt(newName)
@@ -272,10 +266,10 @@ const renderTreeNode = (
         },
         handleDelete: workflow.isTemporary
           ? undefined
-          : async () => {
+          : async function () {
               await workflowService.deleteWorkflow(workflow)
             },
-        contextMenuItems: (node: TreeExplorerNode<ComfyWorkflow>) => {
+        contextMenuItems() {
           return [
             {
               label: t('g.insert'),
