@@ -5,15 +5,18 @@ import { Ref } from 'vue'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDroppable'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useWorkflowService } from '@/services/workflowService'
 import { ComfyModelDef } from '@/stores/modelStore'
 import { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyWorkflow } from '@/stores/workflowStore'
 import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
+  const workflowService = useWorkflowService()
 
   usePragmaticDroppable(() => canvasRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
@@ -70,6 +73,13 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
               widget.value = model.file_name
             }
           }
+        } else if (node.data instanceof ComfyWorkflow) {
+          const workflow = node.data
+          const position = comfyApp.clientPosToCanvasPos([
+            loc.clientX,
+            loc.clientY
+          ])
+          workflowService.insertWorkflow(workflow, { position })
         }
       }
     }

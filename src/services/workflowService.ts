@@ -1,4 +1,5 @@
 import { LGraphCanvas } from '@comfyorg/litegraph'
+import type { Vector2 } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 
 import { t } from '@/i18n'
@@ -327,7 +328,10 @@ export const useWorkflowService = () => {
   /**
    * Insert the given workflow into the current graph editor.
    */
-  const insertWorkflow = async (workflow: ComfyWorkflow) => {
+  const insertWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { position?: Vector2 } = {}
+  ) => {
     const loadedWorkflow = await workflow.load()
     const data = loadedWorkflow.initialState
     const old = localStorage.getItem('litegrapheditor_clipboard')
@@ -341,7 +345,7 @@ export const useWorkflowService = () => {
     canvas.reroutesEnabled = app.canvas.reroutesEnabled
     canvas.selectItems()
     canvas.copyToClipboard()
-    app.canvas.pasteFromClipboard()
+    app.canvas.pasteFromClipboard(options)
     if (old !== null) {
       localStorage.setItem('litegrapheditor_clipboard', old)
     }

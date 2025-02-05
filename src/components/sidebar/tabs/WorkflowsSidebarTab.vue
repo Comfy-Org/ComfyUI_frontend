@@ -280,7 +280,8 @@ const renderTreeNode = (
               }
             }
           ]
-        }
+        },
+        draggable: true
       }
     : { handleClick }
 
