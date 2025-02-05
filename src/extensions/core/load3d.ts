@@ -362,6 +362,12 @@ app.registerExtension({
 
         containerToLoad3D.set(container.id, load3d)
 
+        node.onMouseEnter = function () {
+          if (load3d) {
+            load3d.refreshViewport()
+          }
+        }
+
         node.onResize = function () {
           if (load3d) {
             load3d.handleResize()

@@ -892,6 +892,10 @@ class Load3d {
     this.handleResize()
   }
 
+  refreshViewport() {
+    this.handleResize()
+  }
+
   handleResize() {
     const parentElement = this.renderer?.domElement?.parentElement
 
