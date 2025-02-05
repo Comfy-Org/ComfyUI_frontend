@@ -15,7 +15,7 @@ const folderStructure = `
 src/
   components/
   constants/
-  hooks/
+  composables/
   views/
   stores/
   services/

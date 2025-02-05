@@ -15,7 +15,7 @@ import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
 import { Ref, onMounted, onUnmounted, ref } from 'vue'
 
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { LogEntry, LogsWsMessage, TerminalSize } from '@/types/apiTypes'

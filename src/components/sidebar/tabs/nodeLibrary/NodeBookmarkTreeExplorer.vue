@@ -30,7 +30,7 @@ import FolderCustomizationDialog from '@/components/common/CustomizationDialog.v
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
-import { useTreeExpansion } from '@/hooks/treeHooks'
+import { useTreeExpansion } from '@/composables/treeHooks'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'

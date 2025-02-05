@@ -6,7 +6,7 @@
 import { IDisposable } from '@xterm/xterm'
 import { Ref, onMounted, onUnmounted } from 'vue'
 
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
+import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 
 import BaseTerminal from './BaseTerminal.vue'
