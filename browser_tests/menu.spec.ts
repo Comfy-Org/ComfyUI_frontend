@@ -707,6 +707,36 @@ test.describe('Menu', () => {
         '*Unsaved Workflow.json'
       ])
     })
+
+    test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
+      await comfyPage.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json'
+      })
+      await comfyPage.setup()
+      await comfyPage.menu.workflowsTab.open()
+
+      const nodeCount = await comfyPage.getGraphNodesCount()
+
+      // Get the bounding box of the canvas element
+      const canvasBoundingBox = (await comfyPage.page
+        .locator('#graph-canvas')
+        .boundingBox())!
+
+      // Calculate the center position of the canvas
+      const targetPosition = {
+        x: canvasBoundingBox.x + canvasBoundingBox.width / 2,
+        y: canvasBoundingBox.y + canvasBoundingBox.height / 2
+      }
+
+      await comfyPage.page.dragAndDrop(
+        '.comfyui-workflows-browse .node-label:has-text("workflow1.json")',
+        '#graph-canvas',
+        { targetPosition }
+      )
+      // Wait for the workflow to be inserted
+      await comfyPage.page.waitForTimeout(200)
+      expect(await comfyPage.getGraphNodesCount()).toBe(nodeCount * 2)
+    })
   })
 
   test.describe('Workflows topbar tabs', () => {
