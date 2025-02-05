@@ -45,7 +45,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
-} from '@/composables/usePragmaticDroppable'
+} from '@/composables/usePragmaticDragAndDrop'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,

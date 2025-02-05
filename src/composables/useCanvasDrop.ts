@@ -2,7 +2,7 @@ import { LGraphNode } from '@comfyorg/litegraph'
 import { LiteGraph } from '@comfyorg/litegraph'
 import { Ref } from 'vue'
 
-import { usePragmaticDroppable } from '@/composables/usePragmaticDroppable'
+import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
