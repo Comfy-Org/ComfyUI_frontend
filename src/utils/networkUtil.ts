@@ -38,7 +38,10 @@ export async function isInChina(): Promise<boolean> {
   try {
     // Test connectivity to Google - commonly blocked in China
     const googleTest = await Promise.race([
-      fetch('https://www.google.com'),
+      fetch('https://www.google.com', {
+        mode: 'no-cors',
+        cache: 'no-cache'
+      }),
       new Promise((_, reject) => setTimeout(() => reject(), 2000))
     ])
 
@@ -55,7 +58,10 @@ export async function isInChina(): Promise<boolean> {
     // Additional check - test latency to a reliable Chinese domain
     try {
       const start = performance.now()
-      await fetch('https://www.baidu.com')
+      await fetch('https://www.baidu.com', {
+        mode: 'no-cors',
+        cache: 'no-cache'
+      })
       const latency = performance.now() - start
 
       // If Baidu responds quickly (<150ms), user is likely in China
