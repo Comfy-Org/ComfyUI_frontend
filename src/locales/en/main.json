@@ -759,5 +759,10 @@
     "doNotAskAgain": "Don't show this again",
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
+  },
+  "desktopUpdate": {
+    "title": "Updating ComfyUI Desktop",
+    "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
+    "terminalDefaultMessage": "Any console output from the update will be shown here."
   }
 }
