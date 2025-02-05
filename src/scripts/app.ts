@@ -12,7 +12,7 @@ import _ from 'lodash'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { shallowReactive } from 'vue'
 
-import { st, te } from '@/i18n'
+import { st } from '@/i18n'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -37,7 +37,6 @@ import {
 } from '@/types/comfyWorkflow'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
