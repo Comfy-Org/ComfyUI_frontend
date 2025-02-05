@@ -35,7 +35,7 @@ import { ref } from 'vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
-} from '@/composables/usePragmaticDroppable'
+} from '@/composables/usePragmaticDragAndDrop'
 import { useWorkflowService } from '@/services/workflowService'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'
