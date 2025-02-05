@@ -23,11 +23,12 @@
 
 <script setup lang="ts">
 import type { TreeNode } from 'primevue/treenode'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, h, nextTick, ref, render, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
+import NodePreview from '@/components/node/NodePreview.vue'
 import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder.vue'
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
@@ -151,6 +152,13 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         children: sortedChildren,
         draggable: node.leaf,
+        renderDragPreview(container) {
+          const vnode = h(NodePreview, { nodeDef: node.data })
+          render(vnode, container)
+          return () => {
+            render(null, container)
+          }
+        },
         droppable: !node.leaf,
         handleDrop(data: TreeExplorerDragAndDropData<ComfyNodeDefImpl>) {
           const nodeDefToAdd = data.data.data
