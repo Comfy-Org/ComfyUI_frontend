@@ -11,7 +11,7 @@
       <div class="flex-grow min-w-0 app-drag h-full">
         <WorkflowTabs v-if="workflowTabsPosition === 'Topbar'" />
       </div>
-      <div class="comfyui-menu-right" ref="menuRight"></div>
+      <div class="comfyui-menu-right flex-shrink-0" ref="menuRight"></div>
       <Actionbar />
       <BottomPanelToggleButton class="flex-shrink-0" />
       <Button
