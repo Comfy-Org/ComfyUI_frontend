@@ -596,7 +596,7 @@ export class ComfyApp {
       const res = f.apply(this, arguments)
       for (let item of res) {
         if (item == null || !item.hasOwnProperty('content')) continue
-        item.content = st(`graphCanvasMenu.${item.content}`, item.content)
+        item.content = st(`contextMenu.${item.content}`, item.content)
       }
       return res
     }
@@ -605,15 +605,15 @@ export class ComfyApp {
       if (!values) return
       const reInput = /Convert (.*) to input/
       const reWidget = /Convert (.*) to widget/
-      const cvt = st('graphCanvasMenu.Convert ', 'Convert ')
-      const tinp = st('graphCanvasMenu. to input', ' to input')
-      const twgt = st('graphCanvasMenu. to widget', ' to widget')
+      const cvt = st('contextMenu.Convert ', 'Convert ')
+      const tinp = st('contextMenu. to input', ' to input')
+      const twgt = st('contextMenu. to widget', ' to widget')
       for (var i = 0; i < values.length; i++) {
         const value = values[i]
         translateMenus(value?.submenu?.options, options)
         if (value == null || !value.hasOwnProperty('content')) continue
-        if (te(`graphCanvasMenu.${value.content}`)) {
-          value.content = st(`graphCanvasMenu.${value.content}`, value.content)
+        if (te(`contextMenu.${value.content}`)) {
+          value.content = st(`contextMenu.${value.content}`, value.content)
           continue
         }
 
