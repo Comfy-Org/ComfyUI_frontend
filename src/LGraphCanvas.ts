@@ -163,6 +163,14 @@ interface ClipboardPasteResult {
   reroutes: Map<RerouteId, Reroute>
 }
 
+/** Options for {@link LGraphCanvas.pasteFromClipboard}. */
+interface IPasteFromClipboardOptions {
+  /** If true, connect the inputs of the pasted items to the outputs of the nodes they are connected to. */
+  connectInputs?: boolean
+  /** The position to paste the items at. */
+  position?: Point
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -3449,7 +3457,7 @@ export class LGraphCanvas {
         }
       } else if (e.keyCode === 86 && (e.metaKey || e.ctrlKey)) {
         // paste
-        this.pasteFromClipboard(e.shiftKey)
+        this.pasteFromClipboard({ connectInputs: e.shiftKey })
       } else if (e.keyCode == 46 || e.keyCode == 8) {
         // delete or backspace
         // @ts-expect-error
@@ -3566,7 +3574,12 @@ export class LGraphCanvas {
    * Pastes the items from the canvas "clipbaord" - a local storage variable.
    * @param connectInputs If `true`, always attempt to connect inputs of pasted nodes - including to nodes that were not pasted.
    */
-  _pasteFromClipboard(connectInputs = false): ClipboardPasteResult {
+  _pasteFromClipboard(options: IPasteFromClipboardOptions = {}): ClipboardPasteResult {
+    const {
+      connectInputs = false,
+      position = this.graph_mouse,
+    } = options
+
     // if ctrl + shift + v is off, return when isConnectUnselected is true (shift is pressed) to maintain old behavior
     if (!LiteGraph.ctrl_shift_v_paste_connect_unselected_outputs && connectInputs) return
 
@@ -3687,8 +3700,8 @@ export class LGraphCanvas {
 
     // Adjust positions
     for (const item of created) {
-      item.pos[0] += this.graph_mouse[0] - offsetX
-      item.pos[1] += this.graph_mouse[1] - offsetY
+      item.pos[0] += position[0] - offsetX
+      item.pos[1] += position[1] - offsetY
     }
 
     // TODO: Report failures, i.e. `failedNodes`
@@ -3700,10 +3713,10 @@ export class LGraphCanvas {
     return results
   }
 
-  pasteFromClipboard(isConnectUnselected = false): void {
+  pasteFromClipboard(options: IPasteFromClipboardOptions = {}): void {
     this.emitBeforeChange()
     try {
-      this._pasteFromClipboard(isConnectUnselected)
+      this._pasteFromClipboard(options)
     } finally {
       this.emitAfterChange()
     }
