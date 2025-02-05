@@ -59,7 +59,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import { useCopyToClipboard } from '@/hooks/clipboardHooks'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ExecutionErrorWsMessage, SystemStats } from '@/types/apiTypes'

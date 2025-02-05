@@ -32,7 +32,10 @@
 import Button from 'primevue/button'
 import { ref } from 'vue'
 
-import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
+import {
+  usePragmaticDraggable,
+  usePragmaticDroppable
+} from '@/composables/usePragmaticDroppable'
 import { useWorkflowService } from '@/services/workflowService'
 import { ComfyWorkflow } from '@/stores/workflowStore'
 import { useWorkflowStore } from '@/stores/workflowStore'

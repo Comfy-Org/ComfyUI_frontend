@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { useModelLibrarySidebarTab } from '@/hooks/sidebarTabs/modelLibrarySidebarTab'
-import { useNodeLibrarySidebarTab } from '@/hooks/sidebarTabs/nodeLibrarySidebarTab'
-import { useQueueSidebarTab } from '@/hooks/sidebarTabs/queueSidebarTab'
-import { useWorkflowsSidebarTab } from '@/hooks/sidebarTabs/workflowsSidebarTab'
+import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
+import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
+import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
+import { useWorkflowsSidebarTab } from '@/composables/sidebarTabs/useWorkflowsSidebarTab'
 import { useCommandStore } from '@/stores/commandStore'
 import { SidebarTabExtension } from '@/types/extensionTypes'
 

@@ -3,7 +3,7 @@ import { LiteGraph } from '@comfyorg/litegraph'
 import { toRaw } from 'vue'
 import { fromZodError } from 'zod-validation-error'
 
-import { useErrorHandling } from '@/hooks/errorHooks'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { app } from '@/scripts/app'
 import { downloadBlob, uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

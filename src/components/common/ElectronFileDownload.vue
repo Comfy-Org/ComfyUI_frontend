@@ -80,7 +80,7 @@ import ProgressBar from 'primevue/progressbar'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useDownload } from '@/hooks/downloadHooks'
+import { useDownload } from '@/composables/useDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
 

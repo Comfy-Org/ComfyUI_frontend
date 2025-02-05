@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import {
   useCommandTerminalTab,
   useLogsTerminalTab
-} from '@/hooks/bottomPanelTabs/terminalTabs'
+} from '@/composables/bottomPanelTabs/useTerminalTabs'
 import { useCommandStore } from '@/stores/commandStore'
 import { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'

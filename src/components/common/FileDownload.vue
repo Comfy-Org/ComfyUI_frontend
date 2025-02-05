@@ -27,7 +27,7 @@
 import Button from 'primevue/button'
 import { computed } from 'vue'
 
-import { useDownload } from '@/hooks/downloadHooks'
+import { useDownload } from '@/composables/useDownload'
 import { formatSize } from '@/utils/formatUtil'
 
 const props = defineProps<{

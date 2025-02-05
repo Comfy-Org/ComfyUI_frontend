@@ -41,8 +41,11 @@ import Badge from 'primevue/badge'
 import { Ref, computed, inject, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { usePragmaticDraggable, usePragmaticDroppable } from '@/hooks/dndHooks'
-import { useErrorHandling } from '@/hooks/errorHooks'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  usePragmaticDraggable,
+  usePragmaticDroppable
+} from '@/composables/usePragmaticDroppable'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
