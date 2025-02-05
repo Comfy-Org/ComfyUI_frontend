@@ -330,7 +330,7 @@
         "Node name for S&R": "CheckpointLoaderSimple"
       },
       "widgets_values": [
-        "v1-5-pruned-emaonly.safetensors"
+        "v1-5-pruned-emaonly-fp16.safetensors"
       ]
     }
   ],
