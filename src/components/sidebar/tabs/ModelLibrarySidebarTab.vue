@@ -64,9 +64,7 @@ import {
 } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useSettingStore } from '@/stores/settingStore'
-import type {
-  TreeExplorerNode
-} from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isElectron } from '@/utils/envUtil'
 import { buildTree } from '@/utils/treeUtil'
 
