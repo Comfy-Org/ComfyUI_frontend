@@ -116,7 +116,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
         { name: 'VAE', type: 'VAE', links: [8], slot_index: 2 }
       ],
       properties: {},
-      widgets_values: ['v1-5-pruned-emaonly.ckpt']
+      widgets_values: ['v1-5-pruned-emaonly-fp16.safetensors']
     }
   ],
   links: [
