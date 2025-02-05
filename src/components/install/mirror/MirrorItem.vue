@@ -44,7 +44,10 @@ const normalizedSettingId = computed(() => {
 })
 
 onMounted(() => {
-  modelValue.value = item.mirror
+  // Set mirror value if not already set
+  if (!modelValue.value) {
+    modelValue.value = item.mirror
+  }
 })
 
 watch(validationState, (newState) => {

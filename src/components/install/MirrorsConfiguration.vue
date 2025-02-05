@@ -41,11 +41,12 @@ import {
 } from '@comfyorg/comfyui-electron-types'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
-import { ModelRef, computed, ref } from 'vue'
+import { ModelRef, computed, onMounted, ref } from 'vue'
 
 import MirrorItem from '@/components/install/mirror/MirrorItem.vue'
 import { PYPI_MIRROR, PYTHON_MIRROR, UVMirror } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { isInChina } from '@/utils/networkUtil'
 import { ValidationState, mergeValidationStates } from '@/utils/validationUtil'
 
 const showMirrorInputs = ref(false)
@@ -99,6 +100,15 @@ const validationStateTooltip = computed(() => {
       return t('install.settings.mirrorsReachable')
     default:
       return t('install.settings.checkingMirrors')
+  }
+})
+
+onMounted(async () => {
+  // Check if user is in China and set fallback mirrors directly
+  if (await isInChina()) {
+    for (const [item, modelValue] of mirrors.value) {
+      modelValue.value = item.fallbackMirror
+    }
   }
 })
 </script>
