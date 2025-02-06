@@ -1,6 +1,4 @@
-import { LGraphNode } from '@comfyorg/litegraph'
-import { LiteGraph } from '@comfyorg/litegraph'
-import { CanvasPointer } from '@comfyorg/litegraph'
+import { CanvasPointer, LGraphNode, LiteGraph } from '@comfyorg/litegraph'
 import { watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/stores/graphStore'
