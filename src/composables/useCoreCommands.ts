@@ -13,6 +13,7 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useWorkflowService } from '@/services/workflowService'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useTitleEditorStore } from '@/stores/graphStore'
@@ -156,7 +157,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-expand',
       label: 'Reset View',
       function: () => {
-        app.resetView()
+        useLitegraphService().resetView()
       }
     },
     {

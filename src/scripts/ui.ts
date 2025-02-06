@@ -1,5 +1,6 @@
 // @ts-strict-ignore
 import { useDialogService } from '@/services/dialogService'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSettingStore } from '@/stores/settingStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -609,7 +610,7 @@ export class ComfyUI {
             ) {
               app.clean()
               app.graph.clear()
-              app.resetView()
+              useLitegraphService().resetView()
               api.dispatchCustomEvent('graphCleared')
             }
           }
@@ -622,7 +623,7 @@ export class ComfyUI {
               !useSettingStore().get('Comfy.ConfirmClear') ||
               confirm('Load default workflow?')
             ) {
-              app.resetView()
+              useLitegraphService().resetView()
               await app.loadGraphData()
             }
           }
@@ -631,7 +632,7 @@ export class ComfyUI {
           id: 'comfy-reset-view-button',
           textContent: 'Reset View',
           onclick: async () => {
-            app.resetView()
+            useLitegraphService().resetView()
           }
         })
       ]
