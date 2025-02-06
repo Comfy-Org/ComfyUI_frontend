@@ -572,7 +572,8 @@ export class ComfyApp {
       }
       const isTargetInGraph =
         e.target.classList.contains('litegraph') ||
-        e.target.classList.contains('graph-canvas-container')
+        e.target.classList.contains('graph-canvas-container') ||
+        e.target.id === 'graph-canvas'
 
       // copy nodes and clear clipboard
       if (isTargetInGraph && this.canvas.selected_nodes) {
