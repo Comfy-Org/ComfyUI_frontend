@@ -1,4 +1,9 @@
 {
+  "clipboard": {
+    "errorMessage": "クリップボードへのコピーに失敗しました",
+    "errorNotSupported": "お使いのブラウザではクリップボードAPIがサポートされていません",
+    "successMessage": "クリップボードにコピーしました"
+  },
   "color": {
     "blue": "青",
     "custom": "カスタム",

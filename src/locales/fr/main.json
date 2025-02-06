@@ -1,4 +1,9 @@
 {
+  "clipboard": {
+    "errorMessage": "Échec de la copie dans le presse-papiers",
+    "errorNotSupported": "L'API du presse-papiers n'est pas prise en charge par votre navigateur",
+    "successMessage": "Copié dans le presse-papiers"
+  },
   "color": {
     "blue": "Bleu",
     "custom": "Personnalisé",

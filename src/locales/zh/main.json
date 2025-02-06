@@ -1,4 +1,9 @@
 {
+  "clipboard": {
+    "errorMessage": "复制到剪贴板失败",
+    "errorNotSupported": "您的浏览器不支持剪贴板API",
+    "successMessage": "已复制到剪贴板"
+  },
   "color": {
     "blue": "蓝色",
     "custom": "自定义",
