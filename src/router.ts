@@ -110,6 +110,12 @@ const router = createRouter({
           name: 'MaintenanceView',
           component: () => import('@/views/MaintenanceView.vue'),
           beforeEnter: guardElectronAccess
+        },
+        {
+          path: 'desktop-update',
+          name: 'DesktopUpdateView',
+          component: () => import('@/views/DesktopUpdate.vue'),
+          beforeEnter: guardElectronAccess
         }
       ]
     }

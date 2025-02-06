@@ -1,13 +1,11 @@
 <template>
   <BaseViewTemplate dark>
-    <div class="max-w-screen-sm w-screen p-8">
-      <ProgressBar mode="indeterminate" />
-    </div>
+    <ProgressSpinner class="m-8 w-48 h-48" />
   </BaseViewTemplate>
 </template>
 
 <script setup lang="ts">
-import ProgressBar from 'primevue/progressbar'
+import ProgressSpinner from 'primevue/progressspinner'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 </script>

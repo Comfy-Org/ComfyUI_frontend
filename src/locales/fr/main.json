@@ -81,6 +81,11 @@
     "quit": "Quitter",
     "reinstall": "Réinstaller"
   },
+  "desktopUpdate": {
+    "description": "ComfyUI Desktop installe de nouvelles dépendances. Cela peut prendre quelques minutes.",
+    "terminalDefaultMessage": "Toute sortie de console de la mise à jour sera affichée ici.",
+    "title": "Mise à jour de ComfyUI Desktop"
+  },
   "downloadGit": {
     "gitWebsite": "Télécharger git",
     "instructions": "Veuillez télécharger et installer la dernière version pour votre système d'exploitation. Le bouton Télécharger git ci-dessous ouvre la page de téléchargement de git-scm.com.",

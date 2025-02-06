@@ -81,6 +81,11 @@
     "quit": "종료",
     "reinstall": "재설치"
   },
+  "desktopUpdate": {
+    "description": "ComfyUI 데스크톱은 새로운 종속성을 설치하고 있습니다. 이 작업은 몇 분 정도 걸릴 수 있습니다.",
+    "terminalDefaultMessage": "업데이트로부터의 콘솔 출력은 여기에 표시됩니다.",
+    "title": "ComfyUI 데스크톱 업데이트 중"
+  },
   "downloadGit": {
     "gitWebsite": "git 프로그램 다운로드",
     "instructions": "운영 체제에 맞는 최신 버전을 다운로드하여 설치하십시오. 아래의 'git 프로그램 다운로드' 버튼을 클릭하면 git-scm.com 다운로드 페이지가 열립니다.",
