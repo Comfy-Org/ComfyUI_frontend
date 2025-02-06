@@ -14,21 +14,21 @@ export function useCopyToClipboard() {
         toast.add({
           severity: 'success',
           summary: t('g.success'),
-          detail: t('main.clipboard.successMessage'),
+          detail: t('clipboard.successMessage'),
           life: 3000
         })
       } catch (err) {
         toast.add({
           severity: 'error',
           summary: t('g.error'),
-          detail: t('main.clipboard.errorMessage')
+          detail: t('clipboard.errorMessage')
         })
       }
     } else {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('main.clipboard.errorNotSupported')
+        detail: t('clipboard.errorNotSupported')
       })
     }
   }
