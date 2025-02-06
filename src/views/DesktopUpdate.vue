@@ -26,17 +26,11 @@
           @click="toggleConsoleDrawer"
         />
 
-        <Drawer
-          v-model:visible="terminalVisible"
+        <TerminalOutputDrawer
+          v-model="terminalVisible"
           :header="t('g.terminal')"
-          position="bottom"
-          style="height: max(50vh, 34rem)"
-        >
-          <BaseTerminal
-            @created="terminalCreated"
-            @unmounted="terminalUnmounted"
-          />
-        </Drawer>
+          :default-message="t('desktopUpdate.terminalDefaultMessage')"
+        />
       </div>
     </div>
     <Toast />
@@ -44,16 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
-import Drawer from 'primevue/drawer'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
-import { Ref, onMounted, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 
-import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
-import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuffer'
+import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 
@@ -63,40 +53,9 @@ const electron = electronAPI()
 
 const terminalVisible = ref(false)
 
-/** The actual output of all terminal commands - not rendered */
-const buffer = useTerminalBuffer()
-let xterm: Terminal | null = null
-
-// Created and destroyed with the Drawer - contents copied from hidden buffer
-const terminalCreated = (
-  { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
-  root: Ref<HTMLElement>
-) => {
-  xterm = terminal
-  useAutoSize({ root, autoRows: true, autoCols: true })
-  terminal.write(t('desktopUpdate.terminalDefaultMessage'))
-  buffer.copyTo(terminal)
-
-  terminal.options.cursorBlink = false
-  terminal.options.cursorStyle = 'bar'
-  terminal.options.cursorInactiveStyle = 'bar'
-  terminal.options.disableStdin = true
-}
-
-const terminalUnmounted = () => {
-  xterm = null
-}
-
 const toggleConsoleDrawer = () => {
   terminalVisible.value = !terminalVisible.value
 }
-
-onMounted(async () => {
-  electron.onLogMessage((message: string) => {
-    buffer.write(message)
-    xterm?.write(message)
-  })
-})
 
 onUnmounted(() => electron.Validation.dispose())
 </script>
