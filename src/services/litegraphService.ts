@@ -18,6 +18,7 @@ import { useToastStore } from '@/stores/toastStore'
 import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { isImageNode } from '@/utils/litegraphUtil'
 
 import { useExtensionService } from './extensionService'
 
@@ -337,7 +338,7 @@ export const useLitegraphService = () => {
           })
         }
 
-        if (ComfyApp.isImageNode(this)) {
+        if (isImageNode(this)) {
           options.push({
             content: 'Open in MaskEditor',
             callback: (obj) => {
