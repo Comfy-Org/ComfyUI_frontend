@@ -45,6 +45,7 @@ import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
+import { usePaste } from '@/composables/usePaste'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
 import { i18n } from '@/i18n'
@@ -265,6 +266,7 @@ onMounted(async () => {
   useGlobalLitegraph()
   useContextMenuTranslation()
   useCopy()
+  usePaste()
 
   comfyApp.vueAppReady = true
 
