@@ -37,6 +37,7 @@ import {
 } from '@/types/comfyWorkflow'
 import { ExtensionManager } from '@/types/extensionTypes'
 import { ColorAdjustOptions, adjustColor } from '@/utils/colorUtil'
+import { isImageNode } from '@/utils/litegraphUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, api } from './api'
@@ -185,6 +186,13 @@ export class ComfyApp {
     return useExecutionStore()._executingNodeProgress
   }
 
+  /**
+   * @deprecated Use {@link isImageNode} from @/utils/litegraphUtil instead
+   */
+  static isImageNode(node: LGraphNode) {
+    return isImageNode(node)
+  }
+
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
@@ -230,15 +238,6 @@ export class ComfyApp {
 
   getRandParam() {
     return '&rand=' + Math.random()
-  }
-
-  static isImageNode(node) {
-    return (
-      node.imgs ||
-      (node &&
-        node.widgets &&
-        node.widgets.findIndex((obj) => obj.name === 'image') >= 0)
-    )
   }
 
   static onClipspaceEditorSave() {
@@ -502,7 +501,7 @@ export class ComfyApp {
           if (
             this.canvas.current_node &&
             this.canvas.current_node.is_selected &&
-            ComfyApp.isImageNode(this.canvas.current_node)
+            isImageNode(this.canvas.current_node)
           ) {
             imageNode = this.canvas.current_node
           }
