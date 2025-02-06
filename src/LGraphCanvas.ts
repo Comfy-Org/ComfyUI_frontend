@@ -511,6 +511,11 @@ export class LGraphCanvas {
   /** Set on keydown, keyup. @todo */
   #shiftDown: boolean = false
 
+  /** If true, enable drag zoom. Ctrl+Shift+Drag Up/Down: zoom canvas. */
+  dragZoomEnabled: boolean = false
+  /** The start position of the drag zoom. */
+  #zoom_drag_start: { x: number, y: number, scale: number } | null = null
+
   getMenuOptions?(): IContextMenuValue[]
   getExtraMenuOptions?(
     canvas: LGraphCanvas,
@@ -1992,6 +1997,11 @@ export class LGraphCanvas {
   }
 
   processMouseDown(e: PointerEvent): void {
+    if (this.dragZoomEnabled && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
+      this.#zoom_drag_start = { x: e.x, y: e.y, scale: this.ds.scale }
+      return
+    }
+
     const { graph, pointer } = this
     this.adjustMouseEvent(e)
     if (e.isPrimary) pointer.down(e)
@@ -2827,10 +2837,35 @@ export class LGraphCanvas {
     }
   }
 
+  #processDragZoom(e: PointerEvent): void {
+    // stop canvas zoom action
+    if (!e.buttons) {
+      this.#zoom_drag_start = null
+      return
+    }
+
+    // calculate delta
+    const deltaY = e.y - this.#zoom_drag_start.y
+    const startScale = this.#zoom_drag_start.scale
+
+    const scale = startScale - deltaY / 100
+
+    this.ds.changeScale(scale, [
+      this.#zoom_drag_start.x,
+      this.#zoom_drag_start.y,
+    ])
+    this.graph.change()
+  }
+
   /**
    * Called when a mouse move event has to be processed
    */
   processMouseMove(e: PointerEvent): void {
+    if (this.dragZoomEnabled && e.ctrlKey && e.shiftKey && this.#zoom_drag_start) {
+      this.#processDragZoom(e)
+      return
+    }
+
     if (this.autoresize) this.resize()
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
