@@ -43,6 +43,7 @@ import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
+import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { useWorkflowPersistence } from '@/composables/useWorkflowPersistence'
 import { CORE_SETTINGS } from '@/constants/coreSettings'
@@ -263,6 +264,7 @@ useCanvasDrop(canvasRef)
 onMounted(async () => {
   useGlobalLitegraph()
   useContextMenuTranslation()
+  useCopy()
 
   comfyApp.vueAppReady = true
 

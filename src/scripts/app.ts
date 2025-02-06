@@ -554,38 +554,6 @@ export class ComfyApp {
   }
 
   /**
-   * Adds a handler on copy that serializes selected nodes to JSON
-   */
-  #addCopyHandler() {
-    document.addEventListener('copy', (e) => {
-      if (!(e.target instanceof Element)) {
-        return
-      }
-      if (
-        (e.target instanceof HTMLTextAreaElement &&
-          e.target.type === 'textarea') ||
-        (e.target instanceof HTMLInputElement && e.target.type === 'text')
-      ) {
-        // Default system copy
-        return
-      }
-      const isTargetInGraph =
-        e.target.classList.contains('litegraph') ||
-        e.target.classList.contains('graph-canvas-container') ||
-        e.target.id === 'graph-canvas'
-
-      // copy nodes and clear clipboard
-      if (isTargetInGraph && this.canvas.selected_nodes) {
-        this.canvas.copyToClipboard()
-        e.clipboardData.setData('text', ' ') //clearData doesn't remove images from clipboard
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        return false
-      }
-    })
-  }
-
-  /**
    * Handle mouse
    *
    * Move group by header
@@ -1009,7 +977,6 @@ export class ComfyApp {
     this.#addDrawNodeHandler()
     this.#addDrawGroupsHandler()
     this.#addDropHandler()
-    this.#addCopyHandler()
     this.#addPasteHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
