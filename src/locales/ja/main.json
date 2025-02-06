@@ -81,6 +81,11 @@
     "quit": "終了",
     "reinstall": "再インストール"
   },
+  "desktopUpdate": {
+    "description": "ComfyUIデスクトップは新しい依存関係をインストールしています。これには数分かかる場合があります。",
+    "terminalDefaultMessage": "更新からの任意のコンソール出力はここに表示されます。",
+    "title": "ComfyUIデスクトップの更新"
+  },
   "downloadGit": {
     "gitWebsite": "Gitをダウンロード",
     "instructions": "お使いのオペレーティングシステムに最新バージョンをダウンロードしてインストールしてください。以下の「Gitをダウンロード」ボタンをクリックすると、git-scm.comのダウンロードページが開きます。",

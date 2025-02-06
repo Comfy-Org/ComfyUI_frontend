@@ -81,6 +81,11 @@
     "quit": "退出",
     "reinstall": "重新安装"
   },
+  "desktopUpdate": {
+    "description": "ComfyUI桌面正在安装新的依赖项。这可能需要几分钟的时间。",
+    "terminalDefaultMessage": "更新过程中的任何控制台输出都将在这里显示。",
+    "title": "正在更新ComfyUI桌面"
+  },
   "downloadGit": {
     "gitWebsite": "下载 git",
     "instructions": "请下载并安装适合您操作系统的最新版本。下面的下载 git 按钮将打开 git-scm.com 下载页面。",
