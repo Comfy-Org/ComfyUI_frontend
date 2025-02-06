@@ -478,82 +478,6 @@ export class ComfyApp {
   }
 
   /**
-   * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
-   */
-  #addPasteHandler() {
-    document.addEventListener('paste', async (e: ClipboardEvent) => {
-      // ctrl+shift+v is used to paste nodes with connections
-      // this is handled by litegraph
-      if (this.shiftDown) return
-
-      // @ts-expect-error: Property 'clipboardData' does not exist on type 'Window & typeof globalThis'.
-      // Did you mean 'Clipboard'?ts(2551)
-      // TODO: Not sure what the code wants to do.
-      let data = e.clipboardData || window.clipboardData
-      const items = data.items
-
-      // Look for image paste data
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          var imageNode = null
-
-          // If an image node is selected, paste into it
-          if (
-            this.canvas.current_node &&
-            this.canvas.current_node.is_selected &&
-            isImageNode(this.canvas.current_node)
-          ) {
-            imageNode = this.canvas.current_node
-          }
-
-          // No image node selected: add a new one
-          if (!imageNode) {
-            const newNode = LiteGraph.createNode('LoadImage')
-            // @ts-expect-error array to Float32Array
-            newNode.pos = [...this.canvas.graph_mouse]
-            imageNode = this.graph.add(newNode)
-            this.graph.change()
-          }
-          const blob = item.getAsFile()
-          imageNode.pasteFile(blob)
-          return
-        }
-      }
-
-      // No image found. Look for node data
-      data = data.getData('text/plain')
-      let workflow: ComfyWorkflowJSON | null = null
-      try {
-        data = data.slice(data.indexOf('{'))
-        workflow = JSON.parse(data)
-      } catch (err) {
-        try {
-          data = data.slice(data.indexOf('workflow\n'))
-          data = data.slice(data.indexOf('{'))
-          workflow = JSON.parse(data)
-        } catch (error) {
-          workflow = null
-        }
-      }
-
-      if (workflow && workflow.version && workflow.nodes && workflow.extra) {
-        await this.loadGraphData(workflow)
-      } else {
-        if (
-          (e.target instanceof HTMLTextAreaElement &&
-            e.target.type === 'textarea') ||
-          (e.target instanceof HTMLInputElement && e.target.type === 'text')
-        ) {
-          return
-        }
-
-        // Litegraph default paste
-        this.canvas.pasteFromClipboard()
-      }
-    })
-  }
-
-  /**
    * Handle mouse
    *
    * Move group by header
@@ -977,7 +901,6 @@ export class ComfyApp {
     this.#addDrawNodeHandler()
     this.#addDrawGroupsHandler()
     this.#addDropHandler()
-    this.#addPasteHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
   }
