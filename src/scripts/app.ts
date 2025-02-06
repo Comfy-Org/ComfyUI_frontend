@@ -193,6 +193,14 @@ export class ComfyApp {
     return isImageNode(node)
   }
 
+  /**
+   * Resets the canvas view to the default
+   * @deprecated Use {@link useLitegraphService().resetView} instead
+   */
+  resetView() {
+    useLitegraphService().resetView()
+  }
+
   constructor() {
     this.vueAppReady = false
     this.ui = new ComfyUI(this)
@@ -1803,12 +1811,6 @@ export class ComfyApp {
         life: 1000
       })
     }
-  }
-
-  resetView() {
-    app.canvas.ds.scale = 1
-    app.canvas.ds.offset = [0, 0]
-    app.graph.setDirtyCanvas(true, true)
   }
 
   /**

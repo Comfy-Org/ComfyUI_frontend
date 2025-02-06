@@ -14,6 +14,7 @@ import { api } from '@/scripts/api'
 import { ANIM_PREVIEW_WIDGET, ComfyApp, app } from '@/scripts/app'
 import { $el } from '@/scripts/ui'
 import { calculateImageGrid, createImageHost } from '@/scripts/ui/imagePreview'
+import { useCanvasStore } from '@/stores/graphStore'
 import { useToastStore } from '@/stores/toastStore'
 import { ComfyNodeDef, ExecutedWsMessage } from '@/types/apiTypes'
 import type { NodeId } from '@/types/comfyWorkflow'
@@ -28,6 +29,7 @@ import { useExtensionService } from './extensionService'
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
   const toastStore = useToastStore()
+  const canvasStore = useCanvasStore()
 
   async function registerNodeDef(nodeId: string, nodeData: ComfyNodeDef) {
     const node = class ComfyNode extends LGraphNode {
@@ -792,10 +794,23 @@ export const useLitegraphService = () => {
     app.canvas.animateToBounds(graphNode.boundingRect)
   }
 
+  /**
+   * Resets the canvas view to the default
+   */
+  function resetView() {
+    const canvas = canvasStore.canvas
+    if (!canvas) return
+
+    canvas.ds.scale = 1
+    canvas.ds.offset = [0, 0]
+    canvas.graph.setDirtyCanvas(true, true)
+  }
+
   return {
     registerNodeDef,
     addNodeOnGraph,
     getCanvasCenter,
-    goToNode
+    goToNode,
+    resetView
   }
 }
