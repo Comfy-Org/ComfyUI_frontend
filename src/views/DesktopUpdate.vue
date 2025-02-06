@@ -52,8 +52,8 @@ import Toast from 'primevue/toast'
 import { Ref, onMounted, onUnmounted, ref } from 'vue'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
-import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
-import { useTerminalBuffer } from '@/hooks/bottomPanelTabs/useTerminalBuffer'
+import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
+import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuffer'
 import { t } from '@/i18n'
 import { electronAPI } from '@/utils/envUtil'
 
