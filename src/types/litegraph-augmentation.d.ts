@@ -102,6 +102,8 @@ declare module '@comfyorg/litegraph' {
     imageOffset?: number
     /** Set by DOM widgets */
     freeWidgetSpace?: number
+    /** Callback for pasting an image file into the node */
+    pasteFile?(file: File): void
   }
 
   interface INodeSlot {

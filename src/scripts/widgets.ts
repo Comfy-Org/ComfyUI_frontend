@@ -730,7 +730,6 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       return handled
     }
 
-    // @ts-expect-error
     node.pasteFile = function (file) {
       if (file.type.startsWith('image/')) {
         const is_pasted =

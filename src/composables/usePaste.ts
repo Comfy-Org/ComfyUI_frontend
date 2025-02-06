@@ -54,8 +54,7 @@ export const usePaste = () => {
           graph.change()
         }
         const blob = item.getAsFile()
-        // @ts-expect-error: Property 'pasteFile' does not exist on type 'LGraphNode'.
-        imageNode?.pasteFile(blob)
+        imageNode?.pasteFile?.(blob)
         return
       }
     }
