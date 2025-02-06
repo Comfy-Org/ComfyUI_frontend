@@ -414,7 +414,7 @@ export class ComfyApp {
    */
   #addDropHandler() {
     // Get prompt from dropped PNG or json
-    document.addEventListener('drop', async (event) => {
+    this.canvasEl.addEventListener('drop', async (event) => {
       event.preventDefault()
       event.stopPropagation()
 
