@@ -730,8 +730,7 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
       return handled
     }
 
-    // @ts-expect-error
-    node.pasteFile = function (file) {
+    node.pasteFile = function (file: File) {
       if (file.type.startsWith('image/')) {
         const is_pasted =
           file.name === 'image.png' && file.lastModified - Date.now() < 2000
