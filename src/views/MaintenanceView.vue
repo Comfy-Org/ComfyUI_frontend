@@ -73,17 +73,11 @@
         </div>
       </div>
 
-      <Drawer
-        v-model:visible="terminalVisible"
+      <TerminalOutputDrawer
+        v-model="terminalVisible"
         :header="t('g.terminal')"
-        position="bottom"
-        style="height: max(50vh, 34rem)"
-      >
-        <BaseTerminal
-          @created="terminalCreated"
-          @unmounted="terminalUnmounted"
-        />
-      </Drawer>
+        :default-message="t('maintenance.terminalDefaultMessage')"
+      />
       <Toast />
     </div>
   </BaseViewTemplate>
@@ -91,21 +85,17 @@
 
 <script setup lang="ts">
 import { PrimeIcons } from '@primevue/core/api'
-import { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
-import Drawer from 'primevue/drawer'
 import SelectButton from 'primevue/selectbutton'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
-import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { watch } from 'vue'
 
-import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import RefreshButton from '@/components/common/RefreshButton.vue'
 import StatusTag from '@/components/maintenance/StatusTag.vue'
 import TaskListPanel from '@/components/maintenance/TaskListPanel.vue'
-import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { useTerminalBuffer } from '@/composables/bottomPanelTabs/useTerminalBuffer'
+import TerminalOutputDrawer from '@/components/maintenance/TerminalOutputDrawer.vue'
 import { t } from '@/i18n'
 import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
 import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
@@ -147,10 +137,6 @@ const filterOptions = ref([
 /** Filter binding; can be set to show all tasks, or only errors. */
 const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
-/** The actual output of all terminal commands - not rendered */
-const buffer = useTerminalBuffer()
-let xterm: Terminal | null = null
-
 /** If valid, leave the validation window. */
 const completeValidation = async (alertOnFail = true) => {
   const isValid = await electron.Validation.complete()
@@ -162,26 +148,6 @@ const completeValidation = async (alertOnFail = true) => {
       life: 5_000
     })
   }
-}
-
-// Created and destroyed with the Drawer - contents copied from hidden buffer
-const terminalCreated = (
-  { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
-  root: Ref<HTMLElement>
-) => {
-  xterm = terminal
-  useAutoSize({ root, autoRows: true, autoCols: true })
-  terminal.write(t('maintenance.terminalDefaultMessage'))
-  buffer.copyTo(terminal)
-
-  terminal.options.cursorBlink = false
-  terminal.options.cursorStyle = 'bar'
-  terminal.options.cursorInactiveStyle = 'bar'
-  terminal.options.disableStdin = true
-}
-
-const terminalUnmounted = () => {
-  xterm = null
 }
 
 const toggleConsoleDrawer = () => {
@@ -206,11 +172,6 @@ watch(
 
 onMounted(async () => {
   electron.Validation.onUpdate(processUpdate)
-
-  electron.onLogMessage((message: string) => {
-    buffer.write(message)
-    xterm?.write(message)
-  })
 
   const update = await electron.Validation.getStatus()
   processUpdate(update)
