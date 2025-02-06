@@ -114,7 +114,7 @@ const router = createRouter({
         {
           path: 'desktop-update',
           name: 'DesktopUpdateView',
-          component: () => import('@/views/DesktopUpdate.vue'),
+          component: () => import('@/views/DesktopUpdateView.vue'),
           beforeEnter: guardElectronAccess
         }
       ]
