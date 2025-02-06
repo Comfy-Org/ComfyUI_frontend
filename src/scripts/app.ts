@@ -582,48 +582,6 @@ export class ComfyApp {
   }
 
   /**
-   * Draws group header bar
-   */
-  #addDrawGroupsHandler() {
-    const self = this
-    const origDrawGroups = LGraphCanvas.prototype.drawGroups
-    LGraphCanvas.prototype.drawGroups = function (canvas, ctx) {
-      if (!this.graph) {
-        return
-      }
-
-      var groups = this.graph.groups
-
-      ctx.save()
-      ctx.globalAlpha = 0.7 * this.editor_alpha
-
-      for (var i = 0; i < groups.length; ++i) {
-        var group = groups[i]
-
-        if (!LiteGraph.overlapBounding(this.visible_area, group._bounding)) {
-          continue
-        } //out of the visible area
-
-        ctx.fillStyle = group.color || '#335'
-        ctx.strokeStyle = group.color || '#335'
-        var pos = group._pos
-        var size = group._size
-        ctx.globalAlpha = 0.25 * this.editor_alpha
-        ctx.beginPath()
-        var font_size = group.font_size || LiteGraph.DEFAULT_GROUP_FONT_SIZE
-        ctx.rect(pos[0] + 0.5, pos[1] + 0.5, size[0], font_size * 1.4)
-        ctx.fill()
-        ctx.globalAlpha = this.editor_alpha
-      }
-
-      ctx.restore()
-
-      const res = origDrawGroups.apply(this, arguments)
-      return res
-    }
-  }
-
-  /**
    * Draws node highlights (executing, drag drop) and progress bar
    */
   #addDrawNodeHandler() {
@@ -899,7 +857,6 @@ export class ComfyApp {
     await this.registerNodes()
 
     this.#addDrawNodeHandler()
-    this.#addDrawGroupsHandler()
     this.#addDropHandler()
 
     await useExtensionService().invokeExtensionsAsync('setup')
