@@ -764,5 +764,10 @@
     "title": "Updating ComfyUI Desktop",
     "description": "ComfyUI Desktop is installing new dependencies.  This may take a few minutes.",
     "terminalDefaultMessage": "Any console output from the update will be shown here."
+  },
+  "clipboard": {
+    "successMessage": "Copied to clipboard",
+    "errorMessage": "Failed to copy to clipboard",
+    "errorNotSupported": "Clipboard API not supported in your browser"
   }
 }

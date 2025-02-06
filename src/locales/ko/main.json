@@ -1,4 +1,9 @@
 {
+  "clipboard": {
+    "errorMessage": "클립보드에 복사하지 못했습니다",
+    "errorNotSupported": "당신의 브라우저에서 클립보드 API가 지원되지 않습니다",
+    "successMessage": "클립보드에 복사됨"
+  },
   "color": {
     "blue": "파란색",
     "custom": "사용자 정의",

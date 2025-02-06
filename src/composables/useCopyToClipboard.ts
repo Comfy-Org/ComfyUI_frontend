@@ -1,6 +1,8 @@
 import { useClipboard } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 
+import { t } from '@/i18n'
+
 export function useCopyToClipboard() {
   const { copy, isSupported } = useClipboard()
   const toast = useToast()
@@ -11,22 +13,22 @@ export function useCopyToClipboard() {
         await copy(text)
         toast.add({
           severity: 'success',
-          summary: 'Success',
-          detail: 'Copied to clipboard',
+          summary: t('g.success'),
+          detail: t('clipboard.successMessage'),
           life: 3000
         })
       } catch (err) {
         toast.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to copy report'
+          summary: t('g.error'),
+          detail: t('clipboard.errorMessage')
         })
       }
     } else {
       toast.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Clipboard API not supported in your browser'
+        summary: t('g.error'),
+        detail: t('clipboard.errorNotSupported')
       })
     }
   }
