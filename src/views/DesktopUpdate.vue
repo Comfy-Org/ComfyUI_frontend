@@ -44,76 +44,28 @@
 </template>
 
 <script setup lang="ts">
-import { PrimeIcons } from '@primevue/core/api'
 import { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'
 import Drawer from 'primevue/drawer'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
-import { Ref, computed, onMounted, onUnmounted, ref } from 'vue'
-import { watch } from 'vue'
+import { Ref, onMounted, onUnmounted, ref } from 'vue'
 
 import BaseTerminal from '@/components/bottomPanel/tabs/terminal/BaseTerminal.vue'
 import type { useTerminal } from '@/hooks/bottomPanelTabs/useTerminal'
 import { useTerminalBuffer } from '@/hooks/bottomPanelTabs/useTerminalBuffer'
 import { t } from '@/i18n'
-import { useMaintenanceTaskStore } from '@/stores/maintenanceTaskStore'
-import { MaintenanceFilter } from '@/types/desktop/maintenanceTypes'
 import { electronAPI } from '@/utils/envUtil'
-import { useMinLoadingDurationRef } from '@/utils/refUtil'
 
 import BaseViewTemplate from './templates/BaseViewTemplate.vue'
 
 const electron = electronAPI()
-const toast = useToast()
-const taskStore = useMaintenanceTaskStore()
-const { processUpdate } = taskStore
 
 const terminalVisible = ref(false)
-
-// Use a minimum run time to ensure tasks "feel" like they have run
-const reactiveIsRefreshing = computed(() => taskStore.isRefreshing)
-/** `true` when waiting on tasks to complete. */
-const isRefreshing = useMinLoadingDurationRef(reactiveIsRefreshing, 250)
-
-/** True if any tasks are in an error state. */
-const anyErrors = computed(() => taskStore.anyErrors)
-
-/** Whether to display tasks as a list or cards. */
-const displayAsList = ref(PrimeIcons.TH_LARGE)
-
-const errorFilter = computed(() =>
-  taskStore.tasks.filter((x) => {
-    const { state, resolved } = taskStore.getRunner(x)
-    return state === 'error' || resolved
-  })
-)
-
-const filterOptions = ref([
-  { icon: PrimeIcons.FILTER_FILL, value: 'All', tasks: taskStore.tasks },
-  { icon: PrimeIcons.EXCLAMATION_TRIANGLE, value: 'Errors', tasks: errorFilter }
-])
-
-/** Filter binding; can be set to show all tasks, or only errors. */
-const filter = ref<MaintenanceFilter>(filterOptions.value[1])
 
 /** The actual output of all terminal commands - not rendered */
 const buffer = useTerminalBuffer()
 let xterm: Terminal | null = null
-
-/** If valid, leave the validation window. */
-const completeValidation = async (alertOnFail = true) => {
-  const isValid = await electron.Validation.complete()
-  if (alertOnFail && !isValid) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('maintenance.error.cannotContinue'),
-      life: 5_000
-    })
-  }
-}
 
 // Created and destroyed with the Drawer - contents copied from hidden buffer
 const terminalCreated = (
@@ -139,42 +91,17 @@ const toggleConsoleDrawer = () => {
   terminalVisible.value = !terminalVisible.value
 }
 
-// Show terminal when in use
-watch(
-  () => taskStore.isRunningTerminalCommand,
-  (value) => {
-    terminalVisible.value = value
-  }
-)
-
-// If we're running a fix that may resolve all issues, auto-recheck and continue if everything is OK
-watch(
-  () => taskStore.isRunningInstallationFix,
-  (value, oldValue) => {
-    if (!value && oldValue) completeValidation(false)
-  }
-)
-
 onMounted(async () => {
-  electron.Validation.onUpdate(processUpdate)
-
   electron.onLogMessage((message: string) => {
     buffer.write(message)
     xterm?.write(message)
   })
-
-  const update = await electron.Validation.getStatus()
-  processUpdate(update)
 })
 
 onUnmounted(() => electron.Validation.dispose())
 </script>
 
 <style scoped>
-:deep(.p-tag) {
-  --p-tag-gap: 0.375rem;
-}
-
 .download-bg::before {
   @apply m-0 absolute text-muted;
   font-family: 'primeicons';
