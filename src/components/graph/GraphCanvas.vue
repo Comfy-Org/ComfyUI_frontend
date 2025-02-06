@@ -181,6 +181,12 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  const dragZoomEnabled = settingStore.get('Comfy.Graph.CtrlShiftZoom')
+  const { canvas } = canvasStore
+  if (canvas) canvas.dragZoomEnabled = dragZoomEnabled
+})
+
+watchEffect(() => {
   CanvasPointer.doubleClickTime = settingStore.get(
     'Comfy.Pointer.DoubleClickTime'
   )

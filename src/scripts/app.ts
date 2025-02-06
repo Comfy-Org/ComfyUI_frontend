@@ -115,8 +115,6 @@ export class ComfyApp {
   canvas: LGraphCanvas
   dragOverNode: LGraphNode | null
   canvasEl: HTMLCanvasElement
-  // x, y, scale
-  zoom_drag_start: [number, number, number] | null
   lastNodeErrors: any[] | null
   /** @type {ExecutionErrorWsMessage} */
   lastExecutionError: { node_id?: NodeId } | null
@@ -486,55 +484,6 @@ export class ComfyApp {
   }
 
   /**
-   * Handle mouse
-   *
-   * Move group by header
-   */
-  #addProcessMouseHandler() {
-    const self = this
-
-    const origProcessMouseDown = LGraphCanvas.prototype.processMouseDown
-    LGraphCanvas.prototype.processMouseDown = function (e) {
-      // prepare for ctrl+shift drag: zoom start
-      const useFastZoom = useSettingStore().get('Comfy.Graph.CtrlShiftZoom')
-      if (useFastZoom && e.ctrlKey && e.shiftKey && !e.altKey && e.buttons) {
-        self.zoom_drag_start = [e.x, e.y, this.ds.scale]
-        return
-      }
-
-      const res = origProcessMouseDown.apply(this, arguments)
-      return res
-    }
-    const origProcessMouseMove = LGraphCanvas.prototype.processMouseMove
-    LGraphCanvas.prototype.processMouseMove = function (e) {
-      // handle ctrl+shift drag
-      if (e.ctrlKey && e.shiftKey && self.zoom_drag_start) {
-        // stop canvas zoom action
-        if (!e.buttons) {
-          self.zoom_drag_start = null
-          return
-        }
-
-        // calculate delta
-        let deltaY = e.y - self.zoom_drag_start[1]
-        let startScale = self.zoom_drag_start[2]
-
-        let scale = startScale - deltaY / 100
-
-        this.ds.changeScale(scale, [
-          self.zoom_drag_start[0],
-          self.zoom_drag_start[1]
-        ])
-        this.graph.change()
-
-        return
-      }
-
-      return origProcessMouseMove.apply(this, arguments)
-    }
-  }
-
-  /**
    * Handle keypress
    */
   #addProcessKeyHandler() {
@@ -831,7 +780,6 @@ export class ComfyApp {
     await useWorkspaceStore().workflow.syncWorkflows()
     await useExtensionService().loadExtensions()
 
-    this.#addProcessMouseHandler()
     this.#addProcessKeyHandler()
     this.#addConfigureHandler()
     this.#addApiUpdateHandlers()
