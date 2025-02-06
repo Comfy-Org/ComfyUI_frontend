@@ -803,7 +803,7 @@ export const useLitegraphService = () => {
 
     canvas.ds.scale = 1
     canvas.ds.offset = [0, 0]
-    canvas.graph.setDirtyCanvas(true, true)
+    canvas.setDirty(true, true)
   }
 
   return {
