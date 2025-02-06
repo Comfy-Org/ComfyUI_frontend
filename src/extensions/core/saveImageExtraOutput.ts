@@ -7,7 +7,7 @@ import { applyTextReplacements } from '../../scripts/utils'
 app.registerExtension({
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (nodeData.name === 'SaveImage' || nodeData.name === 'SaveAnimatedWEBP') {
+    if (nodeData.name.includes('SaveImage') || nodeData.name === 'SaveAnimatedWEBP') {
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R
       nodeType.prototype.onNodeCreated = function () {
@@ -16,8 +16,10 @@ app.registerExtension({
           : undefined
 
         const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        widget.serializeValue = () => {
-          return applyTextReplacements(app, widget.value)
+        if (widget) {
+          widget.serializeValue = () => {
+            return applyTextReplacements(app, widget.value)
+          }
         }
 
         return r
