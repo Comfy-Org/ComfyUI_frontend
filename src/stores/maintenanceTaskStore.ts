@@ -100,7 +100,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
   // Task list
   const tasks = ref(DESKTOP_MAINTENANCE_TASKS)
 
-  const taskStates = ref(
+  const taskRunners = ref(
     new Map<MaintenanceTask['id'], MaintenanceTaskRunner>(
       DESKTOP_MAINTENANCE_TASKS.map((x) => [x.id, new MaintenanceTaskRunner(x)])
     )
@@ -116,7 +116,7 @@ export const useMaintenanceTaskStore = defineStore('maintenanceTask', () => {
    * @param task Task to get the matching state object for
    * @returns The state object for this task
    */
-  const getRunner = (task: MaintenanceTask) => taskStates.value.get(task.id)!
+  const getRunner = (task: MaintenanceTask) => taskRunners.value.get(task.id)!
 
   /**
    * Updates the task list with the latest validation state.
